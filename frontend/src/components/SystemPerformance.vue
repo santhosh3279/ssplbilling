@@ -157,14 +157,14 @@
             <span class="h-3 w-3 rounded-full bg-red-500"></span>
             <span class="h-3 w-3 rounded-full bg-amber-500"></span>
             <span class="h-3 w-3 rounded-full bg-emerald-500"></span>
-            <span class="ml-2 text-[11px] font-semibold text-slate-500">bash — root@container</span>
+            <span class="ml-2 text-[11px] font-semibold text-slate-500">bash — {{ stats.terminal_user }}@{{ stats.terminal_host }}</span>
           </div>
           <!-- Output -->
           <div ref="terminalEl" @click="focusInput" class="min-h-32 max-h-72 overflow-y-auto p-4 font-mono text-[12px] leading-relaxed cursor-text text-slate-800">
             <div v-for="(line, i) in terminalLines" :key="i">
               <!-- prompt + command line -->
               <div v-if="line.type === 'cmd'" class="flex">
-                <span class="select-none text-emerald-700 font-semibold">root@container:{{ shortCwd }}#&nbsp;</span>
+                <span class="select-none text-emerald-700 font-semibold">{{ stats.terminal_user }}@{{ stats.terminal_host }}:{{ shortCwd }}{{ promptSymbol }}&nbsp;</span>
                 <span class="text-slate-900">{{ line.text }}</span>
                 <span v-if="i === terminalLines.length - 1 && line.typing" class="animate-pulse text-slate-955">▌</span>
               </div>
@@ -179,7 +179,7 @@
             </div>
             <!-- Interactive input line -->
             <div v-if="terminalDone" class="flex items-center">
-              <span class="select-none text-emerald-700 font-semibold">root@container:{{ shortCwd }}#&nbsp;</span>
+              <span class="select-none text-emerald-700 font-semibold">{{ stats.terminal_user }}@{{ stats.terminal_host }}:{{ shortCwd }}{{ promptSymbol }}&nbsp;</span>
               <input
                 ref="inputEl"
                 v-model="cmdInput"
@@ -209,7 +209,15 @@ const props = defineProps({
 })
 defineEmits(['close'])
 
-const stats = ref({ ram_used_gb: 0, ram_total_gb: 0, ram_percent: 0, cpu_percent: 0 })
+const stats = ref({
+  ram_used_gb: 0,
+  ram_total_gb: 0,
+  ram_percent: 0,
+  cpu_percent: 0,
+  is_docker: false,
+  terminal_user: 'root',
+  terminal_host: 'container'
+})
 const sessionData = ref({ sessions: [], unique_users: 0, unique_ips: 0 })
 const clearing = ref(false)
 const backing = ref(false)
@@ -234,6 +242,8 @@ const shortCwd = computed(() => {
   }
   return cmdCwd.value
 })
+
+const promptSymbol = computed(() => stats.value.terminal_user === 'root' ? '#' : '$')
 
 let pollInterval = null
 

@@ -240,14 +240,33 @@ def save_default_zoom(zoom):
 def get_system_stats():
 	"""Return current RAM and CPU usage for the server."""
 	import psutil
+	import getpass
+	import socket
+
 	mem = psutil.virtual_memory()
 	cpu = psutil.cpu_percent(interval=0.2)
+
+	is_docker = _is_docker()
+	if is_docker:
+		user = os.environ.get("BACKUP_SSH_USER", "erpdev")
+		host = "host"
+	else:
+		user = getpass.getuser()
+		try:
+			host = socket.gethostname()
+		except Exception:
+			host = "localhost"
+
 	return {
 		"ram_used_gb": round(mem.used / (1024 ** 3), 1),
 		"ram_total_gb": round(mem.total / (1024 ** 3), 1),
 		"ram_percent": round(mem.percent, 1),
 		"cpu_percent": round(cpu, 1),
+		"is_docker": is_docker,
+		"terminal_user": user,
+		"terminal_host": host,
 	}
+
 
 
 @frappe.whitelist()
@@ -405,62 +424,134 @@ def run_manual_backup():
 
 @frappe.whitelist()
 def run_terminal_command(command, cwd=None):
-	"""Execute an arbitrary bash command inside the docker container/root container."""
+	"""Execute an arbitrary bash command inside the docker container/root container or SSH to host."""
 	if frappe.session.user not in ["Administrator", "admin"] and "System Manager" not in frappe.get_roles():
 		frappe.throw("Not permitted", frappe.PermissionError)
 
 	import subprocess
 	import os
+	import shlex
 
 	# Execute command in the specified directory if provided, otherwise default to bench path
 	exec_cwd = cwd or frappe.utils.get_bench_path()
 
-	# Handle cd command
-	cmd_parts = command.strip().split()
-	if cmd_parts and cmd_parts[0] == "cd":
-		target_dir = cmd_parts[1] if len(cmd_parts) > 1 else frappe.utils.get_bench_path()
-		resolved_path = os.path.abspath(os.path.join(exec_cwd, target_dir))
-		if os.path.exists(resolved_path) and os.path.isdir(resolved_path):
+	if _is_docker():
+		host = os.environ.get("BACKUP_SSH_HOST") or _docker_host_ip()
+		user = os.environ.get("BACKUP_SSH_USER", "erpdev")
+		key  = os.environ.get("BACKUP_SSH_KEY",  "/home/erpdev/.ssh/id_rsa")
+
+		# Handle cd command via SSH to verify path exists on the host
+		cmd_parts = command.strip().split()
+		if cmd_parts and cmd_parts[0] == "cd":
+			target_dir = cmd_parts[1] if len(cmd_parts) > 1 else exec_cwd
+			remote_command = f"cd {shlex.quote(exec_cwd)} && cd {shlex.quote(target_dir)} && pwd"
+			ssh_cmd = [
+				"ssh", "-i", key, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10",
+				f"{user}@{host}", remote_command
+			]
+			try:
+				result = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=30)
+				if result.returncode == 0:
+					return {
+						"success": True,
+						"stdout": "",
+						"stderr": "",
+						"returncode": 0,
+						"cwd": result.stdout.strip()
+					}
+				else:
+					return {
+						"success": False,
+						"stdout": "",
+						"stderr": result.stderr.strip() or f"cd: {target_dir}: No such file or directory",
+						"returncode": result.returncode,
+						"cwd": exec_cwd
+					}
+			except Exception as e:
+				return {
+					"success": False,
+					"stdout": "",
+					"stderr": str(e),
+					"returncode": -1,
+					"cwd": exec_cwd
+				}
+
+		# Execute remote command
+		remote_command = f"cd {shlex.quote(exec_cwd)} && {command}"
+		ssh_cmd = [
+			"ssh", "-i", key, "-o", "StrictHostKeyChecking=no", "-o", "ConnectTimeout=10",
+			f"{user}@{host}", remote_command
+		]
+		try:
+			result = subprocess.run(
+				ssh_cmd,
+				capture_output=True,
+				text=True,
+				timeout=30
+			)
 			return {
-				"success": True,
-				"stdout": "",
-				"stderr": "",
-				"returncode": 0,
-				"cwd": resolved_path
+				"success": result.returncode == 0,
+				"stdout": result.stdout,
+				"stderr": result.stderr,
+				"returncode": result.returncode,
+				"cwd": exec_cwd
 			}
-		else:
+		except Exception as e:
 			return {
 				"success": False,
 				"stdout": "",
-				"stderr": f"cd: {target_dir}: No such file or directory",
-				"returncode": 1,
+				"stderr": str(e),
+				"returncode": -1,
 				"cwd": exec_cwd
 			}
+	else:
+		# Bare-metal local terminal execution
+		# Handle cd command
+		cmd_parts = command.strip().split()
+		if cmd_parts and cmd_parts[0] == "cd":
+			target_dir = cmd_parts[1] if len(cmd_parts) > 1 else frappe.utils.get_bench_path()
+			resolved_path = os.path.abspath(os.path.join(exec_cwd, target_dir))
+			if os.path.exists(resolved_path) and os.path.isdir(resolved_path):
+				return {
+					"success": True,
+					"stdout": "",
+					"stderr": "",
+					"returncode": 0,
+					"cwd": resolved_path
+				}
+			else:
+				return {
+					"success": False,
+					"stdout": "",
+					"stderr": f"cd: {target_dir}: No such file or directory",
+					"returncode": 1,
+					"cwd": exec_cwd
+				}
 
-	try:
-		result = subprocess.run(
-			command,
-			shell=True,
-			cwd=exec_cwd,
-			capture_output=True,
-			text=True,
-			timeout=30
-		)
-		return {
-			"success": result.returncode == 0,
-			"stdout": result.stdout,
-			"stderr": result.stderr,
-			"returncode": result.returncode,
-			"cwd": exec_cwd
-		}
-	except Exception as e:
-		return {
-			"success": False,
-			"stdout": "",
-			"stderr": str(e),
-			"returncode": -1,
-			"cwd": exec_cwd
-		}
+		try:
+			result = subprocess.run(
+				command,
+				shell=True,
+				cwd=exec_cwd,
+				capture_output=True,
+				text=True,
+				timeout=30
+			)
+			return {
+				"success": result.returncode == 0,
+				"stdout": result.stdout,
+				"stderr": result.stderr,
+				"returncode": result.returncode,
+				"cwd": exec_cwd
+			}
+		except Exception as e:
+			return {
+				"success": False,
+				"stdout": "",
+				"stderr": str(e),
+				"returncode": -1,
+				"cwd": exec_cwd
+			}
 
 
 @frappe.whitelist()
