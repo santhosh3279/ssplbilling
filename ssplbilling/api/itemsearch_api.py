@@ -689,6 +689,10 @@ def _generate_history_html(title, party_noun, party, view_mode, rows):
 	<head>
 		<meta charset="utf-8">
 		<style>
+			@page {{
+				size: A4;
+				margin: 15mm 15mm 20mm 15mm;
+			}}
 			body {{
 				font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
 				color: #1f2937;
@@ -727,7 +731,7 @@ def _generate_history_html(title, party_noun, party, view_mode, rows):
 			}}
 			.footer {{
 				position: fixed;
-				bottom: 0;
+				bottom: -12mm;
 				left: 0;
 				right: 0;
 				text-align: center;
