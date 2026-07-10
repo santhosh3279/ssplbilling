@@ -1780,16 +1780,24 @@ function handleCancel() {
   const hasParty = supplierId.value;
   const hasItems = items.value.length > 0;
 
-  if (!isReadOnly.value && (hasParty || hasItems) && !props.isSubwindow) {
-    showExitWarning.value = true;
-  } else {
-    if (items.value.length === 0 || isReadOnly.value || props.isSubwindow) {
-      goBack();
+  if (props.isSubwindow) {
+    if (!isReadOnly.value && (hasParty || hasItems)) {
+      showExitWarning.value = true;
     } else {
-      selectedRowIdx.value = -1
-      editingRowIdx.value = -1
-      editingField.value = null
-      focusBarcodeInput()
+      goBack();
+    }
+  } else {
+    if (!isReadOnly.value && (hasParty || hasItems)) {
+      showExitWarning.value = true;
+    } else {
+      if (items.value.length === 0 || isReadOnly.value) {
+        goBack();
+      } else {
+        selectedRowIdx.value = -1
+        editingRowIdx.value = -1
+        editingField.value = null
+        focusBarcodeInput()
+      }
     }
   }
 }
@@ -2736,7 +2744,13 @@ function handleGlobalEscape(e) {
                       pendingItem.value || editingRowIdx.value !== -1;
 
     if (!modalOpen) {
-      goBack();
+      const hasParty = supplierId.value;
+      const hasItems = items.value.length > 0;
+      if (!isReadOnly.value && (hasParty || hasItems)) {
+        showExitWarning.value = true;
+      } else {
+        goBack();
+      }
     }
   }
 }

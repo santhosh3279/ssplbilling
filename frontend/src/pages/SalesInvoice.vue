@@ -1518,13 +1518,21 @@ function handleCancel() {
   const hasParty = customerId.value;
   const hasItems = activeItems.value.length > 0;
 
-  if (!isReadOnly.value && (hasParty || hasItems) && !props.isSubwindow) {
-    showExitWarning.value = true;
-  } else {
-    if (activeItems.value.length === 0 || isReadOnly.value || props.isSubwindow) {
-      goBack();
+  if (props.isSubwindow) {
+    if (!isReadOnly.value && (hasParty || hasItems)) {
+      showExitWarning.value = true;
     } else {
-      focusBarcodeInput();
+      goBack();
+    }
+  } else {
+    if (!isReadOnly.value && (hasParty || hasItems)) {
+      showExitWarning.value = true;
+    } else {
+      if (activeItems.value.length === 0 || isReadOnly.value) {
+        goBack();
+      } else {
+        focusBarcodeInput();
+      }
     }
   }
 }
@@ -2620,7 +2628,13 @@ function handleGlobalEscape(e) {
                       pendingItem.value || editingRowIdx.value !== -1;
 
     if (!modalOpen) {
-      goBack();
+      const hasParty = customerId.value;
+      const hasItems = activeItems.value.length > 0;
+      if (!isReadOnly.value && (hasParty || hasItems)) {
+        showExitWarning.value = true;
+      } else {
+        goBack();
+      }
     }
   }
 }
