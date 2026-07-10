@@ -95,15 +95,19 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 			else:
 				other_tax += float(tax.tax_amount or 0)
 
-		# Fetch items to calculate template-wise taxable values
+		# Fetch items to calculate template-wise taxable and tax values
 		items = frappe.get_all(
 			"Sales Invoice Item",
 			filters={"parent": inv.name},
-			fields=["net_amount", "item_tax_template", "cgst_rate", "sgst_rate", "igst_rate"],
+			fields=[
+				"net_amount", "item_tax_template", "cgst_rate", "sgst_rate", "igst_rate",
+				"cgst_amount", "sgst_amount", "igst_amount"
+			],
 		)
-		template_sums = {t.name: 0.0 for t in templates}
+		template_sums = {t.name: {"taxable": 0.0, "tax": 0.0} for t in templates}
 		for item in items:
 			net_amt = float(item.net_amount or 0)
+			tax_amt = float(item.cgst_amount or 0) + float(item.sgst_amount or 0) + float(item.igst_amount or 0)
 			template_name = item.item_tax_template
 			
 			if not template_name or template_name not in template_map:
@@ -115,7 +119,8 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 				template_name = rate_to_template.get(total_rate)
 
 			if template_name in template_sums:
-				template_sums[template_name] += net_amt
+				template_sums[template_name]["taxable"] += net_amt
+				template_sums[template_name]["tax"] += tax_amt
 
 		result.append(
 			{
@@ -229,15 +234,19 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 			else:
 				other_tax += float(tax.tax_amount or 0)
 
-		# Fetch items to calculate template-wise taxable values
+		# Fetch items to calculate template-wise taxable and tax values
 		items = frappe.get_all(
 			"Quotation Item",
 			filters={"parent": qt.name},
-			fields=["net_amount", "item_tax_template", "cgst_rate", "sgst_rate", "igst_rate"],
+			fields=[
+				"net_amount", "item_tax_template", "cgst_rate", "sgst_rate", "igst_rate",
+				"cgst_amount", "sgst_amount", "igst_amount"
+			],
 		)
-		template_sums = {t.name: 0.0 for t in templates}
+		template_sums = {t.name: {"taxable": 0.0, "tax": 0.0} for t in templates}
 		for item in items:
 			net_amt = float(item.net_amount or 0)
+			tax_amt = float(item.cgst_amount or 0) + float(item.sgst_amount or 0) + float(item.igst_amount or 0)
 			template_name = item.item_tax_template
 			
 			if not template_name or template_name not in template_map:
@@ -249,7 +258,8 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 				template_name = rate_to_template.get(total_rate)
 
 			if template_name in template_sums:
-				template_sums[template_name] += net_amt
+				template_sums[template_name]["taxable"] += net_amt
+				template_sums[template_name]["tax"] += tax_amt
 
 		result.append(
 			{
