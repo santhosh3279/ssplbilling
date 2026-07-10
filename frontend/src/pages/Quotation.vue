@@ -1150,6 +1150,35 @@ async function handleSave() {
   if (!selectedSeries.value) { alert('Please select a series first.'); return }
 
   submitting.value = true
+
+  // Fetch the latest customer details from the server before saving
+  try {
+    const cust = await frappeGet('ssplbilling.api.salesinvoice_api.get_customer_details', { customer: customerId.value })
+    if (cust) {
+      customerName.value = cust.customer_name || cust.name || customerName.value
+      customerId.value = cust.name || customerId.value
+      customerDetails.value = cust.mobile || cust.email || ''
+      customerMobile.value = cust.mobile || ''
+      customerGstin.value = cust.gstin || ''
+      customerState.value = cust.state || ''
+      customerModifier.value = cust.pricelist_multiplication_factor ?? null
+      
+      const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
+      customerAddress.value = addrParts.join(', ')
+
+      try {
+        const pricing = await frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: customerId.value })
+        customerPricing.value = pricing || {}
+        reapplyCustomerPricing()
+      } catch (err) {
+        console.warn('Failed to fetch latest customer pricing:', err)
+      }
+
+      applyRegionalTaxLogic()
+    }
+  } catch (err) {
+    console.error('Failed to fetch latest customer details from server:', err)
+  }
   const taxes = []
   const freight = parseFloat(freightEntry.value) || 0
   const loading = parseFloat(loadingEntry.value) || 0

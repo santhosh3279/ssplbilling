@@ -1569,6 +1569,24 @@ async function handleSave() {
   if (!selectedSeries.value) { alert('Please select a series first.'); return }
 
   submitting.value = true
+
+  // Fetch the latest supplier details from the server before saving
+  try {
+    const supplier = await frappeGet('ssplbilling.api.supplier_creator_api.get_supplier_details', { supplier: supplierId.value })
+    if (supplier) {
+      supplierName.value = supplier.supplier_name || supplier.name || supplierName.value
+      supplierId.value = supplier.name || supplierId.value
+      supplierDetails.value = supplier.mobile || supplier.email || ''
+      supplierMobile.value = supplier.mobile || ''
+      supplierGstin.value = supplier.gstin || ''
+      supplierState.value = supplier.state || ''
+      
+      const addrParts = [supplier.address_line1, supplier.city, supplier.state].filter(Boolean)
+      supplierAddress.value = addrParts.join(', ')
+    }
+  } catch (err) {
+    console.error('Failed to fetch latest supplier details from server:', err)
+  }
   const additionalCharges = []
   const freight = parseFloat(freightEntry.value) || 0
   const loading = parseFloat(loadingEntry.value) || 0
