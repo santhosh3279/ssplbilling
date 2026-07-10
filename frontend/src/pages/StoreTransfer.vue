@@ -46,9 +46,11 @@
               <div class="flex flex-col gap-1">
                 <label class="text-sm font-bold uppercase text-[var(--color-text-muted)]">Source Warehouse</label>
                 <select 
+                  ref="fromWarehouseInput"
                   v-model="fromWarehouse" 
                   :disabled="isReadOnly"
                   class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)]"
+                  @keydown.enter.prevent="focusToWarehouse"
                 >
                   <option v-for="w in warehouses" :key="w.name" :value="w.name">{{ w.name }}</option>
                 </select>
@@ -59,9 +61,11 @@
               <div class="flex flex-col gap-1">
                 <label class="text-sm font-bold uppercase text-[var(--color-text-muted)]">Destination Warehouse</label>
                 <select 
+                  ref="toWarehouseInput"
                   v-model="toWarehouse" 
                   :disabled="isReadOnly"
                   class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)]"
+                  @keydown.enter.prevent="focusBarcodeInput"
                 >
                   <option v-for="w in warehouses" :key="w.name" :value="w.name">{{ w.name }}</option>
                 </select>
@@ -317,6 +321,8 @@ const transferName = ref('')
 
 const barcodeQuery = ref('')
 const barcodeInput = ref(null)
+const fromWarehouseInput = ref(null)
+const toWarehouseInput = ref(null)
 const showItemSearch = ref(false)
 const itemSearchInitialQuery = ref('')
 
@@ -348,7 +354,7 @@ onMounted(async () => {
   await fetchMetadata()
   await fetchRecentTransfers()
   refreshItemCache('Stock')
-  focusBarcodeInput()
+  focusFromWarehouse()
 })
 
 async function fetchMetadata() {
@@ -382,6 +388,14 @@ async function fetchRecentTransfers() {
 
 function focusBarcodeInput() {
   nextTick(() => barcodeInput.value?.focus())
+}
+
+function focusFromWarehouse() {
+  nextTick(() => fromWarehouseInput.value?.focus())
+}
+
+function focusToWarehouse() {
+  nextTick(() => toWarehouseInput.value?.focus())
 }
 
 function onBarcodeInput() {
@@ -581,7 +595,7 @@ function resetForm() {
   if (availableSeries.value.length) selectedSeries.value = availableSeries.value[0]
   isReadOnly.value = false
   isDraft.value = false
-  focusBarcodeInput()
+  focusFromWarehouse()
 }
 
 function goBack() {
