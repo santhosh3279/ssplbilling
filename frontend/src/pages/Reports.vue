@@ -388,6 +388,7 @@ const fromDate = ref('')
 const toDate = ref('')
 const generating = ref(false)
 const modalError = ref('')
+const activeTemplates = ref([])
 
 const modalConfig = computed(() => {
   if (reportType.value === 'quotation') {
@@ -521,6 +522,7 @@ async function generateReport() {
     if (reportType.value === 'quotation') {
       const res = await getQuotationTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
       rows = res.rows || []
+      activeTemplates.value = res.active_templates || []
       companyName = res.company_name || ''
       companyAddressLines = res.company_address_lines || []
     } else if (reportType.value === 'hsn') {
@@ -560,6 +562,7 @@ async function generateReport() {
     } else {
       const res = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
       rows = res.rows || []
+      activeTemplates.value = res.active_templates || []
       companyName = res.company_name || ''
       companyAddressLines = res.company_address_lines || []
     }
@@ -902,6 +905,11 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   const workbook = new ExcelJS.Workbook()
   const worksheet = workbook.addWorksheet(modalConfig.value.sheetName)
 
+  const templateCols = activeTemplates.value.map(t => ({
+    key: `temp_${t.name}`,
+    width: 18
+  }))
+
   // Configure column widths
   worksheet.columns = [
     { key: 'doc_no', width: 28 },       // docLabel
@@ -910,11 +918,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
     { key: 'cust_name', width: 28 },    // Customer Name
     { key: 'cust_gstin', width: 18 },   // Customer GSTIN
     { key: 'taxable', width: 16 },      // Taxable Amount
-    { key: 'taxable_0', width: 18 },    // 0% Taxable Value
-    { key: 'taxable_5', width: 18 },    // 5% Taxable Value
-    { key: 'taxable_12', width: 18 },   // 12% Taxable Value
-    { key: 'taxable_18', width: 18 },   // 18% Taxable Value
-    { key: 'taxable_28', width: 18 },   // 28% Taxable Value
+    ...templateCols,
     { key: 'cgst_rate', width: 12 },    // CGST Rate %
     { key: 'cgst_amt', width: 14 },     // CGST Amount
     { key: 'sgst_rate', width: 12 },    // SGST Rate %
@@ -926,11 +930,13 @@ async function buildExcel(rows, companyName, companyAddressLines) {
     { key: 'grand_total', width: 18 }   // Grand Total
   ]
 
+  const totalColsCount = 15 + templateCols.length
+
   // Add Company Name in row 1
   const row1 = worksheet.addRow([companyName || ''])
   row1.getCell(1).font = { name: 'Arial', size: 14, bold: true }
   row1.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
-  worksheet.mergeCells(1, 1, 1, 20)
+  worksheet.mergeCells(1, 1, 1, totalColsCount)
 
   // Add Address lines in rows 2, 3, 4, 5
   for (let i = 0; i < 4; i++) {
@@ -939,7 +945,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
     const row = worksheet.addRow([addrLine])
     row.getCell(1).font = { name: 'Arial', size: 10 }
     row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
-    worksheet.mergeCells(rowNum, 1, rowNum, 20)
+    worksheet.mergeCells(rowNum, 1, rowNum, totalColsCount)
   }
 
   // Row 6: Empty spacing row
@@ -949,11 +955,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   const tableHeaderRow = worksheet.addRow([
     docLabel, 'Date', 'Customer Code', 'Customer Name', 'Customer GSTIN',
     'Taxable Amount',
-    '0% Taxable Value',
-    '5% Taxable Value',
-    '12% Taxable Value',
-    '18% Taxable Value',
-    '28% Taxable Value',
+    ...activeTemplates.value.map(t => `${t.title} Taxable Value`),
     'CGST Rate %', 'CGST Amount',
     'SGST Rate %', 'SGST Amount',
     'IGST Rate %', 'IGST Amount',
@@ -977,11 +979,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
       r.customer_name || '',
       r.customer_gstin || '',
       fmt(r.taxable_amount),
-      fmt(r.taxable_value_0),
-      fmt(r.taxable_value_5),
-      fmt(r.taxable_value_12),
-      fmt(r.taxable_value_18),
-      fmt(r.taxable_value_28),
+      ...activeTemplates.value.map(t => fmt(r.template_values?.[t.name] || 0)),
       fmt(r.cgst_rate),
       fmt(r.cgst_amount),
       fmt(r.sgst_rate),
@@ -996,14 +994,11 @@ async function buildExcel(rows, companyName, companyAddressLines) {
 
   // Totals Row
   const sum = key => rows.reduce((s, r) => s + (r[key] || 0), 0)
+  const totals = activeTemplates.value.map(t => fmt(rows.reduce((s, r) => s + (r.template_values?.[t.name] || 0), 0)))
   const totalsRow = worksheet.addRow([
     'GRAND TOTAL', '', '', '', '',
     fmt(sum('taxable_amount')),
-    fmt(sum('taxable_value_0')),
-    fmt(sum('taxable_value_5')),
-    fmt(sum('taxable_value_12')),
-    fmt(sum('taxable_value_18')),
-    fmt(sum('taxable_value_28')),
+    ...totals,
     '', fmt(sum('cgst_amount')),
     '', fmt(sum('sgst_amount')),
     '', fmt(sum('igst_amount')),

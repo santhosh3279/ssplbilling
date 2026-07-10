@@ -19,6 +19,23 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 
 	Each row represents one submitted Sales Invoice with its CGST/SGST/IGST breakdown.
 	"""
+	company = frappe.db.get_value("Sales Invoice", {"naming_series": series}, "company") or frappe.defaults.get_user_default("company")
+	if not company:
+		company = frappe.db.get_value("Company", {}, "name")
+
+	templates = frappe.get_all(
+		"Item Tax Template",
+		filters={"disabled": 0, "company": ["in", [company, None]]},
+		fields=["name", "title", "gst_rate"],
+		order_by="gst_rate asc, title asc",
+	)
+
+	template_map = {t.name: t for t in templates}
+	rate_to_template = {}
+	for t in templates:
+		if t.gst_rate not in rate_to_template:
+			rate_to_template[t.gst_rate] = t.name
+
 	filters = [
 		["Sales Invoice", "naming_series", "=", series],
 		["Sales Invoice", "docstatus", "=", 1],
@@ -78,31 +95,27 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 			else:
 				other_tax += float(tax.tax_amount or 0)
 
-		# Fetch items to calculate slab-wise taxable values
+		# Fetch items to calculate template-wise taxable values
 		items = frappe.get_all(
 			"Sales Invoice Item",
 			filters={"parent": inv.name},
-			fields=["net_amount", "cgst_rate", "sgst_rate", "igst_rate"],
+			fields=["net_amount", "item_tax_template", "cgst_rate", "sgst_rate", "igst_rate"],
 		)
-		gst_0 = gst_5 = gst_12 = gst_18 = gst_28 = gst_other = 0.0
+		template_sums = {t.name: 0.0 for t in templates}
 		for item in items:
-			igst = float(item.igst_rate or 0)
-			cgst = float(item.cgst_rate or 0)
-			sgst = float(item.sgst_rate or 0)
-			total_rate = round(igst if igst > 0 else (cgst + sgst), 2)
 			net_amt = float(item.net_amount or 0)
-			if total_rate == 0.0:
-				gst_0 += net_amt
-			elif total_rate == 5.0:
-				gst_5 += net_amt
-			elif total_rate == 12.0:
-				gst_12 += net_amt
-			elif total_rate == 18.0:
-				gst_18 += net_amt
-			elif total_rate == 28.0:
-				gst_28 += net_amt
-			else:
-				gst_other += net_amt
+			template_name = item.item_tax_template
+			
+			if not template_name or template_name not in template_map:
+				# Fallback: match by rate
+				igst = float(item.igst_rate or 0)
+				cgst = float(item.cgst_rate or 0)
+				sgst = float(item.sgst_rate or 0)
+				total_rate = round(igst if igst > 0 else (cgst + sgst), 2)
+				template_name = rate_to_template.get(total_rate)
+
+			if template_name in template_sums:
+				template_sums[template_name] += net_amt
 
 		result.append(
 			{
@@ -112,12 +125,7 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 				"customer_name": inv.customer_name,
 				"customer_gstin": customer_gstin,
 				"taxable_amount": float(inv.net_total or 0),
-				"taxable_value_0": gst_0,
-				"taxable_value_5": gst_5,
-				"taxable_value_12": gst_12,
-				"taxable_value_18": gst_18,
-				"taxable_value_28": gst_28,
-				"taxable_value_other": gst_other,
+				"template_values": template_sums,
 				"cgst_rate": cgst_rate,
 				"cgst_amount": cgst_amount,
 				"sgst_rate": sgst_rate,
@@ -133,6 +141,7 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 	comp = get_company_details()
 	return {
 		"rows": result,
+		"active_templates": [{"name": t.name, "title": t.title, "gst_rate": t.gst_rate} for t in templates],
 		"company_name": comp["company_name"],
 		"company_address_lines": comp["address_lines"]
 	}
@@ -144,6 +153,23 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 
 	Includes both Draft (0) and Submitted (1) quotations.
 	"""
+	company = frappe.db.get_value("Quotation", {"naming_series": series}, "company") or frappe.defaults.get_user_default("company")
+	if not company:
+		company = frappe.db.get_value("Company", {}, "name")
+
+	templates = frappe.get_all(
+		"Item Tax Template",
+		filters={"disabled": 0, "company": ["in", [company, None]]},
+		fields=["name", "title", "gst_rate"],
+		order_by="gst_rate asc, title asc",
+	)
+
+	template_map = {t.name: t for t in templates}
+	rate_to_template = {}
+	for t in templates:
+		if t.gst_rate not in rate_to_template:
+			rate_to_template[t.gst_rate] = t.name
+
 	filters = [
 		["Quotation", "naming_series", "=", series],
 		["Quotation", "docstatus", "in", [0, 1]],
@@ -203,31 +229,27 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 			else:
 				other_tax += float(tax.tax_amount or 0)
 
-		# Fetch items to calculate slab-wise taxable values
+		# Fetch items to calculate template-wise taxable values
 		items = frappe.get_all(
 			"Quotation Item",
 			filters={"parent": qt.name},
-			fields=["net_amount", "cgst_rate", "sgst_rate", "igst_rate"],
+			fields=["net_amount", "item_tax_template", "cgst_rate", "sgst_rate", "igst_rate"],
 		)
-		gst_0 = gst_5 = gst_12 = gst_18 = gst_28 = gst_other = 0.0
+		template_sums = {t.name: 0.0 for t in templates}
 		for item in items:
-			igst = float(item.igst_rate or 0)
-			cgst = float(item.cgst_rate or 0)
-			sgst = float(item.sgst_rate or 0)
-			total_rate = round(igst if igst > 0 else (cgst + sgst), 2)
 			net_amt = float(item.net_amount or 0)
-			if total_rate == 0.0:
-				gst_0 += net_amt
-			elif total_rate == 5.0:
-				gst_5 += net_amt
-			elif total_rate == 12.0:
-				gst_12 += net_amt
-			elif total_rate == 18.0:
-				gst_18 += net_amt
-			elif total_rate == 28.0:
-				gst_28 += net_amt
-			else:
-				gst_other += net_amt
+			template_name = item.item_tax_template
+			
+			if not template_name or template_name not in template_map:
+				# Fallback: match by rate
+				igst = float(item.igst_rate or 0)
+				cgst = float(item.cgst_rate or 0)
+				sgst = float(item.sgst_rate or 0)
+				total_rate = round(igst if igst > 0 else (cgst + sgst), 2)
+				template_name = rate_to_template.get(total_rate)
+
+			if template_name in template_sums:
+				template_sums[template_name] += net_amt
 
 		result.append(
 			{
@@ -237,12 +259,7 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 				"customer_name": qt.customer_name,
 				"customer_gstin": customer_gstin,
 				"taxable_amount": float(qt.net_total or 0),
-				"taxable_value_0": gst_0,
-				"taxable_value_5": gst_5,
-				"taxable_value_12": gst_12,
-				"taxable_value_18": gst_18,
-				"taxable_value_28": gst_28,
-				"taxable_value_other": gst_other,
+				"template_values": template_sums,
 				"cgst_rate": cgst_rate,
 				"cgst_amount": cgst_amount,
 				"sgst_rate": sgst_rate,
@@ -258,6 +275,7 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 	comp = get_company_details()
 	return {
 		"rows": result,
+		"active_templates": [{"name": t.name, "title": t.title, "gst_rate": t.gst_rate} for t in templates],
 		"company_name": comp["company_name"],
 		"company_address_lines": comp["address_lines"]
 	}
