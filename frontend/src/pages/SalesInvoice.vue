@@ -1289,14 +1289,6 @@ async function handleSave() {
       const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
       customerAddress.value = addrParts.join(', ')
 
-      try {
-        const pricing = await frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: customerId.value })
-        customerPricing.value = pricing || {}
-        reapplyCustomerPricing()
-      } catch (err) {
-        console.warn('Failed to fetch latest customer pricing:', err)
-      }
-
       applyRegionalTaxLogic()
     }
   } catch (err) {
