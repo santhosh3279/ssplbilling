@@ -163,7 +163,8 @@ const stockFilters = ref({
 
 async function loadStockReportFilters() {
   try {
-    const res = await fetchStockReportFilters()
+    const company = localStorage.getItem('wb-company') || ''
+    const res = await fetchStockReportFilters(company)
     filterOptions.value = res || { warehouses: [], suppliers: [] }
   } catch (err) {
     console.error('Failed to load stock report filters:', err)
@@ -173,7 +174,9 @@ async function loadStockReportFilters() {
 async function loadStockReportData() {
   loadingStockData.value = true
   try {
+    const company = localStorage.getItem('wb-company') || ''
     const data = await fetchStockReportData({
+      company: company,
       warehouse: stockFilters.value.warehouse,
       supplier: stockFilters.value.supplier,
       negative_only: stockFilters.value.negativeOnly

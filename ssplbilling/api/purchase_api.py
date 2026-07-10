@@ -690,9 +690,12 @@ def update_items_order_quantities(items):
 
 
 @frappe.whitelist()
-def get_stock_report_filters():
+def get_stock_report_filters(company=None):
 	"""Returns list of warehouses and suppliers for the filters."""
-	warehouses = frappe.get_all("Warehouse", filters={"disabled": 0}, fields=["name"], order_by="name asc")
+	wh_filters = {"disabled": 0}
+	if company:
+		wh_filters["company"] = company
+	warehouses = frappe.get_all("Warehouse", filters=wh_filters, fields=["name"], order_by="name asc")
 	suppliers = frappe.get_all("Supplier", filters={"disabled": 0}, fields=["name", "supplier_name"], order_by="supplier_name asc")
 	return {
 		"warehouses": [w.name for w in warehouses],
@@ -701,7 +704,7 @@ def get_stock_report_filters():
 
 
 @frappe.whitelist()
-def get_stock_report_data(warehouse=None, supplier=None, negative_only=False):
+def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_only=False):
 	"""Returns stock report data with filters for warehouse, supplier, and negative stock."""
 	conditions = []
 	values = {}
@@ -720,7 +723,13 @@ def get_stock_report_data(warehouse=None, supplier=None, negative_only=False):
 			`tabBin` bin
 		INNER JOIN 
 			`tabItem` item ON bin.item_code = item.item_code
+		INNER JOIN
+			`tabWarehouse` wh ON bin.warehouse = wh.name
 	"""
+
+	if company:
+		conditions.append("wh.company = %(company)s")
+		values["company"] = company
 
 	if warehouse:
 		conditions.append("bin.warehouse = %(warehouse)s")

@@ -986,8 +986,8 @@ export async function fetchChequeBankAccounts() {
 
 /* ── Stock Report Endpoints ─────────────────────────── */
 
-export async function fetchStockReportFilters() {
-  return frappeGet("ssplbilling.api.purchase_api.get_stock_report_filters");
+export async function fetchStockReportFilters(company) {
+  return frappeGet("ssplbilling.api.purchase_api.get_stock_report_filters", { company });
 }
 
 export async function fetchStockReportData(filters = {}) {
