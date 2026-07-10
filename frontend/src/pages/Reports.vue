@@ -946,7 +946,15 @@ async function buildExcel(rows, companyName, companyAddressLines) {
     worksheet.mergeCells(rowNum, 1, rowNum, totalColsCount)
   }
 
-  // Row 6: Empty spacing row
+  // Add Period (From / To Date) in row 6
+  const fromStr = fromDate.value || 'All'
+  const toStr = toDate.value || 'All'
+  const dateRow = worksheet.addRow([`Period: ${fromStr} to ${toStr}`])
+  dateRow.getCell(1).font = { name: 'Arial', size: 11, bold: true, italic: true }
+  dateRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
+  worksheet.mergeCells(6, 1, 6, totalColsCount)
+
+  // Row 7: Empty spacing row
   worksheet.addRow([])
 
   // Table header row: columns/headers
