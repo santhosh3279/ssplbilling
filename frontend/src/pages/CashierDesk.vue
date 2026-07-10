@@ -310,6 +310,15 @@
                           <td class="px-3 py-1 text-right font-mono text-[16px] font-black text-[var(--color-text)]">
                             ₹{{ fmt(adv.allocated_amount) }}
                           </td>
+                          <td class="px-2 py-1 text-center">
+                            <button 
+                              @click="removeAdvance(adv)"
+                              class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] p-0.5 rounded transition-colors inline-flex items-center align-middle"
+                              title="Remove credit note allocation"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                            </button>
+                          </td>
                         </tr>
                       </tbody>
                     </table>
