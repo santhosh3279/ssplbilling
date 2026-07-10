@@ -114,19 +114,20 @@
           </thead>
           <tbody class="divide-y divide-[var(--color-border)] text-[var(--color-text)] font-mono">
             <tr
-              v-for="row in filteredStockRows"
+              v-for="(row, idx) in filteredStockRows"
               :key="row.item_code + '_' + row.warehouse"
-              class="hover:bg-[var(--color-surface-raised)]/30 transition-colors"
+              class="transition-colors"
+              :class="focusedRowIdx === idx ? 'stock-row-focused bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-sm' : 'hover:bg-[var(--color-surface-raised)]/30'"
             >
               <td class="px-2 py-1 font-bold">{{ row.item_code }}</td>
               <td class="px-2 py-1 font-sans">{{ row.item_name }}</td>
-              <td class="px-2 py-1 font-sans text-[var(--color-text-muted)]">{{ row.warehouse }}</td>
-              <td class="px-2 py-1 text-right font-semibold tabular-nums" :class="row.actual_stock < 0 ? 'text-[var(--color-danger)]' : ''">
+              <td class="px-2 py-1 font-sans" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.warehouse }}</td>
+              <td class="px-2 py-1 text-right font-semibold tabular-nums" :class="focusedRowIdx === idx ? '' : (row.actual_stock < 0 ? 'text-[var(--color-danger)]' : '')">
                 {{ row.actual_stock }}
               </td>
-              <td class="px-2 py-1 text-right tabular-nums text-[var(--color-text-muted)]">{{ row.safety_stock }}</td>
-              <td class="px-2 py-1 text-right tabular-nums text-[var(--color-text-muted)]">{{ row.max_stock }}</td>
-              <td class="px-2 py-1 font-sans uppercase tracking-wider text-[var(--color-text-muted)]">{{ row.stock_uom }}</td>
+              <td class="px-2 py-1 text-right tabular-nums" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.safety_stock }}</td>
+              <td class="px-2 py-1 text-right tabular-nums" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.max_stock }}</td>
+              <td class="px-2 py-1 font-sans uppercase tracking-wider" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.stock_uom }}</td>
               <td class="px-2 py-1 font-sans max-w-xs truncate" :title="row.suppliers">{{ row.suppliers || '—' }}</td>
             </tr>
           </tbody>
@@ -137,7 +138,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchStockReportFilters, fetchStockReportData } from '../api.js'
 import ExcelJS from 'exceljs'
@@ -146,6 +147,7 @@ const router = useRouter()
 
 const loadingStockData = ref(false)
 const stockReportRows = ref([])
+const focusedRowIdx = ref(-1)
 const filterOptions = ref({ warehouses: [], suppliers: [] })
 
 const stockFilters = ref({
@@ -173,6 +175,7 @@ async function loadStockReportData() {
       negative_only: stockFilters.value.negativeOnly
     })
     stockReportRows.value = data || []
+    focusedRowIdx.value = stockReportRows.value.length ? 0 : -1
   } catch (err) {
     console.error('Failed to load stock report data:', err)
   } finally {
@@ -189,12 +192,25 @@ watch(
 
 const filteredStockRows = computed(() => {
   const query = stockFilters.value.search.trim().toLowerCase()
-  if (!query) return stockReportRows.value
+  let rows = stockReportRows.value
   
-  return stockReportRows.value.filter(r => 
-    r.item_code.toLowerCase().includes(query) || 
-    r.item_name.toLowerCase().includes(query)
-  )
+  if (query) {
+    rows = rows.filter(r => 
+      r.item_code.toLowerCase().includes(query) || 
+      r.item_name.toLowerCase().includes(query)
+    )
+  }
+
+  // Keep focused row index within bounds
+  if (rows.length > 0) {
+    if (focusedRowIdx.value < 0 || focusedRowIdx.value >= rows.length) {
+      focusedRowIdx.value = 0
+    }
+  } else {
+    focusedRowIdx.value = -1
+  }
+
+  return rows
 })
 
 function resetStockFilters() {
@@ -271,9 +287,41 @@ async function exportStockReportToExcel() {
   link.click()
 }
 
+function scrollToFocusedRow() {
+  nextTick(() => {
+    const el = document.querySelector('.stock-row-focused')
+    if (el) {
+      el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+    }
+  })
+}
+
+function handleKeyDown(e) {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    const len = filteredStockRows.value.length
+    if (len > 0) {
+      focusedRowIdx.value = (focusedRowIdx.value + 1) % len
+      scrollToFocusedRow()
+    }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    const len = filteredStockRows.value.length
+    if (len > 0) {
+      focusedRowIdx.value = (focusedRowIdx.value - 1 + len) % len
+      scrollToFocusedRow()
+    }
+  }
+}
+
 onMounted(() => {
   loadStockReportFilters()
   loadStockReportData()
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 
