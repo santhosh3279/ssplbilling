@@ -191,18 +191,18 @@
                       />
                       <div
                         v-if="itemDropdownIdx === idx && rowItemResults.length"
-                        class="absolute left-0 top-full z-50 mt-1 w-96 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
+                        class="absolute left-0 top-full z-50 mt-1 w-[500px] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
                       >
                         <div
                           v-for="(it, i) in rowItemResults"
                           :key="it.item_code"
-                          class="cursor-pointer px-3 py-2 text-sm"
+                          class="cursor-pointer px-3 py-2 text-xl"
                           :class="i === rowItemHighlight ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]'"
                           @mousedown.prevent="pickRowItem(idx, it)"
                           @mouseover="rowItemHighlight = i"
                         >
-                          <div class="font-mono font-semibold text-lg">{{ it.item_code }}</div>
-                          <div class="text-xs" :class="i === rowItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</div>
+                          <div class="font-mono font-semibold text-[27px]">{{ it.item_code }}</div>
+                          <div class="text-lg" :class="i === rowItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</div>
                         </div>
                       </div>
                     </div>
@@ -292,18 +292,18 @@
                     />
                     <div
                       v-if="newItemResults.length"
-                      class="absolute left-0 top-full z-50 mt-1 w-96 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
+                      class="absolute left-0 top-full z-50 mt-1 w-[500px] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
                     >
                       <div
                         v-for="(it, i) in newItemResults"
                         :key="it.item_code"
-                        class="cursor-pointer px-3 py-2 text-sm"
+                        class="cursor-pointer px-3 py-2 text-xl"
                         :class="i === newItemHighlight ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]'"
                         @mousedown.prevent="pickNewItem(it)"
                         @mouseover="newItemHighlight = i"
                       >
-                        <div class="font-mono font-semibold text-lg">{{ it.item_code }}</div>
-                        <div class="text-xs" :class="i === newItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</div>
+                        <div class="font-mono font-semibold text-[27px]">{{ it.item_code }}</div>
+                        <div class="text-lg" :class="i === newItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</div>
                       </div>
                     </div>
                   </td>
