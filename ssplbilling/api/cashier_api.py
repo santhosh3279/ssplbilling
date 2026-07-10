@@ -296,6 +296,13 @@ def submit_invoice_with_payment(data=None, **kwargs):
 				reconcile_dr_cr_note(reconcile_args, si.company)
 
 	if is_credit:
+		# Mirror credit bill if naming series matches configuration in Automatic Entries
+		try:
+			from ssplbilling.api.automatic_entries_api import mirror_bill
+			mirror_bill(si)
+		except Exception:
+			frappe.log_error(title="Automatic Entries: mirror credit bill failed", message=frappe.get_traceback())
+
 		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted"}
 
 	payment_entries = []
@@ -394,6 +401,26 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	if card_amount > 0.01:
 		pe_name = _create_pe(card_amount, card_account, ref_no=card_ref_no)
 		if pe_name: payment_entries.append(pe_name)
+
+	# Mirror bill and payment entries if naming series matches configuration in Automatic Entries
+	try:
+		from ssplbilling.api.automatic_entries_api import mirror_bill, mirror_payments
+		msi = mirror_bill(si)
+		if msi:
+			mirror_payments(
+				msi,
+				cash_amount=cash_amount,
+				upi_amount=upi_amount,
+				card_amount=card_amount,
+				discount_amount=discount_amount,
+				cash_account=cash_account,
+				upi_account=upi_account,
+				card_account=card_account,
+				discount_account=discount_account,
+				card_ref_no=card_ref_no,
+			)
+	except Exception:
+		frappe.log_error(title="Automatic Entries: mirror bill and payments failed", message=frappe.get_traceback())
 
 	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted"}
 
