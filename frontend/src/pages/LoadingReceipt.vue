@@ -152,12 +152,12 @@
               </colgroup>
               <thead>
                 <tr class="sticky top-0 z-10 bg-[var(--color-surface-raised)]">
-                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-center text-base font-bold uppercase tracking-wider text-[var(--color-text-muted)]">#</th>
-                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-left text-base font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item</th>
-                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-left text-base font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
-                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-right text-base font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Qty</th>
-                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-right text-base font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Rate</th>
-                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-right text-base font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Amount</th>
+                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-center text-2xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">#</th>
+                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-left text-2xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item</th>
+                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-left text-2xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
+                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-right text-2xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Qty</th>
+                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-right text-2xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Rate</th>
+                  <th class="border border-[var(--color-border)] px-0.5 py-0 text-right text-2xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Amount</th>
                   <th class="border border-[var(--color-border)] px-0.5 py-0"></th>
                 </tr>
               </thead>
