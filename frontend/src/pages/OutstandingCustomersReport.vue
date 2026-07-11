@@ -123,30 +123,31 @@
                 v-for="(row, idx) in rows"
                 :key="row.customer"
                 :data-row-index="idx"
-                class="transition-all hover:bg-[var(--color-surface-raised)]/30 cursor-pointer text-[var(--color-text)]"
+                class="transition-all hover:bg-[var(--color-surface-raised)]/30 cursor-pointer"
                 :class="{
-                  'bg-[var(--color-surface-raised)] text-[var(--color-info)]': focusedRowIdx === idx
+                  'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold': focusedRowIdx === idx,
+                  'text-[var(--color-text)]': focusedRowIdx !== idx
                 }"
                 @click="focusedRowIdx = idx"
               >
-                <td class="w-12 px-2 py-2 font-mono text-lg text-center" :class="focusedRowIdx === idx ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">{{ idx + 1 }}</td>
+                <td class="w-12 px-2 py-2 font-mono text-lg text-center" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ idx + 1 }}</td>
                 <td class="px-6 py-2">
-                  <div class="text-lg font-semibold text-[var(--color-text)]">{{ row.customer_name }}</div>
-                  <div class="text-[15px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.customer }}</div>
+                  <div class="text-lg font-semibold" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ row.customer_name }}</div>
+                  <div class="text-[15px] font-mono mt-0.5" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-text-muted)]'">{{ row.customer }}</div>
                 </td>
                 <td class="px-6 py-2 text-right font-mono text-xl font-bold">
-                  <span v-if="row.outstanding_amount > 0" class="text-[var(--color-danger)]">
+                  <span v-if="row.outstanding_amount > 0" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">
                     {{ formatCurrency(row.outstanding_amount) }}
                   </span>
-                  <span v-else class="text-[var(--color-text-muted)]">—</span>
+                  <span v-else :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]/50' : 'text-[var(--color-text-muted)]'">—</span>
                 </td>
                 <td class="px-6 py-2 text-right font-mono text-xl font-bold">
-                  <span v-if="row.outstanding_amount < 0" class="text-[var(--color-success)]">
+                  <span v-if="row.outstanding_amount < 0" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">
                     {{ formatCurrency(Math.abs(row.outstanding_amount)) }}
                   </span>
-                  <span v-else class="text-[var(--color-text-muted)]">—</span>
+                  <span v-else :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]/50' : 'text-[var(--color-text-muted)]'">—</span>
                 </td>
-                <td class="px-6 py-2 text-lg text-[var(--color-text-muted)]">{{ row.last_transaction_date }}</td>
+                <td class="px-6 py-2 text-lg" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ row.last_transaction_date }}</td>
               </tr>
             </tbody>
             <tfoot>
