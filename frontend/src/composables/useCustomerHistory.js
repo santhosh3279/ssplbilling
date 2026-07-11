@@ -81,8 +81,8 @@ export function useCustomerHistory() {
 
     // Try local cache lookup first
     const cachedItem = lookupItemInCache(itemCode)
-    if (cachedItem && cachedItem.warehouse_stock?.length) {
-      itemStock.value = cachedItem.warehouse_stock
+    if (cachedItem) {
+      itemStock.value = cachedItem.warehouse_stock || []
       return
     }
 
@@ -115,7 +115,7 @@ export function useCustomerHistory() {
 
     // Try local cache lookup first
     const cachedItem = lookupItemInCache(itemCode)
-    if (cachedItem && cachedItem.price_lists?.length) {
+    if (cachedItem) {
       const results = (cachedItem.price_lists || []).map(pl => ({
         price_list: pl.name,
         price: pl.rate,
