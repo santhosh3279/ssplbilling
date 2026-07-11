@@ -127,7 +127,21 @@ export function useCustomerHistory() {
 
       const results = localLists.map(plName => {
         const plRecord = (cachedItem.price_lists || []).find(p => p.name === plName)
-        const rate = plRecord ? plRecord.rate : 0.0
+        let rate = plRecord ? plRecord.rate : 0.0
+        
+        if (rate === 0.0 && cachedItem.uom_price_lists?.[plName]) {
+          const uomMap = cachedItem.uom_price_lists[plName]
+          const stdUom = cachedItem.uom || ''
+          if (stdUom && uomMap[stdUom] !== undefined) {
+            rate = uomMap[stdUom]
+          } else {
+            const values = Object.values(uomMap)
+            if (values.length > 0) {
+              rate = values[0]
+            }
+          }
+        }
+
         const buying = plRecord ? (plRecord.buying ? 1 : 0) : 0
         const selling = plRecord ? (plRecord.selling ? 1 : 0) : 1
         
