@@ -38,6 +38,13 @@
             />
           </div>
           <button
+            class="flex items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2 text-sm font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="loading"
+            @click="fetchData"
+          >
+            <span :class="{ 'animate-spin': loading }" class="inline-block">🔄</span> Refresh
+          </button>
+          <button
             class="flex items-center gap-2 rounded-lg bg-[var(--color-info)] px-4 py-2 text-sm font-semibold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] active:scale-95 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             :disabled="!rows.length"
             @click="exportToExcel"
