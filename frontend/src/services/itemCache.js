@@ -54,8 +54,9 @@ const discountRules = ref(loadDiscountRulesFromStorage())
  * Fetch all items with details from the backend and update the global cache.
  * Also syncs discount rules in parallel.
  */
-export async function refreshItemCache(searchType = 'Sales', priceList = null, warehouse = null) {
-  if (items.value.length > 0 &&
+export async function refreshItemCache(searchType = 'Sales', priceList = null, warehouse = null, force = false) {
+  if (!force &&
+      items.value.length > 0 &&
       lastParams.value.searchType === searchType &&
       lastParams.value.warehouse === warehouse) {
     

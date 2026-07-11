@@ -390,7 +390,7 @@ async function preloadItems(forceRefresh = false) {
   if (!paramsChanged && allItems.value.length > 0) return
 
   try {
-    await refreshItemCache(props.searchType, currentPriceList, currentWarehouse)
+    await refreshItemCache(props.searchType, currentPriceList, currentWarehouse, forceRefresh)
   } catch (e) {
     console.error('[ItemSearch] Preload failed:', e)
   }
