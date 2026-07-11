@@ -53,18 +53,38 @@
           <label class="mb-1.5 block text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
             Inherit Settings
           </label>
-          <div class="relative group">
-            <select
+          <div class="relative" ref="inheritDropdownRef">
+            <button
               ref="inheritSettingsSelectRef"
-              v-model="selectedUser"
-              @change="handleUserChange"
-              class="w-full rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-highlight)] focus:outline-none focus:ring-1 focus:ring-[var(--color-highlight)] transition-all hover:bg-[var(--color-midlight)]"
+              type="button"
+              @click="toggleInheritDropdown"
+              class="flex w-full items-center justify-between rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-2 text-left text-sm text-[var(--color-text)] focus:border-[var(--color-highlight)] focus:outline-none focus:ring-1 focus:ring-[var(--color-highlight)] transition-all hover:bg-[var(--color-midlight)]"
             >
-              <option :value="session.user.value">Me ({{ session.fullName.value }})</option>
-              <option v-for="u in allUsers" :key="u.value" :value="u.value">
+              <span class="truncate">{{ selectedUserLabel }}</span>
+              <svg class="h-4 w-4 shrink-0 text-[var(--color-text-muted)] transition-transform duration-200" :class="{ 'rotate-180': isInheritDropdownOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+            
+            <!-- Dropdown List -->
+            <div
+              v-if="isInheritDropdownOpen"
+              class="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] py-1 shadow-lg"
+            >
+              <div
+                v-for="(u, index) in inheritUsersOptions"
+                :key="u.value"
+                :id="'wb-user-opt-' + index"
+                :class="[
+                  'cursor-pointer px-3 py-2 text-sm text-[var(--color-text)] transition-colors',
+                  index === focusedUserIndex ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] font-semibold' : 'hover:bg-[var(--color-midlight)]'
+                ]"
+                @click="selectUserOption(u.value)"
+                @mouseenter="focusedUserIndex = index"
+              >
                 {{ u.label }}
-              </option>
-            </select>
+              </div>
+            </div>
           </div>
           <div v-if="selectedUser !== session.user.value" class="mt-1.5 flex items-center gap-1.5 px-1">
             <span class="relative flex h-2 w-2">
@@ -664,6 +684,62 @@ const userInitials = computed(() => {
 const selectedUser = ref(localStorage.getItem('wb-inherited-user') || session.user.value)
 const allUsers = ref([])
 const inheritSettingsSelectRef = ref(null)
+const isInheritDropdownOpen = ref(false)
+const focusedUserIndex = ref(-1)
+const inheritDropdownRef = ref(null)
+
+const inheritUsersOptions = computed(() => {
+  const options = [{ value: session.user.value, label: `Me (${session.fullName.value || session.user.value})` }]
+  if (Array.isArray(allUsers.value)) {
+    allUsers.value.forEach(u => {
+      if (u.value !== session.user.value) {
+        options.push(u)
+      }
+    })
+  }
+  return options
+})
+
+const selectedUserLabel = computed(() => {
+  const match = inheritUsersOptions.value.find(u => u.value === selectedUser.value)
+  return match ? match.label : selectedUser.value
+})
+
+function toggleInheritDropdown() {
+  if (isInheritDropdownOpen.value) {
+    closeInheritDropdown()
+  } else {
+    isInheritDropdownOpen.value = true
+    const idx = inheritUsersOptions.value.findIndex(o => o.value === selectedUser.value)
+    focusedUserIndex.value = idx >= 0 ? idx : 0
+    scrollToFocusedUser()
+  }
+}
+
+function closeInheritDropdown() {
+  isInheritDropdownOpen.value = false
+}
+
+function selectUserOption(val) {
+  selectedUser.value = val
+  closeInheritDropdown()
+  handleUserChange()
+}
+
+function scrollToFocusedUser() {
+  nextTick(() => {
+    const el = document.getElementById('wb-user-opt-' + focusedUserIndex.value)
+    if (el) {
+      el.scrollIntoView({ block: 'nearest' })
+    }
+  })
+}
+
+function handleClickOutside(e) {
+  if (inheritDropdownRef.value && !inheritDropdownRef.value.contains(e.target)) {
+    closeInheritDropdown()
+  }
+}
 
 async function handleUserChange() {
   if (selectedUser.value === session.user.value) {
@@ -871,9 +947,41 @@ function handleTileKeyNav(e) {
   if (currentTab.value !== 'dashboard' || showGeneralSettings.value || showSystemPerformance.value) return
 
   if (e.key === 'F4') {
-    if (isActualAdmin.value && inheritSettingsSelectRef.value) {
+    if (isActualAdmin.value) {
       e.preventDefault()
-      inheritSettingsSelectRef.value.focus()
+      toggleInheritDropdown()
+      return
+    }
+  }
+
+  if (isInheritDropdownOpen.value) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      focusedUserIndex.value = (focusedUserIndex.value + 1) % inheritUsersOptions.value.length
+      scrollToFocusedUser()
+      return
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      focusedUserIndex.value = (focusedUserIndex.value - 1 + inheritUsersOptions.value.length) % inheritUsersOptions.value.length
+      scrollToFocusedUser()
+      return
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const opt = inheritUsersOptions.value[focusedUserIndex.value]
+      if (opt) {
+        selectUserOption(opt.value)
+      }
+      return
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      closeInheritDropdown()
+      return
+    }
+    // Block standard keys when dropdown is open
+    const tag = e.target?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || e.target?.isContentEditable) return
+    if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault()
       return
     }
   }
@@ -1322,6 +1430,7 @@ function cleanupOldKeys() {
 
 onMounted(async () => {
   cleanupOldKeys()
+  document.addEventListener('click', handleClickOutside)
   window.addEventListener('wb-navigate-home', () => router.push('/'))
   document.addEventListener('fullscreenchange', handleFullscreenChange)
   window.addEventListener('wb-global-keyboard-toggle', syncKeyboardState)
@@ -1371,6 +1480,7 @@ onMounted(async () => {
   }, 1000)
 })
 onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside)
   window.removeEventListener('wb-navigate-home', () => router.push('/'))
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
   window.removeEventListener('wb-global-keyboard-toggle', syncKeyboardState)
