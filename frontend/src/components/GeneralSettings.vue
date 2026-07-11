@@ -360,9 +360,10 @@ async function loadSettings() {
   syncing.value = true
   try {
     const targetUser = localStorage.getItem('wb-inherited-user') || session.user.value
+    const company = localStorage.getItem('wb-company') || ''
     const [settings, metadata] = await Promise.all([
       dashboardApi.getBillingSettings(targetUser),
-      dashboardApi.getSyncMetadata().catch(() => ({}))
+      dashboardApi.getSyncMetadata(company).catch(() => ({}))
     ])
     rawSettings.value = settings
     applyToLocalStorage(settings, targetUser)

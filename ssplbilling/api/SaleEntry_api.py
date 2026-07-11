@@ -576,15 +576,25 @@ def get_discount_rules():
 
 
 @frappe.whitelist()
-def get_sync_metadata():
+def get_sync_metadata(company=None):
     """Fetch Sales/Purchase Tax Templates, Price Lists, Cost Centers and Warehouses for synchronization."""
-    sales_taxes = frappe.get_all("Sales Taxes and Charges Template", filters={"disabled": 0}, fields=["name"])
-    purchase_taxes = frappe.get_all("Purchase Taxes and Charges Template", filters={"disabled": 0}, fields=["name"])
+    tax_filters = {"disabled": 0}
+    cost_filters = {"disabled": 0, "is_group": 0}
+    warehouse_filters = {"disabled": 0, "is_group": 0}
+
+    if company:
+        tax_filters["company"] = company
+        cost_filters["company"] = company
+        warehouse_filters["company"] = company
+
+    sales_taxes = frappe.get_all("Sales Taxes and Charges Template", filters=tax_filters, fields=["name"])
+    purchase_taxes = frappe.get_all("Purchase Taxes and Charges Template", filters=tax_filters, fields=["name"])
     price_lists = frappe.get_all("Price List", filters={"enabled": 1}, fields=["name"])
-    cost_centers = frappe.get_all("Cost Center", filters={"disabled": 0, "is_group": 0}, fields=["name"])
-    warehouses = frappe.get_all("Warehouse", filters={"disabled": 0, "is_group": 0}, fields=["name"])
+    cost_centers = frappe.get_all("Cost Center", filters=cost_filters, fields=["name"])
+    warehouses = frappe.get_all("Warehouse", filters=warehouse_filters, fields=["name"])
 
     return {
+        "sales_tax_template": [t.name for t in sales_taxes],
         "sales_tax_templates": [t.name for t in sales_taxes],
         "purchase_tax_templates": [t.name for t in purchase_taxes],
         "price_lists": [p.name for p in price_lists],

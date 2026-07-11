@@ -129,7 +129,9 @@ export const dashboardApi = {
   /**
    * Fetch Sales/Purchase Tax Templates and Price Lists for synchronization.
    */
-  getSyncMetadata: () => {
-    return frappeGet('ssplbilling.api.SaleEntry_api.get_sync_metadata')
+  getSyncMetadata: (company = null) => {
+    const params = {}
+    if (company) params.company = company
+    return frappeGet('ssplbilling.api.SaleEntry_api.get_sync_metadata', params)
   }
 }
