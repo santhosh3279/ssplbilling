@@ -128,24 +128,27 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 
 	# Stock
 	bin_filters = {"item_code": item_code}
-	if warehouse:
-		bin_filters["warehouse"] = warehouse
-	draft_qtys = get_draft_invoice_qtys_batch(warehouse)
-	draft_purchase_qtys = get_draft_purchase_qtys_batch(warehouse)
+	draft_qtys = get_draft_invoice_qtys_batch(None)
+	draft_purchase_qtys = get_draft_purchase_qtys_batch(None)
 	for b in frappe.get_all("Bin", filters=bin_filters, fields=["warehouse", "actual_qty", "valuation_rate"]):
 		draft = draft_qtys.get((item_code, b.warehouse), 0.0)
 		draft_purchase = draft_purchase_qtys.get((item_code, b.warehouse), 0.0)
 		qty = float(b.actual_qty or 0) - draft + draft_purchase
-		item["stock"] += qty
+		if warehouse and b.warehouse == warehouse:
+			item["stock"] += qty
+		elif not warehouse:
+			item["stock"] += qty
 		item["warehouse_stock"].append({"warehouse": b.warehouse, "qty": qty})
-		if b.valuation_rate:
+		if b.valuation_rate and (not warehouse or b.warehouse == warehouse):
 			item["valuation_rate"] = float(b.valuation_rate)
-	for (ic, _wh), dq in draft_qtys.items():
+	for (ic, wh), dq in draft_qtys.items():
 		if ic == item_code:
-			item["redis_stock"] += dq
-	for (ic, _wh), dpq in draft_purchase_qtys.items():
+			if not warehouse or wh == warehouse:
+				item["redis_stock"] += dq
+	for (ic, wh), dpq in draft_purchase_qtys.items():
 		if ic == item_code:
-			item["redis_purchase_stock"] += dpq
+			if not warehouse or wh == warehouse:
+				item["redis_purchase_stock"] += dpq
 
 	# Tax rate + template name
 	today = frappe.utils.today()
@@ -270,9 +273,6 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 
 	# 2. Batch fetch stock
 	stock_filters = {"item_code": ["in", item_codes]}
-	if warehouse:
-		stock_filters["warehouse"] = warehouse
-
 	bins = frappe.get_all(
 		"Bin",
 		filters=stock_filters,
@@ -283,34 +283,39 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	for i in items:
 		i["warehouse_stock"] = []
 
-	# Get draft invoice quantities for subtraction
-	draft_qtys = get_draft_invoice_qtys_batch(warehouse)
-	# Get draft purchase quantities for addition
-	draft_purchase_qtys = get_draft_purchase_qtys_batch(warehouse)
+	# Get draft invoice/purchase quantities for subtraction/addition across all warehouses
+	draft_qtys = get_draft_invoice_qtys_batch(None)
+	draft_purchase_qtys = get_draft_purchase_qtys_batch(None)
 
 	for b in bins:
 		if b.item_code in item_map:
 			draft_qty = draft_qtys.get((b.item_code, b.warehouse), 0.0)
 			draft_purchase_qty = draft_purchase_qtys.get((b.item_code, b.warehouse), 0.0)
 			qty = float(b.actual_qty or 0) - draft_qty + draft_purchase_qty
-			item_map[b.item_code]["stock"] += qty
+			if warehouse and b.warehouse == warehouse:
+				item_map[b.item_code]["stock"] += qty
+			elif not warehouse:
+				item_map[b.item_code]["stock"] += qty
+
 			item_map[b.item_code]["warehouse_stock"].append({
 				"warehouse": b.warehouse,
 				"qty": qty,
 			})
 			bin_val_rate = float(b.get("valuation_rate") or 0)
-			if bin_val_rate > 0:
+			if bin_val_rate > 0 and (not warehouse or b.warehouse == warehouse):
 				item_map[b.item_code]["valuation_rate"] = bin_val_rate
 
-	# Populate redis stock from cached draft invoice quantities
+	# Populate redis stock from cached draft invoice quantities (active warehouse only)
 	for (item_code, wh), draft_qty in draft_qtys.items():
 		if item_code in item_map:
-			item_map[item_code]["redis_stock"] += draft_qty
+			if not warehouse or wh == warehouse:
+				item_map[item_code]["redis_stock"] += draft_qty
 
-	# Populate redis purchase stock from cached draft purchase quantities
+	# Populate redis purchase stock from cached draft purchase quantities (active warehouse only)
 	for (item_code, wh), draft_purchase_qty in draft_purchase_qtys.items():
 		if item_code in item_map:
-			item_map[item_code]["redis_purchase_stock"] += draft_purchase_qty
+			if not warehouse or wh == warehouse:
+				item_map[item_code]["redis_purchase_stock"] += draft_purchase_qty
 
 	# 3. Batch fetch item tax rates from Item Tax Template
 	today = frappe.utils.today()

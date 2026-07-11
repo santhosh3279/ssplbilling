@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { frappeGet } from '../api.js'
+import { lookupItemInCache } from '../services/itemCache.js'
 
 /**
  * Composable to manage customer sales history for a specific window/session.
@@ -78,6 +79,13 @@ export function useCustomerHistory() {
   async function fetchItemStock(itemCode) {
     if (!itemCode) return
 
+    // Try local cache lookup first
+    const cachedItem = lookupItemInCache(itemCode)
+    if (cachedItem && cachedItem.warehouse_stock?.length) {
+      itemStock.value = cachedItem.warehouse_stock
+      return
+    }
+
     if (stockCache.has(itemCode)) {
       itemStock.value = stockCache.get(itemCode)
       return
@@ -104,6 +112,19 @@ export function useCustomerHistory() {
    */
   async function fetchItemPrices(itemCode) {
     if (!itemCode) return
+
+    // Try local cache lookup first
+    const cachedItem = lookupItemInCache(itemCode)
+    if (cachedItem && cachedItem.price_lists?.length) {
+      const results = (cachedItem.price_lists || []).map(pl => ({
+        price_list: pl.name,
+        price: pl.rate,
+        buying: pl.buying ? 1 : 0,
+        selling: pl.selling ? 1 : 0
+      }))
+      itemPrices.value = results
+      return
+    }
 
     if (pricesCache.has(itemCode)) {
       itemPrices.value = pricesCache.get(itemCode)
