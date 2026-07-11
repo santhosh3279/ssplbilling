@@ -68,7 +68,7 @@ def save_pricing_rule(name, discount_percentage=None, rate=None, discount_amount
 
 
 @frappe.whitelist()
-def get_single_item_detailed(item_code, search_type="Sales", price_list=None, warehouse=None):
+def get_single_item_detailed(item_code, search_type="Sales", price_list=None, warehouse=None, company=None):
 	"""Return one item with the same shape as get_all_items_detailed.
 	Returns None if the item is deleted, disabled, or excluded by search_type."""
 	base_filters = {"name": item_code, "disabled": 0}
@@ -128,8 +128,16 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 
 	# Stock
 	bin_filters = {"item_code": item_code}
-	draft_qtys = get_draft_invoice_qtys_batch(None)
-	draft_purchase_qtys = get_draft_purchase_qtys_batch(None)
+	allowed_warehouses = None
+	if company:
+		allowed_warehouses = frappe.get_all(
+			"Warehouse",
+			filters={"company": company, "disabled": 0, "is_group": 0},
+			pluck="name"
+		)
+		bin_filters["warehouse"] = ["in", allowed_warehouses]
+	draft_qtys = get_draft_invoice_qtys_batch(allowed_warehouses)
+	draft_purchase_qtys = get_draft_purchase_qtys_batch(allowed_warehouses)
 	for b in frappe.get_all("Bin", filters=bin_filters, fields=["warehouse", "actual_qty", "valuation_rate"]):
 		draft = draft_qtys.get((item_code, b.warehouse), 0.0)
 		draft_purchase = draft_purchase_qtys.get((item_code, b.warehouse), 0.0)
@@ -198,7 +206,7 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 
 
 @frappe.whitelist()
-def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None):
+def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None, company=None):
 	"""Fetch all items with price, stock, and ALL price lists in bulk for local caching."""
 	filters = {"disabled": 0}
 	if search_type == "Sales":
@@ -273,6 +281,15 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 
 	# 2. Batch fetch stock
 	stock_filters = {"item_code": ["in", item_codes]}
+	allowed_warehouses = None
+	if company:
+		allowed_warehouses = frappe.get_all(
+			"Warehouse",
+			filters={"company": company, "disabled": 0, "is_group": 0},
+			pluck="name"
+		)
+		stock_filters["warehouse"] = ["in", allowed_warehouses]
+
 	bins = frappe.get_all(
 		"Bin",
 		filters=stock_filters,
@@ -283,9 +300,9 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None)
 	for i in items:
 		i["warehouse_stock"] = []
 
-	# Get draft invoice/purchase quantities for subtraction/addition across all warehouses
-	draft_qtys = get_draft_invoice_qtys_batch(None)
-	draft_purchase_qtys = get_draft_purchase_qtys_batch(None)
+	# Get draft invoice/purchase quantities for subtraction/addition across company warehouses
+	draft_qtys = get_draft_invoice_qtys_batch(allowed_warehouses)
+	draft_purchase_qtys = get_draft_purchase_qtys_batch(allowed_warehouses)
 
 	for b in bins:
 		if b.item_code in item_map:

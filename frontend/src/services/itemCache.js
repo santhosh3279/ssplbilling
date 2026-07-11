@@ -76,11 +76,13 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
   }
 
   syncLoading.value = true
+  const company = localStorage.getItem('wb-company') || ''
   try {
     const data = await frappeGet('ssplbilling.api.itemsearch_api.get_all_items_detailed', {
       search_type: searchType,
       price_list: priceList,
-      warehouse: warehouse
+      warehouse: warehouse,
+      company: company
     })
     items.value = data || []
     saveUomsToStorage(items.value)

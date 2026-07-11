@@ -89,7 +89,12 @@ def get_draft_invoice_qtys_batch(warehouse=None):
 		parts = k.split(":")
 		if len(parts) == 2:
 			item_code, wh = parts
-			if not warehouse or wh == warehouse:
+			if not warehouse:
+				qtys[(item_code, wh)] = float(v)
+			elif isinstance(warehouse, (list, tuple, set)):
+				if wh in warehouse:
+					qtys[(item_code, wh)] = float(v)
+			elif wh == warehouse:
 				qtys[(item_code, wh)] = float(v)
 	return qtys
 
@@ -101,7 +106,12 @@ def get_draft_purchase_qtys_batch(warehouse=None):
 		parts = k.split(":")
 		if len(parts) == 2:
 			item_code, wh = parts
-			if not warehouse or wh == warehouse:
+			if not warehouse:
+				qtys[(item_code, wh)] = float(v)
+			elif isinstance(warehouse, (list, tuple, set)):
+				if wh in warehouse:
+					qtys[(item_code, wh)] = float(v)
+			elif wh == warehouse:
 				qtys[(item_code, wh)] = float(v)
 	return qtys
 

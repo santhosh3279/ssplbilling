@@ -13,9 +13,11 @@ const pendingPatches = new Set()
 
 async function _patchItem(itemCode) {
   const { searchType, priceList, warehouse } = lastParams.value
+  const company = localStorage.getItem('wb-company') || ''
   const params = { item_code: itemCode, search_type: searchType || 'Sales' }
   if (priceList) params.price_list = priceList
   if (warehouse) params.warehouse = warehouse
+  if (company) params.company = company
 
   console.log('[useItemSync] patching cache for item:', itemCode)
   try {
@@ -67,6 +69,17 @@ export function initItemSync() {
 
   _stockHandler = (data) => {
     if (!data?.item_code || !data?.warehouse) return
+
+    // Filter stock updates by company's warehouses
+    let allowedWarehouses = []
+    try {
+      allowedWarehouses = JSON.parse(localStorage.getItem('wb-warehouses') || '[]')
+    } catch {}
+    if (allowedWarehouses.length && !allowedWarehouses.includes(data.warehouse)) {
+      console.log('[useItemSync] ignoring stock_update for warehouse not in current company:', data.warehouse)
+      return
+    }
+
     console.log('[useItemSync] received stock_update:', data)
     updateItemStockInCache(data.item_code, data.warehouse, data.qty, data.redis_stock, data.redis_purchase_stock)
     window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
