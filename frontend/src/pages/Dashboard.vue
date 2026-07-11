@@ -582,7 +582,7 @@ function handleFullscreenChange() {
 
 
 
-const { items: cachedItems, lastSync: itemsLastSync, refreshItemCache } = useItemCache()
+const { items: cachedItems, lastSync: itemsLastSync, refreshItemCache, refreshDiscountRuleCache } = useItemCache()
 const { ledgers: cachedLedgers, lastSync: ledgersLastSync, refreshLedgerCache } = useLedgerCache()
 const { user: currentUser } = session
 
@@ -1258,6 +1258,11 @@ async function syncSettings() {
   // force=true bypasses the series / opening-cash / naming-series caches too.
   await fetchSettings(selectedUser.value, true)
   await loadAllowedTiles(selectedUser.value !== session.user.value ? selectedUser.value : null, true)
+  try {
+    await refreshDiscountRuleCache()
+  } catch (e) {
+    console.warn('[Dashboard] refreshDiscountRuleCache failed:', e)
+  }
 }
 
 async function fetchSettings(user = null, force = false) {

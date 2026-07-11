@@ -57,17 +57,12 @@ const discountRules = ref(loadDiscountRulesFromStorage())
 export async function refreshItemCache(searchType = 'Sales', priceList = null, warehouse = null) {
   syncLoading.value = true
   try {
-    const [data, discRules] = await Promise.all([
-      frappeGet('ssplbilling.api.itemsearch_api.get_all_items_detailed', {
-        search_type: searchType,
-        price_list: priceList,
-        warehouse: warehouse
-      }),
-      frappeGet('ssplbilling.api.SaleEntry_api.get_discount_rules').catch(() => [])
-    ])
+    const data = await frappeGet('ssplbilling.api.itemsearch_api.get_all_items_detailed', {
+      search_type: searchType,
+      price_list: priceList,
+      warehouse: warehouse
+    })
     items.value = data || []
-    discountRules.value = discRules || []
-    saveDiscountRulesToStorage(discountRules.value)
     saveUomsToStorage(items.value)
     savePercentagesToStorage(items.value)
     lastSync.value = Date.now()
