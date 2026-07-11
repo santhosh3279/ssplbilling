@@ -814,3 +814,114 @@ def get_customer_billing_details(customer):
 	}
 
 
+def publish_customer_update(doc, method=None):
+	"""Publish a realtime update event when a Customer is created, updated or deleted."""
+	if not doc or not doc.name:
+		return
+
+	def _emit():
+		frappe.publish_realtime("customer_update", {"name": doc.name})
+
+	frappe.db.after_commit.add(_emit)
+
+
+@frappe.whitelist()
+def get_single_ledger(party_name, party_type="Customer"):
+	"""Fetch details of a single ledger (Customer, Supplier, Employee, or Account) in unified format."""
+	try:
+		if party_type == "Customer":
+			if not frappe.db.exists("Customer", party_name):
+				return None
+			doc = frappe.get_doc("Customer", party_name)
+			if doc.disabled:
+				return None
+
+			l = {
+				"name": doc.name,
+				"label": doc.customer_name or "",
+				"mobile_no": doc.mobile_no or "",
+				"email": doc.email_id or "",
+				"gstin": doc.gstin or "",
+				"group": doc.customer_group or "",
+				"pricelist_multiplication_factor": float(doc.pricelist_multiplication_factor or 1.0),
+				"type": "Customer",
+				"whatsapp": "",
+				"address_name": "",
+				"address_line1": "",
+				"city": "",
+				"state": "",
+				"balance": 0.0,
+				"activity": 0,
+				"last_invoice_date": None
+			}
+
+			# Address
+			addr_name = frappe.db.get_value(
+				"Dynamic Link",
+				{"link_doctype": "Customer", "link_name": doc.name, "parenttype": "Address"},
+				"parent",
+				order_by="modified desc",
+			)
+			if addr_name:
+				addr = frappe.db.get_value(
+					"Address",
+					addr_name,
+					["address_line1", "city", "state"],
+					as_dict=True
+				)
+				if addr:
+					l["address_name"] = addr_name
+					l["address_line1"] = addr.address_line1 or ""
+					l["city"] = addr.city or ""
+					l["state"] = addr.state or ""
+
+			# Contact Phone (WhatsApp)
+			contact_name = frappe.db.get_value(
+				"Dynamic Link",
+				{"link_doctype": "Customer", "link_name": doc.name, "parenttype": "Contact"},
+				"parent",
+			)
+			if contact_name:
+				wa = frappe.db.get_value(
+					"Contact Phone",
+					{"parent": contact_name, "is_primary_mobile_no": 0},
+					"phone",
+					order_by="idx asc",
+				)
+				l["whatsapp"] = wa or ""
+
+			# Balance
+			bal_row = frappe.db.sql("""
+				SELECT SUM(debit) - SUM(credit) as balance
+				FROM `tabGL Entry`
+				WHERE party = %s AND is_cancelled = 0
+			""", (doc.name,), as_dict=True)
+			if bal_row and bal_row[0].balance is not None:
+				l["balance"] = float(bal_row[0].balance)
+
+			# Activity
+			activity_cutoff = frappe.utils.add_days(frappe.utils.today(), -90)
+			activity_count = frappe.db.sql("""
+				SELECT COUNT(*) as activity
+				FROM `tabGL Entry`
+				WHERE party = %s AND is_cancelled = 0 AND posting_date >= %s
+			""", (doc.name, activity_cutoff), as_dict=True)
+			if activity_count:
+				l["activity"] = int(activity_count[0].activity or 0)
+
+			# Last Invoice Date
+			last_invoice = frappe.db.sql("""
+				SELECT MAX(posting_date) as last_date
+				FROM `tabSales Invoice`
+				WHERE customer = %s AND docstatus = 1
+			""", (doc.name,), as_dict=True)
+			if last_invoice and last_invoice[0].last_date:
+				l["last_invoice_date"] = str(last_invoice[0].last_date)
+
+			return l
+	except Exception as e:
+		frappe.log_error(message=str(e), title="get_single_ledger failed")
+		return None
+	return None
+
+

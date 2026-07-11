@@ -109,6 +109,33 @@ export function updateLedgerBalanceInCache(name, balance) {
   _schedulePersist()
 }
 
+/**
+ * Patch a single ledger in the cache without a full refresh.
+ * Pass null as newData to remove the ledger (deleted / disabled).
+ */
+export function patchLedgerInCache(name, newData) {
+  const idx = ledgers.value.findIndex(l => l.name === name)
+  if (newData === null) {
+    if (idx !== -1) ledgers.value.splice(idx, 1)
+  } else if (idx !== -1) {
+    // Preserve balance and activity if not provided in the patch
+    const merged = {
+      ...ledgers.value[idx],
+      ...newData,
+      balance: newData.balance !== undefined ? newData.balance : ledgers.value[idx].balance,
+      activity: newData.activity !== undefined ? newData.activity : ledgers.value[idx].activity
+    }
+    ledgers.value.splice(idx, 1, merged)
+  } else {
+    // New ledger — insert maintaining label alphabetical order
+    const insertAt = ledgers.value.findIndex(l => (l.label || '').toLowerCase() > (newData.label || '').toLowerCase())
+    if (insertAt === -1) ledgers.value.push(newData)
+    else ledgers.value.splice(insertAt, 0, newData)
+  }
+  lastSync.value = Date.now()
+  _schedulePersist()
+}
+
 export function useLedgerCache() {
   return {
     ledgers,
@@ -117,6 +144,7 @@ export function useLedgerCache() {
     syncLoading,
     refreshLedgerCache,
     updateLedgerBalanceInCache,
+    patchLedgerInCache,
     searchLedgersInCache
   }
 }
