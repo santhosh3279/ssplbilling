@@ -119,8 +119,10 @@ export function useCustomerHistory() {
       const results = (cachedItem.price_lists || []).map(pl => ({
         price_list: pl.name,
         price: pl.rate,
+        rate: pl.rate,
         buying: pl.buying ? 1 : 0,
-        selling: pl.selling ? 1 : 0
+        selling: pl.selling ? 1 : 0,
+        uom_rates: (cachedItem.uom_price_lists || {})[pl.name] || {}
       }))
       itemPrices.value = results
       return
