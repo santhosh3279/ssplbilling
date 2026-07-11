@@ -665,6 +665,38 @@ const {
 const items = ref([])
 const recentInvoices = ref([])
 
+function getNextInvoiceNoFromPanel(series, fallbackNo) {
+  if (!series) return fallbackNo || 'NEW'
+  const prefix = series.replace(/\.+#*$/, '').replace(/\.+$/, '')
+  if (!prefix) return fallbackNo || 'NEW'
+
+  const matchingInvoices = recentInvoices.value.filter(
+    inv => inv.name && inv.name.startsWith(prefix)
+  )
+  if (!matchingInvoices.length) {
+    return fallbackNo || 'NEW'
+  }
+
+  let maxNum = 0
+  let suffixLength = 0
+  for (const inv of matchingInvoices) {
+    const suffix = inv.name.substring(prefix.length)
+    const num = parseInt(suffix, 10)
+    if (!isNaN(num) && num > maxNum) {
+      maxNum = num
+      suffixLength = suffix.length
+    }
+  }
+
+  if (maxNum > 0) {
+    const nextNumStr = String(maxNum + 1)
+    const padLen = Math.max(suffixLength, nextNumStr.length)
+    return prefix + nextNumStr.padStart(padLen, '0')
+  }
+
+  return fallbackNo || 'NEW'
+}
+
 // --- Billing Settings & Defaults ---
 const localPriceLists = ref([])
 try { localPriceLists.value = JSON.parse(localStorage.getItem('wb-pricelist') || '[]') } catch { localPriceLists.value = [] }
@@ -1231,7 +1263,7 @@ async function clearBill() {
   if (selectedSeries.value) {
     try {
       const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Sales Invoice' })
-      invoiceNo.value = next.invoice_no || 'NEW'
+      invoiceNo.value = getNextInvoiceNoFromPanel(selectedSeries.value, next.invoice_no)
       defaultTemplate.value = next.print_format || ''
       if (next.warehouse) warehouse.value = next.warehouse
       if (next.cost_center) costCenter.value = next.cost_center
@@ -1523,7 +1555,7 @@ async function closePrintModal() {
   isSaved.value = false
   try {
     const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Sales Invoice' })
-    invoiceNo.value = next.invoice_no || 'NEW'
+    invoiceNo.value = getNextInvoiceNoFromPanel(selectedSeries.value, next.invoice_no)
   } catch {
     invoiceNo.value = 'NEW'
   }
@@ -2570,7 +2602,7 @@ async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
     const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series, doctype: 'Sales Invoice' })
-    invoiceNo.value = res.invoice_no
+    invoiceNo.value = getNextInvoiceNoFromPanel(series, res.invoice_no)
     priceList.value = res.price_list
     taxTemplate.value = res.tax_template
     defaultTemplate.value = res.print_format || ''
