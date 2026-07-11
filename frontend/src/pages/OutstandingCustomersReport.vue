@@ -113,6 +113,7 @@
               <tr class="bg-[var(--color-surface-raised)]/50 border-b border-[var(--color-border)]">
                 <th class="w-12 px-2 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider text-center">S.No</th>
                 <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">{{ partyType === 'Customer' ? 'Customer' : (partyType === 'Supplier' ? 'Supplier' : 'Employee') }}</th>
+                <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Phone Number</th>
                 <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Debit (Dr)</th>
                 <th class="px-6 py-2 text-right text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Credit (Cr)</th>
                 <th class="px-6 py-2 text-lg font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Last Transaction</th>
@@ -132,10 +133,10 @@
               >
                 <td class="w-12 px-2 py-2 font-mono text-lg text-center" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ idx + 1 }}</td>
                 <td class="px-6 py-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-lg font-semibold" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ row.customer_name }}</span>
-                    <span v-if="row.phone_number" class="text-[15px] font-mono" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-text-muted)]'">({{ row.phone_number }})</span>
-                  </div>
+                  <span class="text-lg font-semibold" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ row.customer_name }}</span>
+                </td>
+                <td class="px-6 py-2 font-mono text-[15px]" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-text-muted)]'">
+                  {{ row.phone_number || '—' }}
                 </td>
                 <td class="px-6 py-2 text-right font-mono text-xl font-bold">
                   <span v-if="row.outstanding_amount > 0" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">
@@ -156,6 +157,7 @@
               <tr class="bg-[var(--color-bg)]/50 border-t border-[var(--color-border)] font-black uppercase tracking-wider">
                 <td class="w-12 px-2 py-1.5"></td>
                 <td class="px-6 py-1.5 text-lg">GRAND TOTAL</td>
+                <td class="px-6 py-1.5"></td>
                 <td class="px-6 py-1.5 text-right font-mono text-2xl text-[var(--color-danger)]">{{ formatCurrency(totalDebit) }}</td>
                 <td class="px-6 py-1.5 text-right font-mono text-2xl text-[var(--color-success)]">{{ formatCurrency(totalCredit) }}</td>
                 <td class="px-6 py-1.5"></td>
@@ -212,7 +214,7 @@ function exportToExcel() {
   const labelName = partyType.value === 'Customer' ? 'Customer Name' : (partyType.value === 'Supplier' ? 'Supplier Name' : 'Employee Name')
   const sheetTitle = partyType.value === 'Customer' ? 'Outstanding Customers' : (partyType.value === 'Supplier' ? 'Outstanding Suppliers' : 'Outstanding Employees')
 
-  const headers = ['S.No', labelCode, labelName, 'Debit (Dr)', 'Credit (Cr)', 'Last Transaction Date']
+  const headers = ['S.No', labelCode, labelName, 'Phone Number', 'Debit (Dr)', 'Credit (Cr)', 'Last Transaction Date']
   const data = rows.value.map((r, idx) => {
     const isCr = (r.outstanding_amount || 0) < 0
     const amt = Math.abs(Math.round(r.outstanding_amount || 0))
@@ -220,16 +222,17 @@ function exportToExcel() {
       idx + 1,
       r.customer,
       r.customer_name,
+      r.phone_number || '',
       isCr ? '' : amt,
       isCr ? amt : '',
       r.last_transaction_date,
     ]
   })
-  data.push(['', '', 'GRAND TOTAL', Math.round(totalDebit.value || 0), Math.round(totalCredit.value || 0), ''])
+  data.push(['', '', 'GRAND TOTAL', '', Math.round(totalDebit.value || 0), Math.round(totalCredit.value || 0), ''])
 
   const wb = utils.book_new()
   const ws = utils.aoa_to_sheet([headers, ...data])
-  ws['!cols'] = [{ wch: 8 }, { wch: 20 }, { wch: 35 }, { wch: 20 }, { wch: 20 }, { wch: 18 }]
+  ws['!cols'] = [{ wch: 8 }, { wch: 20 }, { wch: 35 }, { wch: 18 }, { wch: 20 }, { wch: 20 }, { wch: 18 }]
   utils.book_append_sheet(wb, ws, sheetTitle)
 
   writeFile(wb, `Outstanding${partyType.value}s_asOn_${asOnDate.value}.xlsx`)
