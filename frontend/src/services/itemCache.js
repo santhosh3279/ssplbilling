@@ -55,6 +55,26 @@ const discountRules = ref(loadDiscountRulesFromStorage())
  * Also syncs discount rules in parallel.
  */
 export async function refreshItemCache(searchType = 'Sales', priceList = null, warehouse = null) {
+  if (items.value.length > 0 &&
+      lastParams.value.searchType === searchType &&
+      lastParams.value.warehouse === warehouse) {
+    
+    if (lastParams.value.priceList === priceList) {
+      // Nothing changed! Skip API call completely.
+      return items.value
+    }
+
+    // Only the price list changed! We have all rates locally cached. Switch in-memory.
+    console.log('[itemCache] switching price list in-memory to:', priceList)
+    for (const i of items.value) {
+      const plRate = (i.price_lists || []).find(p => p.name === priceList)
+      i.price = plRate ? parseFloat(plRate.rate) || 0 : parseFloat(i.rate) || 0
+    }
+    lastParams.value.priceList = priceList
+    lastSync.value = Date.now()
+    return items.value
+  }
+
   syncLoading.value = true
   try {
     const data = await frappeGet('ssplbilling.api.itemsearch_api.get_all_items_detailed', {
