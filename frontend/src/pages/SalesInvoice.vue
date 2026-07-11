@@ -758,10 +758,17 @@ const ewaybillLoading = ref(false)
 
 // GST Settings "Invoice Value Threshold for e-Waybill Generation" — the generate
 // button only appears when the invoice total reaches it (0 = always show)
-const ewayThreshold = ref(0)
-frappeGet('ssplbilling.api.ewaybill_api.get_eway_threshold')
-  .then(v => { ewayThreshold.value = parseFloat(v) || 0 })
-  .catch(e => console.warn('[SalesInvoice] get_eway_threshold failed:', e))
+const ewayThreshold = ref(parseFloat(localStorage.getItem('wb-eway-threshold') || localStorage.getItem('wb-eway-threshould')) || 0)
+if (!localStorage.getItem('wb-eway-threshold') && !localStorage.getItem('wb-eway-threshould')) {
+  frappeGet('ssplbilling.api.ewaybill_api.get_eway_threshold')
+    .then(v => {
+      const val = parseFloat(v) || 0
+      ewayThreshold.value = val
+      localStorage.setItem('wb-eway-threshold', String(val))
+      localStorage.setItem('wb-eway-threshould', String(val))
+    })
+    .catch(e => console.warn('[SalesInvoice] get_eway_threshold failed:', e))
+}
 const meetsEwayThreshold = computed(() => parseFloat(totalAmount.value) >= ewayThreshold.value)
 
 let tabId = sessionStorage.getItem('wb_tab_id')

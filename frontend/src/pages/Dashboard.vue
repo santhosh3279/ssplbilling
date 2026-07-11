@@ -1393,6 +1393,16 @@ async function fetchSettings(user = null, force = false) {
   } catch (e) {
     console.warn('[Dashboard] syncNamingSeries failed:', e)
   }
+
+  // 5. Fetch and store E-Way Bill threshold value
+  try {
+    const ewayVal = await frappeGet('ssplbilling.api.ewaybill_api.get_eway_threshold')
+    const threshold = String(ewayVal || 0)
+    localStorage.setItem('wb-eway-threshold', threshold)
+    localStorage.setItem('wb-eway-threshould', threshold)
+  } catch (e) {
+    console.warn('[Dashboard] get_eway_threshold failed:', e)
+  }
 }
 
 const filteredBillingSeries = computed(() => {
