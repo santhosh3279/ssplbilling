@@ -122,9 +122,14 @@
               <tr
                 v-for="(row, idx) in rows"
                 :key="row.customer"
-                class="hover:bg-[var(--color-surface-raised)]/30 transition-colors"
+                :data-row-index="idx"
+                class="transition-all hover:bg-[var(--color-surface-raised)]/30 cursor-pointer text-[var(--color-text)]"
+                :class="{
+                  'bg-[var(--color-surface-raised)] text-[var(--color-info)]': focusedRowIdx === idx
+                }"
+                @click="focusedRowIdx = idx"
               >
-                <td class="w-12 px-2 py-2 font-mono text-lg text-[var(--color-text-muted)] text-center">{{ idx + 1 }}</td>
+                <td class="w-12 px-2 py-2 font-mono text-lg text-center" :class="focusedRowIdx === idx ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)]'">{{ idx + 1 }}</td>
                 <td class="px-6 py-2">
                   <div class="text-lg font-semibold text-[var(--color-text)]">{{ row.customer_name }}</div>
                   <div class="text-[15px] text-[var(--color-text-muted)] font-mono mt-0.5">{{ row.customer }}</div>
@@ -161,7 +166,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getOutstandingCustomersReport } from '../api.js'
 import { utils, writeFile } from 'xlsx'
@@ -173,6 +178,7 @@ const error = ref('')
 const rows = ref([])
 const asOnDate = ref(new Date().toISOString().slice(0, 10))
 const partyType = ref('Customer')
+const focusedRowIdx = ref(-1)
 
 const totalOutstanding = computed(() => rows.value.reduce((sum, r) => sum + (r.outstanding_amount || 0), 0))
 const totalDebit = computed(() => rows.value.reduce((sum, r) => sum + (r.outstanding_amount > 0 ? r.outstanding_amount : 0), 0))
@@ -184,6 +190,7 @@ async function fetchData() {
   try {
     const res = await getOutstandingCustomersReport(asOnDate.value, partyType.value)
     rows.value = res.rows || []
+    focusedRowIdx.value = rows.value.length > 0 ? 0 : -1
   } catch (e) {
     error.value = e.message || 'Failed to fetch outstanding balances report'
   } finally {
@@ -225,8 +232,42 @@ function exportToExcel() {
   writeFile(wb, `Outstanding${partyType.value}s_asOn_${asOnDate.value}.xlsx`)
 }
 
+function scrollToRow(idx) {
+  const el = document.querySelector(`[data-row-index="${idx}"]`)
+  if (el) {
+    el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }
+}
+
+function handleKeyDown(e) {
+  if (rows.value.length === 0 || loading.value) return
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    if (focusedRowIdx.value === -1) {
+      focusedRowIdx.value = 0
+    } else {
+      focusedRowIdx.value = Math.min(focusedRowIdx.value + 1, rows.value.length - 1)
+    }
+    scrollToRow(focusedRowIdx.value)
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (focusedRowIdx.value === -1) {
+      focusedRowIdx.value = 0
+    } else {
+      focusedRowIdx.value = Math.max(focusedRowIdx.value - 1, 0)
+    }
+    scrollToRow(focusedRowIdx.value)
+  }
+}
+
 onMounted(() => {
   fetchData()
+  window.addEventListener('keydown', handleKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 
