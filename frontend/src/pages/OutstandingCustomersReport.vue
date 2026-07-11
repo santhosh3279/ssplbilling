@@ -132,8 +132,10 @@
               >
                 <td class="w-12 px-2 py-2 font-mono text-lg text-center" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ idx + 1 }}</td>
                 <td class="px-6 py-2">
-                  <div class="text-lg font-semibold" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ row.customer_name }}</div>
-                  <div class="text-[15px] font-mono mt-0.5" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-text-muted)]'">{{ row.customer }}</div>
+                  <div class="flex items-center gap-3">
+                    <span class="text-lg font-semibold" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ row.customer_name }}</span>
+                    <span v-if="row.phone_number" class="text-[15px] font-mono" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-text-muted)]'">({{ row.phone_number }})</span>
+                  </div>
                 </td>
                 <td class="px-6 py-2 text-right font-mono text-xl font-bold">
                   <span v-if="row.outstanding_amount > 0" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">

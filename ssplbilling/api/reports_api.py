@@ -1319,16 +1319,20 @@ def get_outstanding_customers_report(as_on_date=None, party_type="Customer"):
 	join_table = f"tab{party_type}"
 	if party_type == "Customer":
 		name_field = "customer_name"
+		phone_field = "mobile_no"
 	elif party_type == "Supplier":
 		name_field = "supplier_name"
+		phone_field = "mobile_no"
 	else:
 		name_field = "employee_name"
+		phone_field = "cell_number"
 
 	rows = frappe.db.sql(
 		f"""
 		SELECT
 			gle.party AS customer,
 			COALESCE(p.{name_field}, gle.party) AS customer_name,
+			COALESCE(p.{phone_field}, '') AS phone_number,
 			SUM(gle.debit) - SUM(gle.credit) AS outstanding_amount,
 			MAX(gle.posting_date) AS last_transaction_date
 		FROM `tabGL Entry` gle
