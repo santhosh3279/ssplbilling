@@ -249,7 +249,7 @@
                   {{ row.stock_entry }}
                 </td>
                 <td class="px-6 py-3 text-sm text-[var(--color-text)] border-b border-[var(--color-border)]/50">
-                  {{ row.posting_date }} <span class="text-xs text-[var(--color-text-muted)] ml-1">{{ row.posting_time }}</span>
+                  {{ row.posting_date }} <span class="text-xs text-[var(--color-text-muted)] ml-1">{{ formatTime(row.posting_time) }}</span>
                 </td>
                 <td class="px-6 py-3 text-sm text-[var(--color-text)] border-b border-[var(--color-border)]/50 font-medium">
                   {{ row.source_warehouse }}
@@ -455,6 +455,15 @@ function formatQty(val) {
   }).format(val || 0)
 }
 
+function formatTime(timeStr) {
+  if (!timeStr) return ''
+  const parts = timeStr.split(':')
+  if (parts.length >= 2) {
+    return `${parts[0]}:${parts[1]}`
+  }
+  return timeStr
+}
+
 function exportToExcel() {
   if (!filteredData.value.length) return
 
@@ -474,7 +483,7 @@ function exportToExcel() {
     idx + 1,
     r.stock_entry,
     r.posting_date,
-    r.posting_time,
+    formatTime(r.posting_time),
     r.source_warehouse,
     r.target_warehouse,
     r.total_qty,
