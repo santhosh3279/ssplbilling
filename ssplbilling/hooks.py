@@ -259,6 +259,11 @@ doc_events = {
 		"on_update": "ssplbilling.api.customersearch_api.publish_customer_update",
 		"on_trash": "ssplbilling.api.customersearch_api.publish_customer_update",
 	},
+	"Discount Rule": {
+		"after_insert": "ssplbilling.api.discount_rule_api.publish_discount_rule_update",
+		"on_update": "ssplbilling.api.discount_rule_api.publish_discount_rule_update",
+		"on_trash": "ssplbilling.api.discount_rule_api.publish_discount_rule_update",
+	},
 	"Offer-Items": {
 		"after_insert": "ssplbilling.api.offer_sync.publish_offer_items_update",
 		"on_update": "ssplbilling.api.offer_sync.publish_offer_items_update",

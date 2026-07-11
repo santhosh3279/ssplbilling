@@ -1,12 +1,13 @@
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { frappeGet } from '../api.js'
-import { patchItemInCache, updateItemPriceInCache, updateItemStockInCache, useItemCache } from '../services/itemCache.js'
+import { patchItemInCache, updateItemPriceInCache, updateItemStockInCache, useItemCache, refreshDiscountRuleCache } from '../services/itemCache.js'
 
 const { lastParams } = useItemCache()
 
 let _handler = null
 let _priceHandler = null
 let _stockHandler = null
+let _discountRuleHandler = null
 let _debounceTimer = null
 const pendingPatches = new Set()
 
@@ -72,8 +73,14 @@ export function initItemSync() {
   }
   socket.on('stock_update', _stockHandler)
 
+  _discountRuleHandler = (data) => {
+    console.log('[useItemSync] received discount_rule_update:', data)
+    refreshDiscountRuleCache()
+  }
+  socket.on('discount_rule_update', _discountRuleHandler)
+
   document.addEventListener('visibilitychange', _handleVisibilityChange)
-  console.log('[useItemSync] subscribed to doctype:Item, listening for list_update, item_price_update and stock_update')
+  console.log('[useItemSync] subscribed to doctype:Item, listening for list_update, item_price_update, stock_update and discount_rule_update')
 }
 
 export function destroyItemSync() {
@@ -91,6 +98,10 @@ export function destroyItemSync() {
   if (_stockHandler) {
     socket.off('stock_update', _stockHandler)
     _stockHandler = null
+  }
+  if (_discountRuleHandler) {
+    socket.off('discount_rule_update', _discountRuleHandler)
+    _discountRuleHandler = null
   }
   document.removeEventListener('visibilitychange', _handleVisibilityChange)
 }

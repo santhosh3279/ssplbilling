@@ -194,3 +194,14 @@ def get_discount_rule_metadata():
 		"price_lists": [p.name for p in price_lists],
 		"item_groups": [ig.name for ig in item_groups]
 	}
+
+
+def publish_discount_rule_update(doc, method=None):
+	"""Publish a realtime update event when a Discount Rule is created, updated, or deleted."""
+	if not doc or not doc.name:
+		return
+
+	def _emit():
+		frappe.publish_realtime("discount_rule_update", {"name": doc.name})
+
+	frappe.db.after_commit.add(_emit)
