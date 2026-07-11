@@ -116,14 +116,31 @@ export function useCustomerHistory() {
     // Try local cache lookup first
     const cachedItem = lookupItemInCache(itemCode)
     if (cachedItem) {
-      const results = (cachedItem.price_lists || []).map(pl => ({
-        price_list: pl.name,
-        price: pl.rate,
-        rate: pl.rate,
-        buying: pl.buying ? 1 : 0,
-        selling: pl.selling ? 1 : 0,
-        uom_rates: (cachedItem.uom_price_lists || {})[pl.name] || {}
-      }))
+      let localLists = []
+      try {
+        localLists = JSON.parse(localStorage.getItem('wb-pricelist') || '[]')
+      } catch {}
+      
+      if (!localLists.length) {
+        localLists = (cachedItem.price_lists || []).map(pl => pl.name)
+      }
+
+      const results = localLists.map(plName => {
+        const plRecord = (cachedItem.price_lists || []).find(p => p.name === plName)
+        const rate = plRecord ? plRecord.rate : 0.0
+        const buying = plRecord ? (plRecord.buying ? 1 : 0) : 0
+        const selling = plRecord ? (plRecord.selling ? 1 : 0) : 1
+        
+        return {
+          price_list: plName,
+          price: rate,
+          rate: rate,
+          buying: buying,
+          selling: selling,
+          uom_rates: (cachedItem.uom_price_lists || {})[plName] || {}
+        }
+      })
+      
       itemPrices.value = results
       return
     }
