@@ -12,7 +12,7 @@
           </button>
           <div>
             <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Material Transfer Report</h1>
-            <p class="text-xs text-[var(--color-text-muted)]">Detailed Stock Entry records with Material Transfer type</p>
+            <p class="text-xs text-[var(--color-text-muted)]">Bill-wise summary of Stock Entries with Material Transfer type</p>
           </div>
         </div>
 
@@ -113,7 +113,7 @@
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="Search by Stock Entry ID, Warehouse, Item, Remarks..."
+          placeholder="Search by Stock Entry ID, Warehouse, or Remarks..."
           class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none placeholder-[var(--color-text-muted)]/60"
         />
       </div>
@@ -154,7 +154,7 @@
         <!-- Summary Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 max-w-5xl mx-auto">
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
-            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Total Valuation Value</p>
+            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Total Transferred Value</p>
             <p class="text-3xl font-black text-[var(--color-success)]">{{ formatCurrency(grandTotalValue) }}</p>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
@@ -162,8 +162,8 @@
             <p class="text-3xl font-black text-[var(--color-text)]">{{ formatQty(grandTotalQty) }}</p>
           </div>
           <div class="bg-[var(--color-surface)] border border-[var(--color-border)] p-6 rounded-2xl shadow-sm">
-            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Total Records / Entries</p>
-            <p class="text-3xl font-black text-[var(--color-info)]">{{ filteredData.length }} Rows / {{ uniqueEntriesCount }} Entries</p>
+            <p class="text-xs font-semibold text-[var(--color-text-muted)] uppercase tracking-widest mb-1">Total Entries (Bills)</p>
+            <p class="text-3xl font-black text-[var(--color-info)]">{{ filteredData.length }} Records</p>
           </div>
         </div>
 
@@ -178,7 +178,7 @@
                   class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
                 >
                   <div class="flex items-center gap-1.5">
-                    Stock Entry ID
+                    Stock Entry ID (Bill No)
                     <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'stock_entry'">{{ sortAsc ? '▲' : '▼' }}</span>
                     <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
                   </div>
@@ -198,7 +198,7 @@
                   class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
                 >
                   <div class="flex items-center gap-1.5">
-                    Source Wh
+                    Source Warehouse
                     <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'source_warehouse'">{{ sortAsc ? '▲' : '▼' }}</span>
                     <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
                   </div>
@@ -208,59 +208,28 @@
                   class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
                 >
                   <div class="flex items-center gap-1.5">
-                    Dest Wh
+                    Destination Warehouse
                     <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'target_warehouse'">{{ sortAsc ? '▲' : '▼' }}</span>
                     <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
                   </div>
                 </th>
                 <th
-                  @click="sortBy('item_code')"
-                  class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
-                >
-                  <div class="flex items-center gap-1.5">
-                    Item Code
-                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'item_code'">{{ sortAsc ? '▲' : '▼' }}</span>
-                    <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
-                  </div>
-                </th>
-                <th
-                  @click="sortBy('item_name')"
-                  class="px-6 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
-                >
-                  <div class="flex items-center gap-1.5">
-                    Item Name
-                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'item_name'">{{ sortAsc ? '▲' : '▼' }}</span>
-                    <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
-                  </div>
-                </th>
-                <th
-                  @click="sortBy('qty')"
+                  @click="sortBy('total_qty')"
                   class="px-6 py-3 text-right text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
                 >
                   <div class="flex items-center justify-end gap-1.5">
-                    Qty
-                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'qty'">{{ sortAsc ? '▲' : '▼' }}</span>
-                    <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
-                  </div>
-                </th>
-                <th class="px-4 py-3 text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] text-center">UOM</th>
-                <th
-                  @click="sortBy('valuation_rate')"
-                  class="px-6 py-3 text-right text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
-                >
-                  <div class="flex items-center justify-end gap-1.5">
-                    Rate
-                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'valuation_rate'">{{ sortAsc ? '▲' : '▼' }}</span>
+                    Total Qty
+                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'total_qty'">{{ sortAsc ? '▲' : '▼' }}</span>
                     <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
                   </div>
                 </th>
                 <th
-                  @click="sortBy('transfer_amount')"
+                  @click="sortBy('total_amount')"
                   class="px-6 py-3 text-right text-sm font-bold text-[var(--color-text-muted)] uppercase tracking-wider border-b border-[var(--color-border)] cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
                 >
                   <div class="flex items-center justify-end gap-1.5">
-                    Amount
-                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'transfer_amount'">{{ sortAsc ? '▲' : '▼' }}</span>
+                    Total Value (INR)
+                    <span class="text-xs text-[var(--color-info)]" v-if="sortKey === 'total_amount'">{{ sortAsc ? '▲' : '▼' }}</span>
                     <span class="text-xs text-[var(--color-text-muted)]/30" v-else>⇅</span>
                   </div>
                 </th>
@@ -270,7 +239,7 @@
             <tbody class="divide-y divide-slate-700/10">
               <tr
                 v-for="(row, idx) in filteredData"
-                :key="row.stock_entry + '-' + idx"
+                :key="row.stock_entry"
                 class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group"
               >
                 <td class="w-16 px-4 py-3 font-mono text-sm text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-center">
@@ -288,25 +257,13 @@
                 <td class="px-6 py-3 text-sm text-[var(--color-text)] border-b border-[var(--color-border)]/50 font-medium">
                   {{ row.target_warehouse }}
                 </td>
-                <td class="px-6 py-3 font-mono text-sm font-semibold text-[var(--color-text)] border-b border-[var(--color-border)]/50">
-                  {{ row.item_code }}
-                </td>
-                <td class="px-6 py-3 text-sm text-[var(--color-text)] border-b border-[var(--color-border)]/50 whitespace-normal max-w-xs">
-                  {{ row.item_name }}
-                </td>
                 <td class="px-6 py-3 text-right font-mono text-base text-[var(--color-text)] border-b border-[var(--color-border)]/50">
-                  {{ formatQty(row.qty) }}
-                </td>
-                <td class="px-4 py-3 text-sm text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 text-center">
-                  {{ row.uom }}
-                </td>
-                <td class="px-6 py-3 text-right font-mono text-base text-[var(--color-text)] border-b border-[var(--color-border)]/50">
-                  {{ formatCurrencyWithoutSymbol(row.valuation_rate) }}
+                  {{ formatQty(row.total_qty) }}
                 </td>
                 <td class="px-6 py-3 text-right font-mono text-base font-semibold text-[var(--color-text)] border-b border-[var(--color-border)]/50">
-                  {{ formatCurrencyWithoutSymbol(row.transfer_amount) }}
+                  {{ formatCurrencyWithoutSymbol(row.total_amount) }}
                 </td>
-                <td class="px-6 py-3 text-sm text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 whitespace-normal max-w-xs font-light">
+                <td class="px-6 py-3 text-sm text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 whitespace-normal max-w-md font-light">
                   {{ row.remarks }}
                 </td>
               </tr>
@@ -318,13 +275,9 @@
                 <td class="px-6 py-3 text-sm border-t border-[var(--color-border)]"></td>
                 <td class="px-6 py-3 text-sm border-t border-[var(--color-border)]"></td>
                 <td class="px-6 py-3 text-sm border-t border-[var(--color-border)]"></td>
-                <td class="px-6 py-3 text-sm border-t border-[var(--color-border)]"></td>
-                <td class="px-6 py-3 text-sm border-t border-[var(--color-border)]"></td>
                 <td class="px-6 py-3 text-right font-mono text-lg text-[var(--color-text)] border-t border-[var(--color-border)]">
                   {{ formatQty(grandTotalQty) }}
                 </td>
-                <td class="px-4 py-3 text-sm border-t border-[var(--color-border)]"></td>
-                <td class="px-6 py-3 text-sm border-t border-[var(--color-border)]"></td>
                 <td class="px-6 py-3 text-right font-mono text-lg text-[var(--color-success)] border-t border-[var(--color-border)]">
                   {{ formatCurrency(grandTotalValue) }}
                 </td>
@@ -394,8 +347,6 @@ const filteredData = computed(() => {
       (r.stock_entry || '').toLowerCase().includes(query) ||
       (r.source_warehouse || '').toLowerCase().includes(query) || 
       (r.target_warehouse || '').toLowerCase().includes(query) || 
-      (r.item_code || '').toLowerCase().includes(query) || 
-      (r.item_name || '').toLowerCase().includes(query) ||
       (r.remarks || '').toLowerCase().includes(query)
     )
   }
@@ -421,16 +372,11 @@ const filteredData = computed(() => {
 })
 
 const grandTotalQty = computed(() => {
-  return filteredData.value.reduce((sum, r) => sum + (r.qty || 0), 0)
+  return filteredData.value.reduce((sum, r) => sum + (r.total_qty || 0), 0)
 })
 
 const grandTotalValue = computed(() => {
-  return filteredData.value.reduce((sum, r) => sum + (r.transfer_amount || 0), 0)
-})
-
-const uniqueEntriesCount = computed(() => {
-  const entries = new Set(filteredData.value.map(r => r.stock_entry))
-  return entries.size
+  return filteredData.value.reduce((sum, r) => sum + (r.total_amount || 0), 0)
 })
 
 function adjustDate(type, days) {
@@ -514,17 +460,13 @@ function exportToExcel() {
 
   const headers = [
     'S.No',
-    'Stock Entry ID',
+    'Stock Entry ID (Bill No)',
     'Posting Date',
     'Posting Time',
     'Source Warehouse',
     'Destination Warehouse',
-    'Item Code',
-    'Item Name',
-    'Quantity',
-    'UOM',
-    'Valuation Rate',
-    'Amount',
+    'Total Quantity',
+    'Total Amount (INR)',
     'Remarks'
   ]
   
@@ -535,12 +477,8 @@ function exportToExcel() {
     r.posting_time,
     r.source_warehouse,
     r.target_warehouse,
-    r.item_code,
-    r.item_name,
-    r.qty,
-    r.uom,
-    r.valuation_rate,
-    r.transfer_amount,
+    r.total_qty,
+    r.total_amount,
     r.remarks
   ])
 
@@ -552,11 +490,7 @@ function exportToExcel() {
     '',
     '',
     '',
-    '',
-    '',
     grandTotalQty.value,
-    '',
-    '',
     grandTotalValue.value,
     ''
   ])
@@ -566,22 +500,18 @@ function exportToExcel() {
 
   ws['!cols'] = [
     { wch: 8 },   // S.No
-    { wch: 22 },  // Stock Entry ID
+    { wch: 25 },  // Stock Entry ID
     { wch: 14 },  // Date
     { wch: 12 },  // Time
     { wch: 25 },  // Source Warehouse
-    { wch: 25 },  // Dest Warehouse
-    { wch: 20 },  // Item Code
-    { wch: 35 },  // Item Name
-    { wch: 12 },  // Qty
-    { wch: 10 },  // UOM
-    { wch: 15 },  // Valuation Rate
-    { wch: 18 },  // Amount
+    { wch: 25 },  // Destination Warehouse
+    { wch: 15 },  // Total Qty
+    { wch: 20 },  // Total Value
     { wch: 40 }   // Remarks
   ]
 
   utils.book_append_sheet(wb, ws, 'Material Transfers')
-  writeFile(wb, `MaterialTransferReport_${fromDate.value}_to_${toDate.value}.xlsx`)
+  writeFile(wb, `MaterialTransferSummary_${fromDate.value}_to_${toDate.value}.xlsx`)
 }
 </script>
 
