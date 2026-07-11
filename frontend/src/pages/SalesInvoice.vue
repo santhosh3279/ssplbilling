@@ -1262,13 +1262,17 @@ async function clearBill() {
 
   if (selectedSeries.value) {
     try {
-      const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Sales Invoice' })
-      invoiceNo.value = getNextInvoiceNoFromPanel(selectedSeries.value, next.invoice_no)
-      defaultTemplate.value = next.print_format || ''
-      if (next.warehouse) warehouse.value = next.warehouse
-      if (next.cost_center) costCenter.value = next.cost_center
-      if (next.income_account) incomeAccount.value = next.income_account
-    } catch {
+      const cached = JSON.parse(localStorage.getItem('wb-settings-v2') || 'null')
+      const seriesEntry = cached?.data?.billing_series?.find(bs => bs.series === selectedSeries.value)
+      const userDefaults = cached?.data?.user_defaults || {}
+      
+      invoiceNo.value = getNextInvoiceNoFromPanel(selectedSeries.value, 'NEW')
+      defaultTemplate.value = seriesEntry?.print_format || ''
+      if (userDefaults.warehouse) warehouse.value = userDefaults.warehouse
+      if (userDefaults.cost_center) costCenter.value = userDefaults.cost_center
+      if (userDefaults.income_account) incomeAccount.value = userDefaults.income_account
+    } catch (e) {
+      console.warn('[SalesInvoice] Failed to resolve series defaults locally:', e)
       invoiceNo.value = 'NEW'
     }
   }
@@ -1553,12 +1557,7 @@ async function closePrintModal() {
   clearHistory()
 
   isSaved.value = false
-  try {
-    const next = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Sales Invoice' })
-    invoiceNo.value = getNextInvoiceNoFromPanel(selectedSeries.value, next.invoice_no)
-  } catch {
-    invoiceNo.value = 'NEW'
-  }
+  invoiceNo.value = getNextInvoiceNoFromPanel(selectedSeries.value, 'NEW')
 
   nextTick(() => { newCodeInput.value?.focus() })
 }
@@ -2601,36 +2600,32 @@ function handleCustomerSelected(cust) {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
-    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series, doctype: 'Sales Invoice' })
-    invoiceNo.value = getNextInvoiceNoFromPanel(series, res.invoice_no)
-    priceList.value = res.price_list
-    taxTemplate.value = res.tax_template
-    defaultTemplate.value = res.print_format || ''
-    if (res.warehouse) warehouse.value = res.warehouse
-    if (res.cost_center) costCenter.value = res.cost_center
-    if (res.income_account) incomeAccount.value = res.income_account
+    const cached = JSON.parse(localStorage.getItem('wb-settings-v2') || 'null')
+    const seriesEntry = cached?.data?.billing_series?.find(bs => bs.series === series)
+    const userDefaults = cached?.data?.user_defaults || {}
+    
+    invoiceNo.value = getNextInvoiceNoFromPanel(series, 'NEW')
+    priceList.value = seriesEntry?.price_list || 'Standard Selling'
+    taxTemplate.value = seriesEntry?.tax_template || ''
+    defaultTemplate.value = seriesEntry?.print_format || ''
+    
+    if (userDefaults.warehouse) warehouse.value = userDefaults.warehouse
+    if (userDefaults.cost_center) costCenter.value = userDefaults.cost_center
+    if (userDefaults.income_account) incomeAccount.value = userDefaults.income_account
 
     // Update inclusive tax from billing series settings
-    try {
-      const cached = JSON.parse(localStorage.getItem('wb-settings-v2') || 'null')
-      if (cached?.data?.billing_series) {
-        const entry = cached.data.billing_series.find(bs => bs.series === series)
-        if (entry) {
-          nextTick(() => {
-            isInclusiveTax.value = !!entry.tax_type_incl
-            localStorage.setItem('wb-tax-type-incl', entry.tax_type_incl ? '1' : '0')
-          })
-        }
-      }
-    } catch (e) {
-      console.warn('[SalesInvoice] Failed to sync inclusive tax from series settings:', e)
+    if (seriesEntry) {
+      nextTick(() => {
+        isInclusiveTax.value = !!seriesEntry.tax_type_incl
+        localStorage.setItem('wb-tax-type-incl', seriesEntry.tax_type_incl ? '1' : '0')
+      })
     }
 
     showSeriesModal.value = false
     customerInitialQuery.value = ''
     showCustomerModal.value = true
   } catch (e) {
-    console.error('[SalesInvoice] Failed to fetch series defaults:', e)
+    console.error('[SalesInvoice] Failed to resolve series defaults locally:', e)
   }
 }
 
