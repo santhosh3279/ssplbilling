@@ -493,7 +493,11 @@ function handleGlobalKeydown(e) {
   }
   if (showDateModal.value) return
 
-  if (e.key === 'ArrowDown') {
+  if (e.key === 'Delete') {
+    e.preventDefault()
+    query.value = ''
+    focus()
+  } else if (e.key === 'ArrowDown') {
     e.preventDefault()
     selectedIdx.value = Math.min(selectedIdx.value + 1, results.value.length - 1)
   } else if (e.key === 'ArrowUp') {
