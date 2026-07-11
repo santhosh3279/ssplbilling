@@ -530,4 +530,24 @@ function exportToExcel() {
   background-color: var(--color-border);
   border-radius: 20px;
 }
+
+table th, table td {
+  font-size: calc(0.875rem * 1.5);
+  line-height: 1.5;
+}
+table .text-xs {
+  font-size: calc(0.75rem * 1.5) !important;
+}
+table .text-sm {
+  font-size: calc(0.875rem * 1.5) !important;
+  line-height: calc(1.25rem * 1.5) !important;
+}
+table .text-base {
+  font-size: calc(1rem * 1.5) !important;
+  line-height: calc(1.5rem * 1.5) !important;
+}
+table .text-lg {
+  font-size: calc(1.125rem * 1.5) !important;
+  line-height: calc(1.75rem * 1.5) !important;
+}
 </style>
