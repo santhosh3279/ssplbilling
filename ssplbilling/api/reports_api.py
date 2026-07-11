@@ -1424,3 +1424,42 @@ def get_ledger_wise_sales_purchase_report(from_date=None, to_date=None):
 		"to_date": to_date
 	}
 
+
+@frappe.whitelist()
+def get_material_transfer_report(from_date=None, to_date=None):
+	"""Get submitted Stock Entries with purpose 'Material Transfer' between from_date and to_date."""
+	from_date = from_date or frappe.utils.today()
+	to_date = to_date or frappe.utils.today()
+
+	rows = frappe.db.sql(
+		"""
+		SELECT
+			se.name,
+			se.posting_date,
+			se.from_warehouse,
+			se.to_warehouse,
+			se.total_incoming_value AS total_value,
+			SUM(sed.qty) AS total_qty
+		FROM `tabStock Entry` se
+		LEFT JOIN `tabStock Entry Detail` sed ON sed.parent = se.name
+		WHERE se.docstatus = 1
+		  AND se.purpose = 'Material Transfer'
+		  AND se.posting_date BETWEEN %s AND %s
+		GROUP BY se.name
+		ORDER BY se.posting_date DESC, se.name DESC
+		""",
+		(from_date, to_date),
+		as_dict=True,
+	)
+
+	for r in rows:
+		r["total_value"] = float(r["total_value"] or 0)
+		r["total_qty"] = float(r["total_qty"] or 0)
+		r["posting_date"] = str(r["posting_date"]) if r["posting_date"] else ""
+
+	return {
+		"rows": rows,
+		"from_date": from_date,
+		"to_date": to_date
+	}
+
