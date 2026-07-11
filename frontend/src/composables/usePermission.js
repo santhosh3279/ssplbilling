@@ -85,6 +85,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'ItemSalesSummary',
   'StoreWiseItemSales',
   'FastMovingItems',
+  'MaterialTransferReport',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
@@ -101,6 +102,7 @@ export const ADMIN_ROUTES = new Set([
   'ItemSalesSummary',
   'StoreWiseItemSales',
   'FastMovingItems',
+  'MaterialTransferReport',
   'IncentiveLedger',
   'IncentiveEntry',
   'CustomerEnquiry',
@@ -181,6 +183,7 @@ export function canAccessRoute(routeName) {
       allowed.add('ItemSalesSummary')
       allowed.add('StoreWiseItemSales')
       allowed.add('FastMovingItems')
+      allowed.add('MaterialTransferReport')
     }
     return allowed.has(routeName)
   }
@@ -249,6 +252,7 @@ const TILE_ROUTE_MAP = {
   'item-sales-summary': 'ItemSalesSummary',
   'store-wise-item-sales': 'StoreWiseItemSales',
   'fast-moving-items': 'FastMovingItems',
+  'material-transfer-report': 'MaterialTransferReport',
 }
 
 export function canAccessTile(tileId) {

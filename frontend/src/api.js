@@ -1006,3 +1006,8 @@ export async function getLedgerWiseSalesPurchaseReport(fromDate, toDate) {
   return frappeGet("ssplbilling.api.reports_api.get_ledger_wise_sales_purchase_report", { from_date: fromDate, to_date: toDate });
 }
 
+export async function getMaterialTransferReport(fromDate, toDate) {
+  return frappeGet("ssplbilling.api.reports_api.get_material_transfer_report", { from_date: fromDate, to_date: toDate });
+}
+
+

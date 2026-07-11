@@ -1427,35 +1427,42 @@ def get_ledger_wise_sales_purchase_report(from_date=None, to_date=None):
 
 @frappe.whitelist()
 def get_material_transfer_report(from_date=None, to_date=None):
-	"""Get submitted Stock Entries with purpose 'Material Transfer' between from_date and to_date."""
+	"""Get detailed Stock Entries with purpose 'Material Transfer' between from_date and to_date."""
 	from_date = from_date or frappe.utils.today()
 	to_date = to_date or frappe.utils.today()
 
 	rows = frappe.db.sql(
 		"""
 		SELECT
-			se.name,
+			se.name AS stock_entry,
 			se.posting_date,
-			se.from_warehouse,
-			se.to_warehouse,
-			se.total_incoming_value AS total_value,
-			SUM(sed.qty) AS total_qty
+			se.posting_time,
+			se.remarks,
+			COALESCE(sed.s_warehouse, se.from_warehouse) AS source_warehouse,
+			COALESCE(sed.t_warehouse, se.to_warehouse) AS target_warehouse,
+			sed.item_code,
+			sed.item_name,
+			sed.qty,
+			sed.uom,
+			sed.basic_rate AS valuation_rate,
+			sed.amount AS transfer_amount
 		FROM `tabStock Entry` se
-		LEFT JOIN `tabStock Entry Detail` sed ON sed.parent = se.name
+		JOIN `tabStock Entry Detail` sed ON sed.parent = se.name
 		WHERE se.docstatus = 1
 		  AND se.purpose = 'Material Transfer'
 		  AND se.posting_date BETWEEN %s AND %s
-		GROUP BY se.name
-		ORDER BY se.posting_date DESC, se.name DESC
+		ORDER BY se.posting_date DESC, se.posting_time DESC, se.name DESC, sed.idx ASC
 		""",
 		(from_date, to_date),
 		as_dict=True,
 	)
 
 	for r in rows:
-		r["total_value"] = float(r["total_value"] or 0)
-		r["total_qty"] = float(r["total_qty"] or 0)
+		r["qty"] = float(r["qty"] or 0)
+		r["valuation_rate"] = float(r["valuation_rate"] or 0)
+		r["transfer_amount"] = float(r["transfer_amount"] or 0)
 		r["posting_date"] = str(r["posting_date"]) if r["posting_date"] else ""
+		r["posting_time"] = str(r["posting_time"]) if r["posting_time"] else ""
 
 	return {
 		"rows": rows,

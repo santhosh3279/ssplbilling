@@ -32,6 +32,7 @@ import LedgerSalesPurchaseReport from './pages/LedgerSalesPurchaseReport.vue'
 import ItemSalesSummary from './pages/ItemSalesSummary.vue'
 import StoreWiseItemSales from './pages/StoreWiseItemSales.vue'
 import FastMovingItems from './pages/FastMovingItems.vue'
+import MaterialTransferReport from './pages/MaterialTransferReport.vue'
 import LoadingReceipt from './pages/LoadingReceipt.vue'
 import CustomerEnquiry from './pages/CustomerEnquiry.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
@@ -296,6 +297,12 @@ const routes = [
     name: 'FastMovingItems',
     component: FastMovingItems,
     meta: { title: 'Fast Moving Items' },
+  },
+  {
+    path: '/material-transfer-report',
+    name: 'MaterialTransferReport',
+    component: MaterialTransferReport,
+    meta: { title: 'Material Transfer Report' },
   },
   {
     path: '/loading-receipt',
