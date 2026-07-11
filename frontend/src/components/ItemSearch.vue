@@ -173,7 +173,8 @@
 
       <!-- Footer shortcuts -->
       <div class="border-t border-[var(--color-border)] px-5 py-3 bg-[var(--color-surface-raised)] flex gap-6 text-xs text-[var(--color-text-muted)] uppercase tracking-widest font-bold">
-        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Home</kbd> Search</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Home</kbd> Focus</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Del</kbd> Clear</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">↑↓</kbd> Navigate</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Enter</kbd> Select</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+E</kbd> Toggle Enc</span>
@@ -308,6 +309,12 @@ useSubwindowWatcher(computed(() => props.show), {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
     e.preventDefault()
     if (results.value[selectedIdx.value]) showPriceUpdateModal.value = true
+  },
+  Delete: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    e.preventDefault()
+    query.value = ''
+    focus()
   },
   Home: (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
