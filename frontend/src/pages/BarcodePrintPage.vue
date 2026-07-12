@@ -206,11 +206,7 @@
                         :ref="el => setRef(el, 'qty', idx)"
                         type="number" v-model.number="item.qty" min="1"
                         class="w-24 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-center font-mono text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-                        @keydown.enter.prevent="moveToNextQty(idx)"
-                        @keydown.tab.prevent="moveToNextQty(idx)"
-                        @keydown.shift.tab.prevent="getItemUoms(item.item_code).length > 1 ? focusField('uom', idx) : focusField('code', idx)"
-                        @keydown.down.prevent="moveToNextQty(idx)"
-                        @keydown.up.prevent="moveToPrevQty(idx)"
+                        @keydown="onQtyKeydown($event, idx)"
                       />
                       <button @click.stop="item.qty++"
                         class="h-8 w-8 rounded bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] font-bold text-xl">&plus;</button>
@@ -597,6 +593,32 @@ function moveToNextQty(idx) {
 function moveToPrevQty(idx) {
   const prev = idx - 1
   if (prev >= 0) { selectRow(prev) }
+}
+
+function onQtyKeydown(e, idx) {
+  if (e.key === 'Enter' || e.key === 'Tab' || e.key === 'ArrowDown') {
+    if (e.key === 'Tab' && e.shiftKey) {
+      e.preventDefault()
+      if (getItemUoms(itemsToPrint.value[idx]?.item_code).length > 1) {
+        focusField('uom', idx)
+      } else {
+        focusField('code', idx)
+      }
+    } else {
+      e.preventDefault()
+      moveToNextQty(idx)
+    }
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    moveToPrevQty(idx)
+  } else if (e.key === 'Delete' || e.key === 'Backspace') {
+    const el = e.target
+    const isAllSelected = el.selectionStart === 0 && el.selectionEnd === el.value.length
+    if (isAllSelected || el.value === '' || el.value === '0') {
+      e.preventDefault()
+      removeItem(idx)
+    }
+  }
 }
 
 // ── Item lookup from cache ────────────────────────────────────────────────────
