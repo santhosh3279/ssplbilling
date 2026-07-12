@@ -611,7 +611,7 @@ function onQtyKeydown(e, idx) {
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     moveToPrevQty(idx)
-  } else if (e.key === 'Delete' || e.key === 'Backspace') {
+  } else if (e.key === 'Delete') {
     e.preventDefault()
     removeItem(idx)
   }
@@ -806,7 +806,7 @@ function onRowKeydown(e, idx) {
   if (e.key === 'ArrowDown')  { e.preventDefault(); moveRow(idx, 1) }
   else if (e.key === 'ArrowUp')   { e.preventDefault(); moveRow(idx, -1) }
   else if (e.key === 'Enter')     { e.preventDefault(); selectQtyField(idx) }
-  else if (e.key === 'Delete' || e.key === 'Backspace') {
+  else if (e.key === 'Delete') {
     e.preventDefault()
     removeItem(idx)
   }
