@@ -251,6 +251,8 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		if si.get("payment_schedule"):
 			si.payment_schedule = []
 
+		si.custom_remarks = data.get("custom_remarks") or ""
+
 		# --- Handle Sales Invoice/Purchase Invoice Advances (Credit/Debit Notes) ---
 		# Standard reconcile_against_document (called during SI.submit) fails for these types in v16.
 		special_advances = []

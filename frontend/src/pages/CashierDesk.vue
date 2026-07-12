@@ -527,6 +527,16 @@
                     class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-warning)] focus:ring-4 focus:ring-amber-500/20 transition-all"
                   />
                 </div>
+                <div class="group relative">
+                  <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-focus)] transition-colors uppercase">Remarks</div>
+                  <input
+                    ref="remarksInput"
+                    type="text"
+                    v-model="payments.remarks"
+                    @focus="$event.target.select()"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-32 pr-6 text-right font-mono text-[20px] font-black text-[var(--color-text)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/20 transition-all"
+                  />
+                </div>
               </div>
 
               <!-- Credit Fields -->
@@ -809,7 +819,8 @@ const payments = ref({
   upi: 0,
   card: 0,
   credit: 0,
-  discount: 0
+  discount: 0,
+  remarks: ''
 })
 
 const seriesAccounts = ref({
@@ -825,6 +836,7 @@ const upiInput = ref(null)
 const cardInput = ref(null)
 const creditInput = ref(null)
 const discountInput = ref(null)
+const remarksInput = ref(null)
 const dueDateInput = ref(null)
 const cardRefInput = ref(null)
 const dateInput = ref(null)
@@ -1076,13 +1088,13 @@ async function selectInvoice(inv) {
   isCredit.value = false
   cardRefNo.value = ''
   
-  payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
+  payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: '' }
   
   try {
     const details = await getInvoiceDetails(inv.name)
     selectedInvoice.value = details
     previewItems.value = details.items || []
-    payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
+    payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: '' }
     await loadSeriesSettings(details.naming_series)
 
     // Check for Unallocated Cash
@@ -1179,7 +1191,7 @@ function toggleCredit(val) {
   }
 
   isCredit.value = targetVal
-  payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
+  payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: '' }
   if (isCredit.value) {
     nextTick(() => dueDateInput.value?.focus())
   } else {
@@ -1311,7 +1323,8 @@ async function processPayment() {
       cash_account: seriesAccounts.value.cash,
       upi_account: seriesAccounts.value.upi,
       card_account: seriesAccounts.value.card,
-      discount_account: seriesAccounts.value.discount
+      discount_account: seriesAccounts.value.discount,
+      custom_remarks: payments.value.remarks
     }
     
     const wasUpi = upi > 0.01
@@ -1410,12 +1423,12 @@ function handleAllocationSuccess(res) {
   const remaining = parseFloat((res.outstanding || 0).toFixed(2))
   if (remaining <= 0.01) {
     // Advances fully cover the invoice — just submit
-    payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
+    payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: '' }
     successMsg.value = "Advances cover full amount. Click Post Settlement to finalise."
     nextTick(() => postButton.value?.focus())
   } else {
     // Keep first entry box as zero instead of the balance amount
-    payments.value = { cash: 0, upi: 0, card: 0, discount: 0 }
+    payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: '' }
     successMsg.value = `₹${fmt(remaining)} remaining after advance allocation.`
     nextTick(() => { cashInput.value?.focus(); cashInput.value?.select() })
   }
@@ -1504,6 +1517,7 @@ function handleArrowUp() {
     else if (active === cardInput.value) { upiInput.value?.focus(); upiInput.value?.select() }
     else if (active === creditInput.value) { cardInput.value?.focus(); cardInput.value?.select() }
     else if (active === discountInput.value) { creditInput.value?.focus(); creditInput.value?.select() }
+    else if (active === remarksInput.value) { discountInput.value?.focus(); discountInput.value?.select() }
   } else {
     navigateBills(-1)
   }
@@ -1516,6 +1530,7 @@ function handleArrowDown() {
     else if (active === upiInput.value) { cardInput.value?.focus(); cardInput.value?.select() }
     else if (active === cardInput.value) { creditInput.value?.focus(); creditInput.value?.select() }
     else if (active === creditInput.value) { discountInput.value?.focus(); discountInput.value?.select() }
+    else if (active === discountInput.value) { remarksInput.value?.focus(); remarksInput.value?.select() }
   } else {
     navigateBills(1)
   }
@@ -1592,6 +1607,9 @@ function handleEnter(e) {
       discountInput.value?.focus()
       discountInput.value?.select()
     } else if (active === discountInput.value) {
+      remarksInput.value?.focus()
+      remarksInput.value?.select()
+    } else if (active === remarksInput.value) {
       if (balance.value <= 0.01) postButton.value?.focus()
       else errorMsg.value = "Payment balance remaining"
     } else if (active === postButton.value) {
