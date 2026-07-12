@@ -97,7 +97,7 @@
             <div><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-[var(--color-text-muted)]">Enter</kbd> Resolve item / add</div>
             <div><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-[var(--color-text-muted)]">Tab</kbd> Move to qty</div>
             <div><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-[var(--color-text-muted)]">↑ ↓</kbd> Navigate rows</div>
-            <div><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-[var(--color-text-muted)]">Del</kbd> Remove row</div>
+            <div><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 text-[var(--color-text-muted)]">Del</kbd> Delete qty & next row</div>
           </div>
         </div>
 
@@ -664,13 +664,17 @@ function moveToLastRow() {
 }
 
 function removeItem(idx) {
-  itemsToPrint.value.splice(idx, 1)
-  if (itemsToPrint.value.length === 0) {
+  const item = itemsToPrint.value[idx]
+  if (item) {
+    item.qty = 0
+  }
+  const nextIdx = idx + 1
+  if (nextIdx < itemsToPrint.value.length) {
+    selectRow(nextIdx)
+    selectQtyField(nextIdx)
+  } else {
     selectedRow.value = -1
     focusNewCode()
-  } else {
-    const nextIdx = Math.min(idx, itemsToPrint.value.length - 1)
-    selectRow(nextIdx)
   }
 }
 
@@ -880,7 +884,9 @@ const statusError = ref(false)
 const localBillNo = ref('')
 
 const canPrint = computed(() =>
-  itemsToPrint.value.length > 0 && !!selectedPrinter.value && !!selectedTemplate.value
+  itemsToPrint.value.some(item => item.qty !== null && item.qty !== undefined && item.qty !== '' && item.qty > 0) &&
+  !!selectedPrinter.value &&
+  !!selectedTemplate.value
 )
 
 function setStatus(msg, isError = false) {
@@ -894,13 +900,15 @@ async function triggerPrint() {
   printing.value = true
   statusMsg.value = ''
   try {
-    const itemsWithRates = itemsToPrint.value.map(item => {
-      const itm = { ...item, Bcode: item.barcode }
-      availablePriceLists.value.forEach((pl, idx) => {
-        if (idx < 10) itm[`rate_${idx + 1}`] = item.rates?.[pl] || 0
+    const itemsWithRates = itemsToPrint.value
+      .filter(item => item.qty !== null && item.qty !== undefined && item.qty !== '' && item.qty > 0)
+      .map(item => {
+        const itm = { ...item, Bcode: item.barcode }
+        availablePriceLists.value.forEach((pl, idx) => {
+          if (idx < 10) itm[`rate_${idx + 1}`] = item.rates?.[pl] || 0
+        })
+        return itm
       })
-      return itm
-    })
 
     const docName = await frappePost('ssplbilling.api.barcode_api.create_barcode_print_entry', {
       items: JSON.stringify(itemsWithRates),
