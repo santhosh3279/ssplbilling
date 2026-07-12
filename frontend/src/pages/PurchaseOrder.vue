@@ -4,6 +4,7 @@
       ref="invoiceTemplateRef"
       title="Purchase Order"
       :doc-number="orderNo"
+      :party-id="supplierId"
       :party-name="supplierName"
       :party-details="supplierDetails"
       :party-address="supplierAddress"
@@ -11,6 +12,7 @@
       :party-gstin="supplierGstin"
       :party-balance="null"
       :party-last-inv-date="supplierLastInvDate"
+      @party-refreshed="handlePartyRefreshed"
       :doc-date="orderDate"
       :items="items"
       :subtotal="subtotal"
@@ -1692,6 +1694,12 @@ function confirmPendingItem() {
 }
 
 function cancelPendingItem(skipFocus = false) { pendingItem.value = null; if (!skipFocus) nextTick(() => { newCodeInput.value?.focus() }) }
+
+function handlePartyRefreshed(party) {
+  if (party && party.name === supplierId.value) {
+    handleSupplierSelected(party)
+  }
+}
 
 function handleSupplierSelected(party) {
   supplierName.value = party.label || party.name; supplierId.value = party.name

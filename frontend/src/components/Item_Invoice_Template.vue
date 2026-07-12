@@ -163,57 +163,86 @@
               </div>
 
               <div 
-                class="flex-1 flex items-baseline gap-6 overflow-hidden transition-colors group"
+                class="flex-1 flex flex-col justify-center overflow-hidden transition-colors group"
                 :class="isReadOnly ? 'cursor-default' : 'cursor-pointer hover:bg-[var(--color-surface-raised)]/80'"
                 @click="!isReadOnly && $emit('party-click')"
               >
-                <div class="flex items-baseline gap-3 shrink-0">
-                  <label 
-                    class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap transition-colors"
-                    :class="!isReadOnly ? 'group-hover:text-[var(--color-highlight)]' : ''"
-                  >Party</label>
-                  <div class="text-5xl font-bold text-[var(--color-text)] truncate max-w-[600px]">{{ partyName || 'Not Selected' }}</div>
-                </div>
-
-                <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-3xl whitespace-nowrap shrink-0">
-                  <span class="text-xl uppercase text-[var(--color-text-muted)]">Mob:</span>
-                  {{ partyMobile }}
-                </div>
-
-                <div v-if="partyGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-3xl whitespace-nowrap shrink-0">
-                  <span class="text-xl uppercase text-[var(--color-text-muted)]">GST:</span>
-                  {{ partyGstin }}
-                </div>
-
-                <div v-if="partyBalance !== null" class="flex items-center gap-2 whitespace-nowrap shrink-0">
-                  <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Balance</span>
-                  <span
-                    class="text-3xl font-bold font-mono"
-                    :class="(Number(partyBalance) > 0) ? 'text-[var(--color-success)]' : (Number(partyBalance) < 0) ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'"
+                <!-- Refresh Button row above party details -->
+                <div v-if="partyId && !isReadOnly" class="flex items-center mb-1">
+                  <button
+                    @click.stop="refreshSelectedParty"
+                    :disabled="isRefreshingParty"
+                    class="flex items-center gap-1 text-[11px] font-bold uppercase text-[var(--color-info)] hover:text-[var(--color-info)]/80 disabled:opacity-50 transition-all cursor-pointer bg-transparent border-none p-0"
+                    title="Refresh party details from server"
                   >
-                    ₹ {{ Math.abs(partyBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-                    <span class="text-xl">{{ (Number(partyBalance) > 0) ? 'DR' : (Number(partyBalance) < 0) ? 'CR' : '' }}</span>
-                  </span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      :class="{ 'animate-spin': isRefreshingParty }"
+                    >
+                      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                    </svg>
+                    <span>Refresh {{ partyType }} Info</span>
+                  </button>
                 </div>
 
-                <div v-if="postingTime && showMop" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0 ml-auto">
-                  <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Time</span>
-                  <span class="text-3xl font-bold font-mono text-[var(--color-text)]">{{ formatTime(postingTime) }}</span>
-                </div>
+                <!-- Inner row for party details -->
+                <div class="flex items-baseline gap-6 overflow-hidden w-full">
+                  <div class="flex items-baseline gap-3 shrink-0">
+                    <label 
+                      class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap transition-colors"
+                      :class="!isReadOnly ? 'group-hover:text-[var(--color-highlight)]' : ''"
+                    >Party</label>
+                    <div class="text-5xl font-bold text-[var(--color-text)] truncate max-w-[600px]">{{ partyName || 'Not Selected' }}</div>
+                  </div>
 
-                <div v-if="showMop" @click.stop class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0" :class="{'ml-auto': !(postingTime && showMop)}">
-                  <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">MOP</span>
-                  <select
-                    ref="mopSelectRef"
-                    :value="mop"
-                    @change="$emit('update:mop', $event.target.value)"
-                    :disabled="isReadOnly"
-                    class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)] disabled:opacity-80"
-                    @keydown.enter.prevent="$emit('mop-enter')"
-                  >
-                    <option value="Cash">Cash</option>
-                    <option value="Credit">Credit</option>
-                  </select>
+                  <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-3xl whitespace-nowrap shrink-0">
+                    <span class="text-xl uppercase text-[var(--color-text-muted)]">Mob:</span>
+                    {{ partyMobile }}
+                  </div>
+
+                  <div v-if="partyGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-3xl whitespace-nowrap shrink-0">
+                    <span class="text-xl uppercase text-[var(--color-text-muted)]">GST:</span>
+                    {{ partyGstin }}
+                  </div>
+
+                  <div v-if="partyBalance !== null" class="flex items-center gap-2 whitespace-nowrap shrink-0">
+                    <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Balance</span>
+                    <span
+                      class="text-3xl font-bold font-mono"
+                      :class="(Number(partyBalance) > 0) ? 'text-[var(--color-success)]' : (Number(partyBalance) < 0) ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'"
+                    >
+                      ₹ {{ Math.abs(partyBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
+                      <span class="text-xl">{{ (Number(partyBalance) > 0) ? 'DR' : (Number(partyBalance) < 0) ? 'CR' : '' }}</span>
+                    </span>
+                  </div>
+
+                  <div v-if="postingTime && showMop" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0 ml-auto">
+                    <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Time</span>
+                    <span class="text-3xl font-bold font-mono text-[var(--color-text)]">{{ formatTime(postingTime) }}</span>
+                  </div>
+
+                  <div v-if="showMop" @click.stop class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap shrink-0" :class="{'ml-auto': !(postingTime && showMop)}">
+                    <span class="text-xl font-bold uppercase text-[var(--color-text-muted)]">MOP</span>
+                    <select
+                      ref="mopSelectRef"
+                      :value="mop"
+                      @change="$emit('update:mop', $event.target.value)"
+                      :disabled="isReadOnly"
+                      class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)] disabled:opacity-80"
+                      @keydown.enter.prevent="$emit('mop-enter')"
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="Credit">Credit</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -569,6 +598,8 @@ import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useDevice } from '../composables/useDevice'
 import { useLayout } from '../composables/useLayout'
 import { session } from '../session'
+import { frappeGet } from '../api.js'
+import { patchLedgerInCache } from '../services/ledgerCache.js'
 
 const inheritedUser = computed(() => localStorage.getItem('wb-inherited-user'))
 
@@ -579,6 +610,7 @@ const props = defineProps({
   showBackButton: { type: Boolean, default: true },
   titleBarColor: { type: String, default: '' },
   docNumber: { type: String, default: '' },
+  partyId: { type: String, default: '' },
   partyName: { type: String, default: '' },
   partyDetails: { type: String, default: '' }, // Deprecated or for generic info
   partyAddress: { type: String, default: '' },
@@ -653,7 +685,7 @@ const emit = defineEmits([
   'toggle-draft-only', 'select-sidebar-item', 'delete-item', 'discount-pct-keydown', 'discount-amt-keydown',
   'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry',
   'update:discountPct', 'update:discountDirectAmt',
-  'update:ignoreModifier', 'other-entry-enter'
+  'update:ignoreModifier', 'other-entry-enter', 'party-refreshed'
 ])
 
 const { isTablet } = useDevice()
@@ -807,6 +839,34 @@ function formatQty(val, uom) {
     return Math.floor(num).toString()
   }
   return num.toFixed(2)
+}
+
+const partyType = computed(() => {
+  if (props.doctype === 'Purchase Invoice' || props.doctype === 'Purchase Order') {
+    return 'Supplier'
+  }
+  return 'Customer'
+})
+
+const isRefreshingParty = ref(false)
+
+async function refreshSelectedParty() {
+  if (!props.partyId) return
+  isRefreshingParty.value = true
+  try {
+    const updatedParty = await frappeGet('ssplbilling.api.customersearch_api.get_single_ledger', {
+      party_name: props.partyId,
+      party_type: partyType.value
+    })
+    if (updatedParty) {
+      patchLedgerInCache(props.partyId, updatedParty)
+      emit('party-refreshed', updatedParty)
+    }
+  } catch (e) {
+    console.error('Failed to refresh party:', e)
+  } finally {
+    isRefreshingParty.value = false
+  }
 }
 </script>
 

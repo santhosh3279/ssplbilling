@@ -5,6 +5,7 @@
       title="SALES ORDER"
       title-bar-color="#b2dfb0"
       :doc-number="invoiceNo"
+      :party-id="customerId"
       :party-name="customerName"
       :party-details="customerDetails"
       :party-address="customerAddress"
@@ -14,6 +15,7 @@
       :party-last-inv-date="customerLastInvDate"
       :party-modifier="customerModifier"
       v-model:ignore-modifier="ignoreModifier"
+      @party-refreshed="handlePartyRefreshed"
       :doc-date="invoiceDate"
       :items="items"
       :subtotal="subtotal"
@@ -2203,6 +2205,12 @@ function confirmPendingItem() {
 function cancelPendingItem(skipFocus = false) { 
   pendingItem.value = null
   if (!skipFocus) nextTick(() => { newCodeInput.value?.focus() }) 
+}
+
+function handlePartyRefreshed(party) {
+  if (party && party.name === customerId.value) {
+    handleCustomerSelected(party)
+  }
 }
 
 function handleCustomerSelected(cust) {
