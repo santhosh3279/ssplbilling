@@ -328,6 +328,7 @@ def create_sales_invoice(data=None, **kwargs):
     si.custom_address_line1 = data.get("custom_address_line1") or ""
     si.custom_address_line2 = data.get("custom_address_line2") or ""
     si.custom_mobile_number = data.get("custom_mobile_number") or ""
+    si.custom_remarks = data.get("custom_remarks") or ""
 
     si.ignore_pricing_rule = 1
     si.flags.ignore_pricing_rule = True
@@ -523,6 +524,7 @@ def update_sales_invoice(data=None, **kwargs):
     si.custom_address_line1 = data.get("custom_address_line1") or ""
     si.custom_address_line2 = data.get("custom_address_line2") or ""
     si.custom_mobile_number = data.get("custom_mobile_number") or ""
+    si.custom_remarks = data.get("custom_remarks") or ""
 
     si.ignore_pricing_rule = 1
     si.flags.ignore_pricing_rule = True

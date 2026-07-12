@@ -741,7 +741,7 @@ const showCustomerModal = ref(false)
 const showShortcutPage = ref(false)
 const showCustomAddressModal = ref(false)
 const showHistoryModal = ref(false)
-const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' })
+const customAddress = ref({ customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' })
 const showClearWarning = ref(false)
 const showExitWarning = ref(false)
 const customerInitialQuery = ref('')
@@ -977,6 +977,7 @@ async function handleSelectSidebarItem(item) {
     customAddress.value = {
       customer_name: data.custom_customer_name || '',
       mobile_number: data.custom_mobile_number || '',
+      remarks: data.custom_remarks || '',
       address_line_1: data.custom_address_line1 || '',
       address_line_2: data.custom_address_line2 || '',
     }
@@ -1247,7 +1248,7 @@ async function clearBill() {
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''
-  customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
+  customAddress.value = { customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' }
   clearHistory()
   invoiceNo.value = 'NEW'
   postingTime.value = ''
@@ -1402,6 +1403,7 @@ async function handleSave() {
     custom_address_line1: customAddress.value.address_line_1 || '',
     custom_address_line2: customAddress.value.address_line_2 || '',
     custom_mobile_number: customAddress.value.mobile_number || '',
+    custom_remarks: customAddress.value.remarks || '',
     items: active.map(i => ({
       item_code: i.item_code,
       qty: i.qty,
@@ -1553,7 +1555,7 @@ async function closePrintModal() {
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''
-  customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
+  customAddress.value = { customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' }
   clearHistory()
 
   isSaved.value = false

@@ -166,6 +166,8 @@ def _apply_payload_to_doc(doc, payload):
         doc.custom_address_line2 = payload.get("custom_address_line2")
     if payload.get("custom_mobile_number"):
         doc.custom_mobile_number = payload.get("custom_mobile_number")
+    if payload.get("custom_remarks"):
+        doc.custom_remarks = payload.get("custom_remarks")
 
     doc.set("incentive_system", [])
     for row in payload.get("incentive_rows", []):

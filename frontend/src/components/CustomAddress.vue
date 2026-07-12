@@ -39,6 +39,20 @@
             type="text"
             placeholder="Mobile"
             class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
+            @keydown.enter.prevent="focusRemarks"
+            @keydown.tab.prevent="focusRemarks"
+            @keydown.esc.prevent="emit('close')"
+          />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Remarks</label>
+          <input
+            ref="remarksInput"
+            v-model="form.remarks"
+            type="text"
+            placeholder="Remarks"
+            class="rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] transition-colors"
             @keydown.enter.prevent="focusLine1"
             @keydown.tab.prevent="focusLine1"
             @keydown.esc.prevent="emit('close')"
@@ -60,7 +74,7 @@
         </div>
 
         <div class="flex flex-col gap-2">
-          <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Address Line 2/remark</label>
+          <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Address Line 2</label>
           <input
             ref="line2Input"
             v-model="form.address_line_2"
@@ -104,19 +118,22 @@ const emit = defineEmits(['close', 'saved'])
 const form = ref({
   customer_name: props.initialData.customer_name || '',
   mobile_number: props.initialData.mobile_number || '',
+  remarks: props.initialData.remarks || '',
   address_line_1: props.initialData.address_line_1 || '',
   address_line_2: props.initialData.address_line_2 || '',
 })
 
-const nameInput   = ref(null)
-const mobileInput = ref(null)
-const line1Input  = ref(null)
-const line2Input  = ref(null)
-const saveBtn     = ref(null)
+const nameInput    = ref(null)
+const mobileInput  = ref(null)
+const remarksInput = ref(null)
+const line1Input   = ref(null)
+const line2Input   = ref(null)
+const saveBtn      = ref(null)
 
-function focusMobile() { nextTick(() => { mobileInput.value?.focus(); mobileInput.value?.select() }) }
-function focusLine1()  { nextTick(() => line1Input.value?.focus()) }
-function focusLine2()  { nextTick(() => line2Input.value?.focus()) }
+function focusMobile()  { nextTick(() => { mobileInput.value?.focus(); mobileInput.value?.select() }) }
+function focusRemarks() { nextTick(() => { remarksInput.value?.focus(); remarksInput.value?.select() }) }
+function focusLine1()   { nextTick(() => line1Input.value?.focus()) }
+function focusLine2()   { nextTick(() => line2Input.value?.focus()) }
 
 function handleSave() {
   if (!form.value.customer_name.trim()) { nameInput.value?.focus(); return }

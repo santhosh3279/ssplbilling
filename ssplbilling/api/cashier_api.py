@@ -201,6 +201,7 @@ def get_sales_invoice(invoice_name):
         "custom_address_line1": si.get("custom_address_line1") or "",
         "custom_address_line2": si.get("custom_address_line2") or "",
         "custom_mobile_number": si.get("custom_mobile_number") or "",
+        "custom_remarks": si.get("custom_remarks") or "",
     }
 
 @frappe.whitelist()

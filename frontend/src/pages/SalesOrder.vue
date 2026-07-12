@@ -637,7 +637,7 @@ const showShortcutPage = ref(false)
 const showIncentiveModal = ref(false)
 const incentiveRows = ref([])
 const showCustomAddressModal = ref(false)
-const customAddress = ref({ customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' })
+const customAddress = ref({ customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' })
 const showClearWarning = ref(false)
 const showExitWarning = ref(false)
 const customerInitialQuery = ref('')
@@ -1043,7 +1043,7 @@ async function clearBill() {
   packingEntry.value = ''
   otherEntry.value = ''
   incentiveRows.value = []
-  customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
+  customAddress.value = { customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' }
   clearHistory()
   invoiceNo.value = 'NEW'
   isReturn.value = false
@@ -1269,7 +1269,7 @@ async function closePrintModal() {
   packingEntry.value = ''
   otherEntry.value = ''
   incentiveRows.value = []
-  customAddress.value = { customer_name: '', mobile_number: '', address_line_1: '', address_line_2: '' }
+  customAddress.value = { customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' }
   clearHistory()
 
   isSaved.value = false

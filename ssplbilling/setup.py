@@ -76,10 +76,16 @@ CUSTOM_FIELDS = {
 			"translatable": 0,
 		},
 		{
+			"fieldname": "custom_remarks",
+			"fieldtype": "Small Text",
+			"label": "Remarks",
+			"insert_after": "custom_mobile_number",
+		},
+		{
 			"fieldname": "customer_rate_multiplier",
 			"fieldtype": "Check",
 			"label": "Customer Rate Multiplier",
-			"insert_after": "custom_mobile_number",
+			"insert_after": "custom_remarks",
 			"default": "1",
 		},
 		{
@@ -106,6 +112,12 @@ CUSTOM_FIELDS = {
 			"fieldtype": "Select",
 			"options": "Cash\nCredit",
 			"insert_after": "customer_name",
+		},
+		{
+			"fieldname": "custom_remarks",
+			"fieldtype": "Small Text",
+			"label": "Remarks",
+			"insert_after": "custom_mobile_number",
 		}
 	],
 	"Purchase Invoice": [

@@ -356,6 +356,7 @@ def get_quotation(quotation_name):
 		"custom_address_line1": qt.custom_address_line1 or "",
 		"custom_address_line2": qt.custom_address_line2 or "",
 		"custom_mobile_number": qt.custom_mobile_number or "",
+		"custom_remarks": qt.custom_remarks or "",
 		"custom_half_tax_discount": qt.custom_half_tax_discount or 0,
 		"ewaybill": qt.get("ewaybill") or "",
 		"e_waybill_status": qt.get("e_waybill_status") or "",
@@ -427,6 +428,7 @@ def create_quotation(data):
 	qt.custom_address_line1 = data.get("custom_address_line1") or ""
 	qt.custom_address_line2 = data.get("custom_address_line2") or ""
 	qt.custom_mobile_number = data.get("custom_mobile_number") or ""
+	qt.custom_remarks = data.get("custom_remarks") or ""
 	qt.custom_half_tax_discount = 1 if data.get("custom_half_tax_discount") else 0
 
 	qt.flags.ignore_permissions = True
@@ -511,6 +513,7 @@ def update_quotation(data):
 	qt.custom_address_line1 = data.get("custom_address_line1") or ""
 	qt.custom_address_line2 = data.get("custom_address_line2") or ""
 	qt.custom_mobile_number = data.get("custom_mobile_number") or ""
+	qt.custom_remarks = data.get("custom_remarks") or ""
 	qt.custom_half_tax_discount = 1 if data.get("custom_half_tax_discount") else 0
 
 	qt.flags.ignore_permissions = True
@@ -888,6 +891,7 @@ def create_quotation_from_sales_invoice(sales_invoice_name, naming_series):
 	qt.custom_address_line1 = si.get("custom_address_line1") or ""
 	qt.custom_address_line2 = si.get("custom_address_line2") or ""
 	qt.custom_mobile_number = si.get("custom_mobile_number") or ""
+	qt.custom_remarks = si.get("custom_remarks") or ""
 
 	qt.flags.ignore_permissions = True
 	qt.save()
@@ -961,6 +965,7 @@ def create_sales_invoice_from_quotation(
 	si.custom_address_line1 = qt.get("custom_address_line1") or ""
 	si.custom_address_line2 = qt.get("custom_address_line2") or ""
 	si.custom_mobile_number = qt.get("custom_mobile_number") or ""
+	si.custom_remarks = qt.get("custom_remarks") or ""
 
 	si.update_stock = 1
 
