@@ -612,12 +612,8 @@ function onQtyKeydown(e, idx) {
     e.preventDefault()
     moveToPrevQty(idx)
   } else if (e.key === 'Delete' || e.key === 'Backspace') {
-    const el = e.target
-    const isAllSelected = el.selectionStart === 0 && el.selectionEnd === el.value.length
-    if (isAllSelected || el.value === '' || el.value === '0') {
-      e.preventDefault()
-      removeItem(idx)
-    }
+    e.preventDefault()
+    removeItem(idx)
   }
 }
 
