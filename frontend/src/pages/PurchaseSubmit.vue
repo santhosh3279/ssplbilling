@@ -17,6 +17,13 @@
         </span>
       </div>
       <div class="flex items-center gap-4">
+        <button
+          @click="router.push('/purchase-invoice')"
+          class="flex items-center gap-2 rounded bg-[var(--color-warning)] px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-warning)]/80 active:scale-95 shadow-md"
+        >
+          <span>✍️</span> Purchase Invoice
+        </button>
+        <div class="h-8 w-px bg-[var(--color-border)] mx-1"></div>
         <div class="text-right">
           <div class="text-[12px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Current Date</div>
           <div class="text-[17px] font-medium text-[var(--color-text)]">{{ todayStr }}</div>

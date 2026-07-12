@@ -68,6 +68,12 @@
       <template #header-right>
         <div class="flex items-center gap-4">
           <button
+            @click="router.push('/purchase-submit')"
+            class="flex items-center gap-2 rounded bg-[var(--color-info)] px-3 py-1 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-info)]/80 active:scale-95 shadow-lg"
+          >
+            <span>📥</span> Purchase Desk
+          </button>
+          <button
             v-if="supplierId"
             @click="showHistoryModal = true"
             class="flex items-center gap-2 rounded bg-[var(--color-highlight)] px-3 py-1 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-highlight)]/80 active:scale-95 shadow-lg"
