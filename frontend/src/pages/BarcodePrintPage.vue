@@ -945,6 +945,9 @@ async function triggerPrint() {
       },
     )
     setStatus(`✓ Sent to printer — Job ${res?.cups_job_id ?? ''}`)
+    setTimeout(() => {
+      handleBack()
+    }, 1000)
   } catch (e) {
     setStatus(e?.message || 'Print failed. Check printer connection.', true)
   } finally {
