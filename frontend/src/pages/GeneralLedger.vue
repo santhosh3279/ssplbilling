@@ -377,7 +377,7 @@
               <span class="text-[var(--color-text-muted)]">Mode of Payment</span>
               <span class="font-semibold text-[var(--color-text)] text-right">{{ voucherDetail.mode_of_payment }}</span>
             </div>
-            <!-- Purchase Invoice: first custom field shown as remarks -->
+            <!-- Custom Remarks (Purchase Invoice / Sales Invoice) -->
             <div v-if="voucherDetail.custom_remarks" class="flex justify-between gap-3">
               <span class="text-[var(--color-text-muted)] shrink-0">Remarks</span>
               <span class="font-semibold text-[var(--color-text)] text-right whitespace-pre-wrap break-words">{{ voucherDetail.custom_remarks }}</span>
@@ -456,9 +456,10 @@
             </div>
           </div>
 
-          <div v-if="selectedEntry.remarks" class="mt-6 border-t border-[var(--color-border)] pt-4">
+          <div v-if="selectedEntry.remarks || (voucherDetail && voucherDetail.custom_remarks)" class="mt-6 border-t border-[var(--color-border)] pt-4">
             <div class="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Remarks</div>
-            <p class="text-[11px] leading-relaxed text-[var(--color-text)] whitespace-pre-wrap">{{ selectedEntry.remarks }}</p>
+            <p v-if="voucherDetail && voucherDetail.custom_remarks" class="text-[11px] leading-relaxed text-[var(--color-text)] whitespace-pre-wrap font-semibold bg-[var(--color-surface-raised)] p-2 rounded mb-2">{{ voucherDetail.custom_remarks }}</p>
+            <p v-if="selectedEntry.remarks" class="text-[11px] leading-relaxed text-[var(--color-text-muted)] whitespace-pre-wrap italic">{{ selectedEntry.remarks }}</p>
           </div>
 
         </div>

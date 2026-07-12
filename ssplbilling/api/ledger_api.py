@@ -490,7 +490,7 @@ def _batch_voucher_details(entries):
 
     # Extra header fields needed by the ledger detail panel, on top of the generic set above
     EXTRA_HEADER_FIELDS = {
-        "Sales Invoice": ["custom_customer_name", "custom_address_line1", "custom_address_line2"],
+        "Sales Invoice": ["custom_customer_name", "custom_address_line1", "custom_address_line2", "custom_remarks"],
         "Purchase Invoice": ["custom_remarks"],
     }
 
@@ -532,6 +532,7 @@ def _batch_voucher_details(entries):
                 detail["custom_address"] = ", ".join(
                     filter(None, [h.get("custom_address_line1"), h.get("custom_address_line2")])
                 )
+                detail["custom_remarks"] = h.get("custom_remarks") or ""
             elif vtype == "Purchase Invoice":
                 detail["custom_remarks"] = h.get("custom_remarks") or ""
             details[name] = detail
