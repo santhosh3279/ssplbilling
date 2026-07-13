@@ -177,7 +177,7 @@
             
             <button
               class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
-              @click="openModal('cashflow')"
+              @click="router.push('/cashflow-report')"
             >
               <span class="text-xl">💸</span>
               <div class="text-left">
@@ -239,7 +239,7 @@
           <!-- Modal body -->
           <div class="px-6 py-5 space-y-4">
             <!-- Series selector -->
-            <div v-if="reportType !== 'store_summary' && reportType !== 'cashflow' && reportType !== 'ledger_sales_purchase'">
+            <div v-if="reportType !== 'store_summary' && reportType !== 'ledger_sales_purchase'">
               <label class="mb-1.5 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
                 {{ modalConfig.seriesLabel }}
               </label>
@@ -310,7 +310,7 @@
             <button
               class="flex items-center gap-2 rounded-lg px-5 py-2 text-lg font-semibold text-[var(--color-text-on-highlight)] disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 transition-all"
               :class="modalConfig.btnClass"
-              :disabled="generating || (!selectedSeries && reportType !== 'store_summary' && reportType !== 'cashflow' && reportType !== 'ledger_sales_purchase')"
+              :disabled="generating || (!selectedSeries && reportType !== 'store_summary' && reportType !== 'ledger_sales_purchase')"
               @click="generateReport"
             >
               <span v-if="generating" class="animate-spin">⏳</span>
@@ -329,7 +329,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { utils, writeFile } from 'xlsx'
 import ExcelJS from 'exceljs'
-import { getSalesTaxRegister, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport, getItemSummaryReport, getStoreWiseItemSalesReport, getIncomeAccounts, getCashflowReport, getLedgerWiseSalesPurchaseReport } from '../api.js'
+import { getSalesTaxRegister, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport, getItemSummaryReport, getStoreWiseItemSalesReport, getIncomeAccounts, getLedgerWiseSalesPurchaseReport } from '../api.js'
 import { dashboardApi } from '../services/dashboard'
 
 const router = useRouter()
@@ -462,18 +462,7 @@ const modalConfig = computed(() => {
       docLabel: 'Item Code',
     }
   }
-  if (reportType.value === 'cashflow') {
-    return {
-      title: 'Cashflow Report',
-      subtitle: 'Cost Center-wise cash & bank transactions',
-      seriesLabel: '',
-      btnClass: 'bg-[var(--color-info)] hover:bg-[var(--color-info)]',
-      sheetName: 'Cashflow Summary',
-      filePrefix: 'CashflowReport',
-      noDataMsg: 'No cashflow data found for the selected criteria.',
-      docLabel: 'Cost Center',
-    }
-  }
+  // Cashflow report is now handled in CashflowReport.vue
   if (reportType.value === 'ledger_sales_purchase') {
     return {
       title: 'Ledger Sales & Purchase',
@@ -521,7 +510,7 @@ function openModal(type) {
 // ── Report generation ─────────────────────────────────────────────────────────
 async function generateReport() {
   modalError.value = ''
-  if (!selectedSeries.value && reportType.value !== 'store_summary' && reportType.value !== 'cashflow' && reportType.value !== 'ledger_sales_purchase') {
+  if (!selectedSeries.value && reportType.value !== 'store_summary' && reportType.value !== 'ledger_sales_purchase') {
     modalError.value = 'Please select a series.'
     return
   }
@@ -559,17 +548,7 @@ async function generateReport() {
       buildLedgerSalesPurchaseExcel(res)
       showModal.value = false
       return
-    } else if (reportType.value === 'cashflow') {
-      const res = await getCashflowReport(fromDate.value, toDate.value)
-      const summary = res.summary || []
-      const breakdown = res.breakdown || []
-      if (summary.length === 0 && breakdown.length === 0) {
-        modalError.value = modalConfig.value.noDataMsg
-        return
-      }
-      await buildCashflowExcel(res)
-      showModal.value = false
-      return
+    // Cashflow report is now handled in CashflowReport.vue
     } else {
       const res = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
       rows = res.rows || []
@@ -1085,180 +1064,7 @@ async function buildExcel(rows, companyName, companyAddressLines) {
   link.click()
 }
 
-async function buildCashflowExcel(res) {
-  const { summary, breakdown, company_name, company_address_lines } = res
-  const workbook = new ExcelJS.Workbook()
-
-  // ── SHEET 1: SUMMARY ──
-  const summarySheet = workbook.addWorksheet('Cashflow Summary')
-  summarySheet.columns = [
-    { key: 'cc_name', width: 25 },
-    { key: 'cc_code', width: 25 },
-    { key: 'inflow', width: 18 },
-    { key: 'outflow', width: 18 },
-    { key: 'net_flow', width: 20 }
-  ]
-
-  // Company Name
-  const row1 = summarySheet.addRow([company_name || ''])
-  row1.getCell(1).font = { name: 'Arial', size: 14, bold: true }
-  row1.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
-  summarySheet.mergeCells(1, 1, 1, 5)
-
-  // Address lines
-  for (let i = 0; i < 4; i++) {
-    const addrLine = company_address_lines[i] || ''
-    const rowNum = i + 2
-    const row = summarySheet.addRow([addrLine])
-    row.getCell(1).font = { name: 'Arial', size: 10 }
-    row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
-    summarySheet.mergeCells(rowNum, 1, rowNum, 5)
-  }
-
-  // Report Title
-  const titleRow = summarySheet.addRow([`Cashflow Summary Report (${fromDate.value} to ${toDate.value})`])
-  titleRow.getCell(1).font = { name: 'Arial', size: 11, bold: true }
-  titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
-  summarySheet.mergeCells(6, 1, 6, 5)
-
-  // Spacing
-  summarySheet.addRow([])
-
-  // Headers
-  const headers = ['Cost Center', 'Cost Center Code', 'Inflow (Debit)', 'Outflow (Credit)', 'Net Cash Flow']
-  const headerRow = summarySheet.addRow(headers)
-  headerRow.eachCell(cell => {
-    cell.font = { name: 'Arial', bold: true }
-    cell.alignment = { horizontal: 'center' }
-    cell.border = {
-      bottom: { style: 'thin' },
-      top: { style: 'thin' }
-    }
-  })
-
-  // Rows
-  let totalInflow = 0
-  let totalOutflow = 0
-  let totalNetFlow = 0
-
-  for (const r of summary) {
-    summarySheet.addRow([
-      r.cost_center_name,
-      r.cost_center,
-      fmt(r.inflow),
-      fmt(r.outflow),
-      fmt(r.net_flow)
-    ])
-    totalInflow += r.inflow
-    totalOutflow += r.outflow
-    totalNetFlow += r.net_flow
-  }
-
-  // Total row
-  const totalRow = summarySheet.addRow([
-    'GRAND TOTAL',
-    '',
-    fmt(totalInflow),
-    fmt(totalOutflow),
-    fmt(totalNetFlow)
-  ])
-  totalRow.eachCell((cell, colNumber) => {
-    cell.font = { name: 'Arial', bold: true }
-    if (colNumber >= 3 || colNumber === 1) {
-      cell.border = {
-        top: { style: 'thin' },
-        bottom: { style: 'double' }
-      }
-    }
-  })
-
-  // ── SHEET 2: BREAKDOWN ──
-  const breakdownSheet = workbook.addWorksheet('Cashflow Breakdown')
-  breakdownSheet.columns = [
-    { key: 'cc_name', width: 25 },
-    { key: 'account', width: 35 },
-    { key: 'inflow', width: 18 },
-    { key: 'outflow', width: 18 },
-    { key: 'net_flow', width: 20 }
-  ]
-
-  // Company Name
-  const bRow1 = breakdownSheet.addRow([company_name || ''])
-  bRow1.getCell(1).font = { name: 'Arial', size: 14, bold: true }
-  bRow1.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
-  breakdownSheet.mergeCells(1, 1, 1, 5)
-
-  // Address lines
-  for (let i = 0; i < 4; i++) {
-    const addrLine = company_address_lines[i] || ''
-    const rowNum = i + 2
-    const row = breakdownSheet.addRow([addrLine])
-    row.getCell(1).font = { name: 'Arial', size: 10 }
-    row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
-    breakdownSheet.mergeCells(rowNum, 1, rowNum, 5)
-  }
-
-  // Report Title
-  const bTitleRow = breakdownSheet.addRow([`Cashflow Account-wise Breakdown (${fromDate.value} to ${toDate.value})`])
-  bTitleRow.getCell(1).font = { name: 'Arial', size: 11, bold: true }
-  bTitleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
-  breakdownSheet.mergeCells(6, 1, 6, 5)
-
-  // Spacing
-  breakdownSheet.addRow([])
-
-  // Headers
-  const bHeaders = ['Cost Center', 'Account', 'Inflow (Debit)', 'Outflow (Credit)', 'Net Cash Flow']
-  const bHeaderRow = breakdownSheet.addRow(bHeaders)
-  bHeaderRow.eachCell(cell => {
-    cell.font = { name: 'Arial', bold: true }
-    cell.alignment = { horizontal: 'center' }
-    cell.border = {
-      bottom: { style: 'thin' },
-      top: { style: 'thin' }
-    }
-  })
-
-  // Rows
-  for (const r of breakdown) {
-    breakdownSheet.addRow([
-      r.cost_center_name,
-      r.account,
-      fmt(r.inflow),
-      fmt(r.outflow),
-      fmt(r.net_flow)
-    ])
-  }
-
-  // Total row
-  const bTotalRow = breakdownSheet.addRow([
-    'GRAND TOTAL',
-    '',
-    fmt(totalInflow),
-    fmt(totalOutflow),
-    fmt(totalNetFlow)
-  ])
-  bTotalRow.eachCell((cell, colNumber) => {
-    cell.font = { name: 'Arial', bold: true }
-    if (colNumber >= 3 || colNumber === 1) {
-      cell.border = {
-        top: { style: 'thin' },
-        bottom: { style: 'double' }
-      }
-    }
-  })
-
-  // Generate blob and download
-  const buffer = await workbook.xlsx.writeBuffer()
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-  const link = document.createElement('a')
-  link.href = URL.createObjectURL(blob)
-
-  const from = fromDate.value || 'all'
-  const to = toDate.value || 'all'
-  link.download = `CashflowReport_${from}_to_${to}.xlsx`
-  link.click()
-}
+// Cashflow report is now handled in CashflowReport.vue
 </script>
 
 <style scoped>

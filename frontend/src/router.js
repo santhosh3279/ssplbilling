@@ -52,6 +52,7 @@ import OfferPage from './pages/OfferPage.vue'
 import Catelogue from './pages/catelogue.vue'
 import Unreconciled from './pages/unreconciled.vue'
 import ChequeRegister from './pages/ChequeRegister.vue'
+import CashflowReport from './pages/CashflowReport.vue'
 
 const routes = [
   {
@@ -303,6 +304,12 @@ const routes = [
     name: 'MaterialTransferReport',
     component: MaterialTransferReport,
     meta: { title: 'Material Transfer Report' },
+  },
+  {
+    path: '/cashflow-report',
+    name: 'CashflowReport',
+    component: CashflowReport,
+    meta: { title: 'Cashflow Report' },
   },
   {
     path: '/loading-receipt',
