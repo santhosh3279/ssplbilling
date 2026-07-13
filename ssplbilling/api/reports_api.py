@@ -924,50 +924,37 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                         b["cost_center"] = "No Cost Center"
 
         # Fetch Direct Expenses
-        direct_expense_groups = frappe.get_all(
-                "Account",
-                filters={"account_name": ["like", "Direct Expense%"], "is_group": 1},
-                fields=["name", "lft", "rgt"],
-        )
-        direct_expense_accounts = []
-        for acc in direct_expense_groups:
-                children = frappe.get_all(
-                        "Account",
-                        filters={"lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0},
-                        fields=["name"],
-                )
-                direct_expense_accounts.extend([c.name for c in children])
-
+        # Fetch Direct Expenses (Purchase Invoice data by cost center)
         direct_expense_data = {}
         direct_heads = set()
-        if direct_expense_accounts:
-                direct_expenses = frappe.db.sql(
-                        """
-                        SELECT
-                                cost_center,
-                                account,
-                                SUM(debit - credit) as amount
-                        FROM
-                                `tabGL Entry`
-                        WHERE
-                                posting_date BETWEEN %s AND %s
-                                AND account IN %s
-                                AND is_cancelled = 0
-                        GROUP BY
-                                cost_center, account
-                        """,
-                        (from_date, to_date, tuple(direct_expense_accounts)),
-                        as_dict=1,
-                )
-                for de in direct_expenses:
-                        cc = de["cost_center"] or "No Cost Center"
-                        acc = de["account"]
-                        amount = float(de["amount"] or 0)
-                        if amount != 0:
-                                direct_heads.add(acc)
-                                if cc not in direct_expense_data:
+        direct_expenses = frappe.db.sql(
+                """
+                SELECT
+                        pii.cost_center,
+                        pii.expense_account as account,
+                        SUM(pii.base_net_amount) as amount
+                FROM
+                        `tabPurchase Invoice Item` pii
+                INNER JOIN
+                        `tabPurchase Invoice` pi ON pi.name = pii.parent
+                WHERE
+                        pi.posting_date BETWEEN %s AND %s
+                        AND pi.docstatus = 1
+                GROUP BY
+                        pii.cost_center, pii.expense_account
+                """,
+                (from_date, to_date),
+                as_dict=1,
+        )
+        for de in direct_expenses:
+                cc = de["cost_center"] or "No Cost Center"
+                acc = de["account"]
+                amount = float(de["amount"] or 0)
+                if amount != 0:
+                        direct_heads.add(acc)
+                        if cc not in direct_expense_data:
                                         direct_expense_data[cc] = {}
-                                direct_expense_data[cc][acc] = amount
+                        direct_expense_data[cc][acc] = amount
 
         # Fetch Indirect Expenses
         indirect_expense_groups = frappe.get_all(
@@ -1047,35 +1034,34 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
         expenses_report_data = list(expense_ccs.values())
         expenses_report_data.sort(key=lambda x: x["total_expense"], reverse=True)
 
-        # Entry-level direct expense details (particulars) for Excel export
-        direct_expense_entries = []
-        if direct_expense_accounts:
-                direct_expense_entries = frappe.db.sql(
-                        """
-                        SELECT
-                                cost_center,
-                                posting_date,
-                                voucher_type,
-                                voucher_no,
-                                account,
-                                against,
-                                remarks,
-                                (debit - credit) as amount
-                        FROM
-                                `tabGL Entry`
-                        WHERE
-                                posting_date BETWEEN %s AND %s
-                                AND account IN %s
-                                AND is_cancelled = 0
-                        ORDER BY
-                                cost_center, account, posting_date, voucher_no
-                        """,
-                        (from_date, to_date, tuple(direct_expense_accounts)),
-                        as_dict=1,
-                )
-                for e in direct_expense_entries:
-                        e["cost_center"] = e["cost_center"] or "No Cost Center"
-                        e["posting_date"] = str(e["posting_date"] or "")
+        # Entry-level direct expense details (particulars from Purchase Invoices) for Excel export
+        direct_expense_entries = frappe.db.sql(
+                """
+                SELECT
+                        pii.cost_center,
+                        pi.posting_date,
+                        'Purchase Invoice' as voucher_type,
+                        pi.name as voucher_no,
+                        pii.expense_account as account,
+                        pi.supplier as against,
+                        pi.remarks,
+                        pii.base_net_amount as amount
+                FROM
+                        `tabPurchase Invoice Item` pii
+                INNER JOIN
+                        `tabPurchase Invoice` pi ON pi.name = pii.parent
+                WHERE
+                        pi.posting_date BETWEEN %s AND %s
+                        AND pi.docstatus = 1
+                ORDER BY
+                        pii.cost_center, pii.expense_account, pi.posting_date, pi.name
+                """,
+                (from_date, to_date),
+                as_dict=1,
+        )
+        for e in direct_expense_entries:
+                e["cost_center"] = e["cost_center"] or "No Cost Center"
+                e["posting_date"] = str(e["posting_date"] or "")
 
         # Fetch Sales Invoice Items details for profit report
         profit_results = frappe.db.sql(
