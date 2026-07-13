@@ -799,7 +799,7 @@ def get_income_accounts():
 
 
 @frappe.whitelist()
-def get_cost_center_sale_report(from_date=None, to_date=None):
+def get_cost_center_sale_report(from_date=None, to_date=None, company=None):
         """
         Get sale report grouped by cost center from direct income accounts.
         Preset to today if dates are not provided.
@@ -808,6 +808,10 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                 from_date = frappe.utils.today()
         if not to_date:
                 to_date = frappe.utils.today()
+        if not company:
+                company = frappe.defaults.get_user_default("company") or frappe.defaults.get_global_default("company")
+        if not company:
+                company = frappe.db.get_single_value('Global Defaults', 'default_company') or frappe.get_all("Company", limit=1, pluck="name")[0]
 
         # Find accounts under 'Direct Income' group
         direct_income_groups = frappe.get_all(
@@ -855,13 +859,14 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                                 gle.posting_date BETWEEN %s AND %s
                                 AND gle.account IN %s
                                 AND gle.is_cancelled = 0
+                                AND gle.company = %s
                 ) t
                 GROUP BY
                         cost_center, selling_price_list
                 ORDER BY
                         cost_center, total_amount DESC
         """,
-                (from_date, to_date, tuple(account_list)),
+                (from_date, to_date, tuple(account_list), company),
                 as_dict=1,
         )
 
@@ -908,12 +913,13 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                         gle.posting_date BETWEEN %s AND %s
                         AND gle.account IN %s
                         AND gle.is_cancelled = 0
+                        AND gle.company = %s
                 GROUP BY
                         gle.cost_center, gle.voucher_no
                 ORDER BY
                         gle.cost_center, gle.voucher_no
         """,
-                (from_date, to_date, tuple(account_list)),
+                (from_date, to_date, tuple(account_list), company),
                 as_dict=1,
         )
 
@@ -940,10 +946,11 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                 WHERE
                         pi.posting_date BETWEEN %s AND %s
                         AND pi.docstatus = 1
+                        AND pi.company = %s
                 GROUP BY
                         pii.cost_center, pii.expense_account
                 """,
-                (from_date, to_date),
+                (from_date, to_date, company),
                 as_dict=1,
         )
         for de in direct_expenses:
@@ -986,10 +993,11 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                                 posting_date BETWEEN %s AND %s
                                 AND account IN %s
                                 AND is_cancelled = 0
+                                AND company = %s
                         GROUP BY
                                 cost_center, account
                         """,
-                        (from_date, to_date, tuple(indirect_expense_accounts)),
+                        (from_date, to_date, tuple(indirect_expense_accounts), company),
                         as_dict=1,
                 )
                 for ie in indirect_expenses:
@@ -1053,10 +1061,11 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                 WHERE
                         pi.posting_date BETWEEN %s AND %s
                         AND pi.docstatus = 1
+                        AND pi.company = %s
                 ORDER BY
                         pii.cost_center, pii.expense_account, pi.posting_date, pi.name
                 """,
-                (from_date, to_date),
+                (from_date, to_date, company),
                 as_dict=1,
         )
         for e in direct_expense_entries:
@@ -1078,10 +1087,11 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                 WHERE
                         si.posting_date BETWEEN %s AND %s
                         AND si.docstatus = 1
+                        AND si.company = %s
                 GROUP BY
                         sii.cost_center, si.selling_price_list
                 """,
-                (from_date, to_date),
+                (from_date, to_date, company),
                 as_dict=1,
         )
 
@@ -1136,12 +1146,13 @@ def get_cost_center_sale_report(from_date=None, to_date=None):
                 WHERE
                         si.posting_date BETWEEN %s AND %s
                         AND si.docstatus = 1
+                        AND si.company = %s
                 GROUP BY
                         sii.cost_center, si.selling_price_list, sii.item_code, sii.item_name
                 ORDER BY
                         sii.cost_center, si.selling_price_list, sales_amount DESC
                 """,
-                (from_date, to_date),
+                (from_date, to_date, company),
                 as_dict=1,
         )
 
@@ -1451,4 +1462,9 @@ def get_material_transfer_report(from_date=None, to_date=None):
 		"from_date": from_date,
 		"to_date": to_date
 	}
+
+
+@frappe.whitelist()
+def get_companies():
+	return frappe.get_all("Company", fields=["name"])
 

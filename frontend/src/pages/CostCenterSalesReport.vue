@@ -16,6 +16,19 @@
           </div>
         </div>
         <div class="flex items-center gap-4">
+          <!-- Company Selector -->
+          <div class="flex items-center gap-2 bg-[var(--color-bg)]/50 rounded-xl border border-[var(--color-border)] p-1">
+            <span class="text-[var(--color-text-muted)] text-base font-semibold px-2 uppercase tracking-wider">Company</span>
+            <select
+              v-model="selectedCompany"
+              class="bg-transparent border-none text-base text-[var(--color-text)] focus:ring-0 px-2 py-1 font-semibold outline-none"
+            >
+              <option v-for="c in companyList" :key="c" :value="c" class="bg-[var(--color-surface)] text-[var(--color-text)]">
+                {{ c }}
+              </option>
+            </select>
+          </div>
+
           <!-- Date Presets -->
           <div class="flex items-center gap-2">
             <button
@@ -406,9 +419,9 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getCostCenterSaleReport } from '../api.js'
+import { getCostCenterSaleReport, getCompanies } from '../api.js'
 import { utils, writeFile } from 'xlsx'
 
 const router = useRouter()
@@ -419,6 +432,8 @@ const reportData = ref([])
 const priceLists = ref([])
 const billsData = ref([])
 const expensesData = ref([])
+const companyList = ref([])
+const selectedCompany = ref(localStorage.getItem('wb-company') || '')
 const directExpenseEntries = ref([])
 const directExpenseHeads = ref([])
 const indirectExpenseHeads = ref([])
@@ -477,7 +492,7 @@ async function fetchData() {
   loading.value = true
   error.value = ''
   try {
-    const res = await getCostCenterSaleReport(fromDate.value, toDate.value)
+    const res = await getCostCenterSaleReport(fromDate.value, toDate.value, selectedCompany.value)
     reportData.value = res.report_data || []
     priceLists.value = res.price_lists || []
     billsData.value = res.bills_data || []
@@ -867,8 +882,25 @@ function exportToExcel() {
   writeFile(wb, `CostCenterSaleReport_${fromDate.value}_to_${toDate.value}.xlsx`)
 }
 
-onMounted(() => {
+onMounted(async () => {
+  try {
+    const list = await getCompanies()
+    companyList.value = list.map(c => c.name)
+    if (!selectedCompany.value && companyList.value.length > 0) {
+      selectedCompany.value = companyList.value[0]
+      localStorage.setItem('wb-company', selectedCompany.value)
+    }
+  } catch (e) {
+    console.error('Failed to load companies:', e)
+  }
   fetchData()
+})
+
+watch(selectedCompany, (newVal) => {
+  if (newVal) {
+    localStorage.setItem('wb-company', newVal)
+    fetchData()
+  }
 })
 </script>
 
