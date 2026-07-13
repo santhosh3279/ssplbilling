@@ -332,6 +332,11 @@ const formPartyType  = ref('Customer') // 'Customer' | 'Supplier' | 'Employee'
 const newCustomerName = ref('')
 const hideSecondary = ref(props.hideSecondary)
 
+const savedQuery = ref('')
+const savedActiveType = ref('All')
+const savedSelectedName = ref(null)
+const shouldRestoreState = ref(false)
+
 // Update internal state if prop changes
 watch(() => props.hideSecondary, (val) => {
   hideSecondary.value = val
@@ -464,7 +469,11 @@ const results = computed(() => {
   return applyTopThreeSubSort(filtered).slice(0, 100)
 })
 
-watch([query, activeType], () => { selectedIdx.value = 0 })
+watch([query, activeType], () => {
+  if (!shouldRestoreState.value) {
+    selectedIdx.value = 0
+  }
+})
 
 watch(() => props.initialType, (val) => { activeType.value = val })
 
@@ -556,6 +565,12 @@ function handleSelect(item) {
 function handleDateConfirm(dates) {
   const item = results.value[selectedIdx.value]
   if (item) {
+    // Save state before closing to open General Ledger
+    savedQuery.value = query.value
+    savedActiveType.value = activeType.value
+    savedSelectedName.value = item.name
+    shouldRestoreState.value = true
+
     // Date confirmation now always results in opening the General Ledger subwindow (only triggered via F4)
     showDateModal.value = false
     isGlMode.value = false
@@ -611,8 +626,30 @@ watch(selectedIdx, async (idx) => {
 })
 
 watch(() => props.show, (val) => {
-  if (val) { query.value = props.initialQuery || ''; activeType.value = props.initialType; if (!props.overrideLedgers) preloadLedger(); focus() }
-  else closeSubForm()
+  if (val) {
+    if (shouldRestoreState.value) {
+      query.value = savedQuery.value
+      activeType.value = savedActiveType.value
+      
+      nextTick(() => {
+        if (savedSelectedName.value) {
+          const idx = results.value.findIndex(c => c.name === savedSelectedName.value)
+          if (idx !== -1) {
+            selectedIdx.value = idx
+          }
+        }
+        shouldRestoreState.value = false
+      })
+    } else {
+      query.value = props.initialQuery || ''
+      activeType.value = props.initialType
+    }
+    
+    if (!props.overrideLedgers) preloadLedger()
+    focus()
+  } else {
+    closeSubForm()
+  }
 })
 
 onMounted(() => {
