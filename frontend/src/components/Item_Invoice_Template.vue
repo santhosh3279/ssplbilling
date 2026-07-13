@@ -75,33 +75,39 @@
           <slot name="sidebar-list">
             <div v-if="sidebarLoading" class="p-4 text-center text-lg text-[var(--color-text-muted)]">Loading...</div>
             <div v-else-if="!sidebarItems.length" class="p-4 text-center text-lg text-[var(--color-text-muted)] italic">No bills found</div>
-            <div
-              v-for="(inv, idx) in sidebarItems"
-              :key="inv.name"
-              :ref="el => setSidebarItemRef(el, idx)"
-              tabindex="0"
-              @click="$emit('select-sidebar-item', inv)"
-              @keydown.enter="$emit('select-sidebar-item', inv)"
-              @keydown.up.prevent="navigateSidebar(idx, -1)"
-              @keydown.down.prevent="navigateSidebar(idx, 1)"
-              class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 transition-colors outline-none focus:bg-[var(--color-focus)] focus:border-l-2 focus:border-l-[var(--color-focus)]"
-              :class="{ 'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)]': selectedSidebarItemName === inv.name }"
-            >
-              <div class="flex items-center justify-between gap-1">
-                <div class="flex items-center gap-1.5 truncate min-w-0">
-                  <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'"></span>
-                  <span class="truncate font-mono text-2xl group-focus:text-[var(--color-text-on-focus)] group-focus:font-bold" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)] font-bold' : 'text-[var(--color-highlight)]'">{{ inv.name }}</span>
-                  <span v-if="inv.mop" class="text-[10px] px-1 rounded border uppercase font-bold shrink-0"
-                    :class="inv.mop === 'Cash' ? 'border-[var(--color-success)]/40 text-[var(--color-success)]' : 'border-[var(--color-warning)]/40 text-[var(--color-warning)]'">
-                    {{ inv.mop }}
-                  </span>
+            <template v-for="(inv, idx) in sidebarItems" :key="inv.name">
+              <div
+                v-if="sidebarSearch && (inv.posting_date || inv.transaction_date) && (idx === 0 || (inv.posting_date || inv.transaction_date) !== (sidebarItems[idx - 1].posting_date || sidebarItems[idx - 1].transaction_date))"
+                class="px-2 py-1 bg-[var(--color-lowlight)] border-b border-[var(--color-border)] text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky top-0 z-10"
+              >
+                {{ formatDate(inv.posting_date || inv.transaction_date) }}
+              </div>
+              <div
+                :ref="el => setSidebarItemRef(el, idx)"
+                tabindex="0"
+                @click="$emit('select-sidebar-item', inv)"
+                @keydown.enter="$emit('select-sidebar-item', inv)"
+                @keydown.up.prevent="navigateSidebar(idx, -1)"
+                @keydown.down.prevent="navigateSidebar(idx, 1)"
+                class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 transition-colors outline-none focus:bg-[var(--color-focus)] focus:border-l-2 focus:border-l-[var(--color-focus)]"
+                :class="{ 'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)]': selectedSidebarItemName === inv.name }"
+              >
+                <div class="flex items-center justify-between gap-1">
+                  <div class="flex items-center gap-1.5 truncate min-w-0">
+                    <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'"></span>
+                    <span class="truncate font-mono text-2xl group-focus:text-[var(--color-text-on-focus)] group-focus:font-bold" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)] font-bold' : 'text-[var(--color-highlight)]'">{{ inv.name }}</span>
+                    <span v-if="inv.mop" class="text-[10px] px-1 rounded border uppercase font-bold shrink-0"
+                      :class="inv.mop === 'Cash' ? 'border-[var(--color-success)]/40 text-[var(--color-success)]' : 'border-[var(--color-warning)]/40 text-[var(--color-warning)]'">
+                      {{ inv.mop }}
+                    </span>
+                  </div>
+                  <span class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.rounded_total ?? inv.grand_total }}</span>
                 </div>
-                <span class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.rounded_total ?? inv.grand_total }}</span>
+                <div class="truncate text-2xl group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+                  {{ inv.customer_name }}<template v-if="inv.custom_customer_name"> ({{ inv.custom_customer_name }})</template>
+                </div>
               </div>
-              <div class="truncate text-2xl group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                {{ inv.customer_name }}<template v-if="inv.custom_customer_name"> ({{ inv.custom_customer_name }})</template>
-              </div>
-            </div>
+            </template>
           </slot>
         </div>
       </slot>
