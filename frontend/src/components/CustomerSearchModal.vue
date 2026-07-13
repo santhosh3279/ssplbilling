@@ -275,7 +275,7 @@
 </template>
 
 <script setup>
-import { ref, nextTick, watch, computed, onMounted } from 'vue'
+import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
@@ -652,6 +652,44 @@ watch(() => props.show, (val) => {
   }
 })
 
+function handleWindowKeyDown(e) {
+  if (!props.show) return
+
+  // If a subform/creator/date filter is open, let its inputs and shortcuts handle it
+  if (showNewForm.value || showEditForm.value || showDateModal.value) return
+
+  const target = e.target
+  const isInteractive = target && (
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.tagName === 'SELECT' ||
+    target.tagName === 'BUTTON' ||
+    target.isContentEditable
+  )
+
+  // If focus is already on an interactive element other than searchInput, don't hijack it
+  if (isInteractive && target !== searchInput.value) return
+
+  // printable keys
+  const isPrintable = e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey
+  const isBackspaceOrDelete = e.key === 'Backspace' || e.key === 'Delete'
+
+  if (isPrintable || isBackspaceOrDelete) {
+    if (document.activeElement !== searchInput.value) {
+      searchInput.value?.focus()
+    }
+    return
+  }
+
+  // navigation / actions
+  const navKeys = ['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', 'Escape', 'F2', 'F3', 'F4', 'F5', 'F7', 'PageUp']
+  if (navKeys.includes(e.key)) {
+    if (document.activeElement !== searchInput.value) {
+      handleGlobalKeydown(e)
+    }
+  }
+}
+
 onMounted(() => {
   if (props.show) {
     query.value = props.initialQuery || ''
@@ -659,6 +697,11 @@ onMounted(() => {
     if (!props.overrideLedgers) preloadLedger()
     focus()
   }
+  window.addEventListener('keydown', handleWindowKeyDown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleWindowKeyDown)
 })
 
 // ─── Sub-Form: open / close ───────────────────────────────────────────────────
