@@ -86,6 +86,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'StoreWiseItemSales',
   'FastMovingItems',
   'MaterialTransferReport',
+  'CashflowReport',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
@@ -103,6 +104,7 @@ export const ADMIN_ROUTES = new Set([
   'StoreWiseItemSales',
   'FastMovingItems',
   'MaterialTransferReport',
+  'CashflowReport',
   'IncentiveLedger',
   'IncentiveEntry',
   'CustomerEnquiry',
@@ -184,6 +186,7 @@ export function canAccessRoute(routeName) {
       allowed.add('StoreWiseItemSales')
       allowed.add('FastMovingItems')
       allowed.add('MaterialTransferReport')
+      allowed.add('CashflowReport')
     }
     return allowed.has(routeName)
   }
