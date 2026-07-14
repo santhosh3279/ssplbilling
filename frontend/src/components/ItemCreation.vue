@@ -250,7 +250,7 @@
                 <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Suppliers Mapping</label>
                 <button type="button" @click="addSupplierRow" class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors">+ Add Supplier</button>
               </div>
-              <div class="border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm">
+              <div class="border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
                 <table class="w-full border-collapse text-2xl">
                   <thead>
                     <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]">
