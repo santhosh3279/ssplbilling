@@ -17,6 +17,7 @@
       search-type="Sales"
       :price-list="defaultPriceList"
       :warehouse="defaultWarehouse"
+      :initial-query="itemSearchInitialQuery"
       @close="showItemSearchModal = false"
       @select="pickItem"
     />
@@ -89,6 +90,7 @@ const ledgerToDate = ref('')
 const stockLedgerItemCode = ref('')
 const stockLedgerFromDate = ref('')
 const stockLedgerToDate = ref('')
+const itemSearchInitialQuery = ref('')
 
 const outstandingParty = ref('')
 const outstandingPartyType = ref('Customer')
@@ -112,7 +114,8 @@ async function openCustomerSearch(type = 'All', purpose = 'ledger') {
   })
 }
 
-async function openItemSearch() {
+async function openItemSearch(itemCode = '') {
+  itemSearchInitialQuery.value = itemCode
   showItemSearchModal.value = true
   nextTick(() => {
     itemSearchModalRef.value?.closeSubForm()
@@ -175,7 +178,7 @@ function pickItem(item, dates) {
 
 function closeStockLedgerAndReturnToSearch() {
   showStockLedgerWindow.value = false
-  openItemSearch()
+  openItemSearch(stockLedgerItemCode.value)
 }
 
 function handleGlobalLedgerSearch(e) {
