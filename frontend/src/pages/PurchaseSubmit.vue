@@ -70,9 +70,9 @@
           </div>
           <div v-else class="px-3 pb-4 space-y-4">
             <div v-for="(bucket, idx) in invoicesByDate" :key="bucket.date" :class="{ 'mt-4': idx > 0 }" class="space-y-2">
-              <div class="sticky top-0 bg-[var(--color-surface)] py-1.5 px-2 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)] z-10 flex items-center justify-between">
+              <div class="sticky top-0 bg-[var(--color-highlight)] py-[3px] px-[4px] text-[18px] font-bold uppercase tracking-wider text-[var(--color-text-on-highlight)] border-b border-[var(--color-border)] z-10 flex items-center justify-between">
                 <span>{{ bucket.formattedDate }}</span>
-                <span class="rounded bg-[var(--color-surface-raised)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-text-muted)] border border-[var(--color-border)]">
+                <span class="rounded bg-white/20 px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-text-on-highlight)] border border-white/10">
                   {{ bucket.invoices.length }}
                 </span>
               </div>
