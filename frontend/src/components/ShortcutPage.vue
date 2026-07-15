@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm" @click.self="$emit('close')">
+  <div v-if="show" class="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm">
     <div class="w-[720px] max-h-[85vh] overflow-y-auto rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl">
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 rounded-t-xl sticky top-0">

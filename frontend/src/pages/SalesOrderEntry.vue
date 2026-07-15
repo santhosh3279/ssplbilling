@@ -571,7 +571,6 @@
     <div
       v-if="showSeriesDropdown"
       class="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 backdrop-blur-sm"
-      @click.self="showSeriesDropdown = false"
       @keydown.escape.capture="showSeriesDropdown = false"
     >
       <div class="w-[360px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl">
@@ -605,7 +604,7 @@
     </div>
 
     <!-- IMPORT OPTIONS MODAL -->
-    <div v-if="showImportModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showImportModal = false">
+    <div v-if="showImportModal" class="fixed inset-0 z-[110] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div class="w-[400px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl">
         <div class="bg-[var(--color-info)]/20 px-6 py-4 border-b border-[var(--color-info)]/30">
           <div class="text-xl font-bold text-[var(--color-text)]">Import Items</div>
@@ -639,7 +638,7 @@
     <input type="file" ref="fileInput" class="hidden" @change="handleImportFile" accept=".csv,.xlsx,.xls" />
 
     <!-- DISCARD ORDER MODAL -->
-    <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="showDiscardModal = false">
+    <div v-if="showDiscardModal" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
       <div class="w-[450px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl">
         <div class="bg-[var(--color-warning)]/20 px-6 py-6 flex items-center gap-4 border-b border-[var(--color-warning)]/30">
           <div class="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--color-warning)]/40 text-2xl text-[var(--color-warning)]">⚠️</div>

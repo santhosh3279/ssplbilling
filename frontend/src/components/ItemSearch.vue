@@ -2,7 +2,6 @@
   <div
     v-if="show"
     class="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm outline-none"
-    @click.self="$emit('close')"
     tabindex="-1"
   >
     <div class="flex h-[90vh] w-[90vw] flex-col rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden relative">

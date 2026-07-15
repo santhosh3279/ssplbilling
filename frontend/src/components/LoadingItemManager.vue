@@ -2,7 +2,6 @@
   <div
     v-if="show"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm outline-none"
-    @click.self="$emit('close')"
   >
     <div class="flex h-[90vh] w-[80vw] flex-col rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden relative">
       <!-- Header -->
@@ -73,7 +72,6 @@
       <div
         v-if="showCreateForm"
         class="absolute inset-0 z-[60] flex items-center justify-center bg-black/60"
-        @click.self="showCreateForm = false"
       >
         <div class="w-[500px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden">
           <div class="bg-[var(--color-surface-raised)] px-6 py-4 border-b border-[var(--color-border)] flex justify-between items-center">

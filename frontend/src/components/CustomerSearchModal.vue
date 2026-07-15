@@ -2,7 +2,6 @@
   <div
     v-if="show"
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 outline-none"
-    @click.self="handleEsc"
     @keydown="handleGlobalKeydown"
     tabindex="-1"
   >
@@ -226,7 +225,6 @@
       <div
         v-if="showNewForm || showEditForm || showDateModal"
         class="absolute inset-0 z-[60] flex items-center justify-center bg-black/70"
-        @click.self="handleEsc"
       >
         <!-- Date Range Sub-window -->
         <DateFilter

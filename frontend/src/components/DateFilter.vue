@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/70" @click.self="$emit('close')">
+  <div v-if="show" class="absolute inset-0 z-[60] flex items-center justify-center bg-black/70">
     <div class="w-[400px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden">
       <div class="border-b border-[var(--color-border)] px-5 py-4 bg-[var(--color-surface)]">
         <div class="text-xl font-bold text-[var(--color-text)]">Select Date Range</div>

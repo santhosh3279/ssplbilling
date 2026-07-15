@@ -1,7 +1,6 @@
 <template>
   <div
     class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]"
-    @click.self="$emit('close')"
   >
     <div class="w-[800px] overflow-hidden rounded-2xl bg-[var(--color-surface)] shadow-2xl border border-[var(--color-border)]">
 

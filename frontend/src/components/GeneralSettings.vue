@@ -1,5 +1,5 @@
 <template>
-  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" @click.self="$emit('close')">
+  <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
     <div class="w-[820px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl">
 
       <!-- Header -->
@@ -264,7 +264,7 @@
     </div>
 
     <!-- Debug Modal -->
-    <div v-if="showDebugModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm" @click.self="showDebugModal = false">
+    <div v-if="showDebugModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div class="rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl flex flex-col max-h-[80vh]" :class="debugMode === 'vars' ? 'w-[600px]' : 'w-[400px]'">
         <div class="border-b border-[var(--color-border)] px-5 py-4 flex items-center justify-between bg-[var(--color-surface)] rounded-t-xl">
           <div class="text-sm font-semibold text-[var(--color-text)]">

@@ -324,8 +324,7 @@
 
   <!-- LINKED DOCUMENTS POPUP -->
   <div v-if="linkedPopup.show"
-    class="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 backdrop-blur-sm"
-    @click.self="linkedPopup.show = false">
+    class="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 backdrop-blur-sm">
     <div class="w-full max-w-2xl rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-2xl flex flex-col overflow-hidden">
 
       <!-- popup header -->
