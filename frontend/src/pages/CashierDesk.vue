@@ -80,34 +80,22 @@
         <div class="p-2 border-b border-[var(--color-border)] space-y-2 bg-[var(--color-surface)]/30">
           <!-- Date & Toggle Section -->
           <div class="flex flex-col gap-2">
-            <!-- Date Navigator -->
-            <div class="flex items-center gap-2">
-              <div class="flex-1 flex items-center justify-between gap-2 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-1">
-                <button @click="adjustDate(-1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                </button>
-                <div class="flex-1 text-center relative">
-                  <div class="text-[18px] font-black text-[var(--color-text)] uppercase pointer-events-none">
-                    {{ formatDate(filterDate) }}
-                  </div>
-                  <input
-                    ref="dateInput"
-                    type="date"
-                    v-model="filterDate"
-                    class="absolute inset-0 opacity-0 cursor-pointer w-full"
-                    @change="loadInvoices"
-                  />
-                </div>
-                <button @click="adjustDate(1)" class="rounded-lg p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                </button>
+            <!-- Sidebar Title Section -->
+            <div class="flex items-center justify-between bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-1 px-3 h-10">
+              <div class="flex items-center gap-2">
+                <span class="text-sm font-black uppercase tracking-wider text-[var(--color-text)]">
+                  Draft Bills
+                </span>
+                <span class="flex h-5 items-center justify-center rounded-full bg-[var(--color-focus)]/10 px-2 text-[10px] font-black text-[var(--color-info)]">
+                  {{ invoices.length }}
+                </span>
               </div>
               <button
                 @click="loadInvoices"
-                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--color-highlight)]/20 text-[var(--color-info)] border border-[var(--color-focus)]/30 hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)] transition-all active:scale-90"
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-highlight)]/20 text-[var(--color-info)] border border-[var(--color-focus)]/30 hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)] transition-all active:scale-90"
                 title="Sync Bills"
               >
-                <svg :class="{'animate-spin': loadingList}" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+                <svg :class="{'animate-spin': loadingList}" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
               </button>
             </div>
 
@@ -167,53 +155,68 @@
               <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>
             </div>
             <div class="text-[17.5px] font-bold text-[var(--color-text-muted)]">No bills found</div>
-            <div class="text-[12.5px] text-[var(--color-text-muted)] uppercase tracking-widest mt-1.5">Try changing the date</div>
+            <div class="text-[12.5px] text-[var(--color-text-muted)] uppercase tracking-widest mt-1.5">Pending drafts will appear here</div>
           </div>
-          <div v-else class="p-2.5 space-y-1.5">
-            <button
-              v-for="inv in invoices"
-              :key="inv.name"
-              :data-inv-name="inv.name"
-              @click="selectInvoice(inv)"
-              class="group flex w-full flex-col rounded-xl p-2 text-left transition-all active:scale-[0.98]"
-              :class="highlightedInvoiceName === inv.name
-                ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] shadow-lg'
-                : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)]'"
-            >
-              <div class="flex items-center justify-between mb-0.5">
-                <span
-                  class="rounded px-2 py-0.5 text-[11.25px] font-black uppercase tracking-wider"
-                  :class="highlightedInvoiceName === inv.name
-                    ? 'bg-[var(--color-focus)]/50 text-[var(--color-text-on-focus)]'
-                    : inv.docstatus === 0 
-                      ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]' 
-                      : (inv.outstanding_amount <= 0.01 ? 'bg-[var(--color-success)]/40 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/40 text-[var(--color-danger)]')"
-                >
-                  {{ inv.docstatus === 0 ? 'DRAFT' : (inv.outstanding_amount <= 0.01 ? 'PAID' : 'UNPAID') }}
+          <div v-else class="p-2.5 space-y-4">
+            <div v-for="bucket in bucketedInvoices" :key="bucket.date" class="space-y-1.5 select-none">
+              <!-- Date Bucket Header -->
+              <div class="flex items-center justify-between px-2.5 py-1 bg-[var(--color-surface-raised)]/35 rounded-lg border border-[var(--color-border)]/50">
+                <span class="text-[11px] font-black uppercase tracking-wider text-[var(--color-info)]">
+                  {{ bucket.label }}
                 </span>
-                <span v-if="inv.mop"
-                  class="rounded px-2 py-0.5 text-[11.25px] font-black uppercase tracking-wider border ml-1"
-                  :class="highlightedInvoiceName === inv.name
-                    ? 'border-white/30 text-white'
-                    : inv.mop === 'Cash' ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/20 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/20 text-[var(--color-warning)]'"
-                >
-                  {{ inv.mop }}
+                <span class="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
+                  {{ bucket.invoices.length }} {{ bucket.invoices.length === 1 ? 'bill' : 'bills' }}
                 </span>
-                <div class="flex items-center gap-3">
-                  <span class="text-[11.25px] font-black uppercase tracking-widest opacity-70">{{ inv.items_count || 0 }} items</span>
-                  <span class="text-[15px] font-medium" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                    {{ formatDate(inv.posting_date) }}
-                  </span>
-                </div>
               </div>
-              <div class="flex items-center justify-between mb-0.5">
-                <div class="text-[17.5px] font-bold leading-tight" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
-                <div class="font-mono text-[27px] font-bold shrink-0" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : (((inv.rounded_total || inv.grand_total) < 0) ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">{{ fmt(inv.rounded_total || inv.grand_total) }}</div>
+              
+              <!-- Invoices List -->
+              <div class="space-y-1.5">
+                <button
+                  v-for="inv in bucket.invoices"
+                  :key="inv.name"
+                  :data-inv-name="inv.name"
+                  @click="selectInvoice(inv)"
+                  class="group flex w-full flex-col rounded-xl p-2 text-left transition-all active:scale-[0.98]"
+                  :class="highlightedInvoiceName === inv.name
+                    ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] shadow-lg'
+                    : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)]'"
+                >
+                  <div class="flex items-center justify-between mb-0.5">
+                    <span
+                      class="rounded px-2 py-0.5 text-[11.25px] font-black uppercase tracking-wider"
+                      :class="highlightedInvoiceName === inv.name
+                        ? 'bg-[var(--color-focus)]/50 text-[var(--color-text-on-focus)]'
+                        : inv.docstatus === 0 
+                          ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]' 
+                          : (inv.outstanding_amount <= 0.01 ? 'bg-[var(--color-success)]/40 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/40 text-[var(--color-danger)]')"
+                    >
+                      {{ inv.docstatus === 0 ? 'DRAFT' : (inv.outstanding_amount <= 0.01 ? 'PAID' : 'UNPAID') }}
+                    </span>
+                    <span v-if="inv.mop"
+                      class="rounded px-2 py-0.5 text-[11.25px] font-black uppercase tracking-wider border ml-1"
+                      :class="highlightedInvoiceName === inv.name
+                        ? 'border-white/30 text-white'
+                        : inv.mop === 'Cash' ? 'bg-[var(--color-success)]/10 border-[var(--color-success)]/20 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/10 border-[var(--color-warning)]/20 text-[var(--color-warning)]'"
+                    >
+                      {{ inv.mop }}
+                    </span>
+                    <div class="flex items-center gap-3">
+                      <span class="text-[11.25px] font-black uppercase tracking-widest opacity-70">{{ inv.items_count || 0 }} items</span>
+                      <span v-if="formatTime(inv.posting_time)" class="text-[13px] font-medium" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+                        {{ formatTime(inv.posting_time) }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="flex items-center justify-between mb-0.5">
+                    <div class="text-[17.5px] font-bold leading-tight" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ inv.name }}</div>
+                    <div class="font-mono text-[27px] font-bold shrink-0" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : (((inv.rounded_total || inv.grand_total) < 0) ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">{{ fmt(inv.rounded_total || inv.grand_total) }}</div>
+                  </div>
+                  <div class="truncate text-[16.5px] mt-0.5" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+                    {{ inv.customer }}
+                  </div>
+                </button>
               </div>
-              <div class="truncate text-[16.5px] mt-0.5" :class="highlightedInvoiceName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                {{ inv.customer }}
-              </div>
-            </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -450,6 +453,7 @@
                   </button>
                   <div class="flex-1 text-center">
                     <input
+                      ref="postingDateInput"
                       type="date"
                       v-model="postingDate"
                       class="bg-transparent border-none text-xs font-black text-[var(--color-text)] focus:ring-0 p-0 text-center cursor-pointer w-full"
@@ -839,10 +843,47 @@ const discountInput = ref(null)
 const remarksInput = ref(null)
 const dueDateInput = ref(null)
 const cardRefInput = ref(null)
-const dateInput = ref(null)
+const postingDateInput = ref(null)
 
 // ==================== COMPUTED ====================
 const { partyLinks } = useLedgerCache()
+
+const bucketedInvoices = computed(() => {
+  const groups = {}
+  
+  for (const inv of invoices.value) {
+    const d = inv.posting_date || 'Unknown Date'
+    if (!groups[d]) {
+      groups[d] = []
+    }
+    groups[d].push(inv)
+  }
+
+  const today = getTodayIST()
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterdayStr = yesterday.toISOString().slice(0, 10)
+
+  return Object.keys(groups)
+    .sort((a, b) => b.localeCompare(a))
+    .map(dateKey => {
+      let label = ''
+      if (dateKey === today) {
+        label = 'Today'
+      } else if (dateKey === yesterdayStr) {
+        label = 'Yesterday'
+      } else if (dateKey === 'Unknown Date') {
+        label = 'Unknown Date'
+      } else {
+        label = formatDate(dateKey)
+      }
+      return {
+        date: dateKey,
+        label,
+        invoices: groups[dateKey]
+      }
+    })
+})
 
 const isSecondaryParty = computed(() => {
   if (!selectedInvoice.value?.customer) return false
@@ -973,7 +1014,16 @@ function handleCashierEntrySaved(data) {
 async function loadInvoices() {
   loadingList.value = true
   try {
-    invoices.value = await fetchDraftInvoices(searchQuery.value, 50, filterDate.value, sidebarSeries.value.join(','))
+    const res = await fetchDraftInvoices(searchQuery.value, 500, '', sidebarSeries.value.join(','))
+    res.sort((a, b) => {
+      const dateA = a.posting_date || ''
+      const dateB = b.posting_date || ''
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA)
+      }
+      return b.name.localeCompare(a.name)
+    })
+    invoices.value = res
     if (invoices.value.length > 0 && !highlightedInvoiceName.value) {
       highlightedInvoiceName.value = invoices.value[0].name
     }
@@ -1689,8 +1739,12 @@ const handleSeriesClickAway = (e) => {
   }
 }
 
+const handleGlobalDateFocus = () => {
+  postingDateInput.value?.focus()
+}
+
 onMounted(() => {
-  window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus())
+  window.addEventListener('wb-global-date-focus', handleGlobalDateFocus)
   window.addEventListener('click', handleSeriesClickAway)
   
   initAccountsFromLocalStorage()
@@ -1709,7 +1763,7 @@ onMounted(() => {
 let _billPanelCleanup = null
 
 onUnmounted(() => {
-  window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
+  window.removeEventListener('wb-global-date-focus', handleGlobalDateFocus);
   window.removeEventListener('click', handleSeriesClickAway)
   window.removeEventListener('keydown', handleKeydown)
   _billPanelCleanup?.()
