@@ -158,25 +158,25 @@
             <div class="text-[12.5px] text-[var(--color-text-muted)] uppercase tracking-widest mt-1.5">Pending drafts will appear here</div>
           </div>
           <div v-else class="p-2.5 space-y-4">
-            <div v-for="bucket in bucketedInvoices" :key="bucket.date" class="space-y-1.5 select-none">
+            <div v-for="bucket in bucketedInvoices" :key="bucket.date" class="space-y-1 select-none">
               <!-- Date Bucket Header -->
-              <div class="flex items-center justify-between px-2.5 py-1 bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] rounded-lg shadow-sm">
-                <span class="text-[11px] font-black uppercase tracking-wider">
+              <div class="flex items-center justify-between px-2.5 py-0.5 bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] rounded-lg shadow-sm">
+                <span class="text-[16.5px] font-black uppercase tracking-wider">
                   {{ bucket.label }}
                 </span>
-                <span class="text-[10px] font-black uppercase tracking-widest opacity-90">
+                <span class="text-[12px] font-black uppercase tracking-widest opacity-90">
                   {{ bucket.invoices.length }} {{ bucket.invoices.length === 1 ? 'bill' : 'bills' }}
                 </span>
               </div>
               
               <!-- Invoices List -->
-              <div class="space-y-1.5">
+              <div class="space-y-1">
                 <button
                   v-for="inv in bucket.invoices"
                   :key="inv.name"
                   :data-inv-name="inv.name"
                   @click="selectInvoice(inv)"
-                  class="group flex w-full flex-col rounded-xl p-2 text-left transition-all active:scale-[0.98]"
+                  class="group flex w-full flex-col rounded-xl p-1 text-left transition-all active:scale-[0.98]"
                   :class="highlightedInvoiceName === inv.name
                     ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] shadow-lg'
                     : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)]'"
