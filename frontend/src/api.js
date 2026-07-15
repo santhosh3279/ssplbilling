@@ -643,11 +643,12 @@ export async function searchEmployees(query = "") {
 /**
  * Fetch Purchase Invoices.
  */
-export async function fetchPurchaseInvoices(query = "", limit = 50, postingDate = "") {
+export async function fetchPurchaseInvoices(query = "", limit = 50, postingDate = "", draftOnly = false) {
   return frappeGet("ssplbilling.api.purchase_api.get_purchase_invoices", {
     query,
     limit,
     ...(postingDate && { posting_date: postingDate }),
+    ...(draftOnly && { draft_only: true }),
   });
 }
 

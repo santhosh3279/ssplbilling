@@ -35,47 +35,26 @@
       
       <!-- LEFT PANEL: INVOICE LIST -->
       <aside class="flex w-80 shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
-        <div class="p-4 space-y-3">
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--color-text-muted)]">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-            </span>
-            <input
-              v-model="searchQuery"
-              @input="debouncedSearch"
-              type="text"
-              placeholder="Search PINV or supplier..."
-              class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-9 pr-4 text-[15px] text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)] transition-all"
-            />
-          </div>
-          <div class="flex gap-1 items-center">
-            <button
-              @click="adjustDate(-1)"
-              class="rounded-lg bg-[var(--color-surface-raised)] p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-all border border-[var(--color-border)]"
-              title="Previous Day"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
-            <input
-              ref="dateInput"
-              v-model="filterDate"
-              @change="loadInvoices"
-              type="date"
-              class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-[3px] text-[14px] text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
-            />
-            <button
-              @click="adjustDate(1)"
-              class="rounded-lg bg-[var(--color-surface-raised)] p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-all border border-[var(--color-border)]"
-              title="Next Day"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-            </button>
+        <div class="p-4">
+          <div class="flex gap-2">
+            <div class="relative flex-1">
+              <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--color-text-muted)]">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              </span>
+              <input
+                v-model="searchQuery"
+                @input="debouncedSearch"
+                type="text"
+                placeholder="Search PINV or supplier..."
+                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-9 pr-4 text-[15px] text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)] transition-all"
+              />
+            </div>
             <button
               @click="loadInvoices"
-              class="rounded-lg bg-[var(--color-surface-raised)] p-1.5 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-all border border-[var(--color-border)]"
+              class="rounded-lg bg-[var(--color-surface-raised)] px-3 text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-all border border-[var(--color-border)] flex items-center justify-center active:scale-95"
               title="Refresh List"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
             </button>
           </div>
         </div>
@@ -89,37 +68,39 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" class="mb-4 text-[var(--color-text-muted)]"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
             <span class="text-[17px] font-medium text-[var(--color-text-muted)]">No draft purchases found</span>
           </div>
-          <div v-else class="px-3 pb-4">
-            <button
-              v-for="inv in invoices"
-              :key="inv.name"
-              :data-inv-name="inv.name"
-              @click="selectInvoice(inv)"
-              class="mb-2 flex w-full flex-col gap-1 rounded-xl py-[5px] px-2 text-left transition-all outline-none group border shadow-sm"
-              :class="selectedInvoice?.name === inv.name
-                ? 'bg-[var(--color-warning)] border-[var(--color-warning)] ring-2 ring-amber-500/30'
-                : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border-[var(--color-border)]'"
-            >
-              <div class="flex items-start justify-between">
-                <span class="font-mono text-[16.5px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-warning)]'">
-                  {{ inv.name }}
-                </span>
-                <span class="text-[18px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-success)]'">
-                  {{ fmt(inv.rounded_total || inv.grand_total) }}
+          <div v-else class="px-3 pb-4 space-y-4">
+            <div v-for="(bucket, idx) in invoicesByDate" :key="bucket.date" :class="{ 'mt-4': idx > 0 }" class="space-y-2">
+              <div class="sticky top-0 bg-[var(--color-surface)] py-1.5 px-2 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)] z-10 flex items-center justify-between">
+                <span>{{ bucket.formattedDate }}</span>
+                <span class="rounded bg-[var(--color-surface-raised)] px-1.5 py-0.5 text-[10px] font-bold text-[var(--color-text-muted)] border border-[var(--color-border)]">
+                  {{ bucket.invoices.length }}
                 </span>
               </div>
-              <div class="truncate text-[21px] font-semibold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)]'">
-                {{ inv.supplier_name }}
+              <div class="space-y-2">
+                <button
+                  v-for="inv in bucket.invoices"
+                  :key="inv.name"
+                  :data-inv-name="inv.name"
+                  @click="selectInvoice(inv)"
+                  class="flex w-full flex-col gap-1 rounded-xl py-[5px] px-2 text-left transition-all outline-none group border shadow-sm"
+                  :class="selectedInvoice?.name === inv.name
+                    ? 'bg-[var(--color-warning)] border-[var(--color-warning)] ring-2 ring-amber-500/30'
+                    : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)] border-[var(--color-border)]'"
+                >
+                  <div class="flex items-start justify-between">
+                    <span class="font-mono text-[16.5px] font-bold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-warning)]'">
+                      {{ inv.name }}
+                    </span>
+                    <span class="text-[18px] font-bold font-mono" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-success)]'">
+                      {{ fmt(inv.rounded_total || inv.grand_total) }}
+                    </span>
+                  </div>
+                  <div class="truncate text-[21px] font-semibold" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)]'">
+                    {{ inv.supplier_name }}
+                  </div>
+                </button>
               </div>
-              <div class="flex items-center justify-between mt-1">
-                <span class="text-[12px] font-bold tracking-wider" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'">
-                  DRAFT
-                </span>
-                <span class="text-[12px] font-medium" :class="selectedInvoice?.name === inv.name ? 'text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'">
-                  {{ formatDate(inv.posting_date) }}
-                </span>
-              </div>
-            </button>
+            </div>
           </div>
         </div>
       </aside>
@@ -319,12 +300,6 @@ import PurchaseInvoice from './PurchaseInvoice.vue'
 import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 
 const router = useRouter()
-function getTodayIST() {
-  const date = new Date()
-  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
-  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
-  return formatter.format(date)
-}
 
 // --- STATE ---
 const invoices = ref([])
@@ -348,8 +323,6 @@ useSubwindowWatcher(showBarcodeModal)
 useSubwindowWatcher(showModifyModal)
 
 const searchQuery = ref('')
-const filterDate = ref(getTodayIST())
-const dateInput = ref(null)
 
 const props = defineProps({ isSubWindow: Boolean })
 if (props.isSubWindow) useSubwindow()
@@ -392,6 +365,25 @@ const todayStr = computed(() => {
   })
 })
 
+const invoicesByDate = computed(() => {
+  const groups = {}
+  for (const inv of invoices.value) {
+    const date = inv.posting_date || 'Unknown Date'
+    if (!groups[date]) {
+      groups[date] = []
+    }
+    groups[date].push(inv)
+  }
+  
+  return Object.keys(groups)
+    .sort((a, b) => new Date(b) - new Date(a))
+    .map(date => ({
+      date,
+      formattedDate: formatDate(date),
+      invoices: groups[date]
+    }))
+})
+
 // --- METHODS ---
 function fmt(val) {
   return Number(val || 0).toLocaleString('en-IN', {
@@ -409,21 +401,20 @@ function formatDate(dateStr) {
 async function loadInvoices() {
   loadingList.value = true
   try {
-    // Backend filters for docstatus=0
-    const all = await fetchPurchaseInvoices(searchQuery.value, 50, filterDate.value)
-    invoices.value = all.filter(i => i.docstatus === 0)
+    const all = await fetchPurchaseInvoices(searchQuery.value, 500, '', true)
+    invoices.value = all.filter(i => i.docstatus === 0).sort((a, b) => {
+      const dateA = new Date(a.posting_date || 0)
+      const dateB = new Date(b.posting_date || 0)
+      if (dateA - dateB !== 0) {
+        return dateB - dateA
+      }
+      return b.name.localeCompare(a.name)
+    })
   } catch (e) {
     errorMsg.value = "Failed to load invoices: " + e.message
   } finally {
     loadingList.value = false
   }
-}
-
-function adjustDate(days) {
-  const d = new Date(filterDate.value)
-  d.setDate(d.getDate() + days)
-  filterDate.value = d.toISOString().slice(0, 10)
-  loadInvoices()
 }
 
 let searchTimeout = null
@@ -561,7 +552,6 @@ async function handleAllocations(allocations) {
 }
 
 onMounted(() => {
-  window.addEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   loadInvoices()
   // No series filter on this desk — refresh on any Purchase Invoice change.
   _billPanelCleanup = onBillPanelUpdate('Purchase Invoice', null, loadInvoices)
@@ -570,7 +560,6 @@ onMounted(() => {
 let _billPanelCleanup = null
 
 onUnmounted(() => {
-  window.removeEventListener('wb-global-date-focus', () => dateInput.value?.focus());
   _billPanelCleanup?.()
 })
 </script>
