@@ -241,8 +241,8 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	if si.docstatus == 0:
 		# Update posting date if provided or default to today
-		si.posting_date = posting_date
-		si.posting_time = frappe.utils.nowtime()
+		# si.posting_date = posting_date
+		# si.posting_time = frappe.utils.nowtime()
 
 		si.due_date = data.get("due_date") or posting_date
 		if str(si.due_date) < str(si.posting_date):
@@ -588,11 +588,11 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 		frappe.throw("Advances can only be updated for Draft invoices.")
 
 	# Update past dated bills to today
-	today_str = frappe.utils.today()
-	if str(si.posting_date) < today_str:
-		si.posting_date = today_str
-		si.due_date = today_str
-		si.posting_time = frappe.utils.nowtime()
+	# today_str = frappe.utils.today()
+	# if str(si.posting_date) < today_str:
+	# 	si.posting_date = today_str
+	# 	si.due_date = today_str
+	# 	si.posting_time = frappe.utils.nowtime()
 
 	# Double check due_date to prevent "Due Date cannot be before Posting Date"
 	if str(si.due_date) < str(si.posting_date):
