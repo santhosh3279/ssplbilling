@@ -77,7 +77,7 @@
             <div v-else-if="!sidebarItems.length" class="p-4 text-center text-lg text-[var(--color-text-muted)] italic">No bills found</div>
             <template v-for="(inv, idx) in sidebarItems" :key="inv.name">
               <div
-                v-if="sidebarSearch && (inv.posting_date || inv.transaction_date) && (idx === 0 || (inv.posting_date || inv.transaction_date) !== (sidebarItems[idx - 1].posting_date || sidebarItems[idx - 1].transaction_date))"
+                v-if="(sidebarSearch || draftOnly) && (inv.posting_date || inv.transaction_date) && (idx === 0 || (inv.posting_date || inv.transaction_date) !== (sidebarItems[idx - 1].posting_date || sidebarItems[idx - 1].transaction_date))"
                 class="px-2 py-1 bg-[var(--color-lowlight)] border-b border-[var(--color-border)] text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky top-0 z-10"
               >
                 {{ formatDate(inv.posting_date || inv.transaction_date) }}
