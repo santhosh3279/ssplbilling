@@ -248,9 +248,10 @@ def get_next_quotation_no(naming_series):
 def get_quotations(query="", limit=50, transaction_date=None, show_submitted=False):
 	"""Return list of Quotations for the sidebar."""
 	filters = {"quotation_to": "Customer"}
-	if transaction_date and not query:
+	is_submitted = frappe.parse_json(show_submitted) if isinstance(show_submitted, str) else show_submitted
+	if transaction_date and not query and is_submitted:
 		filters["transaction_date"] = transaction_date
-	if not (frappe.parse_json(show_submitted) if isinstance(show_submitted, str) else show_submitted):
+	if not is_submitted:
 		filters["docstatus"] = 0
 	else:
 		# never list cancelled (docstatus=2) quotations — they cannot be modified

@@ -33,8 +33,8 @@ def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None
 
     filters = [["docstatus", "!=", 2]]
 
-    # If no search query, restrict by date
-    if not query:
+    # If no search query and not draft_only, restrict by date
+    if not query and not draft_only:
         filters.append(["posting_date", "=", posting_date or frappe.utils.today()])
 
     if draft_only:

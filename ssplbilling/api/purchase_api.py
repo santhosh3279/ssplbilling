@@ -346,10 +346,10 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
     filters = [["docstatus", "!=", 2]]
     if company:
         filters.append(["company", "=", company])
-    if not query:
+    draft_only = frappe.parse_json(draft_only)
+    if not query and not draft_only:
         date_filter = posting_date or frappe.utils.today()
         filters.append(["posting_date", "=", date_filter])
-    draft_only = frappe.parse_json(draft_only)
     if draft_only:
         filters.append(["docstatus", "=", 0])
     

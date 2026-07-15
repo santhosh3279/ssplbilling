@@ -13,7 +13,7 @@ def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=Non
     if company:
         filters.append(["company", "=", company])
 
-    if not query:
+    if not query and not draft_only:
         filters.append(["posting_date", "=", posting_date or frappe.utils.today()])
 
     if draft_only:
