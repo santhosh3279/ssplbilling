@@ -160,11 +160,11 @@
           <div v-else class="p-2.5 space-y-4">
             <div v-for="bucket in bucketedInvoices" :key="bucket.date" class="space-y-1.5 select-none">
               <!-- Date Bucket Header -->
-              <div class="flex items-center justify-between px-2.5 py-1 bg-[var(--color-surface-raised)]/35 rounded-lg border border-[var(--color-border)]/50">
-                <span class="text-[11px] font-black uppercase tracking-wider text-[var(--color-info)]">
+              <div class="flex items-center justify-between px-2.5 py-1 bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] rounded-lg shadow-sm">
+                <span class="text-[11px] font-black uppercase tracking-wider">
                   {{ bucket.label }}
                 </span>
-                <span class="text-[10px] font-black text-[var(--color-text-muted)] uppercase tracking-widest">
+                <span class="text-[10px] font-black uppercase tracking-widest opacity-90">
                   {{ bucket.invoices.length }} {{ bucket.invoices.length === 1 ? 'bill' : 'bills' }}
                 </span>
               </div>
