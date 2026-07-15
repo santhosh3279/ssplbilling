@@ -1963,6 +1963,29 @@ function deleteItem(idx) {
   const item = items.value[idx]; if (!item) return
   item.deleted = !item.deleted
   if (item.deleted && editingRowIdx.value === idx) { editingRowIdx.value = -1; editingField.value = null }
+
+  if (item.deleted) {
+    let nextIdx = -1
+    for (let i = idx + 1; i < items.value.length; i++) {
+      if (!items.value[i].deleted) {
+        nextIdx = i
+        break
+      }
+    }
+    if (nextIdx === -1) {
+      for (let i = idx - 1; i >= 0; i--) {
+        if (!items.value[i].deleted) {
+          nextIdx = i
+          break
+        }
+      }
+    }
+    if (nextIdx !== -1) {
+      focusRow(nextIdx)
+    } else {
+      focusBarcodeInput()
+    }
+  }
 }
 
 function onQuickSearchRefresh() {
