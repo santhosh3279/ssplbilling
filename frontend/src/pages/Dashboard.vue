@@ -527,7 +527,7 @@ import { createCustomer, updateCustomer } from '../api/customer.js'
 import { useItemCache } from '../services/itemCache.js'
 import { syncNamingSeries } from '../services/seriesCache.js'
 import { useLedgerCache } from '../services/ledgerCache.js'
-import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
+import { useShortcuts, useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 import { useTheme } from '../composables/useTheme'
@@ -945,8 +945,12 @@ const tileColumns = computed(() => {
 
 function handleTileKeyNav(e) {
   if (currentTab.value !== 'dashboard' || showGeneralSettings.value || showSystemPerformance.value) return
+  // This is a raw window listener the shortcut manager can't suppress — bail out
+  // whenever a subwindow overlay (global item search, price update, etc.) is open,
+  // otherwise its Enter/F4 handling operates the tile grid / inherit dropdown blind
+  if (isSubwindowActive()) return
 
-  if (e.key === 'F4') {
+  if (e.key === 'F4' && !e.shiftKey) {
     if (isActualAdmin.value) {
       e.preventDefault()
       toggleInheritDropdown()
