@@ -503,7 +503,10 @@ async function loadPrices(code) {
         const uomRatesMap = {}
         for (const u of uomsList) {
           const cachedUomPl = cached.uom_price_lists?.[plName]
-          const uomRate = cachedUomPl?.[u.uom] !== undefined ? parseFloat(cachedUomPl[u.uom] || 0) : 0.0
+          // Stock UOM falls back to the base rate when the per-UOM cache has no
+          // entry — otherwise the row shows 0 and gets flagged as a changed price
+          const fallbackRate = u.uom === cached.uom ? baseRate : 0.0
+          const uomRate = cachedUomPl?.[u.uom] !== undefined ? parseFloat(cachedUomPl[u.uom] || 0) : fallbackRate
           uomRatesMap[u.uom] = uomRate
         }
         
@@ -577,10 +580,16 @@ async function loadPrices(code) {
         markup = Number(((p.rate / prevRate - 1) * 100).toFixed(2))
       }
       
+      // Align base rate with the stock UOM rate before snapshotting originals —
+      // the deep watcher syncs them anyway, and a mismatch at load time would
+      // mark every price list as changed even when the user typed nothing
+      const stockRate = (p.uom_rates || {})[stockUom.value]
+      const rate = stockRate !== undefined ? stockRate : p.rate
       const res = {
         ...p,
+        rate,
         markup,
-        original_rate: p.rate,
+        original_rate: rate,
         original_uom_rates: { ...(p.uom_rates || {}) },
       }
 

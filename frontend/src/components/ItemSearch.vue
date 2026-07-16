@@ -214,7 +214,7 @@
         :item-code="results[selectedIdx]?.item_code"
         :selected-price-list="priceList"
         @close="showPriceUpdateModal = false; focus()"
-        @saved="showPriceUpdateModal = false; preloadItems(true); focus()"
+        @saved="handlePricesSaved"
       />
     </div>
   </div>
@@ -327,7 +327,7 @@ useSubwindowWatcher(computed(() => props.show), {
   }
 })
 
-const { items: allItems, refreshItemCache, lookupItemInCache, lastSync, syncLoading: loading, lastParams } = useItemCache()
+const { items: allItems, refreshItemCache, lookupItemInCache, updateItemPriceInCache, lastSync, syncLoading: loading, lastParams } = useItemCache()
 const { hasHistory, getItemHistoryFromCache } = useCustomerHistory()
 
 const query = ref('')
@@ -568,6 +568,22 @@ function openEditModal() {
 
 function handleItemUpdated() {
   showEditModal.value = false
+  focus()
+}
+
+function handlePricesSaved(payload) {
+  showPriceUpdateModal.value = false
+  // Patch only the edited item's rates in the shared cache — a full forced
+  // resync here refetches thousands of items and looks like a page reload
+  const itemCode = results.value[selectedIdx.value]?.item_code
+  if (itemCode && payload?.changedPrices?.length) {
+    for (const p of payload.changedPrices) {
+      updateItemPriceInCache(itemCode, p.price_list, p.rate, null)
+      for (const [uom, rate] of Object.entries(p.uom_rates || {})) {
+        updateItemPriceInCache(itemCode, p.price_list, rate, uom)
+      }
+    }
+  }
   focus()
 }
 
