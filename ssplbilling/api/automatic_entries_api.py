@@ -54,18 +54,81 @@ def _mop_default_account(mop_name, company):
 	) or ""
 
 
+def ensure_account_in_company(original_account, target_company):
+	"""Ensure that an equivalent of original_account exists in target_company.
+	If not, create it copying attributes from original_account (and recursively for its parent).
+	"""
+	if not original_account or not target_company:
+		return None
+
+	orig_doc = frappe.db.get_value(
+		"Account",
+		original_account,
+		[
+			"account_name",
+			"company",
+			"parent_account",
+			"account_type",
+			"root_type",
+			"report_type",
+			"is_group",
+			"account_currency",
+			"tax_rate",
+		],
+		as_dict=True,
+	)
+	if not orig_doc:
+		return None
+
+	if orig_doc.company == target_company:
+		return original_account
+
+	exists = frappe.db.get_value(
+		"Account",
+		{"account_name": orig_doc.account_name, "company": target_company},
+		"name",
+	)
+	if exists:
+		return exists
+
+	target_parent = None
+	if orig_doc.parent_account:
+		target_parent = ensure_account_in_company(orig_doc.parent_account, target_company)
+
+	new_acc = frappe.new_doc("Account")
+	new_acc.account_name = orig_doc.account_name
+	new_acc.company = target_company
+	new_acc.parent_account = target_parent
+	new_acc.account_type = orig_doc.account_type
+	new_acc.root_type = orig_doc.root_type
+	new_acc.report_type = orig_doc.report_type
+	new_acc.is_group = orig_doc.is_group
+	new_acc.account_currency = orig_doc.account_currency or frappe.get_cached_value(
+		"Company", target_company, "default_currency"
+	)
+	if orig_doc.tax_rate:
+		new_acc.tax_rate = orig_doc.tax_rate
+
+	new_acc.flags.ignore_permissions = True
+	new_acc.insert()
+	return new_acc.name
+
+
 def resolve_target_account(original_account, account_map, target_company):
 	"""Resolve `original_account` (belongs to the source company) to its equivalent in
 	`target_company`, in order:
 	1. Explicit Automatic Entries account mapping.
 	2. An account with the same account_name in the target company's chart.
-	3. The default account for original_account's Mode of Payment, in the target company.
+	3. Automatically created account copying the source account structure.
+	4. The default account for original_account's Mode of Payment, in the target company.
 	Returns "" if none of these resolve, so callers can fall back to ERPNext's own defaults.
 	"""
 	if not original_account:
 		return ""
 	if original_account in account_map:
-		return account_map[original_account]
+		mapped_acc = account_map[original_account]
+		if frappe.db.exists("Account", mapped_acc):
+			return mapped_acc
 
 	source_company, account_name = (
 		frappe.db.get_value("Account", original_account, ["company", "account_name"]) or (None, None)
@@ -79,6 +142,11 @@ def resolve_target_account(original_account, account_map, target_company):
 		)
 		if same_name:
 			return same_name
+
+		# Account does not exist in target company, so auto-create it
+		created_acc = ensure_account_in_company(original_account, target_company)
+		if created_acc:
+			return created_acc
 
 	mop = _mop_for_account(original_account, source_company)
 	return _mop_default_account(mop, target_company)
