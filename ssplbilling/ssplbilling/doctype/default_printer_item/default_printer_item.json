@@ -20,7 +20,7 @@
    "fieldname": "format",
    "fieldtype": "Link",
    "label": "Format",
-   "options": "Print Format"
+   "options": "Print Template"
   }
  ],
  "grid_page_length": 50,
