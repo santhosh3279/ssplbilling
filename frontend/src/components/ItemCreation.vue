@@ -274,7 +274,7 @@
                         />
                         <div
                           v-if="activeSupplierRowIdx === idx && supplierOptions.length"
-                          class="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-[10px] py-[6px] shadow-xl"
+                          class="absolute left-0 right-0 bottom-full z-10 mb-1 max-h-48 overflow-y-auto rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-[10px] py-[6px] shadow-xl"
                         >
                           <button
                             v-for="opt in supplierOptions"
