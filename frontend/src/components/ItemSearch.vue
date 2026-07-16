@@ -446,10 +446,13 @@ function updateItemInsight(item) {
       if (!plNamesSeen.has(plName)) {
         plNamesSeen.add(plName)
         const rate = Number(Object.values(uomMap)[0] || 0)
+        // Per-UOM-only lists carry no buying/selling flags from the backend —
+        // fall back to the name convention so buying lists keep sorting first
+        const lname = plName.toLowerCase()
         priceListsMeta.push({
           name: plName,
-          buying: false,
-          selling: false,
+          buying: lname.includes('buying'),
+          selling: lname.includes('selling'),
           rate
         })
       }
@@ -464,8 +467,8 @@ function updateItemInsight(item) {
       return isMrpA ? 1 : -1
     }
 
-    const isBuyingA = a.buying ? 1 : 0
-    const isBuyingB = b.buying ? 1 : 0
+    const isBuyingA = (a.buying || a.name.toLowerCase().includes('buying')) ? 1 : 0
+    const isBuyingB = (b.buying || b.name.toLowerCase().includes('buying')) ? 1 : 0
 
     if (isBuyingA !== isBuyingB) {
       return isBuyingB - isBuyingA
