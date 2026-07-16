@@ -523,7 +523,13 @@ function setRef(el, field, idx) {
   if (el) fieldRefs[idx][field] = el; else delete fieldRefs[idx]?.[field]
 }
 function focusField(field, idx) {
-  nextTick(() => fieldRefs[idx]?.[field]?.focus())
+  nextTick(() => {
+    const el = fieldRefs[idx]?.[field]
+    if (el) {
+      el.focus({ preventScroll: true })
+      el.scrollIntoView({ block: 'nearest' })
+    }
+  })
 }
 
 // New entry row refs
@@ -540,12 +546,33 @@ function getItemUoms(itemCode) {
   if (!cached?.uoms) return []
   return cached.uoms.map(u => u.uom)
 }
-function focusNewCode() { nextTick(() => newCodeInput.value?.focus()) }
-function focusNewQty() {
-  nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() })
+function focusNewCode() {
+  nextTick(() => {
+    newCodeInput.value?.focus({ preventScroll: true })
+    newCodeInput.value?.scrollIntoView({ block: 'nearest' })
+  })
 }
-function focusNewUom() { nextTick(() => newUomSelect.value?.focus()) }
-function focusNewBarcode() { nextTick(() => newBarcodeInput.value?.focus()) }
+function focusNewQty() {
+  nextTick(() => {
+    if (newQtyInput.value) {
+      newQtyInput.value.focus({ preventScroll: true })
+      newQtyInput.value.select()
+      newQtyInput.value.scrollIntoView({ block: 'nearest' })
+    }
+  })
+}
+function focusNewUom() {
+  nextTick(() => {
+    newUomSelect.value?.focus({ preventScroll: true })
+    newUomSelect.value?.scrollIntoView({ block: 'nearest' })
+  })
+}
+function focusNewBarcode() {
+  nextTick(() => {
+    newBarcodeInput.value?.focus({ preventScroll: true })
+    newBarcodeInput.value?.scrollIntoView({ block: 'nearest' })
+  })
+}
 function focusAfterCode(idx) {
   if (getItemUoms(itemsToPrint.value[idx]?.item_code).length > 1) focusField('uom', idx)
   else selectQtyField(idx)
@@ -579,7 +606,14 @@ async function onNewUomChange() {
 }
 
 function selectQtyField(idx) {
-  nextTick(() => { const el = fieldRefs[idx]?.qty; if (el) { el.focus(); el.select() } })
+  nextTick(() => {
+    const el = fieldRefs[idx]?.qty
+    if (el) {
+      el.focus({ preventScroll: true })
+      el.select()
+      el.scrollIntoView({ block: 'nearest' })
+    }
+  })
 }
 function focusQty(idx) {
   selectedRow.value = idx
@@ -665,12 +699,21 @@ function lookupItem(code) {
 }
 
 // ── Row navigation ────────────────────────────────────────────────────────────
-function selectRow(idx) { selectedRow.value = idx; nextTick(() => rowRefs[idx]?.focus()) }
+function selectRow(idx) {
+  selectedRow.value = idx
+  nextTick(() => {
+    rowRefs[idx]?.focus({ preventScroll: true })
+    rowRefs[idx]?.scrollIntoView({ block: 'nearest' })
+  })
+}
 function moveRow(from, dir) {
   const next = from + dir
   if (next >= 0 && next < itemsToPrint.value.length) {
     selectedRow.value = next
-    nextTick(() => rowRefs[next]?.focus())
+    nextTick(() => {
+      rowRefs[next]?.focus({ preventScroll: true })
+      rowRefs[next]?.scrollIntoView({ block: 'nearest' })
+    })
   } else if (dir > 0) {
     selectedRow.value = -1
     focusNewCode()
@@ -678,7 +721,13 @@ function moveRow(from, dir) {
 }
 function moveToLastRow() {
   const last = itemsToPrint.value.length - 1
-  if (last >= 0) { selectedRow.value = last; nextTick(() => rowRefs[last]?.focus()) }
+  if (last >= 0) {
+    selectedRow.value = last
+    nextTick(() => {
+      rowRefs[last]?.focus({ preventScroll: true })
+      rowRefs[last]?.scrollIntoView({ block: 'nearest' })
+    })
+  }
 }
 
 function removeItem(idx) {
