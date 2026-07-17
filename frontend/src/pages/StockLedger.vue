@@ -662,7 +662,8 @@ async function loadLedger() {
       selectedItem.value.item_code,
       fromDate.value,
       toDate.value,
-      selectedWarehouse.value || null
+      selectedWarehouse.value || null,
+      localStorage.getItem('wb-company') || null
     )
   } catch (e) {
     error.value = e.message

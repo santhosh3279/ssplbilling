@@ -531,12 +531,13 @@ export async function fetchVoucherDetail(voucherType, voucherNo) {
  * @param {string|null} warehouse
  * @returns {Promise<Object>}
  */
-export async function fetchStockLedger(itemCode, fromDate, toDate, warehouse = null) {
+export async function fetchStockLedger(itemCode, fromDate, toDate, warehouse = null, company = null) {
   return frappeGet("ssplbilling.api.ledger_api.get_erpnext_stock_ledger", {
     item_code: itemCode,
     from_date: fromDate,
     to_date: toDate,
     warehouse: warehouse,
+    company: company,
   });
 }
 

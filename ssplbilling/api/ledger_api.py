@@ -676,12 +676,12 @@ def _batch_voucher_details(entries):
 
 
 @frappe.whitelist()
-def get_erpnext_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None):
+def get_erpnext_stock_ledger(item_code, from_date=None, to_date=None, warehouse=None, company=None):
     """Return Stock Ledger entries using ERPNext's built-in Stock Ledger report engine."""
     from erpnext.stock.report.stock_ledger.stock_ledger import execute as _sl_execute
     from erpnext import get_default_company
 
-    company = frappe.defaults.get_user_default("company") or get_default_company()
+    company = company or frappe.defaults.get_user_default("company") or get_default_company()
     to_date = to_date or frappe.utils.today()
     from_date = from_date or frappe.utils.add_days(to_date, -30)
 
