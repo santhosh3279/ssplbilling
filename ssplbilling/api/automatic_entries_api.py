@@ -248,7 +248,7 @@ def mirror_bill(si):
 	if not should_mirror_sales_invoice(si.naming_series, ae):
 		return None
 
-	sp = frappe.generate_hash(length=10)
+	sp = "sp_" + frappe.generate_hash(length=10)
 	frappe.db.savepoint(sp)
 	try:
 		msi = create_mirror_sales_invoice(si, ae)
@@ -326,7 +326,7 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 	ae = get_automatic_entries()
 	account_map = _account_map(ae)
 
-	sp = frappe.generate_hash(length=10)
+	sp = "sp_" + frappe.generate_hash(length=10)
 	frappe.db.savepoint(sp)
 	try:
 		entries = []

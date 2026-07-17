@@ -105,7 +105,7 @@ def mirror_purchase_bill(pi):
 	if not ae.alternative_company or not ae.warehouse:
 		return None
 
-	sp = frappe.generate_hash(length=10)
+	sp = "sp_" + frappe.generate_hash(length=10)
 	frappe.db.savepoint(sp)
 	try:
 		mpi = create_mirror_purchase_invoice(pi, ae)
