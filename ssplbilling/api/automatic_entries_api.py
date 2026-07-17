@@ -153,6 +153,20 @@ def resolve_target_account(original_account, account_map, target_company):
 
 	mop = _mop_for_account(original_account, source_company)
 	return _mop_default_account(mop, target_company)
+def resolve_target_item_tax_template(source_template, target_company):
+	"""Resolve a source item tax template to its equivalent in the target company
+	by matching the title of the template.
+	"""
+	if not source_template or not target_company:
+		return ""
+	title = frappe.db.get_value("Item Tax Template", source_template, "title")
+	if title:
+		target_template = frappe.db.get_value(
+			"Item Tax Template", {"company": target_company, "title": title}, "name"
+		)
+		if target_template:
+			return target_template
+	return ""
 
 
 def create_mirror_sales_invoice(si, automatic_entries):
@@ -194,6 +208,10 @@ def create_mirror_sales_invoice(si, automatic_entries):
 			"uom": item.uom or item.stock_uom,
 			"warehouse": target_warehouse,
 		}
+		if item.item_tax_template:
+			target_tax_template = resolve_target_item_tax_template(item.item_tax_template, target_company)
+			if target_tax_template:
+				row["item_tax_template"] = target_tax_template
 		mapped_income = resolve_target_account(item.income_account, account_map, target_company)
 		if mapped_income:
 			row["income_account"] = mapped_income

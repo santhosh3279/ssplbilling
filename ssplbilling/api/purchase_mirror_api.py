@@ -3,6 +3,7 @@ from ssplbilling.api.automatic_entries_api import (
 	get_automatic_entries,
 	_account_map,
 	resolve_target_account,
+	resolve_target_item_tax_template,
 )
 
 
@@ -67,6 +68,10 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 			"uom": item.uom or item.stock_uom,
 			"warehouse": target_warehouse,
 		}
+		if item.item_tax_template:
+			target_tax_template = resolve_target_item_tax_template(item.item_tax_template, target_company)
+			if target_tax_template:
+				row["item_tax_template"] = target_tax_template
 		if frappe.get_meta("Purchase Invoice Item").has_field("allow_zero_valuation_rate"):
 			row["allow_zero_valuation_rate"] = 1
 		mapped_expense = resolve_target_account(item.expense_account, account_map, target_company)
