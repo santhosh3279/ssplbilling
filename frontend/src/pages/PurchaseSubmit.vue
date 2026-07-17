@@ -212,20 +212,30 @@
                   <div v-for="entry in unlinkedEntries" :key="entry.doctype + entry.name" class="p-3 space-y-1.5">
                     <div class="flex items-center justify-between gap-2">
                       <span class="font-mono text-[13px] font-bold text-[var(--color-warning)] truncate">{{ entry.name }}</span>
-                      <span
-                        class="rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider border shrink-0"
-                        :class="entry.doctype === 'Purchase Invoice'
-                          ? 'bg-red-500/10 text-red-500 border-red-500/20'
-                          : 'bg-blue-500/10 text-blue-500 border-blue-500/20'"
-                      >
-                        {{ entry.doctype === 'Purchase Invoice' ? 'Debit Note' : entry.doctype === 'Journal Entry' ? 'Journal' : 'Payment' }}
-                      </span>
+                      <div class="flex items-center gap-1 shrink-0">
+                        <span
+                          class="rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider border"
+                          :class="entry.doctype === 'Purchase Invoice'
+                            ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                            : 'bg-blue-500/10 text-blue-500 border-blue-500/20'"
+                        >
+                          {{ entry.doctype === 'Purchase Invoice' ? 'Debit Note' : entry.doctype === 'Journal Entry' ? 'Journal' : 'Payment' }}
+                        </span>
+                        <span
+                          class="rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider border"
+                          :class="entry.direction === 'Dr'
+                            ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                            : 'bg-amber-500/10 text-amber-500 border-amber-500/20'"
+                        >
+                          {{ entry.direction === 'Dr' ? 'Debit' : 'Credit' }}
+                        </span>
+                      </div>
                     </div>
                     <div class="flex items-center justify-between text-[12px] text-[var(--color-text-muted)]">
                       <span>{{ formatDate(entry.posting_date) }}</span>
-                      <span>Avail: <span class="font-mono font-bold text-[var(--color-success)]">{{ fmt(entry.available) }}</span></span>
+                      <span>Avail: <span class="font-mono font-bold" :class="entry.direction === 'Dr' ? 'text-[var(--color-success)]' : 'text-amber-500'">{{ fmt(entry.available) }}</span></span>
                     </div>
-                    <div class="flex items-center gap-2">
+                    <div v-if="entry.direction === 'Dr'" class="flex items-center gap-2">
                       <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] shrink-0">Link Amt</label>
                       <input
                         v-model.number="entry.alloc"
@@ -236,6 +246,9 @@
                         placeholder="0.00"
                         class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-right text-[14px] font-mono font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-warning)] transition-all"
                       />
+                    </div>
+                    <div v-else class="text-[11px] italic text-[var(--color-text-muted)] opacity-70">
+                      Credit entry — cannot be linked to this bill
                     </div>
                   </div>
                 </div>
@@ -536,36 +549,42 @@ async function loadUnlinkedEntries(supplier, invName) {
     if (selectedInvoice.value?.name !== invName) return
 
     const rows = []
-    for (const p of (res.payment_entries || []).filter(p => p.direction === 'Dr')) {
+    for (const p of res.payment_entries || []) {
       rows.push({
         doctype: 'Payment Entry',
         name: p.name,
         posting_date: p.posting_date,
+        direction: p.direction,
         available: Number(p.unallocated_amount || 0),
         reference_row: null,
         alloc: null
       })
     }
-    for (const j of (res.journal_entries || []).filter(j => j.direction === 'Dr')) {
+    for (const j of res.journal_entries || []) {
       rows.push({
         doctype: 'Journal Entry',
         name: j.name,
         posting_date: j.posting_date,
+        direction: j.direction,
         available: Number(j.unallocated_amount || 0),
         reference_row: j.reference_row || null,
         alloc: null
       })
     }
+    // Only debit notes (return PIs) — regular outstanding bills are not shown here
     for (const i of (res.invoices || []).filter(i => i.doctype === 'Purchase Invoice' && i.direction === 'Dr')) {
       rows.push({
         doctype: 'Purchase Invoice',
         name: i.name,
         posting_date: i.posting_date,
+        direction: 'Dr',
         available: Number(i.outstanding_amount || 0),
         reference_row: null,
         alloc: null
       })
     }
+    // Linkable debit entries first
+    rows.sort((a, b) => (a.direction === 'Dr' ? 0 : 1) - (b.direction === 'Dr' ? 0 : 1))
     unlinkedEntries.value = rows
   } catch (err) {
     console.warn('Failed to load unlinked entries for supplier:', err)
