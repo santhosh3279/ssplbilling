@@ -129,13 +129,6 @@
               >
                 {{ isFetchingItems ? 'Fetching...' : 'Get Items' }}
               </button>
-              <button
-                v-if="!isReadOnly"
-                @click="addVoucherRow"
-                class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1 text-xs font-bold uppercase text-[var(--color-text)] transition-all hover:bg-[var(--color-border)]/20 active:scale-95"
-              >
-                + Add Row
-              </button>
             </div>
           </div>
 
@@ -181,6 +174,7 @@
                 <td class="border-r border-b border-[var(--color-border)] p-0 relative">
                   <div v-if="!isReadOnly" class="relative w-full h-full">
                     <input
+                      ref="docInputRefs"
                       v-model="row.receipt_document"
                       @focus="focusDocSearch(row)"
                       @blur="blurDocSearch(row)"
@@ -239,13 +233,6 @@
         <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">2. Landed Cost Taxes & Charges</h3>
-            <button
-              v-if="!isReadOnly"
-              @click="addTaxRow"
-              class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1 text-xs font-bold uppercase text-[var(--color-text)] transition-all hover:bg-[var(--color-border)]/20 active:scale-95"
-            >
-              + Add Row
-            </button>
           </div>
 
           <table class="w-full text-left border-collapse border-l border-t border-[var(--color-border)]">
@@ -275,6 +262,7 @@
                 <td class="border-r border-b border-[var(--color-border)] p-0 relative">
                   <div v-if="!isReadOnly" class="relative w-full h-full">
                     <input
+                      ref="taxInputRefs"
                       v-model="row.expense_account"
                       @focus="focusAccountSearch(row)"
                       @blur="blurAccountSearch(row)"
@@ -493,8 +481,23 @@ const doc = reactive({
   company: wb_company.value,
   posting_date: new Date().toISOString().split('T')[0],
   distribute_charges_based_on: 'Qty',
-  purchase_receipts: [],
-  taxes: [],
+  purchase_receipts: [{
+    receipt_document_type: 'Purchase Receipt',
+    receipt_document: '',
+    supplier: '',
+    posting_date: '',
+    grand_total: 0,
+    showSearch: false,
+    suggestions: []
+  }],
+  taxes: [{
+    expense_account: '',
+    description: '',
+    amount: 0,
+    base_amount: 0,
+    showSearch: false,
+    suggestions: []
+  }],
   vendor_invoices: [],
   items: [],
   total_vendor_invoices_cost: 0,
@@ -507,6 +510,9 @@ const vouchersList = ref([])
 const loadingList = ref(false)
 const listSearch = ref('')
 
+const docInputRefs = ref([])
+const taxInputRefs = ref([])
+
 const isSaving = ref(false)
 const isSubmitting = ref(false)
 const isCancelling = ref(false)
@@ -518,6 +524,35 @@ const successMsg = ref('')
 
 const isNew = computed(() => !doc.name)
 const isReadOnly = computed(() => doc.docstatus !== 0 && doc.name)
+
+// --- AUTO APPEND ROWS ---
+watch(() => doc.purchase_receipts, (newVal) => {
+  if (isReadOnly.value) return
+  const last = newVal[newVal.length - 1]
+  if (last && last.receipt_document) {
+    addVoucherRow()
+  }
+}, { deep: true })
+
+watch(() => doc.taxes, (newVal) => {
+  if (isReadOnly.value) return
+  const last = newVal[newVal.length - 1]
+  if (last && last.expense_account) {
+    addTaxRow()
+  }
+}, { deep: true })
+
+function focusFirstInput() {
+  nextTick(() => {
+    if (props.isSubwindow && props.prelinkDocName) {
+      taxInputRefs.value[0]?.focus()
+      taxInputRefs.value[0]?.select()
+    } else {
+      docInputRefs.value[0]?.focus()
+      docInputRefs.value[0]?.select()
+    }
+  })
+}
 
 // --- SIDEBAR FILTERING ---
 const filteredVouchers = computed(() => {
@@ -596,16 +631,34 @@ function initNewDoc() {
   doc.name = ''
   doc.posting_date = new Date().toISOString().split('T')[0]
   doc.distribute_charges_based_on = 'Qty'
-  doc.purchase_receipts = []
-  doc.taxes = []
+  doc.purchase_receipts = [{
+    receipt_document_type: 'Purchase Receipt',
+    receipt_document: '',
+    supplier: '',
+    posting_date: '',
+    grand_total: 0,
+    showSearch: false,
+    suggestions: []
+  }]
+  doc.taxes = [{
+    expense_account: '',
+    description: '',
+    amount: 0,
+    base_amount: 0,
+    showSearch: false,
+    suggestions: []
+  }]
   doc.vendor_invoices = []
   doc.items = []
   doc.total_vendor_invoices_cost = 0
   doc.total_taxes_and_charges = 0
   doc.docstatus = 0
   doc.company = wb_company.value
+  
   errorMsg.value = ''
   successMsg.value = ''
+  
+  focusFirstInput()
 }
 
 // --- LOAD A SPECIFIC VOUCHER ---
@@ -641,6 +694,9 @@ function addVoucherRow() {
 
 function deleteVoucherRow(index) {
   doc.purchase_receipts.splice(index, 1)
+  if (doc.purchase_receipts.length === 0) {
+    addVoucherRow()
+  }
   distributeCharges()
 }
 
@@ -713,6 +769,9 @@ function addTaxRow() {
 
 function deleteTaxRow(index) {
   doc.taxes.splice(index, 1)
+  if (doc.taxes.length === 0) {
+    addTaxRow()
+  }
   onAmountChanged()
 }
 
@@ -987,11 +1046,20 @@ onMounted(async () => {
       showSearch: false,
       suggestions: []
     }]
+    doc.taxes = [{
+      expense_account: '',
+      description: '',
+      amount: 0,
+      base_amount: 0,
+      showSearch: false,
+      suggestions: []
+    }]
     await fetchItems()
   } else {
     doc.company = wb_company.value
     await loadVouchersList()
   }
+  focusFirstInput()
 })
 </script>
 
