@@ -839,6 +839,7 @@ async function fetchItems() {
       company: doc.company,
       distribute_charges_based_on: doc.distribute_charges_based_on,
       posting_date: doc.posting_date,
+      naming_series: doc.naming_series || 'MAT-LCV-.YYYY.-',
       ...(doc.modified && { modified: doc.modified }),
       ...(doc.creation && { creation: doc.creation }),
       purchase_receipts: validReceipts.map(r => ({
@@ -936,6 +937,7 @@ async function handleSave() {
       company: doc.company,
       posting_date: doc.posting_date,
       distribute_charges_based_on: doc.distribute_charges_based_on,
+      naming_series: doc.naming_series || 'MAT-LCV-.YYYY.-',
       ...(doc.modified && { modified: doc.modified }),
       ...(doc.creation && { creation: doc.creation }),
       purchase_receipts: validReceipts.map(r => ({
@@ -1006,6 +1008,7 @@ async function handleSubmit() {
       total_taxes_and_charges: doc.total_taxes_and_charges,
       total_vendor_invoices_cost: doc.total_vendor_invoices_cost,
       vendor_invoices: doc.vendor_invoices || [],
+      naming_series: doc.naming_series || 'MAT-LCV-.YYYY.-',
       ...(doc.modified && { modified: doc.modified }),
       ...(doc.creation && { creation: doc.creation }),
       purchase_receipts: doc.purchase_receipts
