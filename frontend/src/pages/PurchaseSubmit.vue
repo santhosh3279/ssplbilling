@@ -285,6 +285,29 @@
         @close="handleModifyClose" 
       />
     </div>
+
+    <!-- LANDED COST VOUCHER WARNING MODAL -->
+    <Warning
+      :show="showLcvWarningModal"
+      title="Create Landed Cost Voucher?"
+      message="Would you like to distribute transport or other landed cost charges for this Purchase Invoice?"
+      @close="handleLcvWarningClose"
+      @confirm="handleLcvWarningConfirm"
+    />
+
+    <!-- LANDED COST VOUCHER SUBWINDOW -->
+    <div v-if="showLcvModal" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
+      <LandCostVoucher
+        is-subwindow
+        prelink-doc-type="Purchase Invoice"
+        :prelink-doc-name="lastSubmittedInvoice?.name"
+        :prelink-company="lastSubmittedInvoice?.company"
+        :prelink-supplier="lastSubmittedInvoice?.supplier"
+        :prelink-posting-date="lastSubmittedInvoice?.posting_date"
+        :prelink-grand-total="lastSubmittedInvoice?.grand_total"
+        @close="handleLcvClose"
+      />
+    </div>
   </div>
 </template>
 
@@ -298,6 +321,8 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import BarcodePrintPage from './BarcodePrintPage.vue'
 import PurchaseInvoice from './PurchaseInvoice.vue'
 import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
+import Warning from '../components/Warning.vue'
+import LandCostVoucher from './land_cost_voucher.vue'
 
 const router = useRouter()
 
@@ -313,6 +338,9 @@ const showPrintModal = ref(false)
 const showBarcodeModal = ref(false)
 const showModifyModal = ref(false)
 const showOutstandingModal = ref(false)
+const showLcvWarningModal = ref(false)
+const showLcvModal = ref(false)
+const lastSubmittedInvoice = ref(null)
 const modalParty = ref('')
 const modalAmount = ref(0)
 const submittedInvoiceName = ref('')
@@ -321,6 +349,8 @@ useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showOutstandingModal)
 useSubwindowWatcher(showBarcodeModal)
 useSubwindowWatcher(showModifyModal)
+useSubwindowWatcher(showLcvWarningModal)
+useSubwindowWatcher(showLcvModal)
 
 const searchQuery = ref('')
 
@@ -494,6 +524,13 @@ async function confirmSubmission() {
     }
 
     const nameToRemove = selectedInvoice.value.name
+    lastSubmittedInvoice.value = {
+      name: invName,
+      company: selectedInvoice.value.company,
+      supplier: supplier,
+      posting_date: selectedInvoice.value.posting_date,
+      grand_total: grandTotal
+    }
     invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
     selectedInvoice.value = null
     previewItems.value = []
@@ -506,6 +543,7 @@ async function confirmSubmission() {
       showOutstandingModal.value = true
     } else {
       loadInvoices()
+      showLcvWarningModal.value = true
     }
     
   } catch (e) {
@@ -521,6 +559,9 @@ function closeOutstandingModal() {
   modalAmount.value = 0
   submittedInvoiceName.value = ''
   loadInvoices()
+  if (lastSubmittedInvoice.value) {
+    showLcvWarningModal.value = true
+  }
 }
 
 async function handleAllocations(allocations) {
@@ -549,6 +590,22 @@ async function handleAllocations(allocations) {
   }
   
   closeOutstandingModal()
+}
+
+function handleLcvWarningClose() {
+  showLcvWarningModal.value = false
+  lastSubmittedInvoice.value = null
+}
+
+function handleLcvWarningConfirm() {
+  showLcvWarningModal.value = false
+  showLcvModal.value = true
+}
+
+function handleLcvClose() {
+  showLcvModal.value = false
+  lastSubmittedInvoice.value = null
+  loadInvoices()
 }
 
 onMounted(() => {

@@ -64,7 +64,7 @@
     <div class="flex flex-1 overflow-hidden">
 
       <!-- LEFT SIDEBAR: LISTING -->
-      <aside class="flex w-80 shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
+      <aside v-if="!isSubwindow" class="flex w-80 shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
         <div class="p-4">
           <div class="relative">
             <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-[var(--color-text-muted)]">
@@ -480,8 +480,24 @@
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import { useSubwindow } from '../services/shortcutManager'
 
+const props = defineProps({
+  isSubwindow: Boolean,
+  prelinkDocType: { type: String, default: 'Purchase Invoice' },
+  prelinkDocName: String,
+  prelinkCompany: String,
+  prelinkSupplier: String,
+  prelinkPostingDate: String,
+  prelinkGrandTotal: Number
+})
+
+const emit = defineEmits(['close'])
 const router = useRouter()
+
+if (props.isSubwindow) {
+  useSubwindow()
+}
 
 // --- STATE ---
 const doc = reactive({
@@ -548,7 +564,11 @@ function formatDate(dateStr) {
 }
 
 function goBack() {
-  router.push('/')
+  if (props.isSubwindow) {
+    emit('close')
+  } else {
+    router.push('/')
+  }
 }
 
 // --- INITIALIZATION ---
@@ -970,7 +990,23 @@ async function handleDelete() {
 // --- MOUNTED ---
 onMounted(async () => {
   await loadCompanies()
-  await loadVouchersList()
+  if (props.isSubwindow && props.prelinkDocName) {
+    if (props.prelinkCompany) {
+      doc.company = props.prelinkCompany
+    }
+    doc.purchase_receipts = [{
+      receipt_document_type: props.prelinkDocType,
+      receipt_document: props.prelinkDocName,
+      supplier: props.prelinkSupplier || '',
+      posting_date: props.prelinkPostingDate || '',
+      grand_total: props.prelinkGrandTotal || 0,
+      showSearch: false,
+      suggestions: []
+    }]
+    await fetchItems()
+  } else {
+    await loadVouchersList()
+  }
 })
 </script>
 
