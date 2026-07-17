@@ -22,6 +22,12 @@ def get_party_outstanding(party_type, party):
 	from erpnext.accounts.party import get_party_account
 	party_account = get_party_account(party_type, party, company)
 
+	# Payment Ledger stores amounts as (debit - credit) on Receivable accounts but
+	# (credit - debit) on Payable accounts, so the sign-to-direction mapping flips.
+	is_payable = (
+		frappe.db.get_value("Account", party_account, "account_type") == "Payable" if party_account else False
+	)
+
 	if party_account:
 		ledger_rows = frappe.db.sql(
 			"""
@@ -78,7 +84,10 @@ def get_party_outstanding(party_type, party):
 				mop = pe_info.get("mode_of_payment") or "Cash"
 				remarks = pe_info.get("remarks") or ""
 
-				direction = "Cr" if out_amt < 0 else "Dr"
+				if is_payable:
+					direction = "Dr" if out_amt < 0 else "Cr"
+				else:
+					direction = "Cr" if out_amt < 0 else "Dr"
 
 				payment_entries.append({
 					"name": v_no,
@@ -95,7 +104,10 @@ def get_party_outstanding(party_type, party):
 				je_row_name = frappe.db.get_value("Journal Entry Account", {"parent": v_no, "party": party, "account": party_account}, "name")
 				remarks = frappe.db.get_value("Journal Entry", v_no, "user_remark") or ""
 
-				direction = "Cr" if out_amt < 0 else "Dr"
+				if is_payable:
+					direction = "Dr" if out_amt < 0 else "Cr"
+				else:
+					direction = "Cr" if out_amt < 0 else "Dr"
 
 				journal_entries.append({
 					"name": v_no,
