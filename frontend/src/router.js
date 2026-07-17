@@ -53,6 +53,7 @@ import Catelogue from './pages/catelogue.vue'
 import Unreconciled from './pages/unreconciled.vue'
 import ChequeRegister from './pages/ChequeRegister.vue'
 import CashflowReport from './pages/CashflowReport.vue'
+import LandCostVoucher from './pages/land_cost_voucher.vue'
 
 const routes = [
   {
@@ -102,6 +103,12 @@ const routes = [
     name: 'Repack',
     component: Repack,
     meta: { title: 'Repack' },
+  },
+  {
+    path: '/land-cost-voucher',
+    name: 'LandCostVoucher',
+    component: LandCostVoucher,
+    meta: { title: 'Landed Cost Voucher' },
   },
   {
     path: '/daily-report',

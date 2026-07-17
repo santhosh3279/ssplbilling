@@ -808,6 +808,7 @@ const allTiles = [
   { id: 'stock-reconciliation', bucket: 'stock',  name: 'Stock Reconciliation',  desc: 'Adjust stock levels',                      icon: '⚖️', shortcut: ''    },
   { id: 'store-transfer',     bucket: 'stock',  name: 'Store Transfer',        desc: 'Transfer stock between warehouses',        icon: '🔄', shortcut: 'Shift+F9'  },
   { id: 'repack',             bucket: 'stock',  name: 'Repack Entry',          desc: 'Repack raw items into finished goods',     icon: '📦', shortcut: ''    },
+  { id: 'land-cost-voucher',  bucket: 'stock',  name: 'Landed Cost Voucher',   desc: 'Distribute landed/transport charges to items', icon: '⚓', shortcut: ''    },
   // ── Accounts ──
   { id: 'expense',            bucket: 'accounts', name: 'Cash Box Entry',        desc: 'Manage company expenses',                  icon: '💸', shortcut: ''  },
   { id: 'single-entry',       bucket: 'accounts', name: 'Single Entry',          desc: 'Manage single payment entries',            icon: '🧾', shortcut: ''    },
@@ -1080,13 +1081,14 @@ function tilesInBucket(bucketId) {
   return filteredTiles.value.filter(t => t.bucket === bucketId)
 }
 
-const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'unreconciled', 'cheques']
+const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'unreconciled', 'cheques', 'land-cost-voucher']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
   sales: '/sales',
   quotation: '/quotation',
   repack: '/repack',
+  'land-cost-voucher': '/land-cost-voucher',
   'offer-display': '/offer-display',
   'purchase-invoice': '/purchase-invoice',
   payment: '/payment',
