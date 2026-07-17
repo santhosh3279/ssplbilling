@@ -17,45 +17,29 @@
         </span>
       </div>
       
-      <div class="flex items-center gap-3">
-        <!-- Action Buttons -->
+      <!-- Posting Date in Header -->
+      <div class="flex items-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] overflow-hidden h-9 px-1">
         <button
-          v-if="doc.docstatus === 0"
-          @click="handleSave"
-          :disabled="isSaving"
-          class="rounded-lg bg-[var(--color-highlight)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-highlight)]/80 active:scale-95 disabled:opacity-50"
+          type="button"
+          @click="adjustDate(-1)"
+          :disabled="isReadOnly"
+          class="px-2 text-[var(--color-text-muted)] hover:bg-[var(--color-border)]/50 transition-colors disabled:opacity-40 text-sm outline-none"
         >
-          {{ isSaving ? 'Saving...' : 'Save' }}
+          &larr;
         </button>
+        <input
+          type="date"
+          v-model="doc.posting_date"
+          :disabled="isReadOnly"
+          class="bg-transparent px-1 text-center text-xs font-bold outline-none disabled:text-[var(--color-text-muted)] w-32 border-none text-[var(--color-text)]"
+        />
         <button
-          v-if="doc.name && doc.docstatus === 0"
-          @click="handleSubmit"
-          :disabled="isSubmitting"
-          class="rounded-lg bg-[var(--color-success)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-success)]/80 active:scale-95 disabled:opacity-50"
+          type="button"
+          @click="adjustDate(1)"
+          :disabled="isReadOnly"
+          class="px-2 text-[var(--color-text-muted)] hover:bg-[var(--color-border)]/50 transition-colors disabled:opacity-40 text-sm outline-none"
         >
-          {{ isSubmitting ? 'Submitting...' : 'Submit' }}
-        </button>
-        <button
-          v-if="doc.name && doc.docstatus === 1"
-          @click="handleCancel"
-          :disabled="isCancelling"
-          class="rounded-lg bg-[var(--color-danger)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-danger)]/80 active:scale-95 disabled:opacity-50"
-        >
-          {{ isCancelling ? 'Cancelling...' : 'Cancel' }}
-        </button>
-        <button
-          v-if="doc.name && doc.docstatus === 0"
-          @click="handleDelete"
-          :disabled="isDeleting"
-          class="rounded-lg bg-[var(--color-danger)]/20 border border-[var(--color-danger)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-danger)] transition-all hover:bg-[var(--color-danger)]/10 active:scale-95 disabled:opacity-50"
-        >
-          {{ isDeleting ? 'Deleting...' : 'Delete' }}
-        </button>
-        <button
-          @click="initNewDoc"
-          class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-raised)]/80 active:scale-95"
-        >
-          New
+          &rarr;
         </button>
       </div>
     </header>
@@ -130,74 +114,7 @@
           {{ successMsg }}
         </div>
 
-        <!-- FORM CARD -->
-        <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm space-y-6">
-          <div class="grid grid-cols-4 gap-6">
-            
-            <!-- Company -->
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Company</label>
-              <select
-                v-model="doc.company"
-                :disabled="isReadOnly"
-                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-[15px] font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
-              >
-                <option v-for="c in companies" :key="c.name" :value="c.name">{{ c.name }}</option>
-              </select>
-            </div>
-
-            <!-- Posting Date -->
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</label>
-              <div class="flex rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] overflow-hidden focus-within:border-[var(--color-highlight)]">
-                <button
-                  type="button"
-                  @click="adjustDate(-1)"
-                  :disabled="isReadOnly"
-                  class="px-3 text-[var(--color-text-muted)] hover:bg-[var(--color-border)]/50 transition-colors disabled:opacity-40"
-                >
-                  &larr;
-                </button>
-                <input
-                  type="date"
-                  v-model="doc.posting_date"
-                  :disabled="isReadOnly"
-                  class="w-full bg-transparent px-2 py-2 text-center text-[15px] font-bold outline-none disabled:text-[var(--color-text-muted)]"
-                />
-                <button
-                  type="button"
-                  @click="adjustDate(1)"
-                  :disabled="isReadOnly"
-                  class="px-3 text-[var(--color-text-muted)] hover:bg-[var(--color-border)]/50 transition-colors disabled:opacity-40"
-                >
-                  &rarr;
-                </button>
-              </div>
-            </div>
-
-            <!-- Distribute Charges Based On -->
-            <div class="flex flex-col gap-2">
-              <label class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Distribute Charges Based On</label>
-              <select
-                v-model="doc.distribute_charges_based_on"
-                :disabled="isReadOnly"
-                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-[15px] font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
-              >
-                <option value="Qty">Qty</option>
-                <option value="Amount">Amount</option>
-                <option value="Weight">Weight</option>
-                <option value="Volume">Volume</option>
-              </select>
-            </div>
-
-            <!-- Totals Overview -->
-            <div class="flex flex-col gap-2 bg-[var(--color-surface-raised)] p-3 rounded-xl border border-[var(--color-border)] justify-center">
-              <div class="text-[11px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Total Landed Cost</div>
-              <div class="text-2xl font-black font-mono text-[var(--color-highlight)]">{{ fmtCurrency(doc.total_taxes_and_charges) }}</div>
-            </div>
-
-          </div>
-        </div>
+        <!-- Form Fields are managed in header/footer -->
 
         <!-- VOUCHERS TABLE -->
         <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm space-y-4">
@@ -473,6 +390,75 @@
       </main>
 
     </div>
+
+    <!-- FOOTER: DISTRIBUTE & TOTALS & ACTION BUTTONS -->
+    <footer class="flex h-16 shrink-0 items-center justify-between border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 shadow-lg z-10">
+      <!-- Distribute Selector -->
+      <div class="flex items-center gap-3">
+        <label class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Distribute By</label>
+        <select
+          v-model="doc.distribute_charges_based_on"
+          :disabled="isReadOnly"
+          class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
+        >
+          <option value="Qty">Qty</option>
+          <option value="Amount">Amount</option>
+          <option value="Weight">Weight</option>
+          <option value="Volume">Volume</option>
+        </select>
+      </div>
+
+      <!-- Total & Action Buttons -->
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Total Landed Cost:</span>
+          <span class="text-xl font-black font-mono text-[var(--color-highlight)]">{{ fmtCurrency(doc.total_taxes_and_charges) }}</span>
+        </div>
+
+        <div class="h-6 w-px bg-[var(--color-border)]"></div>
+
+        <div class="flex items-center gap-3">
+          <button
+            v-if="doc.docstatus === 0"
+            @click="handleSave"
+            :disabled="isSaving"
+            class="rounded-lg bg-[var(--color-highlight)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-highlight)]/80 active:scale-95 disabled:opacity-50"
+          >
+            {{ isSaving ? 'Saving...' : 'Save' }}
+          </button>
+          <button
+            v-if="doc.name && doc.docstatus === 0"
+            @click="handleSubmit"
+            :disabled="isSubmitting"
+            class="rounded-lg bg-[var(--color-success)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-success)]/80 active:scale-95 disabled:opacity-50"
+          >
+            {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+          </button>
+          <button
+            v-if="doc.name && doc.docstatus === 1"
+            @click="handleCancel"
+            :disabled="isCancelling"
+            class="rounded-lg bg-[var(--color-danger)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-danger)]/80 active:scale-95 disabled:opacity-50"
+          >
+            {{ isCancelling ? 'Cancelling...' : 'Cancel' }}
+          </button>
+          <button
+            v-if="doc.name && doc.docstatus === 0"
+            @click="handleDelete"
+            :disabled="isDeleting"
+            class="rounded-lg bg-[var(--color-danger)]/20 border border-[var(--color-danger)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-danger)] transition-all hover:bg-[var(--color-danger)]/10 active:scale-95 disabled:opacity-50"
+          >
+            {{ isDeleting ? 'Deleting...' : 'Delete' }}
+          </button>
+          <button
+            @click="initNewDoc"
+            class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-raised)]/80 active:scale-95"
+          >
+            New
+          </button>
+        </div>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -499,10 +485,12 @@ if (props.isSubwindow) {
   useSubwindow()
 }
 
+const wb_company = computed(() => localStorage.getItem('wb-company') || '')
+
 // --- STATE ---
 const doc = reactive({
   name: '',
-  company: '',
+  company: wb_company.value,
   posting_date: new Date().toISOString().split('T')[0],
   distribute_charges_based_on: 'Qty',
   purchase_receipts: [],
@@ -615,10 +603,7 @@ function initNewDoc() {
   doc.total_vendor_invoices_cost = 0
   doc.total_taxes_and_charges = 0
   doc.docstatus = 0
-  
-  if (companies.value.length) {
-    doc.company = companies.value[0].name
-  }
+  doc.company = wb_company.value
   errorMsg.value = ''
   successMsg.value = ''
 }
@@ -989,11 +974,8 @@ async function handleDelete() {
 
 // --- MOUNTED ---
 onMounted(async () => {
-  await loadCompanies()
   if (props.isSubwindow && props.prelinkDocName) {
-    if (props.prelinkCompany) {
-      doc.company = props.prelinkCompany
-    }
+    doc.company = props.prelinkCompany || wb_company.value
     doc.purchase_receipts = [{
       receipt_document_type: props.prelinkDocType,
       receipt_document: props.prelinkDocName,
@@ -1005,6 +987,7 @@ onMounted(async () => {
     }]
     await fetchItems()
   } else {
+    doc.company = wb_company.value
     await loadVouchersList()
   }
 })
