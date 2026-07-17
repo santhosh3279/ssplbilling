@@ -588,6 +588,11 @@ def submit_purchase_invoice(invoice_name):
     pi = frappe.get_doc("Purchase Invoice", invoice_name)
     if pi.docstatus == 0:
         pi.submit()
+        try:
+            from ssplbilling.api.automatic_entries_api import mirror_purchase_bill
+            mirror_purchase_bill(pi)
+        except Exception:
+            frappe.log_error(title="Automatic Entries: mirror purchase bill failed", message=frappe.get_traceback())
         return {"name": pi.name, "status": "Submitted"}
     elif pi.docstatus == 1:
         return {"name": pi.name, "status": "Already Submitted"}
