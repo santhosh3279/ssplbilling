@@ -774,6 +774,8 @@ async function fetchItems() {
   try {
     const payloadDoc = {
       doctype: 'Landed Cost Voucher',
+      name: doc.name || undefined,
+      __islocal: doc.name ? 0 : 1,
       company: doc.company,
       distribute_charges_based_on: doc.distribute_charges_based_on,
       posting_date: doc.posting_date,
