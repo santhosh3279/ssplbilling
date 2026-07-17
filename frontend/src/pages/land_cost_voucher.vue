@@ -839,6 +839,8 @@ async function fetchItems() {
       company: doc.company,
       distribute_charges_based_on: doc.distribute_charges_based_on,
       posting_date: doc.posting_date,
+      ...(doc.modified && { modified: doc.modified }),
+      ...(doc.creation && { creation: doc.creation }),
       purchase_receipts: validReceipts.map(r => ({
         name: r.name,
         receipt_document_type: r.receipt_document_type,
@@ -934,6 +936,8 @@ async function handleSave() {
       company: doc.company,
       posting_date: doc.posting_date,
       distribute_charges_based_on: doc.distribute_charges_based_on,
+      ...(doc.modified && { modified: doc.modified }),
+      ...(doc.creation && { creation: doc.creation }),
       purchase_receipts: validReceipts.map(r => ({
         name: r.name,
         receipt_document_type: r.receipt_document_type,
@@ -1002,6 +1006,8 @@ async function handleSubmit() {
       total_taxes_and_charges: doc.total_taxes_and_charges,
       total_vendor_invoices_cost: doc.total_vendor_invoices_cost,
       vendor_invoices: doc.vendor_invoices || [],
+      ...(doc.modified && { modified: doc.modified }),
+      ...(doc.creation && { creation: doc.creation }),
       purchase_receipts: doc.purchase_receipts
         .filter(r => r.receipt_document)
         .map(r => ({
