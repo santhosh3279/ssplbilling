@@ -149,6 +149,7 @@ DASHBOARD_TILES = [
 	("stock-reconciliation", "Stock Reconciliation", "Stock"),
 	("store-transfer", "Store Transfer", "Stock"),
 	("repack", "Repack Entry", "Stock"),
+	("land-cost-voucher", "Landed Cost Voucher", "Stock"),
 	# Accounts
 	("expense", "Cash Box Entry", "Accounts"),
 	("single-entry", "Single Entry", "Accounts"),

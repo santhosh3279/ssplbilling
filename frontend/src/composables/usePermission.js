@@ -42,6 +42,7 @@ export const BILLER_ROUTES = new Set([
   'Repack',
   'OfferDisplay',
   'PurchaseOrder',
+  'LandCostVoucher',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -256,6 +257,7 @@ const TILE_ROUTE_MAP = {
   'store-wise-item-sales': 'StoreWiseItemSales',
   'fast-moving-items': 'FastMovingItems',
   'material-transfer-report': 'MaterialTransferReport',
+  'land-cost-voucher': 'LandCostVoucher',
 }
 
 export function canAccessTile(tileId) {
