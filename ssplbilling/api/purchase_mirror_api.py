@@ -97,7 +97,7 @@ def mirror_purchase_bill(pi):
 	Isolated with a savepoint so a failure here never rolls back pi's own submission.
 	"""
 	ae = get_automatic_entries()
-	if not should_mirror_purchase_invoice(pi.naming_series, ae):
+	if not ae.alternative_company or not ae.warehouse:
 		return None
 
 	sp = frappe.generate_hash(length=10)
