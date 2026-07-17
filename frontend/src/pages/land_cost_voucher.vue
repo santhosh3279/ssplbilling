@@ -408,19 +408,11 @@
         <div class="flex items-center gap-3">
           <button
             v-if="doc.docstatus === 0"
-            @click="handleSave"
-            :disabled="isSaving"
-            class="rounded-lg bg-[var(--color-highlight)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-highlight)]/80 active:scale-95 disabled:opacity-50"
-          >
-            {{ isSaving ? 'Saving...' : 'Save' }}
-          </button>
-          <button
-            v-if="doc.name && doc.docstatus === 0"
-            @click="handleSubmit"
-            :disabled="isSubmitting"
+            @click="handleSaveAndSubmit"
+            :disabled="isSaving || isSubmitting"
             class="rounded-lg bg-[var(--color-success)] px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-success)]/80 active:scale-95 disabled:opacity-50"
           >
-            {{ isSubmitting ? 'Submitting...' : 'Submit' }}
+            {{ isSaving ? 'Saving...' : isSubmitting ? 'Submitting...' : 'Save & Submit' }}
           </button>
           <button
             v-if="doc.name && doc.docstatus === 1"
@@ -985,11 +977,19 @@ async function handleSave() {
 
     Object.assign(doc, res)
     await loadVouchersList()
+    return true
   } catch (err) {
     errorMsg.value = 'Save failed: ' + err.message
+    return false
   } finally {
     isSaving.value = false
   }
+}
+
+async function handleSaveAndSubmit() {
+  const saved = await handleSave()
+  if (!saved) return
+  await handleSubmit()
 }
 
 async function handleSubmit() {
