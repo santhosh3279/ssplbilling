@@ -156,7 +156,8 @@
 
           <!-- PREVIEW CONTENT -->
           <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
-            <div class="mx-auto max-w-4xl rounded-2xl bg-[var(--color-surface)] p-8 shadow-md border border-[var(--color-border)]">
+            <div class="flex items-start gap-6">
+            <div class="min-w-0 flex-1 rounded-2xl bg-[var(--color-surface)] p-8 shadow-md border border-[var(--color-border)]">
 
               <table class="w-full text-left">
                 <thead>
@@ -189,6 +190,68 @@
                   </div>
                 </div>
               </div>
+            </div>
+
+            <!-- UNLINKED PAYMENTS / DEBIT NOTES PANE -->
+            <div class="w-80 shrink-0 rounded-2xl bg-[var(--color-surface)] shadow-md border border-[var(--color-border)] overflow-hidden">
+              <div class="px-4 py-3 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
+                <div class="text-[12px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Unlinked Payments / Debit Notes</div>
+              </div>
+
+              <div v-if="loadingUnlinked" class="flex items-center justify-center gap-2 py-8 opacity-50">
+                <div class="h-4 w-4 animate-spin rounded-full border-2 border-[var(--color-warning)] border-t-transparent"></div>
+                <span class="text-[13px] text-[var(--color-text-muted)]">Checking supplier...</span>
+              </div>
+
+              <div v-else-if="unlinkedEntries.length === 0" class="py-8 px-4 text-center opacity-40">
+                <span class="text-[13px] font-medium text-[var(--color-text-muted)]">No unlinked payments or debit notes for this supplier</span>
+              </div>
+
+              <template v-else>
+                <div class="max-h-96 overflow-y-auto custom-scrollbar divide-y divide-[var(--color-border)]">
+                  <div v-for="entry in unlinkedEntries" :key="entry.doctype + entry.name" class="p-3 space-y-1.5">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="font-mono text-[13px] font-bold text-[var(--color-warning)] truncate">{{ entry.name }}</span>
+                      <span
+                        class="rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider border shrink-0"
+                        :class="entry.doctype === 'Purchase Invoice'
+                          ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                          : 'bg-blue-500/10 text-blue-500 border-blue-500/20'"
+                      >
+                        {{ entry.doctype === 'Purchase Invoice' ? 'Debit Note' : entry.doctype === 'Journal Entry' ? 'Journal' : 'Payment' }}
+                      </span>
+                    </div>
+                    <div class="flex items-center justify-between text-[12px] text-[var(--color-text-muted)]">
+                      <span>{{ formatDate(entry.posting_date) }}</span>
+                      <span>Avail: <span class="font-mono font-bold text-[var(--color-success)]">{{ fmt(entry.available) }}</span></span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] shrink-0">Link Amt</label>
+                      <input
+                        v-model.number="entry.alloc"
+                        @input="clampAlloc(entry)"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 py-1 text-right text-[14px] font-mono font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-warning)] transition-all"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="px-4 py-3 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 space-y-1">
+                  <div class="flex justify-between text-[13px] font-bold">
+                    <span class="uppercase tracking-wider text-[var(--color-text-muted)]">Total to Link</span>
+                    <span class="font-mono text-[var(--color-success)]">{{ fmt(totalToLink) }}</span>
+                  </div>
+                  <div class="flex justify-between text-[13px] font-bold">
+                    <span class="uppercase tracking-wider text-[var(--color-text-muted)]">Balance Payable</span>
+                    <span class="font-mono text-[var(--color-warning)]">{{ fmt((selectedInvoice.rounded_total || selectedInvoice.grand_total) - totalToLink) }}</span>
+                  </div>
+                </div>
+              </template>
+            </div>
             </div>
           </div>
         </template>
@@ -303,7 +366,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
-import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice } from '../api.js'
+import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice, frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import BarcodePrintPage from './BarcodePrintPage.vue'
@@ -327,6 +390,8 @@ const showModifyModal = ref(false)
 const showLcvWarningModal = ref(false)
 const showLcvModal = ref(false)
 const lastSubmittedInvoice = ref(null)
+const unlinkedEntries = ref([])
+const loadingUnlinked = ref(false)
 
 useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showBarcodeModal)
@@ -437,19 +502,89 @@ function debouncedSearch() {
 
 async function selectInvoice(inv) {
   if (selectedInvoice.value?.name === inv.name) return
-  
+
   selectedInvoice.value = inv
   previewItems.value = []
+  unlinkedEntries.value = []
   errorMsg.value = ''
   successMsg.value = ''
-  
+
   try {
     const details = await getPurchaseInvoiceDetails(inv.name)
     selectedInvoice.value = details
     previewItems.value = details.items || []
+    loadUnlinkedEntries(details.supplier, inv.name)
   } catch (e) {
     errorMsg.value = "Failed to load details: " + e.message
   }
+}
+
+// --- UNLINKED PAYMENTS / DEBIT NOTES ---
+const totalToLink = computed(() =>
+  unlinkedEntries.value.reduce((sum, e) => sum + Number(e.alloc || 0), 0)
+)
+
+async function loadUnlinkedEntries(supplier, invName) {
+  if (!supplier) return
+  loadingUnlinked.value = true
+  try {
+    const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
+      party_type: 'Supplier',
+      party: supplier
+    })
+    // Ignore stale responses if the user has moved to another invoice
+    if (selectedInvoice.value?.name !== invName) return
+
+    const rows = []
+    for (const p of (res.payment_entries || []).filter(p => p.direction === 'Dr')) {
+      rows.push({
+        doctype: 'Payment Entry',
+        name: p.name,
+        posting_date: p.posting_date,
+        available: Number(p.unallocated_amount || 0),
+        reference_row: null,
+        alloc: null
+      })
+    }
+    for (const j of (res.journal_entries || []).filter(j => j.direction === 'Dr')) {
+      rows.push({
+        doctype: 'Journal Entry',
+        name: j.name,
+        posting_date: j.posting_date,
+        available: Number(j.unallocated_amount || 0),
+        reference_row: j.reference_row || null,
+        alloc: null
+      })
+    }
+    for (const i of (res.invoices || []).filter(i => i.doctype === 'Purchase Invoice' && i.direction === 'Dr')) {
+      rows.push({
+        doctype: 'Purchase Invoice',
+        name: i.name,
+        posting_date: i.posting_date,
+        available: Number(i.outstanding_amount || 0),
+        reference_row: null,
+        alloc: null
+      })
+    }
+    unlinkedEntries.value = rows
+  } catch (err) {
+    console.warn('Failed to load unlinked entries for supplier:', err)
+  } finally {
+    loadingUnlinked.value = false
+  }
+}
+
+function clampAlloc(entry) {
+  let val = Number(entry.alloc || 0)
+  if (val < 0) val = 0
+  if (val > entry.available) val = entry.available
+  // Total linked cannot exceed the bill amount
+  const billTotal = Number(selectedInvoice.value?.rounded_total || selectedInvoice.value?.grand_total || 0)
+  const others = unlinkedEntries.value.reduce(
+    (sum, e) => (e === entry ? sum : sum + Number(e.alloc || 0)), 0
+  )
+  if (others + val > billTotal) val = Math.max(0, billTotal - others)
+  entry.alloc = val
 }
 
 function handleBarcodePrint() {
@@ -487,7 +622,31 @@ async function confirmSubmission() {
     const supplier = selectedInvoice.value.supplier
     const grandTotal = selectedInvoice.value.rounded_total || selectedInvoice.value.grand_total
 
+    const allocations = unlinkedEntries.value
+      .filter(e => Number(e.alloc) > 0)
+      .map(e => ({
+        payment_type: e.doctype,
+        payment_name: e.name,
+        reference_row: e.reference_row,
+        invoice_type: 'Purchase Invoice',
+        invoice_name: invName,
+        amount: Number(e.alloc),
+        unreconciled_amount: e.available
+      }))
+
     await submitPurchaseInvoice(invName)
+
+    if (allocations.length > 0) {
+      try {
+        await frappePost('ssplbilling.api.reconcile_api.post_reconciliation', {
+          party_type: 'Supplier',
+          party: supplier,
+          allocations: JSON.stringify(allocations)
+        })
+      } catch (err) {
+        errorMsg.value = 'Bill submitted, but linking payments failed: ' + (err.message || err)
+      }
+    }
 
     const nameToRemove = selectedInvoice.value.name
     lastSubmittedInvoice.value = {
@@ -500,6 +659,7 @@ async function confirmSubmission() {
     invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
     selectedInvoice.value = null
     previewItems.value = []
+    unlinkedEntries.value = []
     successMsg.value = ''
 
     loadInvoices()
