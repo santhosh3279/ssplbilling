@@ -826,7 +826,8 @@ function onAmountChanged() {
 
 // --- GET ITEMS FROM VOUCHERS (SERVER CALL) ---
 async function fetchItems() {
-  if (!doc.purchase_receipts.length) return
+  const validReceipts = doc.purchase_receipts.filter(r => r.receipt_document)
+  if (!validReceipts.length) return
   isFetchingItems.value = true
   errorMsg.value = ''
   successMsg.value = ''
@@ -838,19 +839,23 @@ async function fetchItems() {
       company: doc.company,
       distribute_charges_based_on: doc.distribute_charges_based_on,
       posting_date: doc.posting_date,
-      purchase_receipts: doc.purchase_receipts.map(r => ({
+      purchase_receipts: validReceipts.map(r => ({
+        name: r.name,
         receipt_document_type: r.receipt_document_type,
         receipt_document: r.receipt_document,
         supplier: r.supplier,
         posting_date: r.posting_date,
         grand_total: r.grand_total
       })),
-      taxes: doc.taxes.map(t => ({
-        expense_account: t.expense_account,
-        description: t.description,
-        amount: t.amount,
-        base_amount: t.amount
-      })),
+      taxes: doc.taxes
+        .filter(t => t.expense_account)
+        .map(t => ({
+          name: t.name,
+          expense_account: t.expense_account,
+          description: t.description,
+          amount: t.amount,
+          base_amount: t.amount
+        })),
       items: []
     }
 
@@ -914,7 +919,8 @@ async function handleSave() {
     errorMsg.value = 'Company is required.'
     return
   }
-  if (!doc.purchase_receipts.length) {
+  const validReceipts = doc.purchase_receipts.filter(r => r.receipt_document)
+  if (!validReceipts.length) {
     errorMsg.value = 'Please add at least one Purchase Receipt or Invoice.'
     return
   }
@@ -928,20 +934,25 @@ async function handleSave() {
       company: doc.company,
       posting_date: doc.posting_date,
       distribute_charges_based_on: doc.distribute_charges_based_on,
-      purchase_receipts: doc.purchase_receipts.map(r => ({
+      purchase_receipts: validReceipts.map(r => ({
+        name: r.name,
         receipt_document_type: r.receipt_document_type,
         receipt_document: r.receipt_document,
         supplier: r.supplier,
         posting_date: r.posting_date,
         grand_total: r.grand_total
       })),
-      taxes: doc.taxes.map(t => ({
-        expense_account: t.expense_account,
-        description: t.description,
-        amount: t.amount,
-        base_amount: t.amount
-      })),
+      taxes: doc.taxes
+        .filter(t => t.expense_account)
+        .map(t => ({
+          name: t.name,
+          expense_account: t.expense_account,
+          description: t.description,
+          amount: t.amount,
+          base_amount: t.amount
+        })),
       items: doc.items.map(i => ({
+        name: i.name,
         item_code: i.item_code,
         description: i.description,
         receipt_document_type: i.receipt_document_type,
@@ -981,7 +992,51 @@ async function handleSubmit() {
   errorMsg.value = ''
   successMsg.value = ''
   try {
-    const res = await frappePost('frappe.client.submit', { doc: doc })
+    const payload = {
+      doctype: 'Landed Cost Voucher',
+      name: doc.name,
+      docstatus: doc.docstatus,
+      company: doc.company,
+      posting_date: doc.posting_date,
+      distribute_charges_based_on: doc.distribute_charges_based_on,
+      total_taxes_and_charges: doc.total_taxes_and_charges,
+      total_vendor_invoices_cost: doc.total_vendor_invoices_cost,
+      vendor_invoices: doc.vendor_invoices || [],
+      purchase_receipts: doc.purchase_receipts
+        .filter(r => r.receipt_document)
+        .map(r => ({
+          name: r.name,
+          receipt_document_type: r.receipt_document_type,
+          receipt_document: r.receipt_document,
+          supplier: r.supplier,
+          posting_date: r.posting_date,
+          grand_total: r.grand_total
+        })),
+      taxes: doc.taxes
+        .filter(t => t.expense_account)
+        .map(t => ({
+          name: t.name,
+          expense_account: t.expense_account,
+          description: t.description,
+          amount: t.amount,
+          base_amount: t.amount
+        })),
+      items: doc.items.map(i => ({
+        name: i.name,
+        item_code: i.item_code,
+        description: i.description,
+        receipt_document_type: i.receipt_document_type,
+        receipt_document: i.receipt_document,
+        qty: i.qty,
+        rate: i.rate,
+        amount: i.amount,
+        applicable_charges: i.applicable_charges,
+        purchase_receipt_item: i.purchase_receipt_item,
+        stock_entry_item: i.stock_entry_item,
+        cost_center: i.cost_center
+      }))
+    }
+    const res = await frappePost('frappe.client.submit', { doc: payload })
     successMsg.value = `${res.name} submitted successfully.`
     Object.assign(doc, res)
     await loadVouchersList()
