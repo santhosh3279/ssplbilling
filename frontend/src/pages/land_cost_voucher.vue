@@ -134,14 +134,14 @@
 
           <table class="w-full text-left border-collapse border-l border-t border-[var(--color-border)]">
             <thead>
-              <tr class="bg-[var(--color-surface-raised)]/70 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-12 text-center">#</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-48">Document Type</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2">Document Number</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2">Supplier</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-36">Posting Date</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-36 text-right">Grand Total</th>
-                <th v-if="!isReadOnly" class="border-r border-b border-[var(--color-border)] p-2 w-12 text-center"></th>
+              <tr class="bg-[var(--color-surface-raised)]/70 text-2xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-12 text-center">#</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-48">Document Type</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1">Document Number</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1">Supplier</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-36">Posting Date</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-36 text-right">Grand Total</th>
+                <th v-if="!isReadOnly" class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-12 text-center"></th>
               </tr>
             </thead>
             <tbody>
@@ -155,7 +155,7 @@
                 :key="index"
                 class="hover:bg-[var(--color-surface-raised)]/20 text-[14px]"
               >
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 font-mono text-xs text-[var(--color-text-muted)] text-center bg-[var(--color-surface-raised)]/30">{{ index + 1 }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 font-mono text-xl text-[var(--color-text-muted)] text-center bg-[var(--color-surface-raised)]/30">{{ index + 1 }}</td>
                 
                 <!-- Type Selection -->
                 <td class="border-r border-b border-[var(--color-border)] p-0">
@@ -163,7 +163,7 @@
                     v-model="row.receipt_document_type"
                     :disabled="isReadOnly"
                     @change="clearRowDoc(row)"
-                    class="w-full h-full min-h-[36px] bg-transparent border-none outline-none px-3 py-1.5 text-xs font-bold text-[var(--color-text)] focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-70 appearance-none"
+                    class="w-full h-full min-h-[32px] bg-transparent border-none outline-none px-1.5 py-0.5 text-xl font-bold text-[var(--color-text)] focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-70 appearance-none"
                   >
                     <option value="Purchase Receipt">Purchase Receipt</option>
                     <option value="Purchase Invoice">Purchase Invoice</option>
@@ -181,7 +181,7 @@
                       @input="handleDocSearch(row)"
                       type="text"
                       placeholder="Type to search..."
-                      class="w-full h-full min-h-[36px] bg-transparent border-none outline-none px-3 py-1.5 text-xs font-bold text-[var(--color-text)] focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+                      class="w-full h-full min-h-[32px] bg-transparent border-none outline-none px-1.5 py-0.5 text-xl font-bold text-[var(--color-text)] focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                     />
                     <!-- Suggestions Dropdown -->
                     <div 
@@ -193,27 +193,27 @@
                         :key="sug.name"
                         type="button"
                         @mousedown="selectVoucherDoc(row, sug)"
-                        class="w-full text-left p-2.5 hover:bg-[var(--color-highlight)]/10 text-xs transition-colors border-b border-[var(--color-border)] last:border-none outline-none"
+                        class="w-full text-left p-1 hover:bg-[var(--color-highlight)]/10 text-xl transition-colors border-b border-[var(--color-border)] last:border-none outline-none"
                       >
                         <div class="font-mono font-bold text-[var(--color-highlight)]">{{ sug.name }}</div>
-                        <div class="flex justify-between mt-1 text-[11px] text-[var(--color-text-muted)]">
+                        <div class="flex justify-between mt-1 text-lg text-[var(--color-text-muted)]">
                           <span>Supplier: {{ sug.supplier }}</span>
                           <span>Total: {{ fmtCurrency(sug.grand_total) }}</span>
                         </div>
                       </button>
                     </div>
                   </div>
-                  <span v-else class="px-3 py-1.5 block font-mono font-bold text-xs text-[var(--color-highlight)]">{{ row.receipt_document }}</span>
+                  <span v-else class="px-1.5 py-0.5 block font-mono font-bold text-xl text-[var(--color-highlight)]">{{ row.receipt_document }}</span>
                 </td>
 
                 <!-- Supplier -->
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-muted)] font-medium">{{ row.supplier || '-' }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 text-xl text-[var(--color-text-muted)] font-medium">{{ row.supplier || '-' }}</td>
 
                 <!-- Posting Date -->
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 font-mono text-xs text-[var(--color-text-muted)]">{{ row.posting_date ? formatDate(row.posting_date) : '-' }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 font-mono text-xl text-[var(--color-text-muted)]">{{ row.posting_date ? formatDate(row.posting_date) : '-' }}</td>
 
                 <!-- Grand Total -->
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 text-right font-mono text-xs text-[var(--color-text)]">{{ row.grand_total ? fmtCurrency(row.grand_total) : '-' }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 text-right font-mono text-xl text-[var(--color-text)]">{{ row.grand_total ? fmtCurrency(row.grand_total) : '-' }}</td>
 
                 <!-- Delete Action -->
                 <td v-if="!isReadOnly" class="border-r border-b border-[var(--color-border)] p-0 text-center">
@@ -237,12 +237,12 @@
 
           <table class="w-full text-left border-collapse border-l border-t border-[var(--color-border)]">
             <thead>
-              <tr class="bg-[var(--color-surface-raised)]/70 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-12 text-center">#</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-72">Expense Account</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2">Description</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-48 text-right">Amount</th>
-                <th v-if="!isReadOnly" class="border-r border-b border-[var(--color-border)] p-2 w-12 text-center"></th>
+              <tr class="bg-[var(--color-surface-raised)]/70 text-2xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-12 text-center">#</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-72">Expense Account</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1">Description</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-48 text-right">Amount</th>
+                <th v-if="!isReadOnly" class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-12 text-center"></th>
               </tr>
             </thead>
             <tbody>
@@ -256,7 +256,7 @@
                 :key="index"
                 class="hover:bg-[var(--color-surface-raised)]/20 text-[14px]"
               >
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 font-mono text-xs text-[var(--color-text-muted)] text-center bg-[var(--color-surface-raised)]/30">{{ index + 1 }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 font-mono text-xl text-[var(--color-text-muted)] text-center bg-[var(--color-surface-raised)]/30">{{ index + 1 }}</td>
                 
                 <!-- Account Autocomplete -->
                 <td class="border-r border-b border-[var(--color-border)] p-0 relative">
@@ -269,7 +269,7 @@
                       @input="handleAccountSearch(row)"
                       type="text"
                       placeholder="Search account..."
-                      class="w-full h-full min-h-[36px] bg-transparent border-none outline-none px-3 py-1.5 text-xs font-bold text-[var(--color-text)] focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+                      class="w-full h-full min-h-[32px] bg-transparent border-none outline-none px-1.5 py-0.5 text-xl font-bold text-[var(--color-text)] focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                     />
                     <!-- Suggestion Dropdown -->
                     <div 
@@ -281,13 +281,13 @@
                         :key="sug.name"
                         type="button"
                         @mousedown="selectTaxAccount(row, sug)"
-                        class="w-full text-left p-2.5 hover:bg-[var(--color-highlight)]/10 text-xs transition-colors border-b border-[var(--color-border)] last:border-none outline-none font-bold text-[var(--color-text)]"
+                        class="w-full text-left p-1 hover:bg-[var(--color-highlight)]/10 text-xl transition-colors border-b border-[var(--color-border)] last:border-none outline-none font-bold text-[var(--color-text)]"
                       >
                         {{ sug.name }}
                       </button>
                     </div>
                   </div>
-                  <span v-else class="px-3 py-1.5 block font-bold text-xs text-[var(--color-text)]">{{ row.expense_account }}</span>
+                  <span v-else class="px-1.5 py-0.5 block font-bold text-xl text-[var(--color-text)]">{{ row.expense_account }}</span>
                 </td>
 
                 <!-- Description -->
@@ -297,9 +297,9 @@
                     v-model="row.description"
                     type="text"
                     placeholder="e.g. Freight Charges"
-                    class="w-full h-full min-h-[36px] bg-transparent border-none outline-none px-3 py-1.5 text-xs font-medium text-[var(--color-text)] focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+                    class="w-full h-full min-h-[32px] bg-transparent border-none outline-none px-1.5 py-0.5 text-xl font-medium text-[var(--color-text)] focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                   />
-                  <span v-else class="px-3 py-1.5 block text-xs text-[var(--color-text)]">{{ row.description || '-' }}</span>
+                  <span v-else class="px-1.5 py-0.5 block text-xl text-[var(--color-text)]">{{ row.description || '-' }}</span>
                 </td>
 
                 <!-- Amount -->
@@ -310,9 +310,9 @@
                     @input="onAmountChanged"
                     type="number"
                     step="0.01"
-                    class="w-full h-full min-h-[36px] bg-transparent border-none outline-none px-3 py-1.5 text-xs font-mono text-right text-[var(--color-text)] focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+                    class="w-full h-full min-h-[32px] bg-transparent border-none outline-none px-1.5 py-0.5 text-xl font-mono text-right text-[var(--color-text)] focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                   />
-                  <span v-else class="px-3 py-1.5 block text-right font-mono text-xs text-[var(--color-text)]">{{ fmtCurrency(row.amount) }}</span>
+                  <span v-else class="px-1.5 py-0.5 block text-right font-mono text-xl text-[var(--color-text)]">{{ fmtCurrency(row.amount) }}</span>
                 </td>
 
                 <!-- Delete -->
@@ -340,15 +340,15 @@
 
           <table class="w-full text-left border-collapse border-l border-t border-[var(--color-border)]">
             <thead>
-              <tr class="bg-[var(--color-surface-raised)]/70 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-12 text-center">#</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-48">Item Code</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2">Description / Name</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-36">Voucher</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-28 text-right">Qty</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-32 text-right">Rate</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-32 text-right">Amount</th>
-                <th class="border-r border-b border-[var(--color-border)] p-2 w-36 text-right text-[var(--color-highlight)]">Applicable Charges</th>
+              <tr class="bg-[var(--color-surface-raised)]/70 text-2xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-12 text-center">#</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-48">Item Code</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1">Description / Name</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-36">Voucher</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-28 text-right">Qty</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-32 text-right">Rate</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-32 text-right">Amount</th>
+                <th class="border-r border-b border-[var(--color-border)] px-1.5 py-1 w-36 text-right text-[var(--color-highlight)]">Applicable Charges</th>
               </tr>
             </thead>
             <tbody>
@@ -362,14 +362,14 @@
                 :key="index"
                 class="hover:bg-[var(--color-surface-raised)]/20 text-[14px]"
               >
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 font-mono text-xs text-[var(--color-text-muted)] text-center bg-[var(--color-surface-raised)]/30">{{ index + 1 }}</td>
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 font-mono text-xs text-[var(--color-highlight)] font-semibold">{{ row.item_code }}</td>
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text)] font-medium">{{ row.description || row.item_name }}</td>
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 font-mono text-xs text-[var(--color-text-muted)]">{{ row.receipt_document }}</td>
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 text-right font-mono text-xs text-[var(--color-text)]">{{ row.qty }}</td>
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 text-right font-mono text-xs text-[var(--color-text-muted)]">{{ fmtCurrency(row.rate) }}</td>
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 text-right font-mono text-xs text-[var(--color-text-muted)]">{{ fmtCurrency(row.amount) }}</td>
-                <td class="border-r border-b border-[var(--color-border)] px-3 py-1.5 text-right font-mono text-xs font-bold text-[var(--color-highlight)]">{{ fmtCurrency(row.applicable_charges) }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 font-mono text-xl text-[var(--color-text-muted)] text-center bg-[var(--color-surface-raised)]/30">{{ index + 1 }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 font-mono text-xl text-[var(--color-highlight)] font-semibold">{{ row.item_code }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 text-xl text-[var(--color-text)] font-medium">{{ row.description || row.item_name }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 font-mono text-xl text-[var(--color-text-muted)]">{{ row.receipt_document }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 text-right font-mono text-xl text-[var(--color-text)]">{{ row.qty }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 text-right font-mono text-xl text-[var(--color-text-muted)]">{{ fmtCurrency(row.rate) }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 text-right font-mono text-xl text-[var(--color-text-muted)]">{{ fmtCurrency(row.amount) }}</td>
+                <td class="border-r border-b border-[var(--color-border)] px-1.5 py-0.5 text-right font-mono text-xl font-bold text-[var(--color-highlight)]">{{ fmtCurrency(row.applicable_charges) }}</td>
               </tr>
             </tbody>
           </table>
