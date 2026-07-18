@@ -416,6 +416,8 @@ def mirror_bill(si):
 def _create_mirror_payment_entry(msi, amount, original_account, allowed_accounts, ref_no=None, original_pe_name=None):
 	if amount <= 0.01 or not original_account:
 		return None
+	if original_account not in allowed_accounts:
+		return None
 	target_company = msi.company
 	paid_to = resolve_target_account(original_account, allowed_accounts, target_company)
 	if not paid_to:
@@ -499,41 +501,42 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 			entries.append(pe_name)
 
 		if discount_amount > 0.01 and discount_account:
-			mapped_discount = resolve_target_account(discount_account, allowed_accounts, msi.company)
-			if mapped_discount:
-				mirror_je_name = f"{original_discount_je}/" if original_discount_je else None
-				if mirror_je_name and frappe.db.exists("Journal Entry", mirror_je_name):
-					entries.append(mirror_je_name)
-				else:
-					je = frappe.new_doc("Journal Entry")
-					je.voucher_type = "Journal Entry"
-					je.posting_date = msi.posting_date
-					je.company = msi.company
-					je.append("accounts", {"account": mapped_discount, "debit_in_account_currency": discount_amount})
-					je.append("accounts", {
-						"account": msi.debit_to,
-						"credit_in_account_currency": discount_amount,
-						"party_type": "Customer",
-						"party": msi.customer,
-						"reference_type": "Sales Invoice",
-						"reference_name": msi.name,
-					})
-					if original_discount_je:
-						cheque_no, cheque_date = frappe.db.get_value(
-							"Journal Entry", original_discount_je, ["cheque_no", "cheque_date"]
-						)
-						if cheque_no:
-							je.cheque_no = cheque_no
-						if cheque_date:
-							je.cheque_date = cheque_date
-
-					je.flags.ignore_permissions = True
-					if mirror_je_name:
-						je.insert(set_name=mirror_je_name)
+			if discount_account in allowed_accounts:
+				mapped_discount = resolve_target_account(discount_account, allowed_accounts, msi.company)
+				if mapped_discount:
+					mirror_je_name = f"{original_discount_je}/" if original_discount_je else None
+					if mirror_je_name and frappe.db.exists("Journal Entry", mirror_je_name):
+						entries.append(mirror_je_name)
 					else:
-						je.insert()
-					je.submit()
-					entries.append(je.name)
+						je = frappe.new_doc("Journal Entry")
+						je.voucher_type = "Journal Entry"
+						je.posting_date = msi.posting_date
+						je.company = msi.company
+						je.append("accounts", {"account": mapped_discount, "debit_in_account_currency": discount_amount})
+						je.append("accounts", {
+							"account": msi.debit_to,
+							"credit_in_account_currency": discount_amount,
+							"party_type": "Customer",
+							"party": msi.customer,
+							"reference_type": "Sales Invoice",
+							"reference_name": msi.name,
+						})
+						if original_discount_je:
+							cheque_no, cheque_date = frappe.db.get_value(
+								"Journal Entry", original_discount_je, ["cheque_no", "cheque_date"]
+							)
+							if cheque_no:
+								je.cheque_no = cheque_no
+							if cheque_date:
+								je.cheque_date = cheque_date
+
+						je.flags.ignore_permissions = True
+						if mirror_je_name:
+							je.insert(set_name=mirror_je_name)
+						else:
+							je.insert()
+						je.submit()
+						entries.append(je.name)
 
 		frappe.db.release_savepoint(sp)
 		return entries

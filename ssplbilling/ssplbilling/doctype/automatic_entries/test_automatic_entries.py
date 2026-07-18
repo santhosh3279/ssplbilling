@@ -110,3 +110,16 @@ class TestAutomaticEntries(IntegrationTestCase):
 			self.assertTrue(frappe.db.exists("Account", "Temp Test Acc Whitelist - NCK"))
 		finally:
 			frappe.db.rollback()
+
+	def test_create_mirror_payment_entry_allowed(self):
+		from ssplbilling.api.automatic_entries_api import _create_mirror_payment_entry
+		
+		msi = frappe.new_doc("Sales Invoice")
+		msi.company = "Sundaram And Sons Private Limited 2"
+		msi.customer = "Test Customer"
+		msi.posting_date = "2026-07-18"
+		msi.debit_to = "Debtors - NCK"
+		
+		# If the payment account is not whitelisted, it must return None
+		res_not_allowed = _create_mirror_payment_entry(msi, 100.0, "Cash - SSPL", set())
+		self.assertIsNone(res_not_allowed)
