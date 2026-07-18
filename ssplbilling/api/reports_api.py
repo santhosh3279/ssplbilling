@@ -14,12 +14,13 @@ def _classify_tax(account_head):
 
 
 @frappe.whitelist()
-def get_sales_tax_register(series, from_date=None, to_date=None):
+def get_sales_tax_register(series, from_date=None, to_date=None, company=None):
 	"""Return Sales Tax Account Register rows for the given naming series and date range.
 
 	Each row represents one submitted Sales Invoice with its CGST/SGST/IGST breakdown.
 	"""
-	company = frappe.db.get_value("Sales Invoice", {"naming_series": series}, "company") or frappe.defaults.get_user_default("company")
+	if not company:
+		company = frappe.db.get_value("Sales Invoice", {"naming_series": series}, "company") or frappe.defaults.get_user_default("company")
 	if not company:
 		company = frappe.db.get_value("Company", {}, "name")
 
@@ -40,6 +41,8 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 		["Sales Invoice", "naming_series", "=", series],
 		["Sales Invoice", "docstatus", "=", 1],
 	]
+	if company:
+		filters.append(["Sales Invoice", "company", "=", company])
 	if from_date:
 		filters.append(["Sales Invoice", "posting_date", ">=", from_date])
 	if to_date:
@@ -147,7 +150,7 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 			}
 		)
 
-	comp = get_company_details()
+	comp = get_company_details(company)
 	return {
 		"rows": result,
 		"active_templates": [{"name": t.name, "title": t.title, "gst_rate": t.gst_rate} for t in templates],
@@ -157,12 +160,13 @@ def get_sales_tax_register(series, from_date=None, to_date=None):
 
 
 @frappe.whitelist()
-def get_quotation_tax_register(series, from_date=None, to_date=None):
+def get_quotation_tax_register(series, from_date=None, to_date=None, company=None):
 	"""Return Quotation Tax Register rows for the given naming series and date range.
 
 	Includes both Draft (0) and Submitted (1) quotations.
 	"""
-	company = frappe.db.get_value("Quotation", {"naming_series": series}, "company") or frappe.defaults.get_user_default("company")
+	if not company:
+		company = frappe.db.get_value("Quotation", {"naming_series": series}, "company") or frappe.defaults.get_user_default("company")
 	if not company:
 		company = frappe.db.get_value("Company", {}, "name")
 
@@ -183,6 +187,8 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 		["Quotation", "naming_series", "=", series],
 		["Quotation", "docstatus", "in", [0, 1]],
 	]
+	if company:
+		filters.append(["Quotation", "company", "=", company])
 	if from_date:
 		filters.append(["Quotation", "transaction_date", ">=", from_date])
 	if to_date:
@@ -290,7 +296,7 @@ def get_quotation_tax_register(series, from_date=None, to_date=None):
 			}
 		)
 
-	comp = get_company_details()
+	comp = get_company_details(company)
 	return {
 		"rows": result,
 		"active_templates": [{"name": t.name, "title": t.title, "gst_rate": t.gst_rate} for t in templates],
@@ -326,12 +332,23 @@ def get_quotation_series():
 	return ["QTN-"]
 
 
-def get_company_details():
+def get_company_details(company=None):
 	from erpnext import get_default_company
-	company = frappe.defaults.get_global_default("company") or get_default_company() or "Sundaram and Sons Private Ltd"
-	
+	if not company:
+		company = frappe.defaults.get_global_default("company") or get_default_company() or "Sundaram and Sons Private Ltd"
+
 	address_fields = ["address_line1", "address_line2", "city", "state", "pincode", "gstin"]
-	addr = frappe.db.get_value("Address", {"is_your_company_address": 1}, address_fields, as_dict=True)
+	addr = None
+	linked = frappe.get_all(
+		"Dynamic Link",
+		filters={"link_doctype": "Company", "link_name": company, "parenttype": "Address"},
+		pluck="parent",
+		limit=1,
+	)
+	if linked:
+		addr = frappe.db.get_value("Address", linked[0], address_fields, as_dict=True)
+	if not addr:
+		addr = frappe.db.get_value("Address", {"is_your_company_address": 1}, address_fields, as_dict=True)
 	
 	address_lines = []
 	if addr:
@@ -358,7 +375,7 @@ def get_company_details():
 
 
 @frappe.whitelist()
-def get_hsn_summary_report(series, from_date=None, to_date=None):
+def get_hsn_summary_report(series, from_date=None, to_date=None, company=None):
 	"""Return HSN Summary Report for Sales Invoices for the given naming series and date range.
 	Group by HSN code and invoice to show bill details.
 	"""
@@ -370,6 +387,9 @@ def get_hsn_summary_report(series, from_date=None, to_date=None):
 	if to_date:
 		date_condition += " AND inv.posting_date <= %s"
 		query_filters.append(to_date)
+	if company:
+		date_condition += " AND inv.company = %s"
+		query_filters.append(company)
 
 	rows = frappe.db.sql(f"""
 		SELECT 
@@ -418,7 +438,7 @@ def get_hsn_summary_report(series, from_date=None, to_date=None):
 		
 		result.append(r)
 
-	comp = get_company_details()
+	comp = get_company_details(company)
 	return {
 		"rows": result,
 		"company_name": comp["company_name"],
@@ -427,7 +447,7 @@ def get_hsn_summary_report(series, from_date=None, to_date=None):
 
 
 @frappe.whitelist()
-def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
+def get_quotation_hsn_summary_report(series, from_date=None, to_date=None, company=None):
 	"""Return HSN Summary Report for Quotations for the given naming series and date range.
 	Includes both Draft and Submitted quotations. Group by HSN code and quotation name to show bill details.
 	"""
@@ -439,6 +459,9 @@ def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
 	if to_date:
 		date_condition += " AND qt.transaction_date <= %s"
 		query_filters.append(to_date)
+	if company:
+		date_condition += " AND qt.company = %s"
+		query_filters.append(company)
 
 	rows = frappe.db.sql(f"""
 		SELECT 
@@ -486,7 +509,7 @@ def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
 		
 		result.append(r)
 
-	comp = get_company_details()
+	comp = get_company_details(company)
 	return {
 		"rows": result,
 		"company_name": comp["company_name"],
@@ -496,7 +519,7 @@ def get_quotation_hsn_summary_report(series, from_date=None, to_date=None):
 
 
 @frappe.whitelist()
-def get_item_summary_report(series, from_date=None, to_date=None):
+def get_item_summary_report(series, from_date=None, to_date=None, company=None):
 	"""Return Item Sales Summary Report for Sales Invoices for the given naming series and date range.
 	Group by Item Code.
 	"""
@@ -508,6 +531,9 @@ def get_item_summary_report(series, from_date=None, to_date=None):
 	if to_date:
 		date_condition += " AND inv.posting_date <= %s"
 		query_filters.append(to_date)
+	if company:
+		date_condition += " AND inv.company = %s"
+		query_filters.append(company)
 
 	rows = frappe.db.sql(f"""
 		SELECT 
@@ -738,7 +764,7 @@ def get_store_sale_report(from_date=None, to_date=None):
         }
 
 @frappe.whitelist()
-def get_store_wise_item_sales_report(from_date=None, to_date=None, income_account=None):
+def get_store_wise_item_sales_report(from_date=None, to_date=None, income_account=None, company=None):
 	"""Return Store Wise Item Sales Report.
 	Group by Income Account and Item Code.
 	"""
@@ -755,6 +781,9 @@ def get_store_wise_item_sales_report(from_date=None, to_date=None, income_accoun
 	if income_account:
 		income_account_condition = " AND it.income_account = %s"
 		query_filters.append(income_account)
+	if company:
+		income_account_condition += " AND inv.company = %s"
+		query_filters.append(company)
 
 	rows = frappe.db.sql(f"""
 		SELECT 
@@ -788,11 +817,14 @@ def get_store_wise_item_sales_report(from_date=None, to_date=None, income_accoun
 	return result
 
 @frappe.whitelist()
-def get_income_accounts():
+def get_income_accounts(company=None):
     """Return a list of income accounts for filtering."""
+    filters = {"root_type": "Income", "is_group": 0}
+    if company:
+        filters["company"] = company
     return frappe.get_all(
         "Account",
-        filters={"root_type": "Income", "is_group": 0},
+        filters=filters,
         pluck="name",
         order_by="name asc"
     )
@@ -1353,12 +1385,15 @@ def get_outstanding_customers_report(as_on_date=None, party_type="Customer"):
 
 
 @frappe.whitelist()
-def get_ledger_wise_sales_purchase_report(from_date=None, to_date=None):
+def get_ledger_wise_sales_purchase_report(from_date=None, to_date=None, company=None):
 	"""Get sales and purchase customer/supplier-wise summary report for a date range."""
 	if not from_date:
 		from_date = frappe.utils.today()
 	if not to_date:
 		to_date = frappe.utils.today()
+
+	company_condition = " AND gle.company = %s" if company else ""
+	params = (from_date, to_date, company) if company else (from_date, to_date)
 
 	sales_rows = frappe.db.sql(
 		"""
@@ -1374,11 +1409,12 @@ def get_ledger_wise_sales_purchase_report(from_date=None, to_date=None):
 		  AND gle.party_type = 'Customer'
 		  AND gle.is_cancelled = 0
 		  AND gle.posting_date BETWEEN %s AND %s
+		  {company_condition}
 		GROUP BY gle.party
 		HAVING ABS(SUM(gle.debit)) > 0.005 OR ABS(SUM(gle.credit)) > 0.005
 		ORDER BY net_amount DESC, gle.party
-		""",
-		(from_date, to_date),
+		""".format(company_condition=company_condition),
+		params,
 		as_dict=True,
 	)
 
@@ -1396,11 +1432,12 @@ def get_ledger_wise_sales_purchase_report(from_date=None, to_date=None):
 		  AND gle.party_type = 'Supplier'
 		  AND gle.is_cancelled = 0
 		  AND gle.posting_date BETWEEN %s AND %s
+		  {company_condition}
 		GROUP BY gle.party
 		HAVING ABS(SUM(gle.debit)) > 0.005 OR ABS(SUM(gle.credit)) > 0.005
 		ORDER BY net_amount DESC, gle.party
-		""",
-		(from_date, to_date),
+		""".format(company_condition=company_condition),
+		params,
 		as_dict=True,
 	)
 

@@ -427,7 +427,8 @@ async function fetchReport() {
       report_type: activeTab.value,
       from_date: fromDate.value,
       to_date: toDate.value,
-      naming_series: namingSeriesParam
+      naming_series: namingSeriesParam,
+      company: localStorage.getItem('wb-company') || ''
     })
     reportData.value = (data || []).map(row => {
       let display_amount = 0

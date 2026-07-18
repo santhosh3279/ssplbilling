@@ -2,7 +2,7 @@ import frappe
 from frappe.utils import flt, getdate
 
 @frappe.whitelist()
-def get_daily_reports(report_type, from_date, to_date, naming_series=None):
+def get_daily_reports(report_type, from_date, to_date, naming_series=None, company=None):
         """
         Returns a list of documents for a specific date range and type.
         report_type: 'Sales Invoice', 'Purchase Invoice', 'Payment', 'Journal', 'Quotation', 'Loading'
@@ -15,6 +15,8 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
                         "posting_date": ["between", [from_date, to_date]],
                         "docstatus": ["<", 2]
                 }
+                if company:
+                        filters["company"] = company
                 if naming_series:
                         if isinstance(naming_series, str):
                                 if naming_series.startswith("[") and naming_series.endswith("]"):
@@ -41,6 +43,8 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
                         "posting_date": ["between", [from_date, to_date]],
                         "docstatus": ["<", 2]
                 }
+                if company:
+                        filters["company"] = company
                 if naming_series:
                         if isinstance(naming_series, str):
                                 if naming_series.startswith("[") and naming_series.endswith("]"):
@@ -63,39 +67,53 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None):
                 )
 
         elif report_type == 'Payment':
+                filters = {"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]}
+                if company:
+                        filters["company"] = company
                 return frappe.get_all(
                         "Payment Entry",
-                        filters={"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]},
+                        filters=filters,
                         fields=["name", "party_name", "paid_amount", "received_amount", "mode_of_payment", "docstatus", "posting_date", "payment_type"],
                         order_by="posting_date desc, creation desc"
                 )
 
         elif report_type == 'Journal':
+                filters = {"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]}
+                if company:
+                        filters["company"] = company
                 return frappe.get_all(
                         "Journal Entry",
-                        filters={"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]},
+                        filters=filters,
                         fields=["name", "voucher_type", "total_debit", "total_credit", "docstatus", "user_remark", "posting_date"],
                         order_by="posting_date desc, creation desc"
                 )
 
         elif report_type == 'Quotation':
+                filters = {"transaction_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]}
+                if company:
+                        filters["company"] = company
                 return frappe.get_all(
                         "Quotation",
-                        filters={"transaction_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]},
+                        filters=filters,
                         fields=["name", "customer_name", "grand_total", "docstatus", "status", "transaction_date"],
                         order_by="transaction_date desc, creation desc"
                 )
 
         elif report_type == 'Loading':
+                company_condition = ""
+                params = [from_date, to_date]
+                if company and frappe.get_meta("Loading Receipt").has_field("company"):
+                        company_condition = " AND lr.company = %s"
+                        params.append(company)
                 return frappe.db.sql("""
                         SELECT 
                                 lr.name, lr.date, lr.customer_name, lr.bill_no,
                                 lri.item, lri.item_name, lri.qty, lri.rate, lri.amount
                         FROM `tabLoading Receipt` lr
                         JOIN `tabLoading Receipt Item` lri ON lri.parent = lr.name
-                        WHERE lr.date BETWEEN %s AND %s
+                        WHERE lr.date BETWEEN %s AND %s{company_condition}
                         ORDER BY lr.date DESC, lr.creation DESC
-                """, (from_date, to_date), as_dict=True)
+                """.format(company_condition=company_condition), tuple(params), as_dict=True)
 
         return []
 

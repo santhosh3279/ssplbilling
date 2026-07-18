@@ -834,6 +834,7 @@ export async function getSalesTaxRegister(series, fromDate, toDate) {
     series,
     from_date: fromDate,
     to_date: toDate,
+    company: localStorage.getItem("wb-company") || undefined,
   });
 }
 
@@ -862,6 +863,7 @@ export async function getQuotationTaxRegister(series, fromDate, toDate) {
     series,
     from_date: fromDate,
     to_date: toDate,
+    company: localStorage.getItem("wb-company") || undefined,
   });
 }
 
@@ -873,6 +875,7 @@ export async function getHsnSummaryReport(series, fromDate, toDate) {
     series,
     from_date: fromDate,
     to_date: toDate,
+    company: localStorage.getItem("wb-company") || undefined,
   });
 }
 
@@ -884,6 +887,7 @@ export async function getQuotationHsnSummaryReport(series, fromDate, toDate) {
     series,
     from_date: fromDate,
     to_date: toDate,
+    company: localStorage.getItem("wb-company") || undefined,
   });
 }
 
@@ -895,6 +899,7 @@ export async function getItemSummaryReport(series, fromDate, toDate) {
     series,
     from_date: fromDate,
     to_date: toDate,
+    company: localStorage.getItem("wb-company") || undefined,
   });
 }
 
@@ -903,6 +908,7 @@ export async function getStoreWiseItemSalesReport(fromDate, toDate, incomeAccoun
     from_date: fromDate,
     to_date: toDate,
     income_account: incomeAccount,
+    company: localStorage.getItem("wb-company") || undefined,
   });
 }
 
@@ -923,7 +929,9 @@ export async function getFastMovingItemsReport(fromDate, toDate, series, incomeA
  * Fetch list of income accounts.
  */
 export async function getIncomeAccounts() {
-  return frappeGet("ssplbilling.api.reports_api.get_income_accounts", {});
+  return frappeGet("ssplbilling.api.reports_api.get_income_accounts", {
+    company: localStorage.getItem("wb-company") || undefined,
+  });
 }
 
 /**
@@ -1012,7 +1020,11 @@ export async function getOutstandingCustomersReport(asOnDate, partyType = "Custo
 }
 
 export async function getLedgerWiseSalesPurchaseReport(fromDate, toDate) {
-  return frappeGet("ssplbilling.api.reports_api.get_ledger_wise_sales_purchase_report", { from_date: fromDate, to_date: toDate });
+  return frappeGet("ssplbilling.api.reports_api.get_ledger_wise_sales_purchase_report", {
+    from_date: fromDate,
+    to_date: toDate,
+    company: localStorage.getItem("wb-company") || undefined,
+  });
 }
 
 export async function getMaterialTransferReport(fromDate, toDate) {
