@@ -427,11 +427,13 @@ export async function fetchAllowedTiles(user = null) {
  * @returns {Promise<Array<{name,customer,customer_name,posting_date,grand_total,outstanding_amount,docstatus}>>}
  */
 export async function fetchDraftInvoices(query = "", limit = 50, postingDate = "", namingSeries = "") {
+  const company = localStorage.getItem("wb-company") || "";
   return frappeGet("ssplbilling.api.cashier_api.get_sales_invoices", {
     query,
     limit,
     ...(postingDate && { posting_date: postingDate }),
     ...(namingSeries && { naming_series: namingSeries }),
+    ...(company && { company }),
     draft_only: true
   });
 }

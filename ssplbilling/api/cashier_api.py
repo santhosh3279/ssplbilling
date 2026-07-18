@@ -27,11 +27,14 @@ def _get_item_tax_rate(item_code):
     return float(sum(d.tax_rate or 0 for d in details)) / 2
 
 @frappe.whitelist()
-def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None, draft_only=False):
+def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None, draft_only=False, company=None):
     """List Sales Invoices for the sidebar bill panel."""
     draft_only = frappe.parse_json(draft_only)
 
     filters = [["docstatus", "!=", 2]]
+
+    if company:
+        filters.append(["company", "=", company])
 
     # If no search query and not draft_only, restrict by date
     if not query and not draft_only:
