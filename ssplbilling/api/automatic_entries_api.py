@@ -613,8 +613,13 @@ def mirror_standalone_payment_entry(pe):
 			frappe.db.rollback(save_point=sp)
 			return None
 
+		# Prefer the target company's MOP for the mapped account; otherwise keep the
+		# source MOP rather than _mop_for_account's "Cash" fallback.
 		mop_account = mpe.paid_from if pe.payment_type == "Pay" else mpe.paid_to
-		mpe.mode_of_payment = _mop_for_account(mop_account, target_company)
+		target_mop = frappe.db.get_value(
+			"Mode of Payment Account", {"default_account": mop_account, "company": target_company}, "parent"
+		)
+		mpe.mode_of_payment = target_mop or pe.mode_of_payment
 
 		# Re-link allocations against mirrored vouchers ('<name>/') when they exist,
 		# belong to the target company and are submitted (drafts cannot be allocated).
