@@ -853,6 +853,17 @@ function handleDocDateChange(days) {
   invoiceDate.value = d.toISOString().split('T')[0]
 }
 
+// Same-date bills must stay adjacent so the sidebar's date headers form one
+// bucket per day; dates descending, bill number descending within a day.
+function sortSidebarInvoices(list) {
+  return [...list].sort((a, b) => {
+    const dateA = a.posting_date || a.transaction_date || ''
+    const dateB = b.posting_date || b.transaction_date || ''
+    if (dateA !== dateB) return dateB.localeCompare(dateA)
+    return b.name.localeCompare(a.name)
+  })
+}
+
 function sidebarCacheParams() {
   return {
     date: sidebarDate.value,
@@ -870,7 +881,7 @@ async function fetchRecentInvoices(force = false) {
     if (cached) {
       // Stale caches (e.g. written while this client was offline) may still hold
       // invoices cancelled elsewhere — never show docstatus 2 in the modify panel
-      recentInvoices.value = cached.filter(inv => inv.docstatus !== 2)
+      recentInvoices.value = sortSidebarInvoices(cached.filter(inv => inv.docstatus !== 2))
       return
     }
   }
@@ -885,7 +896,7 @@ async function fetchRecentInvoices(force = false) {
       draft_only: draftOnly.value,
       company: localStorage.getItem('wb-company') || ''
     })
-    recentInvoices.value = (invoices || []).filter(inv => inv.docstatus !== 2)
+    recentInvoices.value = sortSidebarInvoices((invoices || []).filter(inv => inv.docstatus !== 2))
     if (!sidebarSearch.value) {
       saveCachedPanel('Sales Invoice', sidebarCacheParams(), recentInvoices.value)
     }
@@ -903,10 +914,10 @@ function applySidebarPanelEvent(data) {
   if (currentCompany && data?.row?.company && data.row.company !== currentCompany) {
     return false
   }
-  recentInvoices.value = applyPanelEvent(recentInvoices.value, data, {
+  recentInvoices.value = sortSidebarInvoices(applyPanelEvent(recentInvoices.value, data, {
     date: sidebarDate.value,
     draftOnly: draftOnly.value
-  })
+  }))
   return true
 }
 

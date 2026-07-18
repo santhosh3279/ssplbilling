@@ -43,7 +43,7 @@ def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=Non
         or_filters=or_filters,
         fields=["name", "customer", "customer_name", "posting_date", "grand_total", "rounded_total", "outstanding_amount", "status", "modified", "docstatus", "custom_customer_name", "mop", "company"],
         limit=int(limit),
-        order_by="name desc",
+        order_by="posting_date desc, name desc",
     )
 
     for inv in invoices:
