@@ -544,3 +544,97 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 		frappe.db.rollback(save_point=sp)
 		frappe.log_error(frappe.get_traceback(), "Automatic Entries: mirror payments failed")
 		return []
+
+
+def create_mirror_invoice_for_gst_conversion(si, ae):
+	"""Create a mirror Sales Invoice in target company (ae_company) for a Sales Invoice
+	that is being converted to a GST bill (Quotation).
+	It creates a Sales Invoice in target company, with name si.name + '/', and copies all accounts,
+	creating them in the target company if they don't exist.
+	"""
+	mirror_name = f"{si.name}/"
+	if frappe.db.exists("Sales Invoice", mirror_name):
+		return frappe.get_doc("Sales Invoice", mirror_name)
+
+	target_company = ae.alternative_company
+	
+	source_warehouse = si.set_warehouse or (si.items[0].warehouse if si.items else None)
+	target_warehouse = ensure_warehouse_in_company(source_warehouse, target_company) or ae.warehouse
+	
+	source_cost_center = si.cost_center or (si.items[0].cost_center if si.items else None)
+	target_cost_center = ensure_cost_center_in_company(source_cost_center, target_company)
+
+	msi = frappe.new_doc("Sales Invoice")
+	msi.company = target_company
+	msi.customer = si.customer
+	if si.customer_address:
+		msi.customer_address = si.customer_address
+	msi.naming_series = si.naming_series
+	msi.posting_date = si.posting_date
+	msi.posting_time = si.posting_time
+	msi.set_posting_time = 1
+	msi.due_date = si.due_date
+	msi.selling_price_list = si.selling_price_list
+	msi.additional_discount_percentage = si.additional_discount_percentage
+	msi.discount_amount = si.discount_amount
+	msi.is_return = si.is_return
+	msi.update_stock = si.update_stock
+	
+	if si.set_warehouse:
+		msi.set_warehouse = ensure_warehouse_in_company(si.set_warehouse, target_company) or target_warehouse
+	else:
+		msi.set_warehouse = target_warehouse
+		
+	if si.cost_center:
+		msi.cost_center = ensure_cost_center_in_company(si.cost_center, target_company)
+	elif target_cost_center:
+		msi.cost_center = target_cost_center
+
+	if si.debit_to:
+		msi.debit_to = ensure_account_in_company(si.debit_to, target_company)
+
+	for item in si.items:
+		item_wh = ensure_warehouse_in_company(item.warehouse, target_company) or target_warehouse
+		item_cc = ensure_cost_center_in_company(item.cost_center, target_company) or msi.cost_center
+		row = {
+			"item_code": item.item_code,
+			"qty": item.qty,
+			"rate": item.rate,
+			"price_list_rate": item.price_list_rate or item.rate,
+			"discount_percentage": item.discount_percentage,
+			"uom": item.uom or item.stock_uom,
+			"warehouse": item_wh,
+		}
+		if item_cc:
+			row["cost_center"] = item_cc
+		if item.item_tax_template:
+			target_tax_template = resolve_target_item_tax_template(item.item_tax_template, target_company)
+			if target_tax_template:
+				row["item_tax_template"] = target_tax_template
+		if item.income_account:
+			row["income_account"] = ensure_account_in_company(item.income_account, target_company)
+		msi.append("items", row)
+
+	if si.taxes_and_charges:
+		msi.taxes_and_charges = si.taxes_and_charges
+	for tax in si.taxes:
+		tax_row = {
+			"charge_type": tax.charge_type,
+			"account_head": ensure_account_in_company(tax.account_head, target_company) or tax.account_head,
+			"description": tax.description,
+			"rate": tax.rate,
+			"included_in_print_rate": tax.included_in_print_rate,
+		}
+		if tax.cost_center:
+			tax_row["cost_center"] = ensure_cost_center_in_company(tax.cost_center, target_company)
+		msi.append("taxes", tax_row)
+
+	msi.custom_customer_name = si.get("custom_customer_name") or ""
+	msi.custom_address_line1 = si.get("custom_address_line1") or ""
+	msi.custom_address_line2 = si.get("custom_address_line2") or ""
+	msi.custom_mobile_number = si.get("custom_mobile_number") or ""
+
+	msi.flags.ignore_permissions = True
+	msi.insert(set_name=mirror_name)
+	msi.submit()
+	return msi
