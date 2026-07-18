@@ -657,6 +657,30 @@ def get_conversion_series():
 	}
 
 
+def _expand_series_prefix(prefix, doctype="Sales Invoice"):
+	"""Expand a bare series prefix (e.g. 'WGB') to the full naming series option
+	configured for the doctype (e.g. 'WGB.#####'), so invoices always store the
+	exact option value the sidebar panels filter on. Returns the input unchanged
+	when it already contains a '.' or no matching option exists."""
+	if not prefix or "." in prefix:
+		return prefix
+
+	options = frappe.db.get_value(
+		"Property Setter",
+		{"doc_type": doctype, "field_name": "naming_series", "property": "options"},
+		"value",
+	)
+	if not options:
+		field = frappe.get_meta(doctype).get_field("naming_series")
+		options = field.options if field else ""
+
+	for opt in (options or "").split("\n"):
+		opt = opt.strip()
+		if opt == prefix or opt.startswith(prefix + "."):
+			return opt
+	return prefix
+
+
 @frappe.whitelist()
 def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_list=None):
 	"""Mirror `sales_invoice_name` into the Automatic Entries alternative company as a new
@@ -669,6 +693,7 @@ def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_li
 	if naming_series not in _conversion_mirror_series(ae):
 		frappe.throw(f"Series {naming_series} is not a Conversion Invoice Series in Automatic Entries.")
 
+	naming_series = _expand_series_prefix(naming_series)
 	si = frappe.get_doc("Sales Invoice", sales_invoice_name)
 	msi = create_mirror_invoice_for_gst_conversion(
 		si, ae, naming_series=naming_series, price_list=price_list, use_series_naming=True, submit=False
