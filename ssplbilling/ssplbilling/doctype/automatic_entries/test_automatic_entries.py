@@ -46,3 +46,36 @@ class TestAutomaticEntries(IntegrationTestCase):
 		
 		# Test non-matching series
 		self.assertFalse(should_mirror_purchase_invoice("OTHER-9999", ae))
+
+	def test_ensure_warehouse_in_company(self):
+		from ssplbilling.api.automatic_entries_api import ensure_warehouse_in_company
+		
+		# Test with existing warehouse in target company
+		res = ensure_warehouse_in_company("Finished Goods - NCK", "Sundaram And Sons Private Limited 2")
+		self.assertEqual(res, "Finished Goods - NCK")
+
+		# Test creating a warehouse in the target company
+		frappe.db.begin()
+		try:
+			if frappe.db.exists("Warehouse", "DAMAGE - NCK"):
+				frappe.delete_doc("Warehouse", "DAMAGE - NCK")
+				
+			target_wh = ensure_warehouse_in_company("DAMAGE - SSPL", "Sundaram And Sons Private Limited 2")
+			self.assertEqual(target_wh, "DAMAGE - NCK")
+			self.assertTrue(frappe.db.exists("Warehouse", "DAMAGE - NCK"))
+		finally:
+			frappe.db.rollback()
+
+	def test_ensure_cost_center_in_company(self):
+		from ssplbilling.api.automatic_entries_api import ensure_cost_center_in_company
+		
+		frappe.db.begin()
+		try:
+			if frappe.db.exists("Cost Center", "NCK - NCK"):
+				frappe.delete_doc("Cost Center", "NCK - NCK")
+				
+			target_cc = ensure_cost_center_in_company("NCK - SSPL", "Sundaram And Sons Private Limited 2")
+			self.assertEqual(target_cc, "NCK - NCK")
+			self.assertTrue(frappe.db.exists("Cost Center", "NCK - NCK"))
+		finally:
+			frappe.db.rollback()

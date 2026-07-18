@@ -4,6 +4,8 @@ from ssplbilling.api.automatic_entries_api import (
 	_account_map,
 	resolve_target_account,
 	resolve_target_item_tax_template,
+	ensure_warehouse_in_company,
+	ensure_cost_center_in_company,
 )
 
 
@@ -40,7 +42,13 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 		return frappe.get_doc("Purchase Invoice", mirror_name)
 
 	target_company = automatic_entries.alternative_company
-	target_warehouse = automatic_entries.warehouse
+	
+	source_warehouse = pi.set_warehouse or (pi.items[0].warehouse if pi.items else None)
+	target_warehouse = ensure_warehouse_in_company(source_warehouse, target_company) or automatic_entries.warehouse
+	
+	source_cost_center = pi.cost_center or (pi.items[0].cost_center if pi.items else None)
+	target_cost_center = ensure_cost_center_in_company(source_cost_center, target_company)
+	
 	account_map = _account_map(automatic_entries)
 
 	mpi = frappe.new_doc("Purchase Invoice")
@@ -54,11 +62,23 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 	mpi.set_posting_time = 1
 	mpi.is_return = pi.is_return
 	mpi.update_stock = pi.update_stock
-	mpi.set_warehouse = target_warehouse
+	
+	if pi.set_warehouse:
+		mpi.set_warehouse = ensure_warehouse_in_company(pi.set_warehouse, target_company) or target_warehouse
+	else:
+		mpi.set_warehouse = target_warehouse
+		
+	if pi.cost_center:
+		mpi.cost_center = ensure_cost_center_in_company(pi.cost_center, target_company)
+	elif target_cost_center:
+		mpi.cost_center = target_cost_center
+
 	mpi.additional_discount_percentage = pi.additional_discount_percentage
 	mpi.discount_amount = pi.discount_amount
 
 	for item in pi.items:
+		item_wh = ensure_warehouse_in_company(item.warehouse, target_company) or target_warehouse
+		item_cc = ensure_cost_center_in_company(item.cost_center, target_company) or mpi.cost_center
 		row = {
 			"item_code": item.item_code,
 			"qty": item.qty,
@@ -66,8 +86,10 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 			"price_list_rate": item.price_list_rate or item.rate,
 			"discount_percentage": item.discount_percentage,
 			"uom": item.uom or item.stock_uom,
-			"warehouse": target_warehouse,
+			"warehouse": item_wh,
 		}
+		if item_cc:
+			row["cost_center"] = item_cc
 		if item.item_tax_template:
 			target_tax_template = resolve_target_item_tax_template(item.item_tax_template, target_company)
 			if target_tax_template:
@@ -82,13 +104,16 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 	if pi.taxes_and_charges:
 		mpi.taxes_and_charges = pi.taxes_and_charges
 	for tax in pi.taxes:
-		mpi.append("taxes", {
+		tax_row = {
 			"charge_type": tax.charge_type,
 			"account_head": resolve_target_account(tax.account_head, account_map, target_company) or tax.account_head,
 			"description": tax.description,
 			"rate": tax.rate,
 			"included_in_print_rate": tax.included_in_print_rate,
-		})
+		}
+		if tax.cost_center:
+			tax_row["cost_center"] = ensure_cost_center_in_company(tax.cost_center, target_company)
+		mpi.append("taxes", tax_row)
 
 	mpi.flags.ignore_permissions = True
 	mpi.insert(set_name=mirror_name)

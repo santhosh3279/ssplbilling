@@ -182,6 +182,124 @@ def resolve_target_item_tax_template(source_template, target_company):
 	return ""
 
 
+def ensure_warehouse_in_company(original_warehouse, target_company):
+	"""Ensure that an equivalent of original_warehouse exists in target_company.
+	If not, create it copying attributes from original_warehouse (and recursively for its parent).
+	"""
+	if not original_warehouse or not target_company:
+		return None
+
+	orig_doc = frappe.db.get_value(
+		"Warehouse",
+		original_warehouse,
+		[
+			"warehouse_name",
+			"company",
+			"parent_warehouse",
+			"is_group",
+			"is_rejected_warehouse",
+		],
+		as_dict=True,
+	)
+	if not orig_doc:
+		return None
+
+	if orig_doc.company == target_company:
+		return original_warehouse
+
+	exists = frappe.db.get_value(
+		"Warehouse",
+		{"warehouse_name": orig_doc.warehouse_name, "company": target_company},
+		"name",
+	)
+	if exists:
+		return exists
+
+	# Find or ensure the parent warehouse exists in the target company
+	target_parent = None
+	if orig_doc.parent_warehouse:
+		target_parent = ensure_warehouse_in_company(orig_doc.parent_warehouse, target_company)
+	else:
+		# Root warehouse, return target root warehouse
+		target_root = frappe.db.get_value(
+			"Warehouse",
+			{"company": target_company, "parent_warehouse": ["in", ["", None]]},
+			"name",
+		)
+		if target_root:
+			return target_root
+
+	new_wh = frappe.new_doc("Warehouse")
+	new_wh.warehouse_name = orig_doc.warehouse_name
+	new_wh.company = target_company
+	new_wh.parent_warehouse = target_parent
+	new_wh.is_group = orig_doc.is_group
+	new_wh.is_rejected_warehouse = orig_doc.is_rejected_warehouse
+
+	new_wh.flags.ignore_permissions = True
+	new_wh.insert()
+	return new_wh.name
+
+
+def ensure_cost_center_in_company(original_cost_center, target_company):
+	"""Ensure that an equivalent of original_cost_center exists in target_company.
+	If not, create it copying attributes from original_cost_center (and recursively for its parent).
+	"""
+	if not original_cost_center or not target_company:
+		return None
+
+	orig_doc = frappe.db.get_value(
+		"Cost Center",
+		original_cost_center,
+		[
+			"cost_center_name",
+			"company",
+			"parent_cost_center",
+			"is_group",
+			"disabled",
+		],
+		as_dict=True,
+	)
+	if not orig_doc:
+		return None
+
+	if orig_doc.company == target_company:
+		return original_cost_center
+
+	exists = frappe.db.get_value(
+		"Cost Center",
+		{"cost_center_name": orig_doc.cost_center_name, "company": target_company},
+		"name",
+	)
+	if exists:
+		return exists
+
+	# Find or ensure the parent cost center exists in the target company
+	target_parent = None
+	if orig_doc.parent_cost_center:
+		target_parent = ensure_cost_center_in_company(orig_doc.parent_cost_center, target_company)
+	else:
+		# Root cost center, return target root cost center
+		target_root = frappe.db.get_value(
+			"Cost Center",
+			{"company": target_company, "parent_cost_center": ["in", ["", None]]},
+			"name",
+		)
+		if target_root:
+			return target_root
+
+	new_cc = frappe.new_doc("Cost Center")
+	new_cc.cost_center_name = orig_doc.cost_center_name
+	new_cc.company = target_company
+	new_cc.parent_cost_center = target_parent
+	new_cc.is_group = orig_doc.is_group
+	new_cc.disabled = orig_doc.disabled
+
+	new_cc.flags.ignore_permissions = True
+	new_cc.insert()
+	return new_cc.name
+
+
 def create_mirror_sales_invoice(si, automatic_entries):
 	"""Create + submit a mirror Sales Invoice for `si` in the alternate company, named
 	si.name + '/', posted against the Automatic Entries warehouse with accounts
@@ -191,7 +309,13 @@ def create_mirror_sales_invoice(si, automatic_entries):
 		return frappe.get_doc("Sales Invoice", mirror_name)
 
 	target_company = automatic_entries.alternative_company
-	target_warehouse = automatic_entries.warehouse
+	
+	source_warehouse = si.set_warehouse or (si.items[0].warehouse if si.items else None)
+	target_warehouse = ensure_warehouse_in_company(source_warehouse, target_company) or automatic_entries.warehouse
+	
+	source_cost_center = si.cost_center or (si.items[0].cost_center if si.items else None)
+	target_cost_center = ensure_cost_center_in_company(source_cost_center, target_company)
+	
 	account_map = _account_map(automatic_entries)
 
 	msi = frappe.new_doc("Sales Invoice")
@@ -209,9 +333,20 @@ def create_mirror_sales_invoice(si, automatic_entries):
 	msi.discount_amount = si.discount_amount
 	msi.is_return = si.is_return
 	msi.update_stock = si.update_stock
-	msi.set_warehouse = target_warehouse
+	
+	if si.set_warehouse:
+		msi.set_warehouse = ensure_warehouse_in_company(si.set_warehouse, target_company) or target_warehouse
+	else:
+		msi.set_warehouse = target_warehouse
+		
+	if si.cost_center:
+		msi.cost_center = ensure_cost_center_in_company(si.cost_center, target_company)
+	elif target_cost_center:
+		msi.cost_center = target_cost_center
 
 	for item in si.items:
+		item_wh = ensure_warehouse_in_company(item.warehouse, target_company) or target_warehouse
+		item_cc = ensure_cost_center_in_company(item.cost_center, target_company) or msi.cost_center
 		row = {
 			"item_code": item.item_code,
 			"qty": item.qty,
@@ -219,8 +354,10 @@ def create_mirror_sales_invoice(si, automatic_entries):
 			"price_list_rate": item.price_list_rate or item.rate,
 			"discount_percentage": item.discount_percentage,
 			"uom": item.uom or item.stock_uom,
-			"warehouse": target_warehouse,
+			"warehouse": item_wh,
 		}
+		if item_cc:
+			row["cost_center"] = item_cc
 		if item.item_tax_template:
 			target_tax_template = resolve_target_item_tax_template(item.item_tax_template, target_company)
 			if target_tax_template:
@@ -233,13 +370,16 @@ def create_mirror_sales_invoice(si, automatic_entries):
 	if si.taxes_and_charges:
 		msi.taxes_and_charges = si.taxes_and_charges
 	for tax in si.taxes:
-		msi.append("taxes", {
+		tax_row = {
 			"charge_type": tax.charge_type,
 			"account_head": resolve_target_account(tax.account_head, account_map, target_company) or tax.account_head,
 			"description": tax.description,
 			"rate": tax.rate,
 			"included_in_print_rate": tax.included_in_print_rate,
-		})
+		}
+		if tax.cost_center:
+			tax_row["cost_center"] = ensure_cost_center_in_company(tax.cost_center, target_company)
+		msi.append("taxes", tax_row)
 
 	msi.custom_customer_name = si.get("custom_customer_name") or ""
 	msi.custom_address_line1 = si.get("custom_address_line1") or ""
