@@ -6,7 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "sales_invoice_series",
-  "purchase_invoice_series"
+  "purchase_invoice_series",
+  "conversion_invoice_series"
  ],
  "fields": [
   {
@@ -20,6 +21,12 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Purchase Invoice Series"
+  },
+  {
+   "fieldname": "conversion_invoice_series",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Conversion Invoice Series"
   }
  ],
  "grid_page_length": 50,

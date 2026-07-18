@@ -663,6 +663,7 @@ def get_billing_settings(user=None):
 				{
 					"sales_invoice_series": r.sales_invoice_series or "",
 					"purchase_invoice_series": r.purchase_invoice_series or "",
+					"conversion_invoice_series": r.get("conversion_invoice_series") or "",
 				}
 				for r in (automatic_entries.series or [])
 			],

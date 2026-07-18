@@ -19,6 +19,18 @@ def _sales_mirror_series(automatic_entries):
 	return series_set
 
 
+def _conversion_mirror_series(automatic_entries):
+	series_set = set()
+	for r in (automatic_entries.series or []):
+		val_raw = r.get("conversion_invoice_series")
+		if val_raw:
+			for val in val_raw.split(','):
+				val_clean = val.strip()
+				if val_clean:
+					series_set.add(val_clean)
+	return series_set
+
+
 def _account_map(automatic_entries):
 	return {
 		r.account: r.alternative_account
@@ -33,7 +45,8 @@ def should_mirror_sales_invoice(naming_series, automatic_entries):
 		return False
 	if not naming_series:
 		return False
-	for prefix in _sales_mirror_series(automatic_entries):
+	allowed = _sales_mirror_series(automatic_entries) | _conversion_mirror_series(automatic_entries)
+	for prefix in allowed:
 		if naming_series == prefix or naming_series.startswith(prefix):
 			return True
 	return False
