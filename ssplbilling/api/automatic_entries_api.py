@@ -546,6 +546,106 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 		return []
 
 
+def mirror_standalone_payment_entry(pe):
+	"""Mirror a standalone Payment Entry (paymentv2 flow) into the Automatic Entries
+	alternative company, named pe.name + '/'. Only fires when every involved bank/cash
+	account is whitelisted in the Automatic Entries accounts table (party accounts are
+	exempt — they are resolved/created via ensure_account_in_company). References are
+	re-linked to their mirrored counterparts ('<name>/') when those exist and are
+	submitted. Savepoint-isolated: a failure never rolls back the source entry.
+	Returns the mirror name, or None when not applicable/failed."""
+	ae = get_automatic_entries()
+	target_company = ae.alternative_company
+	if not target_company or pe.company == target_company:
+		return None
+
+	allowed = _allowed_accounts(ae)
+	if pe.payment_type == "Receive":
+		mop_side = [pe.paid_to]
+	elif pe.payment_type == "Pay":
+		mop_side = [pe.paid_from]
+	else:  # Internal Transfer — both sides are plain accounts
+		mop_side = [pe.paid_from, pe.paid_to]
+	if not all(a and a in allowed for a in mop_side):
+		return None
+
+	mirror_name = f"{pe.name}/"
+	if frappe.db.exists("Payment Entry", mirror_name):
+		return mirror_name
+
+	sp = "sp_" + frappe.generate_hash(length=10)
+	frappe.db.savepoint(sp)
+	try:
+		mpe = frappe.new_doc("Payment Entry")
+		mpe.payment_type = pe.payment_type
+		mpe.company = target_company
+		mpe.posting_date = pe.posting_date
+		if pe.party_type and pe.party:
+			mpe.party_type = pe.party_type
+			mpe.party = pe.party
+		mpe.paid_from_account_currency = pe.paid_from_account_currency
+		mpe.paid_to_account_currency = pe.paid_to_account_currency
+		mpe.source_exchange_rate = pe.source_exchange_rate
+		mpe.target_exchange_rate = pe.target_exchange_rate
+		mpe.paid_amount = pe.paid_amount
+		mpe.received_amount = pe.received_amount
+		if pe.reference_no:
+			mpe.reference_no = pe.reference_no
+			mpe.reference_date = pe.reference_date or pe.posting_date
+		if pe.remarks:
+			mpe.remarks = pe.remarks
+		if pe.get("custom_remarks"):
+			mpe.set("custom_remarks", pe.get("custom_remarks"))
+		if pe.cost_center:
+			mpe.cost_center = ensure_cost_center_in_company(pe.cost_center, target_company)
+
+		if pe.payment_type == "Receive":
+			mpe.paid_from = ensure_account_in_company(pe.paid_from, target_company)
+			mpe.paid_to = resolve_target_account(pe.paid_to, allowed, target_company)
+		elif pe.payment_type == "Pay":
+			mpe.paid_from = resolve_target_account(pe.paid_from, allowed, target_company)
+			mpe.paid_to = ensure_account_in_company(pe.paid_to, target_company)
+		else:
+			mpe.paid_from = resolve_target_account(pe.paid_from, allowed, target_company)
+			mpe.paid_to = resolve_target_account(pe.paid_to, allowed, target_company)
+
+		if not mpe.paid_from or not mpe.paid_to:
+			frappe.db.rollback(save_point=sp)
+			return None
+
+		mop_account = mpe.paid_from if pe.payment_type == "Pay" else mpe.paid_to
+		mpe.mode_of_payment = _mop_for_account(mop_account, target_company)
+
+		# Re-link allocations against mirrored vouchers ('<name>/') when they exist,
+		# belong to the target company and are submitted (drafts cannot be allocated).
+		for ref in (pe.references or []):
+			mirror_ref = f"{ref.reference_name}/"
+			if not frappe.db.exists(ref.reference_doctype, mirror_ref):
+				continue
+			ref_doc = frappe.db.get_value(
+				ref.reference_doctype, mirror_ref, ["company", "docstatus", "outstanding_amount"], as_dict=True
+			)
+			if not ref_doc or ref_doc.company != target_company or ref_doc.docstatus != 1:
+				continue
+			allocated = min(ref.allocated_amount or 0, ref_doc.outstanding_amount or 0)
+			if allocated > 0:
+				mpe.append("references", {
+					"reference_doctype": ref.reference_doctype,
+					"reference_name": mirror_ref,
+					"allocated_amount": allocated,
+				})
+
+		mpe.flags.ignore_permissions = True
+		mpe.insert(set_name=mirror_name)
+		mpe.submit()
+		frappe.db.release_savepoint(sp)
+		return mpe.name
+	except Exception:
+		frappe.db.rollback(save_point=sp)
+		frappe.log_error(frappe.get_traceback(), "Automatic Entries: standalone payment mirror failed")
+		return None
+
+
 def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_list=None, use_series_naming=False, submit=True):
 	"""Create a mirror Sales Invoice in target company (ae_company) for a Sales Invoice
 	that is being converted to a GST bill (Quotation).

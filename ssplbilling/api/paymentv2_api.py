@@ -238,7 +238,15 @@ def create_payment_entry(data=None, **kwargs):
 
     pe.insert()
     pe.submit()
-    return {"payment_entry": pe.name}
+
+    mirror_name = None
+    try:
+        from ssplbilling.api.automatic_entries_api import mirror_standalone_payment_entry
+        mirror_name = mirror_standalone_payment_entry(pe)
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Automatic Entries: payment mirror failed")
+
+    return {"payment_entry": pe.name, "mirror_payment_entry": mirror_name}
 
 def _get_party_account(party_type, party, company=None):
     """Get the default receivable/payable account for a party."""

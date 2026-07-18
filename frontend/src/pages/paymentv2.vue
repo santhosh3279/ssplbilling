@@ -1049,6 +1049,9 @@ async function handleSubmit() {
       if (res && res.payment_entry) {
         createdEntries.push(res.payment_entry)
       }
+      if (res && res.mirror_payment_entry) {
+        createdEntries.push(res.mirror_payment_entry)
+      }
     }
     
     successDocName.value = createdEntries.join(', ')
