@@ -141,7 +141,7 @@ async function selectSeries(s) {
     })
 
     if (res && res.invoice_name) {
-      alert(`Mirror Sales Invoice ${res.invoice_name} created in ${res.company}!`)
+      alert(`Draft mirror Sales Invoice ${res.invoice_name} created in ${res.company}!`)
       emit('created', res.invoice_name)
       emit('close')
     } else {

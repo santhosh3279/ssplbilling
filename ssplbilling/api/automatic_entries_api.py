@@ -546,7 +546,7 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 		return []
 
 
-def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_list=None, use_series_naming=False):
+def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_list=None, use_series_naming=False, submit=True):
 	"""Create a mirror Sales Invoice in target company (ae_company) for a Sales Invoice
 	that is being converted to a GST bill (Quotation).
 	It creates a Sales Invoice in target company, with name si.name + '/', and copies all accounts,
@@ -642,7 +642,8 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 		msi.insert(set_name=mirror_name)
 	else:
 		msi.insert()
-	msi.submit()
+	if submit:
+		msi.submit()
 	return msi
 
 
@@ -659,7 +660,7 @@ def get_conversion_series():
 @frappe.whitelist()
 def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_list=None):
 	"""Mirror `sales_invoice_name` into the Automatic Entries alternative company as a new
-	submitted Sales Invoice named from `naming_series` (must be a configured Conversion
+	draft Sales Invoice named from `naming_series` (must be a configured Conversion
 	Invoice Series). Missing accounts, warehouses and cost centers are auto-created in
 	the target company via the ensure_*_in_company helpers."""
 	ae = get_automatic_entries()
@@ -670,6 +671,6 @@ def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_li
 
 	si = frappe.get_doc("Sales Invoice", sales_invoice_name)
 	msi = create_mirror_invoice_for_gst_conversion(
-		si, ae, naming_series=naming_series, price_list=price_list, use_series_naming=True
+		si, ae, naming_series=naming_series, price_list=price_list, use_series_naming=True, submit=False
 	)
 	return {"status": "success", "invoice_name": msi.name, "company": msi.company}
