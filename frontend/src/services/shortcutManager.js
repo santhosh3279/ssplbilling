@@ -62,15 +62,8 @@ function handleKeyDown(e) {
 
   const key = getEventKey(e)
 
-  // 0. Priority Exception: F1, CTRL+I, and CTRL+L are always global.
-  //    A page-local binding still wins when no subwindow is open, so a page can
-  //    repurpose one of these keys (e.g. CTRL+I on SalesInvoice opens Bill Mirror).
+  // 0. Priority Exception: F1, CTRL+I, and CTRL+L are always global
   if (key === 'F1' || key === 'CTRL+I' || key === 'CTRL+L') {
-    if (subwindowStack.length === 0 && registry.local.has(key)) {
-      e.preventDefault()
-      registry.local.get(key)(e)
-      return
-    }
     if (registry.global.has(key)) {
       e.preventDefault()
       registry.global.get(key)(e)

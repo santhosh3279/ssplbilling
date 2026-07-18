@@ -596,7 +596,7 @@
         { key: 'M', desc: 'Modify bill (when bill is open)' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
-        { key: 'Ctrl+I', desc: 'Mirror bill to alternate company (conversion series)' },
+        { key: 'Ctrl+K', desc: 'Mirror bill to alternate company (conversion series)' },
       ]"
       @close="showShortcutPage = false"
     />
