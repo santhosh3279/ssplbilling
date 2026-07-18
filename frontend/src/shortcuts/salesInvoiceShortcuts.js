@@ -18,4 +18,5 @@ export const salesInvoiceShortcuts = (handlers) => ({
   'ESCAPE':  handlers.cancel           || (() => {}),
   'DELETE':  handlers.deleteRow        || (() => {}),
   'CTRL+O':  handlers.openGstBillCreator|| (() => {}),
+  'CTRL+I':  handlers.openBillMirror    || (() => {}),
 })

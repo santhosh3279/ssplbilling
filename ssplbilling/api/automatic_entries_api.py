@@ -546,14 +546,17 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 		return []
 
 
-def create_mirror_invoice_for_gst_conversion(si, ae):
+def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_list=None, use_series_naming=False):
 	"""Create a mirror Sales Invoice in target company (ae_company) for a Sales Invoice
 	that is being converted to a GST bill (Quotation).
 	It creates a Sales Invoice in target company, with name si.name + '/', and copies all accounts,
 	creating them in the target company if they don't exist.
+
+	With use_series_naming=True the mirror is named from `naming_series` instead of
+	si.name + '/', so repeated calls create new invoices (manual conversion mirroring).
 	"""
-	mirror_name = f"{si.name}/"
-	if frappe.db.exists("Sales Invoice", mirror_name):
+	mirror_name = None if use_series_naming else f"{si.name}/"
+	if mirror_name and frappe.db.exists("Sales Invoice", mirror_name):
 		return frappe.get_doc("Sales Invoice", mirror_name)
 
 	target_company = ae.alternative_company
@@ -569,22 +572,22 @@ def create_mirror_invoice_for_gst_conversion(si, ae):
 	msi.customer = si.customer
 	if si.customer_address:
 		msi.customer_address = si.customer_address
-	msi.naming_series = si.naming_series
+	msi.naming_series = naming_series or si.naming_series
 	msi.posting_date = si.posting_date
 	msi.posting_time = si.posting_time
 	msi.set_posting_time = 1
 	msi.due_date = si.due_date
-	msi.selling_price_list = si.selling_price_list
+	msi.selling_price_list = price_list or si.selling_price_list
 	msi.additional_discount_percentage = si.additional_discount_percentage
 	msi.discount_amount = si.discount_amount
 	msi.is_return = si.is_return
 	msi.update_stock = si.update_stock
-	
+
 	if si.set_warehouse:
 		msi.set_warehouse = ensure_warehouse_in_company(si.set_warehouse, target_company) or target_warehouse
 	else:
 		msi.set_warehouse = target_warehouse
-		
+
 	if si.cost_center:
 		msi.cost_center = ensure_cost_center_in_company(si.cost_center, target_company)
 	elif target_cost_center:
@@ -635,6 +638,38 @@ def create_mirror_invoice_for_gst_conversion(si, ae):
 	msi.custom_mobile_number = si.get("custom_mobile_number") or ""
 
 	msi.flags.ignore_permissions = True
-	msi.insert(set_name=mirror_name)
+	if mirror_name:
+		msi.insert(set_name=mirror_name)
+	else:
+		msi.insert()
 	msi.submit()
 	return msi
+
+
+@frappe.whitelist()
+def get_conversion_series():
+	"""Conversion Invoice Series configured in Automatic Entries, plus the target company."""
+	ae = get_automatic_entries()
+	return {
+		"company": ae.alternative_company or "",
+		"series": sorted(_conversion_mirror_series(ae)),
+	}
+
+
+@frappe.whitelist()
+def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_list=None):
+	"""Mirror `sales_invoice_name` into the Automatic Entries alternative company as a new
+	submitted Sales Invoice named from `naming_series` (must be a configured Conversion
+	Invoice Series). Missing accounts, warehouses and cost centers are auto-created in
+	the target company via the ensure_*_in_company helpers."""
+	ae = get_automatic_entries()
+	if not ae.alternative_company:
+		frappe.throw("Automatic Entries: alternative company is not configured.")
+	if naming_series not in _conversion_mirror_series(ae):
+		frappe.throw(f"Series {naming_series} is not a Conversion Invoice Series in Automatic Entries.")
+
+	si = frappe.get_doc("Sales Invoice", sales_invoice_name)
+	msi = create_mirror_invoice_for_gst_conversion(
+		si, ae, naming_series=naming_series, price_list=price_list, use_series_naming=True
+	)
+	return {"status": "success", "invoice_name": msi.name, "company": msi.company}

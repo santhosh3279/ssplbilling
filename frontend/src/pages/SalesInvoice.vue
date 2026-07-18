@@ -510,6 +510,13 @@
       @close="showGstBillCreator = false"
     />
 
+    <BillMirrorCreator
+      v-if="showBillMirrorCreator"
+      :show="showBillMirrorCreator"
+      :invoice-name="invoiceNo"
+      @close="showBillMirrorCreator = false"
+    />
+
     <CustomerPrice
       v-if="showPriceDetectModal"
       :data="priceDetectData"
@@ -589,6 +596,7 @@
         { key: 'M', desc: 'Modify bill (when bill is open)' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
+        { key: 'Ctrl+I', desc: 'Mirror bill to alternate company (conversion series)' },
       ]"
       @close="showShortcutPage = false"
     />
@@ -617,6 +625,7 @@ import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import PartyHistoryModal from '../components/PartyHistoryModal.vue'
 import Userseries from '../components/Userseries.vue'
 import Gstbillcreator from '../components/Gstbillcreator.vue'
+import BillMirrorCreator from '../components/BillMirrorCreator.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import ItemSearch from '../components/ItemSearch.vue'
@@ -761,6 +770,7 @@ const lastEnterTime = ref(0)
 const showPriceDetectModal = ref(false)
 const showJumpModal = ref(false)
 const showGstBillCreator = ref(false)
+const showBillMirrorCreator = ref(false)
 const priceDetectData = ref(null)
 const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: number }
 
@@ -2656,6 +2666,7 @@ useShortcuts(salesInvoiceShortcuts({
     }
   },
   openGstBillCreator: () => handleOpenGstBillCreator(),
+  openBillMirror:     () => handleOpenBillMirror(),
 }), props.isSubwindow ? 'subwindow' : 'local')
 
 function handleOpenGstBillCreator() {
@@ -2667,6 +2678,17 @@ function handleOpenGstBillCreator() {
     return
   }
   showGstBillCreator.value = true
+}
+
+function handleOpenBillMirror() {
+  if (!invoiceNo.value || invoiceNo.value === 'NEW' || !isSaved.value) {
+    alert('Please save the sales invoice first.')
+    return
+  }
+  if (!isReadOnly.value) {
+    return
+  }
+  showBillMirrorCreator.value = true
 }
 
 function handleGlobalEscape(e) {
