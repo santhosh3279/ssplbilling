@@ -31,11 +31,11 @@ def _conversion_mirror_series(automatic_entries):
 	return series_set
 
 
-def _account_map(automatic_entries):
+def _allowed_accounts(automatic_entries):
 	return {
-		r.account: r.alternative_account
+		r.account
 		for r in (automatic_entries.accounts or [])
-		if r.account and r.alternative_account
+		if r.account
 	}
 
 
@@ -130,21 +130,16 @@ def ensure_account_in_company(original_account, target_company):
 	return new_acc.name
 
 
-def resolve_target_account(original_account, account_map, target_company):
+def resolve_target_account(original_account, allowed_accounts, target_company):
 	"""Resolve `original_account` (belongs to the source company) to its equivalent in
 	`target_company`, in order:
-	1. Explicit Automatic Entries account mapping.
-	2. An account with the same account_name in the target company's chart.
-	3. Automatically created account copying the source account structure.
-	4. The default account for original_account's Mode of Payment, in the target company.
+	1. An account with the same account_name in the target company's chart.
+	2. Automatically created account copying the source account structure (if whitelisted).
+	3. The default account for original_account's Mode of Payment, in the target company.
 	Returns "" if none of these resolve, so callers can fall back to ERPNext's own defaults.
 	"""
 	if not original_account:
 		return ""
-	if original_account in account_map:
-		mapped_acc = account_map[original_account]
-		if frappe.db.exists("Account", mapped_acc):
-			return mapped_acc
 
 	source_company, account_name = (
 		frappe.db.get_value("Account", original_account, ["company", "account_name"]) or (None, None)
@@ -159,10 +154,11 @@ def resolve_target_account(original_account, account_map, target_company):
 		if same_name:
 			return same_name
 
-		# Account does not exist in target company, so auto-create it
-		created_acc = ensure_account_in_company(original_account, target_company)
-		if created_acc:
-			return created_acc
+		# Account does not exist in target company, so auto-create it (if whitelisted)
+		if original_account in allowed_accounts:
+			created_acc = ensure_account_in_company(original_account, target_company)
+			if created_acc:
+				return created_acc
 
 	mop = _mop_for_account(original_account, source_company)
 	return _mop_default_account(mop, target_company)
@@ -316,7 +312,7 @@ def create_mirror_sales_invoice(si, automatic_entries):
 	source_cost_center = si.cost_center or (si.items[0].cost_center if si.items else None)
 	target_cost_center = ensure_cost_center_in_company(source_cost_center, target_company)
 	
-	account_map = _account_map(automatic_entries)
+	allowed_accounts = _allowed_accounts(automatic_entries)
 
 	msi = frappe.new_doc("Sales Invoice")
 	msi.company = target_company
@@ -362,7 +358,7 @@ def create_mirror_sales_invoice(si, automatic_entries):
 			target_tax_template = resolve_target_item_tax_template(item.item_tax_template, target_company)
 			if target_tax_template:
 				row["item_tax_template"] = target_tax_template
-		mapped_income = resolve_target_account(item.income_account, account_map, target_company)
+		mapped_income = resolve_target_account(item.income_account, allowed_accounts, target_company)
 		if mapped_income:
 			row["income_account"] = mapped_income
 		msi.append("items", row)
@@ -372,7 +368,7 @@ def create_mirror_sales_invoice(si, automatic_entries):
 	for tax in si.taxes:
 		tax_row = {
 			"charge_type": tax.charge_type,
-			"account_head": resolve_target_account(tax.account_head, account_map, target_company) or tax.account_head,
+			"account_head": resolve_target_account(tax.account_head, allowed_accounts, target_company) or tax.account_head,
 			"description": tax.description,
 			"rate": tax.rate,
 			"included_in_print_rate": tax.included_in_print_rate,
@@ -417,11 +413,11 @@ def mirror_bill(si):
 
 
 
-def _create_mirror_payment_entry(msi, amount, original_account, account_map, ref_no=None, original_pe_name=None):
+def _create_mirror_payment_entry(msi, amount, original_account, allowed_accounts, ref_no=None, original_pe_name=None):
 	if amount <= 0.01 or not original_account:
 		return None
 	target_company = msi.company
-	paid_to = resolve_target_account(original_account, account_map, target_company)
+	paid_to = resolve_target_account(original_account, allowed_accounts, target_company)
 	if not paid_to:
 		return None
 
@@ -477,7 +473,7 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 		return []
 
 	ae = get_automatic_entries()
-	account_map = _account_map(ae)
+	allowed_accounts = _allowed_accounts(ae)
 
 	sp = "sp_" + frappe.generate_hash(length=10)
 	frappe.db.savepoint(sp)
@@ -485,25 +481,25 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 		entries = []
 
 		pe_name = _create_mirror_payment_entry(
-			msi, cash_amount, cash_account, account_map, original_pe_name=original_cash_pe
+			msi, cash_amount, cash_account, allowed_accounts, original_pe_name=original_cash_pe
 		)
 		if pe_name:
 			entries.append(pe_name)
 
 		pe_name = _create_mirror_payment_entry(
-			msi, upi_amount, upi_account, account_map, original_pe_name=original_upi_pe
+			msi, upi_amount, upi_account, allowed_accounts, original_pe_name=original_upi_pe
 		)
 		if pe_name:
 			entries.append(pe_name)
 
 		pe_name = _create_mirror_payment_entry(
-			msi, card_amount, card_account, account_map, ref_no=card_ref_no, original_pe_name=original_card_pe
+			msi, card_amount, card_account, allowed_accounts, ref_no=card_ref_no, original_pe_name=original_card_pe
 		)
 		if pe_name:
 			entries.append(pe_name)
 
 		if discount_amount > 0.01 and discount_account:
-			mapped_discount = resolve_target_account(discount_account, account_map, msi.company)
+			mapped_discount = resolve_target_account(discount_account, allowed_accounts, msi.company)
 			if mapped_discount:
 				mirror_je_name = f"{original_discount_je}/" if original_discount_je else None
 				if mirror_je_name and frappe.db.exists("Journal Entry", mirror_je_name):

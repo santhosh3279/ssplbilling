@@ -79,3 +79,34 @@ class TestAutomaticEntries(IntegrationTestCase):
 			self.assertTrue(frappe.db.exists("Cost Center", "NCK - NCK"))
 		finally:
 			frappe.db.rollback()
+
+	def test_resolve_target_account(self):
+		from ssplbilling.api.automatic_entries_api import resolve_target_account
+		
+		# Test direct name matching (always works regardless of whitelist)
+		res = resolve_target_account("Cash - SSPL", set(), "Sundaram And Sons Private Limited 2")
+		self.assertEqual(res, "Cash - NCK")
+		
+		frappe.db.begin()
+		try:
+			# Create a temporary unique source account in SSPL
+			src_acc = frappe.new_doc("Account")
+			src_acc.account_name = "Temp Test Acc Whitelist"
+			src_acc.company = "Sundaram And Sons Private Limited"
+			src_acc.parent_account = "Cash In Hand - SSPL"
+			src_acc.account_type = "Cash"
+			src_acc.root_type = "Asset"
+			src_acc.report_type = "Balance Sheet"
+			src_acc.is_group = 0
+			src_acc.insert()
+			
+			# If it's not whitelisted, resolve_target_account should not auto-create it
+			res_not_allowed = resolve_target_account(src_acc.name, set(), "Sundaram And Sons Private Limited 2")
+			self.assertNotEqual(res_not_allowed, "Temp Test Acc Whitelist - NCK")
+			
+			# If it is whitelisted, it should be auto-created
+			res_allowed = resolve_target_account(src_acc.name, {src_acc.name}, "Sundaram And Sons Private Limited 2")
+			self.assertEqual(res_allowed, "Temp Test Acc Whitelist - NCK")
+			self.assertTrue(frappe.db.exists("Account", "Temp Test Acc Whitelist - NCK"))
+		finally:
+			frappe.db.rollback()

@@ -1,7 +1,7 @@
 import frappe
 from ssplbilling.api.automatic_entries_api import (
 	get_automatic_entries,
-	_account_map,
+	_allowed_accounts,
 	resolve_target_account,
 	resolve_target_item_tax_template,
 	ensure_warehouse_in_company,
@@ -49,7 +49,7 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 	source_cost_center = pi.cost_center or (pi.items[0].cost_center if pi.items else None)
 	target_cost_center = ensure_cost_center_in_company(source_cost_center, target_company)
 	
-	account_map = _account_map(automatic_entries)
+	allowed_accounts = _allowed_accounts(automatic_entries)
 
 	mpi = frappe.new_doc("Purchase Invoice")
 	mpi.company = target_company
@@ -96,7 +96,7 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 				row["item_tax_template"] = target_tax_template
 		if frappe.get_meta("Purchase Invoice Item").has_field("allow_zero_valuation_rate"):
 			row["allow_zero_valuation_rate"] = 1
-		mapped_expense = resolve_target_account(item.expense_account, account_map, target_company)
+		mapped_expense = resolve_target_account(item.expense_account, allowed_accounts, target_company)
 		if mapped_expense:
 			row["expense_account"] = mapped_expense
 		mpi.append("items", row)
@@ -106,7 +106,7 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 	for tax in pi.taxes:
 		tax_row = {
 			"charge_type": tax.charge_type,
-			"account_head": resolve_target_account(tax.account_head, account_map, target_company) or tax.account_head,
+			"account_head": resolve_target_account(tax.account_head, allowed_accounts, target_company) or tax.account_head,
 			"description": tax.description,
 			"rate": tax.rate,
 			"included_in_print_rate": tax.included_in_print_rate,

@@ -670,7 +670,6 @@ def get_billing_settings(user=None):
 			"accounts": [
 				{
 					"account": r.account or "",
-					"alternative_account": r.alternative_account or "",
 				}
 				for r in (automatic_entries.accounts or [])
 			],
