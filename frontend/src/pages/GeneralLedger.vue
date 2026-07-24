@@ -355,10 +355,6 @@
               <span class="text-[var(--color-text-muted)]">Posting Date</span>
               <span class="font-semibold text-[var(--color-text)]">{{ fmtDate(voucherDetail.posting_date) }}</span>
             </div>
-            <div v-if="voucherDetail.party_name" class="flex justify-between">
-              <span class="text-[var(--color-text-muted)]">Party</span>
-              <span class="font-semibold text-[var(--color-text)] text-right">{{ voucherDetail.party_name }}</span>
-            </div>
             <!-- Purchase Invoice: Supplier Invoice No + Date -->
             <div v-if="voucherDetail.voucher_type === 'Purchase Invoice' && voucherDetail.bill_no" class="flex justify-between">
               <span class="text-[var(--color-text-muted)]">Supplier Invoice No</span>
