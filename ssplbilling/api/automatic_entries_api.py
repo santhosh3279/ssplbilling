@@ -439,9 +439,19 @@ def mirror_standalone_payment_entry(pe):
 	if not all(a and a in allowed for a in mop_side):
 		return None
 
-	mirror_name = f"{pe.name}/"
-	if frappe.db.exists("Payment Entry", mirror_name):
-		return mirror_name
+	if ae.payment_entry_naming_settings:
+		existing = frappe.db.get_value(
+			"Payment Entry",
+			{"company": target_company, "remarks": ["like", f"%Mirrored from {pe.name}%"], "docstatus": ["!=", 2]},
+			"name"
+		)
+		if existing:
+			return existing
+		mirror_name = None
+	else:
+		mirror_name = f"{pe.name}/"
+		if frappe.db.exists("Payment Entry", mirror_name):
+			return mirror_name
 
 	sp = "sp_" + frappe.generate_hash(length=10)
 	frappe.db.savepoint(sp)
@@ -462,8 +472,9 @@ def mirror_standalone_payment_entry(pe):
 		if pe.reference_no:
 			mpe.reference_no = pe.reference_no
 			mpe.reference_date = pe.reference_date or pe.posting_date
-		if pe.remarks:
-			mpe.remarks = pe.remarks
+		original_remarks = pe.remarks or ""
+		mpe.remarks = f"{original_remarks}\nMirrored from {pe.name}".strip()
+		mpe.custom_remarks = 1
 		if pe.get("custom_remarks"):
 			mpe.set("custom_remarks", pe.get("custom_remarks"))
 		if pe.cost_center:
@@ -491,10 +502,10 @@ def mirror_standalone_payment_entry(pe):
 		)
 		mpe.mode_of_payment = target_mop or pe.mode_of_payment
 
-		# Re-link allocations against mirrored vouchers ('<name>/') when they exist,
+		# Re-link allocations against mirrored vouchers when they exist,
 		# belong to the target company and are submitted (drafts cannot be allocated).
 		for ref in (pe.references or []):
-			mirror_ref = f"{ref.reference_name}/"
+			mirror_ref = ref.reference_name[:-1] if ref.reference_name.endswith("/") else f"{ref.reference_name}/"
 			if not frappe.db.exists(ref.reference_doctype, mirror_ref):
 				continue
 			ref_doc = frappe.db.get_value(
@@ -511,7 +522,13 @@ def mirror_standalone_payment_entry(pe):
 				})
 
 		mpe.flags.ignore_permissions = True
-		mpe.insert(set_name=mirror_name)
+		if ae.payment_entry_naming_settings:
+			mpe.naming_series = ae.payment_entry_naming_settings
+			mpe.insert()
+		elif mirror_name:
+			mpe.insert(set_name=mirror_name)
+		else:
+			mpe.insert()
 		mpe.submit()
 		frappe.db.release_savepoint(sp)
 		return mpe.name

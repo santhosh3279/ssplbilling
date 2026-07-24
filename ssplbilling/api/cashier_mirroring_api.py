@@ -17,9 +17,20 @@ def _create_mirror_payment_entry(msi, amount, original_account, allowed_accounts
 	if not paid_to:
 		return None
 
-	mirror_name = f"{original_pe_name}/" if original_pe_name else None
-	if mirror_name and frappe.db.exists("Payment Entry", mirror_name):
-		return mirror_name
+	ae = get_automatic_entries()
+	if ae.payment_entry_naming_settings and original_pe_name:
+		existing = frappe.db.get_value(
+			"Payment Entry",
+			{"company": target_company, "remarks": ["like", f"%Mirrored from {original_pe_name}%"], "docstatus": ["!=", 2]},
+			"name"
+		)
+		if existing:
+			return existing
+		mirror_name = None
+	else:
+		mirror_name = f"{original_pe_name}/" if original_pe_name else None
+		if mirror_name and frappe.db.exists("Payment Entry", mirror_name):
+			return mirror_name
 
 	outstanding = frappe.db.get_value("Sales Invoice", msi.name, "outstanding_amount") or 0
 	allocated = min(amount, outstanding)
@@ -35,6 +46,9 @@ def _create_mirror_payment_entry(msi, amount, original_account, allowed_accounts
 	pe.paid_to = paid_to
 	pe.paid_amount = amount
 	pe.received_amount = amount
+	if original_pe_name:
+		pe.remarks = f"Mirrored from {original_pe_name}"
+		pe.custom_remarks = 1
 
 	if original_pe_name and not ref_no:
 		ref_no = frappe.db.get_value("Payment Entry", original_pe_name, "reference_no")
@@ -49,7 +63,10 @@ def _create_mirror_payment_entry(msi, amount, original_account, allowed_accounts
 			"allocated_amount": allocated,
 		})
 	pe.flags.ignore_permissions = True
-	if mirror_name:
+	if ae.payment_entry_naming_settings:
+		pe.naming_series = ae.payment_entry_naming_settings
+		pe.insert()
+	elif mirror_name:
 		pe.insert(set_name=mirror_name)
 	else:
 		pe.insert()
