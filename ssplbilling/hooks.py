@@ -21,6 +21,7 @@ fixtures = [
 				"in",
 				[
 					"item_print_name",
+					"custom_is_gst_item",
 					"custom_max_stock",
 					"custom_max_order_qty",
 					"incentive_section",

@@ -7,6 +7,13 @@
   "label": "Item Print Name"
  },
  {
+  "dt": "Item",
+  "fieldname": "custom_is_gst_item",
+  "fieldtype": "Check",
+  "insert_after": "is_stock_item",
+  "label": "GST Item"
+ },
+ {
   "dt": "Employee",
   "fieldname": "incentive_section",
   "fieldtype": "Section Break",
