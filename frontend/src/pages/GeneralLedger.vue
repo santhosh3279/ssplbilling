@@ -359,6 +359,15 @@
               <span class="text-[var(--color-text-muted)]">Party</span>
               <span class="font-semibold text-[var(--color-text)] text-right">{{ voucherDetail.party_name }}</span>
             </div>
+            <!-- Purchase Invoice: Supplier Invoice No + Date -->
+            <div v-if="voucherDetail.voucher_type === 'Purchase Invoice' && voucherDetail.bill_no" class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">Supplier Invoice No</span>
+              <span class="font-semibold text-[var(--color-text)] text-right">{{ voucherDetail.bill_no }}</span>
+            </div>
+            <div v-if="voucherDetail.voucher_type === 'Purchase Invoice' && voucherDetail.bill_date" class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">Supplier Invoice Date</span>
+              <span class="font-semibold text-[var(--color-text)] text-right">{{ fmtDate(voucherDetail.bill_date) }}</span>
+            </div>
             <!-- Sales Invoice: custom customer name + address -->
             <div v-if="voucherDetail.custom_customer_name" class="flex justify-between">
               <span class="text-[var(--color-text-muted)]">Customer Name</span>
