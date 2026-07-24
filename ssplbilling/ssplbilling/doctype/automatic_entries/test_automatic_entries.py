@@ -112,7 +112,7 @@ class TestAutomaticEntries(IntegrationTestCase):
 			frappe.db.rollback()
 
 	def test_create_mirror_payment_entry_allowed(self):
-		from ssplbilling.api.automatic_entries_api import _create_mirror_payment_entry
+		from ssplbilling.api.cashier_mirroring_api import _create_mirror_payment_entry
 		
 		msi = frappe.new_doc("Sales Invoice")
 		msi.company = "Sundaram And Sons Private Limited 2"

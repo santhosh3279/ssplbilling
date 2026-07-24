@@ -422,7 +422,8 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	# Mirror bill and payment entries if naming series matches configuration in Automatic Entries
 	try:
-		from ssplbilling.api.automatic_entries_api import mirror_bill, mirror_payments
+		from ssplbilling.api.automatic_entries_api import mirror_bill
+		from ssplbilling.api.cashier_mirroring_api import mirror_payments
 		msi = mirror_bill(si)
 		if msi:
 			mirror_payments(
