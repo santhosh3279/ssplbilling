@@ -1369,6 +1369,7 @@ async function fetchSettings(user = null, force = false) {
       const ae = settings.automatic_entries
       localStorage.setItem('ae-alternative_company', ae.alternative_company || '')
       localStorage.setItem('ae-warehouse', ae.warehouse || '')
+      localStorage.setItem('ae_payment_series', ae.payment_entry_naming_settings || '')
       localStorage.setItem('ae-series', JSON.stringify(ae.series || []))
       localStorage.setItem('ae-accounts', JSON.stringify(ae.accounts || []))
     }
