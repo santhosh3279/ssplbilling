@@ -619,3 +619,39 @@ def submit_sales_invoice(invoice_name):
     si.submit()
 
     return {"invoice_name": si.name, "docstatus": si.docstatus}
+
+
+def set_suffix_for_original_invoice(doc, method=None):
+    if doc.doctype != "Sales Invoice":
+        return
+    if doc.name:
+        return
+
+    try:
+        from ssplbilling.api.automatic_entries_api import get_automatic_entries, _sales_mirror_series
+        ae = get_automatic_entries()
+    except Exception:
+        return
+
+    if not ae or not ae.alternative_company or not ae.warehouse:
+        return
+
+    naming_series = doc.naming_series
+    if not naming_series:
+        return
+
+    allowed = _sales_mirror_series(ae)
+    should_suffix = False
+    for prefix in allowed:
+        if naming_series == prefix or naming_series.startswith(prefix):
+            should_suffix = True
+            break
+
+    if should_suffix:
+        from frappe.model.naming import make_autoname
+        generated_name = make_autoname(naming_series, doc=doc)
+        if not generated_name.endswith("/"):
+            doc.name = f"{generated_name}/"
+
+
+

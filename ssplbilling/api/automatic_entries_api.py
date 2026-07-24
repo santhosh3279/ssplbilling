@@ -300,7 +300,7 @@ def create_mirror_sales_invoice(si, automatic_entries):
 	"""Create + submit a mirror Sales Invoice for `si` in the alternate company, named
 	si.name + '/', posted against the Automatic Entries warehouse with accounts
 	substituted via resolve_target_account."""
-	mirror_name = f"{si.name}/"
+	mirror_name = si.name[:-1] if si.name.endswith("/") else f"{si.name}/"
 	if frappe.db.exists("Sales Invoice", mirror_name):
 		return frappe.get_doc("Sales Invoice", mirror_name)
 
@@ -530,7 +530,7 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 	With use_series_naming=True the mirror is named from `naming_series` instead of
 	si.name + '/', so repeated calls create new invoices (manual conversion mirroring).
 	"""
-	mirror_name = None if use_series_naming else f"{si.name}/"
+	mirror_name = None if use_series_naming else (si.name[:-1] if si.name.endswith("/") else f"{si.name}/")
 	if mirror_name and frappe.db.exists("Sales Invoice", mirror_name):
 		return frappe.get_doc("Sales Invoice", mirror_name)
 

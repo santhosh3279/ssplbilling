@@ -177,6 +177,7 @@ after_migrate = ["ssplbilling.setup.after_migrate"]
 
 doc_events = {
 	"Sales Invoice": {
+		"autoname": "ssplbilling.api.SaleEntry_api.set_suffix_for_original_invoice",
 		"before_insert": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
 		"before_save": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",
 		"validate": "ssplbilling.api.SaleEntry_api.sync_gst_category",

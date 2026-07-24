@@ -192,3 +192,54 @@ class TestAutomaticEntries(IntegrationTestCase):
 			
 		finally:
 			frappe.db.rollback()
+
+	def test_draft_invoice_suffix_and_mirroring(self):
+		from ssplbilling.api.automatic_entries_api import create_mirror_sales_invoice
+		frappe.db.begin()
+		try:
+			# Configure Automatic Entries to mirror "SINV-"
+			ae = frappe.get_doc("Automatic Entries", "Automatic Entries")
+			ae.alternative_company = "Sundaram And Sons Private Limited 2"
+			ae.warehouse = "Finished Goods - NCK"
+			
+			# Clean old rows and append a row to series child table
+			ae.series = []
+			ae.append("series", {
+				"sales_invoice_series": "SINV-",
+				"purchase_invoice_series": "PINV-",
+				"conversion_invoice_series": "CONV-",
+			})
+			ae.save(ignore_permissions=True)
+
+			# Create a Sales Invoice with the whitelisted naming series in draft stage
+			si = frappe.new_doc("Sales Invoice")
+			si.company = "Sundaram And Sons Private Limited"
+			si.customer = "Test Customer"
+			si.naming_series = "SINV-"
+			si.posting_date = frappe.utils.today()
+			si.debit_to = "Debtors - SSPL"
+			si.append("items", {
+				"item_code": "Test Item",
+				"qty": 1,
+				"rate": 100.0,
+				"warehouse": "Finished Goods - SSPL",
+				"income_account": "Sales - SSPL",
+				"cost_center": "Main - SSPL"
+			})
+			
+			# Insert the draft sales invoice
+			si.insert(ignore_permissions=True)
+
+			# The name should end with "/" in draft stage itself
+			self.assertTrue(si.name.endswith("/"))
+
+			# Now trigger mirroring
+			msi = create_mirror_sales_invoice(si, ae)
+			
+			# Verify mirror invoice was created without the suffix "/"
+			self.assertFalse(msi.name.endswith("/"))
+			self.assertEqual(msi.name, si.name[:-1])
+			
+		finally:
+			frappe.db.rollback()
+
