@@ -684,3 +684,18 @@ def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_li
 		si, ae, naming_series=naming_series, price_list=price_list, use_series_naming=True, submit=False
 	)
 	return {"status": "success", "invoice_name": msi.name, "company": msi.company}
+
+
+@frappe.whitelist()
+def get_payment_entry_series():
+	"""Return naming series configured for Payment Entry as a list of strings."""
+	options = frappe.db.get_value(
+		"Property Setter",
+		{"doc_type": "Payment Entry", "field_name": "naming_series", "property": "options"},
+		"value",
+	)
+	if not options:
+		field = frappe.get_meta("Payment Entry").get_field("naming_series")
+		options = field.options if field else ""
+	return [opt.strip() for opt in (options or "").split("\n") if opt.strip()]
+

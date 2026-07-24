@@ -6,6 +6,7 @@
  "field_order": [
   "alternative_company",
   "warehouse",
+  "payment_entry_naming_settings",
   "section_break_tables",
   "series",
   "accounts"
@@ -22,6 +23,12 @@
    "fieldtype": "Link",
    "label": "Warehouse",
    "options": "Warehouse"
+  },
+  {
+   "fieldname": "payment_entry_naming_settings",
+   "fieldtype": "Select",
+   "label": "Payment Entry Naming Settings",
+   "options": ""
   },
   {
    "fieldname": "section_break_tables",
