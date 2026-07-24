@@ -413,10 +413,10 @@ def mirror_bill(si):
 
 
 
-def _create_mirror_payment_entry(msi, amount, original_account, allowed_accounts, ref_no=None, original_pe_name=None):
+def _create_mirror_payment_entry(msi, amount, original_account, allowed_accounts, ref_no=None, original_pe_name=None, bypass_whitelist=False):
 	if amount <= 0.01 or not original_account:
 		return None
-	if original_account not in allowed_accounts:
+	if not bypass_whitelist and original_account not in allowed_accounts:
 		return None
 	target_company = msi.company
 	paid_to = resolve_target_account(original_account, allowed_accounts, target_company)
@@ -467,7 +467,7 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
                      cash_account=None, upi_account=None, card_account=None,
                      discount_account=None, card_ref_no=None,
                      original_cash_pe=None, original_upi_pe=None, original_card_pe=None,
-                     original_discount_je=None):
+                     original_discount_je=None, bypass_whitelist=True):
 	"""Replicate the cash/UPI/card payments (and discount write-off) against the mirror
 	invoice `msi`. No-op if msi is None. Isolated with its own savepoint.
 	"""
@@ -483,25 +483,25 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 		entries = []
 
 		pe_name = _create_mirror_payment_entry(
-			msi, cash_amount, cash_account, allowed_accounts, original_pe_name=original_cash_pe
+			msi, cash_amount, cash_account, allowed_accounts, original_pe_name=original_cash_pe, bypass_whitelist=bypass_whitelist
 		)
 		if pe_name:
 			entries.append(pe_name)
 
 		pe_name = _create_mirror_payment_entry(
-			msi, upi_amount, upi_account, allowed_accounts, original_pe_name=original_upi_pe
+			msi, upi_amount, upi_account, allowed_accounts, original_pe_name=original_upi_pe, bypass_whitelist=bypass_whitelist
 		)
 		if pe_name:
 			entries.append(pe_name)
 
 		pe_name = _create_mirror_payment_entry(
-			msi, card_amount, card_account, allowed_accounts, ref_no=card_ref_no, original_pe_name=original_card_pe
+			msi, card_amount, card_account, allowed_accounts, ref_no=card_ref_no, original_pe_name=original_card_pe, bypass_whitelist=bypass_whitelist
 		)
 		if pe_name:
 			entries.append(pe_name)
 
 		if discount_amount > 0.01 and discount_account:
-			if discount_account in allowed_accounts:
+			if bypass_whitelist or discount_account in allowed_accounts:
 				mapped_discount = resolve_target_account(discount_account, allowed_accounts, msi.company)
 				if mapped_discount:
 					mirror_je_name = f"{original_discount_je}/" if original_discount_je else None
@@ -770,7 +770,8 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 						original_account=pe_data.paid_to,
 						allowed_accounts=allowed_accounts,
 						ref_no=pe_data.reference_no,
-						original_pe_name=ref.parent
+						original_pe_name=ref.parent,
+						bypass_whitelist=True
 					)
 
 			# 2. Replicate Journal Entries (discounts, etc.)
@@ -801,7 +802,7 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 					continue
 
 				discount_account = discount_acc_row.account
-				if discount_account in allowed_accounts:
+				if True or discount_account in allowed_accounts:
 					mapped_discount = resolve_target_account(discount_account, allowed_accounts, msi.company)
 					if mapped_discount:
 						je = frappe.new_doc("Journal Entry")
