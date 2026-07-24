@@ -749,6 +749,87 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 		msi.insert()
 	if submit:
 		msi.submit()
+		# Replicate payment entries and journal entries associated with the original Sales Invoice `si`
+		sp = "sp_" + frappe.generate_hash(length=10)
+		frappe.db.savepoint(sp)
+		try:
+			allowed_accounts = _allowed_accounts(ae)
+			
+			# 1. Replicate Payment Entries
+			pe_references = frappe.db.get_all(
+				"Payment Entry Reference",
+				filters={"reference_doctype": "Sales Invoice", "reference_name": si.name, "docstatus": 1},
+				fields=["parent", "allocated_amount"]
+			)
+			for ref in pe_references:
+				pe_data = frappe.db.get_value("Payment Entry", ref.parent, ["paid_to", "reference_no"], as_dict=True)
+				if pe_data:
+					_create_mirror_payment_entry(
+						msi=msi,
+						amount=ref.allocated_amount,
+						original_account=pe_data.paid_to,
+						allowed_accounts=allowed_accounts,
+						ref_no=pe_data.reference_no,
+						original_pe_name=ref.parent
+					)
+
+			# 2. Replicate Journal Entries (discounts, etc.)
+			je_references = frappe.db.get_all(
+				"Journal Entry Account",
+				filters={"reference_type": "Sales Invoice", "reference_name": si.name, "docstatus": 1},
+				fields=["parent"]
+			)
+			# Filter unique journal entry parents
+			unique_je_names = list(set(ref.parent for ref in je_references))
+			for je_name in unique_je_names:
+				mirror_je_name = f"{je_name}/"
+				if frappe.db.exists("Journal Entry", mirror_je_name):
+					continue
+
+				je_doc = frappe.get_doc("Journal Entry", je_name)
+				si_acc_row = next((acc for acc in je_doc.accounts if acc.reference_name == si.name), None)
+				if not si_acc_row:
+					continue
+
+				amount = si_acc_row.credit_in_account_currency or si_acc_row.debit_in_account_currency
+				if amount <= 0.01:
+					continue
+
+				# Find the discount/contra account row in the same JE
+				discount_acc_row = next((acc for acc in je_doc.accounts if acc != si_acc_row), None)
+				if not discount_acc_row:
+					continue
+
+				discount_account = discount_acc_row.account
+				if discount_account in allowed_accounts:
+					mapped_discount = resolve_target_account(discount_account, allowed_accounts, msi.company)
+					if mapped_discount:
+						je = frappe.new_doc("Journal Entry")
+						je.voucher_type = "Journal Entry"
+						je.posting_date = msi.posting_date
+						je.company = msi.company
+						je.append("accounts", {"account": mapped_discount, "debit_in_account_currency": amount})
+						je.append("accounts", {
+							"account": msi.debit_to,
+							"credit_in_account_currency": amount,
+							"party_type": "Customer",
+							"party": msi.customer,
+							"reference_type": "Sales Invoice",
+							"reference_name": msi.name,
+						})
+						if je_doc.cheque_no:
+							je.cheque_no = je_doc.cheque_no
+						if je_doc.cheque_date:
+							je.cheque_date = je_doc.cheque_date
+
+						je.flags.ignore_permissions = True
+						je.insert(set_name=mirror_je_name)
+						je.submit()
+
+			frappe.db.release_savepoint(sp)
+		except Exception:
+			frappe.db.rollback(save_point=sp)
+			frappe.log_error(frappe.get_traceback(), "Automatic Entries: mirror converted payments failed")
 	return msi
 
 

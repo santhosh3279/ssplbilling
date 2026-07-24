@@ -123,3 +123,72 @@ class TestAutomaticEntries(IntegrationTestCase):
 		# If the payment account is not whitelisted, it must return None
 		res_not_allowed = _create_mirror_payment_entry(msi, 100.0, "Cash - SSPL", set())
 		self.assertIsNone(res_not_allowed)
+
+	def test_create_mirror_invoice_for_gst_conversion_payments(self):
+		from ssplbilling.api.automatic_entries_api import create_mirror_invoice_for_gst_conversion
+		
+		# Set up a temporary Sales Invoice with a Payment Entry
+		frappe.db.begin()
+		try:
+			# Create a Sales Invoice in main company
+			si = frappe.new_doc("Sales Invoice")
+			si.company = "Sundaram And Sons Private Limited"
+			si.customer = "Test Customer"
+			si.posting_date = frappe.utils.today()
+			si.debit_to = "Debtors - SSPL"
+			# Add an item
+			si.append("items", {
+				"item_code": "Test Item",
+				"qty": 1,
+				"rate": 100.0,
+				"warehouse": "Finished Goods - SSPL",
+				"income_account": "Sales - SSPL",
+				"cost_center": "Main - SSPL"
+			})
+			si.save()
+			si.submit()
+			
+			# Create a Payment Entry for it
+			pe = frappe.new_doc("Payment Entry")
+			pe.payment_type = "Receive"
+			pe.company = "Sundaram And Sons Private Limited"
+			pe.posting_date = frappe.utils.today()
+			pe.party_type = "Customer"
+			pe.party = "Test Customer"
+			pe.paid_from = "Debtors - SSPL"
+			pe.paid_to = "Cash - SSPL"
+			pe.paid_amount = 100.0
+			pe.received_amount = 100.0
+			pe.append("references", {
+				"reference_doctype": "Sales Invoice",
+				"reference_name": si.name,
+				"allocated_amount": 100.0
+			})
+			pe.save()
+			pe.submit()
+			
+			# Set up Automatic Entries settings
+			ae = frappe.new_doc("Automatic Entries")
+			ae.alternative_company = "Sundaram And Sons Private Limited 2"
+			ae.warehouse = "Finished Goods - NCK"
+			ae.append("accounts", {
+				"source_account": "Cash - SSPL",
+				"target_account": "Cash - NCK"
+			})
+			
+			# Trigger mirroring
+			msi = create_mirror_invoice_for_gst_conversion(si, ae, submit=True)
+			
+			# Verify mirror invoice was created
+			self.assertTrue(frappe.db.exists("Sales Invoice", f"{si.name}/"))
+			
+			# Verify the mirror Payment Entry was created and submitted
+			mirror_pe_name = f"{pe.name}/"
+			self.assertTrue(frappe.db.exists("Payment Entry", mirror_pe_name))
+			mirror_pe = frappe.get_doc("Payment Entry", mirror_pe_name)
+			self.assertEqual(mirror_pe.company, "Sundaram And Sons Private Limited 2")
+			self.assertEqual(mirror_pe.docstatus, 1)
+			self.assertEqual(mirror_pe.paid_amount, 100.0)
+			
+		finally:
+			frappe.db.rollback()
