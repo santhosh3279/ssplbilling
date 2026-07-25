@@ -653,7 +653,7 @@ def _batch_voucher_details(entries):
         headers = {r.name: r for r in frappe.get_all(
             "Journal Entry",
             filters={"name": ["in", names]},
-            fields=["name", "posting_date", "total_debit"],
+            fields=["name", "posting_date", "total_debit", "user_remark"],
         )}
         items_map = defaultdict(list)
         for r in je_items:
@@ -672,6 +672,7 @@ def _batch_voucher_details(entries):
                 "voucher_type": "Journal Entry",
                 "total_amount": float(h.get("total_debit") or 0),
                 "posting_date": str(h.get("posting_date", "")),
+                "user_remark": h.get("user_remark") or "",
                 "items": items_map.get(name, []),
             }
 

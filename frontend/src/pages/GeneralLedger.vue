@@ -387,6 +387,11 @@
               <span class="text-[var(--color-text-muted)] shrink-0">Remarks</span>
               <span class="font-semibold text-[var(--color-text)] text-right whitespace-pre-wrap break-words">{{ voucherDetail.custom_remarks }}</span>
             </div>
+            <!-- User Remark (Journal Entry) -->
+            <div v-if="voucherDetail.user_remark" class="flex justify-between gap-3">
+              <span class="text-[var(--color-text-muted)] shrink-0">User Remark</span>
+              <span class="font-semibold text-[var(--color-text)] text-right whitespace-pre-wrap break-words">{{ voucherDetail.user_remark }}</span>
+            </div>
             <div class="flex justify-between border-t border-[var(--color-border)] pt-2 mt-2">
               <span class="text-[var(--color-text-muted)] font-bold uppercase">Total Amount</span>
               <span class="font-bold text-[var(--color-info)]">₹{{ fmt(voucherDetail.total_amount) }}</span>
@@ -461,9 +466,10 @@
             </div>
           </div>
 
-          <div v-if="selectedEntry.remarks || (voucherDetail && voucherDetail.custom_remarks)" class="mt-6 border-t border-[var(--color-border)] pt-4">
+          <div v-if="selectedEntry.remarks || (voucherDetail && (voucherDetail.custom_remarks || voucherDetail.user_remark))" class="mt-6 border-t border-[var(--color-border)] pt-4">
             <div class="mb-1 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Remarks</div>
             <p v-if="voucherDetail && voucherDetail.custom_remarks" class="text-[11px] leading-relaxed text-[var(--color-text)] whitespace-pre-wrap font-semibold bg-[var(--color-surface-raised)] p-2 rounded mb-2">{{ voucherDetail.custom_remarks }}</p>
+            <p v-if="voucherDetail && voucherDetail.user_remark" class="text-[11px] leading-relaxed text-[var(--color-text)] whitespace-pre-wrap font-semibold bg-[var(--color-surface-raised)] p-2 rounded mb-2">{{ voucherDetail.user_remark }}</p>
             <p v-if="selectedEntry.remarks" class="text-[11px] leading-relaxed text-[var(--color-text-muted)] whitespace-pre-wrap italic">{{ selectedEntry.remarks }}</p>
           </div>
 
