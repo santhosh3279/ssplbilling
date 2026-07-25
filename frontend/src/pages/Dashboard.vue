@@ -554,7 +554,7 @@
           <span class="font-bold text-[var(--color-text)]">Deployment Instructions:</span>
           <ol class="list-decimal pl-4 mt-1 space-y-1">
             <li>Generate a valid signed <code class="bg-[var(--color-surface-raised)] px-1 rounded">license.json</code> file.</li>
-            <li>Place the file on the server in your site directory:<br/><code class="bg-[var(--color-surface-raised)] px-1 rounded block mt-0.5 truncate font-mono">sites/erp.localhost/license.json</code></li>
+            <li>Place the file on the server in your site directory:<br/><code class="bg-[var(--color-surface-raised)] px-1 rounded block mt-0.5 truncate font-mono">sites/{{ licenseInfo?.site_name || 'erp.localhost' }}/license.json</code></li>
             <li>Click "Re-verify License" below.</li>
           </ol>
         </div>

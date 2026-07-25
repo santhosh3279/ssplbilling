@@ -39,86 +39,60 @@ def get_license_status():
 		# Also fallback to private files in case they upload it via File Manager
 		license_path = frappe.get_site_path("private", "files", "license.json")
 
+	status = {
+		"valid": False,
+		"message": "",
+		"customer_name": "",
+		"expiry_date": "",
+		"features": [],
+		"days_remaining": 0,
+		"site_name": frappe.local.site
+	}
+
 	if not os.path.exists(license_path):
-		return {
-			"valid": False,
-			"message": "License file not found on server",
-			"customer_name": "",
-			"expiry_date": "",
-			"features": [],
-			"days_remaining": 0
-		}
+		status["message"] = "License file not found on server"
+		return status
 
 	try:
 		with open(license_path, "r") as f:
 			data = json.load(f)
 	except Exception as e:
-		return {
-			"valid": False,
-			"message": f"Failed to parse license file: {str(e)}",
-			"customer_name": "",
-			"expiry_date": "",
-			"features": [],
-			"days_remaining": 0
-		}
+		status["message"] = f"Failed to parse license file: {str(e)}"
+		return status
 
 	customer_name = data.get("customer_name")
 	expiry_date = data.get("expiry_date")
 	features = data.get("features", [])
 	signature = data.get("signature")
 
+	status["customer_name"] = customer_name or ""
+	status["expiry_date"] = expiry_date or ""
+	status["features"] = features
+
 	if not customer_name or not expiry_date or not signature:
-		return {
-			"valid": False,
-			"message": "Invalid license file format (missing fields)",
-			"customer_name": "",
-			"expiry_date": "",
-			"features": [],
-			"days_remaining": 0
-		}
+		status["message"] = "Invalid license file format (missing fields)"
+		return status
 
 	# Verify signature
 	if not _verify_signature(customer_name, expiry_date, features, signature):
-		return {
-			"valid": False,
-			"message": "License signature verification failed (tampered)",
-			"customer_name": customer_name,
-			"expiry_date": expiry_date,
-			"features": features,
-			"days_remaining": 0
-		}
+		status["message"] = "License signature verification failed (tampered)"
+		return status
 
 	# Check expiration
 	try:
 		expiry_dt = datetime.strptime(expiry_date, "%Y-%m-%d").date()
 	except ValueError:
-		return {
-			"valid": False,
-			"message": "Invalid date format in license. Expected YYYY-MM-DD.",
-			"customer_name": customer_name,
-			"expiry_date": expiry_date,
-			"features": features,
-			"days_remaining": 0
-		}
+		status["message"] = "Invalid date format in license. Expected YYYY-MM-DD."
+		return status
 
 	today = datetime.now().date()
 	days_remaining = (expiry_dt - today).days
+	status["days_remaining"] = days_remaining
 
 	if days_remaining < 0:
-		return {
-			"valid": False,
-			"message": "License has expired",
-			"customer_name": customer_name,
-			"expiry_date": expiry_date,
-			"features": features,
-			"days_remaining": days_remaining
-		}
+		status["message"] = "License has expired"
+		return status
 
-	return {
-		"valid": True,
-		"message": "License is active",
-		"customer_name": customer_name,
-		"expiry_date": expiry_date,
-		"features": features,
-		"days_remaining": days_remaining
-	}
+	status["valid"] = True
+	status["message"] = "License is active"
+	return status
