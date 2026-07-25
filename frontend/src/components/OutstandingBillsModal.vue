@@ -8,7 +8,13 @@
           <h2 class="text-4xl font-black uppercase tracking-tight text-[var(--color-text)]">Outstanding Items</h2>
           <span v-if="party" class="text-2xl font-bold text-[var(--color-highlight)] bg-[var(--color-highlight)]/10 px-4 py-1.5 rounded-lg font-mono">{{ party }}</span>
           <!-- Direction Filter -->
-          <div class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
+          <div v-if="directionLocked" class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
+            <span
+              class="min-w-[60px] rounded-md px-4 py-1.5 text-[20px] font-black uppercase bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] shadow-sm"
+              :title="activeTab === 'Payment' ? 'Payments only settle Cr items (unlinked amounts & credit notes)' : 'Receipts only settle Dr items (unlinked amounts & debit notes)'"
+            >{{ effectiveDirection }}</span>
+          </div>
+          <div v-else class="flex rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-0.5">
             <button
               v-for="d in ['All', 'Dr', 'Cr']"
               :key="d"
@@ -440,6 +446,11 @@ const linkedPopup = ref({ show: false, docname: '', doctype: '', docs: [], total
 
 const isLoading = computed(() => props.loading || localLoading.value)
 
+// Payment settles Cr items only (unlinked amounts + credit notes); Receipt settles Dr items only.
+const directionLocked = computed(() => props.activeTab === 'Payment' || props.activeTab === 'Receipt')
+const lockedDirection = computed(() => props.activeTab === 'Payment' ? 'Cr' : props.activeTab === 'Receipt' ? 'Dr' : null)
+const effectiveDirection = computed(() => directionLocked.value ? lockedDirection.value : filterDirection.value)
+
 async function fetchData() {
   if (!props.party || !props.partyType) return
   localLoading.value = true
@@ -528,7 +539,7 @@ const currentJournals = computed(() => localJournals.value.length ? localJournal
 const filteredInvoices = computed(() => {
   if (!showTypeInv.value) return []
   const list = currentInvoices.value || []
-  return filterDirection.value === 'All' ? list : list.filter(i => i.direction === filterDirection.value)
+  return effectiveDirection.value === 'All' ? list : list.filter(i => i.direction === effectiveDirection.value)
 })
 const filteredPayments = computed(() => {
   if (!showTypePay.value) return []
@@ -536,12 +547,12 @@ const filteredPayments = computed(() => {
   if (props.mop) {
     list = list.filter(p => p.mode_of_payment && p.mode_of_payment.toLowerCase() === props.mop.toLowerCase())
   }
-  return filterDirection.value === 'All' ? list : list.filter(p => p.direction === filterDirection.value)
+  return effectiveDirection.value === 'All' ? list : list.filter(p => p.direction === effectiveDirection.value)
 })
 const filteredJournals = computed(() => {
   if (!showTypeJrn.value) return []
   const list = currentJournals.value || []
-  return filterDirection.value === 'All' ? list : list.filter(j => j.direction === filterDirection.value)
+  return effectiveDirection.value === 'All' ? list : list.filter(j => j.direction === effectiveDirection.value)
 })
 
 const totalAllocated = computed(() =>
