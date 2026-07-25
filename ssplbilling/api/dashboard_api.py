@@ -598,7 +598,7 @@ def get_billing_settings(user=None):
 	}
 
 	return {
-		"app_version": ssplbilling.__version__,
+		"app_version": settings.custom_version or ssplbilling.__version__,
 		"last_updated": last_updated,
 		"company_state": company_state,
 		"discount_account": settings.discount_account or "",
@@ -789,4 +789,15 @@ def get_ic_api_credits():
 			return {"success": False, "error": f"API HTTP Error {response.status_code}"}
 	except Exception as e:
 		return {"success": False, "error": str(e)}
+
+
+@frappe.whitelist()
+def update_custom_version(version):
+	"""Updates the custom version in SSPL Billing Settings. Restricted to System Manager."""
+	if "System Manager" not in frappe.get_roles(frappe.session.user) and frappe.session.user not in ["Administrator", "admin"]:
+		frappe.throw("Only System Manager can update the version")
+
+	frappe.db.set_single_value("SSPL Billing Settings", "custom_version", version)
+	frappe.clear_cache(doctype="SSPL Billing Settings")
+	return {"success": True, "version": version}
 

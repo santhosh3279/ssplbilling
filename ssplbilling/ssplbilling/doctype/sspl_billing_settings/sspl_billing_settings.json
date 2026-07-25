@@ -5,6 +5,7 @@
  "engine": "InnoDB",
  "field_order": [
   "encryption_section",
+  "custom_version",
   "cipher_map",
   "discount_account",
   "freight",
@@ -27,6 +28,11 @@
    "fieldname": "encryption_section",
    "fieldtype": "Section Break",
    "label": "Price Encryption"
+  },
+  {
+   "fieldname": "custom_version",
+   "fieldtype": "Data",
+   "label": "Custom Version"
   },
   {
    "default": "[\"K\",\"L\",\"M\",\"N\",\"O\",\"P\",\"Q\",\"R\",\"S\",\"T\"]",
