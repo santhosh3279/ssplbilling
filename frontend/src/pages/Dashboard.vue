@@ -509,6 +509,70 @@
 
 
     <!-- SUCCESS POPUP -->
+     
+    <!-- ===================== LICENSE OVERLAY ===================== -->
+    <div
+      v-if="isLicenseInvalid"
+      class="fixed inset-0 z-[9999] flex items-center justify-center bg-[var(--color-bg)]/95 backdrop-blur-md px-6"
+    >
+      <div class="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl space-y-6">
+        <div class="flex flex-col items-center text-center space-y-2">
+          <div class="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-danger)]/10 text-3xl text-[var(--color-danger)]">
+            🔒
+          </div>
+          <h2 class="text-xl font-bold text-[var(--color-text)]">
+            {{ licenseInfo?.days_remaining < 0 ? 'Software License Expired' : 'License Activation Required' }}
+          </h2>
+          <p class="text-xs text-[var(--color-text-muted)] max-w-sm">
+            {{ licenseInfo?.message || 'A valid license file is required to use this software features.' }}
+          </p>
+        </div>
+
+        <!-- License Details Card -->
+        <div v-if="licenseInfo && licenseInfo.customer_name" class="rounded-xl bg-[var(--color-surface-raised)] p-4 text-xs space-y-2">
+          <div class="flex justify-between">
+            <span class="text-[var(--color-text-muted)]">Licensed To</span>
+            <span class="font-bold text-[var(--color-text)] text-right">{{ licenseInfo.customer_name }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-[var(--color-text-muted)]">Expiry Date</span>
+            <span class="font-semibold text-[var(--color-text)]">{{ licenseInfo.expiry_date }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-[var(--color-text-muted)]">Remaining Days</span>
+            <span class="font-bold" :class="licenseInfo.days_remaining < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-warning)]'">
+              {{ licenseInfo.days_remaining }} days
+            </span>
+          </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="text-[11px] text-[var(--color-text-muted)] leading-relaxed bg-[var(--color-surface-raised)]/50 p-3 rounded-lg border border-[var(--color-border)]/50">
+          <span class="font-bold text-[var(--color-text)]">Deployment Instructions:</span>
+          <ol class="list-decimal pl-4 mt-1 space-y-1">
+            <li>Generate a valid signed <code class="bg-[var(--color-surface-raised)] px-1 rounded">license.json</code> file.</li>
+            <li>Place the file on the server in your site directory:<br/><code class="bg-[var(--color-surface-raised)] px-1 rounded block mt-0.5 truncate font-mono">sites/erp.localhost/license.json</code></li>
+            <li>Click "Re-verify License" below.</li>
+          </ol>
+        </div>
+
+        <div class="flex gap-3">
+          <button
+            @click="handleLogout"
+            class="flex-1 rounded-xl bg-[var(--color-surface-raised)] hover:bg-[var(--color-midlight)] border border-[var(--color-border)] py-2.5 text-sm font-semibold text-[var(--color-text)] transition active:scale-95 cursor-pointer"
+          >
+            Logout
+          </button>
+          <button
+            @click="syncSettings"
+            class="flex-1 rounded-xl bg-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/90 py-2.5 text-sm font-semibold text-[var(--color-text-on-highlight)] transition active:scale-95 shadow-lg shadow-[var(--color-highlight)]/15 cursor-pointer"
+          >
+            Re-verify License
+          </button>
+        </div>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -1378,6 +1442,15 @@ async function fetchSettings(user = null, force = false) {
     console.warn('[Dashboard] getBillingSettings failed:', e)
   }
 
+  // 2.5 Fetch license status from server
+  try {
+    const lic = await frappeGet('ssplbilling.api.license_api.get_license_status')
+    localStorage.setItem('ae_license_info', JSON.stringify(lic))
+    updateLicenseState()
+  } catch (e) {
+    console.warn('[Dashboard] get_license_status failed:', e)
+  }
+
   // 3. Sync today's opening box cash — refetch only once per calendar day
   //    (date-keyed, NOT TTL: a stale value here would show yesterday's opening).
   try {
@@ -1441,6 +1514,21 @@ const filteredUserSeries = computed(() => {
   return all.filter(us => us.user === user)
 })
 
+const licenseInfo = ref(null)
+
+function updateLicenseState() {
+  try {
+    licenseInfo.value = JSON.parse(localStorage.getItem('ae_license_info') || 'null')
+  } catch {
+    licenseInfo.value = null
+  }
+}
+
+const isLicenseInvalid = computed(() => {
+  if (!licenseInfo.value) return false
+  return !licenseInfo.value.valid || licenseInfo.value.days_remaining < 0
+})
+
 function cleanupOldKeys() {
   const keysToRemove = [
     'wb-general-settings-v1',
@@ -1451,6 +1539,7 @@ function cleanupOldKeys() {
 }
 
 onMounted(async () => {
+  updateLicenseState()
   cleanupOldKeys()
   document.addEventListener('click', handleClickOutside)
   window.addEventListener('wb-navigate-home', () => router.push('/'))

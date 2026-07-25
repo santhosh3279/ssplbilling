@@ -164,8 +164,35 @@ function getConfiguredTileIds() {
  * the visible tiles are allowed and the role-based sets below are bypassed.
  * Without a tile configuration, the role-based logic applies as before.
  */
+export function getLicenseInfo() {
+  try {
+    return JSON.parse(localStorage.getItem('ae_license_info') || 'null')
+  } catch {
+    return null
+  }
+}
+
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'Login'].includes(routeName)) return true
+
+  const license = getLicenseInfo()
+  if (license) {
+    if (!license.valid || license.days_remaining < 0) {
+      return false
+    }
+    if (Array.isArray(license.features)) {
+      let tileId = null
+      for (const [tid, rname] of Object.entries(TILE_ROUTE_MAP)) {
+        if (rname === routeName) {
+          tileId = tid
+          break
+        }
+      }
+      if (tileId && !license.features.includes(tileId)) {
+        return false
+      }
+    }
+  }
 
   const role = getUserRole()
   if (role === 'admin') return true
@@ -261,6 +288,16 @@ const TILE_ROUTE_MAP = {
 }
 
 export function canAccessTile(tileId) {
+  const license = getLicenseInfo()
+  if (license) {
+    if (!license.valid || license.days_remaining < 0) {
+      return false
+    }
+    if (Array.isArray(license.features) && !license.features.includes(tileId)) {
+      return false
+    }
+  }
+
   // Tile access configured → membership in the configured list decides,
   // regardless of role flags.
   const tileIds = getConfiguredTileIds()
