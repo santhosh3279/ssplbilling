@@ -10,6 +10,9 @@
         <div class="mt-2 flex flex-col gap-0.5 text-[10px] text-[var(--color-text-muted)] font-mono opacity-80">
           <div>Version: {{ appVersion }}</div>
           <div v-if="lastUpdated">Updated: {{ lastUpdated }}</div>
+          <div v-if="daysRemaining !== null" :class="daysRemaining < 30 ? 'text-[var(--color-warning)] font-bold' : ''">
+            License: {{ daysRemaining }} days left
+          </div>
         </div>
       </div>
 
@@ -1542,6 +1545,13 @@ function updateLicenseState() {
 const isLicenseInvalid = computed(() => {
   if (!licenseInfo.value) return false
   return !licenseInfo.value.valid || licenseInfo.value.days_remaining < 0
+})
+
+const daysRemaining = computed(() => {
+  if (licenseInfo.value && typeof licenseInfo.value.days_remaining === 'number') {
+    return licenseInfo.value.days_remaining
+  }
+  return null
 })
 
 function cleanupOldKeys() {
