@@ -326,6 +326,9 @@ if (defaultCostCenter && !localCostCenters.includes(defaultCostCenter)) localCos
 const costCenters = ref(localCostCenters)
 const costCenterFilter = ref(defaultCostCenter)
 
+// Store Transfer bills below this amount are hidden — synced from Incentive Rule
+const storeTransferLimit = Number(localStorage.getItem('wb-store-transfer-limit') || 0)
+
 const billDetails = ref({
   amount: 0,
   percentage: 0,
@@ -461,6 +464,11 @@ async function fetchBills() {
 // Filter bills based on search & doctype filter pills
 const filteredBills = computed(() => {
   let list = bills.value
+
+  // Store Transfer bills at/below the configured limit are hidden
+  if (storeTransferLimit > 0) {
+    list = list.filter(b => b.doctype !== 'Stock Entry' || b.amount > storeTransferLimit)
+  }
 
   // Doctype filter
   if (activeFilter.value !== 'All') {

@@ -580,6 +580,7 @@ def get_billing_settings(user=None):
 	company_state = frappe.db.get_value("Address", {"is_your_company_address": 1}, "state") or ""
 
 	automatic_entries = frappe.get_cached_doc("Automatic Entries", "Automatic Entries")
+	incentive_rule = frappe.get_cached_doc("Incentive Rule")
 
 	user_zoom = (user_row.zoom_value or "") if user_row else ""
 	user_theme = (user_row.theme or "Light") if user_row else "Light"
@@ -609,6 +610,7 @@ def get_billing_settings(user=None):
 		"other_charges": settings.other_charges or "",
 		"round_off": settings.round_off or "",
 		"cipher_map": settings.cipher_map or "",
+		"store_transfer_bill_limit": incentive_rule.store_transfer_bill_limit or 0,
 		"mop_map": mop_map,
 		"user_zoom": user_zoom,
 		"wb_theme": user_theme,

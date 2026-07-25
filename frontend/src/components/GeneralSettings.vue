@@ -422,6 +422,9 @@ function applyToLocalStorage(settings, targetUserArg) {
   if (settings.round_off) {
     localStorage.setItem('wb-round-off', settings.round_off)
   }
+  if (settings.store_transfer_bill_limit) {
+    localStorage.setItem('wb-store-transfer-limit', String(settings.store_transfer_bill_limit))
+  }
 
   // Visible accounts — global list of GL accounts exposed in the ledger search modal
   const visibleAccountNames = (settings.visible_accounts || [])

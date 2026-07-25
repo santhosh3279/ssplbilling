@@ -10,6 +10,7 @@
   "wholesale",
   "purchase",
   "store_transfer",
+  "store_transfer_bill_limit",
   "conversion_factor",
   "incentive_ledger",
   "column_break_fpju",
@@ -33,6 +34,11 @@
    "fieldname": "store_transfer",
    "fieldtype": "Data",
    "label": "Store Transfer"
+  },
+  {
+   "fieldname": "store_transfer_bill_limit",
+   "fieldtype": "Currency",
+   "label": "Store Transfer Bill Amount Limit"
   },
   {
    "fieldname": "wholesale",
