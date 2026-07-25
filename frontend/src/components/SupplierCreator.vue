@@ -630,6 +630,11 @@ function validate() {
     addr1Input.value?.focus()
     return false
   }
+  if (form.pincode && !/^[1-9]\d{5}$/.test(form.pincode)) {
+    alert('Pincode must be a 6-digit number and cannot start with 0')
+    pincodeInput.value?.focus()
+    return false
+  }
   return true
 }
 

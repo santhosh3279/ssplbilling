@@ -453,6 +453,9 @@ function validate() {
   if (!form.value.address_line1 || !form.value.address_line1.trim()) {
     alert('Address Line 1 is required'); return false
   }
+  if (form.value.pincode && !/^[1-9]\d{5}$/.test(form.value.pincode)) {
+    alert('Pincode must be a 6-digit number and cannot start with 0'); return false
+  }
   return true
 }
 
