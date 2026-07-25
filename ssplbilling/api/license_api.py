@@ -8,7 +8,7 @@ from cryptography.exceptions import InvalidSignature
 
 # Public key only — verification cannot forge a license. Signing key lives in the
 # separate private license-generator repo and never touches this codebase.
-LICENSE_PUBLIC_KEY_B64 = "0jYtKr0arB/5P0ZqUOPJ2UbU//CSbbMb/Zs69n3gVag="
+LICENSE_PUBLIC_KEY_B64 = "NCcdnL9384366XVtCpkpqq39XtZU7t/Fy+BYWt/+RBM="
 
 
 def _build_message(customer_name, expiry_date, features):
