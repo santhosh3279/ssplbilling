@@ -719,6 +719,36 @@ export async function updateItem(data) {
   return frappePost("ssplbilling.api.item_api.update_item", { data });
 }
 
+/**
+ * Upload a file using Frappe's standard /api/method/upload_file endpoint.
+ * @param {File} file
+ * @param {Object} [args]  Optional additional parameters like is_private, folder
+ * @returns {Promise<Object>} The uploaded file document
+ */
+export async function uploadFile(file, args = {}) {
+  const formData = new FormData();
+  formData.append("file", file, file.name);
+  formData.append("is_private", args.is_private ? "1" : "0");
+  formData.append("folder", args.folder || "Home");
+
+  if (args.doctype) formData.append("doctype", args.doctype);
+  if (args.docname) formData.append("docname", args.docname);
+  if (args.fieldname) formData.append("fieldname", args.fieldname);
+
+  const res = await fetch("/api/method/upload_file", {
+    method: "POST",
+    headers: {
+      "X-Frappe-CSRF-Token": csrfToken(),
+    },
+    body: formData,
+  });
+
+  if (!res.ok) throw new Error(`Upload failed: HTTP ${res.status} — ${res.statusText}`);
+  const json = await res.json();
+  if (json.exc) throw new Error(parseExc(json.exc));
+  return json.message ?? json;
+}
+
 // ─── Sales Invoice ─────────────────────────────────────────────────────────────
 
 /**

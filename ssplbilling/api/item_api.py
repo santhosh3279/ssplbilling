@@ -68,6 +68,9 @@ def create_item(data):
 	
 	if data.get("hsn_sac"):
 		item.gst_hsn_code = data.get("hsn_sac")
+
+	if "image" in data:
+		item.image = data.get("image")
 	
 	# Add to barcodes child table
 	item.append("barcodes", {"barcode": barcode, "uom": item.stock_uom})
@@ -178,6 +181,7 @@ def get_item_for_edit(item_code):
 		"suppliers": suppliers,
 		"uom_conversions": uom_conversions,
 		"extra_barcodes": extra_barcodes,
+		"image": item.image or "",
 	}
 
 
@@ -199,6 +203,8 @@ def update_item(data):
 	item.safety_stock = float(data.get("safety_stock") or 0)
 	if data.get("hsn_sac"):
 		item.gst_hsn_code = data["hsn_sac"]
+	if "image" in data:
+		item.image = data.get("image")
 
 	# Update barcodes (keep primary, replace extras)
 	primary_barcode = item.item_code

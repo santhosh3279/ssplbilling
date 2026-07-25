@@ -111,6 +111,45 @@
                 </table>
               </div>
             </div>
+
+            <!-- Item Image -->
+            <div class="space-y-[4px]">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Item Image</label>
+              <div class="border border-[var(--color-border)] bg-[var(--color-surface)] rounded-xl p-[16px] flex flex-col items-center justify-center gap-[12px] min-h-[160px] relative group overflow-hidden">
+                <div v-if="isUploadingImage" class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-[8px] z-10">
+                  <span class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-info)] border-t-transparent"></span>
+                  <span class="text-2xl font-bold text-white">Uploading...</span>
+                </div>
+
+                <div v-if="form.image" class="relative w-full flex flex-col items-center gap-[8px]">
+                  <img :src="form.image" class="max-h-[140px] max-w-full rounded-lg object-contain border border-[var(--color-border)] bg-black/5 shadow-sm" alt="Item Image" />
+                  <button 
+                    type="button" 
+                    @click="removeImage"
+                    class="text-xl font-bold text-[var(--color-danger)] hover:text-red-700 transition-colors flex items-center gap-1 mt-1"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                    Remove Image
+                  </button>
+                </div>
+
+                <div v-else class="flex flex-col items-center justify-center text-center cursor-pointer w-full py-[16px]" @click="triggerFileInput">
+                  <svg class="w-16 h-16 text-[var(--color-text-muted)] group-hover:text-[var(--color-info)] transition-colors mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375 0 11-.75 0 .375 0 01.75 0z" />
+                  </svg>
+                  <span class="text-2xl font-semibold text-[var(--color-text)] group-hover:text-[var(--color-info)] transition-colors">Click to Upload Image</span>
+                  <span class="text-xl text-[var(--color-text-muted)] mt-1">PNG, JPG, JPEG up to 5MB</span>
+                </div>
+
+                <input 
+                  ref="fileInput"
+                  type="file" 
+                  accept="image/*"
+                  class="hidden"
+                  @change="handleImageUpload"
+                />
+              </div>
+            </div>
           </div>
 
           <!-- Column 2: Classification & Taxes -->
@@ -345,7 +384,7 @@
 
 <script setup>
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
-import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, frappeGet } from '../api.js'
+import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, frappeGet, uploadFile } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
@@ -392,6 +431,7 @@ function _applyItemData(data, itemCode) {
   const bcDetailed = data.barcodes_detailed || []
   form.value.item_name        = data.item_name        || ''
   form.value.item_print_name  = data.item_print_name  || ''
+  form.value.image            = data.image            || ''
   form.value.barcode           = isFromCache
     ? (bcDetailed[0]?.barcode || itemCode)
     : (data.barcode || itemCode)
@@ -459,6 +499,7 @@ const form = ref({
   item_name: '',
   item_print_name: '',
   barcode: '',
+  image: '',
   item_group: '',
   hsn_sac: '',
   stock_uom: 'Nos',
@@ -469,6 +510,48 @@ const form = ref({
   uom_conversions: [],
   extra_barcodes: [],
 })
+
+const fileInput = ref(null)
+const isUploadingImage = ref(false)
+
+function triggerFileInput() {
+  fileInput.value?.click()
+}
+
+async function handleImageUpload(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+
+  // Validate file size (max 5MB)
+  if (file.size > 5 * 1024 * 1024) {
+    alert('File size exceeds 5MB limit.')
+    return
+  }
+
+  isUploadingImage.value = true
+  try {
+    const uploadArgs = {}
+    if (isEditMode.value) {
+      uploadArgs.doctype = 'Item'
+      uploadArgs.docname = props.editItemCode
+      uploadArgs.fieldname = 'image'
+    }
+    const res = await uploadFile(file, uploadArgs)
+    form.value.image = res.file_url
+  } catch (err) {
+    console.error('Image upload failed:', err)
+    alert('Failed to upload image: ' + err.message)
+  } finally {
+    isUploadingImage.value = false
+    if (fileInput.value) {
+      fileInput.value.value = ''
+    }
+  }
+}
+
+function removeImage() {
+  form.value.image = ''
+}
 
 const extraBarcodeInputs = ref([])
 
@@ -703,6 +786,7 @@ function resetForm() {
     item_name: '',
     item_print_name: '',
     barcode: '',
+    image: '',
     item_group:        cache.item_group        || metadata.value.item_groups[0]?.name || '',
     hsn_sac:           cache.hsn_sac           || '',
     stock_uom:         cache.stock_uom         || 'Nos',
