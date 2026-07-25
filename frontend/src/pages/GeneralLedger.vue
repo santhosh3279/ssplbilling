@@ -387,11 +387,6 @@
               <span class="text-[var(--color-text-muted)] shrink-0">Remarks</span>
               <span class="font-semibold text-[var(--color-text)] text-right whitespace-pre-wrap break-words">{{ voucherDetail.custom_remarks }}</span>
             </div>
-            <!-- User Remark (Journal Entry) -->
-            <div v-if="voucherDetail.user_remark" class="flex justify-between gap-3">
-              <span class="text-[var(--color-text-muted)] shrink-0">User Remark</span>
-              <span class="font-semibold text-[var(--color-text)] text-right whitespace-pre-wrap break-words">{{ voucherDetail.user_remark }}</span>
-            </div>
             <div class="flex justify-between border-t border-[var(--color-border)] pt-2 mt-2">
               <span class="text-[var(--color-text-muted)] font-bold uppercase">Total Amount</span>
               <span class="font-bold text-[var(--color-info)]">₹{{ fmt(voucherDetail.total_amount) }}</span>
