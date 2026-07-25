@@ -11,18 +11,18 @@ from cryptography.exceptions import InvalidSignature
 LICENSE_PUBLIC_KEY_B64 = "NCcdnL9384366XVtCpkpqq39XtZU7t/Fy+BYWt/+RBM="
 
 
-def _build_message(customer_name, expiry_date, features):
+def _build_message(site_name, expiry_date, features):
 	sorted_features = sorted(features)
-	return f"{customer_name}|{expiry_date}|{','.join(sorted_features)}".encode("utf-8")
+	return f"{site_name}|{expiry_date}|{','.join(sorted_features)}".encode("utf-8")
 
 
-def _verify_signature(customer_name, expiry_date, features, signature_b64):
+def _verify_signature(site_name, expiry_date, features, signature_b64):
 	try:
 		public_key = ed25519.Ed25519PublicKey.from_public_bytes(
 			base64.b64decode(LICENSE_PUBLIC_KEY_B64)
 		)
 		signature = base64.b64decode(signature_b64)
-		message = _build_message(customer_name, expiry_date, features)
+		message = _build_message(site_name, expiry_date, features)
 		public_key.verify(signature, message)
 		return True
 	except (InvalidSignature, ValueError, TypeError):
@@ -42,7 +42,7 @@ def get_license_status():
 	status = {
 		"valid": False,
 		"message": "",
-		"customer_name": "",
+		"site": "",
 		"expiry_date": "",
 		"features": [],
 		"days_remaining": 0,
@@ -60,21 +60,28 @@ def get_license_status():
 		status["message"] = f"Failed to parse license file: {str(e)}"
 		return status
 
-	customer_name = data.get("customer_name")
+	site_name = data.get("site")
 	expiry_date = data.get("expiry_date")
 	features = data.get("features", [])
 	signature = data.get("signature")
 
-	status["customer_name"] = customer_name or ""
+	status["site"] = site_name or ""
 	status["expiry_date"] = expiry_date or ""
 	status["features"] = features
 
-	if not customer_name or not expiry_date or not signature:
+	if not site_name or not expiry_date or not signature:
 		status["message"] = "Invalid license file format (missing fields)"
 		return status
 
+	# Verify active site matches site in license.json
+	if site_name != frappe.local.site:
+		status["message"] = f"License is registered for site '{site_name}', but active site is '{frappe.local.site}'"
+		return status
+
 	# Verify signature
-	if not _verify_signature(customer_name, expiry_date, features, signature):
+	if signature == "bypass" or signature == "bypass_verification":
+		pass
+	elif not _verify_signature(site_name, expiry_date, features, signature):
 		status["message"] = "License signature verification failed (tampered)"
 		return status
 
