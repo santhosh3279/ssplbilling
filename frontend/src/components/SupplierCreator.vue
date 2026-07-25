@@ -640,9 +640,14 @@ async function submit() {
 
   saving.value = true
   try {
+    const payload = {
+      ...form,
+      new_supplier_name: form.supplier_name,
+      new_name: form.supplier_name
+    }
     const result = props.isEdit
-      ? await updateSupplier(form.name, { ...form })
-      : await createSupplier({ ...form })
+      ? await updateSupplier(form.name, payload)
+      : await createSupplier(payload)
     emit('saved', result)
   } catch (e) {
     alert('Failed to save supplier: ' + e.message)

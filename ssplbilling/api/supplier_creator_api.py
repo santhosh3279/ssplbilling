@@ -41,7 +41,7 @@ def create_supplier_full(data):
 	if isinstance(data, str):
 		data = json.loads(data)
 
-	supplier_name = (data.get("supplier_name") or "").strip()
+	supplier_name = (data.get("supplier_name") or data.get("new_supplier_name") or data.get("new_name") or "").strip()
 	if not supplier_name:
 		frappe.throw("Supplier Name is required")
 
@@ -179,8 +179,15 @@ def update_supplier_full(data):
 	if not address_line1:
 		frappe.throw("Address Line 1 is required")
 
+	new_supplier_name = (data.get("supplier_name") or data.get("new_supplier_name") or data.get("new_name") or "").strip()
+	if new_supplier_name and supplier_id != new_supplier_name:
+		if frappe.db.exists("Supplier", new_supplier_name):
+			frappe.throw(f"Supplier with name '{new_supplier_name}' already exists.")
+		frappe.rename_doc("Supplier", supplier_id, new_supplier_name, ignore_permissions=True)
+		supplier_id = new_supplier_name
+
 	sup = frappe.get_doc("Supplier", supplier_id)
-	sup.supplier_name = data.get("supplier_name") or sup.supplier_name
+	sup.supplier_name = new_supplier_name or sup.supplier_name
 	sup.supplier_print_name = data.get("supplier_print_name") or ""
 	sup.supplier_type = data.get("supplier_type") or sup.supplier_type or "Individual"
 	sup.supplier_group = data.get("supplier_group") or sup.supplier_group or "All Supplier Groups"
