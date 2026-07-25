@@ -557,6 +557,15 @@ def run_terminal_command(command, cwd=None):
 @frappe.whitelist()
 def get_billing_settings(user=None):
 	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current or specified user."""
+	import ssplbilling
+	from datetime import datetime
+	app_path = frappe.get_app_path("ssplbilling")
+	hooks_path = os.path.join(app_path, "hooks.py")
+	last_updated = ""
+	if os.path.exists(hooks_path):
+		mtime = os.path.getmtime(hooks_path)
+		last_updated = datetime.fromtimestamp(mtime).strftime("%Y-%m-%d")
+
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
 	current_user = frappe.session.user
 	if user and current_user not in ["Administrator", "admin"]:
@@ -589,6 +598,8 @@ def get_billing_settings(user=None):
 	}
 
 	return {
+		"app_version": ssplbilling.__version__,
+		"last_updated": last_updated,
 		"company_state": company_state,
 		"discount_account": settings.discount_account or "",
 		"freight_account": settings.freight or "",

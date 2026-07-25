@@ -7,8 +7,10 @@
       <div class="border-b border-[var(--color-border)] px-4 py-4">
         <div class="text-lg font-bold text-[var(--color-text)]">Wholesale<span class="font-light text-[var(--color-text-muted)]">Billing</span></div>
         <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">Fast Billing System</div>
-        
-
+        <div class="mt-2 flex flex-col gap-0.5 text-[10px] text-[var(--color-text-muted)] font-mono opacity-80">
+          <div>Version: {{ appVersion }}</div>
+          <div v-if="lastUpdated">Updated: {{ lastUpdated }}</div>
+        </div>
       </div>
 
       <!-- User -->
@@ -1379,6 +1381,16 @@ async function fetchSettings(user = null, force = false) {
     }
     
     systemSettings.value = settings
+    if (settings) {
+      if (settings.app_version) {
+        localStorage.setItem('wb-app-version', settings.app_version)
+        appVersion.value = settings.app_version
+      }
+      if (settings.last_updated) {
+        localStorage.setItem('wb-last-updated', settings.last_updated)
+        lastUpdated.value = settings.last_updated
+      }
+    }
     // Sync user's zoom to localStorage so Sales Invoice can use it
     if (settings && settings.user_zoom) {
       localStorage.setItem('wb-zoom', settings.user_zoom)
@@ -1513,6 +1525,9 @@ const filteredUserSeries = computed(() => {
   if (user === 'Administrator' || user === 'admin') return all
   return all.filter(us => us.user === user)
 })
+
+const appVersion = ref(localStorage.getItem('wb-app-version') || '0.0.1')
+const lastUpdated = ref(localStorage.getItem('wb-last-updated') || '')
 
 const licenseInfo = ref(null)
 
