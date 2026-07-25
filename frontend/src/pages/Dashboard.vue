@@ -603,6 +603,7 @@ import { useTheme } from '../composables/useTheme'
 import { useMqtt } from '../composables/useMqtt'
 import { useDevice } from '../composables/useDevice'
 import { getFrappeSocket } from '../services/frappeSocket'
+import { APP_VERSION, APP_UPDATED } from '../version'
 
 const router = useRouter()
 
@@ -1384,16 +1385,6 @@ async function fetchSettings(user = null, force = false) {
     }
     
     systemSettings.value = settings
-    if (settings) {
-      if (settings.app_version) {
-        localStorage.setItem('wb-app-version', settings.app_version)
-        appVersion.value = settings.app_version
-      }
-      if (settings.last_updated) {
-        localStorage.setItem('wb-last-updated', settings.last_updated)
-        lastUpdated.value = settings.last_updated
-      }
-    }
     // Sync user's zoom to localStorage so Sales Invoice can use it
     if (settings && settings.user_zoom) {
       localStorage.setItem('wb-zoom', settings.user_zoom)
@@ -1529,8 +1520,8 @@ const filteredUserSeries = computed(() => {
   return all.filter(us => us.user === user)
 })
 
-const appVersion = ref(localStorage.getItem('wb-app-version') || '0.0.1')
-const lastUpdated = ref(localStorage.getItem('wb-last-updated') || '')
+const appVersion = ref(APP_VERSION)
+const lastUpdated = ref(APP_UPDATED)
 
 const licenseInfo = ref(null)
 
