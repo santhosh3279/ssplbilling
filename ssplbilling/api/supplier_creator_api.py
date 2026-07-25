@@ -183,7 +183,8 @@ def update_supplier_full(data):
 	if new_supplier_name and supplier_id != new_supplier_name:
 		if frappe.db.exists("Supplier", new_supplier_name):
 			frappe.throw(f"Supplier with name '{new_supplier_name}' already exists.")
-		frappe.rename_doc("Supplier", supplier_id, new_supplier_name, ignore_permissions=True)
+		from frappe.model.rename_doc import rename_doc as _rename_doc
+		_rename_doc("Supplier", supplier_id, new_supplier_name, ignore_permissions=True)
 		supplier_id = new_supplier_name
 
 	sup = frappe.get_doc("Supplier", supplier_id)
