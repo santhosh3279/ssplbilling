@@ -1,27 +1,40 @@
 import os
 import json
-import hmac
-import hashlib
+import base64
 from datetime import datetime
 import frappe
+from cryptography.hazmat.primitives.asymmetric import ed25519
+from cryptography.exceptions import InvalidSignature
 
-LICENSE_SECRET = "ssplbilling_secure_license_key_2026_santhosh"
+# Public key only — verification cannot forge a license. Signing key lives in the
+# separate private license-generator repo and never touches this codebase.
+LICENSE_PUBLIC_KEY_B64 = "0jYtKr0arB/5P0ZqUOPJ2UbU//CSbbMb/Zs69n3gVag="
 
-def calculate_signature(customer_name, expiry_date, features):
+
+def _build_message(customer_name, expiry_date, features):
 	sorted_features = sorted(features)
-	message = f"{customer_name}|{expiry_date}|{','.join(sorted_features)}"
-	return hmac.new(
-		LICENSE_SECRET.encode("utf-8"),
-		message.encode("utf-8"),
-		hashlib.sha256
-	).hexdigest()
+	return f"{customer_name}|{expiry_date}|{','.join(sorted_features)}".encode("utf-8")
+
+
+def _verify_signature(customer_name, expiry_date, features, signature_b64):
+	try:
+		public_key = ed25519.Ed25519PublicKey.from_public_bytes(
+			base64.b64decode(LICENSE_PUBLIC_KEY_B64)
+		)
+		signature = base64.b64decode(signature_b64)
+		message = _build_message(customer_name, expiry_date, features)
+		public_key.verify(signature, message)
+		return True
+	except (InvalidSignature, ValueError, TypeError):
+		return False
+
 
 @frappe.whitelist(allow_guest=True)
 def get_license_status():
-	"""Reads license.json from site directory, verifies signature & expiry, and returns status."""
+	"""Reads license.json from site directory, verifies Ed25519 signature & expiry, and returns status."""
 	# Location: sites/<site>/license.json
 	license_path = frappe.get_site_path("license.json")
-	
+
 	if not os.path.exists(license_path):
 		# Also fallback to private files in case they upload it via File Manager
 		license_path = frappe.get_site_path("private", "files", "license.json")
@@ -65,8 +78,7 @@ def get_license_status():
 		}
 
 	# Verify signature
-	expected_sig = calculate_signature(customer_name, expiry_date, features)
-	if not hmac.compare_digest(signature, expected_sig):
+	if not _verify_signature(customer_name, expiry_date, features, signature):
 		return {
 			"valid": False,
 			"message": "License signature verification failed (tampered)",
@@ -109,21 +121,4 @@ def get_license_status():
 		"expiry_date": expiry_date,
 		"features": features,
 		"days_remaining": days_remaining
-	}
-
-@frappe.whitelist()
-def generate_license(customer_name, expiry_date, features):
-	"""Generates a signed license JSON payload. Restricted to Administrator."""
-	if frappe.session.user != "Administrator":
-		frappe.throw("Only Administrator can generate licenses")
-	
-	if isinstance(features, str):
-		features = json.loads(features)
-
-	signature = calculate_signature(customer_name, expiry_date, features)
-	return {
-		"customer_name": customer_name,
-		"expiry_date": expiry_date,
-		"features": features,
-		"signature": signature
 	}
