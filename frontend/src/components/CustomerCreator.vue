@@ -473,9 +473,14 @@ async function submit() {
   if (!validate()) return
   saving.value = true
   try {
+    const payload = {
+      ...form.value,
+      new_customer_name: form.value.customer_name,
+      new_name: form.value.customer_name
+    }
     const result = props.isEdit
-      ? await updateCustomer(form.value.name, form.value)
-      : await createCustomer(form.value)
+      ? await updateCustomer(form.value.name, payload)
+      : await createCustomer(payload)
     emit('saved', result)
   } catch (e) {
     alert('Failed to save customer: ' + e.message)

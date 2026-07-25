@@ -534,8 +534,16 @@ def update_customer_full(data):
 	if not address_line1:
 		frappe.throw("Address Line 1 is required")
 
+	new_customer_name = (data.get("customer_name") or data.get("new_customer_name") or data.get("new_name") or "").strip()
+	if new_customer_name and customer_id != new_customer_name:
+		if frappe.db.exists("Customer", new_customer_name):
+			frappe.throw(f"Customer with name '{new_customer_name}' already exists.")
+		from frappe.model.rename_doc import rename_doc as _rename_doc
+		_rename_doc("Customer", customer_id, new_customer_name, ignore_permissions=True)
+		customer_id = new_customer_name
+
 	cust = frappe.get_doc("Customer", customer_id)
-	cust.customer_name = data.get("customer_name") or cust.customer_name
+	cust.customer_name = new_customer_name or cust.customer_name
 	cust.customer_print_name = data.get("customer_print_name") or ""
 	cust.customer_group = data.get("customer_group") or cust.customer_group
 	cust.mobile_no = data.get("mobile") or ""
@@ -656,7 +664,7 @@ def quick_create_customer(data=None, **kwargs):
     if isinstance(data, str):
         data = json.loads(data)
 
-    customer_name = data.get("customer_name", "").strip()
+    customer_name = (data.get("customer_name") or data.get("new_customer_name") or data.get("new_name") or "").strip()
     if not customer_name:
         frappe.throw("Customer name is required")
 
