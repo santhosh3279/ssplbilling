@@ -5,11 +5,9 @@
     <aside class="flex w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
       <!-- Logo -->
       <div class="border-b border-[var(--color-border)] px-4 py-4">
-        <div class="text-lg font-bold text-[var(--color-text)]">Wholesale<span class="font-light text-[var(--color-text-muted)]">Billing</span></div>
+        <div class="text-lg font-bold text-[var(--color-text)]">Wholesale<span class="font-light text-[var(--color-text-muted)]">Billing</span> <span class="text-[10px] font-mono font-normal text-[var(--color-text-muted)] opacity-80">V:{{ appVersion }}</span></div>
         <div class="mt-0.5 text-xs text-[var(--color-text-muted)]">Fast Billing System</div>
         <div class="mt-2 flex flex-col gap-0.5 text-[10px] text-[var(--color-text-muted)] font-mono opacity-80">
-          <div>Version: {{ appVersion }}</div>
-          <div v-if="lastUpdated">Updated: {{ lastUpdated }}</div>
           <div v-if="daysRemaining !== null" :class="daysRemaining < 30 ? 'text-[var(--color-warning)] font-bold' : ''">
             License: {{ daysRemaining }} days left
           </div>
@@ -603,7 +601,7 @@ import { useTheme } from '../composables/useTheme'
 import { useMqtt } from '../composables/useMqtt'
 import { useDevice } from '../composables/useDevice'
 import { getFrappeSocket } from '../services/frappeSocket'
-import { APP_VERSION, APP_UPDATED } from '../version'
+import { APP_VERSION } from '../version'
 
 const router = useRouter()
 
@@ -1521,7 +1519,6 @@ const filteredUserSeries = computed(() => {
 })
 
 const appVersion = ref(APP_VERSION)
-const lastUpdated = ref(APP_UPDATED)
 
 const licenseInfo = ref(null)
 
