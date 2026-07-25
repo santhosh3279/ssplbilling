@@ -422,7 +422,7 @@ function applyToLocalStorage(settings, targetUserArg) {
   if (settings.round_off) {
     localStorage.setItem('wb-round-off', settings.round_off)
   }
-  if (settings.store_transfer_bill_limit) {
+  if (settings.store_transfer_bill_limit !== undefined && settings.store_transfer_bill_limit !== null) {
     localStorage.setItem('wb-store-transfer-limit', String(settings.store_transfer_bill_limit))
   }
 
