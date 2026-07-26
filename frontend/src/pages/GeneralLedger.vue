@@ -102,13 +102,22 @@
         <!-- Quick range buttons -->
         <div class="flex items-center gap-1.5">
           <button
-            @click="setQuickRange('D')"
+            @click="setQuickRange('T')"
             class="px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
-            :class="activeQuickRange === 'D'
+            :class="activeQuickRange === 'T'
               ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
               : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-info)] focus:border-[var(--color-info)]'"
           >
-            D
+            T
+          </button>
+          <button
+            @click="setQuickRange('Y')"
+            class="px-3.5 py-1.5 text-xs font-black uppercase tracking-wider rounded-xl border-2 focus:outline-none active:scale-95 transition-all shadow-sm"
+            :class="activeQuickRange === 'Y'
+              ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
+              : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:border-[var(--color-info)] focus:border-[var(--color-info)]'"
+          >
+            Y
           </button>
           <button
             @click="setQuickRange('CM')"
@@ -745,12 +754,24 @@ function todayISO() {
   return `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`
 }
 
+function yesterdayISO() {
+  const date = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
+  date.setDate(date.getDate() - 1)
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
+  const formatter = new Intl.DateTimeFormat('en-CA', options)
+  return formatter.format(date)
+}
+
 const activeQuickRange = computed(() => {
   const [y, m, d] = getLocalDateParts()
   const todayISO = `${y}-${m.toString().padStart(2, '0')}-${d.toString().padStart(2, '0')}`
 
   const isToday = fromDate.value === todayISO && toDate.value === todayISO
-  if (isToday) return 'D'
+  if (isToday) return 'T'
+
+  const yISO = yesterdayISO()
+  const isYesterday = fromDate.value === yISO && toDate.value === yISO
+  if (isYesterday) return 'Y'
 
   const currentMonthStart = `${y}-${m.toString().padStart(2, '0')}-01`
   const isCM = fromDate.value === currentMonthStart && toDate.value === todayISO
@@ -783,9 +804,13 @@ function setQuickRange(range) {
   let fromISO = todayISO
   let toISO = todayISO
 
-  if (range === 'D') {
+  if (range === 'T') {
     fromISO = todayISO
     toISO = todayISO
+  } else if (range === 'Y') {
+    const yISO = yesterdayISO()
+    fromISO = yISO
+    toISO = yISO
   } else if (range === 'CM') {
     fromISO = `${y}-${m.toString().padStart(2, '0')}-01`
     toISO = todayISO
