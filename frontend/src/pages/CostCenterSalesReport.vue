@@ -877,6 +877,62 @@ function exportToExcel() {
     ]
     
     utils.book_append_sheet(wb, wsAcc, finalSheetName)
+
+    // Add Day-Wise Sales Sheet for this store
+    const salesByDate = {}
+    ccBills.forEach(b => {
+      const date = b.posting_date || 'N/A'
+      if (!salesByDate[date]) {
+        salesByDate[date] = {}
+        priceLists.value.forEach(pl => {
+          salesByDate[date][pl] = 0
+        })
+        salesByDate[date].total = 0
+      }
+      const pl = b.selling_price_list || 'Other/Direct'
+      const amt = Math.round(b.bill_amount || 0)
+      salesByDate[date][pl] = (salesByDate[date][pl] || 0) + amt
+      salesByDate[date].total += amt
+    })
+
+    const sortedDates = Object.keys(salesByDate).sort()
+    if (sortedDates.length > 0) {
+      const dailyHeaders = ['Date', ...priceLists.value, 'Day Total']
+      const dailyRows = sortedDates.map(date => {
+        const row = [date]
+        priceLists.value.forEach(pl => {
+          row.push(salesByDate[date][pl] || 0)
+        })
+        row.push(salesByDate[date].total)
+        return row
+      })
+
+      const grandTotals = ['GRAND TOTAL']
+      priceLists.value.forEach(pl => {
+        const plTotal = sortedDates.reduce((sum, date) => sum + (salesByDate[date][pl] || 0), 0)
+        grandTotals.push(plTotal)
+      })
+      const totalSales = sortedDates.reduce((sum, date) => sum + (salesByDate[date].total || 0), 0)
+      grandTotals.push(totalSales)
+      dailyRows.push(grandTotals)
+
+      const wsDaily = utils.aoa_to_sheet([dailyHeaders, ...dailyRows])
+      const dailyColWidths = [{ wch: 15 }]
+      priceLists.value.forEach(() => dailyColWidths.push({ wch: 18 }))
+      dailyColWidths.push({ wch: 18 })
+      wsDaily['!cols'] = dailyColWidths
+
+      let dailyCleanName = `Daily - ${rawName}`.replace(/[:\\/?*\[\]]/g, '').substring(0, 31).trim()
+      if (!dailyCleanName) dailyCleanName = 'Daily Sheet'
+
+      let finalDailySheetName = dailyCleanName
+      let dailyCounter = 1
+      while (wb.SheetNames.includes(finalDailySheetName)) {
+        finalDailySheetName = `${dailyCleanName.substring(0, 27)}_${dailyCounter++}`
+      }
+
+      utils.book_append_sheet(wb, wsDaily, finalDailySheetName)
+    }
   })
 
   writeFile(wb, `CostCenterSaleReport_${fromDate.value}_to_${toDate.value}.xlsx`)
