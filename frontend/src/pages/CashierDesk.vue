@@ -457,7 +457,7 @@
 
               <!-- Posting Date Selector -->
               <div class="flex flex-col gap-1.5 pb-2">
-                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] ml-1">Posting Date</label>
+                <label class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] text-center block w-full">Posting Date</label>
                 <div 
                   class="flex items-center justify-between gap-1.5 rounded-xl border p-0.5 transition-all duration-300"
                   :class="postingDate !== getTodayIST()
@@ -1842,6 +1842,11 @@ input[type="date"]::-webkit-inner-spin-button,
 input[type="date"]::-webkit-calendar-picker-indicator {
   display: none;
   -webkit-appearance: none;
+}
+input[type="date"]::-webkit-datetime-edit {
+  display: flex;
+  justify-content: center;
+  width: 100%;
 }
 
 .fade-enter-active, .fade-leave-active {
