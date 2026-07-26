@@ -268,13 +268,15 @@
     />
 
     <!-- Item Search Modal -->
-    <ItemSearch 
+    <ItemSearch
       v-if="showItemSearch"
       :show="showItemSearch"
       :initial-query="itemSearchInitialQuery"
       :skip-date-filter="true"
+      enable-quick-qty
       @close="showItemSearch = false"
       @select="handleItemSelect"
+      @select-multiple="handleItemSelectMultiple"
     />
 
     <!-- Exit Warning Modal -->
@@ -644,6 +646,39 @@ async function handleItemSelect(item) {
   barcodeQuery.value = ''
   quickSearchResults.value = []
   showItemSearch.value = false
+}
+
+async function handleItemSelectMultiple(entries) {
+  showItemSearch.value = false
+
+  for (const entry of entries) {
+    let details = entry
+    try {
+      const res = await getItemDetailsFromServer(entry.item_code)
+      if (res && res.found) details = res
+    } catch (e) {
+      console.error('[StoreTransfer] Failed to fetch item details for bulk add:', e)
+    }
+    const rate = details.rate || details.valuation_rate || 0
+    const uom = details.uom || entry.uom
+
+    const existing = items.value.find(i => i.item_code === entry.item_code)
+    if (existing) {
+      existing.qty += entry.qty
+    } else {
+      items.value.push({
+        item_code: entry.item_code,
+        item_name: entry.item_name,
+        qty: entry.qty,
+        uom,
+        rate
+      })
+    }
+  }
+
+  barcodeQuery.value = ''
+  quickSearchResults.value = []
+  focusBarcodeInput()
 }
 
 function setPendingItem(details) {
