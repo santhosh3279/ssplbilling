@@ -25,7 +25,7 @@
         </button>
         <button
           ref="yesBtn"
-          class="flex-1 rounded-xl bg-[var(--color-highlight)] py-3 text-xl font-bold text-[var(--color-text-on-highlight)] transition-all hover:brightness-110 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)] shadow-lg"
+          class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 text-xl font-bold text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-raised)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] focus:border-[var(--color-focus)]"
           @click="$emit('confirm')"
         >
           Yes
