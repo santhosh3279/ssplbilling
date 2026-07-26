@@ -1104,6 +1104,38 @@ def get_cost_center_sale_report(from_date=None, to_date=None, company=None):
                 e["cost_center"] = e["cost_center"] or "No Cost Center"
                 e["posting_date"] = str(e["posting_date"] or "")
 
+        # Entry-level indirect expense details (particulars from GL Entries) for Excel export
+        indirect_expense_entries = []
+        if indirect_expense_accounts:
+                indirect_expense_entries = frappe.db.sql(
+                        """
+                        SELECT
+                                cost_center,
+                                posting_date,
+                                voucher_type,
+                                voucher_no,
+                                account,
+                                against,
+                                remarks,
+                                (debit - credit) as amount
+                        FROM
+                                `tabGL Entry`
+                        WHERE
+                                posting_date BETWEEN %s AND %s
+                                AND account IN %s
+                                AND is_cancelled = 0
+                                AND company = %s
+                        ORDER BY
+                                cost_center, account, posting_date, voucher_no
+                        """,
+                        (from_date, to_date, tuple(indirect_expense_accounts), company),
+                        as_dict=1,
+                )
+                for e in indirect_expense_entries:
+                        e["cost_center"] = e["cost_center"] or "No Cost Center"
+                        e["posting_date"] = str(e["posting_date"] or "")
+                        e["amount"] = float(e["amount"] or 0)
+
         # Fetch Sales Invoice Items details for profit report
         profit_results = frappe.db.sql(
                 """
@@ -1196,6 +1228,7 @@ def get_cost_center_sale_report(from_date=None, to_date=None, company=None):
                 "direct_expense_entries": direct_expense_entries,
                 "direct_expense_heads": sorted(list(direct_heads)),
                 "indirect_expense_heads": sorted(list(indirect_heads)),
+                "indirect_expense_entries": indirect_expense_entries,
                 "profit_data": profit_report_data,
                 "profit_price_lists": sorted(list(profit_price_lists)),
                 "item_profit_data": item_profit_results,
