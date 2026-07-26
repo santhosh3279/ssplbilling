@@ -142,7 +142,7 @@
             <a :href="erpNextListUrl" target="_blank" title="Go to ERPNext Listview" class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] hover:text-[var(--color-highlight)] transition-colors">List</a>
             <span class="h-3 w-px bg-[var(--color-border)] opacity-50"></span>
             <a :href="`/app/${doctype.toLowerCase().replace(/ /g, '-')}/new`" target="_blank" title="Create New in ERPNext" class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] hover:text-[var(--color-highlight)] transition-colors">New</a>
-            <template v-if="docNumber">
+            <template v-if="docNumber && docNumber !== 'NEW' && !availableSeries.includes(docNumber)">
               <span class="h-3 w-px bg-[var(--color-border)] opacity-50"></span>
               <a :href="erpNextUrl" target="_blank" title="Open this document in ERPNext" class="text-xs font-black uppercase tracking-wider text-[var(--color-highlight)] hover:underline">Open</a>
             </template>
@@ -699,7 +699,7 @@ const { isSidebarCollapsed } = useLayout()
 
 const erpNextUrl = computed(() => {
   const slug = props.doctype.toLowerCase().replace(/ /g, '-')
-  if (props.docNumber) {
+  if (props.docNumber && props.docNumber !== 'NEW' && !props.availableSeries.includes(props.docNumber)) {
     return `/app/${slug}/${props.docNumber}`
   }
   return `/app/${slug}/new`

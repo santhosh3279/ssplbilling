@@ -6,7 +6,7 @@
       title-bar-color="#b2dfb0"
       :show-sidebar="!isSubwindow"
       :show-back-button="!isSubwindow"
-      :doc-number="invoiceNo"
+      :doc-number="displayedDocNumber"
       :party-id="customerId"
       :party-name="customerName"
       :party-details="customerDetails"
@@ -807,6 +807,12 @@ const priceDetectData = ref(null)
 const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: number }
 
 const invoiceNo = ref('NEW')
+const displayedDocNumber = computed(() => {
+  if (invoiceNo.value === 'NEW') {
+    return selectedSeries.value || 'NEW'
+  }
+  return invoiceNo.value
+})
 const postingTime = ref('')
 const selectedSeries = ref('')
 const defaultTemplate = ref('')
