@@ -506,8 +506,10 @@
       :warehouse="warehouse"
       :skip-date-filter="true"
       :initial-query="itemSearchInitialQuery"
+      enable-quick-qty
       @close="closeItemSearch"
       @select="onItemSearchSelect"
+      @select-multiple="onItemSearchSelectMultiple"
     />
 
 
@@ -2343,6 +2345,42 @@ function onItemSearchSelect(item) {
     item_code: finalItem.item_code, item_name: finalItem.item_name, qty: 0, rate: getItemRateForPriceList(finalItem, finalItem.uom),
     uom: finalItem.uom || 'Nos', discount: 0, tax_rate: finalItem.tax_rate || 0, deleted: false
   })
+}
+
+function onItemSearchSelectMultiple(entries) {
+  showItemSearch.value = false
+  itemSearchTargetRowIdx.value = null
+
+  for (const entry of entries) {
+    const history = isReturn.value ? getHistoryRateAndDiscount(entry.item_code) : null
+    let baseRate, rate, discount, cpApplied = false
+    if (history) {
+      baseRate = history.rate
+      rate = history.rate
+      discount = history.discount
+    } else {
+      baseRate = entry.rate || 0
+      cpApplied = customerPricing.value[entry.item_code] != null
+      rate = parseFloat((baseRate * combinedFactor(entry.item_code)).toFixed(2))
+      discount = 0
+    }
+    const qty = isReturn.value ? -Math.abs(entry.qty) : entry.qty
+    const newItem = {
+      item_code: entry.item_code, item_name: entry.item_name, qty, uom: entry.uom || 'Nos',
+      rate: rate || 0, _base_rate: baseRate ?? rate ?? 0, _cp_applied: cpApplied,
+      discount: discount || 0, tax_rate: entry.tax_rate || 0,
+      amount: parseFloat((qty * (rate || 0)).toFixed(2)),
+      deleted: false, _rowKey: makeRowKey()
+    }
+    if (isReturn.value && discount != null) {
+      newItem._rule_discount = discount
+    }
+    items.value.push(newItem)
+  }
+
+  newItemCode.value = ''
+  quickSearchResults.value = []
+  nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
 }
 
 function onEditCodeInput(rowIdx) {
