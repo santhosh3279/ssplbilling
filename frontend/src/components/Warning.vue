@@ -6,7 +6,7 @@
     @keydown.left.prevent="focusBtn('no')"
     @keydown.right.prevent="focusBtn('yes')"
   >
-    <div class="w-[450px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] p-8 shadow-2xl">
+    <div class="w-[450px] rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-bg)_92%,var(--color-danger)_8%)] p-8 shadow-2xl">
       <div class="mb-6 flex flex-col items-center text-center">
         <div class="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--color-warning)]/30 text-4xl text-[var(--color-warning)] shadow-[0_0_20px_rgba(245,158,11,0.2)]">
           ⚠️
