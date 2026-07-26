@@ -12,6 +12,21 @@
           <div class="text-sm text-[var(--color-text-muted)]">View stock info and select item</div>
         </div>
 
+        <!-- Selected Supplier Badge -->
+        <div
+          v-if="selectedSupplier"
+          class="shrink-0 flex items-center gap-2 bg-[var(--color-supplier)]/15 border border-[var(--color-supplier)]/30 rounded-lg px-3 py-1.5 text-lg font-semibold text-[var(--color-supplier)] transition-all hover:bg-[var(--color-supplier)]/20"
+        >
+          <span>Supplier: {{ selectedSupplier.label }}</span>
+          <button
+            @click="selectedSupplier = null; focus()"
+            class="hover:text-[var(--color-text)] font-bold transition-colors ml-1"
+            title="Clear supplier filter"
+          >
+            ✕
+          </button>
+        </div>
+
         <!-- Search input integrated into header -->
         <div class="flex-1 relative">
           <input
@@ -27,6 +42,14 @@
         </div>
 
         <div class="flex items-center gap-3">
+          <button
+            @click="openSupplierSearch"
+            class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-all border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+            title="Search Supplier (F7)"
+          >
+            <span>🔍</span>
+            Supplier (F7)
+          </button>
           <button
             @click="preloadItems(true)"
             :disabled="loading"
@@ -182,6 +205,7 @@
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F4</kbd> Stock Ledger</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">S+F4</kbd> Price</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F5</kbd> Sync</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F7</kbd> Supplier</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Esc</kbd> Close</span>
       </div>
 
@@ -216,6 +240,18 @@
         @close="showPriceUpdateModal = false; focus()"
         @saved="handlePricesSaved"
       />
+
+      <CustomerSearchModal
+        v-if="showSupplierModal"
+        :show="showSupplierModal"
+        skip-date-filter
+        initial-type="Supplier"
+        :allowed-types="['Supplier']"
+        :hide-secondary="false"
+        :show-hide-secondary="false"
+        @close="showSupplierModal = false; focus()"
+        @select="handleSupplierSelect"
+      />
     </div>
   </div>
 </template>
@@ -229,6 +265,7 @@ import DateFilter from './DateFilter.vue'
 import ItemCreation from './ItemCreation.vue'
 import PriceListUpdate from '../pages/PriceListUpdate.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
+import CustomerSearchModal from './CustomerSearchModal.vue'
 
 const props = defineProps({
   show: Boolean,
@@ -255,22 +292,22 @@ const emit = defineEmits(['close', 'select'])
 
 useSubwindowWatcher(computed(() => props.show), {
   ArrowDown: (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     selectedIdx.value = Math.min(selectedIdx.value + 1, results.value.length - 1)
   },
   ArrowUp: (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     selectedIdx.value = Math.max(selectedIdx.value - 1, 0)
   },
   'CTRL+E': (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     isDecrypted.value = !isDecrypted.value
   },
   Enter: (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     const item = results.value[selectedIdx.value]
     if (item) {
       e.preventDefault()
@@ -282,22 +319,22 @@ useSubwindowWatcher(computed(() => props.show), {
     }
   },
   F5: (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     preloadItems(true)
   },
   F2: (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     showCreationModal.value = true
   },
   F3: (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     openEditModal()
   },
   F4: (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     if (results.value[selectedIdx.value]) {
       isSlMode.value = true
@@ -305,23 +342,28 @@ useSubwindowWatcher(computed(() => props.show), {
     }
   },
   'SHIFT+F4': (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     if (results.value[selectedIdx.value]) showPriceUpdateModal.value = true
   },
+  F7: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
+    e.preventDefault()
+    openSupplierSearch()
+  },
   Delete: (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     query.value = ''
     focus()
   },
   Home: (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     focus()
   },
   Escape: (e) => {
-    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value) return
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     emit('close')
   }
@@ -343,6 +385,18 @@ const showPriceUpdateModal = ref(false)
 const insightData = ref(null)
 const cipherMap = ref([])
 const isDecrypted = ref(false)
+const showSupplierModal = ref(false)
+const selectedSupplier = ref(null)
+
+function openSupplierSearch() {
+  showSupplierModal.value = true
+}
+
+function handleSupplierSelect(supplier) {
+  selectedSupplier.value = supplier
+  showSupplierModal.value = false
+  focus()
+}
 
 // ─── Encryption Logic ────────────────────────────────────────────────────────
 
@@ -497,6 +551,19 @@ const results = computed(() => {
   const terms = q.split(/\s+/).filter(Boolean)
   let list = allItems.value
 
+  if (selectedSupplier.value) {
+    list = list.filter(i => {
+      if (!i.suppliers || !i.suppliers.length) return false
+      const targetName = (selectedSupplier.value.name || '').toLowerCase()
+      const targetLabel = (selectedSupplier.value.label || '').toLowerCase()
+      if (!targetName && !targetLabel) return true
+      return i.suppliers.some(s => {
+        const sName = (typeof s === 'string' ? s : s.supplier || '').toLowerCase()
+        return (targetName && sName === targetName) || (targetLabel && sName === targetLabel)
+      })
+    })
+  }
+
   if (terms.length > 0) {
     list = allItems.value.filter(i => {
       const code = (i.item_code || '').toLowerCase()
@@ -628,6 +695,7 @@ function closeSubForm() {
   showDateModal.value = false
   showCreationModal.value = false
   showEditModal.value = false
+  showSupplierModal.value = false
   focus()
 }
 
@@ -663,6 +731,7 @@ watch(selectedIdx, async (idx) => {
 watch(() => props.show, async (newVal) => {
   if (newVal) {
     query.value = ''
+    selectedSupplier.value = null
     isDecrypted.value = false
     loadCipherMap()
     focus()
@@ -684,6 +753,8 @@ watch(() => props.show, async (newVal) => {
     showDateModal.value = false
     showCreationModal.value = false
     showEditModal.value = false
+    showSupplierModal.value = false
+    selectedSupplier.value = null
   }
 })
 
