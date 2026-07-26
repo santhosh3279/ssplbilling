@@ -293,6 +293,13 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  // Item code to highlight on open when there's no real search text yet
+  // (e.g. Right-arrow from an empty barcode field) — jumps to that row
+  // instead of defaulting to the top of the list.
+  focusItemCode: {
+    type: String,
+    default: ''
+  },
   enableQuickQty: {
     type: Boolean,
     default: false
@@ -819,6 +826,9 @@ watch(() => props.show, async (newVal) => {
         // No exact match — treat as a failed barcode scan: pre-fill the search box
         query.value = props.initialQuery
       }
+    } else if (props.focusItemCode) {
+      const idx = results.value.findIndex(i => i.item_code === props.focusItemCode)
+      if (idx >= 0) selectedIdx.value = idx
     }
   } else {
     showDateModal.value = false
