@@ -641,16 +641,14 @@ const results = computed(() => {
     })
   }
 
+  // With no search text, the browse list below is capped to a 100-item
+  // window. Default that window to the start, but if a focus target is
+  // given, center the window on its natural (alphabetical) position instead
+  // of always showing the front of the list.
+  let sliceStart = 0
   if (terms.length === 0 && props.focusItemCode) {
-    // With no search text, the browse list is capped to the first 100 items
-    // in cache order below — the focus target would otherwise never appear
-    // in that window, so bubble it to the front before the cap is applied.
     const idx = list.findIndex(i => i.item_code === props.focusItemCode)
-    if (idx > 0) {
-      list = [...list]
-      const [target] = list.splice(idx, 1)
-      list.unshift(target)
-    }
+    if (idx >= 0) sliceStart = Math.max(0, idx - 50)
   }
 
   if (terms.length > 0) {
@@ -681,7 +679,7 @@ const results = computed(() => {
     })
   }
 
-  return list.slice(0, 100).map(i => {
+  return list.slice(sliceStart, sliceStart + 100).map(i => {
     // Find the rate for the selected price list from props
     let displayPrice = i.price
     if (props.priceList) {
