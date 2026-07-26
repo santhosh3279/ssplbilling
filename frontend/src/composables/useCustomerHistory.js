@@ -6,23 +6,25 @@ import { lookupItemInCache } from '../services/itemCache.js'
  * Composable to manage customer sales history for a specific window/session.
  * Unlike itemCache, this does not use a global singleton so it can be cleared independently.
  */
-export function useCustomerHistory() {
-  const customerSalesHistory = ref([])
-  const currentCustomerForHistory = ref(null)
-  const supplierPurchaseHistory = ref([])
-  const currentSupplierForHistory = ref(null)
-  const historyLoading = ref(false)
-  
-  const otherSuppliersItemHistory = ref([])
-  const otherSuppliersHistoryLoading = ref(false)
-  
-  const itemStock = ref([])
-  const stockLoading = ref(false)
-  const stockCache = new Map()
+// Global state for sharing across components
+const customerSalesHistory = ref([])
+const currentCustomerForHistory = ref(null)
+const supplierPurchaseHistory = ref([])
+const currentSupplierForHistory = ref(null)
+const historyLoading = ref(false)
 
-  const itemPrices = ref([])
-  const pricesLoading = ref(false)
-  const pricesCache = new Map()
+const otherSuppliersItemHistory = ref([])
+const otherSuppliersHistoryLoading = ref(false)
+
+const itemStock = ref([])
+const stockLoading = ref(false)
+const stockCache = new Map()
+
+const itemPrices = ref([])
+const pricesLoading = ref(false)
+const pricesCache = new Map()
+
+export function useCustomerHistory() {
 
   /**
    * Fetch and cache previous sales history for a customer.
