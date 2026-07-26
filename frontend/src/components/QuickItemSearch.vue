@@ -98,14 +98,8 @@ async function handleRefresh() {
 const selectedIndex = ref(0)
 const scrollContainer = ref(null)
 
-// Sort all items alphabetically by item_name
-const sortedAllItems = computed(() => {
-  return [...allItems.value].sort((a, b) => {
-    const nameA = (a.item_name || '').toLowerCase()
-    const nameB = (b.item_name || '').toLowerCase()
-    return nameA.localeCompare(nameB)
-  })
-})
+// Keep sortedAllItems pointing directly to allItems since they are cached sorted
+const sortedAllItems = computed(() => allItems.value)
 
 // Populate items with history
 const allItemsWithHistory = computed(() => {

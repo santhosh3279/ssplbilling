@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { frappeGet } from '../api.js'
 import { lookupItemInCache } from '../services/itemCache.js'
 
@@ -12,6 +12,23 @@ const currentCustomerForHistory = ref(null)
 const supplierPurchaseHistory = ref([])
 const currentSupplierForHistory = ref(null)
 const historyLoading = ref(false)
+
+// Computed sets of item codes for O(1) checks in loops (like quick search)
+const customerHistoryItemCodes = computed(() => {
+  const set = new Set()
+  for (const h of customerSalesHistory.value) {
+    if (h.item_code) set.add(h.item_code)
+  }
+  return set
+})
+
+const supplierHistoryItemCodes = computed(() => {
+  const set = new Set()
+  for (const h of supplierPurchaseHistory.value) {
+    if (h.item_code) set.add(h.item_code)
+  }
+  return set
+})
 
 const otherSuppliersItemHistory = ref([])
 const otherSuppliersHistoryLoading = ref(false)
@@ -182,12 +199,9 @@ export function useCustomerHistory() {
     }
   }
 
-  /**
-   * Check if an item has history with the currently cached customer.
-   */
   function hasHistory(itemCode) {
-    if (!itemCode || !customerSalesHistory.value.length) return false
-    return customerSalesHistory.value.some(h => h.item_code === itemCode)
+    if (!itemCode) return false
+    return customerHistoryItemCodes.value.has(itemCode)
   }
 
   /**
@@ -199,8 +213,8 @@ export function useCustomerHistory() {
   }
 
   function hasSupplierHistory(itemCode) {
-    if (!itemCode || !supplierPurchaseHistory.value.length) return false
-    return supplierPurchaseHistory.value.some(h => h.item_code === itemCode)
+    if (!itemCode) return false
+    return supplierHistoryItemCodes.value.has(itemCode)
   }
 
   function getSupplierItemHistoryFromCache(itemCode) {
