@@ -220,7 +220,7 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None,
 		"Item",
 		filters=filters,
 		fields=["item_code", "item_name", "item_print_name", "item_group",
-				"stock_uom as uom", "standard_rate as rate", "valuation_rate", "gst_hsn_code as hsn_sac", "safety_stock", "min_order_qty", "custom_max_stock", "custom_max_order_qty"],
+				"stock_uom as uom", "standard_rate as rate", "valuation_rate", "gst_hsn_code as hsn_sac", "safety_stock", "min_order_qty", "custom_max_stock", "custom_max_order_qty", "image"],
 		limit=0,
 		order_by="item_name asc",
 	)
