@@ -211,7 +211,7 @@
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">S+F4</kbd> Price</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F5</kbd> Sync</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F7</kbd> Supplier</span>
-        <span v-if="enableQuickQty"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+W</kbd> {{ quickQtyMode ? 'Exit Qty Mode' : 'Qty Mode' }}</span>
+        <span v-if="enableQuickQty"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F6</kbd> {{ quickQtyMode ? 'Exit Qty Mode' : 'Qty Mode' }}</span>
         <span v-if="quickQtyMode"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+Enter</kbd> Add Batch</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Esc</kbd> Close</span>
       </div>
@@ -337,7 +337,7 @@ useSubwindowWatcher(computed(() => props.show), {
       }
     }
   },
-  'CTRL+W': (e) => {
+  F6: (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     if (!props.enableQuickQty) return
     quickQtyMode.value = !quickQtyMode.value
