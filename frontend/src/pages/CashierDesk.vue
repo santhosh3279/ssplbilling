@@ -456,7 +456,7 @@
                       ref="postingDateInput"
                       type="date"
                       v-model="postingDate"
-                      class="bg-transparent border-none text-lg font-black text-[var(--color-text)] focus:ring-0 p-0 text-center cursor-pointer w-full"
+                      class="bg-transparent border-none text-2xl font-black text-[var(--color-text)] focus:ring-0 p-0 text-center cursor-pointer w-full"
                     />
                   </div>
                   <button @click="adjustPostingDate(1)" class="rounded-lg p-[3px] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
