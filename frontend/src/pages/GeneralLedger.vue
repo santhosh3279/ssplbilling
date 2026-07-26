@@ -293,7 +293,7 @@
               </td>
               <td class="px-3 py-2 whitespace-nowrap">
                 <button
-                  @click.stop="openInErpNext(entry.voucher_type, entry.voucher_no)"
+                  @click.stop="onVoucherNoClick(entry)"
                   class="font-mono hover:underline"
                   :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-info)]'"
                 >{{ entry.voucher_no }}</button>
@@ -536,6 +536,14 @@
       @confirm="handleDateConfirm"
     />
 
+    <Warning
+      :show="showCancelWarning"
+      title="Cancel Transaction"
+      :message="cancelTarget ? `Cancel ${cancelTarget.voucher_type} ${cancelTarget.voucher_no}? This cannot be undone.` : ''"
+      @close="showCancelWarning = false; cancelTarget = null"
+      @confirm="doCancelTransaction"
+    />
+
     <!-- ═══════ BILL DETAIL OVERLAY ═══════ -->
     <div v-if="showBillDetail" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div class="flex h-[95vh] w-[95vw] flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl">
@@ -567,11 +575,12 @@
 <script setup>
 import { ref, onMounted, nextTick, computed, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { frappeGet } from '../api.js'
+import { frappeGet, frappePost } from '../api.js'
 import * as XLSX from 'xlsx'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import DateFilter from '../components/DateFilter.vue'
+import Warning from '../components/Warning.vue'
 import { getUserRole } from '../composables/usePermission.js'
 import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
@@ -1154,6 +1163,44 @@ function openInErpNext(voucherType, voucherNo) {
   }
   const dt = dtMap[voucherType] || voucherType.toLowerCase().replace(/\s+/g, '-')
   window.open(`/app/${dt}/${encodeURIComponent(voucherNo)}`, '_blank')
+}
+
+// ── Cancel transaction (Voucher No click) ──
+// Only these doctypes are wired up server-side (ssplbilling.api.cancellation_api).
+// Other voucher types (Stock Entry, Delivery Note, Sales Order, Purchase Order)
+// keep the old "open in ERPNext" click behavior — viewing them here is still
+// available via the "Open in ERPNext" button in the detail panel regardless.
+const CANCELLABLE_VOUCHER_TYPES = ['Sales Invoice', 'Purchase Invoice', 'Journal Entry', 'Payment Entry']
+const showCancelWarning = ref(false)
+const cancelTarget = ref(null) // { voucher_type, voucher_no }
+const cancelling = ref(false)
+
+function onVoucherNoClick(entry) {
+  if (CANCELLABLE_VOUCHER_TYPES.includes(entry.voucher_type)) {
+    cancelTarget.value = { voucher_type: entry.voucher_type, voucher_no: entry.voucher_no }
+    showCancelWarning.value = true
+  } else {
+    openInErpNext(entry.voucher_type, entry.voucher_no)
+  }
+}
+
+async function doCancelTransaction() {
+  if (!cancelTarget.value || cancelling.value) return
+  cancelling.value = true
+  try {
+    await frappePost('ssplbilling.api.cancellation_api.cancel_document', {
+      doctype: cancelTarget.value.voucher_type,
+      name: cancelTarget.value.voucher_no,
+    })
+    showCancelWarning.value = false
+    cancelTarget.value = null
+    await loadLedger({ forceRefresh: true })
+  } catch (e) {
+    showCancelWarning.value = false
+    alert(e.message || 'Failed to cancel the transaction.')
+  } finally {
+    cancelling.value = false
+  }
 }
 </script>
 
