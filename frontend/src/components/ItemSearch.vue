@@ -838,7 +838,17 @@ watch(() => props.show, async (newVal) => {
       }
     } else if (props.focusItemCode) {
       const idx = results.value.findIndex(i => i.item_code === props.focusItemCode)
-      if (idx >= 0) selectedIdx.value = idx
+      if (idx >= 0) {
+        selectedIdx.value = idx
+        // Center the row so items above and below it are visible, rather
+        // than the default minimal scroll-into-view.
+        await nextTick()
+        const container = scrollContainer.value
+        const activeRow = container?.querySelector(`tbody tr:nth-child(${idx + 1})`)
+        if (container && activeRow) {
+          container.scrollTop = activeRow.offsetTop - (container.clientHeight / 2 - activeRow.offsetHeight / 2)
+        }
+      }
     }
   } else {
     showDateModal.value = false
