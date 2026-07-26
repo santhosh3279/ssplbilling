@@ -129,7 +129,7 @@ def get_sales_invoice(invoice_name):
         pes = frappe.get_all(
             "Payment Entry",
             filters={"name": ["in", pe_names]},
-            fields=["name", "posting_date", "mode_of_payment", "reference_no", "paid_amount", "docstatus"]
+            fields=["name", "posting_date", "mode_of_payment", "reference_no", "paid_amount", "docstatus", "paid_to"]
         )
         pe_alloc_map = {r.parent: r.allocated_amount for r in pe_references}
         for pe in pes:
@@ -140,7 +140,8 @@ def get_sales_invoice(invoice_name):
                 "posting_date": str(pe.posting_date),
                 "reference_no": pe.reference_no or "",
                 "amount": float(pe_alloc_map.get(pe.name, pe.paid_amount) or 0),
-                "docstatus": pe.docstatus
+                "docstatus": pe.docstatus,
+                "account": pe.paid_to or ""
             })
 
     je_accounts = frappe.get_all(
@@ -160,6 +161,21 @@ def get_sales_invoice(invoice_name):
             amount = 0.0
             if je_row:
                 amount = je_row.credit_in_account_currency or je_row.debit_in_account_currency or 0.0
+            
+            # Find the account not referencing this invoice in the Journal Entry
+            je_rows = frappe.get_all(
+                "Journal Entry Account",
+                filters={"parent": je.name},
+                fields=["account", "reference_name"]
+            )
+            opp_account = ""
+            for row in je_rows:
+                if row.reference_name != invoice_name:
+                    opp_account = row.account
+                    break
+            if not opp_account and je_rows:
+                opp_account = je_rows[0].account
+
             payments.append({
                 "name": je.name,
                 "type": "Journal Entry",
@@ -167,7 +183,8 @@ def get_sales_invoice(invoice_name):
                 "posting_date": str(je.posting_date),
                 "reference_no": je.cheque_no or "",
                 "amount": float(amount),
-                "docstatus": je.docstatus
+                "docstatus": je.docstatus,
+                "account": opp_account
             })
 
     for p in (si.payments or []):
@@ -179,14 +196,15 @@ def get_sales_invoice(invoice_name):
                 "posting_date": str(si.posting_date),
                 "reference_no": p.account or "",
                 "amount": float(p.amount),
-                "docstatus": si.docstatus
+                "docstatus": si.docstatus,
+                "account": p.account or ""
             })
 
     existing_names = {p["name"] for p in payments}
     for adv in (si.advances or []):
         if adv.reference_name and adv.reference_name not in existing_names:
             if adv.reference_type == "Payment Entry":
-                pe = frappe.db.get_value("Payment Entry", adv.reference_name, ["posting_date", "mode_of_payment", "reference_no", "docstatus"], as_dict=True)
+                pe = frappe.db.get_value("Payment Entry", adv.reference_name, ["posting_date", "mode_of_payment", "reference_no", "docstatus", "paid_to"], as_dict=True)
                 if pe:
                     payments.append({
                         "name": adv.reference_name,
@@ -195,11 +213,25 @@ def get_sales_invoice(invoice_name):
                         "posting_date": str(pe.posting_date),
                         "reference_no": pe.reference_no or "",
                         "amount": float(adv.allocated_amount or 0),
-                        "docstatus": pe.docstatus
+                        "docstatus": pe.docstatus,
+                        "account": pe.paid_to or ""
                     })
             elif adv.reference_type == "Journal Entry":
                 je = frappe.db.get_value("Journal Entry", adv.reference_name, ["posting_date", "cheque_no", "docstatus", "user_remark"], as_dict=True)
                 if je:
+                    je_rows = frappe.get_all(
+                        "Journal Entry Account",
+                        filters={"parent": adv.reference_name},
+                        fields=["account", "reference_name"]
+                    )
+                    opp_account = ""
+                    for row in je_rows:
+                        if row.reference_name != invoice_name:
+                            opp_account = row.account
+                            break
+                    if not opp_account and je_rows:
+                        opp_account = je_rows[0].account
+
                     payments.append({
                         "name": adv.reference_name,
                         "type": "Journal Entry",
@@ -207,7 +239,8 @@ def get_sales_invoice(invoice_name):
                         "posting_date": str(je.posting_date),
                         "reference_no": je.cheque_no or "",
                         "amount": float(adv.allocated_amount or 0),
-                        "docstatus": je.docstatus
+                        "docstatus": je.docstatus,
+                        "account": opp_account
                     })
 
     def _actual_charge(keyword):
