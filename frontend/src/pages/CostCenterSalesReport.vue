@@ -33,6 +33,12 @@
           <div class="flex items-center gap-2">
             <button
               class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-border)] transition-all active:scale-95 uppercase tracking-wider"
+              @click="setDateRange('today')"
+            >
+              Today
+            </button>
+            <button
+              class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-border)] transition-all active:scale-95 uppercase tracking-wider"
               @click="setDateRange('yesterday')"
             >
               Yesterday
@@ -535,7 +541,10 @@ function setDateRange(preset) {
   let from = ''
   let to = ''
 
-  if (preset === 'yesterday') {
+  if (preset === 'today') {
+    from = formatDateIso(now)
+    to = formatDateIso(now)
+  } else if (preset === 'yesterday') {
     const yesterday = new Date()
     yesterday.setDate(now.getDate() - 1)
     from = formatDateIso(yesterday)
