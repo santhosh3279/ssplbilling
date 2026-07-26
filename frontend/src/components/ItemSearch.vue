@@ -570,7 +570,7 @@ const results = computed(() => {
   }
 
   if (terms.length > 0) {
-    list = allItems.value.filter(i => {
+    list = list.filter(i => {
       const code = (i.item_code || '').toLowerCase()
       const name = (i.item_name || '').toLowerCase()
       const barcodes = (i.barcodes || '').toLowerCase().split(',')
