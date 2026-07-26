@@ -182,9 +182,9 @@
           </div>
           
           <div class="flex items-center gap-4">
-            <span class="text-[var(--color-info)] font-bold uppercase tracking-widest text-xs">
+            <span class="text-[var(--color-info)] font-bold uppercase tracking-widest text-lg">
               👤 {{ session.fullName.value || session.user.value }}
-              <span v-if="selectedUser !== session.user.value" class="normal-case font-normal text-[var(--color-text-muted)] text-xs"> ({{ selectedUserDisplayName }})</span>
+              <span v-if="selectedUser !== session.user.value" class="normal-case font-normal text-[var(--color-text-muted)] text-sm"> ({{ selectedUserDisplayName }})</span>
             </span>
             <!-- Fullscreen button -->
             <button
