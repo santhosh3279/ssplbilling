@@ -641,6 +641,18 @@ const results = computed(() => {
     })
   }
 
+  if (terms.length === 0 && props.focusItemCode) {
+    // With no search text, the browse list is capped to the first 100 items
+    // in cache order below — the focus target would otherwise never appear
+    // in that window, so bubble it to the front before the cap is applied.
+    const idx = list.findIndex(i => i.item_code === props.focusItemCode)
+    if (idx > 0) {
+      list = [...list]
+      const [target] = list.splice(idx, 1)
+      list.unshift(target)
+    }
+  }
+
   if (terms.length > 0) {
     list = list.filter(i => {
       const code = (i.item_code || '').toLowerCase()
