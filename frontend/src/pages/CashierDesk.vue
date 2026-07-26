@@ -420,10 +420,10 @@
                     <span class="font-mono font-bold text-[var(--color-text)] text-[18px]">₹{{ fmt(totalPaid) }}</span>
                   </div>
                   <div class="flex justify-between items-center">
-                    <span class="text-[18px] font-bold uppercase tracking-widest" :class="balance <= 0.01 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'">
+                    <span class="text-[18px] font-bold uppercase tracking-widest" :class="balance <= 0.01 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
                       {{ balance <= 0.01 ? 'Change Return' : 'Balance Due' }}
                     </span>
-                    <span class="text-[30px] font-black font-mono" :class="balance <= 0.01 ? 'text-[var(--color-success)]' : 'text-[var(--color-info)]'">
+                    <span class="text-[30px] font-black font-mono" :class="balance <= 0.01 ? 'text-[var(--color-danger)]' : 'text-[var(--color-info)]'">
                       ₹{{ fmt(Math.abs(balance)) }}
                     </span>
                   </div>
