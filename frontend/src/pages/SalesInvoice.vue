@@ -229,9 +229,7 @@
                     <tr v-for="p in linkedPayments" :key="p.name" class="text-[var(--color-text)]">
                       <td class="py-1 pr-1 font-mono leading-none whitespace-nowrap">{{ formatDateShort(p.posting_date) }}</td>
                       <td class="py-1 px-1 leading-none whitespace-nowrap">
-                        <a :href="`/app/payment-entry/${p.name}`" target="_blank" class="text-[var(--color-highlight)] hover:underline" v-if="p.type === 'Payment Entry'">{{ p.account ? p.account.split(' - ')[0] : '-' }}</a>
-                        <a :href="`/app/journal-entry/${p.name}`" target="_blank" class="text-[var(--color-highlight)] hover:underline" v-else-if="p.type === 'Journal Entry'">{{ p.account ? p.account.split(' - ')[0] : '-' }}</a>
-                        <span v-else>{{ p.account ? p.account.split(' - ')[0] : '-' }}</span>
+                        {{ p.account ? p.account.split(' - ')[0] : '-' }}
                       </td>
                       <td class="py-1 pl-1 text-right font-mono leading-none font-bold text-[var(--color-success)]">{{ format(p.amount) }}</td>
                     </tr>
