@@ -658,8 +658,10 @@
       :warehouse="warehouse"
       :skip-date-filter="true"
       :initial-query="itemSearchInitialQuery"
+      enable-quick-qty
       @close="closeItemSearch"
       @select="onItemSearchSelect"
+      @select-multiple="onItemSearchSelectMultiple"
     />
 
     <CustomerSearchModal
@@ -2110,6 +2112,40 @@ function onItemSearchSelect(item) {
     item_code: finalItem.item_code, item_name: finalItem.item_name, qty: 0, rate: getItemRateForPriceList(finalItem, finalItem.uom),
     uom: finalItem.uom || 'Nos', discount: 0, tax_rate: finalItem.tax_rate || 0, deleted: false
   })
+}
+
+function onItemSearchSelectMultiple(entries) {
+  if (!supplierInvoiceNo.value.trim()) {
+    alert('Supplier Invoice No is mandatory.')
+    supplierInvoiceNoRef.value?.focus()
+    return
+  }
+  if (!isExempted.value && supplierId.value && !supplierGstin.value.trim()) {
+    alert("Add party Gstin or change the tax template to exempted")
+    return
+  }
+  showItemSearch.value = false
+  itemSearchTargetRowIdx.value = null
+
+  const globalPct = parseFloat(globalDiscountPct.value)
+  const itemDiscount = isNaN(globalPct) ? 0 : globalPct
+
+  for (const entry of entries) {
+    const baseRate = entry.rate || 0
+    const qty = isReturn.value ? -Math.abs(entry.qty) : entry.qty
+    const netRate = parseFloat((baseRate * (1 - itemDiscount / 100)).toFixed(2))
+    items.value.push({
+      item_code: entry.item_code, item_name: entry.item_name, qty, uom: entry.uom || 'Nos',
+      rate: baseRate, _base_rate: baseRate,
+      discount: itemDiscount, tax_rate: entry.tax_rate || 0,
+      amount: parseFloat((qty * netRate).toFixed(2)),
+      deleted: false,
+    })
+  }
+
+  newItemCode.value = ''
+  quickSearchResults.value = []
+  nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
 }
 
 function onEditCodeInput(rowIdx) {
