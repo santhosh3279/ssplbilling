@@ -2131,7 +2131,7 @@ function onItemSearchSelectMultiple(entries) {
   const itemDiscount = isNaN(globalPct) ? 0 : globalPct
 
   for (const entry of entries) {
-    const baseRate = entry.rate || 0
+    const baseRate = getItemRateForPriceList(entry, entry.uom) || 0
     const qty = isReturn.value ? -Math.abs(entry.qty) : entry.qty
     const netRate = parseFloat((baseRate * (1 - itemDiscount / 100)).toFixed(2))
     items.value.push({

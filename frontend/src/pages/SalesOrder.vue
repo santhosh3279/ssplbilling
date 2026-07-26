@@ -1953,7 +1953,7 @@ function onItemSearchSelectMultiple(entries) {
   itemSearchTargetRowIdx.value = null
 
   for (const entry of entries) {
-    const baseRate = entry.rate || 0
+    const baseRate = getItemRateForPriceList(entry, entry.uom) || 0
     const cpApplied = customerPricing.value[entry.item_code] != null
     const rate = parseFloat((baseRate * combinedFactor(entry.item_code)).toFixed(2))
     const qty = isReturn.value ? -Math.abs(entry.qty) : entry.qty

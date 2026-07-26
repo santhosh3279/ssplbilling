@@ -1453,7 +1453,7 @@ function onItemSearchSelectMultiple(entries) {
   itemSearchTargetRowIdx.value = null
 
   for (const entry of entries) {
-    const rate = entry.rate || 0
+    const rate = getItemRateForPriceList(entry, entry.uom) || 0
     const qty = entry.qty
     items.value.push({
       item_code: entry.item_code, item_name: entry.item_name, qty, uom: entry.uom || 'Nos',

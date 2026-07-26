@@ -2359,7 +2359,7 @@ function onItemSearchSelectMultiple(entries) {
       rate = history.rate
       discount = history.discount
     } else {
-      baseRate = entry.rate || 0
+      baseRate = getItemRateForPriceList(entry, entry.uom) || 0
       cpApplied = customerPricing.value[entry.item_code] != null
       rate = parseFloat((baseRate * combinedFactor(entry.item_code)).toFixed(2))
       discount = 0
