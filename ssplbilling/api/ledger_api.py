@@ -392,17 +392,17 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None, company=
     # cancelled vouchers back in as zero-impact rows (debit/credit=0, balance=None)
     # so the frontend can show them struck through without perturbing the running
     # balance math above or in computeWindow() on the client.
-    if party_type in ("Customer", "Supplier"):
+    if party_type in ("Customer", "Supplier", "Account"):
         for c in _get_cancelled_entries(party_type, party, from_date, to_date, company):
             entries.append({
                 "date": c["date"],
-                "account": "",
+                "account": c.get("account") or "",
                 "party_type": party_type,
                 "party": party,
                 "party_name": label,
                 "voucher_type": c["voucher_type"],
                 "voucher_no": c["voucher_no"],
-                "against": "",
+                "against": c.get("against") or "",
                 "debit": 0.0,
                 "credit": 0.0,
                 "balance": None,
@@ -492,89 +492,242 @@ def get_warehouses(company=None):
 
 def _get_cancelled_entries(party_type, party, from_date, to_date, company):
     """Find cancelled Sales/Purchase Invoice, Payment Entry, and Journal Entry
-    vouchers for this party+date range so they can be shown (struck through,
+    vouchers for this party/account + date range so they can be shown (struck through,
     zero balance impact) instead of silently vanishing from the ledger.
 
-    Returns a list of {date, voucher_type, voucher_no, is_debit, amount}.
+    Returns a list of {date, voucher_type, voucher_no, is_debit, amount, against, account}.
     `is_debit` is a best-effort guess at which column the amount would have
     landed in, matching the normal GL sign convention for that voucher type.
     """
     cancelled = []
 
+    # 1. Sales & Purchase Invoices
     if party_type == "Customer":
-        inv_doctype, inv_party_field, inv_is_debit = "Sales Invoice", "customer", True
-    else:
-        inv_doctype, inv_party_field, inv_is_debit = "Purchase Invoice", "supplier", False
+        for d in frappe.get_all(
+            "Sales Invoice",
+            filters={
+                "customer": party,
+                "docstatus": 2,
+                "company": company,
+                "posting_date": ["between", [from_date, to_date]],
+            },
+            fields=["name", "posting_date", "grand_total"],
+        ):
+            cancelled.append({
+                "date": str(d.posting_date),
+                "voucher_type": "Sales Invoice",
+                "voucher_no": d.name,
+                "is_debit": True,
+                "amount": float(d.grand_total or 0),
+                "against": "",
+                "account": "",
+            })
+    elif party_type == "Supplier":
+        for d in frappe.get_all(
+            "Purchase Invoice",
+            filters={
+                "supplier": party,
+                "docstatus": 2,
+                "company": company,
+                "posting_date": ["between", [from_date, to_date]],
+            },
+            fields=["name", "posting_date", "grand_total"],
+        ):
+            cancelled.append({
+                "date": str(d.posting_date),
+                "voucher_type": "Purchase Invoice",
+                "voucher_no": d.name,
+                "is_debit": False,
+                "amount": float(d.grand_total or 0),
+                "against": "",
+                "account": "",
+            })
+    elif party_type == "Account":
+        # Sales Invoices affecting this debit_to account
+        for d in frappe.get_all(
+            "Sales Invoice",
+            filters={
+                "debit_to": party,
+                "docstatus": 2,
+                "company": company,
+                "posting_date": ["between", [from_date, to_date]],
+            },
+            fields=["name", "posting_date", "grand_total", "customer"],
+        ):
+            cancelled.append({
+                "date": str(d.posting_date),
+                "voucher_type": "Sales Invoice",
+                "voucher_no": d.name,
+                "is_debit": True,
+                "amount": float(d.grand_total or 0),
+                "against": d.customer or "",
+                "account": party,
+            })
 
-    for d in frappe.get_all(
-        inv_doctype,
-        filters={
-            inv_party_field: party,
-            "docstatus": 2,
-            "company": company,
-            "posting_date": ["between", [from_date, to_date]],
-        },
-        fields=["name", "posting_date", "grand_total"],
-    ):
-        cancelled.append({
-            "date": str(d.posting_date),
-            "voucher_type": inv_doctype,
-            "voucher_no": d.name,
-            "is_debit": inv_is_debit,
-            "amount": float(d.grand_total or 0),
-        })
+        # Purchase Invoices affecting this credit_to account
+        for d in frappe.get_all(
+            "Purchase Invoice",
+            filters={
+                "credit_to": party,
+                "docstatus": 2,
+                "company": company,
+                "posting_date": ["between", [from_date, to_date]],
+            },
+            fields=["name", "posting_date", "grand_total", "supplier"],
+        ):
+            cancelled.append({
+                "date": str(d.posting_date),
+                "voucher_type": "Purchase Invoice",
+                "voucher_no": d.name,
+                "is_debit": False,
+                "amount": float(d.grand_total or 0),
+                "against": d.supplier or "",
+                "account": party,
+            })
 
-    for d in frappe.get_all(
-        "Payment Entry",
-        filters={
-            "party_type": party_type,
-            "party": party,
-            "docstatus": 2,
-            "company": company,
-            "posting_date": ["between", [from_date, to_date]],
-        },
-        fields=["name", "posting_date", "payment_type", "paid_amount"],
-    ):
-        cancelled.append({
-            "date": str(d.posting_date),
-            "voucher_type": "Payment Entry",
-            "voucher_no": d.name,
-            "is_debit": d.payment_type == "Pay",
-            "amount": float(d.paid_amount or 0),
-        })
+    # 2. Payment Entries
+    if party_type in ("Customer", "Supplier"):
+        for d in frappe.get_all(
+            "Payment Entry",
+            filters={
+                "party_type": party_type,
+                "party": party,
+                "docstatus": 2,
+                "company": company,
+                "posting_date": ["between", [from_date, to_date]],
+            },
+            fields=["name", "posting_date", "payment_type", "paid_amount"],
+        ):
+            cancelled.append({
+                "date": str(d.posting_date),
+                "voucher_type": "Payment Entry",
+                "voucher_no": d.name,
+                "is_debit": d.payment_type == "Pay",
+                "amount": float(d.paid_amount or 0),
+                "against": "",
+                "account": "",
+            })
+    elif party_type == "Account":
+        # Payment Entries where paid_from = party (money paid OUT of this account = Credit)
+        for d in frappe.get_all(
+            "Payment Entry",
+            filters=[
+                ["docstatus", "=", 2],
+                ["company", "=", company],
+                ["posting_date", "between", [from_date, to_date]],
+                ["paid_from", "=", party],
+            ],
+            fields=["name", "posting_date", "paid_amount", "paid_to", "party", "party_name"],
+        ):
+            cancelled.append({
+                "date": str(d.posting_date),
+                "voucher_type": "Payment Entry",
+                "voucher_no": d.name,
+                "is_debit": False,
+                "amount": float(d.paid_amount or 0),
+                "against": d.party_name or d.party or d.paid_to or "",
+                "account": party,
+            })
 
-    je_names = frappe.get_all(
-        "Journal Entry",
-        filters=[
-            ["Journal Entry Account", "party_type", "=", party_type],
-            ["Journal Entry Account", "party", "=", party],
-            ["Journal Entry", "docstatus", "=", 2],
-            ["Journal Entry", "company", "=", company],
-            ["Journal Entry", "posting_date", "between", [from_date, to_date]],
-        ],
-        fields=["name", "posting_date"],
-        group_by="`tabJournal Entry`.name",
-    )
-    for d in je_names:
-        totals = frappe.db.sql(
-            """
-            select sum(debit_in_account_currency) as debit, sum(credit_in_account_currency) as credit
-            from `tabJournal Entry Account`
-            where parent = %s and party_type = %s and party = %s
-            """,
-            (d.name, party_type, party),
-            as_dict=True,
+        # Payment Entries where paid_to = party (money received INTO this account = Debit)
+        for d in frappe.get_all(
+            "Payment Entry",
+            filters=[
+                ["docstatus", "=", 2],
+                ["company", "=", company],
+                ["posting_date", "between", [from_date, to_date]],
+                ["paid_to", "=", party],
+            ],
+            fields=["name", "posting_date", "paid_amount", "paid_from", "party", "party_name"],
+        ):
+            cancelled.append({
+                "date": str(d.posting_date),
+                "voucher_type": "Payment Entry",
+                "voucher_no": d.name,
+                "is_debit": True,
+                "amount": float(d.paid_amount or 0),
+                "against": d.party_name or d.party or d.paid_from or "",
+                "account": party,
+            })
+
+    # 3. Journal Entries
+    if party_type in ("Customer", "Supplier"):
+        je_names = frappe.get_all(
+            "Journal Entry",
+            filters=[
+                ["Journal Entry Account", "party_type", "=", party_type],
+                ["Journal Entry Account", "party", "=", party],
+                ["Journal Entry", "docstatus", "=", 2],
+                ["Journal Entry", "company", "=", company],
+                ["Journal Entry", "posting_date", "between", [from_date, to_date]],
+            ],
+            fields=["name", "posting_date"],
+            group_by="`tabJournal Entry`.name",
         )
-        debit = float(totals[0].debit or 0) if totals else 0.0
-        credit = float(totals[0].credit or 0) if totals else 0.0
-        net = debit - credit
-        cancelled.append({
-            "date": str(d.posting_date),
-            "voucher_type": "Journal Entry",
-            "voucher_no": d.name,
-            "is_debit": net >= 0,
-            "amount": abs(net),
-        })
+        for d in je_names:
+            totals = frappe.db.sql(
+                """
+                select sum(debit_in_account_currency) as debit, sum(credit_in_account_currency) as credit
+                from `tabJournal Entry Account`
+                where parent = %s and party_type = %s and party = %s
+                """,
+                (d.name, party_type, party),
+                as_dict=True,
+            )
+            debit = float(totals[0].debit or 0) if totals else 0.0
+            credit = float(totals[0].credit or 0) if totals else 0.0
+            net = debit - credit
+            cancelled.append({
+                "date": str(d.posting_date),
+                "voucher_type": "Journal Entry",
+                "voucher_no": d.name,
+                "is_debit": net >= 0,
+                "amount": abs(net),
+                "against": "",
+                "account": "",
+            })
+    elif party_type == "Account":
+        je_names = frappe.get_all(
+            "Journal Entry",
+            filters=[
+                ["Journal Entry Account", "account", "=", party],
+                ["Journal Entry", "docstatus", "=", 2],
+                ["Journal Entry", "company", "=", company],
+                ["Journal Entry", "posting_date", "between", [from_date, to_date]],
+            ],
+            fields=["name", "posting_date"],
+            group_by="`tabJournal Entry`.name",
+        )
+        for d in je_names:
+            totals = frappe.db.sql(
+                """
+                select sum(debit_in_account_currency) as debit, sum(credit_in_account_currency) as credit
+                from `tabJournal Entry Account`
+                where parent = %s and account = %s
+                """,
+                (d.name, party),
+                as_dict=True,
+            )
+            debit = float(totals[0].debit or 0) if totals else 0.0
+            credit = float(totals[0].credit or 0) if totals else 0.0
+            net = debit - credit
+            # Find the other accounts in the Journal Entry to show in "against"
+            against_accounts = frappe.get_all(
+                "Journal Entry Account",
+                filters={"parent": d.name, "account": ["!=", party]},
+                fields=["account"],
+                limit=3
+            )
+            against_str = ", ".join([r.account for r in against_accounts])
+            cancelled.append({
+                "date": str(d.posting_date),
+                "voucher_type": "Journal Entry",
+                "voucher_no": d.name,
+                "is_debit": net >= 0,
+                "amount": abs(net),
+                "against": against_str,
+                "account": party,
+            })
 
     return cancelled
 
