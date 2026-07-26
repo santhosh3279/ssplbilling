@@ -80,7 +80,8 @@ const props = defineProps({
   priceList: { type: String, default: '' },
   searchType: { type: String, default: 'Sales' },
   warehouse: { type: String, default: '' },
-  anchorEl: { type: Object, default: null } // Optional: to position relative to
+  anchorEl: { type: Object, default: null }, // Optional: to position relative to
+  lastItemCode: { type: String, default: '' } // The item code of the last entered item
 })
 
 const emit = defineEmits(['select', 'close', 'refresh'])
@@ -163,6 +164,14 @@ const transformStyle = computed(() => {
 
 // Search logic inside total items
 const findBestMatchIndex = (query) => {
+  if (query === '  ') {
+    if (props.lastItemCode) {
+      const idx = allItemsWithHistory.value.findIndex(i => i.item_code === props.lastItemCode)
+      if (idx !== -1) return idx
+    }
+    return 0
+  }
+
   if (!query) return -1
   const cleanQuery = query.trim().toLowerCase()
   const terms = cleanQuery.split(/\s+/).filter(Boolean)

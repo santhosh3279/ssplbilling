@@ -261,6 +261,7 @@
       search-type="Stock"
       :warehouse="fromWarehouse"
       :anchor-el="quickSearchAnchor"
+      :last-item-code="items[items.length - 1]?.item_code"
       @select="onQuickSearchSelect"
       @close="quickSearchResults = []"
       @refresh="onQuickSearchRefresh"
@@ -550,7 +551,10 @@ function onEditQtyKeydown(e, idx) {
 
 function onBarcodeInput() {
   const code = barcodeQuery.value.trim()
-  if (code.length >= 2) {
+  if (barcodeQuery.value === '  ') {
+    quickSearchResults.value = [{ item_code: 'DUMMY' }]
+    quickSearchAnchor.value = barcodeInput.value
+  } else if (code.length >= 2) {
     quickSearchResults.value = searchItemsInCache(code)
     quickSearchAnchor.value = barcodeInput.value
   } else {

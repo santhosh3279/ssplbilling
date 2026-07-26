@@ -302,6 +302,7 @@
       price-list="Standard Selling"
       search-type="Sales"
       :anchor-el="quickSearchAnchor"
+      :last-item-code="itemsToPrint[itemsToPrint.length - 1]?.item_code"
       @select="onQuickSearchSelect"
       @close="quickSearchResults = []"
       @refresh="onQuickSearchRefresh"
@@ -780,7 +781,9 @@ function onCodeInput(idx) {
 
 function onNewCodeInput() {
   editQuickSearchRowIdx.value = null
-  if (newItemCode.value.length >= 2) {
+  if (newItemCode.value === '  ') {
+    quickSearchResults.value = [{ item_code: 'DUMMY' }]
+  } else if (newItemCode.value.length >= 2) {
     quickSearchResults.value = searchItemsInCache(newItemCode.value)
   } else {
     quickSearchResults.value = []

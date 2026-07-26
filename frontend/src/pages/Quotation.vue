@@ -433,6 +433,7 @@
       search-type="Sales"
       :warehouse="warehouse"
       :anchor-el="quickSearchAnchor"
+      :last-item-code="items[items.length - 1]?.item_code"
       @select="onQuickSearchSelect"
       @close="quickSearchResults = []"
       @refresh="onQuickSearchRefresh"
@@ -1651,7 +1652,10 @@ function handleItemEntry() {
 
 function onNewCodeInput() {
   const code = newItemCode.value.trim()
-  if (code.length >= 2) {
+  if (newItemCode.value === '  ') {
+    quickSearchResults.value = [{ item_code: 'DUMMY' }]
+    quickSearchAnchor.value = newCodeInput.value
+  } else if (code.length >= 2) {
     const rawResults = searchItemsInCache(code)
     quickSearchResults.value = rawResults.map(item => ({
       ...item,
