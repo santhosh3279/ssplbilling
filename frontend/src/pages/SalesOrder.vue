@@ -445,8 +445,10 @@
       :warehouse="warehouse"
       :skip-date-filter="true"
       :initial-query="itemSearchInitialQuery"
+      enable-quick-qty
       @close="closeItemSearch"
       @select="onItemSearchSelect"
+      @select-multiple="onItemSearchSelectMultiple"
     />
 
 
@@ -1944,6 +1946,29 @@ function onItemSearchSelect(item) {
     item_code: finalItem.item_code, item_name: finalItem.item_name, qty: 0, rate: getItemRateForPriceList(finalItem, finalItem.uom),
     uom: finalItem.uom || 'Nos', discount: 0, tax_rate: finalItem.tax_rate || 0, deleted: false
   })
+}
+
+function onItemSearchSelectMultiple(entries) {
+  showItemSearch.value = false
+  itemSearchTargetRowIdx.value = null
+
+  for (const entry of entries) {
+    const baseRate = entry.rate || 0
+    const cpApplied = customerPricing.value[entry.item_code] != null
+    const rate = parseFloat((baseRate * combinedFactor(entry.item_code)).toFixed(2))
+    const qty = isReturn.value ? -Math.abs(entry.qty) : entry.qty
+    items.value.push({
+      item_code: entry.item_code, item_name: entry.item_name, qty, uom: entry.uom || 'Nos',
+      rate, _base_rate: baseRate, _cp_applied: cpApplied,
+      discount: 0, tax_rate: entry.tax_rate || 0,
+      amount: parseFloat((qty * rate).toFixed(2)),
+      deleted: false, _rowKey: makeRowKey()
+    })
+  }
+
+  newItemCode.value = ''
+  quickSearchResults.value = []
+  nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
 }
 
 function onEditCodeInput(rowIdx) {
