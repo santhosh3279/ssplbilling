@@ -1405,6 +1405,7 @@ async function processPayment() {
     highlightedInvoiceName.value = invoices.value.length > 0 ? invoices.value[0].name : ''
     previewItems.value = []
     unallocatedPayments.value = []
+    postingDate.value = getTodayIST()
     errorMsg.value = ''
     successMsg.value = ''
     
