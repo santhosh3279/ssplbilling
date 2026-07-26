@@ -34,7 +34,7 @@
             v-model="query"
             class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-[8px] text-4xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/20"
             placeholder="Type item code or name..."
-            @keydown.esc.stop="$emit('close')"
+            @keydown="onSearchInputKeydown"
           />
           <div v-if="loading && !allItems.length" class="absolute right-4 top-1/2 -translate-y-1/2">
             <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-highlight)] border-t-transparent"></span>
@@ -125,6 +125,7 @@
               <th class="p-[5px] text-left">Item Name</th>
               <th class="p-[5px] text-right">{{ priceList || 'Rate' }}</th>
               <th class="p-[5px] text-right">Stock</th>
+              <th v-if="quickQtyMode" class="p-[5px] text-right w-24">Qty</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[var(--color-border)]">
@@ -159,9 +160,13 @@
                   (+{{ item.redis_purchase_stock }})
                 </span>
               </td>
+              <td v-if="quickQtyMode" class="p-[5px] text-right font-mono text-3xl tabular-nums" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-highlight)]'">
+                <span>{{ quickQtyMap[item.item_code] || '' }}</span>
+                <span v-if="selectedIdx === idx" class="inline-block w-[2px] h-[0.8em] bg-current animate-pulse ml-0.5 align-middle"></span>
+              </td>
             </tr>
             <tr v-if="!results.length && !loading">
-              <td colspan="4" class="px-5 py-12 text-center text-[var(--color-text-muted)] text-xl italic">
+              <td :colspan="quickQtyMode ? 5 : 4" class="px-5 py-12 text-center text-[var(--color-text-muted)] text-xl italic">
                 No items found matching "{{ query }}"
               </td>
             </tr>
@@ -206,6 +211,8 @@
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">S+F4</kbd> Price</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F5</kbd> Sync</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F7</kbd> Supplier</span>
+        <span v-if="enableQuickQty"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+W</kbd> {{ quickQtyMode ? 'Exit Qty Mode' : 'Qty Mode' }}</span>
+        <span v-if="quickQtyMode"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+Enter</kbd> Add Batch</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Esc</kbd> Close</span>
       </div>
 
@@ -285,10 +292,14 @@ const props = defineProps({
   initialQuery: {
     type: String,
     default: ''
+  },
+  enableQuickQty: {
+    type: Boolean,
+    default: false
   }
 })
 
-const emit = defineEmits(['close', 'select'])
+const emit = defineEmits(['close', 'select', 'select-multiple'])
 
 useSubwindowWatcher(computed(() => props.show), {
   ArrowDown: (e) => {
@@ -311,6 +322,11 @@ useSubwindowWatcher(computed(() => props.show), {
     // Swallow a stray Enter that lands right after the supplier search closes
     // (double-tap / key bounce) — it must never fall through to item selection.
     if (Date.now() - supplierModalClosedAt.value < 350) return
+    if (quickQtyMode.value) {
+      e.preventDefault()
+      selectedIdx.value = Math.min(selectedIdx.value + 1, results.value.length - 1)
+      return
+    }
     const item = results.value[selectedIdx.value]
     if (item) {
       e.preventDefault()
@@ -320,6 +336,17 @@ useSubwindowWatcher(computed(() => props.show), {
         showDateModal.value = true
       }
     }
+  },
+  'CTRL+W': (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
+    if (!props.enableQuickQty) return
+    quickQtyMode.value = !quickQtyMode.value
+    if (!quickQtyMode.value) quickQtyMap.value = {}
+  },
+  'CTRL+ENTER': (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
+    if (!quickQtyMode.value) return
+    submitQuickQtyBatch()
   },
   F5: (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
@@ -391,6 +418,44 @@ const isDecrypted = ref(false)
 const showSupplierModal = ref(false)
 const selectedSupplier = ref(null)
 const supplierModalClosedAt = ref(0)
+const quickQtyMode = ref(false)
+const quickQtyMap = ref({})
+
+function onSearchInputKeydown(e) {
+  if (e.key === 'Escape') {
+    e.stopPropagation()
+    emit('close')
+    return
+  }
+  if (!quickQtyMode.value) return
+  const item = results.value[selectedIdx.value]
+  if (!item) return
+  const code = item.item_code
+  if (/^[0-9]$/.test(e.key)) {
+    e.preventDefault()
+    quickQtyMap.value[code] = (quickQtyMap.value[code] || '') + e.key
+  } else if (e.key === '.') {
+    e.preventDefault()
+    const current = quickQtyMap.value[code] || ''
+    if (!current.includes('.')) quickQtyMap.value[code] = current + '.'
+  } else if (e.key === 'Backspace') {
+    e.preventDefault()
+    quickQtyMap.value[code] = (quickQtyMap.value[code] || '').slice(0, -1)
+  }
+}
+
+function submitQuickQtyBatch() {
+  const entries = []
+  for (const item of results.value) {
+    const raw = quickQtyMap.value[item.item_code]
+    const qty = parseFloat(raw)
+    if (raw && qty > 0) entries.push({ ...item, qty })
+  }
+  if (!entries.length) return
+  emit('select-multiple', entries)
+  quickQtyMode.value = false
+  quickQtyMap.value = {}
+}
 
 function openSupplierSearch() {
   showSupplierModal.value = true
@@ -761,6 +826,8 @@ watch(() => props.show, async (newVal) => {
     showEditModal.value = false
     showSupplierModal.value = false
     selectedSupplier.value = null
+    quickQtyMode.value = false
+    quickQtyMap.value = {}
   }
 })
 
