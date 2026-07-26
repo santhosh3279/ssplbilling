@@ -222,7 +222,6 @@
                     <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
                       <th class="py-0.5 pr-1 font-bold">Date</th>
                       <th class="py-0.5 px-1 font-bold">Account</th>
-                      <th class="py-0.5 px-1 font-bold">Ref No</th>
                       <th class="py-0.5 pl-1 text-right font-bold">Amount</th>
                     </tr>
                   </thead>
@@ -234,7 +233,6 @@
                         <a :href="`/app/journal-entry/${p.name}`" target="_blank" class="text-[var(--color-highlight)] hover:underline" v-else-if="p.type === 'Journal Entry'">{{ p.account ? p.account.split(' - ')[0] : '-' }}</a>
                         <span v-else>{{ p.account ? p.account.split(' - ')[0] : '-' }}</span>
                       </td>
-                      <td class="py-1 px-1 font-mono leading-none truncate max-w-[100px]" :title="p.reference_no">{{ p.reference_no || '-' }}</td>
                       <td class="py-1 pl-1 text-right font-mono leading-none font-bold text-[var(--color-success)]">{{ format(p.amount) }}</td>
                     </tr>
                   </tbody>
