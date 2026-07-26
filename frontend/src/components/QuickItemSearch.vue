@@ -15,7 +15,7 @@
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path><path d="M21 3v5h-5"></path><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path><path d="M8 16H3v5"></path></svg>
         </button>
-        <span class="text-xs text-[var(--color-text-muted)]">{{ allItemsWithHistory.length }} items</span>
+        <span class="text-xs text-[var(--color-text-muted)]">{{ filteredItems.length }} items</span>
       </div>
     </div>
     
@@ -109,6 +109,25 @@ const allItemsWithHistory = computed(() => {
   }))
 })
 
+// Narrow the list down to matches as the user types. A pure-whitespace query
+// (e.g. the double-space "go to last item" shortcut) has no real terms, so it
+// falls through to the full list instead of filtering to nothing.
+const filteredItems = computed(() => {
+  const terms = props.query.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  if (terms.length === 0) return allItemsWithHistory.value
+
+  return allItemsWithHistory.value.filter(i => {
+    const code = (i.item_code || '').toLowerCase()
+    const name = (i.item_name || '').toLowerCase()
+    const barcodes = (i.barcodes || '').toLowerCase().split(',')
+    return terms.every(term =>
+      code.includes(term) ||
+      name.includes(term) ||
+      barcodes.some(b => b.includes(term))
+    )
+  })
+})
+
 // --- Virtual Scroll variables and calculations ---
 const scrollTop = ref(0)
 const containerHeight = ref(500) // fallback
@@ -130,11 +149,11 @@ const startIndex = computed(() => {
 })
 
 const endIndex = computed(() => {
-  return Math.min(allItemsWithHistory.value.length, Math.ceil((scrollTop.value + containerHeight.value) / itemHeight) + buffer)
+  return Math.min(filteredItems.value.length, Math.ceil((scrollTop.value + containerHeight.value) / itemHeight) + buffer)
 })
 
 const visibleItems = computed(() => {
-  return allItemsWithHistory.value.slice(startIndex.value, endIndex.value).map((item, localIdx) => {
+  return filteredItems.value.slice(startIndex.value, endIndex.value).map((item, localIdx) => {
     return {
       item,
       globalIndex: startIndex.value + localIdx
@@ -143,7 +162,7 @@ const visibleItems = computed(() => {
 })
 
 const spacerHeight = computed(() => {
-  return allItemsWithHistory.value.length * itemHeight
+  return filteredItems.value.length * itemHeight
 })
 
 const transformStyle = computed(() => {
@@ -160,7 +179,7 @@ const transformStyle = computed(() => {
 const findBestMatchIndex = (query) => {
   if (query === '  ') {
     if (props.lastItemCode) {
-      const idx = allItemsWithHistory.value.findIndex(i => i.item_code === props.lastItemCode)
+      const idx = filteredItems.value.findIndex(i => i.item_code === props.lastItemCode)
       if (idx !== -1) return idx
     }
     return 0
@@ -171,7 +190,7 @@ const findBestMatchIndex = (query) => {
   const terms = cleanQuery.split(/\s+/).filter(Boolean)
   if (terms.length === 0) return -1
 
-  const list = allItemsWithHistory.value
+  const list = filteredItems.value
 
   // 1. Exact match on item_code or barcode (highest priority)
   let bestIdx = list.findIndex(i => {
@@ -212,12 +231,16 @@ function scrollToIndex(idx) {
   })
 }
 
-// Watch props.query to find and scroll to match
+// Watch props.query to filter, then find and scroll to the best match
 watch(() => props.query, (newQuery) => {
   const matchedIdx = findBestMatchIndex(newQuery)
   if (matchedIdx !== -1) {
     selectedIndex.value = matchedIdx
     scrollToIndex(matchedIdx)
+  } else if (selectedIndex.value >= filteredItems.value.length) {
+    // Filtering just shrank the list past the previously selected row
+    selectedIndex.value = 0
+    scrollToIndex(0)
   }
 })
 
@@ -292,19 +315,19 @@ function formatPrice(p) {
 }
 
 function handleQuickSearchKeydown(e) {
-  if (allItemsWithHistory.value.length === 0) return
+  if (filteredItems.value.length === 0) return
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
-    selectedIndex.value = (selectedIndex.value + 1) % allItemsWithHistory.value.length
+    selectedIndex.value = (selectedIndex.value + 1) % filteredItems.value.length
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
-    selectedIndex.value = (selectedIndex.value - 1 + allItemsWithHistory.value.length) % allItemsWithHistory.value.length
+    selectedIndex.value = (selectedIndex.value - 1 + filteredItems.value.length) % filteredItems.value.length
   } else if (e.key === 'Enter') {
-    if (allItemsWithHistory.value[selectedIndex.value]) {
+    if (filteredItems.value[selectedIndex.value]) {
       e.preventDefault()
       e.stopPropagation()
-      emit('select', allItemsWithHistory.value[selectedIndex.value])
+      emit('select', filteredItems.value[selectedIndex.value])
     }
   } else if (e.key === 'Escape') {
     e.preventDefault()
@@ -316,6 +339,6 @@ function handleQuickSearchKeydown(e) {
 defineExpose({
   handleQuickSearchKeydown,
   getSelectedIndex: () => selectedIndex.value,
-  getSelectedValue: () => allItemsWithHistory.value[selectedIndex.value]
+  getSelectedValue: () => filteredItems.value[selectedIndex.value]
 })
 </script>
