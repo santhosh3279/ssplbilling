@@ -281,7 +281,8 @@
               class="cursor-pointer border-b border-[var(--color-border)] transition-all outline-none"
               :class="{
                 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-inner z-10 relative': focusedIdx === idx,
-                'hover:bg-[var(--color-surface-raised)]/60': focusedIdx !== idx
+                'hover:bg-[var(--color-surface-raised)]/60': focusedIdx !== idx,
+                'line-through opacity-60': entry.is_cancelled
               }"
             >
               <td class="px-3 py-2 whitespace-nowrap font-mono" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtDate(entry.date) }}</td>
@@ -304,14 +305,19 @@
               <td class="px-3 py-2 max-w-[200px] truncate" :title="entry.against" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.against || '—' }}</td>
               <td class="px-3 py-2 whitespace-nowrap font-mono" :title="entry.creation" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtTime(entry.creation) }}</td>
               <td class="px-3 py-2 text-right font-mono">
-                <span v-if="entry.debit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">{{ fmt(entry.debit) }}</span>
+                <span v-if="entry.is_cancelled && entry.cancelled_is_debit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">{{ fmt(entry.cancelled_amount) }}</span>
+                <span v-else-if="entry.debit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">{{ fmt(entry.debit) }}</span>
                 <span v-else :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/60' : 'text-[var(--color-text-muted)]'">—</span>
               </td>
               <td class="px-3 py-2 text-right font-mono">
-                <span v-if="entry.credit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">{{ fmt(entry.credit) }}</span>
+                <span v-if="entry.is_cancelled && !entry.cancelled_is_debit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">{{ fmt(entry.cancelled_amount) }}</span>
+                <span v-else-if="entry.credit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-danger)]'">{{ fmt(entry.credit) }}</span>
                 <span v-else :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/60' : 'text-[var(--color-text-muted)]'">—</span>
               </td>
-              <td class="px-3 py-2 text-right font-mono font-semibold"
+              <td v-if="entry.is_cancelled" class="px-3 py-2 text-right font-mono font-semibold" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/60' : 'text-[var(--color-text-muted)]'">
+                —
+              </td>
+              <td v-else class="px-3 py-2 text-right font-mono font-semibold"
                 :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : (entry.balance < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">
                 {{ fmt(Math.abs(entry.balance)) }}
                 <span class="ml-0.5 text-[15px] font-normal" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-text-muted)]'">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
@@ -724,7 +730,15 @@ function computeWindow(cache, from, to) {
       windowEntries.push(e)
     }
   }
-  const closing = windowEntries.length ? windowEntries[windowEntries.length - 1].balance : opening
+  // Cancelled rows carry balance=null (zero impact) — find the last REAL entry
+  // for the closing balance, not just the last row chronologically.
+  let closing = opening
+  for (let i = windowEntries.length - 1; i >= 0; i--) {
+    if (windowEntries[i].balance != null) {
+      closing = windowEntries[i].balance
+      break
+    }
+  }
   return {
     party_type: cache.party_type,
     party: cache.party,
@@ -1176,6 +1190,10 @@ const cancelTarget = ref(null) // { voucher_type, voucher_no }
 const cancelling = ref(false)
 
 function onVoucherNoClick(entry) {
+  if (entry.is_cancelled) {
+    openInErpNext(entry.voucher_type, entry.voucher_no)
+    return
+  }
   if (CANCELLABLE_VOUCHER_TYPES.includes(entry.voucher_type)) {
     cancelTarget.value = { voucher_type: entry.voucher_type, voucher_no: entry.voucher_no }
     showCancelWarning.value = true

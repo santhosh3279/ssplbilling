@@ -387,6 +387,32 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None, company=
             "remarks": row.get("remarks") or "",
         })
 
+    # ERPNext's GL report hard-excludes cancelled vouchers (is_cancelled=1), so a
+    # cancelled transaction otherwise vanishes from this ledger entirely. Splice
+    # cancelled vouchers back in as zero-impact rows (debit/credit=0, balance=None)
+    # so the frontend can show them struck through without perturbing the running
+    # balance math above or in computeWindow() on the client.
+    if party_type in ("Customer", "Supplier"):
+        for c in _get_cancelled_entries(party_type, party, from_date, to_date, company):
+            entries.append({
+                "date": c["date"],
+                "account": "",
+                "party_type": party_type,
+                "party": party,
+                "party_name": label,
+                "voucher_type": c["voucher_type"],
+                "voucher_no": c["voucher_no"],
+                "against": "",
+                "debit": 0.0,
+                "credit": 0.0,
+                "balance": None,
+                "remarks": "",
+                "is_cancelled": True,
+                "cancelled_amount": c["amount"],
+                "cancelled_is_debit": c["is_debit"],
+            })
+        entries.sort(key=lambda e: e["date"])
+
     # Attach voucher creation timestamps (batched per voucher type)
     vouchers_by_type = {}
     for e in entries:
@@ -462,6 +488,95 @@ def get_warehouses(company=None):
 		fields=["name"],
 		order_by="name asc",
 	)]
+
+
+def _get_cancelled_entries(party_type, party, from_date, to_date, company):
+    """Find cancelled Sales/Purchase Invoice, Payment Entry, and Journal Entry
+    vouchers for this party+date range so they can be shown (struck through,
+    zero balance impact) instead of silently vanishing from the ledger.
+
+    Returns a list of {date, voucher_type, voucher_no, is_debit, amount}.
+    `is_debit` is a best-effort guess at which column the amount would have
+    landed in, matching the normal GL sign convention for that voucher type.
+    """
+    cancelled = []
+
+    if party_type == "Customer":
+        inv_doctype, inv_party_field, inv_is_debit = "Sales Invoice", "customer", True
+    else:
+        inv_doctype, inv_party_field, inv_is_debit = "Purchase Invoice", "supplier", False
+
+    for d in frappe.get_all(
+        inv_doctype,
+        filters={
+            inv_party_field: party,
+            "docstatus": 2,
+            "company": company,
+            "posting_date": ["between", [from_date, to_date]],
+        },
+        fields=["name", "posting_date", "grand_total"],
+    ):
+        cancelled.append({
+            "date": str(d.posting_date),
+            "voucher_type": inv_doctype,
+            "voucher_no": d.name,
+            "is_debit": inv_is_debit,
+            "amount": float(d.grand_total or 0),
+        })
+
+    for d in frappe.get_all(
+        "Payment Entry",
+        filters={
+            "party_type": party_type,
+            "party": party,
+            "docstatus": 2,
+            "company": company,
+            "posting_date": ["between", [from_date, to_date]],
+        },
+        fields=["name", "posting_date", "payment_type", "paid_amount"],
+    ):
+        cancelled.append({
+            "date": str(d.posting_date),
+            "voucher_type": "Payment Entry",
+            "voucher_no": d.name,
+            "is_debit": d.payment_type == "Pay",
+            "amount": float(d.paid_amount or 0),
+        })
+
+    je_names = frappe.get_all(
+        "Journal Entry",
+        filters=[
+            ["Journal Entry Account", "party_type", "=", party_type],
+            ["Journal Entry Account", "party", "=", party],
+            ["Journal Entry", "docstatus", "=", 2],
+            ["Journal Entry", "company", "=", company],
+            ["Journal Entry", "posting_date", "between", [from_date, to_date]],
+        ],
+        fields=["name", "posting_date"],
+        group_by="`tabJournal Entry`.name",
+    )
+    for d in je_names:
+        totals = frappe.db.sql(
+            """
+            select sum(debit_in_account_currency) as debit, sum(credit_in_account_currency) as credit
+            from `tabJournal Entry Account`
+            where parent = %s and party_type = %s and party = %s
+            """,
+            (d.name, party_type, party),
+            as_dict=True,
+        )
+        debit = float(totals[0].debit or 0) if totals else 0.0
+        credit = float(totals[0].credit or 0) if totals else 0.0
+        net = debit - credit
+        cancelled.append({
+            "date": str(d.posting_date),
+            "voucher_type": "Journal Entry",
+            "voucher_no": d.name,
+            "is_debit": net >= 0,
+            "amount": abs(net),
+        })
+
+    return cancelled
 
 
 def _batch_voucher_details(entries):
