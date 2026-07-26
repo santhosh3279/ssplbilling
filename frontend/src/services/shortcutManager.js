@@ -62,6 +62,11 @@ function handleKeyDown(e) {
 
   const key = getEventKey(e)
 
+  // Ignore auto-repeat Enter: a held key can fire a stray repeat after a
+  // subwindow closes (e.g. selecting in a supplier/ledger search), which
+  // would otherwise land on whatever shortcut layer is now on top.
+  if (e.repeat && key === 'ENTER') return
+
   // 0. Priority Exception: F1, CTRL+I, and CTRL+L are always global
   if (key === 'F1' || key === 'CTRL+I' || key === 'CTRL+L') {
     if (registry.global.has(key)) {

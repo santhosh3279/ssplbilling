@@ -700,6 +700,7 @@ function closeSubForm() {
 }
 
 function handleGlobalItemSearch() {
+  if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
   if (props.show && results.value[selectedIdx.value]) {
     isSlMode.value = true
     showDateModal.value = true
