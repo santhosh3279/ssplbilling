@@ -379,7 +379,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
-import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice, frappeGet, frappePost } from '../api.js'
+import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice, frappeGet, frappePost, linkSupplierToItems } from '../api.js'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import BarcodePrintPage from './BarcodePrintPage.vue'
@@ -654,6 +654,17 @@ async function confirmSubmission() {
       }))
 
     await submitPurchaseInvoice(invName)
+
+    const itemCodes = (previewItems.value || [])
+      .filter(i => i.item_code)
+      .map(i => i.item_code)
+    if (itemCodes.length > 0) {
+      try {
+        await linkSupplierToItems(supplier, itemCodes)
+      } catch (err) {
+        console.error('Failed to link supplier to items:', err)
+      }
+    }
 
     if (allocations.length > 0) {
       try {
