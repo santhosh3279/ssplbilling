@@ -18,7 +18,7 @@
           <div class="min-w-0 flex-1">
             <div class="truncate text-base font-semibold text-[var(--color-text)]">
               {{ session.fullName.value || 'User' }}
-              <span v-if="selectedUser !== session.user.value" class="text-xs font-normal text-[var(--color-text-muted)]"> ({{ selectedUser }})</span>
+              <span v-if="selectedUser !== session.user.value" class="text-xs font-normal text-[var(--color-text-muted)]"> ({{ selectedUserDisplayName }})</span>
             </div>
             <div class="flex items-center gap-1.5">
               <span class="truncate text-xs text-[var(--color-text-muted)]">{{ session.user.value }}</span>
@@ -184,7 +184,7 @@
           <div class="flex items-center gap-4">
             <span class="text-[var(--color-info)] font-bold uppercase tracking-widest text-xs">
               👤 {{ session.fullName.value || session.user.value }}
-              <span v-if="selectedUser !== session.user.value" class="normal-case font-normal text-[var(--color-text-muted)] text-xs"> ({{ selectedUser }})</span>
+              <span v-if="selectedUser !== session.user.value" class="normal-case font-normal text-[var(--color-text-muted)] text-xs"> ({{ selectedUserDisplayName }})</span>
             </span>
             <!-- Fullscreen button -->
             <button
@@ -769,6 +769,14 @@ const inheritUsersOptions = computed(() => {
 })
 
 const selectedUserLabel = computed(() => {
+  const match = inheritUsersOptions.value.find(u => u.value === selectedUser.value)
+  return match ? match.label : selectedUser.value
+})
+
+const selectedUserDisplayName = computed(() => {
+  if (selectedUser.value === session.user.value) {
+    return session.fullName.value || session.user.value
+  }
   const match = inheritUsersOptions.value.find(u => u.value === selectedUser.value)
   return match ? match.label : selectedUser.value
 })

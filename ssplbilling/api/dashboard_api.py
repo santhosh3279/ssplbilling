@@ -116,7 +116,11 @@ def update_single_series_counter(prefix, current):
 def get_all_users():
     """Return a list of all users from SSPL Billing Settings -> User Series."""
     settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
-    return [{"value": r.user, "label": r.user} for r in settings.user_series if r.user]
+    return [
+        {"value": r.user, "label": frappe.get_cached_value("User", r.user, "full_name") or r.user}
+        for r in settings.user_series
+        if r.user
+    ]
 
 @frappe.whitelist()
 def get_allowed_series(doctype="Sales Invoice", user=None):
