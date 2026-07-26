@@ -308,6 +308,9 @@ useSubwindowWatcher(computed(() => props.show), {
   },
   Enter: (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
+    // Swallow a stray Enter that lands right after the supplier search closes
+    // (double-tap / key bounce) — it must never fall through to item selection.
+    if (Date.now() - supplierModalClosedAt.value < 350) return
     const item = results.value[selectedIdx.value]
     if (item) {
       e.preventDefault()
@@ -387,6 +390,7 @@ const cipherMap = ref([])
 const isDecrypted = ref(false)
 const showSupplierModal = ref(false)
 const selectedSupplier = ref(null)
+const supplierModalClosedAt = ref(0)
 
 function openSupplierSearch() {
   showSupplierModal.value = true
@@ -395,6 +399,7 @@ function openSupplierSearch() {
 function handleSupplierSelect(supplier) {
   selectedSupplier.value = supplier
   showSupplierModal.value = false
+  supplierModalClosedAt.value = Date.now()
   focus()
 }
 
