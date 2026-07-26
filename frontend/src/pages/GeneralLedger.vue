@@ -32,8 +32,15 @@
             <span v-if="ledgerData" class="ml-3 text-xl text-[var(--color-text-muted)] font-medium">— {{ ledgerData.label }}</span>
           </h1>
           <span v-if="ledgerData" class="rounded-lg bg-[var(--color-info)]/20 px-3 py-1 text-lg font-bold text-[var(--color-info)] shadow-sm">
-            {{ ledgerData.entries.length }} entries
+            {{ isAnyFilterActive ? `${filteredEntries.length} of ${ledgerData.entries.length} entries` : `${ledgerData.entries.length} entries` }}
           </span>
+          <button
+            v-if="isAnyFilterActive"
+            @click="clearFilters"
+            class="rounded-lg border border-[var(--color-danger)]/50 bg-[var(--color-danger)]/10 px-3 py-1 text-base font-bold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/20 transition-all active:scale-95 shadow-sm"
+          >
+            Clear Filters
+          </button>
         </div>
 
         <div class="flex items-center gap-2">
@@ -242,6 +249,81 @@
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Credit (Cr)</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Balance</th>
             </tr>
+            <!-- Heading Filter Row -->
+            <tr class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
+              <th class="px-2 py-1">
+                <input
+                  v-model="filters.date"
+                  type="text"
+                  placeholder="Filter..."
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                />
+              </th>
+              <th class="px-2 py-1">
+                <input
+                  v-model="filters.voucher_type"
+                  type="text"
+                  placeholder="Filter..."
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                />
+              </th>
+              <th class="px-2 py-1">
+                <input
+                  v-model="filters.voucher_no"
+                  type="text"
+                  placeholder="Filter..."
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                />
+              </th>
+              <th class="px-2 py-1">
+                <input
+                  v-model="filters.payment_type"
+                  type="text"
+                  placeholder="Filter..."
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                />
+              </th>
+              <th class="px-2 py-1">
+                <input
+                  v-model="filters.against"
+                  type="text"
+                  placeholder="Filter..."
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                />
+              </th>
+              <th class="px-2 py-1">
+                <input
+                  v-model="filters.creation"
+                  type="text"
+                  placeholder="Filter..."
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                />
+              </th>
+              <th class="px-2 py-1">
+                <input
+                  v-model="filters.debit"
+                  type="text"
+                  placeholder="Filter..."
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs text-right font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                />
+              </th>
+              <th class="px-2 py-1">
+                <input
+                  v-model="filters.credit"
+                  type="text"
+                  placeholder="Filter..."
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs text-right font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                />
+              </th>
+              <th class="px-2 py-1">
+                <input
+                  v-model="filters.balance"
+                  type="text"
+                  placeholder="Filter..."
+                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs text-right font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                />
+              </th>
+            </tr>
           </thead>
           <tbody ref="tableBodyRef">
 
@@ -265,15 +347,15 @@
             </tr>
 
             <!-- No entries -->
-            <tr v-if="!ledgerData.entries.length">
+            <tr v-if="!filteredEntries.length">
               <td colspan="10" class="px-3 py-12 text-center text-[var(--color-text-muted)]">
-                No transactions in the selected date range.
+                {{ isAnyFilterActive ? 'No transactions matching the filters.' : 'No transactions in the selected date range.' }}
               </td>
             </tr>
 
             <!-- Entry rows -->
             <tr
-              v-for="(entry, idx) in ledgerData.entries"
+              v-for="(entry, idx) in filteredEntries"
               :key="idx"
               :data-idx="idx"
               tabindex="0"
@@ -325,7 +407,7 @@
             </tr>
 
             <!-- Closing row -->
-            <tr v-if="ledgerData.entries.length" class="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
+            <tr v-if="filteredEntries.length" class="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
               <td colspan="3" class="px-3 py-2 font-semibold text-[var(--color-text)]">Closing Balance</td>
               <td colspan="3" class="px-3 py-2 text-[18px] text-[var(--color-text-muted)]">
                 {{ fmtDate(ledgerData.from_date) }} → {{ fmtDate(ledgerData.to_date) }}
@@ -668,6 +750,142 @@ const ledgerData = ref(null)
 const loading = ref(false)
 const error = ref('')
 
+// ── Headings Filter state ──
+const filters = ref({
+  date: '',
+  voucher_type: '',
+  voucher_no: '',
+  payment_type: '',
+  against: '',
+  creation: '',
+  debit: '',
+  credit: '',
+  balance: ''
+})
+
+const isAnyFilterActive = computed(() => {
+  return Object.values(filters.value).some(val => val.trim() !== '')
+})
+
+function clearFilters() {
+  for (const key in filters.value) {
+    filters.value[key] = ''
+  }
+}
+
+const filteredEntries = computed(() => {
+  if (!ledgerData.value || !ledgerData.value.entries) return []
+  return ledgerData.value.entries.filter(entry => {
+    // Date filter: check raw and formatted date
+    if (filters.value.date) {
+      const query = filters.value.date.toLowerCase()
+      const rawDate = entry.date.toLowerCase()
+      const formattedDate = fmtDate(entry.date).toLowerCase()
+      if (!rawDate.includes(query) && !formattedDate.includes(query)) return false
+    }
+
+    // Voucher Type filter: match full type and abbreviation/label
+    if (filters.value.voucher_type) {
+      const query = filters.value.voucher_type.toLowerCase()
+      const type = entry.voucher_type.toLowerCase()
+      const label = voucherLabel(entry.voucher_type).toLowerCase()
+      if (!type.includes(query) && !label.includes(query)) return false
+    }
+
+    // Voucher No filter
+    if (filters.value.voucher_no) {
+      const query = filters.value.voucher_no.toLowerCase()
+      const no = entry.voucher_no.toLowerCase()
+      if (!no.includes(query)) return false
+    }
+
+    // Payment Type filter
+    if (filters.value.payment_type) {
+      const query = filters.value.payment_type.toLowerCase()
+      const payType = (entry.detail?.payment_type || '').toLowerCase()
+      if (!payType.includes(query)) return false
+    }
+
+    // Against filter
+    if (filters.value.against) {
+      const query = filters.value.against.toLowerCase()
+      const against = (entry.against || '').toLowerCase()
+      if (!against.includes(query)) return false
+    }
+
+    // Creation filter
+    if (filters.value.creation) {
+      const query = filters.value.creation.toLowerCase()
+      const creation = (entry.creation || '').toLowerCase()
+      const timeStr = fmtTime(entry.creation).toLowerCase()
+      if (!creation.includes(query) && !timeStr.includes(query)) return false
+    }
+
+    // Debit filter
+    if (filters.value.debit) {
+      const query = filters.value.debit.toLowerCase()
+      if (entry.is_cancelled && entry.cancelled_is_debit) {
+        const val = String(entry.cancelled_amount).toLowerCase()
+        const formatted = fmt(entry.cancelled_amount).toLowerCase()
+        if (!val.includes(query) && !formatted.includes(query)) return false
+      } else if (entry.debit) {
+        const val = String(entry.debit).toLowerCase()
+        const formatted = fmt(entry.debit).toLowerCase()
+        if (!val.includes(query) && !formatted.includes(query)) return false
+      } else {
+        return false
+      }
+    }
+
+    // Credit filter
+    if (filters.value.credit) {
+      const query = filters.value.credit.toLowerCase()
+      if (entry.is_cancelled && !entry.cancelled_is_debit) {
+        const val = String(entry.cancelled_amount).toLowerCase()
+        const formatted = fmt(entry.cancelled_amount).toLowerCase()
+        if (!val.includes(query) && !formatted.includes(query)) return false
+      } else if (entry.credit) {
+        const val = String(entry.credit).toLowerCase()
+        const formatted = fmt(entry.credit).toLowerCase()
+        if (!val.includes(query) && !formatted.includes(query)) return false
+      } else {
+        return false
+      }
+    }
+
+    // Balance filter
+    if (filters.value.balance) {
+      const query = filters.value.balance.toLowerCase()
+      if (entry.is_cancelled) {
+        return false
+      } else {
+        const val = String(entry.balance).toLowerCase()
+        const absVal = String(Math.abs(entry.balance)).toLowerCase()
+        const formatted = fmt(Math.abs(entry.balance)).toLowerCase()
+        const suffix = (entry.balance < 0 ? 'cr' : 'dr').toLowerCase()
+        if (!val.includes(query) && !absVal.includes(query) && !formatted.includes(query) && !suffix.includes(query)) return false
+      }
+    }
+
+    return true
+  })
+})
+
+watch(filteredEntries, (newVal) => {
+  if (newVal.length === 0) {
+    closeDetail()
+    return
+  }
+  const currentIdx = newVal.findIndex(e => e === selectedEntry.value)
+  if (currentIdx !== -1) {
+    focusedIdx.value = currentIdx
+  } else {
+    const lastIdx = newVal.length - 1
+    onRowClick(newVal[lastIdx], lastIdx)
+    scrollRowIntoView(lastIdx)
+  }
+})
+
 const totalDebit = computed(() => {
   if (!ledgerData.value || !ledgerData.value.entries) return 0
   return ledgerData.value.entries.reduce((sum, entry) => sum + (Number(entry.debit) || 0), 0)
@@ -917,6 +1135,7 @@ function pickCustomer(item) {
   showCustomerSearchModal.value = false
   selectedParty.value = item
   partyType.value = item.type
+  clearFilters()
   loadLedger()
 }
 
@@ -924,6 +1143,7 @@ function clearSelection() {
   selectedParty.value = null
   ledgerData.value = null
   error.value = ''
+  clearFilters()
   closeDetail()
 }
 
@@ -990,13 +1210,13 @@ function applyCachedWindow() {
   closeDetail()
   const data = computeWindow(ledgerCache.value, fromDate.value, toDate.value)
   ledgerData.value = data
-  if (data.entries.length > 0) {
-    nextTick(() => {
-      const lastIdx = data.entries.length - 1
-      onRowClick(data.entries[lastIdx], lastIdx)
+  nextTick(() => {
+    if (filteredEntries.value.length > 0) {
+      const lastIdx = filteredEntries.value.length - 1
+      onRowClick(filteredEntries.value[lastIdx], lastIdx)
       scrollRowIntoView(lastIdx)
-    })
-  }
+    }
+  })
 }
 
 // ── Row selection & Preview (detail is pre-loaded per entry — no per-row server call) ──
@@ -1016,28 +1236,28 @@ function closeDetail() {
 function onGlobalKeydown(e) {
   if (showCustomerSearchModal.value || printModalVisible.value || showBillDetail.value || showDateModal.value) return
   if (document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) return
-  if (!ledgerData.value || !ledgerData.value.entries.length) return
+  if (!filteredEntries.value || !filteredEntries.value.length) return
 
-  const len = ledgerData.value.entries.length
+  const len = filteredEntries.value.length
 
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     const nextIdx = Math.min(focusedIdx.value + 1, len - 1)
-    onRowClick(ledgerData.value.entries[nextIdx], nextIdx)
+    onRowClick(filteredEntries.value[nextIdx], nextIdx)
     scrollRowIntoView(nextIdx)
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     const prevIdx = Math.max(focusedIdx.value - 1, 0)
-    onRowClick(ledgerData.value.entries[prevIdx], prevIdx)
+    onRowClick(filteredEntries.value[prevIdx], prevIdx)
     scrollRowIntoView(prevIdx)
   } else if (e.key === 'Home') {
     e.preventDefault()
-    onRowClick(ledgerData.value.entries[0], 0)
+    onRowClick(filteredEntries.value[0], 0)
     scrollRowIntoView(0)
   } else if (e.key === 'End') {
     e.preventDefault()
     const lastIdx = len - 1
-    onRowClick(ledgerData.value.entries[lastIdx], lastIdx)
+    onRowClick(filteredEntries.value[lastIdx], lastIdx)
     scrollRowIntoView(lastIdx)
   } else if (e.key === 'F4') {
     e.preventDefault()
@@ -1128,7 +1348,7 @@ function exportExcel() {
   ])
 
   // Entry rows
-  for (const e of d.entries) {
+  for (const e of filteredEntries.value) {
     rows.push([
       fmtDate(e.date),
       e.voucher_type,
