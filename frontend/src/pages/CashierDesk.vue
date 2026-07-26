@@ -1,7 +1,18 @@
 <template>
   <div class="flex h-screen flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] overflow-hidden">
-    <!-- TOP NAVBAR -->
-    <header class="grid grid-cols-[360px_1fr_700px] h-14 items-center border-b border-[var(--color-border)] bg-[var(--color-surface)] z-20 shrink-0 overflow-hidden">
+    <header 
+      class="grid grid-cols-[360px_1fr_700px] h-14 items-center border-b border-[var(--color-border)] bg-[var(--color-surface)] z-20 shrink-0 overflow-hidden transition-all duration-300"
+      :style="postingDate !== getTodayIST() ? {
+        '--color-surface': '#dc2626',
+        '--color-border': 'rgba(255, 255, 255, 0.2)',
+        '--color-text': '#ffffff',
+        '--color-text-muted': 'rgba(255, 255, 255, 0.7)',
+        '--color-info': '#ffffff',
+        '--color-surface-raised': 'rgba(255, 255, 255, 0.15)',
+        '--color-highlight': '#ffffff',
+        '--color-text-on-highlight': '#dc2626'
+      } : {}"
+    >
       <!-- Col 1: App Title & Navigation -->
       <div class="flex items-center px-6 gap-4 border-r border-[var(--color-border)] h-full">
         <button @click="$router.push('/')" class="shrink-0 flex items-center gap-1.5 rounded-lg bg-[var(--color-surface-raised)]/50 px-2.5 py-1.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-all active:scale-95">
