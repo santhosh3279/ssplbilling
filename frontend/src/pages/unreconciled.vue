@@ -24,11 +24,11 @@
 
       <!-- Ledger Selection (Centered) -->
       <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center opacity-100">
-        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)] opacity-100">Ledger Name (Customer/Supplier)</span>
+        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--color-text)] opacity-100">Ledger Name (Customer/Supplier)</span>
         <button 
           ref="ledgerBtnRef"
           @click="openSearch"
-          class="mt-1 cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-xl font-black text-[var(--color-highlight)] hover:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 outline-none transition-all min-w-[300px] text-center opacity-100"
+          class="mt-1 cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-xl font-black text-[var(--color-text)] hover:text-[var(--color-highlight)] hover:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 outline-none transition-all min-w-[300px] text-center opacity-100"
         >
           {{ selectedLedgerName || 'Select Ledger...' }}
         </button>
