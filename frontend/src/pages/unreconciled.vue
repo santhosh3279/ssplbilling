@@ -1,7 +1,7 @@
 <template>
   <div class="flex h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
     <!-- Header -->
-    <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-sm shrink-0">
+    <header class="relative flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-sm shrink-0">
       <div class="flex items-center gap-3">
         <button
           v-if="!party"
@@ -22,34 +22,33 @@
         </button>
       </div>
 
-      <!-- Ledger Selection -->
-      <div class="flex items-center gap-4">
-        <div class="flex flex-col items-end">
-          <span class="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)]">Ledger Name (Customer/Supplier)</span>
-          <div class="flex items-center gap-3 mt-1">
-            <!-- Apply Reconcile Button -->
-            <button
-              v-if="party"
-              @click="submitReconciliation"
-              :disabled="queuedAllocations.length === 0 || isSubmitting"
-              class="h-11 cursor-pointer rounded-xl bg-[var(--color-success)] px-6 text-xs font-black uppercase tracking-widest text-white hover:brightness-105 active:scale-95 disabled:opacity-30 transition-all shadow-md flex items-center justify-center gap-2"
-            >
-              <span v-if="isSubmitting">Reconciling...</span>
-              <template v-else>
-                <span>Apply Reconcile</span>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-              </template>
-            </button>
+      <!-- Ledger Selection (Centered) -->
+      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center opacity-100">
+        <span class="text-[9px] font-black uppercase tracking-[0.18em] text-[var(--color-text-muted)] opacity-100">Ledger Name (Customer/Supplier)</span>
+        <button 
+          ref="ledgerBtnRef"
+          @click="openSearch"
+          class="mt-1 cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-xl font-black text-[var(--color-highlight)] hover:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 outline-none transition-all min-w-[300px] text-center opacity-100"
+        >
+          {{ selectedLedgerName || 'Select Ledger...' }}
+        </button>
+      </div>
 
-            <button 
-              ref="ledgerBtnRef"
-              @click="openSearch"
-              class="cursor-pointer rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-6 py-2 text-xl font-black text-[var(--color-highlight)] hover:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/10 outline-none transition-all min-w-[300px] text-right"
-            >
-              {{ selectedLedgerName || 'Select Ledger...' }}
-            </button>
-          </div>
-        </div>
+      <!-- Right Header Actions -->
+      <div class="flex items-center gap-4">
+        <!-- Apply Reconcile Button -->
+        <button
+          v-if="party"
+          @click="submitReconciliation"
+          :disabled="queuedAllocations.length === 0 || isSubmitting"
+          class="h-11 cursor-pointer rounded-xl bg-[var(--color-success)] px-6 text-xs font-black uppercase tracking-widest text-white hover:brightness-105 active:scale-95 disabled:opacity-30 transition-all shadow-md flex items-center justify-center gap-2"
+        >
+          <span v-if="isSubmitting">Reconciling...</span>
+          <template v-else>
+            <span>Apply Reconcile</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+          </template>
+        </button>
       </div>
     </header>
 
