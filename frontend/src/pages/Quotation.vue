@@ -447,6 +447,7 @@
       :warehouse="warehouse"
       :skip-date-filter="true"
       :initial-query="itemSearchInitialQuery"
+      :focus-item-code="items[items.length - 1]?.item_code || ''"
       enable-quick-qty
       @close="closeItemSearch"
       @select="onItemSearchSelect"
