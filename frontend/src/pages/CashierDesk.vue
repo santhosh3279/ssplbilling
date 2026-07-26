@@ -458,8 +458,21 @@
               <!-- Posting Date Selector -->
               <div class="flex flex-col gap-1.5 pb-2">
                 <label class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] ml-1">Posting Date</label>
-                <div class="flex items-center justify-between gap-1.5 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] p-0.5">
-                  <button @click="adjustPostingDate(-1)" class="rounded-lg p-[3px] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
+                <div 
+                  class="flex items-center justify-between gap-1.5 rounded-xl border p-0.5 transition-all duration-300"
+                  :class="postingDate !== getTodayIST()
+                    ? 'bg-red-600 border-red-700 text-white'
+                    : 'bg-[var(--color-bg)] border-[var(--color-border)]'
+                  "
+                >
+                  <button 
+                    @click="adjustPostingDate(-1)" 
+                    class="rounded-lg p-[3px] transition-colors"
+                    :class="postingDate !== getTodayIST()
+                      ? 'text-white/70 hover:bg-white/10 hover:text-white'
+                      : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'
+                    "
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                   </button>
                   <div class="flex-1 text-center">
@@ -467,10 +480,18 @@
                       ref="postingDateInput"
                       type="date"
                       v-model="postingDate"
-                      class="bg-transparent border-none text-2xl font-black text-[var(--color-text)] focus:ring-0 p-0 text-center cursor-pointer w-full"
+                      class="bg-transparent border-none text-2xl font-black focus:ring-0 p-0 text-center cursor-pointer w-full transition-all duration-300"
+                      :class="postingDate !== getTodayIST() ? 'text-white' : 'text-[var(--color-text)]'"
                     />
                   </div>
-                  <button @click="adjustPostingDate(1)" class="rounded-lg p-[3px] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors">
+                  <button 
+                    @click="adjustPostingDate(1)" 
+                    class="rounded-lg p-[3px] transition-colors"
+                    :class="postingDate !== getTodayIST()
+                      ? 'text-white/70 hover:bg-white/10 hover:text-white'
+                      : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'
+                    "
+                  >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                   </button>
                 </div>
