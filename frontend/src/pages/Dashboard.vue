@@ -56,10 +56,10 @@
               ref="inheritSettingsSelectRef"
               type="button"
               @click="toggleInheritDropdown"
-              class="flex w-full items-center justify-between rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-2 text-left text-sm text-[var(--color-text)] focus:border-[var(--color-highlight)] focus:outline-none focus:ring-1 focus:ring-[var(--color-highlight)] transition-all hover:bg-[var(--color-midlight)]"
+              class="flex w-full items-center justify-between rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-[9px] py-[6px] text-left text-[21px] text-[var(--color-text)] focus:border-[var(--color-highlight)] focus:outline-none focus:ring-1 focus:ring-[var(--color-highlight)] transition-all hover:bg-[var(--color-midlight)]"
             >
               <span class="truncate">{{ selectedUserLabel }}</span>
-              <svg class="h-4 w-4 shrink-0 text-[var(--color-text-muted)] transition-transform duration-200" :class="{ 'rotate-180': isInheritDropdownOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg class="h-6 w-6 shrink-0 text-[var(--color-text-muted)] transition-transform duration-200" :class="{ 'rotate-180': isInheritDropdownOpen }" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
               </svg>
             </button>
@@ -74,7 +74,7 @@
                 :key="u.value"
                 :id="'wb-user-opt-' + index"
                 :class="[
-                  'cursor-pointer px-3 py-2 text-sm text-[var(--color-text)] transition-colors',
+                  'cursor-pointer px-[9px] py-[6px] text-[21px] text-[var(--color-text)] transition-colors',
                   index === focusedUserIndex ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] font-semibold' : 'hover:bg-[var(--color-midlight)]'
                 ]"
                 @click="selectUserOption(u.value)"
