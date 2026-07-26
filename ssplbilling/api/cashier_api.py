@@ -117,6 +117,99 @@ def get_sales_invoice(invoice_name):
     payment_mode = si.payments[0].mode_of_payment if si.payments else "Cash"
     cost_center = si.items[0].cost_center if si.items else ""
 
+    # Fetch linked Payment Entries & Journal Entries
+    payments = []
+    pe_references = frappe.get_all(
+        "Payment Entry Reference",
+        filters={"reference_doctype": "Sales Invoice", "reference_name": invoice_name, "docstatus": ["!=", 2]},
+        fields=["parent", "allocated_amount"]
+    )
+    if pe_references:
+        pe_names = [r.parent for r in pe_references]
+        pes = frappe.get_all(
+            "Payment Entry",
+            filters={"name": ["in", pe_names]},
+            fields=["name", "posting_date", "mode_of_payment", "reference_no", "paid_amount", "docstatus"]
+        )
+        pe_alloc_map = {r.parent: r.allocated_amount for r in pe_references}
+        for pe in pes:
+            payments.append({
+                "name": pe.name,
+                "type": "Payment Entry",
+                "mode_of_payment": pe.mode_of_payment,
+                "posting_date": str(pe.posting_date),
+                "reference_no": pe.reference_no or "",
+                "amount": float(pe_alloc_map.get(pe.name, pe.paid_amount) or 0),
+                "docstatus": pe.docstatus
+            })
+
+    je_accounts = frappe.get_all(
+        "Journal Entry Account",
+        filters={"reference_type": "Sales Invoice", "reference_name": invoice_name, "docstatus": ["!=", 2]},
+        fields=["parent", "credit_in_account_currency", "debit_in_account_currency"]
+    )
+    if je_accounts:
+        je_names = [r.parent for r in je_accounts]
+        jes = frappe.get_all(
+            "Journal Entry",
+            filters={"name": ["in", je_names]},
+            fields=["name", "posting_date", "cheque_no", "docstatus", "user_remark"]
+        )
+        for je in jes:
+            je_row = next((r for r in je_accounts if r.parent == je.name), None)
+            amount = 0.0
+            if je_row:
+                amount = je_row.credit_in_account_currency or je_row.debit_in_account_currency or 0.0
+            payments.append({
+                "name": je.name,
+                "type": "Journal Entry",
+                "mode_of_payment": "Discount / Adjustment" if "discount" in (je.user_remark or "").lower() else "Journal Entry",
+                "posting_date": str(je.posting_date),
+                "reference_no": je.cheque_no or "",
+                "amount": float(amount),
+                "docstatus": je.docstatus
+            })
+
+    for p in (si.payments or []):
+        if p.amount > 0:
+            payments.append({
+                "name": si.name,
+                "type": "Sales Invoice Payment",
+                "mode_of_payment": p.mode_of_payment,
+                "posting_date": str(si.posting_date),
+                "reference_no": p.account or "",
+                "amount": float(p.amount),
+                "docstatus": si.docstatus
+            })
+
+    existing_names = {p["name"] for p in payments}
+    for adv in (si.advances or []):
+        if adv.reference_name and adv.reference_name not in existing_names:
+            if adv.reference_type == "Payment Entry":
+                pe = frappe.db.get_value("Payment Entry", adv.reference_name, ["posting_date", "mode_of_payment", "reference_no", "docstatus"], as_dict=True)
+                if pe:
+                    payments.append({
+                        "name": adv.reference_name,
+                        "type": "Payment Entry",
+                        "mode_of_payment": pe.mode_of_payment,
+                        "posting_date": str(pe.posting_date),
+                        "reference_no": pe.reference_no or "",
+                        "amount": float(adv.allocated_amount or 0),
+                        "docstatus": pe.docstatus
+                    })
+            elif adv.reference_type == "Journal Entry":
+                je = frappe.db.get_value("Journal Entry", adv.reference_name, ["posting_date", "cheque_no", "docstatus", "user_remark"], as_dict=True)
+                if je:
+                    payments.append({
+                        "name": adv.reference_name,
+                        "type": "Journal Entry",
+                        "mode_of_payment": "Discount / Adjustment" if "discount" in (je.user_remark or "").lower() else "Journal Entry",
+                        "posting_date": str(je.posting_date),
+                        "reference_no": je.cheque_no or "",
+                        "amount": float(adv.allocated_amount or 0),
+                        "docstatus": je.docstatus
+                    })
+
     def _actual_charge(keyword):
         for t in si.taxes:
             if t.charge_type == "Actual" and keyword.lower() in (t.description or "").lower():
@@ -205,6 +298,7 @@ def get_sales_invoice(invoice_name):
         "custom_address_line2": si.get("custom_address_line2") or "",
         "custom_mobile_number": si.get("custom_mobile_number") or "",
         "custom_remarks": si.get("custom_remarks") or "",
+        "payments": payments,
     }
 
 @frappe.whitelist()
