@@ -88,6 +88,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'FastMovingItems',
   'MaterialTransferReport',
   'CashflowReport',
+  'AccountTree',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
@@ -285,6 +286,7 @@ const TILE_ROUTE_MAP = {
   'fast-moving-items': 'FastMovingItems',
   'material-transfer-report': 'MaterialTransferReport',
   'land-cost-voucher': 'LandCostVoucher',
+  'account-tree':      'AccountTree',
 }
 
 export function canAccessTile(tileId) {

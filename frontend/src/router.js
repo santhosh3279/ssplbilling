@@ -55,6 +55,7 @@ import Unreconciled from './pages/unreconciled.vue'
 import ChequeRegister from './pages/ChequeRegister.vue'
 import CashflowReport from './pages/CashflowReport.vue'
 import LandCostVoucher from './pages/land_cost_voucher.vue'
+import AccountTree from './pages/AccountTree.vue'
 
 const routes = [
   {
@@ -372,6 +373,12 @@ const routes = [
     name: 'ChequeRegister',
     component: ChequeRegister,
     meta: { title: 'Cheque Register' },
+  },
+  {
+    path: '/account-tree',
+    name: 'AccountTree',
+    component: AccountTree,
+    meta: { title: 'Chart of Accounts' },
   },
 ]
 
