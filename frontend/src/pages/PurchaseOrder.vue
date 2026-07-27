@@ -445,7 +445,7 @@
                 v-model="pendingItem.uom"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                 @change="onPendingUomChange"
-                @keydown.enter.prevent="openPriceListUpdate"
+                @keydown.enter.prevent="confirmPendingItem"
                 @keydown.escape="cancelPendingItem"
               >
                 <option v-for="u in getItemUoms(pendingItem.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
@@ -1516,7 +1516,7 @@ function onEditQtyKeydown(e, idx) {
     e.preventDefault()
     const item = items.value[idx]
     if (item && item.qty > 0) {
-      openRowPriceListUpdate(idx)
+      finishRowEdit(idx)
     }
   } else if (e.key === 'Escape') {
     e.preventDefault()
@@ -1880,7 +1880,7 @@ function handlePendingQtyKeydown(e) {
     if (pendingItem.value.qty > 0) {
       e.preventDefault()
       if (getItemUoms(pendingItem.value.item_code).length > 1) { pendingUomSelect.value?.focus(); if (pendingUomSelect.value?.showPicker) pendingUomSelect.value.showPicker() }
-      else openPriceListUpdate()
+      else confirmPendingItem()
     }
   } else if (e.key === 'Escape') cancelPendingItem()
   else if (e.key === 'Backspace' && (!pendingItem.value.qty || pendingItem.value.qty === 0)) { e.preventDefault(); cancelPendingItem() }
