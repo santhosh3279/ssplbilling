@@ -180,8 +180,8 @@
           <div>
             <h1 class="text-lg font-bold text-[var(--color-text)]">
               {{ (currentTab === 'locked-bills' && userRole === 'admin') ? 'Locked Bills' : 'Dashboard' }}
-              <span v-if="daysRemaining !== null" class="text-[15px] font-mono font-normal ml-1" :class="daysRemaining < 30 ? 'text-[var(--color-warning)] font-bold' : 'text-[var(--color-text-muted)]'">
-                License: {{ daysRemaining }} days left
+              <span v-if="licenseStatusText" class="text-[15px] font-mono font-normal ml-1" :class="daysRemaining !== null && daysRemaining < 30 ? 'text-[var(--color-warning)] font-bold' : 'text-[var(--color-text-muted)]'">
+                License: {{ licenseStatusText }}
               </span>
             </h1>
             <p class="text-[10px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider">{{ todayDate }} | {{ todayDay }}</p>
@@ -1586,7 +1586,7 @@ function updateLicenseState() {
 
 const isLicenseInvalid = computed(() => {
   if (!licenseInfo.value) return false
-  return !licenseInfo.value.valid || licenseInfo.value.days_remaining < 0
+  return !licenseInfo.value.valid || (licenseInfo.value.days_remaining != null && licenseInfo.value.days_remaining < 0)
 })
 
 const daysRemaining = computed(() => {
@@ -1594,6 +1594,17 @@ const daysRemaining = computed(() => {
     return licenseInfo.value.days_remaining
   }
   return null
+})
+
+// No expiry_date on the license => unlimited. Otherwise: past 50 days remaining,
+// show the actual expiry date; inside that window, show a day countdown instead.
+const licenseStatusText = computed(() => {
+  const info = licenseInfo.value
+  if (!info || !info.valid) return null
+  if (!info.expiry_date) return 'Unlimited'
+  if (typeof info.days_remaining !== 'number') return null
+  if (info.days_remaining > 50) return `valid till ${info.expiry_date}`
+  return `${info.days_remaining} days left`
 })
 
 function cleanupOldKeys() {

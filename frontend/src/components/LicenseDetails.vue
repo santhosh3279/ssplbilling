@@ -61,9 +61,9 @@
             </div>
             <div class="flex justify-between">
               <span class="text-[var(--color-text-muted)]">Expiry Date</span>
-              <span class="font-semibold text-[var(--color-text)]">{{ license?.expiry_date || '—' }}</span>
+              <span class="font-semibold text-[var(--color-text)]">{{ license?.expiry_date || 'Unlimited' }}</span>
             </div>
-            <div class="flex justify-between">
+            <div v-if="license?.expiry_date" class="flex justify-between">
               <span class="text-[var(--color-text-muted)]">Days Remaining</span>
               <span class="font-bold" :class="(license?.days_remaining ?? 0) < 30 ? 'text-[var(--color-warning)]' : 'text-[var(--color-text)]'">
                 {{ license?.days_remaining ?? '—' }}

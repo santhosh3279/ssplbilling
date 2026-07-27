@@ -12,6 +12,10 @@ LICENSE_PUBLIC_KEY_B64 = "NCcdnL9384366XVtCpkpqq39XtZU7t/Fy+BYWt/+RBM="
 
 
 def _build_message(site_name, expiry_date, features, max_tabs=None, customer_name=None, watch_text=None):
+	# expiry_date is a core positional field, but an empty/missing value means
+	# "unlimited" (no expiry) rather than being omitted from the message like the
+	# optional fields below — normalize to "" so both build and verify agree.
+	expiry_date = expiry_date or ""
 	sorted_features = sorted(features)
 	message = f"{site_name}|{expiry_date}|{','.join(sorted_features)}"
 	# Optional fields are only folded into the signed message when present, in this
@@ -96,7 +100,8 @@ def _load_license_status():
 	status["customer_name"] = customer_name or ""
 	status["watch_text"] = watch_text or ""
 
-	if not site_name or not expiry_date or not signature:
+	# expiry_date is optional — an empty/missing value means the license never expires.
+	if not site_name or not signature:
 		status["message"] = "Invalid license file format (missing fields)"
 		return status
 
@@ -110,6 +115,12 @@ def _load_license_status():
 		pass
 	elif not _verify_signature(site_name, expiry_date, features, signature, max_tabs, customer_name, watch_text):
 		status["message"] = "License signature verification failed (tampered)"
+		return status
+
+	if not expiry_date:
+		status["days_remaining"] = None
+		status["valid"] = True
+		status["message"] = "License is active (no expiry)"
 		return status
 
 	# Check expiration
