@@ -55,62 +55,13 @@
                 class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
               />
             </div>
-            <div>
-              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Discount Account</label>
-              <input 
-                v-model="settings.discount_account" list="dl-accounts" 
-                type="text" 
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Freight Account</label>
-              <input 
-                v-model="settings.freight" list="dl-accounts" 
-                type="text" 
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Tax Paid on Purchase</label>
-              <input 
-                v-model="settings.tax_paid_on_purchase" list="dl-accounts" 
-                type="text" 
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Packing Charge</label>
-              <input 
-                v-model="settings.packing_charge" list="dl-accounts" 
-                type="text" 
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Loading</label>
-              <input 
-                v-model="settings.loading" list="dl-accounts" 
-                type="text" 
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Other Charges</label>
-              <input 
-                v-model="settings.other_charges" list="dl-accounts" 
-                type="text" 
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Round Off</label>
-              <input 
-                v-model="settings.round_off" list="dl-accounts" 
-                type="text" 
-                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-              />
-            </div>
+            <DropdownField v-model="settings.discount_account" list="dl-accounts" label="Discount Account" />
+            <DropdownField v-model="settings.freight" list="dl-accounts" label="Freight Account" />
+            <DropdownField v-model="settings.tax_paid_on_purchase" list="dl-accounts" label="Tax Paid on Purchase" />
+            <DropdownField v-model="settings.packing_charge" list="dl-accounts" label="Packing Charge" />
+            <DropdownField v-model="settings.loading" list="dl-accounts" label="Loading" />
+            <DropdownField v-model="settings.other_charges" list="dl-accounts" label="Other Charges" />
+            <DropdownField v-model="settings.round_off" list="dl-accounts" label="Round Off" />
           </div>
         </section>
 
@@ -133,10 +84,10 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.billing_series" :key="idx" class="border-b border-[var(--color-border)]">
-                <td class="px-2 py-2"><input v-model="row.series" list="dl-series" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-2 py-2"><input v-model="row.print_format" list="dl-print-formats" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-2 py-2"><input v-model="row.price_list" list="dl-price-lists" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-2 py-2"><input v-model="row.tax_template" list="dl-tax-templates" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.series" list="dl-series" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.print_format" list="dl-print-formats" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.price_list" list="dl-price-lists" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.tax_template" list="dl-tax-templates" /></td>
                 <td class="px-2 py-2 text-center">
                   <input type="checkbox" v-model="row.tax_type_incl" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" />
                 </td>
@@ -180,23 +131,23 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.user_series" :key="idx" class="border-b border-[var(--color-border)]">
-                <td class="px-1 py-2"><input v-model="row.user" list="dl-users" class="w-full min-w-[100px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.allowed_series_seperated_by_comma" placeholder="ALL or prefixes" class="w-full min-w-[100px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.zoom_value" type="number" placeholder="100" class="w-full min-w-[60px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.cash" list="dl-accounts" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.upi" list="dl-accounts" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.card" list="dl-accounts" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.bank" list="dl-accounts" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.warehouse" list="dl-warehouses" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.cost_center" list="dl-cost-centers" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.income_account" list="dl-accounts" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.company" list="dl-companies" class="w-full min-w-[100px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.user" list="dl-users" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.allowed_series_seperated_by_comma" placeholder="ALL or prefixes" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.zoom_value" type="number" placeholder="100" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.cash" list="dl-accounts" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.upi" list="dl-accounts" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.card" list="dl-accounts" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.bank" list="dl-accounts" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.warehouse" list="dl-warehouses" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.cost_center" list="dl-cost-centers" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.income_account" list="dl-accounts" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.company" list="dl-companies" compact /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.admin" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.cashier" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.biller" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.accounts" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
-                <td class="px-1 py-2"><input v-model="row.default_printer" list="dl-printers" class="w-full min-w-[80px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-1 py-2"><input v-model="row.theme" list="dl-themes" class="w-full min-w-[70px] bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 text-xs focus:border-[var(--color-info)] outline-none" /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.default_printer" list="dl-printers" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.theme" list="dl-themes" compact /></td>
                 <td class="px-1 py-2 text-right"><button @click="removeRow('user_series', idx)" class="text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold px-2">&times;</button></td>
               </tr>
             </tbody>
@@ -220,9 +171,9 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.table_vycb" :key="idx" class="border-b border-[var(--color-border)]">
-                <td class="px-2 py-2"><input v-model="row.user" list="dl-users" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-2 py-2"><input v-model="row.printer" list="dl-printers" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
-                <td class="px-2 py-2"><input v-model="row.template" list="dl-print-formats" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.user" list="dl-users" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.printer" list="dl-printers" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.template" list="dl-print-formats" /></td>
                 <td class="px-2 py-2 text-right"><button @click="removeRow('table_vycb', idx)" class="text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold px-2">&times;</button></td>
               </tr>
             </tbody>
@@ -245,7 +196,7 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.visible_accounts" :key="idx" class="border-b border-[var(--color-border)]">
-                <td class="px-2 py-2"><input v-model="row.account" list="dl-accounts" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.account" list="dl-accounts" /></td>
                 <td class="px-2 py-2"><input v-model="row.label" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-2 py-2 text-right"><button @click="removeRow('visible_accounts', idx)" class="text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold px-2">&times;</button></td>
               </tr>
@@ -262,6 +213,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import DropdownField from '../components/DropdownField.vue'
 
 const router = useRouter()
 const isLoading = ref(true)
