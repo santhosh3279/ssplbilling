@@ -348,11 +348,9 @@ useSubwindowWatcher(computed(() => props.show), {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     if (!props.enableQuickQty) return
     quickQtyMode.value = !quickQtyMode.value
-    if (!quickQtyMode.value) quickQtyMap.value = {}
   },
   'CTRL+ENTER': (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
-    if (!quickQtyMode.value) return
     submitQuickQtyBatch()
   },
   F5: (e) => {
@@ -426,7 +424,30 @@ const showSupplierModal = ref(false)
 const selectedSupplier = ref(null)
 const supplierModalClosedAt = ref(0)
 const quickQtyMode = ref(false)
-const quickQtyMap = ref({})
+
+function loadQuickQtyMap() {
+  try {
+    const raw = localStorage.getItem('sspl-quick-qty-map')
+    return raw ? JSON.parse(raw) : {}
+  } catch (e) {
+    return {}
+  }
+}
+
+function saveQuickQtyMap() {
+  try {
+    localStorage.setItem('sspl-quick-qty-map', JSON.stringify(quickQtyMap.value))
+  } catch (e) {}
+}
+
+function clearQuickQtyMap() {
+  quickQtyMap.value = {}
+  try {
+    localStorage.removeItem('sspl-quick-qty-map')
+  } catch (e) {}
+}
+
+const quickQtyMap = ref(loadQuickQtyMap())
 
 function onSearchInputKeydown(e) {
   if (e.key === 'Escape') {
@@ -441,27 +462,52 @@ function onSearchInputKeydown(e) {
   if (/^[0-9]$/.test(e.key)) {
     e.preventDefault()
     quickQtyMap.value[code] = (quickQtyMap.value[code] || '') + e.key
+    saveQuickQtyMap()
   } else if (e.key === '.') {
     e.preventDefault()
     const current = quickQtyMap.value[code] || ''
-    if (!current.includes('.')) quickQtyMap.value[code] = current + '.'
+    if (!current.includes('.')) {
+      quickQtyMap.value[code] = current + '.'
+      saveQuickQtyMap()
+    }
   } else if (e.key === 'Backspace') {
     e.preventDefault()
     quickQtyMap.value[code] = (quickQtyMap.value[code] || '').slice(0, -1)
+    saveQuickQtyMap()
   }
 }
 
 function submitQuickQtyBatch() {
   const entries = []
-  for (const item of results.value) {
-    const raw = quickQtyMap.value[item.item_code]
+  for (const [itemCode, raw] of Object.entries(quickQtyMap.value)) {
     const qty = parseFloat(raw)
-    if (raw && qty > 0) entries.push({ ...item, qty })
+    if (raw && qty > 0) {
+      const cachedItem = lookupItemInCache(itemCode)
+      if (cachedItem) {
+        let displayPrice = cachedItem.price
+        if (props.priceList) {
+          if (cachedItem.price_lists) {
+            const pl = cachedItem.price_lists.find(p => p.name === props.priceList)
+            if (pl) displayPrice = pl.rate
+          }
+          if (cachedItem.uom_price_lists?.[props.priceList]) {
+            const uomRate = cachedItem.uom_price_lists[props.priceList][cachedItem.uom]
+            if (uomRate != null) displayPrice = uomRate
+          }
+        }
+        
+        entries.push({
+          ...cachedItem,
+          price: displayPrice,
+          qty
+        })
+      }
+    }
   }
   if (!entries.length) return
   emit('select-multiple', entries)
   quickQtyMode.value = false
-  quickQtyMap.value = {}
+  clearQuickQtyMap()
 }
 
 function openSupplierSearch() {
@@ -822,6 +868,7 @@ watch(() => props.show, async (newVal) => {
     selectedSupplier.value = null
     isDecrypted.value = false
     loadCipherMap()
+    quickQtyMap.value = loadQuickQtyMap()
     focus()
     // Re-scope/refresh the shared cache to THIS modal's warehouse + price list.
     // The global cache may have been populated warehouse-less (e.g. by Dashboard),
@@ -857,7 +904,6 @@ watch(() => props.show, async (newVal) => {
     showSupplierModal.value = false
     selectedSupplier.value = null
     quickQtyMode.value = false
-    quickQtyMap.value = {}
   }
 })
 
