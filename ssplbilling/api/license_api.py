@@ -11,7 +11,7 @@ from cryptography.exceptions import InvalidSignature
 LICENSE_PUBLIC_KEY_B64 = "NCcdnL9384366XVtCpkpqq39XtZU7t/Fy+BYWt/+RBM="
 
 
-def _build_message(site_name, expiry_date, features, max_tabs=None, customer_name=None):
+def _build_message(site_name, expiry_date, features, max_tabs=None, customer_name=None, watch_text=None):
 	sorted_features = sorted(features)
 	message = f"{site_name}|{expiry_date}|{','.join(sorted_features)}"
 	# Optional fields are only folded into the signed message when present, in this
@@ -21,16 +21,18 @@ def _build_message(site_name, expiry_date, features, max_tabs=None, customer_nam
 		message += f"|{max_tabs}"
 	if customer_name:
 		message += f"|{customer_name}"
+	if watch_text:
+		message += f"|{watch_text}"
 	return message.encode("utf-8")
 
 
-def _verify_signature(site_name, expiry_date, features, signature_b64, max_tabs=None, customer_name=None):
+def _verify_signature(site_name, expiry_date, features, signature_b64, max_tabs=None, customer_name=None, watch_text=None):
 	try:
 		public_key = ed25519.Ed25519PublicKey.from_public_bytes(
 			base64.b64decode(LICENSE_PUBLIC_KEY_B64)
 		)
 		signature = base64.b64decode(signature_b64)
-		message = _build_message(site_name, expiry_date, features, max_tabs, customer_name)
+		message = _build_message(site_name, expiry_date, features, max_tabs, customer_name, watch_text)
 		public_key.verify(signature, message)
 		return True
 	except (InvalidSignature, ValueError, TypeError):
@@ -58,6 +60,7 @@ def _load_license_status():
 		"features": [],
 		"max_tabs": None,
 		"customer_name": "",
+		"watch_text": "",
 		"days_remaining": 0,
 		"site_name": frappe.local.site
 	}
@@ -84,12 +87,14 @@ def _load_license_status():
 	if max_tabs is not None and (not isinstance(max_tabs, int) or max_tabs < 0):
 		max_tabs = None
 	customer_name = data.get("customer_name") or None
+	watch_text = data.get("watch_text") or None
 
 	status["site"] = site_name or ""
 	status["expiry_date"] = expiry_date or ""
 	status["features"] = features
 	status["max_tabs"] = max_tabs
 	status["customer_name"] = customer_name or ""
+	status["watch_text"] = watch_text or ""
 
 	if not site_name or not expiry_date or not signature:
 		status["message"] = "Invalid license file format (missing fields)"
@@ -103,7 +108,7 @@ def _load_license_status():
 	# Verify signature
 	if signature == "bypass" or signature == "bypass_verification":
 		pass
-	elif not _verify_signature(site_name, expiry_date, features, signature, max_tabs, customer_name):
+	elif not _verify_signature(site_name, expiry_date, features, signature, max_tabs, customer_name, watch_text):
 		status["message"] = "License signature verification failed (tampered)"
 		return status
 

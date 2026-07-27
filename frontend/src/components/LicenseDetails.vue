@@ -51,6 +51,10 @@
               <span class="text-[var(--color-text-muted)]">Licensed Customer</span>
               <span class="font-semibold text-[var(--color-text)]">{{ license.customer_name }}</span>
             </div>
+            <div v-if="license?.watch_text" class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">Watch Text</span>
+              <span class="font-semibold text-[var(--color-text)]">{{ license.watch_text }}</span>
+            </div>
             <div class="flex justify-between">
               <span class="text-[var(--color-text-muted)]">Licensed Site</span>
               <span class="font-semibold text-[var(--color-text)]">{{ license?.site || '—' }}</span>

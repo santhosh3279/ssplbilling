@@ -1558,6 +1558,11 @@ const licenseInfo = ref(null)
 
 const CLOCK_ABBR_STOPWORDS = new Set(['and', '&', 'of', 'the'])
 const customerAbbr = computed(() => {
+  // watch_text is an explicit, independently-settable field — takes priority
+  // over auto-deriving an abbreviation from customer_name.
+  const explicit = licenseInfo.value?.watch_text
+  if (explicit) return explicit
+
   const name = licenseInfo.value?.customer_name
   if (!name) return 'CTR'
   const abbr = name
