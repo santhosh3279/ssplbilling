@@ -239,10 +239,10 @@
           <!-- Licensed Customer Widget -->
           <div
             v-if="licenseInfo?.customer_name"
-            class="flex flex-col items-start justify-center bg-[var(--color-surface)] px-5 py-[5px] rounded-2xl border border-[var(--color-border)] shadow-sm shrink-0"
+            class="flex flex-col items-start justify-center bg-[var(--color-surface)] px-5 py-[5px] rounded-2xl border border-[var(--color-border)] shadow-sm shrink-0 w-[280px]"
           >
             <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em] leading-none mb-1">Licensed To</div>
-            <div class="text-base font-black text-[var(--color-text)] truncate max-w-[280px] leading-tight">{{ licenseInfo.customer_name }}</div>
+            <div class="text-base font-black text-[var(--color-text)] truncate max-w-[240px] leading-tight">{{ licenseInfo.customer_name }}</div>
           </div>
         </div>
 
