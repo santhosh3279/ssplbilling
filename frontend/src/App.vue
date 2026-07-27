@@ -56,6 +56,23 @@
     >
       <span class="text-xs font-bold font-mono">◀</span>
     </button>
+
+    <!-- Tab Limit Block Overlay (root-level: the content div has transform-gpu, -->
+    <!-- which would make `fixed` children scope to it instead of the viewport) -->
+    <div
+      v-if="tabLimitBlocked"
+      class="fixed inset-0 z-[400] flex items-center justify-center bg-black/70 backdrop-blur-sm"
+    >
+      <div class="max-w-md mx-4 rounded-2xl bg-[var(--color-surface)] border border-[var(--color-border)] shadow-2xl p-8 text-center">
+        <h2 class="text-xl font-bold text-[var(--color-error)] mb-2">Too Many Tabs Open</h2>
+        <p class="text-[var(--color-text)] mb-1">
+          This license allows {{ tabLimitInfo.max_tabs }} concurrent tab{{ tabLimitInfo.max_tabs === 1 ? '' : 's' }}.
+        </p>
+        <p class="text-[var(--color-text-muted)] text-sm">
+          Close another open tab of this app to free a slot. This will unlock automatically once one is available.
+        </p>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -77,6 +94,7 @@ import { initItemSync, destroyItemSync } from './composables/useItemSync';
 import { initLedgerSync, destroyLedgerSync } from './composables/useLedgerSync';
 import { initBillPanelSync, destroyBillPanelSync } from './composables/useBillPanelSync';
 import { initFrappeSocket } from './services/frappeSocket';
+import { tabLimitBlocked, tabLimitInfo } from './services/tabSession';
 
 const showCalculator = ref(false);
 const showCommandLine = ref(false);

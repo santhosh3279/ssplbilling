@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { session } from './session'
 import { canAccessRoute } from './composables/usePermission'
+import { initTabSession } from './services/tabSession'
 import Login from './pages/Login.vue'
 import Dashboard from './pages/Dashboard.vue'
 import SalesInvoice from './pages/SalesInvoice.vue'
@@ -396,6 +397,7 @@ router.beforeEach(async (to, from, next) => {
       next({ name: 'Login' })
       return
     }
+    await initTabSession()
     if (!canAccessRoute(to.name)) {
       next({ name: 'Dashboard' })
       return

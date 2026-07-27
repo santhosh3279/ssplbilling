@@ -1061,4 +1061,14 @@ export async function getMaterialTransferReport(fromDate, toDate) {
   return frappeGet("ssplbilling.api.reports_api.get_material_transfer_report", { from_date: fromDate, to_date: toDate });
 }
 
+// ─── Tab Session (license-enforced concurrent tab limit) ────────────────────
+
+export async function registerTab(tabId) {
+  return frappePost("ssplbilling.api.tab_session_api.register_tab", { tab_id: tabId });
+}
+
+export async function releaseTab(tabId) {
+  return frappePost("ssplbilling.api.tab_session_api.release_tab", { tab_id: tabId });
+}
+
 

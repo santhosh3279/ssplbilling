@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import { createResource } from 'frappe-ui'
+import { destroyTabSession } from './services/tabSession'
 
 const isLoggedIn = ref(false)
 const user = ref(null)
@@ -80,6 +81,7 @@ async function login(usr, pwd) {
 }
 
 async function logout() {
+  await destroyTabSession()
   await fetch('/api/method/logout', { method: 'POST' })
   isLoggedIn.value = false
   user.value = null

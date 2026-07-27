@@ -117,6 +117,12 @@
 
         <button
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
+          @click="showLicenseDetails = true"
+        >
+          🪪 License Details
+        </button>
+        <button
+          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="handleToggleTheme"
         >
           <span v-if="theme === 'light'">☀️</span>
@@ -509,6 +515,12 @@
       @close="showSystemPerformance = false"
     />
 
+    <!-- LICENSE DETAILS -->
+    <LicenseDetails
+      :show="showLicenseDetails"
+      @close="showLicenseDetails = false"
+    />
+
 
 
     <!-- SUCCESS POPUP -->
@@ -586,6 +598,7 @@ import { session } from '../session'
 import { dashboardApi } from '../services/dashboard'
 import GeneralSettings from '../components/GeneralSettings.vue'
 import SystemPerformance from '../components/SystemPerformance.vue'
+import LicenseDetails from '../components/LicenseDetails.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
 
 import { fetchItemPrice, fetchItemStockForWarehouses, fetchAllowedTiles, frappeGet, frappePost } from '../api.js'
@@ -1252,6 +1265,9 @@ const ITEM_CACHE_TTL = 5 * 60 * 1000 // 5 mins — items / ledgers freshness win
 
 // ==================== SYSTEM PERFORMANCE ====================
 const showSystemPerformance = ref(false)
+
+// ==================== LICENSE DETAILS ====================
+const showLicenseDetails = ref(false)
 
 // ==================== GENERAL SETTINGS ====================
 const showGeneralSettings = ref(false)
