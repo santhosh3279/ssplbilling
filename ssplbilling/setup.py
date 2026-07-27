@@ -161,6 +161,7 @@ DASHBOARD_TILES = [
 	("outstanding-bills", "Outstanding", "Accounts"),
 	("incentive-redeem", "Incentive Redeem", "Accounts"),
 	("incentive-entry", "Incentive Entry", "Accounts"),
+	("account-tree", "Chart of Accounts", "Accounts"),
 	# Ledger View
 	("stock-ledger", "Stock", "Ledger View"),
 	("ledger", "Customer Ledger", "Ledger View"),
