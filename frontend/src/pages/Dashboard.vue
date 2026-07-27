@@ -205,32 +205,44 @@
       </header>
 
       <div v-if="currentTab === 'dashboard'" class="flex flex-col px-10 py-8 gap-6">
-        <!-- Search bar at the top -->
-        <div class="relative w-full max-w-lg group">
-          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <svg class="h-5 w-5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-highlight)] transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-          <input
-            ref="searchInputRef"
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search tiles... (Arrow keys to navigate, Enter to open)"
-            class="w-full pl-11 pr-12 py-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] font-semibold placeholder-[var(--color-text-muted)] transition-all duration-300 focus:outline-none focus:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/15 shadow-sm hover:border-[var(--color-border)]/80"
-          />
-          <div class="absolute inset-y-0 right-0 pr-4 flex items-center gap-2">
-            <span v-if="!searchQuery" class="text-[10px] font-bold text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-1.5 py-0.5 rounded shadow-sm">/</span>
-            <button
-              v-else
-              @click="searchQuery = ''; focusSearch()"
-              class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors p-1 rounded-full hover:bg-[var(--color-border)]/30"
-              title="Clear search"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        <!-- Top bar with Search & Licensed To Widget -->
+        <div class="flex items-center justify-between gap-6 w-full">
+          <!-- Search bar -->
+          <div class="relative w-full max-w-lg group">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-highlight)] transition-colors duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
-            </button>
+            </div>
+            <input
+              ref="searchInputRef"
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search tiles... (Arrow keys to navigate, Enter to open)"
+              class="w-full pl-11 pr-12 py-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] font-semibold placeholder-[var(--color-text-muted)] transition-all duration-300 focus:outline-none focus:border-[var(--color-highlight)] focus:ring-4 focus:ring-[var(--color-highlight)]/15 shadow-sm hover:border-[var(--color-border)]/80"
+            />
+            <div class="absolute inset-y-0 right-0 pr-4 flex items-center gap-2">
+              <span v-if="!searchQuery" class="text-[10px] font-bold text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-1.5 py-0.5 rounded shadow-sm">/</span>
+              <button
+                v-else
+                @click="searchQuery = ''; focusSearch()"
+                class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors p-1 rounded-full hover:bg-[var(--color-border)]/30"
+                title="Clear search"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Licensed Customer Widget -->
+          <div
+            v-if="licenseInfo?.customer_name"
+            class="flex items-center gap-2 bg-[var(--color-surface)] px-4 py-[11px] rounded-2xl border border-[var(--color-border)] shadow-sm shrink-0"
+          >
+            <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em] whitespace-nowrap">Licensed To:</span>
+            <span class="text-base font-black text-[var(--color-text)] truncate max-w-[300px]">{{ licenseInfo.customer_name }}</span>
           </div>
         </div>
 
@@ -299,14 +311,6 @@
 
         <!-- Right Column: Clock & MQTT Widgets -->
         <div class="flex-shrink-0 flex flex-col gap-4 w-[280px]">
-          <!-- Licensed Customer -->
-          <div
-            v-if="licenseInfo?.customer_name"
-            class="flex flex-col items-center gap-1 bg-[var(--color-surface)] px-6 py-4 rounded-3xl border border-[var(--color-border)] shadow-xl text-center"
-          >
-            <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Licensed To</div>
-            <div class="text-base font-black text-[var(--color-text)] truncate max-w-full">{{ licenseInfo.customer_name }}</div>
-          </div>
 
           <!-- Clock -->
           <div class="flex flex-col items-center gap-1 pt-2 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] backdrop-blur-sm shadow-xl">
