@@ -299,6 +299,15 @@
 
         <!-- Right Column: Clock & MQTT Widgets -->
         <div class="flex-shrink-0 flex flex-col gap-4 w-[280px]">
+          <!-- Licensed Customer -->
+          <div
+            v-if="licenseInfo?.customer_name"
+            class="flex flex-col items-center gap-1 bg-[var(--color-surface)] px-6 py-4 rounded-3xl border border-[var(--color-border)] shadow-xl text-center"
+          >
+            <div class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">Licensed To</div>
+            <div class="text-base font-black text-[var(--color-text)] truncate max-w-full">{{ licenseInfo.customer_name }}</div>
+          </div>
+
           <!-- Clock -->
           <div class="flex flex-col items-center gap-1 pt-2 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] backdrop-blur-sm shadow-xl">
             <div class="text-[15px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{{ todayDate }}</div>

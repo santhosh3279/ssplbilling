@@ -47,6 +47,10 @@
 
           <!-- Core details -->
           <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-sm space-y-3">
+            <div v-if="license?.customer_name" class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">Licensed Customer</span>
+              <span class="font-semibold text-[var(--color-text)]">{{ license.customer_name }}</span>
+            </div>
             <div class="flex justify-between">
               <span class="text-[var(--color-text-muted)]">Licensed Site</span>
               <span class="font-semibold text-[var(--color-text)]">{{ license?.site || '—' }}</span>
