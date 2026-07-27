@@ -367,6 +367,7 @@ const toast = ref(null)
 
 const { lookupItemInCache } = useItemCache()
 const loadedItemCode = ref('')
+const loadedPercentages = ref([])
 const currentItemCode = computed(() => props.itemCode || loadedItemCode.value)
 
 const cachedItem = computed(() => {
@@ -468,11 +469,26 @@ watch(() => prices.value, (newPrices) => {
   })
 
   // 2. Persist markups to local storage
-  const markups = {}
-  newPrices.forEach(p => {
-    if (p.price_list) markups[p.price_list] = p.markup
-  })
-  localStorage.setItem('sspl_pricelist_markups', JSON.stringify(markups))
+  try {
+    const savedMarkups = JSON.parse(localStorage.getItem('sspl_pricelist_markups') || '{}')
+    let hasChanged = false
+    newPrices.forEach(p => {
+      if (p.price_list) {
+        const fetched = loadedPercentages.value.find(fp => fp.pricelist === p.price_list)
+        if (!fetched) {
+          if (savedMarkups[p.price_list] !== p.markup) {
+            savedMarkups[p.price_list] = p.markup
+            hasChanged = true
+          }
+        }
+      }
+    })
+    if (hasChanged) {
+      localStorage.setItem('sspl_pricelist_markups', JSON.stringify(savedMarkups))
+    }
+  } catch (err) {
+    console.error('Failed to save markups to localStorage:', err)
+  }
 }, { deep: true })
 
 async function loadPrices(code) {
@@ -558,6 +574,7 @@ async function loadPrices(code) {
     uoms.value = normalizedUoms
 
     hasFetchedPercentages.value = !!(data.pricelist_percentages && data.pricelist_percentages.length > 0)
+    loadedPercentages.value = data.pricelist_percentages || []
 
 
     const savedMarkups = JSON.parse(localStorage.getItem('sspl_pricelist_markups') || '{}')
