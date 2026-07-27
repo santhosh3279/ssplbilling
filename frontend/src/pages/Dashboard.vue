@@ -312,7 +312,7 @@
           <div class="flex flex-col items-center gap-1 pt-2 bg-[var(--color-surface)] p-6 rounded-3xl border border-[var(--color-border)] backdrop-blur-sm shadow-xl">
             <div class="text-[15px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.2em]">{{ todayDate }}</div>
             <div class="text-lg font-black text-[var(--color-text)] uppercase tracking-wider mb-2 drop-shadow-sm">{{ todayDay }}</div>
-            <AnalogueClock />
+            <AnalogueClock :abbr="customerAbbr" />
           </div>
 
           <!-- India Compliance API Credits Card -->
@@ -1555,6 +1555,21 @@ const appVersion = ref(APP_VERSION)
 const appUpdated = ref(APP_UPDATED)
 
 const licenseInfo = ref(null)
+
+const CLOCK_ABBR_STOPWORDS = new Set(['and', '&', 'of', 'the'])
+const customerAbbr = computed(() => {
+  const name = licenseInfo.value?.customer_name
+  if (!name) return 'CTR'
+  const abbr = name
+    .trim()
+    .split(/\s+/)
+    .filter((w) => w && !CLOCK_ABBR_STOPWORDS.has(w.toLowerCase()))
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 4)
+  return abbr || 'CTR'
+})
 
 function updateLicenseState() {
   try {

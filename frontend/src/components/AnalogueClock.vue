@@ -23,7 +23,7 @@
         text-anchor="middle"
         class="text-[13.5px] font-sans font-black fill-blue-600 select-none tracking-widest"
       >
-        CTR
+        {{ abbr }}
       </text>
       
       <!-- Minute markers (ticks) -->
@@ -60,6 +60,10 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+
+defineProps({
+  abbr: { type: String, default: 'CTR' },
+})
 
 const hourDeg = ref(0)
 const minuteDeg = ref(0)
