@@ -26,18 +26,6 @@
 
     
     <main class="flex-1 overflow-y-auto scrollbar-none p-6 text-[var(--color-text)]">
-      <datalist id="dl-accounts"><option v-for="o in lists.accounts" :key="o" :value="o"></option></datalist>
-      <datalist id="dl-users"><option v-for="o in lists.users" :key="o" :value="o"></option></datalist>
-      <datalist id="dl-printers"><option v-for="o in lists.printers" :key="o" :value="o"></option></datalist>
-      <datalist id="dl-print-formats"><option v-for="o in lists.printFormats" :key="o" :value="o"></option></datalist>
-      <datalist id="dl-price-lists"><option v-for="o in lists.priceLists" :key="o" :value="o"></option></datalist>
-      <datalist id="dl-tax-templates"><option v-for="o in lists.taxTemplates" :key="o" :value="o"></option></datalist>
-      <datalist id="dl-warehouses"><option v-for="o in lists.warehouses" :key="o" :value="o"></option></datalist>
-      <datalist id="dl-cost-centers"><option v-for="o in lists.costCenters" :key="o" :value="o"></option></datalist>
-      <datalist id="dl-companies"><option v-for="o in lists.companies" :key="o" :value="o"></option></datalist>
-      <datalist id="dl-series"><option v-for="o in lists.series" :key="o" :value="o"></option></datalist>
-      <datalist id="dl-themes"><option value="Light"></option><option value="Dark"></option></datalist>
-
       <div v-if="isLoading" class="flex h-full items-center justify-center text-[var(--color-text-muted)]">
         <span class="text-xl animate-pulse">Loading settings...</span>
       </div>
@@ -55,13 +43,13 @@
                 class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
               />
             </div>
-            <DropdownField v-model="settings.discount_account" list="dl-accounts" label="Discount Account" />
-            <DropdownField v-model="settings.freight" list="dl-accounts" label="Freight Account" />
-            <DropdownField v-model="settings.tax_paid_on_purchase" list="dl-accounts" label="Tax Paid on Purchase" />
-            <DropdownField v-model="settings.packing_charge" list="dl-accounts" label="Packing Charge" />
-            <DropdownField v-model="settings.loading" list="dl-accounts" label="Loading" />
-            <DropdownField v-model="settings.other_charges" list="dl-accounts" label="Other Charges" />
-            <DropdownField v-model="settings.round_off" list="dl-accounts" label="Round Off" />
+            <DropdownField v-model="settings.discount_account" :options="lists.accounts" label="Discount Account" />
+            <DropdownField v-model="settings.freight" :options="lists.accounts" label="Freight Account" />
+            <DropdownField v-model="settings.tax_paid_on_purchase" :options="lists.accounts" label="Tax Paid on Purchase" />
+            <DropdownField v-model="settings.packing_charge" :options="lists.accounts" label="Packing Charge" />
+            <DropdownField v-model="settings.loading" :options="lists.accounts" label="Loading" />
+            <DropdownField v-model="settings.other_charges" :options="lists.accounts" label="Other Charges" />
+            <DropdownField v-model="settings.round_off" :options="lists.accounts" label="Round Off" />
           </div>
         </section>
 
@@ -84,10 +72,10 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.billing_series" :key="idx" class="border-b border-[var(--color-border)]">
-                <td class="px-2 py-2"><DropdownField v-model="row.series" list="dl-series" /></td>
-                <td class="px-2 py-2"><DropdownField v-model="row.print_format" list="dl-print-formats" /></td>
-                <td class="px-2 py-2"><DropdownField v-model="row.price_list" list="dl-price-lists" /></td>
-                <td class="px-2 py-2"><DropdownField v-model="row.tax_template" list="dl-tax-templates" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.series" :options="lists.series" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.print_format" :options="lists.printFormats" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.price_list" :options="lists.priceLists" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.tax_template" :options="lists.taxTemplates" /></td>
                 <td class="px-2 py-2 text-center">
                   <input type="checkbox" v-model="row.tax_type_incl" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" />
                 </td>
@@ -131,23 +119,23 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.user_series" :key="idx" class="border-b border-[var(--color-border)]">
-                <td class="px-1 py-2"><DropdownField v-model="row.user" list="dl-users" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.user" :options="lists.users" compact /></td>
                 <td class="px-1 py-2"><DropdownField v-model="row.allowed_series_seperated_by_comma" placeholder="ALL or prefixes" compact /></td>
                 <td class="px-1 py-2"><DropdownField v-model="row.zoom_value" type="number" placeholder="100" compact /></td>
-                <td class="px-1 py-2"><DropdownField v-model="row.cash" list="dl-accounts" compact /></td>
-                <td class="px-1 py-2"><DropdownField v-model="row.upi" list="dl-accounts" compact /></td>
-                <td class="px-1 py-2"><DropdownField v-model="row.card" list="dl-accounts" compact /></td>
-                <td class="px-1 py-2"><DropdownField v-model="row.bank" list="dl-accounts" compact /></td>
-                <td class="px-1 py-2"><DropdownField v-model="row.warehouse" list="dl-warehouses" compact /></td>
-                <td class="px-1 py-2"><DropdownField v-model="row.cost_center" list="dl-cost-centers" compact /></td>
-                <td class="px-1 py-2"><DropdownField v-model="row.income_account" list="dl-accounts" compact /></td>
-                <td class="px-1 py-2"><DropdownField v-model="row.company" list="dl-companies" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.cash" :options="lists.accounts" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.upi" :options="lists.accounts" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.card" :options="lists.accounts" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.bank" :options="lists.accounts" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.warehouse" :options="lists.warehouses" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.cost_center" :options="lists.costCenters" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.income_account" :options="lists.accounts" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.company" :options="lists.companies" compact /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.admin" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.cashier" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.biller" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.accounts" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
-                <td class="px-1 py-2"><DropdownField v-model="row.default_printer" list="dl-printers" compact /></td>
-                <td class="px-1 py-2"><DropdownField v-model="row.theme" list="dl-themes" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.default_printer" :options="lists.printers" compact /></td>
+                <td class="px-1 py-2"><DropdownField v-model="row.theme" :options="lists.themes" compact /></td>
                 <td class="px-1 py-2 text-right"><button @click="removeRow('user_series', idx)" class="text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold px-2">&times;</button></td>
               </tr>
             </tbody>
@@ -171,9 +159,9 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.table_vycb" :key="idx" class="border-b border-[var(--color-border)]">
-                <td class="px-2 py-2"><DropdownField v-model="row.user" list="dl-users" /></td>
-                <td class="px-2 py-2"><DropdownField v-model="row.printer" list="dl-printers" /></td>
-                <td class="px-2 py-2"><DropdownField v-model="row.template" list="dl-print-formats" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.user" :options="lists.users" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.printer" :options="lists.printers" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.template" :options="lists.printFormats" /></td>
                 <td class="px-2 py-2 text-right"><button @click="removeRow('table_vycb', idx)" class="text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold px-2">&times;</button></td>
               </tr>
             </tbody>
@@ -196,7 +184,7 @@
             </thead>
             <tbody>
               <tr v-for="(row, idx) in settings.visible_accounts" :key="idx" class="border-b border-[var(--color-border)]">
-                <td class="px-2 py-2"><DropdownField v-model="row.account" list="dl-accounts" /></td>
+                <td class="px-2 py-2"><DropdownField v-model="row.account" :options="lists.accounts" /></td>
                 <td class="px-2 py-2"><input v-model="row.label" class="w-full bg-[var(--color-bg)] border border-[var(--color-border)] rounded px-2 py-1 focus:border-[var(--color-info)] outline-none" /></td>
                 <td class="px-2 py-2 text-right"><button @click="removeRow('visible_accounts', idx)" class="text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold px-2">&times;</button></td>
               </tr>
@@ -231,7 +219,8 @@ const lists = ref({
   warehouses: [],
   costCenters: [],
   companies: [],
-  series: []
+  series: [],
+  themes: ['Light', 'Dark']
 })
 
 
