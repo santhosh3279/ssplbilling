@@ -10,14 +10,64 @@ let tabId = null
 let heartbeatTimer = null
 let initPromise = null
 
-function getTabId() {
+const channel = new BroadcastChannel('sspl_tab_channel')
+
+channel.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'ping_tab_id' && e.data.tab_id === tabId) {
+    channel.postMessage({ type: 'pong_tab_id', tab_id: tabId })
+  }
+})
+
+function generateTabId() {
+  return `tab_${Date.now()}_${Math.random().toString(36).slice(2)}`
+}
+
+export function getTabId() {
   if (tabId) return tabId
   tabId = sessionStorage.getItem('wb_tab_id')
   if (!tabId) {
-    tabId = `tab_${Date.now()}_${Math.random().toString(36).slice(2)}`
+    tabId = generateTabId()
     sessionStorage.setItem('wb_tab_id', tabId)
   }
   return tabId
+}
+
+function resolveTabId() {
+  return new Promise((resolve) => {
+    const existingId = sessionStorage.getItem('wb_tab_id')
+    if (!existingId) {
+      tabId = generateTabId()
+      sessionStorage.setItem('wb_tab_id', tabId)
+      resolve(tabId)
+      return
+    }
+
+    let resolved = false
+    const pongHandler = (e) => {
+      if (e.data && e.data.type === 'pong_tab_id' && e.data.tab_id === existingId) {
+        tabId = generateTabId()
+        sessionStorage.setItem('wb_tab_id', tabId)
+        cleanup()
+      }
+    }
+
+    const cleanup = () => {
+      if (resolved) return
+      resolved = true
+      channel.removeEventListener('message', pongHandler)
+      resolve(tabId)
+    }
+
+    channel.addEventListener('message', pongHandler)
+    channel.postMessage({ type: 'ping_tab_id', tab_id: existingId })
+
+    setTimeout(() => {
+      if (!resolved) {
+        tabId = existingId
+        cleanup()
+      }
+    }, 100)
+  })
 }
 
 async function heartbeat() {
@@ -51,10 +101,12 @@ function releaseOnUnload() {
  */
 export function initTabSession() {
   if (!initPromise) {
-    initPromise = heartbeat().then(() => {
-      heartbeatTimer = setInterval(heartbeat, HEARTBEAT_MS)
-      window.addEventListener('beforeunload', releaseOnUnload)
-    })
+    initPromise = resolveTabId()
+      .then(() => heartbeat())
+      .then(() => {
+        heartbeatTimer = setInterval(heartbeat, HEARTBEAT_MS)
+        window.addEventListener('beforeunload', releaseOnUnload)
+      })
   }
   return initPromise
 }
