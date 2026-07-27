@@ -1689,7 +1689,7 @@ function onPriceListUpdateSaved(data) {
       const pl = data.changedPrices.find(p => p.price_list === priceList.value)
       if (pl) { const uomRate = pl.uom_rates?.[item.uom]; const newRate = uomRate != null ? uomRate : (pl.rate ?? item.rate); item.rate = newRate; item._base_rate = newRate; recalcAmount(idx) }
     }
-    focusEditField('rate', idx)
+    finishRowEdit(idx)
   } else {
     if (pendingItem.value && data.changedPrices?.length) {
       const pl = data.changedPrices.find(p => p.price_list === priceList.value)
@@ -1701,7 +1701,7 @@ function onPriceListUpdateSaved(data) {
 
 function onPriceListUpdateClose() {
   showPriceListUpdate.value = false
-  if (editRowPriceUpdateIdx.value !== null) { const idx = editRowPriceUpdateIdx.value; editRowPriceUpdateIdx.value = null; focusEditField('rate', idx) }
+  if (editRowPriceUpdateIdx.value !== null) { const idx = editRowPriceUpdateIdx.value; editRowPriceUpdateIdx.value = null; finishRowEdit(idx) }
   else confirmPendingItem()
 }
 
