@@ -16,7 +16,7 @@
       </span>
       <span v-if="loading" class="text-xs text-[var(--color-text-muted)] animate-pulse">...</span>
       <span class="text-sm truncate" :class="node.expandable ? 'font-semibold' : ''">{{ node.title || node.value }}</span>
-      <span v-if="balanceText" class="ml-auto shrink-0 pl-2 font-mono text-xs" :class="node.balance > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">
+      <span v-if="balanceText" class="ml-auto shrink-0 pl-2 font-mono text-xs font-bold" :class="node.balance > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">
         {{ balanceText }}
       </span>
     </div>

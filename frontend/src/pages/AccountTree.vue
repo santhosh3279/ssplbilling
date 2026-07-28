@@ -1,5 +1,5 @@
 <template>
-  <div class="flex h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]" style="zoom: 1.5">
+  <div class="flex h-screen flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
     <header class="shrink-0 flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex items-center gap-4">
         <button
@@ -37,7 +37,7 @@
       </div>
     </header>
 
-    <main class="flex-1 overflow-hidden p-6">
+    <main class="flex-1 overflow-hidden p-6" style="zoom: 1.5">
       <div class="mx-auto grid h-full max-w-6xl grid-cols-1 gap-6 md:grid-cols-[1fr_360px]">
         <section class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm overflow-y-auto">
           <div v-if="isLoading" class="flex h-full items-center justify-center text-[var(--color-text-muted)]">
@@ -73,7 +73,7 @@
             </div>
             <div v-if="balance !== null">
               <dt class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Balance</dt>
-              <dd class="font-mono font-semibold" :class="balance > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">
+              <dd class="font-mono font-bold" :class="balance > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">
                 {{ formatCurrency(Math.abs(balance)) }} {{ balance > 0 ? 'Dr' : 'Cr' }}
               </dd>
             </div>
