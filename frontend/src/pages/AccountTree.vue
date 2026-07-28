@@ -52,6 +52,7 @@
               :selected="selectedAccount"
               :company="company"
               @select="onSelect"
+              @view-ledger="onViewLedger"
             />
           </ul>
         </section>
@@ -111,6 +112,14 @@
         </section>
       </div>
     </main>
+
+    <GeneralLedger
+      v-if="showLedgerWindow"
+      :is-sub-window="true"
+      :ledger-name="ledgerAccountName"
+      :ledger-type="'Account'"
+      @close="showLedgerWindow = false"
+    />
   </div>
 </template>
 
@@ -119,6 +128,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import AccountTreeNode from '../components/AccountTreeNode.vue'
+import GeneralLedger from './GeneralLedger.vue'
 
 const router = useRouter()
 const isLoading = ref(true)
@@ -133,6 +143,14 @@ const selectedAccount = ref('')
 const detail = ref(null)
 const detailLoading = ref(false)
 const balance = ref(null)
+
+const showLedgerWindow = ref(false)
+const ledgerAccountName = ref('')
+
+function onViewLedger(payload) {
+  ledgerAccountName.value = payload.value
+  showLedgerWindow.value = true
+}
 
 function formatCurrency(val) {
   return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(val || 0)

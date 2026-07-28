@@ -52,6 +52,7 @@
         :selected="selected"
         :company="company"
         @select="(v) => emit('select', v)"
+        @view-ledger="(v) => emit('view-ledger', v)"
       />
     </ul>
     <div v-else-if="expanded && !loading && !children.length" class="text-xs italic text-[var(--color-text-muted)]" :style="{ paddingLeft: (level * 18 + 32) + 'px' }">
@@ -62,10 +63,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
-
-const router = useRouter()
 
 const props = defineProps({
   node: { type: Object, required: true },
@@ -74,7 +72,7 @@ const props = defineProps({
   company: { type: String, default: '' },
 })
 
-const emit = defineEmits(['select'])
+const emit = defineEmits(['select', 'view-ledger'])
 
 const expanded = ref(false)
 const loading = ref(false)
@@ -141,9 +139,6 @@ function onAddChild() {
 }
 
 function onViewLedger() {
-  router.push({
-    name: 'GeneralLedger',
-    query: { party: props.node.value, party_type: 'Account', label: props.node.title || props.node.value },
-  })
+  emit('view-ledger', { value: props.node.value, label: props.node.title || props.node.value })
 }
 </script>
