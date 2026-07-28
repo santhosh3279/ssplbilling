@@ -31,6 +31,7 @@
             title="Add Child Account"
           >+ Child</button>
           <button
+            v-if="!node.expandable"
             @click.stop="onViewLedger"
             class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-text-muted)] hover:border-[var(--color-highlight)] hover:text-[var(--color-highlight)] transition-colors"
             title="View Ledger"
