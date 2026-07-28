@@ -712,7 +712,7 @@ onMounted(async () => {
   if (props.initialToDate) toDate.value = props.initialToDate
 
   const party = props.ledgerName || route.query.party || route.query.customer || route.query.ledger
-  const party_type = props.ledgerType || route.query.party_type || (route.query.customer ? 'Customer' : 'Account')
+  const party_type = route.query.party_type || props.ledgerType || (route.query.customer ? 'Customer' : 'Account')
   const label = route.query.label
 
   if (party && party_type) {
