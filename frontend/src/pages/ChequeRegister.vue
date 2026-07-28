@@ -43,6 +43,7 @@
           <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Bank Balance</span>
           <div class="flex items-baseline justify-between mt-1">
             <span class="text-[45px] font-mono font-black text-[var(--color-info)]">₹{{ fmt(bankBalance) }}</span>
+            <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider truncate max-w-[140px]" :title="bankName">{{ bankName || '—' }}</span>
           </div>
         </div>
       </div>
@@ -446,9 +447,10 @@ const cheques = ref([])
 const summary = ref({ received_total: 0, received_count: 0, issued_total: 0, issued_count: 0 })
 const bankAccounts = ref([])
 const bankBalance = ref(0)
+const bankName = ref(localStorage.getItem('wb-bank') || '')
 
 async function loadBankBalance() {
-  const account = localStorage.getItem('wb-bank') || ''
+  const account = bankName.value
   if (!account) return
   try {
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { account })
