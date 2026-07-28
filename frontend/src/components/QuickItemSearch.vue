@@ -21,7 +21,7 @@
     
     <div 
       ref="scrollContainer" 
-      class="max-h-[500px] overflow-y-auto scrollbar-none relative"
+      class="max-h-[640px] overflow-y-auto scrollbar-none relative"
       @scroll="handleScroll"
     >
       <!-- Spacer to enable browser scrollbar -->
@@ -125,7 +125,7 @@ const filteredItems = computed(() => {
 
 // --- Virtual Scroll variables and calculations ---
 const scrollTop = ref(0)
-const containerHeight = ref(500) // fallback
+const containerHeight = ref(640) // fallback
 const itemHeight = 80 // height in pixels matching h-[80px]
 const buffer = 10
 
