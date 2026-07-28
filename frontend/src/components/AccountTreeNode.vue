@@ -53,18 +53,28 @@
         :company="company"
         @select="(v) => emit('select', v)"
         @view-ledger="(v) => emit('view-ledger', v)"
+        @refresh="() => emit('refresh')"
       />
     </ul>
     <div v-else-if="expanded && !loading && !children.length" class="text-xs italic text-[var(--color-text-muted)]" :style="{ paddingLeft: (level * 18 + 32) + 'px' }">
       No accounts
     </div>
 
-    <AddChildAccountModal
+    <AccountFormModal
       :show="showAddChildModal"
+      mode="create"
       :parent-account="node.value"
       :company="company"
       @close="showAddChildModal = false"
-      @created="onChildCreated"
+      @saved="onChildCreated"
+    />
+    <AccountFormModal
+      :show="showEditModal"
+      mode="edit"
+      :account-name="node.value"
+      :company="company"
+      @close="showEditModal = false"
+      @saved="onAccountSaved"
     />
   </li>
 </template>
@@ -72,7 +82,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { frappeGet } from '../api.js'
-import AddChildAccountModal from './AddChildAccountModal.vue'
+import AccountFormModal from './AccountFormModal.vue'
 
 const props = defineProps({
   node: { type: Object, required: true },
@@ -81,7 +91,7 @@ const props = defineProps({
   company: { type: String, default: '' },
 })
 
-const emit = defineEmits(['select', 'view-ledger'])
+const emit = defineEmits(['select', 'view-ledger', 'refresh'])
 
 const expanded = ref(false)
 const loading = ref(false)
@@ -139,8 +149,15 @@ function onRowClick() {
   if (props.node.expandable) toggle()
 }
 
+const showEditModal = ref(false)
+
 function onEdit() {
-  window.open(`/app/account/${encodeURIComponent(props.node.value)}`, '_blank')
+  showEditModal.value = true
+}
+
+function onAccountSaved() {
+  showEditModal.value = false
+  emit('refresh')
 }
 
 const showAddChildModal = ref(false)

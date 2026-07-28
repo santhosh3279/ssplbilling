@@ -53,6 +53,7 @@
               :company="company"
               @select="onSelect"
               @view-ledger="onViewLedger"
+              @refresh="loadRoots"
             />
           </ul>
         </section>
