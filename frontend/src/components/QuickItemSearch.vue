@@ -275,16 +275,6 @@ watch(selectedIndex, (newIdx) => {
 })
 
 const positionStyle = computed(() => {
-  // Double-space "jump to last item" should always appear screen-centered,
-  // regardless of which table row's input anchored the search.
-  if (props.query === '  ') {
-    return {
-      top: '50%',
-      left: '50%',
-      transform: 'translate(-50%, -50%)',
-      maxHeight: '80vh'
-    }
-  }
   if (props.anchorEl) {
     const rect = props.anchorEl.getBoundingClientRect()
     return {
