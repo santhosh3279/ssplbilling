@@ -50,7 +50,7 @@
               <div class="flex flex-col items-end shrink-0">
                 <div class="text-[1.75rem] font-mono font-bold" :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ formatPrice(getItemPrice(itemMeta.item)) }}</div>
                 <div 
-                  class="text-sm font-bold" 
+                  class="text-[1.09375rem] font-bold"
                   :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : (itemMeta.item.stock > 20 ? 'text-[var(--color-success)]' : itemMeta.item.stock > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]')"
                 >
                   {{ itemMeta.item.stock }} {{ itemMeta.item.uom }}
