@@ -614,18 +614,15 @@ import SystemPerformance from '../components/SystemPerformance.vue'
 import LicenseDetails from '../components/LicenseDetails.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
 
-import { fetchItemPrice, fetchItemStockForWarehouses, fetchAllowedTiles, frappeGet, frappePost } from '../api.js'
-import { searchCustomers } from '../customersearch.js'
-import { createCustomer, updateCustomer } from '../api/customer.js'
+import { fetchAllowedTiles, frappeGet, frappePost } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 import { syncNamingSeries } from '../services/seriesCache.js'
 import { useLedgerCache } from '../services/ledgerCache.js'
-import { useShortcuts, useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
+import { useShortcuts, isSubwindowActive } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 import { useTheme } from '../composables/useTheme'
 import { useMqtt } from '../composables/useMqtt'
-import { useDevice } from '../composables/useDevice'
 import { getFrappeSocket } from '../services/frappeSocket'
 import { APP_VERSION, APP_UPDATED } from '../version'
 
@@ -678,7 +675,6 @@ function handleFullscreenChange() {
 
 const { items: cachedItems, lastSync: itemsLastSync, refreshItemCache, refreshDiscountRuleCache } = useItemCache()
 const { ledgers: cachedLedgers, lastSync: ledgersLastSync, refreshLedgerCache } = useLedgerCache()
-const { user: currentUser } = session
 
 // ==================== PERMISSIONS & ROLES ====================
 const permissionTrigger = ref(0)
@@ -686,11 +682,10 @@ const userRole = computed(() => {
   permissionTrigger.value
   return getUserRole()
 })
-const isBiller = computed(() => userRole.value === 'biller')
 const isActualAdmin = computed(() => ['Administrator', 'admin'].includes(session.user.value))
 
 // ==================== THEME ====================
-const { theme, toggleTheme, applyTheme } = useTheme()
+const { theme, toggleTheme } = useTheme()
 
 function handleToggleTheme() {
   toggleTheme()
@@ -698,27 +693,6 @@ function handleToggleTheme() {
 
 function handleOpenGstValidator() {
   window.dispatchEvent(new CustomEvent('wb-open-gst-validator'))
-}
-
-// ==================== KEYBOARD ====================
-const { isTablet: isTabletDevice } = useDevice()
-
-// Mirrors App.vue's tri-state: explicit 'true'/'false' wins, unset follows device
-function readKeyboardVisible() {
-  const pref = localStorage.getItem('wb-force-keyboard')
-  if (pref === 'true') return true
-  if (pref === 'false') return false
-  return isTabletDevice.value
-}
-
-const isKeyboardVisible = ref(readKeyboardVisible())
-
-function handleToggleKeyboard() {
-  window.dispatchEvent(new CustomEvent('wb-global-keyboard-toggle'))
-}
-
-function syncKeyboardState() {
-  isKeyboardVisible.value = readKeyboardVisible()
 }
 
 // ==================== INDIA COMPLIANCE API CREDITS ====================
@@ -1247,14 +1221,6 @@ function openModule(id) {
   }
 }
 
-// ==================== F-KEY SHORTCUTS ====================
-const routeMap = {
-  'SHIFT+F2': 'purchase-invoice', 'SHIFT+F3': 'payment',
-  'SHIFT+F4': 'purchase-submit', 'SHIFT+F5': 'cashier', 'SHIFT+F6': 'ledger',
-  'SHIFT+F7': 'purchase-order', 'SHIFT+F8': 'journal-contra', 'SHIFT+F9': 'store-transfer',
-  'SHIFT+F10': 'quotation',
-}
-
 // ==================== KEYBOARD SHORTCUTS ====================
 useShortcuts(dashboardShortcuts({
   openModule,
@@ -1377,11 +1343,10 @@ async function syncSettings() {
   }
 }
 
-async function fetchSettings(user = null, force = false) {
-  const targetUser = user || session.user.value
-  // 1. Fetch allowed series for this user — cached per user with TTL.
-  //    Always rehydrate reactive state (even on cache hit) so a page reload
-  //    doesn't leave the series dropdown empty.
+// 1. Fetch allowed series for this user — cached per user with TTL.
+//    Always rehydrate reactive state (even on cache hit) so a page reload
+//    doesn't leave the series dropdown empty.
+async function syncAllowedSeries(targetUser, force) {
   try {
     let d = null
     const cached = JSON.parse(localStorage.getItem(ALLOWED_SERIES_CACHE_KEY) || 'null')
@@ -1401,8 +1366,10 @@ async function fetchSettings(user = null, force = false) {
   } catch (e) {
     console.warn('[Dashboard] getAllowedSeries failed:', e)
   }
+}
 
-  // 2. Fetch global settings
+// 2. Fetch global settings
+async function syncBillingSettings(targetUser, force) {
   try {
     // Check cache first
     let settings = null
@@ -1483,8 +1450,10 @@ async function fetchSettings(user = null, force = false) {
   } catch (e) {
     console.warn('[Dashboard] getBillingSettings failed:', e)
   }
+}
 
-  // 2.5 Fetch license status from server
+// 2.5 Fetch license status from server
+async function syncLicenseStatus() {
   try {
     const lic = await frappeGet('ssplbilling.api.license_api.get_license_status')
     localStorage.setItem('ae_license_info', JSON.stringify(lic))
@@ -1492,9 +1461,11 @@ async function fetchSettings(user = null, force = false) {
   } catch (e) {
     console.warn('[Dashboard] get_license_status failed:', e)
   }
+}
 
-  // 3. Sync today's opening box cash — refetch only once per calendar day
-  //    (date-keyed, NOT TTL: a stale value here would show yesterday's opening).
+// 3. Sync today's opening box cash — refetch only once per calendar day
+//    (date-keyed, NOT TTL: a stale value here would show yesterday's opening).
+async function syncOpeningBoxCash(force) {
   try {
     const today = new Date().toLocaleDateString('en-CA')
     const haveToday = localStorage.getItem(OPENING_CASH_DATE_KEY) === today &&
@@ -1511,17 +1482,21 @@ async function fetchSettings(user = null, force = false) {
   } catch (e) {
     console.warn('[Dashboard] opening box cash sync failed:', e)
   }
+}
 
-  // 4. Fetch and store all naming series for the requested DocTypes.
-  //    Rarely changes → seriesCache refetches on TTL expiry or when any
-  //    wb-series-* key is missing/empty; consumers read those LS keys.
+// 4. Fetch and store all naming series for the requested DocTypes.
+//    Rarely changes → seriesCache refetches on TTL expiry or when any
+//    wb-series-* key is missing/empty; consumers read those LS keys.
+async function syncNamingSeriesStep(force) {
   try {
     await syncNamingSeries(force)
   } catch (e) {
     console.warn('[Dashboard] syncNamingSeries failed:', e)
   }
+}
 
-  // 5. Fetch and store E-Way Bill threshold value
+// 5. Fetch and store E-Way Bill threshold value
+async function syncEwayThreshold() {
   try {
     const ewayVal = await frappeGet('ssplbilling.api.ewaybill_api.get_eway_threshold')
     const threshold = String(ewayVal || 0)
@@ -1532,29 +1507,15 @@ async function fetchSettings(user = null, force = false) {
   }
 }
 
-const filteredBillingSeries = computed(() => {
-  const all = systemSettings.value?.billing_series || []
-  if (!availableSeries.value?.length) {
-    return userAllowedString.value ? [] : all
-  }
-  return all.filter(bs => availableSeries.value.includes(bs.series))
-})
-
-const warehouseLabel = computed(() => {
-  const warehouses = [...new Set(
-    filteredBillingSeries.value.map(bs => bs.warehouse).filter(Boolean)
-  )]
-  if (warehouses.length === 0) return 'All Warehouses'
-  if (warehouses.length === 1) return warehouses[0]
-  return warehouses.join(', ')
-})
-
-const filteredUserSeries = computed(() => {
-  const all = systemSettings.value?.user_series || []
-  const user = currentUser.value
-  if (user === 'Administrator' || user === 'admin') return all
-  return all.filter(us => us.user === user)
-})
+async function fetchSettings(user = null, force = false) {
+  const targetUser = user || session.user.value
+  await syncAllowedSeries(targetUser, force)
+  await syncBillingSettings(targetUser, force)
+  await syncLicenseStatus()
+  await syncOpeningBoxCash(force)
+  await syncNamingSeriesStep(force)
+  await syncEwayThreshold()
+}
 
 const appVersion = ref(APP_VERSION)
 const appUpdated = ref(APP_UPDATED)
@@ -1612,6 +1573,10 @@ const licenseStatusText = computed(() => {
   return `${info.days_remaining} days left`
 })
 
+function handleNavigateHome() {
+  router.push('/')
+}
+
 function cleanupOldKeys() {
   const keysToRemove = [
     'wb-general-settings-v1',
@@ -1625,9 +1590,8 @@ onMounted(async () => {
   updateLicenseState()
   cleanupOldKeys()
   document.addEventListener('click', handleClickOutside)
-  window.addEventListener('wb-navigate-home', () => router.push('/'))
+  window.addEventListener('wb-navigate-home', handleNavigateHome)
   document.addEventListener('fullscreenchange', handleFullscreenChange)
-  window.addEventListener('wb-global-keyboard-toggle', syncKeyboardState)
   window.addEventListener('keydown', handleTileKeyNav)
   window.addEventListener('wb-item-cache-updated', _onItemCacheUpdated)
   focusSearch()
@@ -1675,9 +1639,8 @@ onMounted(async () => {
 })
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
-  window.removeEventListener('wb-navigate-home', () => router.push('/'))
+  window.removeEventListener('wb-navigate-home', handleNavigateHome)
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
-  window.removeEventListener('wb-global-keyboard-toggle', syncKeyboardState)
   window.removeEventListener('keydown', handleTileKeyNav)
   window.removeEventListener('wb-item-cache-updated', _onItemCacheUpdated)
   clearTimeout(_flashTimer)
