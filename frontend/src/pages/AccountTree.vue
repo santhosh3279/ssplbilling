@@ -50,6 +50,7 @@
               :node="node"
               :level="0"
               :selected="selectedAccount"
+              :company="company"
               @select="onSelect"
             />
           </ul>
@@ -69,6 +70,12 @@
             <div>
               <dt class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Parent Account</dt>
               <dd>{{ detail.parent_account || '—' }}</dd>
+            </div>
+            <div v-if="balance !== null">
+              <dt class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Balance</dt>
+              <dd class="font-mono font-semibold" :class="balance > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">
+                {{ formatCurrency(Math.abs(balance)) }} {{ balance > 0 ? 'Dr' : 'Cr' }}
+              </dd>
             </div>
             <div class="grid grid-cols-2 gap-3">
               <div>
@@ -116,6 +123,7 @@ import AccountTreeNode from '../components/AccountTreeNode.vue'
 const router = useRouter()
 const isLoading = ref(true)
 const roots = ref([])
+const company = ref(localStorage.getItem('wb-company') || '')
 
 const searchQuery = ref('')
 const searchResults = ref([])
@@ -124,16 +132,37 @@ let searchTimer = null
 const selectedAccount = ref('')
 const detail = ref(null)
 const detailLoading = ref(false)
+const balance = ref(null)
+
+function formatCurrency(val) {
+  return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(val || 0)
+}
 
 onMounted(loadRoots)
 
 async function loadRoots() {
   isLoading.value = true
   try {
-    roots.value = await frappeGet('frappe.desk.treeview.get_children', {
-      doctype: 'Account',
-      parent: '',
-    })
+    if (company.value) {
+      const rootAccounts = await frappeGet('erpnext.accounts.utils.get_children', {
+        doctype: 'Account',
+        parent: '',
+        company: company.value,
+        is_root: true,
+      })
+      roots.value = rootAccounts.length
+        ? await frappeGet('erpnext.accounts.utils.get_account_balances', {
+            accounts: rootAccounts,
+            company: company.value,
+            include_default_fb_balances: true,
+          })
+        : rootAccounts
+    } else {
+      roots.value = await frappeGet('frappe.desk.treeview.get_children', {
+        doctype: 'Account',
+        parent: '',
+      })
+    }
   } catch (e) {
     console.error('Failed to load account roots', e)
   } finally {
@@ -172,8 +201,17 @@ async function onSelect(name) {
   selectedAccount.value = name
   detailLoading.value = true
   detail.value = null
+  balance.value = null
   try {
     detail.value = await frappeGet('frappe.client.get', { doctype: 'Account', name })
+    if (company.value && detail.value) {
+      const [result] = await frappeGet('erpnext.accounts.utils.get_account_balances', {
+        accounts: [{ value: name, account_currency: detail.value.account_currency }],
+        company: company.value,
+        include_default_fb_balances: true,
+      })
+      balance.value = result?.balance ?? null
+    }
   } catch (e) {
     console.error('Failed to load account detail', e)
   } finally {

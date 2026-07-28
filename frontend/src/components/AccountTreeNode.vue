@@ -16,6 +16,9 @@
       </span>
       <span v-if="loading" class="text-xs text-[var(--color-text-muted)] animate-pulse">...</span>
       <span class="text-sm truncate" :class="node.expandable ? 'font-semibold' : ''">{{ node.title || node.value }}</span>
+      <span v-if="balanceText" class="ml-auto shrink-0 pl-2 font-mono text-xs" :class="node.balance > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">
+        {{ balanceText }}
+      </span>
     </div>
 
     <ul v-if="expanded && children.length" class="list-none">
@@ -25,6 +28,7 @@
         :node="child"
         :level="level + 1"
         :selected="selected"
+        :company="company"
         @select="(v) => emit('select', v)"
       />
     </ul>
@@ -35,13 +39,14 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { frappeGet } from '../api.js'
 
 const props = defineProps({
   node: { type: Object, required: true },
   level: { type: Number, default: 0 },
   selected: { type: String, default: '' },
+  company: { type: String, default: '' },
 })
 
 const emit = defineEmits(['select'])
@@ -51,16 +56,42 @@ const loading = ref(false)
 const children = ref([])
 let loaded = false
 
+function formatCurrency(val) {
+  return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(val || 0)
+}
+
+const balanceText = computed(() => {
+  if (props.node.balance === undefined || props.node.balance === null) return ''
+  const drCr = props.node.balance > 0 ? 'Dr' : 'Cr'
+  return `${formatCurrency(Math.abs(props.node.balance))} ${drCr}`
+})
+
 async function toggle() {
   if (!props.node.expandable) return
   expanded.value = !expanded.value
   if (expanded.value && !loaded) {
     loading.value = true
     try {
-      children.value = await frappeGet('frappe.desk.treeview.get_children', {
-        doctype: 'Account',
-        parent: props.node.value,
-      })
+      if (props.company) {
+        const kids = await frappeGet('erpnext.accounts.utils.get_children', {
+          doctype: 'Account',
+          parent: props.node.value,
+          company: props.company,
+          is_root: false,
+        })
+        children.value = kids.length
+          ? await frappeGet('erpnext.accounts.utils.get_account_balances', {
+              accounts: kids,
+              company: props.company,
+              include_default_fb_balances: true,
+            })
+          : kids
+      } else {
+        children.value = await frappeGet('frappe.desk.treeview.get_children', {
+          doctype: 'Account',
+          parent: props.node.value,
+        })
+      }
       loaded = true
     } catch (e) {
       console.error('Failed to load child accounts', e)
