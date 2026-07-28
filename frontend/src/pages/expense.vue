@@ -3,7 +3,7 @@
     <!-- Header -->
     <header 
       class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm transition-colors duration-300"
-      :class="activeTab === 'Payment' ? 'bg-red-500/30' : 'bg-green-500/30'"
+      :class="isNotToday ? 'bg-red-600/50' : (activeTab === 'Payment' ? 'bg-red-500/30' : 'bg-green-500/30')"
     >
       <!-- Left: back + title -->
       <div class="flex items-center gap-3">
@@ -233,7 +233,10 @@
     </main>
 
     <!-- Bottom Action Bar -->
-    <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 shadow-lg">
+    <footer
+      class="border-t border-[var(--color-border)] px-8 py-4 shadow-lg transition-colors duration-300"
+      :class="isNotToday ? 'bg-red-600/30' : 'bg-[var(--color-surface)]'"
+    >
       <div class="flex items-center justify-between gap-8">
         
         <div class="flex items-center gap-8 flex-1">
@@ -409,6 +412,10 @@ const displayDate = computed(() => {
 
 const isFormValid = computed(() => {
   return form.rows.some(r => r.account && r.amount > 0) && cashAccount.value.account
+})
+
+const isNotToday = computed(() => {
+  return postingDate.value !== new Date().toISOString().split('T')[0]
 })
 
 const totalRows = computed(() => form.rows.filter(r => r.account && r.amount > 0).length)
