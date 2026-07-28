@@ -230,7 +230,7 @@
                 ref="chequeNoInputRef"
                 v-model="newForm.cheque_no"
                 @keydown.enter.prevent="chequeDateInputRef?.focus()"
-                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-mono font-bold outline-none focus:border-[var(--color-highlight)]"
+                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-mono font-bold outline-none focus:border-[var(--color-highlight)] text-[1.25rem]"
                 placeholder="000123"
               />
             </div>
