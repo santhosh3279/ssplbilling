@@ -89,6 +89,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'MaterialTransferReport',
   'CashflowReport',
   'AccountTree',
+  'GeneralLedger',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)

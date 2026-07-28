@@ -1,7 +1,7 @@
 <template>
   <li>
     <div
-      class="flex items-center gap-1.5 rounded px-2 py-1.5 cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
+      class="group flex items-center gap-1.5 rounded px-2 py-1.5 cursor-pointer hover:bg-[var(--color-surface-raised)] transition-colors"
       :class="selected === node.value ? 'bg-[var(--color-surface-raised)] text-[var(--color-highlight)]' : 'text-[var(--color-text)]'"
       :style="{ paddingLeft: (level * 18 + 8) + 'px' }"
       @click="onRowClick"
@@ -16,8 +16,29 @@
       </span>
       <span v-if="loading" class="text-xs text-[var(--color-text-muted)] animate-pulse">...</span>
       <span class="text-sm truncate" :class="node.expandable ? 'font-semibold' : ''">{{ node.title || node.value }}</span>
-      <span v-if="balanceText" class="ml-auto shrink-0 pl-2 font-mono text-xs font-bold" :class="node.balance > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">
-        {{ balanceText }}
+
+      <span class="ml-auto flex shrink-0 items-center gap-2 pl-2">
+        <span class="hidden items-center gap-1 group-hover:flex">
+          <button
+            @click.stop="onEdit"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-text-muted)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] transition-colors"
+            title="Edit Account"
+          >Edit</button>
+          <button
+            v-if="node.expandable"
+            @click.stop="onAddChild"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-text-muted)] hover:border-[var(--color-success)] hover:text-[var(--color-success)] transition-colors"
+            title="Add Child Account"
+          >+ Child</button>
+          <button
+            @click.stop="onViewLedger"
+            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-text-muted)] hover:border-[var(--color-highlight)] hover:text-[var(--color-highlight)] transition-colors"
+            title="View Ledger"
+          >Ledger</button>
+        </span>
+        <span v-if="balanceText" class="font-mono text-xs font-bold" :class="node.balance > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">
+          {{ balanceText }}
+        </span>
       </span>
     </div>
 
@@ -40,7 +61,10 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
+
+const router = useRouter()
 
 const props = defineProps({
   node: { type: Object, required: true },
@@ -103,5 +127,22 @@ async function toggle() {
 function onRowClick() {
   emit('select', props.node.value)
   if (props.node.expandable) toggle()
+}
+
+function onEdit() {
+  window.open(`/app/account/${encodeURIComponent(props.node.value)}`, '_blank')
+}
+
+function onAddChild() {
+  const params = new URLSearchParams({ parent_account: props.node.value })
+  if (props.company) params.set('company', props.company)
+  window.open(`/app/account/new?${params}`, '_blank')
+}
+
+function onViewLedger() {
+  router.push({
+    name: 'GeneralLedger',
+    query: { party: props.node.value, party_type: 'Account', label: props.node.title || props.node.value },
+  })
 }
 </script>
