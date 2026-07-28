@@ -5,7 +5,7 @@
     :style="positionStyle"
   >
     <div class="bg-[var(--color-surface)] px-4 py-3 border-b border-[var(--color-border)] flex justify-between items-center">
-      <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Quick Search</span>
+      <span class="text-[1.125rem] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Quick Search</span>
       <div class="flex items-center gap-3">
         <button 
           @click.stop="handleRefresh" 
