@@ -3,7 +3,7 @@
     <!-- Header -->
     <header 
       class="flex items-center justify-between border-b border-[var(--color-border)] px-6 py-2.5 shadow-sm transition-colors duration-300"
-      :class="isNotToday ? 'bg-red-600/50' : (activeTab === 'Payment' ? 'bg-red-500/30' : 'bg-green-500/30')"
+      :class="isNotToday ? 'bg-red-600/50' : (activeTab === 'Payment' ? 'bg-blue-500/30' : 'bg-green-500/30')"
     >
       <!-- Left: back + title -->
       <div class="flex items-center gap-3">
