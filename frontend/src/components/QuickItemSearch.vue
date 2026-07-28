@@ -42,7 +42,7 @@
                   <div class="text-3xl font-normal truncate" :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ itemMeta.item.item_name }}</div>
                   <div class="text-2xl font-mono flex flex-wrap items-center gap-x-2 gap-y-0.5" :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
                     <span>{{ itemMeta.item.item_code }}</span>
-                    <span v-if="itemMeta.item.hsn_sac" class="text-lg opacity-70">· HSN: {{ itemMeta.item.hsn_sac }}</span>
+                    <span v-if="itemMeta.item.hsn_sac" class="text-[1.40625rem] opacity-70">· HSN: {{ itemMeta.item.hsn_sac }}</span>
                     <span v-if="itemMeta.item.suppliers && itemMeta.item.suppliers.length" class="text-lg opacity-70 truncate max-w-[320px]" :title="itemMeta.item.suppliers.map(s => typeof s === 'string' ? s : s.supplier).join(', ')">· Supp: {{ itemMeta.item.suppliers.map(s => typeof s === 'string' ? s : s.supplier).join(', ') }}</span>
                   </div>
                 </div>
