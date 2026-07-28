@@ -77,7 +77,6 @@ async function toggle() {
           doctype: 'Account',
           parent: props.node.value,
           company: props.company,
-          is_root: false,
         })
         children.value = kids.length
           ? await frappeGet('erpnext.accounts.utils.get_account_balances', {
