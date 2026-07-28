@@ -113,7 +113,9 @@
               <tr
                 v-for="chq in cheques"
                 :key="chq.name"
-                class="border-t border-[var(--color-border)]/60 hover:bg-[var(--color-surface-raised)]/40 transition-colors"
+                @click="selectedChequeName = chq.name"
+                class="border-t border-[var(--color-border)]/60 hover:bg-[var(--color-surface-raised)]/40 transition-colors cursor-pointer"
+                :class="selectedChequeName === chq.name ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : ''"
               >
                 <td class="px-4 py-3 font-mono font-bold">{{ chq.cheque_no }}</td>
                 <td class="px-4 py-3">
@@ -448,6 +450,7 @@ const isSaving = ref(false)
 const cheques = ref([])
 const summary = ref({ received_total: 0, received_count: 0, issued_total: 0, issued_count: 0 })
 const bankAccounts = ref([])
+const selectedChequeName = ref('')
 const bankBalance = ref(0)
 const bankName = ref(localStorage.getItem('wb-bank') || '')
 
