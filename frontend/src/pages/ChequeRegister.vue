@@ -24,7 +24,7 @@
 
     <main class="flex-1 overflow-hidden p-6 flex flex-col gap-5">
       <!-- Summary Cards -->
-      <div class="grid grid-cols-2 gap-6 shrink-0">
+      <div class="grid grid-cols-3 gap-6 shrink-0">
         <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
           <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cheques in Hand (Pending Received)</span>
           <div class="flex items-baseline justify-between mt-1">
@@ -37,6 +37,12 @@
           <div class="flex items-baseline justify-between mt-1">
             <span class="text-[45px] font-mono font-black text-[var(--color-danger)]">₹{{ fmt(summary.issued_total) }}</span>
             <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ summary.issued_count }}</span>
+          </div>
+        </div>
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+          <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Bank Balance</span>
+          <div class="flex items-baseline justify-between mt-1">
+            <span class="text-[45px] font-mono font-black text-[var(--color-info)]">₹{{ fmt(bankBalance) }}</span>
           </div>
         </div>
       </div>
@@ -399,6 +405,7 @@ import {
   bounceCheque,
   cancelCheque,
   fetchChequeBankAccounts,
+  frappeGet,
 } from '../api'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
@@ -438,6 +445,18 @@ const isSaving = ref(false)
 const cheques = ref([])
 const summary = ref({ received_total: 0, received_count: 0, issued_total: 0, issued_count: 0 })
 const bankAccounts = ref([])
+const bankBalance = ref(0)
+
+async function loadBankBalance() {
+  const account = localStorage.getItem('wb-bank') || ''
+  if (!account) return
+  try {
+    const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { account })
+    bankBalance.value = res?.balance || 0
+  } catch (e) {
+    console.error('Failed to load bank balance:', e)
+  }
+}
 
 const showNewModal = ref(false)
 const showPartySearch = ref(false)
@@ -631,6 +650,7 @@ function onKeydown(e) {
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
   loadCheques()
+  loadBankBalance()
 })
 
 onUnmounted(() => {
