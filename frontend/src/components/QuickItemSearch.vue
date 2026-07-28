@@ -104,24 +104,34 @@ const allItemsWithHistory = computed(() => {
   }))
 })
 
+// Precompute lowercased match fields once per item so filtering and best-match
+// lookup don't each re-derive them on every keystroke.
+const normalizedItems = computed(() => {
+  return allItemsWithHistory.value.map(item => ({
+    item,
+    code: (item.item_code || '').toLowerCase(),
+    name: (item.item_name || '').toLowerCase(),
+    barcodes: (item.barcodes || '').toLowerCase().split(',')
+  }))
+})
+
 // Narrow the list down to matches as the user types. A pure-whitespace query
 // (e.g. the double-space "go to last item" shortcut) has no real terms, so it
 // falls through to the full list instead of filtering to nothing.
-const filteredItems = computed(() => {
+const filteredNormalized = computed(() => {
   const terms = props.query.trim().toLowerCase().split(/\s+/).filter(Boolean)
-  if (terms.length === 0) return allItemsWithHistory.value
+  if (terms.length === 0) return normalizedItems.value
 
-  return allItemsWithHistory.value.filter(i => {
-    const code = (i.item_code || '').toLowerCase()
-    const name = (i.item_name || '').toLowerCase()
-    const barcodes = (i.barcodes || '').toLowerCase().split(',')
-    return terms.every(term =>
-      code.includes(term) ||
-      name.includes(term) ||
-      barcodes.some(b => b.includes(term))
+  return normalizedItems.value.filter(n =>
+    terms.every(term =>
+      n.code.includes(term) ||
+      n.name.includes(term) ||
+      n.barcodes.some(b => b.includes(term))
     )
-  })
+  )
 })
+
+const filteredItems = computed(() => filteredNormalized.value.map(n => n.item))
 
 // --- Virtual Scroll variables and calculations ---
 const scrollTop = ref(0)
@@ -135,7 +145,7 @@ function handleScroll(e) {
 
 const updateContainerHeight = () => {
   if (scrollContainer.value) {
-    containerHeight.value = scrollContainer.value.clientHeight || 500
+    containerHeight.value = scrollContainer.value.clientHeight || 640
   }
 }
 
@@ -185,35 +195,24 @@ const findBestMatchIndex = (query) => {
   const terms = cleanQuery.split(/\s+/).filter(Boolean)
   if (terms.length === 0) return -1
 
-  const list = filteredItems.value
+  const list = filteredNormalized.value
 
   // 1. Exact match on item_code or barcode (highest priority)
-  let bestIdx = list.findIndex(i => {
-    const code = (i.item_code || '').toLowerCase()
-    const barcodes = (i.barcodes || '').toLowerCase().split(',')
-    return code === cleanQuery || barcodes.includes(cleanQuery)
-  })
+  let bestIdx = list.findIndex(n => n.code === cleanQuery || n.barcodes.includes(cleanQuery))
   if (bestIdx !== -1) return bestIdx
 
   // 2. Starts with query on item_code or item_name
-  bestIdx = list.findIndex(i => {
-    const code = (i.item_code || '').toLowerCase()
-    const name = (i.item_name || '').toLowerCase()
-    return code.startsWith(cleanQuery) || name.startsWith(cleanQuery)
-  })
+  bestIdx = list.findIndex(n => n.code.startsWith(cleanQuery) || n.name.startsWith(cleanQuery))
   if (bestIdx !== -1) return bestIdx
 
   // 3. Contains all terms
-  bestIdx = list.findIndex(i => {
-    const code = (i.item_code || '').toLowerCase()
-    const name = (i.item_name || '').toLowerCase()
-    const barcodes = (i.barcodes || '').toLowerCase().split(',')
-    return terms.every(term =>
-      code.includes(term) ||
-      name.includes(term) ||
-      barcodes.some(b => b.includes(term))
+  bestIdx = list.findIndex(n =>
+    terms.every(term =>
+      n.code.includes(term) ||
+      n.name.includes(term) ||
+      n.barcodes.some(b => b.includes(term))
     )
-  })
+  )
   return bestIdx
 }
 
