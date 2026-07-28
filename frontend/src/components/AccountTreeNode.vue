@@ -58,12 +58,21 @@
     <div v-else-if="expanded && !loading && !children.length" class="text-xs italic text-[var(--color-text-muted)]" :style="{ paddingLeft: (level * 18 + 32) + 'px' }">
       No accounts
     </div>
+
+    <AddChildAccountModal
+      :show="showAddChildModal"
+      :parent-account="node.value"
+      :company="company"
+      @close="showAddChildModal = false"
+      @created="onChildCreated"
+    />
   </li>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { frappeGet } from '../api.js'
+import AddChildAccountModal from './AddChildAccountModal.vue'
 
 const props = defineProps({
   node: { type: Object, required: true },
@@ -89,38 +98,40 @@ const balanceText = computed(() => {
   return `${formatCurrency(Math.abs(props.node.balance))} ${drCr}`
 })
 
+async function loadChildren() {
+  loading.value = true
+  try {
+    if (props.company) {
+      const kids = await frappeGet('erpnext.accounts.utils.get_children', {
+        doctype: 'Account',
+        parent: props.node.value,
+        company: props.company,
+      })
+      children.value = kids.length
+        ? await frappeGet('erpnext.accounts.utils.get_account_balances', {
+            accounts: kids,
+            company: props.company,
+            include_default_fb_balances: true,
+          })
+        : kids
+    } else {
+      children.value = await frappeGet('frappe.desk.treeview.get_children', {
+        doctype: 'Account',
+        parent: props.node.value,
+      })
+    }
+    loaded = true
+  } catch (e) {
+    console.error('Failed to load child accounts', e)
+  } finally {
+    loading.value = false
+  }
+}
+
 async function toggle() {
   if (!props.node.expandable) return
   expanded.value = !expanded.value
-  if (expanded.value && !loaded) {
-    loading.value = true
-    try {
-      if (props.company) {
-        const kids = await frappeGet('erpnext.accounts.utils.get_children', {
-          doctype: 'Account',
-          parent: props.node.value,
-          company: props.company,
-        })
-        children.value = kids.length
-          ? await frappeGet('erpnext.accounts.utils.get_account_balances', {
-              accounts: kids,
-              company: props.company,
-              include_default_fb_balances: true,
-            })
-          : kids
-      } else {
-        children.value = await frappeGet('frappe.desk.treeview.get_children', {
-          doctype: 'Account',
-          parent: props.node.value,
-        })
-      }
-      loaded = true
-    } catch (e) {
-      console.error('Failed to load child accounts', e)
-    } finally {
-      loading.value = false
-    }
-  }
+  if (expanded.value && !loaded) await loadChildren()
 }
 
 function onRowClick() {
@@ -132,10 +143,17 @@ function onEdit() {
   window.open(`/app/account/${encodeURIComponent(props.node.value)}`, '_blank')
 }
 
+const showAddChildModal = ref(false)
+
 function onAddChild() {
-  const params = new URLSearchParams({ parent_account: props.node.value })
-  if (props.company) params.set('company', props.company)
-  window.open(`/app/account/new?${params}`, '_blank')
+  showAddChildModal.value = true
+}
+
+function onChildCreated() {
+  showAddChildModal.value = false
+  loaded = false
+  expanded.value = true
+  loadChildren()
 }
 
 function onViewLedger() {
