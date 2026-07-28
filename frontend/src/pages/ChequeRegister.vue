@@ -115,7 +115,7 @@
                 :key="chq.name"
                 :ref="el => setRowRef(el, chq.name)"
                 @click="selectedChequeName = chq.name"
-                class="border-t border-[var(--color-border)]/60 hover:bg-[var(--color-surface-raised)]/40 transition-colors cursor-pointer"
+                class="border-t border-[var(--color-border)]/60 hover:bg-[var(--color-surface-raised)]/40 transition-colors cursor-pointer scroll-mt-[52px]"
                 :class="selectedChequeName === chq.name ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : ''"
               >
                 <td class="px-4 py-3 font-mono font-bold">{{ chq.cheque_no }}</td>
