@@ -113,6 +113,7 @@
               <tr
                 v-for="chq in cheques"
                 :key="chq.name"
+                :ref="el => setRowRef(el, chq.name)"
                 @click="selectedChequeName = chq.name"
                 class="border-t border-[var(--color-border)]/60 hover:bg-[var(--color-surface-raised)]/40 transition-colors cursor-pointer"
                 :class="selectedChequeName === chq.name ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : ''"
@@ -451,6 +452,12 @@ const cheques = ref([])
 const summary = ref({ received_total: 0, received_count: 0, issued_total: 0, issued_count: 0 })
 const bankAccounts = ref([])
 const selectedChequeName = ref('')
+const rowRefs = new Map()
+
+function setRowRef(el, name) {
+  if (el) rowRefs.set(name, el)
+  else rowRefs.delete(name)
+}
 const bankBalance = ref(0)
 const bankName = ref(localStorage.getItem('wb-bank') || '')
 
@@ -629,7 +636,31 @@ const canSaveNew = computed(() => {
   return true
 })
 
+function selectChequeAt(idx) {
+  const chq = cheques.value[idx]
+  if (!chq) return
+  selectedChequeName.value = chq.name
+  rowRefs.get(chq.name)?.scrollIntoView({ block: 'nearest' })
+}
+
 function onKeydown(e) {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (showPartySearch.value || showPrintModal.value || showWarningModal.value ||
+        showNewModal.value || settleTarget.value) return
+    const tag = e.target?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+    if (!cheques.value.length) return
+
+    e.preventDefault()
+    const currentIdx = cheques.value.findIndex(c => c.name === selectedChequeName.value)
+    if (e.key === 'ArrowDown') {
+      selectChequeAt(currentIdx < 0 ? 0 : Math.min(currentIdx + 1, cheques.value.length - 1))
+    } else {
+      selectChequeAt(currentIdx < 0 ? 0 : Math.max(currentIdx - 1, 0))
+    }
+    return
+  }
+
   if (e.key === 'Escape') {
     if (showPartySearch.value) return
     if (showPrintModal.value) return
