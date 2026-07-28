@@ -1414,7 +1414,7 @@ async function syncBillingSettings(targetUser, force) {
     }
 
     // Set billing defaults from the first visible series row
-    const firstSeries = (settings.billing_series || [])[0]
+    const firstSeries = (settings?.billing_series || [])[0]
     if (firstSeries) {
       localStorage.setItem('wb-tax-type-incl', firstSeries.tax_type_incl ? '1' : '0')
     }
