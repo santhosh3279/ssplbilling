@@ -1,7 +1,7 @@
 <template>
   <div 
     v-if="props.results.length > 0" 
-    class="fixed z-[150] w-[700px] rounded-2xl border-2 border-[var(--color-highlight)] bg-[var(--color-bg)] shadow-2xl overflow-hidden"
+    class="fixed z-[150] w-[700px] rounded-2xl border-2 border-[var(--color-highlight)] bg-[var(--color-bg)] shadow-[0_35px_80px_-15px_rgba(0,0,0,0.7)] overflow-hidden"
     :style="positionStyle"
   >
     <div class="bg-[var(--color-surface)] px-4 py-3 border-b border-[var(--color-border)] flex justify-between items-center">
