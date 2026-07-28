@@ -43,7 +43,7 @@
           <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Bank Balance</span>
           <div class="flex items-baseline justify-between mt-1">
             <span class="text-[45px] font-mono font-black text-[var(--color-info)]">₹{{ fmt(bankBalance) }}</span>
-            <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider truncate max-w-[140px]" :title="bankName">{{ bankName || '—' }}</span>
+            <span class="text-[1.125rem] font-bold text-[var(--color-text-muted)] uppercase tracking-wider truncate max-w-[140px]" :title="bankName">{{ bankName || '—' }}</span>
           </div>
         </div>
       </div>
