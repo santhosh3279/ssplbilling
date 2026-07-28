@@ -31,7 +31,7 @@
           <div 
             v-for="itemMeta in visibleItems" 
             :key="itemMeta.item.item_code"
-            class="quick-search-item px-4 cursor-pointer border-b border-[var(--color-border)]/50 last:border-0 transition-all h-[80px] box-border flex flex-col justify-center overflow-hidden"
+            class="quick-search-item px-4 cursor-pointer border-b border-[var(--color-border)] last:border-0 transition-all h-[80px] box-border flex flex-col justify-center overflow-hidden"
             :class="selectedIndex === itemMeta.globalIndex ? 'bg-[var(--color-focus)] border-l-4 border-l-[var(--color-focus)] font-bold' : 'hover:bg-[var(--color-surface-raised)]/40'"
             @click="$emit('select', itemMeta.item)"
           >
