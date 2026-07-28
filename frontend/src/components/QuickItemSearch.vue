@@ -275,17 +275,11 @@ watch(selectedIndex, (newIdx) => {
 })
 
 const positionStyle = computed(() => {
-  if (props.anchorEl) {
-    const rect = props.anchorEl.getBoundingClientRect()
-    return {
-      top: `${rect.top}px`,
-      left: `${rect.right + 10}px`,
-      maxHeight: `calc(100vh - ${rect.top + 20}px)`
-    }
-  }
   return {
-    top: '20%',
-    right: '24px'
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    maxHeight: '80vh'
   }
 })
 
