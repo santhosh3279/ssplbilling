@@ -41,9 +41,9 @@
         </div>
         <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
           <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Bank Balance</span>
-          <div class="flex items-baseline justify-between mt-1">
+          <div class="flex flex-col mt-1">
             <span class="text-[45px] font-mono font-black text-[var(--color-info)]">₹{{ fmt(bankBalance) }}</span>
-            <span class="text-[1.125rem] font-bold text-[var(--color-text-muted)] uppercase tracking-wider truncate max-w-[140px]" :title="bankName">{{ bankName || '—' }}</span>
+            <span class="text-[1.125rem] font-bold text-[var(--color-text-muted)] uppercase tracking-wider truncate" :title="bankName">{{ bankName || '—' }}</span>
           </div>
         </div>
       </div>
