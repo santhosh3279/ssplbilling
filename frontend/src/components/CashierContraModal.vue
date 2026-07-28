@@ -246,6 +246,7 @@ async function handleSave() {
         account_type:                  r.account_type,
         debit_in_account_currency:     r.debit,
         credit_in_account_currency:    r.credit,
+        cost_center:                   localStorage.getItem('wb-cost-center') || null,
         user_remark:                   remarks.value,
       })),
     }
