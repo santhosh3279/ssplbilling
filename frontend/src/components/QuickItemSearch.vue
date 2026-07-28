@@ -277,7 +277,8 @@ watch(selectedIndex, (newIdx) => {
 const positionStyle = computed(() => {
   return {
     top: '80px',
-    right: '24px',
+    left: '50%',
+    transform: 'translateX(-50%)',
     maxHeight: 'calc(100vh - 100px)'
   }
 })
