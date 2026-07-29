@@ -148,7 +148,7 @@
               </td>
               <td v-if="quickQtyMode" class="p-[5px] text-right font-mono text-3xl tabular-nums border-x-2 border-[var(--color-highlight)]" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-highlight)]'">
                 <span>{{ quickQtyMap[item.item_code] || '' }}</span>
-                <span v-if="selectedIdx === idx" class="inline-block w-[2px] h-[0.8em] bg-current animate-pulse ml-0.5 align-middle"></span>
+                <span v-if="selectedIdx === idx && qtyCellActive" class="inline-block w-[2px] h-[0.8em] bg-current animate-pulse ml-0.5 align-middle"></span>
               </td>
               <td class="p-[5px] text-right font-mono tracking-wider" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-warning)]'">
                 <span>{{ encPrice(item.price || 0) }}</span>
@@ -314,11 +314,13 @@ useSubwindowWatcher(computed(() => props.show), {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     selectedIdx.value = Math.min(selectedIdx.value + 1, results.value.length - 1)
+    if (quickQtyMode.value) qtyCellActive.value = true
   },
   ArrowUp: (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     selectedIdx.value = Math.max(selectedIdx.value - 1, 0)
+    if (quickQtyMode.value) qtyCellActive.value = true
   },
   'CTRL+E': (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
@@ -331,8 +333,9 @@ useSubwindowWatcher(computed(() => props.show), {
     // (double-tap / key bounce) — it must never fall through to item selection.
     if (Date.now() - supplierModalClosedAt.value < 350) return
     if (quickQtyMode.value) {
+      // Commit whatever was typed and drop the qty cell focus — stay on this row.
       e.preventDefault()
-      selectedIdx.value = Math.min(selectedIdx.value + 1, results.value.length - 1)
+      qtyCellActive.value = false
       return
     }
     const item = results.value[selectedIdx.value]
@@ -349,6 +352,7 @@ useSubwindowWatcher(computed(() => props.show), {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     if (!props.enableQuickQty) return
     quickQtyMode.value = !quickQtyMode.value
+    qtyCellActive.value = quickQtyMode.value
   },
   'CTRL+ENTER': (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
@@ -358,6 +362,7 @@ useSubwindowWatcher(computed(() => props.show), {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
     quickQtyMode.value = false
+    qtyCellActive.value = false
     focus()
   },
   F5: (e) => {
@@ -431,6 +436,9 @@ const showSupplierModal = ref(false)
 const selectedSupplier = ref(null)
 const supplierModalClosedAt = ref(0)
 const quickQtyMode = ref(false)
+// Whether the selected row's qty cell is accepting digits. Enter commits the
+// value and drops this focus; moving rows re-arms it.
+const qtyCellActive = ref(false)
 
 function loadQuickQtyMap() {
   try {
@@ -465,10 +473,11 @@ function onSearchInputKeydown(e) {
   if (e.key === '/') {
     e.preventDefault()
     quickQtyMode.value = false
+    qtyCellActive.value = false
     focus()
     return
   }
-  if (!quickQtyMode.value) return
+  if (!quickQtyMode.value || !qtyCellActive.value) return
   const item = results.value[selectedIdx.value]
   if (!item) return
   const code = item.item_code
@@ -520,6 +529,7 @@ function submitQuickQtyBatch() {
   if (!entries.length) return
   emit('select-multiple', entries)
   quickQtyMode.value = false
+  qtyCellActive.value = false
   clearQuickQtyMap()
 }
 
@@ -917,6 +927,7 @@ watch(() => props.show, async (newVal) => {
     showSupplierModal.value = false
     selectedSupplier.value = null
     quickQtyMode.value = false
+    qtyCellActive.value = false
   }
 })
 
