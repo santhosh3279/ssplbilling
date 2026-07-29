@@ -123,9 +123,9 @@
             <tr class="text-2xl uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
               <th class="p-[5px] text-left w-1/4">Item Code</th>
               <th class="p-[5px] text-left">Item Name</th>
+              <th v-if="quickQtyMode" class="p-[5px] text-right w-24">Qty</th>
               <th class="p-[5px] text-right">{{ priceList || 'Rate' }}</th>
               <th class="p-[5px] text-right">Stock</th>
-              <th v-if="quickQtyMode" class="p-[5px] text-right w-24">Qty</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-[var(--color-border)]">
@@ -146,6 +146,10 @@
               <td class="p-[5px]">
                 <div class="font-medium" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-text)]'">{{ item.item_name }}</div>
               </td>
+              <td v-if="quickQtyMode" class="p-[5px] text-right font-mono text-3xl tabular-nums" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-highlight)]'">
+                <span>{{ quickQtyMap[item.item_code] || '' }}</span>
+                <span v-if="selectedIdx === idx" class="inline-block w-[2px] h-[0.8em] bg-current animate-pulse ml-0.5 align-middle"></span>
+              </td>
               <td class="p-[5px] text-right font-mono tracking-wider" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-warning)]'">
                 <span>{{ encPrice(item.price || 0) }}</span>
               </td>
@@ -159,10 +163,6 @@
                 <span v-if="item.redis_purchase_stock" class="text-2xl ml-2 font-normal text-[var(--color-success)]" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)]/80' : ''">
                   (+{{ item.redis_purchase_stock }})
                 </span>
-              </td>
-              <td v-if="quickQtyMode" class="p-[5px] text-right font-mono text-3xl tabular-nums" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-highlight)]'">
-                <span>{{ quickQtyMap[item.item_code] || '' }}</span>
-                <span v-if="selectedIdx === idx" class="inline-block w-[2px] h-[0.8em] bg-current animate-pulse ml-0.5 align-middle"></span>
               </td>
             </tr>
             <tr v-if="!results.length && !loading">
