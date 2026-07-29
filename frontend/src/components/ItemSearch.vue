@@ -333,9 +333,10 @@ useSubwindowWatcher(computed(() => props.show), {
     // (double-tap / key bounce) — it must never fall through to item selection.
     if (Date.now() - supplierModalClosedAt.value < 350) return
     if (quickQtyMode.value) {
-      // Commit whatever was typed and drop the qty cell focus — stay on this row.
+      // Toggle qty cell focus on the current row: focused → commit + blur,
+      // unfocused → focus it again. Never moves the selection.
       e.preventDefault()
-      qtyCellActive.value = false
+      qtyCellActive.value = !qtyCellActive.value
       return
     }
     const item = results.value[selectedIdx.value]
