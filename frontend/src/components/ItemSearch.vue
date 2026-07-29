@@ -43,6 +43,16 @@
 
         <div class="flex items-center gap-3">
           <button
+            v-if="quickQtyMode"
+            @click="clearQuickQtyMap(); focus()"
+            :disabled="!quickQtyCount"
+            class="flex items-center gap-2 rounded-lg border border-[var(--color-danger)] bg-[var(--color-danger)]/15 px-3 py-1.5 text-sm text-[var(--color-danger)] transition-all hover:bg-[var(--color-danger)]/25 disabled:opacity-40 disabled:hover:bg-[var(--color-danger)]/15"
+            :title="`Clear typed quantities on ${quickQtyCount} item(s)`"
+          >
+            <span>🗑</span>
+            Clear Qty ({{ quickQtyCount }})
+          </button>
+          <button
             @click="openSupplierSearch"
             class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-all border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
             title="Search Supplier (F7)"
@@ -491,6 +501,12 @@ function clearQuickQtyMap() {
 }
 
 const quickQtyMap = ref(loadQuickQtyMap())
+
+// Items carrying a usable qty — same filter submitQuickQtyBatch() applies,
+// so the button count matches what a batch add would actually push.
+const quickQtyCount = computed(
+  () => Object.values(quickQtyMap.value).filter(raw => raw && parseFloat(raw) > 0).length
+)
 
 function onSearchInputKeydown(e) {
   if (e.key === 'Escape') {
