@@ -123,7 +123,13 @@
             <tr class="text-2xl uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
               <th class="p-[5px] text-left w-1/4">Item Code</th>
               <th class="p-[5px] text-left">Item Name</th>
-              <th v-if="quickQtyMode" class="p-[5px] text-right w-24 border-x-2 border-[var(--color-highlight)]">Qty</th>
+              <th
+                v-if="quickQtyMode"
+                class="p-[5px] text-right w-24 border-x-2 transition-colors"
+                :class="qtyCellActive ? 'border-[var(--color-highlight)] bg-[var(--color-highlight)]/25 text-[var(--color-highlight)]' : 'border-[var(--color-border)]'"
+              >
+                Qty
+              </th>
               <th class="p-[5px] text-right">{{ priceList || 'Rate' }}</th>
               <th class="p-[5px] text-right">Stock</th>
             </tr>
@@ -146,7 +152,14 @@
               <td class="p-[5px]">
                 <div class="font-medium" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-text)]'">{{ item.item_name }}</div>
               </td>
-              <td v-if="quickQtyMode" class="p-[5px] text-right font-mono text-3xl tabular-nums border-x-2 border-[var(--color-highlight)]" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-highlight)]'">
+              <td
+                v-if="quickQtyMode"
+                class="p-[5px] text-right font-mono text-3xl tabular-nums border-x-2 transition-colors"
+                :class="[
+                  qtyCellActive ? 'border-[var(--color-highlight)] bg-[var(--color-highlight)]/15' : 'border-[var(--color-border)]',
+                  selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-highlight)]'
+                ]"
+              >
                 <span>{{ quickQtyMap[item.item_code] || '' }}</span>
                 <span v-if="selectedIdx === idx && qtyCellActive" class="inline-block w-[2px] h-[0.8em] bg-current animate-pulse ml-0.5 align-middle"></span>
               </td>
