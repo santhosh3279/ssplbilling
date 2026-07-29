@@ -598,6 +598,7 @@ import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import ItemSearch from '../components/ItemSearch.vue'
+import { clearQuickQtyMap } from '../services/quickQty.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
@@ -1011,6 +1012,7 @@ function format(val) {
 
 async function clearBill() {
   await releaseLock()
+  clearQuickQtyMap()
   items.value = []
   pendingItem.value = null
   newItemCode.value = ''

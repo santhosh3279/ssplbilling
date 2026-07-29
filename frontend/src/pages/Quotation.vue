@@ -581,6 +581,7 @@ import Gstbillcreator from '../components/Gstbillcreator.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import ItemSearch from '../components/ItemSearch.vue'
+import { clearQuickQtyMap } from '../services/quickQty.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerPrice from '../components/CustomerPrice.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
@@ -1079,6 +1080,7 @@ function format(val) {
 
 async function clearBill() {
   await releaseLock()
+  clearQuickQtyMap()
   items.value = []
   pendingItem.value = null
   newItemCode.value = ''

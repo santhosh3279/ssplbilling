@@ -284,6 +284,11 @@ import ItemCreation from './ItemCreation.vue'
 import PriceListUpdate from '../pages/PriceListUpdate.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import CustomerSearchModal from './CustomerSearchModal.vue'
+import {
+  loadQuickQtyMap,
+  saveQuickQtyMap as persistQuickQtyMap,
+  clearQuickQtyMap as clearStoredQuickQty
+} from '../services/quickQty.js'
 
 const props = defineProps({
   show: Boolean,
@@ -476,26 +481,13 @@ function qtyCellClass(idx) {
   ]
 }
 
-function loadQuickQtyMap() {
-  try {
-    const raw = localStorage.getItem('sspl-quick-qty-map')
-    return raw ? JSON.parse(raw) : {}
-  } catch (e) {
-    return {}
-  }
-}
-
 function saveQuickQtyMap() {
-  try {
-    localStorage.setItem('sspl-quick-qty-map', JSON.stringify(quickQtyMap.value))
-  } catch (e) {}
+  persistQuickQtyMap(quickQtyMap.value)
 }
 
 function clearQuickQtyMap() {
   quickQtyMap.value = {}
-  try {
-    localStorage.removeItem('sspl-quick-qty-map')
-  } catch (e) {}
+  clearStoredQuickQty()
 }
 
 const quickQtyMap = ref(loadQuickQtyMap())
@@ -967,8 +959,13 @@ watch(() => props.show, async (newVal) => {
   }
 })
 
+function handleQuickQtyCleared() {
+  quickQtyMap.value = {}
+}
+
 onMounted(() => {
   window.addEventListener('wb-global-item-search', handleGlobalItemSearch)
+  window.addEventListener('wb-quick-qty-cleared', handleQuickQtyCleared)
   if (props.show) {
     loadCipherMap()
   }
@@ -976,5 +973,6 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('wb-global-item-search', handleGlobalItemSearch)
+  window.removeEventListener('wb-quick-qty-cleared', handleQuickQtyCleared)
 })
 </script>

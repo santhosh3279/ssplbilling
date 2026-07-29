@@ -312,6 +312,7 @@ import { useRouter } from 'vue-router'
 import { useShortcuts } from '../services/shortcutManager'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import ItemSearch from '../components/ItemSearch.vue'
+import { clearQuickQtyMap } from '../services/quickQty.js'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import Warning from '../components/Warning.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
@@ -809,6 +810,7 @@ async function handleSubmit() {
 }
 
 function resetForm() {
+  clearQuickQtyMap()
   transferNo.value = ''
   transferName.value = ''
   items.value = []
