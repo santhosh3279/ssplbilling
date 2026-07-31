@@ -633,7 +633,7 @@ def set_suffix_for_original_invoice(doc, method=None):
     except Exception:
         return
 
-    if not ae or not ae.alternative_company or not ae.warehouse:
+    if not ae or not ae.alternative_company:
         return
 
     naming_series = doc.naming_series

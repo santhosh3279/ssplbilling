@@ -900,7 +900,7 @@ def create_quotation_from_sales_invoice(sales_invoice_name, naming_series):
 	try:
 		from ssplbilling.api.automatic_entries_api import get_automatic_entries, create_mirror_invoice_for_gst_conversion
 		ae = get_automatic_entries()
-		if ae.alternative_company and ae.warehouse:
+		if ae.alternative_company:
 			create_mirror_invoice_for_gst_conversion(si, ae)
 	except Exception:
 		frappe.log_error(title="Automatic Entries: mirror GST conversion failed", message=frappe.get_traceback())
