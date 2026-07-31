@@ -763,3 +763,37 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 	return data
 
 
+def set_suffix_for_original_purchase_invoice(doc, method=None):
+	if doc.doctype != "Purchase Invoice":
+		return
+	if doc.name:
+		return
+
+	try:
+		from ssplbilling.api.automatic_entries_api import get_automatic_entries
+		from ssplbilling.api.purchase_mirror_api import _purchase_mirror_series
+		ae = get_automatic_entries()
+	except Exception:
+		return
+
+	if not ae or not ae.alternative_company:
+		return
+
+	naming_series = doc.naming_series
+	if not naming_series:
+		return
+
+	allowed = _purchase_mirror_series(ae)
+	should_suffix = False
+	for prefix in allowed:
+		if naming_series == prefix or naming_series.startswith(prefix):
+			should_suffix = True
+			break
+
+	if should_suffix:
+		from frappe.model.naming import make_autoname
+		generated_name = make_autoname(naming_series, doc=doc)
+		if not generated_name.endswith("/"):
+			doc.name = f"{generated_name}/"
+
+

@@ -37,7 +37,7 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 	pi.name + '/', posted against the Automatic Entries warehouse with accounts
 	substituted via resolve_target_account.
 	"""
-	mirror_name = f"{pi.name}/"
+	mirror_name = pi.name[:-1] if pi.name.endswith("/") else f"{pi.name}/"
 	if frappe.db.exists("Purchase Invoice", mirror_name):
 		return frappe.get_doc("Purchase Invoice", mirror_name)
 
