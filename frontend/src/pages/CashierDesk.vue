@@ -735,7 +735,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           </div>
           <div class="flex flex-col">
-            <h2 class="text-lg font-black text-[var(--color-text)] uppercase tracking-tight leading-none">Bill Settled</h2>
+            <h2 class="text-lg font-black text-[var(--color-text)] uppercase tracking-tight leading-none">
+              {{ wasMirrored ? 'Bill Settled & Mirrored' : 'Bill Settled' }}
+            </h2>
             <p class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest mt-1.5 opacity-70">
               {{ processedInvoiceName }}
             </p>
@@ -822,6 +824,7 @@ const showGstWarning = ref(false)
 const cardRefNo = ref('')
 const processedInvoiceName = ref('')
 const showCashierEntry = ref(false)
+const wasMirrored = ref(false)
 
 // Block page shortcuts while any inline subwindow is open
 useSubwindowWatcher(showCardRefModal)
@@ -1412,7 +1415,9 @@ async function processPayment() {
     const wasExempted = selectedInvoice.value?.tax_template?.toLowerCase().includes('exempt')
     const invoiceName = selectedInvoice.value?.name
 
-    await submitInvoiceWithPayment(payload)
+    wasMirrored.value = false
+    const res = await submitInvoiceWithPayment(payload)
+    wasMirrored.value = res?.mirrored || false
     
     processedInvoiceName.value = invoiceName
     showSuccessModal.value = true

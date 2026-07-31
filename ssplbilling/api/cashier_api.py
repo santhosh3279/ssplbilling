@@ -428,15 +428,18 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			if reconcile_args:
 				reconcile_dr_cr_note(reconcile_args, si.company)
 
+	mirrored = False
 	if is_credit:
 		# Mirror credit bill if naming series matches configuration in Automatic Entries
 		try:
 			from ssplbilling.api.automatic_entries_api import mirror_bill
-			mirror_bill(si)
+			msi = mirror_bill(si)
+			if msi:
+				mirrored = True
 		except Exception:
 			frappe.log_error(title="Automatic Entries: mirror credit bill failed", message=frappe.get_traceback())
 
-		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted"}
+		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted", "mirrored": mirrored}
 
 	payment_entries = []
 
@@ -553,6 +556,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		from ssplbilling.api.cashier_mirroring_api import mirror_payments
 		msi = mirror_bill(si)
 		if msi:
+			mirrored = True
 			mirror_payments(
 				msi,
 				cash_amount=cash_amount,
@@ -572,7 +576,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	except Exception:
 		frappe.log_error(title="Automatic Entries: mirror bill and payments failed", message=frappe.get_traceback())
 
-	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted"}
+	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted", "mirrored": mirrored}
 
 @frappe.whitelist()
 def get_customer_unallocated_cash(customer, invoice_name=None):
