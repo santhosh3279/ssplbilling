@@ -5,6 +5,14 @@
       :class="[showKeyboardPanel ? (isSidebarCollapsed ? 'w-[70%]' : 'w-[80%]') : 'w-full']"
       class="relative h-screen overflow-hidden transform-gpu flex flex-col bg-[var(--color-bg)] transition-all duration-300 ease-in-out"
     >
+      <!-- Company Indicator Top Bar -->
+      <div 
+        v-if="showCompanyBar" 
+        class="bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] text-center py-2.5 px-4 font-black text-xs uppercase tracking-widest select-none border-b border-black/10 shrink-0 shadow-sm flex items-center justify-center gap-2"
+      >
+        🏢 {{ alternativeCompany }}
+      </div>
+
       <router-view class="flex-1 overflow-hidden" />
       
       <!-- Global Components (Contained within this div's boundaries on tablet) -->
@@ -104,6 +112,21 @@ const errorType = ref('error');
 const errorTitle = ref('Error');
 
 const toasts = ref([]);
+
+const wbCompany = ref('');
+const alternativeCompany = ref('');
+let companiesInterval = null;
+
+const showCompanyBar = computed(() => {
+  const wb = (wbCompany.value || '').trim().toLowerCase();
+  const ae = (alternativeCompany.value || '').trim().toLowerCase();
+  return wb && ae && wb === ae;
+});
+
+function updateCompanies() {
+  wbCompany.value = localStorage.getItem('wb-company') || '';
+  alternativeCompany.value = localStorage.getItem('ae-alternative_company') || '';
+}
 function showToast(message, type = 'success', duration = 2000) {
   const id = Date.now() + Math.random().toString(36).substr(2, 9);
   toasts.value.push({ id, message, type });
@@ -215,6 +238,10 @@ watch(showKeyboardPanel, () => {
 });
 
 onMounted(async () => {
+  updateCompanies();
+  window.addEventListener('storage', updateCompanies);
+  companiesInterval = setInterval(updateCompanies, 1000);
+
   initTheme();
   await initFrappeSocket();
   connectMqtt();
@@ -254,6 +281,11 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('storage', updateCompanies);
+  if (companiesInterval) {
+    clearInterval(companiesInterval);
+  }
+
   destroyItemSync();
   destroyLedgerSync();
   destroyBillPanelSync();
