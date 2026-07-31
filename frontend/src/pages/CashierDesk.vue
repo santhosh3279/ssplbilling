@@ -1345,35 +1345,38 @@ async function sendUpiMqtt() {
 async function processPayment() {
   if (!canSubmit.value) return
 
-  if (postingDate.value === getTodayIST()) {
-    try {
-      const hasOpening = await frappeGet('ssplbilling.api.cahierlog_api.check_cashier_opening', {
-        date: getTodayIST(),
-        user: session.user.value
-      })
-      if (!hasOpening) {
-        showCashierEntry.value = true
-        return
-      }
-    } catch (e) { console.error(e) }
-  }
-
-  if (Number(payments.value.card) > 0.01 && !cardRefNo.value) {
-    showCardRefModal.value = true
-    nextTick(() => cardRefInput.value?.focus())
-    return
-  }
-
-  if (!isCredit.value && selectedInvoice.value?.is_return) {
-    errorMsg.value = "Sales returns can only be processed as Credit."
-    return
-  }
-
   isSubmitting.value = true
   errorMsg.value = ''
   successMsg.value = ''
 
   try {
+    if (postingDate.value === getTodayIST()) {
+      try {
+        const hasOpening = await frappeGet('ssplbilling.api.cahierlog_api.check_cashier_opening', {
+          date: getTodayIST(),
+          user: session.user.value
+        })
+        if (!hasOpening) {
+          showCashierEntry.value = true
+          isSubmitting.value = false
+          return
+        }
+      } catch (e) { console.error(e) }
+    }
+
+    if (Number(payments.value.card) > 0.01 && !cardRefNo.value) {
+      showCardRefModal.value = true
+      nextTick(() => cardRefInput.value?.focus())
+      isSubmitting.value = false
+      return
+    }
+
+    if (!isCredit.value && selectedInvoice.value?.is_return) {
+      errorMsg.value = "Sales returns can only be processed as Credit."
+      isSubmitting.value = false
+      return
+    }
+
     const bill = amountToCollect.value
     const upi  = Number(payments.value.upi)  || 0
     const card = Number(payments.value.card) || 0
