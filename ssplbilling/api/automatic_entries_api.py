@@ -41,7 +41,7 @@ def _allowed_accounts(automatic_entries):
 
 def should_mirror_sales_invoice(naming_series, automatic_entries):
 	"""Whether `naming_series` is configured in Automatic Entries for cross-company mirroring."""
-	if not automatic_entries.alternative_company or not automatic_entries.warehouse:
+	if not automatic_entries.alternative_company:
 		return False
 	if not naming_series:
 		return False
