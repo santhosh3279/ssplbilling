@@ -463,6 +463,11 @@ def update_quotation(data):
 		qt.contact_mobile = None
 		qt.contact_email = None
 		qt.address_display = None
+		qt.tax_category = None
+		qt.gst_category = None
+		qt.billing_address_gstin = None
+		qt.customer_name = None
+		qt.place_of_supply = None
 	elif data.get("customer_address"):
 		qt.customer_address = data["customer_address"]
 

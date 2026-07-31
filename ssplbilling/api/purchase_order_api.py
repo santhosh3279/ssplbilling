@@ -439,6 +439,10 @@ def update_purchase_order(data=None, **kwargs):
         po.supplier_address = None
         po.contact_person = None
         po.address_display = None
+        po.tax_category = None
+        po.gst_category = None
+        po.supplier_gstin = None
+        po.place_of_supply = None
 
     po.transaction_date = data.get("date", frappe.utils.today())
     po.additional_discount_percentage = float(data.get("discount_percentage") or 0)

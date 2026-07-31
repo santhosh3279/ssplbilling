@@ -351,6 +351,11 @@ def update_sales_order(data):
 		so.contact_mobile = None
 		so.contact_email = None
 		so.address_display = None
+		so.tax_category = None
+		so.gst_category = None
+		so.billing_address_gstin = None
+		so.customer_name = None
+		so.place_of_supply = None
 
 	so.transaction_date = data.get("date") or so.transaction_date
 	if data.get("delivery_date"):

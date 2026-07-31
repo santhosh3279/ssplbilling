@@ -498,6 +498,10 @@ def update_purchase_invoice(data=None, **kwargs):
         pi.contact_mobile = None
         pi.contact_email = None
         pi.address_display = None
+        pi.tax_category = None
+        pi.gst_category = None
+        pi.supplier_gstin = None
+        pi.place_of_supply = None
 
     pi.is_return = data.get("is_return", 0)
     pi.update_stock = 1
