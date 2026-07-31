@@ -461,20 +461,23 @@ def get_customer_full(customer):
 		order_by="modified desc",
 	)
 	if addr_name:
+		fields = ["address_line1", "address_line2", "city", "pincode", "state"]
+		if "address_line3" in [f.fieldname for f in frappe.get_meta("Address").fields]:
+			fields.append("address_line3")
 		addr = frappe.db.get_value(
 			"Address",
 			addr_name,
-			["address_line1", "address_line2", "address_line3", "city", "pincode", "state"],
+			fields,
 			as_dict=True,
 		)
 		if addr:
 			result["address_name"] = addr_name
-			result["address_line1"] = addr.address_line1 or ""
-			result["address_line2"] = addr.address_line2 or ""
-			result["address_line3"] = addr.address_line3 or ""
-			result["city"] = addr.city or ""
-			result["pincode"] = addr.pincode or ""
-			result["state"] = addr.state or ""
+			result["address_line1"] = addr.get("address_line1") or ""
+			result["address_line2"] = addr.get("address_line2") or ""
+			result["address_line3"] = addr.get("address_line3") or ""
+			result["city"] = addr.get("city") or ""
+			result["pincode"] = addr.get("pincode") or ""
+			result["state"] = addr.get("state") or ""
 
 	contact_name = frappe.db.get_value(
 		"Dynamic Link",
@@ -604,27 +607,30 @@ def update_customer_full(data):
 		addr = frappe.get_doc("Address", address_name)
 		addr.address_line1 = address_line1
 		addr.address_line2 = data.get("address_line2") or ""
-		addr.address_line3 = data.get("address_line3") or ""
+		if "address_line3" in [f.fieldname for f in addr.meta.fields]:
+			addr.address_line3 = data.get("address_line3") or ""
 		addr.city = data.get("city") or addr.city
 		addr.pincode = data.get("pincode") or ""
 		addr.state = data.get("state") or ""
 		addr.gstin = data.get("gstin") or ""
 		addr.save(ignore_permissions=True)
 	else:
-		addr = frappe.get_doc({
+		addr_dict = {
 			"doctype": "Address",
 			"address_title": cust.customer_name,
 			"address_type": "Billing",
 			"address_line1": address_line1,
 			"address_line2": data.get("address_line2") or "",
-			"address_line3": data.get("address_line3") or "",
 			"city": data.get("city") or "",
 			"pincode": data.get("pincode") or "",
 			"state": data.get("state") or "",
 			"gstin": data.get("gstin") or "",
 			"country": "India",
 			"links": [{"link_doctype": "Customer", "link_name": customer_id}],
-		})
+		}
+		if "address_line3" in [f.fieldname for f in frappe.get_meta("Address").fields]:
+			addr_dict["address_line3"] = data.get("address_line3") or ""
+		addr = frappe.get_doc(addr_dict)
 		addr.insert(ignore_permissions=True)
 
 	contact_name = frappe.db.get_value(
