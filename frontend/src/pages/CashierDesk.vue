@@ -1439,7 +1439,8 @@ async function processPayment() {
       showSuccessModal.value = false
     }, 1500)
 
-    if (wasUpi && wasExempted) {
+    const hasAlternativeCompany = !!localStorage.getItem('ae-alternative_company')
+    if (wasUpi && wasExempted && hasAlternativeCompany) {
       nextTick(() => {
         showGstWarning.value = true
       })
