@@ -240,7 +240,6 @@ def get_unlinked_entries(party_type, party):
 	# as they might have both types of entries.
 	account_types = ["Receivable", "Payable"]
 	
-	frappe.log_error(f"Fetching unlinked for {party_type} {party}", "ssplbilling.api.reconcile_api.get_unlinked_entries")
 
 	payment_entries = frappe.db.sql(
 		"""
@@ -359,7 +358,6 @@ def get_unlinked_entries(party_type, party):
 				processed_jes.append(dict(je))
 		je_entries = processed_jes
 
-	frappe.log_error(f"Found {len(payment_entries)} PE and {len(je_entries)} JE", "ssplbilling.api.reconcile_api.get_unlinked_entries_result")
 
 	return {
 		"payment_entries": [dict(r) for r in payment_entries],
