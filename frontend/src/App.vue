@@ -8,7 +8,7 @@
       <!-- Company Indicator Top Bar -->
       <div 
         v-if="showCompanyBar" 
-        class="bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] text-center py-2.5 px-4 font-black text-xs uppercase tracking-widest select-none border-b border-black/10 shrink-0 shadow-sm flex items-center justify-center gap-2"
+        class="bg-red-600 text-white text-center py-2.5 px-4 font-black text-xs uppercase tracking-widest select-none border-b border-black/10 shrink-0 shadow-sm flex items-center justify-center gap-2"
       >
         🏢 {{ alternativeCompany }}
       </div>
