@@ -692,20 +692,19 @@
       @close="showPrintModal = false"
     />
 
-    <!-- GST BILL CREATOR MODAL -->
-    <Gstbillcreator
-      v-if="showGstBillCreator"
-      :show="showGstBillCreator"
+    <!-- BILL MIRROR CREATOR MODAL -->
+    <BillMirrorCreator
+      v-if="showBillMirrorCreator"
+      :show="showBillMirrorCreator"
       :invoice-name="processedInvoiceName"
-      doctype="Quotation"
-      @close="showGstBillCreator = false"
+      @close="showBillMirrorCreator = false"
     />
 
-    <!-- GST BILL WARNING MODAL -->
+    <!-- GST MIRROR WARNING MODAL -->
     <Warning
       :show="showGstWarning"
-      title="Create GST Bill"
-      :message="`create a gst bill for salesinvoice no: ${processedInvoiceName}`"
+      title="GST Mirroring"
+      :message="`mirror salesinvoice no: ${processedInvoiceName} to alternate company`"
       @close="showGstWarning = false"
       @confirm="handleGstConfirm"
     />
@@ -760,7 +759,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Unallocated from '../components/Unallocated.vue'
 import CashierEntry from '../components/CashierEntry.vue'
 import SalesInvoice from './SalesInvoice.vue'
-import Gstbillcreator from '../components/Gstbillcreator.vue'
+import BillMirrorCreator from '../components/BillMirrorCreator.vue'
 import Warning from '../components/Warning.vue'
 import { canAccessTile } from '../composables/usePermission'
 
@@ -818,7 +817,7 @@ const showPrintModal = ref(false)
 const showModifyModal = ref(false)
 const showReconcileModal = ref(false)
 const showSuccessModal = ref(false)
-const showGstBillCreator = ref(false)
+const showBillMirrorCreator = ref(false)
 const showGstWarning = ref(false)
 const cardRefNo = ref('')
 const processedInvoiceName = ref('')
@@ -830,7 +829,7 @@ useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showModifyModal)
 useSubwindowWatcher(showReconcileModal)
 useSubwindowWatcher(showCashierEntry)
-useSubwindowWatcher(showGstBillCreator)
+useSubwindowWatcher(showBillMirrorCreator)
 useSubwindowWatcher(showGstWarning)
 
 const invoices = ref([])
@@ -1450,7 +1449,7 @@ async function processPayment() {
 
 function handleGstConfirm() {
   showGstWarning.value = false
-  showGstBillCreator.value = true
+  showBillMirrorCreator.value = true
 }
 
 async function confirmCardRef() {
