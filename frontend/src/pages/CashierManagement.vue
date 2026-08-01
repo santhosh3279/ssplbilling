@@ -950,7 +950,8 @@ async function fetchTodayBills() {
       cash_account: cashAcc,
       upi_account: upiAcc,
       card_account: cardAcc,
-      discount_account: discAcc
+      discount_account: discAcc,
+      company: localStorage.getItem('wb-company') || '',
     })
     todayBills.value = res || []
   } catch (e) {

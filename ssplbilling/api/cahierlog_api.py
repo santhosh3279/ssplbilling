@@ -93,7 +93,7 @@ def get_upi_day_balances(account, date):
 
 
 @frappe.whitelist()
-def get_today_bills(date, series_list, cash_account=None, upi_account=None, card_account=None, discount_account=None):
+def get_today_bills(date, series_list, cash_account=None, upi_account=None, card_account=None, discount_account=None, company=None):
 	"""Return today's submitted Sales Invoices for the given series with payment mode breakdown."""
 	import json
 
@@ -109,16 +109,24 @@ def get_today_bills(date, series_list, cash_account=None, upi_account=None, card
 	series_conditions = " OR ".join(["si.name LIKE %s"] * len(series_list))
 	series_params = [f"{s}%" for s in series_list]
 
+	company_condition = ""
+	params = [date]
+	if company:
+		company_condition = " AND si.company = %s"
+		params.append(company)
+	params.extend(series_params)
+
 	invoices = frappe.db.sql(
 		f"""
 		SELECT si.name, si.customer, si.grand_total, si.discount_amount, si.outstanding_amount, si.posting_time
 		FROM `tabSales Invoice` si
 		WHERE si.posting_date = %s
 		  AND si.docstatus = 1
+		  {company_condition}
 		  AND ({series_conditions})
 		ORDER BY si.posting_time DESC
 		""",
-		[date] + series_params,
+		params,
 		as_dict=True,
 	)
 
