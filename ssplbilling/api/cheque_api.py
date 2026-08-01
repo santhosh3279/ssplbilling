@@ -177,7 +177,10 @@ def create_cheque(data=None, **kwargs):
 def get_cheques(status="Pending", direction="All", party=None, company=None, limit=200):
     """List cheques for the register, plus pending totals for the summary cards."""
     filters = {}
-    if status and status != "All":
+    if status == "Today":
+        filters["status"] = "Pending"
+        filters["cheque_date"] = frappe.utils.today()
+    elif status and status != "All":
         filters["status"] = status
     if direction and direction != "All":
         filters["direction"] = direction

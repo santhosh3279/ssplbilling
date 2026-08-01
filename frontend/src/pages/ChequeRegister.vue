@@ -459,9 +459,10 @@ function focusIssuedBtn() {
   nextTick(() => issuedBtnRef.value?.focus())
 }
 
-const STATUSES = ['Pending', 'Cleared', 'Bounced', 'Cancelled', 'All']
+const STATUSES = ['Pending', 'Today', 'Cleared', 'Bounced', 'Cancelled', 'All']
 const STATUS_CLASSES = {
   Pending: 'bg-[var(--color-warning)]/10 text-[var(--color-warning)]',
+  Today: 'bg-[var(--color-warning)]/20 text-[var(--color-warning-text)] border border-[var(--color-warning)]/50',
   Cleared: 'bg-[var(--color-success)]/10 text-[var(--color-success)]',
   Bounced: 'bg-[var(--color-danger)]/10 text-[var(--color-danger)]',
   Cancelled: 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]',
