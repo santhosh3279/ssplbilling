@@ -104,7 +104,9 @@
             @focus="onPartyFocus"
             @keydown="quickLedgerSearchRef?.handleKeydown($event)"
           />
-          <label class="absolute left-4 top-1.5 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] pointer-events-none">Customer / Supplier</label>
+          <label class="absolute left-4 top-1.5 text-[9px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] pointer-events-none">
+            Customer / Supplier <kbd class="ml-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-0.5 font-mono text-[8px] text-[var(--color-text-muted)]">F7</kbd>
+          </label>
           <div class="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
             <button
               v-if="partyFilter"
