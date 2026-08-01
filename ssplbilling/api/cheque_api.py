@@ -214,6 +214,17 @@ def get_cheques(status="Pending", direction="All", party=None, company=None, lim
         summary[f"{key}_total"] = float(p.total or 0)
         summary[f"{key}_count"] = int(p.cnt or 0)
 
+    # Calculate cheques due today (Pending and cheque_date <= today)
+    due_today_query = "SELECT SUM(amount) AS total, COUNT(*) AS cnt FROM `tabSSPL Cheque` WHERE status = 'Pending' AND cheque_date <= %(today)s"
+    due_today_args = {"today": frappe.utils.today()}
+    if company:
+        due_today_query += " AND company = %(company)s"
+        due_today_args["company"] = company
+    
+    due_today_res = frappe.db.sql(due_today_query, due_today_args, as_dict=True)
+    summary["due_today_total"] = float(due_today_res[0].total or 0) if due_today_res else 0.0
+    summary["due_today_count"] = int(due_today_res[0].cnt or 0) if due_today_res else 0
+
     return {"cheques": rows, "summary": summary}
 
 

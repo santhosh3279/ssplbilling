@@ -24,7 +24,7 @@
 
     <main class="flex-1 overflow-hidden p-6 flex flex-col gap-5">
       <!-- Summary Cards -->
-      <div class="grid grid-cols-3 gap-6 shrink-0">
+      <div class="grid grid-cols-4 gap-6 shrink-0">
         <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
           <span class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cheques in Hand (Pending Received)</span>
           <div class="flex items-baseline justify-between mt-1">
@@ -37,6 +37,13 @@
           <div class="flex items-baseline justify-between mt-1">
             <span class="text-[45px] font-mono font-black text-[var(--color-danger)]">₹{{ fmt(summary.issued_total) }}</span>
             <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ summary.issued_count }}</span>
+          </div>
+        </div>
+        <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
+          <span class="text-[15px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cheque Due Today</span>
+          <div class="flex items-baseline justify-between mt-1">
+            <span class="text-[45px] font-mono font-black text-[var(--color-warning)]">₹{{ fmt(summary.due_today_total) }}</span>
+            <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Count: {{ summary.due_today_count }}</span>
           </div>
         </div>
         <div class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-4 flex flex-col justify-between shadow-sm">
@@ -449,7 +456,7 @@ const directionFilter = ref('All')
 const isLoading = ref(false)
 const isSaving = ref(false)
 const cheques = ref([])
-const summary = ref({ received_total: 0, received_count: 0, issued_total: 0, issued_count: 0 })
+const summary = ref({ received_total: 0, received_count: 0, issued_total: 0, issued_count: 0, due_today_total: 0, due_today_count: 0 })
 const bankAccounts = ref([])
 const selectedChequeName = ref('')
 const rowRefs = new Map()
