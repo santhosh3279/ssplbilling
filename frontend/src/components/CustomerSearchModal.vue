@@ -170,11 +170,11 @@
               <td class="px-2.5 py-1.5 text-right">
                 <span
                   class="font-bold whitespace-nowrap"
-                  :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]' : ((c.balance || 0) > 0 ? 'text-[var(--color-success)]' : (c.balance || 0) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')"
+                  :class="selectedIdx === idx ? 'text-[var(--color-text-on-focus)]' : (getDisplayBalance(c) > 0 ? 'text-[var(--color-success)]' : getDisplayBalance(c) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')"
                 >
-                  {{ Math.abs(c.balance || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
+                  {{ Math.abs(getDisplayBalance(c)).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}
                   <span class="text-xs font-normal uppercase ml-0.5">
-                    {{ (c.balance || 0) > 0 ? 'DR' : (c.balance || 0) < 0 ? 'CR' : '' }}
+                    {{ getDisplayBalance(c) > 0 ? 'DR' : getDisplayBalance(c) < 0 ? 'CR' : '' }}
                   </span>
                 </span>
               </td>
@@ -359,6 +359,20 @@ async function preloadLedger(force = false) {
 
 // ─── Filtering ────────────────────────────────────────────────────────────────
 const userRole = computed(() => getUserRole())
+
+const isSameCompany = computed(() => {
+  const wbCompany = localStorage.getItem('wb-company')
+  const aeCompany = localStorage.getItem('ae-alternative_company')
+  return wbCompany && aeCompany && wbCompany === aeCompany
+})
+
+function getDisplayBalance(c) {
+  if (isSameCompany.value) {
+    return c.alternative_balance || 0
+  }
+  return c.balance || 0
+}
+
 const allowedAccountSet = computed(() => {
   const role = userRole.value
   if (role === 'admin' || role === 'accounts') return null
@@ -375,7 +389,22 @@ const allowedAccountSet = computed(() => {
     if (raw) accounts.push(...JSON.parse(raw))
   } catch (_) {}
 
-  return new Set(accounts)
+  const allowed = new Set(accounts)
+
+  if (isSameCompany.value) {
+    const wbCompany = localStorage.getItem('wb-company')
+    const wbAbbr = wbCompany === 'CHETTIYAR KADA' ? 'SSPL' : 'NCK'
+    const altAbbr = wbCompany === 'CHETTIYAR KADA' ? 'NCK' : 'SSPL'
+
+    accounts.forEach(acc => {
+      if (acc.endsWith(` - ${wbAbbr}`)) {
+        const altAcc = acc.replace(` - ${wbAbbr}`, ` - ${altAbbr}`)
+        allowed.add(altAcc)
+      }
+    })
+  }
+
+  return allowed
 })
 
 function tokenMatch(l, fields, tokens) {

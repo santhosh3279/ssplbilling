@@ -55,7 +55,12 @@ export async function refreshLedgerCache(force = false) {
 
   syncLoading.value = true
   try {
-    const data = await frappeGet('ssplbilling.api.customersearch_api.get_all_ledgers')
+    const company = localStorage.getItem('wb-company') || ''
+    const alternative_company = localStorage.getItem('ae-alternative_company') || ''
+    const data = await frappeGet('ssplbilling.api.customersearch_api.get_all_ledgers', {
+      company,
+      alternative_company
+    })
     const rawList = data || []
     
     const newPartyLinks = {}

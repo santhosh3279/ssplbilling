@@ -41,7 +41,7 @@ def get_user_mop_ledgers():
 
 
 @frappe.whitelist()
-def get_all_ledgers():
+def get_all_ledgers(company=None, alternative_company=None):
     """Fetch all Customers, Suppliers, and Accounts in a unified format for local preloading."""
     ledgers = []
 
@@ -81,10 +81,18 @@ def get_all_ledgers():
     ledgers.extend(employees)
 
     # 4. Accounts (Ledgers)
+    account_filters = {"disabled": 0, "is_group": 0, "account_type": ["not in", ["Receivable", "Payable"]]}
+    if company and alternative_company:
+        account_filters["company"] = ["in", [company, alternative_company]]
+    elif company:
+        account_filters["company"] = company
+    elif alternative_company:
+        account_filters["company"] = alternative_company
+
     accounts = frappe.get_all(
         "Account",
-        filters={"disabled": 0, "is_group": 0, "account_type": ["not in", ["Receivable", "Payable"]]},
-        fields=["name", "account_name as label", "account_type as group"],
+        filters=account_filters,
+        fields=["name", "account_name as label", "account_type as group", "company"],
         limit=0
     )
     for a in accounts:
@@ -126,20 +134,49 @@ def get_all_ledgers():
             ledger_map[w.name]["whatsapp"] = w.whatsapp
 
     # 6. Batch fetch Balances (Unified)
-    balances = frappe.db.sql("""
+    # Active company balances
+    active_balance_cond = ""
+    active_params = []
+    if company:
+        active_balance_cond = " AND company = %s"
+        active_params = [company, company]
+
+    active_balances = frappe.db.sql(f"""
         SELECT party as name, SUM(debit) - SUM(credit) as balance
         FROM `tabGL Entry`
-        WHERE is_cancelled = 0
+        WHERE is_cancelled = 0 {active_balance_cond}
         GROUP BY party
         UNION
         SELECT account as name, SUM(debit) - SUM(credit) as balance
         FROM `tabGL Entry`
-        WHERE is_cancelled = 0 AND (party IS NULL OR party = '')
+        WHERE is_cancelled = 0 {active_balance_cond} AND (party IS NULL OR party = '')
         GROUP BY account
-    """, as_dict=True)
-    for b in balances:
+    """, tuple(active_params), as_dict=True)
+
+    for b in active_balances:
         if b.name in ledger_map:
             ledger_map[b.name]["balance"] = float(b.balance or 0)
+
+    # Alternate company balances
+    if alternative_company:
+        alt_balance_cond = " AND company = %s"
+        alt_params = [alternative_company, alternative_company]
+
+        alt_balances = frappe.db.sql(f"""
+            SELECT party as name, SUM(debit) - SUM(credit) as balance
+            FROM `tabGL Entry`
+            WHERE is_cancelled = 0 {alt_balance_cond}
+            GROUP BY party
+            UNION
+            SELECT account as name, SUM(debit) - SUM(credit) as balance
+            FROM `tabGL Entry`
+            WHERE is_cancelled = 0 {alt_balance_cond} AND (party IS NULL OR party = '')
+            GROUP BY account
+        """, tuple(alt_params), as_dict=True)
+
+        for b in alt_balances:
+            if b.name in ledger_map:
+                ledger_map[b.name]["alternative_balance"] = float(b.balance or 0)
 
     # 6b. Batch fetch activity counts (GL postings in the last 90 days) —
     # the front-end ledger search ranks busier ledgers first.
