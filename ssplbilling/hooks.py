@@ -300,6 +300,9 @@ doc_events = {
 scheduler_events = {
 	"all": [
 		"ssplbilling.api.mqtt_api.ensure_mqtt_connected"
+	],
+	"daily": [
+		"ssplbilling.ssplbilling.doctype.version_purge_settings.version_purge_settings.daily_purge"
 	]
 }
 
