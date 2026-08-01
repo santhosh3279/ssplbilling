@@ -117,76 +117,92 @@
               </tr>
             </thead>
             <tbody>
-              <tr
-                v-for="chq in cheques"
-                :key="chq.name"
-                :ref="el => setRowRef(el, chq.name)"
-                @click="selectedChequeName = chq.name"
-                class="border-t border-[var(--color-border)]/60 hover:bg-[var(--color-surface-raised)]/40 transition-colors cursor-pointer scroll-mt-[52px]"
-                :class="selectedChequeName === chq.name ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : ''"
-              >
-                <td class="px-4 py-3 font-mono font-bold">{{ chq.cheque_no }}</td>
-                <td class="px-4 py-3">
-                  <span
-                    class="px-2 py-0.5 rounded font-black uppercase tracking-widest"
-                    :class="chq.direction === 'Received' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/10 text-[var(--color-danger)]'"
-                  >
-                    {{ chq.direction === 'Received' ? '⬇ Received' : '⬆ Issued' }}
-                  </span>
-                </td>
-                <td class="px-4 py-3">
-                  <div class="font-bold">{{ chq.party_name || chq.party }}</div>
-                </td>
-                <td class="px-4 py-3 text-[var(--color-text-muted)] uppercase tracking-wider">
-                  {{ chq.party_type }}
-                </td>
-                <td class="px-4 py-3 text-[var(--color-text-muted)]">{{ chq.bank_name || '—' }}</td>
-                <td class="px-4 py-3 text-center font-semibold" :class="isPostDated(chq) ? 'text-[var(--color-warning)]' : ''">
-                  {{ formatDate(chq.cheque_date) }}
-                  <div v-if="isPostDated(chq)" class="font-black uppercase tracking-widest text-[var(--color-warning)]">Post-dated</div>
-                </td>
-                <td class="px-4 py-3 text-right font-mono font-black">₹{{ fmt(chq.amount) }}</td>
-                <td class="px-4 py-3 text-center">
-                  <span
-                    class="px-2.5 py-0.5 rounded-full font-black uppercase tracking-widest"
-                    :class="STATUS_CLASSES[chq.status] || ''"
-                  >
-                    {{ chq.status }}
-                  </span>
-                </td>
-                <td class="px-4 py-3">
-                  <div class="flex justify-end gap-2">
-                    <button
-                      v-if="chq.status === 'Pending'"
-                      @click="openSettle(chq)"
-                      class="rounded-lg bg-[var(--color-success)] px-2.5 py-1 text-xs font-black uppercase tracking-widest text-white shadow-sm hover:brightness-110 active:scale-95 transition-all"
+              <template v-for="(chq, idx) in cheques" :key="chq.name">
+                <!-- Today's Header -->
+                <tr v-if="idx === 0 && chq.cheque_date === getTodayIST()" class="bg-[var(--color-warning)]/15 pointer-events-none">
+                  <td colspan="9" class="px-4 py-2.5 text-xs font-black uppercase tracking-widest text-[var(--color-warning)]">
+                    ⭐ Today's Cheques (Due Today)
+                  </td>
+                </tr>
+                <!-- Other Header -->
+                <tr v-if="idx > 0 && cheques[idx-1].cheque_date === getTodayIST() && chq.cheque_date !== getTodayIST()" class="bg-[var(--color-surface-raised)]/50 pointer-events-none border-t border-[var(--color-border)]">
+                  <td colspan="9" class="px-4 py-2.5 text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                    Other Cheques
+                  </td>
+                </tr>
+                <!-- Main Cheque Row -->
+                <tr
+                  :ref="el => setRowRef(el, chq.name)"
+                  @click="selectedChequeName = chq.name"
+                  class="border-t border-[var(--color-border)]/60 hover:bg-[var(--color-surface-raised)]/40 transition-colors cursor-pointer scroll-mt-[52px]"
+                  :class="[
+                    selectedChequeName === chq.name ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : '',
+                    chq.cheque_date === getTodayIST() && selectedChequeName !== chq.name ? 'bg-[var(--color-warning)]/5 border-l-4 border-l-[var(--color-warning)] shadow-inner' : ''
+                  ]"
+                >
+                  <td class="px-4 py-3 font-mono font-bold">{{ chq.cheque_no }}</td>
+                  <td class="px-4 py-3">
+                    <span
+                      class="px-2 py-0.5 rounded font-black uppercase tracking-widest"
+                      :class="chq.direction === 'Received' ? 'bg-[var(--color-success)]/10 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/10 text-[var(--color-danger)]'"
                     >
-                      Settle
-                    </button>
-                    <button
-                      v-if="chq.status === 'Pending'"
-                      @click="markBounced(chq)"
-                      class="rounded-lg bg-[var(--color-danger)]/10 px-2.5 py-1 text-xs font-black uppercase tracking-widest text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white active:scale-95 transition-all"
+                      {{ chq.direction === 'Received' ? '⬇ Received' : '⬆ Issued' }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="font-bold">{{ chq.party_name || chq.party }}</div>
+                  </td>
+                  <td class="px-4 py-3 text-[var(--color-text-muted)] uppercase tracking-wider">
+                    {{ chq.party_type }}
+                  </td>
+                  <td class="px-4 py-3 text-[var(--color-text-muted)]">{{ chq.bank_name || '—' }}</td>
+                  <td class="px-4 py-3 text-center font-semibold" :class="isPostDated(chq) ? 'text-[var(--color-warning)]' : ''">
+                    {{ formatDate(chq.cheque_date) }}
+                    <div v-if="isPostDated(chq)" class="font-black uppercase tracking-widest text-[var(--color-warning)]">Post-dated</div>
+                  </td>
+                  <td class="px-4 py-3 text-right font-mono font-black">₹{{ fmt(chq.amount) }}</td>
+                  <td class="px-4 py-3 text-center">
+                    <span
+                      class="px-2.5 py-0.5 rounded-full font-black uppercase tracking-widest"
+                      :class="STATUS_CLASSES[chq.status] || ''"
                     >
-                      Bounce
-                    </button>
-                    <button
-                      v-if="chq.status === 'Pending'"
-                      @click="markCancelled(chq)"
-                      class="rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] active:scale-95 transition-all"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      @click="triggerPrint(chq)"
-                      class="rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs font-black text-[var(--color-text-muted)] hover:border-[var(--color-highlight)] hover:text-[var(--color-highlight)] active:scale-95 transition-all"
-                      title="Print Cheque"
-                    >
-                      🖨
-                    </button>
-                  </div>
-                </td>
-              </tr>
+                      {{ chq.status }}
+                    </span>
+                  </td>
+                  <td class="px-4 py-3">
+                    <div class="flex justify-end gap-2">
+                      <button
+                        v-if="chq.status === 'Pending'"
+                        @click="openSettle(chq)"
+                        class="rounded-lg bg-[var(--color-success)] px-2.5 py-1 text-xs font-black uppercase tracking-widest text-white shadow-sm hover:brightness-110 active:scale-95 transition-all"
+                      >
+                        Settle
+                      </button>
+                      <button
+                        v-if="chq.status === 'Pending'"
+                        @click="markBounced(chq)"
+                        class="rounded-lg bg-[var(--color-danger)]/10 px-2.5 py-1 text-xs font-black uppercase tracking-widest text-[var(--color-danger)] hover:bg-[var(--color-danger)] hover:text-white active:scale-95 transition-all"
+                      >
+                        Bounce
+                      </button>
+                      <button
+                        v-if="chq.status === 'Pending'"
+                        @click="markCancelled(chq)"
+                        class="rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:border-[var(--color-danger)] hover:text-[var(--color-danger)] active:scale-95 transition-all"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        @click="triggerPrint(chq)"
+                        class="rounded-lg border border-[var(--color-border)] px-2.5 py-1 text-xs font-black text-[var(--color-text-muted)] hover:border-[var(--color-highlight)] hover:text-[var(--color-highlight)] active:scale-95 transition-all"
+                        title="Print Cheque"
+                      >
+                        🖨
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
             </tbody>
           </table>
         </div>
@@ -502,6 +518,13 @@ function getLocalDateParts() {
   return formatter.format(now).split('-').map(Number)
 }
 
+function getTodayIST() {
+  const [y, m, d] = getLocalDateParts()
+  const mm = String(m).padStart(2, '0')
+  const dd = String(d).padStart(2, '0')
+  return `${y}-${mm}-${dd}`
+}
+
 function onChequeDateInput(e) {
   let val = e.target.value.replace(/\D/g, '')
 
@@ -719,7 +742,11 @@ async function loadCheques() {
       directionFilter.value,
       localStorage.getItem('wb-company') || ''
     )
-    cheques.value = res.cheques || []
+    const todayStr = getTodayIST()
+    const allCheques = res.cheques || []
+    const todayList = allCheques.filter(c => c.cheque_date === todayStr)
+    const otherList = allCheques.filter(c => c.cheque_date !== todayStr)
+    cheques.value = [...todayList, ...otherList]
     summary.value = res.summary || summary.value
   } catch (e) {
     alert('Failed to load cheques: ' + e.message)
