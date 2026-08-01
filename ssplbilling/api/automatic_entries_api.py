@@ -39,9 +39,11 @@ def _allowed_accounts(automatic_entries):
 	}
 
 
-def should_mirror_sales_invoice(naming_series, automatic_entries):
+def should_mirror_sales_invoice(naming_series, automatic_entries, company=None):
 	"""Whether `naming_series` is configured in Automatic Entries for cross-company mirroring."""
 	if not automatic_entries.alternative_company:
+		return False
+	if company and company == automatic_entries.alternative_company:
 		return False
 	if not naming_series:
 		return False
@@ -394,7 +396,7 @@ def mirror_bill(si):
 	Isolated with a savepoint so a failure here never rolls back si's own submission.
 	"""
 	ae = get_automatic_entries()
-	if not should_mirror_sales_invoice(si.naming_series, ae):
+	if not should_mirror_sales_invoice(si.naming_series, ae, si.company):
 		return None
 
 	sp = "sp_" + frappe.generate_hash(length=10)
