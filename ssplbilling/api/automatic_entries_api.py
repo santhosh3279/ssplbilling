@@ -734,6 +734,19 @@ def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_li
 		frappe.throw(f"Series {naming_series} is not a Conversion Invoice Series in Automatic Entries.")
 
 	naming_series = _expand_series_prefix(naming_series)
+
+	if not tax_template:
+		try:
+			settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
+			base_series = naming_series.split(".")[0] if naming_series else ""
+			for row in settings.billing_series or []:
+				row_series = row.series.split(".")[0] if row.series else ""
+				if row_series == base_series:
+					tax_template = row.tax_template
+					break
+		except Exception:
+			pass
+
 	si = frappe.get_doc("Sales Invoice", sales_invoice_name)
 	msi = create_mirror_invoice_for_gst_conversion(
 		si, ae, naming_series=naming_series, price_list=price_list, tax_template=tax_template, use_series_naming=True, submit=False

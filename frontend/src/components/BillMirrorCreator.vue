@@ -131,7 +131,7 @@ async function selectSeries(s) {
     let seriesEntry = null
     try {
       const cached = JSON.parse(localStorage.getItem('wb-settings-v2') || 'null')
-      seriesEntry = cached?.data?.billing_series?.find(bs => bs.series === s) || null
+      seriesEntry = cached?.data?.billing_series?.find(bs => bs.series === s || bs.series.startsWith(s + '.')) || null
     } catch { /* ignore cache parse errors */ }
 
     const res = await frappePost('ssplbilling.api.automatic_entries_api.create_conversion_mirror_invoice', {
