@@ -1019,6 +1019,16 @@ async function handleSubmit() {
         }
       }
 
+      const invoiceRefs = (mopRow.allocations || [])
+        .filter(a => ['Sales Invoice', 'Purchase Invoice'].includes(a.reference_doctype))
+        .map(r => ({
+          reference_doctype: r.reference_doctype,
+          reference_name: r.reference_name,
+          total_amount: r.total_amount,
+          outstanding_amount: r.outstanding_amount,
+          allocated_amount: parseFloat(r.allocated_amount) || 0,
+        }))
+
       const payload = {
         payment_type: paymentType,
         party_type: isTransfer ? '' : form.party_type,
@@ -1033,13 +1043,7 @@ async function handleSubmit() {
         cost_center: localStorage.getItem('wb-cost-center') || null,
         remarks: form.remarks,
         "Custom Remarks": 1,
-        references: (mopRow.allocations || []).map(r => ({
-          reference_doctype: r.reference_doctype,
-          reference_name: r.reference_name,
-          total_amount: r.total_amount,
-          outstanding_amount: r.outstanding_amount,
-          allocated_amount: parseFloat(r.allocated_amount) || 0,
-        })),
+        references: invoiceRefs,
       }
       
       const res = await frappePost('ssplbilling.api.paymentv2_api.create_payment_entry', {
@@ -1047,7 +1051,32 @@ async function handleSubmit() {
       })
       
       if (res && res.payment_entry) {
-        createdEntries.push(res.payment_entry)
+        const pe_name = res.payment_entry
+        createdEntries.push(pe_name)
+
+        const crossAllocations = (mopRow.allocations || [])
+          .filter(a => ['Payment Entry', 'Journal Entry'].includes(a.reference_doctype))
+          .map(a => ({
+            payment_type: 'Payment Entry',
+            payment_name: pe_name,
+            reference_row: a._row || null,
+            invoice_type: a.reference_doctype,
+            invoice_name: a.reference_name,
+            amount: parseFloat(a.allocated_amount) || 0,
+            unreconciled_amount: mopRow.amount
+          }))
+
+        if (crossAllocations.length > 0) {
+          try {
+            await frappePost('ssplbilling.api.reconcile_api.post_reconciliation', {
+              party_type: isTransfer ? '' : form.party_type,
+              party: payloadParty,
+              allocations: JSON.stringify(crossAllocations)
+            })
+          } catch (err) {
+            console.warn('Cross reconciliation failed for ' + pe_name + ':', err)
+          }
+        }
       }
       if (res && res.mirror_payment_entry) {
         createdEntries.push(res.mirror_payment_entry)
