@@ -2775,6 +2775,12 @@ function handleOpenGstBillCreator() {
 }
 
 function handleOpenBillMirror() {
+  const wbCompany = localStorage.getItem('wb-company') || ''
+  const aeCompany = localStorage.getItem('ae-alternative_company') || ''
+  if (wbCompany && aeCompany && wbCompany === aeCompany) {
+    return
+  }
+
   if (!invoiceNo.value || invoiceNo.value === 'NEW' || !isSaved.value) {
     alert('Please save the sales invoice first.')
     return
