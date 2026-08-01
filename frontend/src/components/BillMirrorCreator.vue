@@ -137,7 +137,8 @@ async function selectSeries(s) {
     const res = await frappePost('ssplbilling.api.automatic_entries_api.create_conversion_mirror_invoice', {
       sales_invoice_name: props.invoiceName,
       naming_series: s,
-      price_list: seriesEntry?.price_list || undefined
+      price_list: seriesEntry?.price_list || undefined,
+      tax_template: seriesEntry?.tax_template || undefined
     })
 
     if (res && res.invoice_name) {

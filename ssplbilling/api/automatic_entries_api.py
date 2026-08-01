@@ -180,6 +180,22 @@ def resolve_target_item_tax_template(source_template, target_company):
 	return ""
 
 
+def resolve_target_taxes_and_charges_template(source_template, target_company):
+	"""Resolve a source Sales Taxes and Charges Template to its equivalent in the target company
+	by matching the title.
+	"""
+	if not source_template or not target_company:
+		return ""
+	title = frappe.db.get_value("Sales Taxes and Charges Template", source_template, "title")
+	if title:
+		target_template = frappe.db.get_value(
+			"Sales Taxes and Charges Template", {"company": target_company, "title": title}, "name"
+		)
+		if target_template:
+			return target_template
+	return ""
+
+
 def ensure_warehouse_in_company(original_warehouse, target_company):
 	"""Ensure that an equivalent of original_warehouse exists in target_company.
 	If not, create it copying attributes from original_warehouse (and recursively for its parent).
@@ -366,7 +382,7 @@ def create_mirror_sales_invoice(si, automatic_entries):
 		msi.append("items", row)
 
 	if si.taxes_and_charges:
-		msi.taxes_and_charges = si.taxes_and_charges
+		msi.taxes_and_charges = resolve_target_taxes_and_charges_template(si.taxes_and_charges, target_company) or si.taxes_and_charges
 	for tax in si.taxes:
 		tax_row = {
 			"charge_type": tax.charge_type,
@@ -540,7 +556,7 @@ def mirror_standalone_payment_entry(pe):
 		return None
 
 
-def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_list=None, use_series_naming=False, submit=True):
+def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_list=None, tax_template=None, use_series_naming=False, submit=True):
 	"""Create a mirror Sales Invoice in target company (ae_company) for a Sales Invoice
 	that is being converted to a GST bill (Quotation).
 	It creates a Sales Invoice in target company, with name si.name + '/', and copies all accounts,
@@ -612,19 +628,39 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 			row["income_account"] = ensure_account_in_company(item.income_account, target_company)
 		msi.append("items", row)
 
-	if si.taxes_and_charges:
-		msi.taxes_and_charges = si.taxes_and_charges
-	for tax in si.taxes:
-		tax_row = {
-			"charge_type": tax.charge_type,
-			"account_head": ensure_account_in_company(tax.account_head, target_company) or tax.account_head,
-			"description": tax.description,
-			"rate": tax.rate,
-			"included_in_print_rate": tax.included_in_print_rate,
-		}
-		if tax.cost_center:
-			tax_row["cost_center"] = ensure_cost_center_in_company(tax.cost_center, target_company)
-		msi.append("taxes", tax_row)
+	applied_tax_template = None
+	if tax_template:
+		applied_tax_template = resolve_target_taxes_and_charges_template(tax_template, target_company) or tax_template
+
+	if applied_tax_template:
+		msi.taxes_and_charges = applied_tax_template
+		from erpnext.controllers.accounts_controller import get_taxes_and_charges
+		taxes = get_taxes_and_charges("Sales Taxes and Charges Template", applied_tax_template)
+		for tax in taxes:
+			tax_row = {
+				"charge_type": tax.get("charge_type"),
+				"account_head": tax.get("account_head"),
+				"description": tax.get("description"),
+				"rate": tax.get("rate"),
+				"included_in_print_rate": tax.get("included_in_print_rate"),
+			}
+			if tax.get("cost_center"):
+				tax_row["cost_center"] = ensure_cost_center_in_company(tax.get("cost_center"), target_company)
+			msi.append("taxes", tax_row)
+	else:
+		if si.taxes_and_charges:
+			msi.taxes_and_charges = resolve_target_taxes_and_charges_template(si.taxes_and_charges, target_company) or si.taxes_and_charges
+		for tax in si.taxes:
+			tax_row = {
+				"charge_type": tax.charge_type,
+				"account_head": ensure_account_in_company(tax.account_head, target_company) or tax.account_head,
+				"description": tax.description,
+				"rate": tax.rate,
+				"included_in_print_rate": tax.included_in_print_rate,
+			}
+			if tax.cost_center:
+				tax_row["cost_center"] = ensure_cost_center_in_company(tax.cost_center, target_company)
+			msi.append("taxes", tax_row)
 
 	msi.custom_customer_name = si.get("custom_customer_name") or ""
 	msi.custom_address_line1 = si.get("custom_address_line1") or ""
@@ -686,7 +722,7 @@ def _expand_series_prefix(prefix, doctype="Sales Invoice"):
 
 
 @frappe.whitelist()
-def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_list=None):
+def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_list=None, tax_template=None):
 	"""Mirror `sales_invoice_name` into the Automatic Entries alternative company as a new
 	draft Sales Invoice named from `naming_series` (must be a configured Conversion
 	Invoice Series). Missing accounts, warehouses and cost centers are auto-created in
@@ -700,7 +736,7 @@ def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_li
 	naming_series = _expand_series_prefix(naming_series)
 	si = frappe.get_doc("Sales Invoice", sales_invoice_name)
 	msi = create_mirror_invoice_for_gst_conversion(
-		si, ae, naming_series=naming_series, price_list=price_list, use_series_naming=True, submit=False
+		si, ae, naming_series=naming_series, price_list=price_list, tax_template=tax_template, use_series_naming=True, submit=False
 	)
 	return {"status": "success", "invoice_name": msi.name, "company": msi.company}
 
