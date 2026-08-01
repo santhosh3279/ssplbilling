@@ -240,6 +240,7 @@ async function handleSave() {
     const payload = {
       voucher_type: 'Contra',
       posting_date: postingDate,
+      company: localStorage.getItem('wb-company') || null,
       user_remark: remarks.value,
       accounts: rows.value.map(r => ({
         account:                       r.account,
