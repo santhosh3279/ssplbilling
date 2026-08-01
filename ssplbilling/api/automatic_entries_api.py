@@ -196,6 +196,35 @@ def resolve_target_taxes_and_charges_template(source_template, target_company):
 	return ""
 
 
+def get_interstate_tax_template(tax_template, target_company, is_interstate=False):
+	"""Resolve and swap In-State and Out-State tax templates based on company vs party state comparison."""
+	if not tax_template:
+		return tax_template
+
+	title = frappe.db.get_value("Sales Taxes and Charges Template", tax_template, "title") or tax_template
+
+	new_title = title
+	if is_interstate:
+		if "In-state" in title:
+			new_title = title.replace("In-state", "Out-state")
+		elif "In state" in title:
+			new_title = title.replace("In state", "Out state")
+	else:
+		if "Out-state" in title:
+			new_title = title.replace("Out-state", "In-state")
+		elif "Out state" in title:
+			new_title = title.replace("Out state", "In state")
+
+	if new_title != title:
+		target_template = frappe.db.get_value(
+			"Sales Taxes and Charges Template", {"company": target_company, "title": new_title}, "name"
+		)
+		if target_template:
+			return target_template
+
+	return None
+
+
 def ensure_warehouse_in_company(original_warehouse, target_company):
 	"""Ensure that an equivalent of original_warehouse exists in target_company.
 	If not, create it copying attributes from original_warehouse (and recursively for its parent).
@@ -381,19 +410,49 @@ def create_mirror_sales_invoice(si, automatic_entries):
 			row["income_account"] = mapped_income
 		msi.append("items", row)
 
+	# Determine if it's interstate
+	is_interstate = False
+	company_address = frappe.db.get_value("Dynamic Link", {"link_doctype": "Company", "link_name": target_company, "parenttype": "Address"}, "parent")
+	company_state = frappe.db.get_value("Address", company_address, "state") if company_address else ""
+	party_state = frappe.db.get_value("Address", si.customer_address, "state") if si.customer_address else ""
+
+	if company_state and party_state:
+		is_interstate = (company_state.lower().strip() != party_state.lower().strip())
+
+	applied_tax_template = None
 	if si.taxes_and_charges:
-		msi.taxes_and_charges = resolve_target_taxes_and_charges_template(si.taxes_and_charges, target_company) or si.taxes_and_charges
-	for tax in si.taxes:
-		tax_row = {
-			"charge_type": tax.charge_type,
-			"account_head": resolve_target_account(tax.account_head, allowed_accounts, target_company) or tax.account_head,
-			"description": tax.description,
-			"rate": tax.rate,
-			"included_in_print_rate": tax.included_in_print_rate,
-		}
-		if tax.cost_center:
-			tax_row["cost_center"] = ensure_cost_center_in_company(tax.cost_center, target_company)
-		msi.append("taxes", tax_row)
+		resolved_template = resolve_target_taxes_and_charges_template(si.taxes_and_charges, target_company) or si.taxes_and_charges
+		adjusted_template = get_interstate_tax_template(resolved_template, target_company, is_interstate)
+		applied_tax_template = adjusted_template or resolved_template
+
+	if applied_tax_template:
+		msi.taxes_and_charges = applied_tax_template
+		from erpnext.controllers.accounts_controller import get_taxes_and_charges
+		taxes = get_taxes_and_charges("Sales Taxes and Charges Template", applied_tax_template)
+		msi.taxes = []
+		for tax in taxes:
+			tax_row = {
+				"charge_type": tax.get("charge_type"),
+				"account_head": tax.get("account_head"),
+				"description": tax.get("description"),
+				"rate": tax.get("rate"),
+				"included_in_print_rate": tax.get("included_in_print_rate"),
+			}
+			if tax.get("cost_center"):
+				tax_row["cost_center"] = ensure_cost_center_in_company(tax.get("cost_center"), target_company)
+			msi.append("taxes", tax_row)
+	else:
+		for tax in si.taxes:
+			tax_row = {
+				"charge_type": tax.charge_type,
+				"account_head": resolve_target_account(tax.account_head, allowed_accounts, target_company) or tax.account_head,
+				"description": tax.description,
+				"rate": tax.rate,
+				"included_in_print_rate": tax.included_in_print_rate,
+			}
+			if tax.cost_center:
+				tax_row["cost_center"] = ensure_cost_center_in_company(tax.cost_center, target_company)
+			msi.append("taxes", tax_row)
 
 	msi.custom_customer_name = si.get("custom_customer_name") or ""
 	msi.custom_address_line1 = si.get("custom_address_line1") or ""
@@ -628,9 +687,21 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 			row["income_account"] = ensure_account_in_company(item.income_account, target_company)
 		msi.append("items", row)
 
+	# Determine if it's interstate
+	is_interstate = False
+	company_address = frappe.db.get_value("Dynamic Link", {"link_doctype": "Company", "link_name": target_company, "parenttype": "Address"}, "parent")
+	company_state = frappe.db.get_value("Address", company_address, "state") if company_address else ""
+	party_state = frappe.db.get_value("Address", si.customer_address, "state") if si.customer_address else ""
+
+	if company_state and party_state:
+		is_interstate = (company_state.lower().strip() != party_state.lower().strip())
+
 	applied_tax_template = None
-	if tax_template:
-		applied_tax_template = resolve_target_taxes_and_charges_template(tax_template, target_company) or tax_template
+	source_template_to_use = tax_template or si.taxes_and_charges
+	if source_template_to_use:
+		resolved_template = resolve_target_taxes_and_charges_template(source_template_to_use, target_company) or source_template_to_use
+		adjusted_template = get_interstate_tax_template(resolved_template, target_company, is_interstate)
+		applied_tax_template = adjusted_template or resolved_template
 
 	if applied_tax_template:
 		msi.taxes_and_charges = applied_tax_template
@@ -648,8 +719,6 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 				tax_row["cost_center"] = ensure_cost_center_in_company(tax.get("cost_center"), target_company)
 			msi.append("taxes", tax_row)
 	else:
-		if si.taxes_and_charges:
-			msi.taxes_and_charges = resolve_target_taxes_and_charges_template(si.taxes_and_charges, target_company) or si.taxes_and_charges
 		for tax in si.taxes:
 			tax_row = {
 				"charge_type": tax.charge_type,
