@@ -628,7 +628,7 @@ def mirror_standalone_payment_entry(pe):
 		return None
 
 
-def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_list=None, tax_template=None, use_series_naming=False, submit=True):
+def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_list=None, tax_template=None, tax_type_incl=None, use_series_naming=False, submit=True):
 	"""Create a mirror Sales Invoice in target company (ae_company) for a Sales Invoice
 	that is being converted to a GST bill (Quotation).
 	It creates a Sales Invoice in target company, with name si.name + '/', and copies all accounts,
@@ -730,7 +730,11 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 		adjusted_template = get_interstate_tax_template(resolved_template, target_company, is_interstate)
 		applied_tax_template = adjusted_template or resolved_template
 
-	source_is_inclusive = any(int(t.included_in_print_rate or 0) for t in si.taxes)
+	is_inclusive = False
+	if tax_type_incl is not None:
+		is_inclusive = bool(int(tax_type_incl))
+	else:
+		is_inclusive = any(int(t.included_in_print_rate or 0) for t in si.taxes)
 
 	if applied_tax_template:
 		msi.taxes_and_charges = applied_tax_template
@@ -742,7 +746,7 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 				"account_head": tax.get("account_head"),
 				"description": tax.get("description"),
 				"rate": tax.get("rate"),
-				"included_in_print_rate": 1 if source_is_inclusive else tax.get("included_in_print_rate"),
+				"included_in_print_rate": 1 if is_inclusive else tax.get("included_in_print_rate"),
 			}
 			if tax.get("cost_center"):
 				tax_row["cost_center"] = ensure_cost_center_in_company(tax.get("cost_center"), target_company)
@@ -754,7 +758,7 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 				"account_head": ensure_account_in_company(tax.account_head, target_company) or tax.account_head,
 				"description": tax.description,
 				"rate": tax.rate,
-				"included_in_print_rate": 1 if source_is_inclusive else tax.included_in_print_rate,
+				"included_in_print_rate": 1 if is_inclusive else tax.included_in_print_rate,
 			}
 			if tax.cost_center:
 				tax_row["cost_center"] = ensure_cost_center_in_company(tax.cost_center, target_company)
@@ -820,7 +824,7 @@ def _expand_series_prefix(prefix, doctype="Sales Invoice"):
 
 
 @frappe.whitelist()
-def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_list=None, tax_template=None):
+def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_list=None, tax_template=None, tax_type_incl=None):
 	"""Mirror `sales_invoice_name` into the Automatic Entries alternative company as a new
 	draft Sales Invoice named from `naming_series` (must be a configured Conversion
 	Invoice Series). Missing accounts, warehouses and cost centers are auto-created in
@@ -833,21 +837,24 @@ def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_li
 
 	naming_series = _expand_series_prefix(naming_series)
 
-	if not tax_template:
+	if tax_template is None or tax_type_incl is None:
 		try:
 			settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
 			base_series = naming_series.split(".")[0] if naming_series else ""
 			for row in settings.billing_series or []:
 				row_series = row.series.split(".")[0] if row.series else ""
 				if row_series == base_series:
-					tax_template = row.tax_template
+					if tax_template is None:
+						tax_template = row.tax_template
+					if tax_type_incl is None:
+						tax_type_incl = row.tax_type_incl
 					break
 		except Exception:
 			pass
 
 	si = frappe.get_doc("Sales Invoice", sales_invoice_name)
 	msi = create_mirror_invoice_for_gst_conversion(
-		si, ae, naming_series=naming_series, price_list=price_list, tax_template=tax_template, use_series_naming=True, submit=False
+		si, ae, naming_series=naming_series, price_list=price_list, tax_template=tax_template, tax_type_incl=tax_type_incl, use_series_naming=True, submit=False
 	)
 	return {"status": "success", "invoice_name": msi.name, "company": msi.company}
 

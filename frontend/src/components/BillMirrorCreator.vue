@@ -138,7 +138,8 @@ async function selectSeries(s) {
       sales_invoice_name: props.invoiceName,
       naming_series: s,
       price_list: seriesEntry?.price_list || undefined,
-      tax_template: seriesEntry?.tax_template || undefined
+      tax_template: seriesEntry?.tax_template || undefined,
+      tax_type_incl: seriesEntry?.tax_type_incl !== undefined ? seriesEntry.tax_type_incl : undefined
     })
 
     if (res && res.invoice_name) {
