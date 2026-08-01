@@ -215,16 +215,29 @@ def get_interstate_tax_template(tax_template, target_company, is_interstate=Fals
 	title = frappe.db.get_value("Sales Taxes and Charges Template", tax_template, "title") or tax_template
 
 	new_title = title
+	replacements = []
 	if is_interstate:
-		if "In-state" in title:
-			new_title = title.replace("In-state", "Out-state")
-		elif "In state" in title:
-			new_title = title.replace("In state", "Out state")
+		replacements = [
+			("In-state", "Out-state"),
+			("In state", "Out state"),
+			("in-state", "out-state"),
+			("in state", "out state"),
+			("IN-STATE", "OUT-STATE"),
+			("IN STATE", "OUT STATE"),
+		]
 	else:
-		if "Out-state" in title:
-			new_title = title.replace("Out-state", "In-state")
-		elif "Out state" in title:
-			new_title = title.replace("Out state", "In state")
+		replacements = [
+			("Out-state", "In-state"),
+			("Out state", "In state"),
+			("out-state", "in-state"),
+			("out state", "in state"),
+			("OUT-STATE", "IN-STATE"),
+			("OUT STATE", "IN STATE"),
+		]
+
+	for src, dest in replacements:
+		if src in new_title:
+			new_title = new_title.replace(src, dest)
 
 	if new_title != title:
 		target_template = frappe.db.get_value(
@@ -425,7 +438,22 @@ def create_mirror_sales_invoice(si, automatic_entries):
 	is_interstate = False
 	company_address = frappe.db.get_value("Dynamic Link", {"link_doctype": "Company", "link_name": target_company, "parenttype": "Address"}, "parent")
 	company_state = frappe.db.get_value("Address", company_address, "state") if company_address else ""
-	party_state = frappe.db.get_value("Address", si.customer_address, "state") if si.customer_address else ""
+	if not company_state:
+		company_links = frappe.db.get_all("Dynamic Link", {"link_doctype": "Company", "link_name": target_company, "parenttype": "Address"}, ["parent"])
+		for link in company_links:
+			company_state = frappe.db.get_value("Address", link.parent, "state")
+			if company_state:
+				break
+
+	party_state = ""
+	if si.customer_address:
+		party_state = frappe.db.get_value("Address", si.customer_address, "state") or ""
+	if not party_state and si.place_of_supply:
+		party_state = si.place_of_supply.split("-")[-1].strip()
+	if not party_state and si.customer:
+		cust_address = frappe.db.get_value("Dynamic Link", {"link_doctype": "Customer", "link_name": si.customer, "parenttype": "Address"}, "parent")
+		if cust_address:
+			party_state = frappe.db.get_value("Address", cust_address, "state") or ""
 
 	if company_state and party_state:
 		is_interstate = (company_state.lower().strip() != party_state.lower().strip())
@@ -704,7 +732,22 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 	is_interstate = False
 	company_address = frappe.db.get_value("Dynamic Link", {"link_doctype": "Company", "link_name": target_company, "parenttype": "Address"}, "parent")
 	company_state = frappe.db.get_value("Address", company_address, "state") if company_address else ""
-	party_state = frappe.db.get_value("Address", si.customer_address, "state") if si.customer_address else ""
+	if not company_state:
+		company_links = frappe.db.get_all("Dynamic Link", {"link_doctype": "Company", "link_name": target_company, "parenttype": "Address"}, ["parent"])
+		for link in company_links:
+			company_state = frappe.db.get_value("Address", link.parent, "state")
+			if company_state:
+				break
+
+	party_state = ""
+	if si.customer_address:
+		party_state = frappe.db.get_value("Address", si.customer_address, "state") or ""
+	if not party_state and si.place_of_supply:
+		party_state = si.place_of_supply.split("-")[-1].strip()
+	if not party_state and si.customer:
+		cust_address = frappe.db.get_value("Dynamic Link", {"link_doctype": "Customer", "link_name": si.customer, "parenttype": "Address"}, "parent")
+		if cust_address:
+			party_state = frappe.db.get_value("Address", cust_address, "state") or ""
 
 	if company_state and party_state:
 		is_interstate = (company_state.lower().strip() != party_state.lower().strip())
