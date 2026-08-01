@@ -568,7 +568,7 @@ def get_item_summary_report(series, from_date=None, to_date=None, company=None):
 
 
 @frappe.whitelist()
-def get_fast_moving_items_report(from_date=None, to_date=None, series=None, income_account=None, limit=50):
+def get_fast_moving_items_report(from_date=None, to_date=None, series=None, income_account=None, limit=50, company=None):
 	"""Return Fast Moving Items Report.
 	Ordered by total quantity sold descending.
 	"""
@@ -587,6 +587,9 @@ def get_fast_moving_items_report(from_date=None, to_date=None, series=None, inco
 	if income_account:
 		conditions.append("it.income_account = %s")
 		query_filters.append(income_account)
+	if company:
+		conditions.append("inv.company = %s")
+		query_filters.append(company)
 
 	where_clause = " AND ".join(conditions)
 	if where_clause:
@@ -635,7 +638,7 @@ def get_fast_moving_items_report(from_date=None, to_date=None, series=None, inco
 
 
 @frappe.whitelist()
-def get_store_sale_report(from_date=None, to_date=None):
+def get_store_sale_report(from_date=None, to_date=None, company=None):
         """
         Get sale report grouped by store (Income Account) from direct income accounts.
         Preset to today if dates are not provided.
@@ -645,23 +648,33 @@ def get_store_sale_report(from_date=None, to_date=None):
         if not to_date:
                 to_date = frappe.utils.today()
 
+        group_filters = {"account_name": ["like", "%Direct Income%"], "is_group": 1}
+        if company:
+                group_filters["company"] = company
+
         # Find accounts under 'Direct Income' group
         direct_income_groups = frappe.get_all(
                 "Account",
-                filters={"account_name": ["like", "%Direct Income%"], "is_group": 1},
+                filters=group_filters,
                 fields=["name", "lft", "rgt"],
         )
 
         if not direct_income_groups:
+                fallback_filters = {"root_type": "Income", "is_group": 1}
+                if company:
+                        fallback_filters["company"] = company
                 direct_income_groups = frappe.get_all(
-                        "Account", filters={"root_type": "Income", "is_group": 1}, fields=["name", "lft", "rgt"]
+                        "Account", filters=fallback_filters, fields=["name", "lft", "rgt"]
                 )
 
         account_list = []
         for acc in direct_income_groups:
+                child_filters = {"lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0}
+                if company:
+                        child_filters["company"] = company
                 children = frappe.get_all(
                         "Account",
-                        filters={"lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0},
+                        filters=child_filters,
                         fields=["name"],
                 )
                 account_list.extend([c.name for c in children])
@@ -671,8 +684,14 @@ def get_store_sale_report(from_date=None, to_date=None):
 
         # Query GL Entry joined with Sales Invoice to get Price List
         # Group by account instead of cost_center
+        company_condition = ""
+        sql_params = [from_date, to_date, tuple(account_list)]
+        if company:
+                company_condition = " AND gle.company = %s"
+                sql_params.append(company)
+
         results = frappe.db.sql(
-                """
+                f"""
                 SELECT
                         account,
                         selling_price_list,
@@ -691,13 +710,14 @@ def get_store_sale_report(from_date=None, to_date=None):
                                 gle.posting_date BETWEEN %s AND %s
                                 AND gle.account IN %s
                                 AND gle.is_cancelled = 0
+                                {company_condition}
                 ) t
                 GROUP BY
                         account, selling_price_list
                 ORDER BY
                         account, total_amount DESC
         """,
-                (from_date, to_date, tuple(account_list)),
+                tuple(sql_params),
                 as_dict=1,
         )
 
@@ -727,7 +747,7 @@ def get_store_sale_report(from_date=None, to_date=None):
         report_data.sort(key=lambda x: x["total_amount"], reverse=True)
 
         bills_results = frappe.db.sql(
-                """
+                f"""
                 SELECT
                         gle.account,
                         gle.voucher_no as bill_no,
@@ -744,12 +764,13 @@ def get_store_sale_report(from_date=None, to_date=None):
                         gle.posting_date BETWEEN %s AND %s
                         AND gle.account IN %s
                         AND gle.is_cancelled = 0
+                        {company_condition}
                 GROUP BY
                         gle.account, gle.voucher_no
                 ORDER BY
                         gle.account, gle.voucher_no
         """,
-                (from_date, to_date, tuple(account_list)),
+                tuple(sql_params),
                 as_dict=1,
         )
 
@@ -1236,17 +1257,21 @@ def get_cost_center_sale_report(from_date=None, to_date=None, company=None):
 
 
 @frappe.whitelist()
-def get_cashflow_report(from_date=None, to_date=None):
+def get_cashflow_report(from_date=None, to_date=None, company=None):
 	"""Return Cost Center-wise Cash & Bank inflow, outflow, and net flow."""
 	if not from_date:
 		from_date = frappe.utils.today()
 	if not to_date:
 		to_date = frappe.utils.today()
 
+	account_filters = {"account_type": ["in", ["Cash", "Bank"]], "is_group": 0}
+	if company:
+		account_filters["company"] = company
+
 	# Get all Cash and Bank accounts
 	cash_bank_accounts = frappe.get_all(
 		"Account",
-		filters={"account_type": ["in", ["Cash", "Bank"]], "is_group": 0},
+		filters=account_filters,
 		pluck="name"
 	)
 
@@ -1259,13 +1284,21 @@ def get_cashflow_report(from_date=None, to_date=None):
 		}
 
 	# Get company info
-	company_details = get_company_details()
+	company_details = get_company_details(company)
 	company_name = company_details.get("company_name", "")
 	company_address_lines = company_details.get("address_lines", [])
 
+	company_condition = ""
+	sql_params_summary = [from_date, to_date, tuple(cash_bank_accounts)]
+	sql_params_breakdown = [from_date, to_date, tuple(cash_bank_accounts)]
+	if company:
+		company_condition = " AND gle.company = %s"
+		sql_params_summary.append(company)
+		sql_params_breakdown.append(company)
+
 	# 1. Summary grouped by Cost Center
 	summary_rows = frappe.db.sql(
-		"""
+		f"""
 		SELECT
 			COALESCE(gle.cost_center, '') as cost_center,
 			SUM(gle.debit) as inflow,
@@ -1276,18 +1309,19 @@ def get_cashflow_report(from_date=None, to_date=None):
 			gle.posting_date BETWEEN %s AND %s
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
+			{company_condition}
 		GROUP BY
 			gle.cost_center
 		ORDER BY
 			gle.cost_center ASC
 		""",
-		(from_date, to_date, tuple(cash_bank_accounts)),
+		tuple(sql_params_summary),
 		as_dict=1
 	)
 
 	# 2. Breakdown grouped by Cost Center and Account
 	breakdown_rows = frappe.db.sql(
-		"""
+		f"""
 		SELECT
 			COALESCE(gle.cost_center, '') as cost_center,
 			gle.account,
@@ -1299,12 +1333,13 @@ def get_cashflow_report(from_date=None, to_date=None):
 			gle.posting_date BETWEEN %s AND %s
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
+			{company_condition}
 		GROUP BY
 			gle.cost_center, gle.account
 		ORDER BY
 			gle.cost_center ASC, gle.account ASC
 		""",
-		(from_date, to_date, tuple(cash_bank_accounts)),
+		tuple(sql_params_breakdown),
 		as_dict=1
 	)
 
@@ -1346,7 +1381,7 @@ def get_cashflow_report(from_date=None, to_date=None):
 
 
 @frappe.whitelist()
-def get_stock_aging_report(to_date=None, warehouse=None):
+def get_stock_aging_report(to_date=None, warehouse=None, company=None):
 	"""FIFO-based stock ageing (0-30 / 31-60 / 61-90 / 91+ day buckets), item x warehouse-wise.
 
 	Reuses ERPNext's Stock Ageing report logic instead of reimplementing FIFO queue math.
@@ -1355,7 +1390,8 @@ def get_stock_aging_report(to_date=None, warehouse=None):
 	from erpnext.stock.report.stock_ageing.stock_ageing import execute as run_stock_ageing
 
 	to_date = to_date or frappe.utils.nowdate()
-	company = frappe.defaults.get_global_default("company") or get_default_company()
+	if not company:
+		company = frappe.defaults.get_global_default("company") or get_default_company()
 
 	filters = frappe._dict({
 		"to_date": to_date,
@@ -1373,7 +1409,7 @@ def get_stock_aging_report(to_date=None, warehouse=None):
 
 
 @frappe.whitelist()
-def get_outstanding_customers_report(as_on_date=None, party_type="Customer"):
+def get_outstanding_customers_report(as_on_date=None, party_type="Customer", company=None):
 	"""Outstanding balance per customer/supplier/employee as on a given date, from the GL party ledger."""
 	as_on_date = as_on_date or frappe.utils.today()
 	party_type = party_type if party_type in ["Customer", "Supplier", "Employee"] else "Customer"
@@ -1389,6 +1425,12 @@ def get_outstanding_customers_report(as_on_date=None, party_type="Customer"):
 		name_field = "employee_name"
 		phone_field = "cell_number"
 
+	company_condition = ""
+	params = [party_type, as_on_date]
+	if company:
+		company_condition = " AND gle.company = %s"
+		params.append(company)
+
 	rows = frappe.db.sql(
 		f"""
 		SELECT
@@ -1402,11 +1444,12 @@ def get_outstanding_customers_report(as_on_date=None, party_type="Customer"):
 		WHERE gle.party_type = %s
 		  AND gle.is_cancelled = 0
 		  AND gle.posting_date <= %s
+		  {company_condition}
 		GROUP BY gle.party
 		HAVING ABS(SUM(gle.debit) - SUM(gle.credit)) > 0.005
 		ORDER BY outstanding_amount DESC
 		""",
-		(party_type, as_on_date),
+		tuple(params),
 		as_dict=True,
 	)
 
@@ -1493,13 +1536,19 @@ def get_ledger_wise_sales_purchase_report(from_date=None, to_date=None, company=
 
 
 @frappe.whitelist()
-def get_material_transfer_report(from_date=None, to_date=None):
+def get_material_transfer_report(from_date=None, to_date=None, company=None):
 	"""Get Stock Entries with purpose 'Material Transfer' between from_date and to_date (bill-wise summary)."""
 	from_date = from_date or frappe.utils.today()
 	to_date = to_date or frappe.utils.today()
 
+	company_condition = ""
+	params = [from_date, to_date]
+	if company:
+		company_condition = " AND se.company = %s"
+		params.append(company)
+
 	rows = frappe.db.sql(
-		"""
+		f"""
 		SELECT
 			se.name AS stock_entry,
 			se.posting_date,
@@ -1514,10 +1563,11 @@ def get_material_transfer_report(from_date=None, to_date=None):
 		WHERE se.docstatus = 1
 		  AND se.purpose = 'Material Transfer'
 		  AND se.posting_date BETWEEN %s AND %s
+		  {company_condition}
 		GROUP BY se.name
 		ORDER BY se.posting_date DESC, se.posting_time DESC, se.name DESC
 		""",
-		(from_date, to_date),
+		tuple(params),
 		as_dict=True,
 	)
 

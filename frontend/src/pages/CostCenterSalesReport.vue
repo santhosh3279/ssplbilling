@@ -19,14 +19,9 @@
           <!-- Company Selector -->
           <div class="flex items-center gap-2 bg-[var(--color-bg)]/50 rounded-xl border border-[var(--color-border)] p-1">
             <span class="text-[var(--color-text-muted)] text-base font-semibold px-2 uppercase tracking-wider">Company</span>
-            <select
-              v-model="selectedCompany"
-              class="bg-transparent border-none text-base text-[var(--color-text)] focus:ring-0 px-2 py-1 font-semibold outline-none"
-            >
-              <option v-for="c in companyList" :key="c" :value="c" class="bg-[var(--color-surface)] text-[var(--color-text)]">
-                {{ c }}
-              </option>
-            </select>
+            <span class="text-base text-[var(--color-text)] px-2 font-semibold outline-none">
+              {{ selectedCompany }}
+            </span>
           </div>
 
           <!-- Date Presets -->

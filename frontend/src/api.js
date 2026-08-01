@@ -878,10 +878,11 @@ export async function getQuotationSeries() {
 /**
  * Fetch Cashflow Report data.
  */
-export async function getCashflowReport(fromDate, toDate) {
+export async function getCashflowReport(fromDate, toDate, company) {
   return frappeGet("ssplbilling.api.reports_api.get_cashflow_report", {
     from_date: fromDate,
     to_date: toDate,
+    company: company || localStorage.getItem("wb-company") || undefined,
   });
 }
 
@@ -945,13 +946,14 @@ export async function getStoreWiseItemSalesReport(fromDate, toDate, incomeAccoun
 /**
  * Fetch Fast Moving Items Report.
  */
-export async function getFastMovingItemsReport(fromDate, toDate, series, incomeAccount, limit) {
+export async function getFastMovingItemsReport(fromDate, toDate, series, incomeAccount, limit, company) {
   return frappeGet("ssplbilling.api.reports_api.get_fast_moving_items_report", {
     from_date: fromDate,
     to_date: toDate,
     series: series,
     income_account: incomeAccount,
     limit: limit,
+    company: company || localStorage.getItem("wb-company") || undefined,
   });
 }
 
@@ -967,10 +969,11 @@ export async function getIncomeAccounts() {
 /**
  * Fetch Store Sale Report (Sales by Store/Cost Center from Direct Income).
  */
-export async function getStoreSaleReport(fromDate, toDate) {
+export async function getStoreSaleReport(fromDate, toDate, company) {
   return frappeGet("ssplbilling.api.reports_api.get_store_sale_report", {
     from_date: fromDate,
     to_date: toDate,
+    company: company || localStorage.getItem("wb-company") || undefined,
   });
 }
 
@@ -981,7 +984,7 @@ export async function getCostCenterSaleReport(fromDate, toDate, company) {
   return frappeGet("ssplbilling.api.reports_api.get_cost_center_sale_report", {
     from_date: fromDate,
     to_date: toDate,
-    company: company,
+    company: company || localStorage.getItem("wb-company") || undefined,
   });
 }
 
@@ -1041,12 +1044,20 @@ export async function fetchStockReportData(filters = {}) {
   return frappeGet("ssplbilling.api.purchase_api.get_stock_report_data", filters);
 }
 
-export async function getStockAgingReport(toDate, warehouse) {
-  return frappeGet("ssplbilling.api.reports_api.get_stock_aging_report", { to_date: toDate, warehouse });
+export async function getStockAgingReport(toDate, warehouse, company) {
+  return frappeGet("ssplbilling.api.reports_api.get_stock_aging_report", {
+    to_date: toDate,
+    warehouse,
+    company: company || localStorage.getItem("wb-company") || undefined,
+  });
 }
 
-export async function getOutstandingCustomersReport(asOnDate, partyType = "Customer") {
-  return frappeGet("ssplbilling.api.reports_api.get_outstanding_customers_report", { as_on_date: asOnDate, party_type: partyType });
+export async function getOutstandingCustomersReport(asOnDate, partyType = "Customer", company) {
+  return frappeGet("ssplbilling.api.reports_api.get_outstanding_customers_report", {
+    as_on_date: asOnDate,
+    party_type: partyType,
+    company: company || localStorage.getItem("wb-company") || undefined,
+  });
 }
 
 export async function getLedgerWiseSalesPurchaseReport(fromDate, toDate) {
@@ -1057,8 +1068,12 @@ export async function getLedgerWiseSalesPurchaseReport(fromDate, toDate) {
   });
 }
 
-export async function getMaterialTransferReport(fromDate, toDate) {
-  return frappeGet("ssplbilling.api.reports_api.get_material_transfer_report", { from_date: fromDate, to_date: toDate });
+export async function getMaterialTransferReport(fromDate, toDate, company) {
+  return frappeGet("ssplbilling.api.reports_api.get_material_transfer_report", {
+    from_date: fromDate,
+    to_date: toDate,
+    company: company || localStorage.getItem("wb-company") || undefined,
+  });
 }
 
 // ─── Tab Session (license-enforced concurrent tab limit) ────────────────────
