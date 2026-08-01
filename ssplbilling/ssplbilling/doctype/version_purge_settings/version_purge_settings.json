@@ -4,10 +4,19 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
+  "version_section",
   "enabled",
-  "retention_days"
+  "retention_days",
+  "deleted_docs_section",
+  "purge_deleted_docs",
+  "deleted_docs_retention_days"
  ],
  "fields": [
+  {
+   "fieldname": "version_section",
+   "fieldtype": "Section Break",
+   "label": "Version Purge Settings"
+  },
   {
    "default": "1",
    "fieldname": "enabled",
@@ -20,11 +29,29 @@
    "fieldtype": "Int",
    "label": "Retention Days",
    "description": "Purge Version records older than these many days."
+  },
+  {
+   "fieldname": "deleted_docs_section",
+   "fieldtype": "Section Break",
+   "label": "Deleted Documents Purge Settings"
+  },
+  {
+   "default": "1",
+   "fieldname": "purge_deleted_docs",
+   "fieldtype": "Check",
+   "label": "Purge Deleted Documents"
+  },
+  {
+   "default": "180",
+   "fieldname": "deleted_docs_retention_days",
+   "fieldtype": "Int",
+   "label": "Deleted Docs Retention Days",
+   "description": "Purge Deleted Document records older than these many days."
   }
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-08-01 02:00:00.000000",
+ "modified": "2026-08-01 02:15:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "Version Purge Settings",
