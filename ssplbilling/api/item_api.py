@@ -91,7 +91,23 @@ def create_item(data):
 
 	# Tax template
 	if data.get("item_tax_template"):
-		item.set("taxes", [{"item_tax_template": data["item_tax_template"]}])
+		wb_tax_template = data["item_tax_template"]
+		taxes = [{"item_tax_template": wb_tax_template}]
+		
+		ae_company = frappe.db.get_single_value("Automatic Entries", "alternative_company")
+		if ae_company:
+			wb_company = frappe.db.get_value("Item Tax Template", wb_tax_template, "company")
+			if wb_company and wb_company != ae_company:
+				wb_abbr = frappe.db.get_value("Company", wb_company, "abbr")
+				ae_abbr = frappe.db.get_value("Company", ae_company, "abbr")
+				if wb_abbr and ae_abbr:
+					suffix_wb = f" - {wb_abbr}"
+					suffix_ae = f" - {ae_abbr}"
+					if wb_tax_template.endswith(suffix_wb):
+						ae_tax_template = wb_tax_template[:-len(suffix_wb)] + suffix_ae
+						if frappe.db.exists("Item Tax Template", ae_tax_template):
+							taxes.append({"item_tax_template": ae_tax_template})
+		item.set("taxes", taxes)
 
 	# Add supplier mapping (multiple support)
 	if data.get("suppliers"):
@@ -228,7 +244,23 @@ def update_item(data):
 
 	# Update tax template
 	if data.get("item_tax_template"):
-		item.set("taxes", [{"item_tax_template": data["item_tax_template"]}])
+		wb_tax_template = data["item_tax_template"]
+		taxes = [{"item_tax_template": wb_tax_template}]
+		
+		ae_company = frappe.db.get_single_value("Automatic Entries", "alternative_company")
+		if ae_company:
+			wb_company = frappe.db.get_value("Item Tax Template", wb_tax_template, "company")
+			if wb_company and wb_company != ae_company:
+				wb_abbr = frappe.db.get_value("Company", wb_company, "abbr")
+				ae_abbr = frappe.db.get_value("Company", ae_company, "abbr")
+				if wb_abbr and ae_abbr:
+					suffix_wb = f" - {wb_abbr}"
+					suffix_ae = f" - {ae_abbr}"
+					if wb_tax_template.endswith(suffix_wb):
+						ae_tax_template = wb_tax_template[:-len(suffix_wb)] + suffix_ae
+						if frappe.db.exists("Item Tax Template", ae_tax_template):
+							taxes.append({"item_tax_template": ae_tax_template})
+		item.set("taxes", taxes)
 	else:
 		item.set("taxes", [])
 
