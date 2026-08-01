@@ -436,6 +436,8 @@ def create_mirror_sales_invoice(si, automatic_entries):
 		adjusted_template = get_interstate_tax_template(resolved_template, target_company, is_interstate)
 		applied_tax_template = adjusted_template or resolved_template
 
+	source_is_inclusive = any(int(t.included_in_print_rate or 0) for t in si.taxes)
+
 	if applied_tax_template:
 		msi.taxes_and_charges = applied_tax_template
 		from erpnext.controllers.accounts_controller import get_taxes_and_charges
@@ -447,7 +449,7 @@ def create_mirror_sales_invoice(si, automatic_entries):
 				"account_head": tax.get("account_head"),
 				"description": tax.get("description"),
 				"rate": tax.get("rate"),
-				"included_in_print_rate": tax.get("included_in_print_rate"),
+				"included_in_print_rate": 1 if source_is_inclusive else tax.get("included_in_print_rate"),
 			}
 			if tax.get("cost_center"):
 				tax_row["cost_center"] = ensure_cost_center_in_company(tax.get("cost_center"), target_company)
@@ -459,7 +461,7 @@ def create_mirror_sales_invoice(si, automatic_entries):
 				"account_head": resolve_target_account(tax.account_head, allowed_accounts, target_company) or tax.account_head,
 				"description": tax.description,
 				"rate": tax.rate,
-				"included_in_print_rate": tax.included_in_print_rate,
+				"included_in_print_rate": 1 if source_is_inclusive else tax.included_in_print_rate,
 			}
 			if tax.cost_center:
 				tax_row["cost_center"] = ensure_cost_center_in_company(tax.cost_center, target_company)
@@ -728,6 +730,8 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 		adjusted_template = get_interstate_tax_template(resolved_template, target_company, is_interstate)
 		applied_tax_template = adjusted_template or resolved_template
 
+	source_is_inclusive = any(int(t.included_in_print_rate or 0) for t in si.taxes)
+
 	if applied_tax_template:
 		msi.taxes_and_charges = applied_tax_template
 		from erpnext.controllers.accounts_controller import get_taxes_and_charges
@@ -738,7 +742,7 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 				"account_head": tax.get("account_head"),
 				"description": tax.get("description"),
 				"rate": tax.get("rate"),
-				"included_in_print_rate": tax.get("included_in_print_rate"),
+				"included_in_print_rate": 1 if source_is_inclusive else tax.get("included_in_print_rate"),
 			}
 			if tax.get("cost_center"):
 				tax_row["cost_center"] = ensure_cost_center_in_company(tax.get("cost_center"), target_company)
@@ -750,7 +754,7 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 				"account_head": ensure_account_in_company(tax.account_head, target_company) or tax.account_head,
 				"description": tax.description,
 				"rate": tax.rate,
-				"included_in_print_rate": tax.included_in_print_rate,
+				"included_in_print_rate": 1 if source_is_inclusive else tax.included_in_print_rate,
 			}
 			if tax.cost_center:
 				tax_row["cost_center"] = ensure_cost_center_in_company(tax.cost_center, target_company)
