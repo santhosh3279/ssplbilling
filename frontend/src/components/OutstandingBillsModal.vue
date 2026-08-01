@@ -618,12 +618,14 @@ function emitAllocations() {
 
   const allInvoices = currentInvoices.value.map(i => {
     const maxVal = getAdjustedOutstanding(i)
+    const isNegative = i.doctype === 'Sales Invoice' ? i.direction === 'Cr' : i.direction === 'Dr'
+    const sign = isNegative ? -1 : 1
     return {
       reference_doctype: i.doctype,
       reference_name: i.name,
       total_amount: i.grand_total,
-      outstanding_amount: Math.abs(i.outstanding_amount),
-      allocated_amount: clamp(localAmounts.value[i.name], maxVal),
+      outstanding_amount: sign * Math.abs(i.outstanding_amount),
+      allocated_amount: sign * clamp(localAmounts.value[i.name], maxVal),
     }
   })
   const allJournals = currentJournals.value.map(j => {
