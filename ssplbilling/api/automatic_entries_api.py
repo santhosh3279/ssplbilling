@@ -180,12 +180,23 @@ def resolve_target_item_tax_template(source_template, target_company):
 	return ""
 
 
-def resolve_target_taxes_and_charges_template(source_template, target_company):
-	"""Resolve a source Sales Taxes and Charges Template to its equivalent in the target company
-	by matching the title.
+def resolve_target_taxes_and_charges_template(source_template, source_company, target_company):
+	"""Resolve a source Sales Taxes and Charges Template to its equivalent in the target company.
+	First tries to replace the abbreviation, then falls back to title matching.
 	"""
 	if not source_template or not target_company:
 		return ""
+
+	if source_company:
+		source_abbr = frappe.db.get_value("Company", source_company, "abbr")
+		target_abbr = frappe.db.get_value("Company", target_company, "abbr")
+		if source_abbr and target_abbr:
+			suffix = f" - {source_abbr}"
+			if source_template.endswith(suffix):
+				target_template_name = source_template[:-len(suffix)] + f" - {target_abbr}"
+				if frappe.db.exists("Sales Taxes and Charges Template", target_template_name):
+					return target_template_name
+
 	title = frappe.db.get_value("Sales Taxes and Charges Template", source_template, "title")
 	if title:
 		target_template = frappe.db.get_value(
@@ -421,7 +432,7 @@ def create_mirror_sales_invoice(si, automatic_entries):
 
 	applied_tax_template = None
 	if si.taxes_and_charges:
-		resolved_template = resolve_target_taxes_and_charges_template(si.taxes_and_charges, target_company) or si.taxes_and_charges
+		resolved_template = resolve_target_taxes_and_charges_template(si.taxes_and_charges, si.company, target_company) or si.taxes_and_charges
 		adjusted_template = get_interstate_tax_template(resolved_template, target_company, is_interstate)
 		applied_tax_template = adjusted_template or resolved_template
 
@@ -713,7 +724,7 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 		source_template_to_use = tax_template or si.taxes_and_charges
 
 	if source_template_to_use:
-		resolved_template = resolve_target_taxes_and_charges_template(source_template_to_use, target_company) or source_template_to_use
+		resolved_template = resolve_target_taxes_and_charges_template(source_template_to_use, si.company, target_company) or source_template_to_use
 		adjusted_template = get_interstate_tax_template(resolved_template, target_company, is_interstate)
 		applied_tax_template = adjusted_template or resolved_template
 
