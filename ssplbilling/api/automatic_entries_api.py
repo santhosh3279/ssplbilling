@@ -697,7 +697,21 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 		is_interstate = (company_state.lower().strip() != party_state.lower().strip())
 
 	applied_tax_template = None
-	source_template_to_use = tax_template or si.taxes_and_charges
+
+	# Determine if the source template is exempted (e.g. "Exempted - SSPL")
+	is_exempted = True
+	if si.taxes_and_charges:
+		title = frappe.db.get_value("Sales Taxes and Charges Template", si.taxes_and_charges, "title") or si.taxes_and_charges
+		is_exempted = "exempt" in title.lower()
+
+	# If original bill has a tax template and it is NOT exempted, map it to target company.
+	# Otherwise, use the series tax template from local storage.
+	source_template_to_use = None
+	if si.taxes_and_charges and not is_exempted:
+		source_template_to_use = si.taxes_and_charges
+	else:
+		source_template_to_use = tax_template or si.taxes_and_charges
+
 	if source_template_to_use:
 		resolved_template = resolve_target_taxes_and_charges_template(source_template_to_use, target_company) or source_template_to_use
 		adjusted_template = get_interstate_tax_template(resolved_template, target_company, is_interstate)
