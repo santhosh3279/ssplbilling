@@ -80,7 +80,7 @@
         <div class="grid grid-cols-2 gap-8 max-w-lg mx-auto">
           <button
             @click="selectEntryType('Payment')"
-            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-4 transition-all"
+            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-[10px] transition-all"
             :class="selectionIdx === 0
               ? 'bg-[var(--color-highlight)]/15 border-[var(--color-highlight)] text-[var(--color-highlight)] scale-105 shadow-2xl ring-4 ring-[var(--color-highlight)]/20 font-black'
               : 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20 hover:border-red-500'"
@@ -90,7 +90,7 @@
           </button>
           <button
             @click="selectEntryType('Receipt')"
-            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-4 transition-all"
+            class="flex flex-col items-center gap-6 rounded-2xl p-12 border-[10px] transition-all"
             :class="selectionIdx === 1
               ? 'bg-[var(--color-highlight)]/15 border-[var(--color-highlight)] text-[var(--color-highlight)] scale-105 shadow-2xl ring-4 ring-[var(--color-highlight)]/20 font-black'
               : 'bg-green-500/10 border-green-500/30 text-green-500 hover:bg-green-500/20 hover:border-green-500'"
