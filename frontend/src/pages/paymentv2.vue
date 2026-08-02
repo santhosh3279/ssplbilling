@@ -82,7 +82,7 @@
             @click="selectEntryType('Payment')"
             class="flex flex-col items-center gap-6 rounded-2xl p-12 border-[10px] transition-all"
             :class="selectionIdx === 0
-              ? 'bg-[var(--color-focus)]/15 border-[var(--color-focus)] text-[var(--color-focus)] scale-105 shadow-2xl ring-4 ring-[var(--color-focus)]/20 font-black'
+              ? 'bg-red-500/20 border-red-500 text-red-600 scale-105 shadow-2xl ring-4 ring-red-500/20 font-black'
               : 'bg-red-500/10 border-transparent text-red-500 hover:bg-red-500/20'"
           >
             <span class="text-8xl">💸</span>
@@ -92,7 +92,7 @@
             @click="selectEntryType('Receipt')"
             class="flex flex-col items-center gap-6 rounded-2xl p-12 border-[10px] transition-all"
             :class="selectionIdx === 1
-              ? 'bg-[var(--color-focus)]/15 border-[var(--color-focus)] text-[var(--color-focus)] scale-105 shadow-2xl ring-4 ring-[var(--color-focus)]/20 font-black'
+              ? 'bg-green-500/20 border-green-500 text-green-600 scale-105 shadow-2xl ring-4 ring-green-500/20 font-black'
               : 'bg-green-500/10 border-transparent text-green-500 hover:bg-green-500/20'"
           >
             <span class="text-8xl">💰</span>
