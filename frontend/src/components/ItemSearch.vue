@@ -199,9 +199,14 @@
         <div class="overflow-x-auto scrollbar-none">
           <table class="w-full border-collapse">
             <thead>
-              <tr class="bg-[var(--color-surface-raised)]/50">
-                <th class="border border-[var(--color-border)] px-2 py-1 text-left text-sm font-normal text-[var(--color-text-muted)] uppercase w-32">UOM</th>
-                <th v-for="pl in insightData.priceLists" :key="pl.name" class="border border-[var(--color-border)] px-2 py-1 text-right text-xl font-normal text-[var(--color-text-muted)] uppercase min-w-[120px]">
+              <tr class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
+                <th class="border border-[var(--color-border)] px-3 py-2 text-left text-sm font-bold text-[var(--color-text)] uppercase w-32 bg-[var(--color-surface-raised)]">UOM</th>
+                <th
+                  v-for="pl in insightData.priceLists"
+                  :key="pl.name"
+                  class="border border-[var(--color-border)] px-3 py-2 text-right text-xl uppercase min-w-[120px] transition-colors"
+                  :class="pl.name === activePriceList ? 'bg-[var(--color-highlight)]/15 text-[var(--color-highlight)] font-extrabold border-b-2 border-b-[var(--color-highlight)]' : 'font-bold text-[var(--color-text-muted)] bg-[var(--color-surface-raised)]'"
+                >
                   {{ pl.name }}
                 </th>
               </tr>
@@ -465,6 +470,10 @@ const quickQtyMode = ref(false)
 // Whether the selected row's qty cell is accepting digits. Enter commits the
 // value and drops this focus; moving rows re-arms it.
 const qtyCellActive = ref(false)
+
+const activePriceList = computed(() => {
+  return props.priceList || (props.searchType === 'Purchase' ? 'Standard Buying' : 'Standard Selling')
+})
 
 // Qty column styling: while the cell has focus the whole column takes the
 // theme focus colour, and the row actually being typed into gets it solid.
