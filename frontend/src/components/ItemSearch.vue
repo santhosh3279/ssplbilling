@@ -673,7 +673,16 @@ function updateItemInsight(item) {
   const priceListsMeta = []
   const plNamesSeen = new Set()
 
+  const isBuyingPl = (name) => {
+    if (name.toLowerCase().includes('buying')) return true
+    const found = (item.price_lists || []).find(p => p.name === name)
+    if (found) return !!found.buying
+    return false
+  }
+
   for (const pl of item.price_lists || []) {
+    if (props.searchType !== 'Purchase' && (pl.buying || isBuyingPl(pl.name))) continue
+
     if (!plNamesSeen.has(pl.name)) {
       plNamesSeen.add(pl.name)
       priceListsMeta.push({
@@ -687,6 +696,8 @@ function updateItemInsight(item) {
 
   if (item.uom_price_lists) {
     for (const [plName, uomMap] of Object.entries(item.uom_price_lists)) {
+      if (props.searchType !== 'Purchase' && isBuyingPl(plName)) continue
+
       if (!plNamesSeen.has(plName)) {
         plNamesSeen.add(plName)
         const rate = Number(Object.values(uomMap)[0] || 0)
