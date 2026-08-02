@@ -502,12 +502,12 @@
                 <template v-if="it.item_code">
                   <div class="flex justify-between font-semibold">
                     <span class="text-[var(--color-info)]">{{ it.item_code }}</span>
-                    <span>₹{{ fmt(it.amount) }}</span>
+                    <span v-if="!(selectedEntry.voucher_type === 'Purchase Invoice' && !canAccessPurchaseInvoice)">₹{{ fmt(it.amount) }}</span>
                   </div>
                   <div class="text-[10px] text-[var(--color-text-muted)] truncate">{{ it.item_name }}</div>
                   <div class="mt-1 flex gap-2 text-[10px] opacity-70">
                     <span>{{ it.qty }} {{ it.uom }}</span>
-                    <span>@ ₹{{ fmt(it.rate) }}</span>
+                    <span v-if="!(selectedEntry.voucher_type === 'Purchase Invoice' && !canAccessPurchaseInvoice)">@ ₹{{ fmt(it.rate) }}</span>
                   </div>
                 </template>
 
@@ -517,7 +517,7 @@
                     <div class="flex items-center gap-1.5">
                       <span class="text-[var(--color-info)]">{{ it.reference_name }}</span>
                       <button 
-                        v-if="['Sales Invoice', 'Purchase Invoice'].includes(it.reference_doctype)"
+                        v-if="['Sales Invoice', 'Purchase Invoice'].includes(it.reference_doctype) && !(it.reference_doctype === 'Purchase Invoice' && !canAccessPurchaseInvoice)"
                         @click="openInvoiceDetail(it.reference_doctype, it.reference_name)"
                         class="ref-open-btn px-1 rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] cursor-pointer transition"
                         title="Open Invoice"
@@ -543,7 +543,7 @@
                     <div v-if="it.reference_name" class="flex items-center gap-1">
                       <span class="font-mono">{{ it.reference_name }}</span>
                       <button 
-                        v-if="['Sales Invoice', 'Purchase Invoice'].includes(it.reference_type)"
+                        v-if="['Sales Invoice', 'Purchase Invoice'].includes(it.reference_type) && !(it.reference_type === 'Purchase Invoice' && !canAccessPurchaseInvoice)"
                         @click="openInvoiceDetail(it.reference_type, it.reference_name)"
                         class="ref-open-btn px-1 rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] cursor-pointer transition"
                         title="Open Invoice"
@@ -570,7 +570,7 @@
         <!-- Panel Footer -->
         <div class="border-t border-[var(--color-border)] p-4 bg-[var(--color-surface-raised)]/30">
           <button
-            v-if="['Sales Invoice', 'Quotation', 'Purchase Invoice'].includes(selectedEntry.voucher_type)"
+            v-if="['Sales Invoice', 'Quotation', 'Purchase Invoice'].includes(selectedEntry.voucher_type) && !(selectedEntry.voucher_type === 'Purchase Invoice' && !canAccessPurchaseInvoice)"
             @click="openBillDetail"
             class="mb-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--color-success)] py-2.5 text-xs font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all hover:bg-[var(--color-success)]/90 active:scale-95"
           >
@@ -588,6 +588,7 @@
           </button>
 
           <button
+            v-if="!(selectedEntry.voucher_type === 'Purchase Invoice' && !canAccessPurchaseInvoice)"
             @click="openInErpNext(selectedEntry.voucher_type, selectedEntry.voucher_no)"
             class="w-full rounded-lg bg-[var(--color-surface)] border border-[var(--color-border)] py-2 text-xs font-semibold text-[var(--color-text)] hover:border-[var(--color-info)] hover:text-[var(--color-info)] transition-all"
           >
@@ -669,7 +670,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import DateFilter from '../components/DateFilter.vue'
 import Warning from '../components/Warning.vue'
-import { getUserRole } from '../composables/usePermission.js'
+import { getUserRole, canAccessTile } from '../composables/usePermission.js'
 import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
 import PurchaseInvoice from './PurchaseInvoice.vue'
@@ -699,6 +700,8 @@ useSubwindowWatcher(ref(props.isSubWindow), {
 
 const router = useRouter()
 const route = useRoute()
+
+const canAccessPurchaseInvoice = computed(() => canAccessTile('purchase-invoice'))
 
 // ── Filter state ──
 const partyType = ref('Customer')
@@ -1092,6 +1095,9 @@ const billType = ref('')
 
 function openBillDetail() {
   if (!selectedEntry.value) return
+  if (selectedEntry.value.voucher_type === 'Purchase Invoice' && !canAccessPurchaseInvoice.value) {
+    return
+  }
   billName.value = selectedEntry.value.voucher_no
   billType.value = selectedEntry.value.voucher_type
   showBillDetail.value = true
@@ -1099,6 +1105,9 @@ function openBillDetail() {
 
 function openInvoiceDetail(voucherType, voucherNo) {
   if (['Sales Invoice', 'Purchase Invoice'].includes(voucherType)) {
+    if (voucherType === 'Purchase Invoice' && !canAccessPurchaseInvoice.value) {
+      return
+    }
     billName.value = voucherNo
     billType.value = voucherType
     showBillDetail.value = true
@@ -1387,6 +1396,9 @@ function exportExcel() {
 }
 
 function openInErpNext(voucherType, voucherNo) {
+  if (voucherType === 'Purchase Invoice' && !canAccessPurchaseInvoice.value) {
+    return
+  }
   const dtMap = {
     'Sales Invoice': 'sales-invoice',
     'Purchase Invoice': 'purchase-invoice',
