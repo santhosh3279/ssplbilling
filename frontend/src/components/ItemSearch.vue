@@ -298,6 +298,7 @@ import DateFilter from './DateFilter.vue'
 import ItemCreation from './ItemCreation.vue'
 import PriceListUpdate from '../pages/PriceListUpdate.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
+import { canAccessTile } from '../composables/usePermission'
 import CustomerSearchModal from './CustomerSearchModal.vue'
 import {
   loadQuickQtyMap,
@@ -422,7 +423,7 @@ useSubwindowWatcher(computed(() => props.show), {
   'SHIFT+F4': (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
-    if (results.value[selectedIdx.value]) showPriceUpdateModal.value = true
+    if (results.value[selectedIdx.value] && canAccessTile('pricelist-update')) showPriceUpdateModal.value = true
   },
   F7: (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return

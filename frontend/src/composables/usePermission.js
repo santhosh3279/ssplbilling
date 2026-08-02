@@ -177,6 +177,10 @@ export function getLicenseInfo() {
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'Login'].includes(routeName)) return true
 
+  if (routeName === 'PriceListUpdate') {
+    return canAccessTile('purchase-invoice')
+  }
+
   const license = getLicenseInfo()
   if (license) {
     if (!license.valid || license.days_remaining < 0) {
@@ -291,6 +295,10 @@ const TILE_ROUTE_MAP = {
 }
 
 export function canAccessTile(tileId) {
+  if (tileId === 'pricelist-update') {
+    return canAccessTile('purchase-invoice')
+  }
+
   const license = getLicenseInfo()
   if (license) {
     if (!license.valid || license.days_remaining < 0) {

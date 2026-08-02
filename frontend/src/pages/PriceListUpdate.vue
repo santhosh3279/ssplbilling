@@ -327,6 +327,7 @@ import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 import { useItemCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
+import { canAccessTile } from '../composables/usePermission'
 
 const props = defineProps({
   isSubWindow: { type: Boolean, default: false },
@@ -791,6 +792,15 @@ const handleGlobalKeydown = (e) => {
 }
 
 onMounted(() => {
+  if (!canAccessTile('pricelist-update')) {
+    if (props.isSubWindow) {
+      emit('close')
+    } else {
+      router.push('/')
+    }
+    return
+  }
+
   const code = props.itemCode || route.query.item_code
   if (code) {
     loadPrices(code)

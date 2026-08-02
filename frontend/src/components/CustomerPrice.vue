@@ -77,6 +77,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { frappeGet } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 import PriceListUpdate from '../pages/PriceListUpdate.vue'
+import { canAccessTile } from '../composables/usePermission'
 
 const props = defineProps({
   data: { type: Object, required: true },   // { item_code, item_name, standard_rate, current_rate }
@@ -129,7 +130,7 @@ async function saveForCustomer() {
 
 function onKeydown(e) {
   if (e.key === 'Escape') { e.preventDefault(); return }
-  if (e.key === 'F4') { e.preventDefault(); showPriceListUpdate.value = true; return }
+  if (e.key === 'F4') { e.preventDefault(); if (canAccessTile('pricelist-update')) showPriceListUpdate.value = true; return }
 
   const btns = [savePriceYesBtn.value, savePriceNoBtn.value].filter(Boolean)
   const currIdx = btns.indexOf(document.activeElement)
