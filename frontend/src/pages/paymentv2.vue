@@ -83,7 +83,7 @@
             class="flex flex-col items-center gap-6 rounded-2xl p-12 border-[10px] transition-all"
             :class="selectionIdx === 0
               ? 'bg-[var(--color-focus)]/15 border-[var(--color-focus)] text-[var(--color-focus)] scale-105 shadow-2xl ring-4 ring-[var(--color-focus)]/20 font-black'
-              : 'bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20 hover:border-red-500'"
+              : 'bg-red-500/10 border-transparent text-red-500 hover:bg-red-500/20'"
           >
             <span class="text-8xl">💸</span>
             <span class="text-4xl font-black uppercase">Payment</span>
@@ -93,7 +93,7 @@
             class="flex flex-col items-center gap-6 rounded-2xl p-12 border-[10px] transition-all"
             :class="selectionIdx === 1
               ? 'bg-[var(--color-focus)]/15 border-[var(--color-focus)] text-[var(--color-focus)] scale-105 shadow-2xl ring-4 ring-[var(--color-focus)]/20 font-black'
-              : 'bg-green-500/10 border-green-500/30 text-green-500 hover:bg-green-500/20 hover:border-green-500'"
+              : 'bg-green-500/10 border-transparent text-green-500 hover:bg-green-500/20'"
           >
             <span class="text-8xl">💰</span>
             <span class="text-4xl font-black uppercase">Receipt</span>
