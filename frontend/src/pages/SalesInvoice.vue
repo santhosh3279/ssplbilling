@@ -284,17 +284,17 @@
             </div>
 
             <!-- Available Prices -->
-            <div v-if="activeItemCode && itemPrices.length" class="border-t border-[var(--color-border)] pt-2 mt-2">
+            <div v-if="activeItemCode && filteredItemPrices.length" class="border-t border-[var(--color-border)] pt-2 mt-2">
               <div class="mb-1 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider">Available Prices:</div>
               <div v-if="pricesLoading" class="text-sm text-[var(--color-info)] animate-pulse">Updating prices...</div>
               <div v-else class="grid grid-cols-2 gap-x-4 gap-y-1">
-                <div v-for="p in itemPrices" :key="p.price_list" class="flex justify-between items-center text-lg font-mono leading-none">
+                <div v-for="p in filteredItemPrices" :key="p.price_list" class="flex justify-between items-center text-lg font-mono leading-none">
                   <span class="text-[var(--color-text-muted)] truncate mr-2">{{ p.price_list }}</span>
                   <span class="text-[var(--color-highlight)] font-bold tracking-widest">{{ encryptPrice(p.rate) }}</span>
                 </div>
               </div>
             </div>
-            <div v-else-if="activeItemCode && !historyLoading && !pricesLoading && !itemPrices.length" class="border-t border-[var(--color-border)] pt-2 mt-2 text-sm text-[var(--color-text-muted)] italic">
+            <div v-else-if="activeItemCode && !historyLoading && !pricesLoading && !filteredItemPrices.length" class="border-t border-[var(--color-border)] pt-2 mt-2 text-sm text-[var(--color-text-muted)] italic">
               No additional price lists available.
             </div>
           </div>
@@ -1142,6 +1142,10 @@ const activeItemCode = computed(() => {
   if (pendingItem.value) return pendingItem.value.item_code
   if (selectedRowIdx.value !== -1) return items.value[selectedRowIdx.value]?.item_code
   return null
+})
+
+const filteredItemPrices = computed(() => {
+  return (itemPrices.value || []).filter(p => !p.buying)
 })
 
 const isExempted = computed(() => (taxTemplate.value || '').toLowerCase().includes('exempt'))
