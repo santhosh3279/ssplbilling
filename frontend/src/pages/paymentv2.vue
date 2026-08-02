@@ -452,15 +452,25 @@
       @close="showInvoicesModal = false"
       @update-allocations="updateAllocations"
     />
+
+    <!-- Warning Discard Modal -->
+    <Warning
+      :show="showDiscardWarning"
+      title="Discard Changes"
+      message="Are you sure you want to discard this payment/receipt entry?"
+      @close="showDiscardWarning = false"
+      @confirm="confirmDiscard"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
+import Warning from '../components/Warning.vue'
 import { useShortcuts } from '../services/shortcutManager'
 import { paymentShortcuts } from '../shortcuts/paymentShortcuts'
 
@@ -479,6 +489,44 @@ const saveBtn = ref(null)
 const selectionOverlayRef = ref(null)
 const selectionIdx = ref(0) // 0 = Payment, 1 = Receipt
 const ENTRY_TYPES = ['Payment', 'Receipt']
+
+const showDiscardWarning = ref(false)
+
+const isDirty = computed(() => {
+  return !!(
+    form.party ||
+    (form.amount !== null && form.amount > 0) ||
+    form.remarks ||
+    form.reference_no ||
+    form.mop_rows.some(r => r.account || (r.amount !== null && r.amount > 0))
+  )
+})
+
+function handleExit() {
+  if (isDirty.value) {
+    showDiscardWarning.value = true
+  } else {
+    router.push('/')
+  }
+}
+
+function confirmDiscard() {
+  showDiscardWarning.value = false
+  router.push('/')
+}
+
+function onGlobalKeydown(e) {
+  if (e.key === 'Escape') {
+    if (showInitialSelection.value) return
+    if (showSearchModal.value) return
+    if (showInvoicesModal.value) return
+    if (showDiscardWarning.value) return
+
+    e.preventDefault()
+    e.stopPropagation()
+    handleExit()
+  }
+}
 
 const currentMopRowIdx = ref(0)
 
@@ -1103,6 +1151,11 @@ onMounted(() => {
   updateTime()
   setInterval(updateTime, 1000)
   nextTick(() => selectionOverlayRef.value?.focus())
+  window.addEventListener('keydown', onGlobalKeydown)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onGlobalKeydown)
 })
 
 watch(activeTab, () => {
