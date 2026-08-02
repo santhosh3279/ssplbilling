@@ -161,8 +161,9 @@ export function useCustomerHistory() {
           }
         }
 
-        const buying = plRecord ? (plRecord.buying ? 1 : 0) : 0
-        const selling = plRecord ? (plRecord.selling ? 1 : 0) : 1
+        const isBuyingName = plName.toLowerCase().includes('buying')
+        const buying = plRecord && plRecord.buying !== undefined ? (plRecord.buying ? 1 : 0) : (isBuyingName ? 1 : 0)
+        const selling = plRecord && plRecord.selling !== undefined ? (plRecord.selling ? 1 : 0) : (isBuyingName ? 0 : 1)
         
         return {
           price_list: plName,

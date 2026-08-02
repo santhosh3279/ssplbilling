@@ -1145,7 +1145,12 @@ const activeItemCode = computed(() => {
 })
 
 const filteredItemPrices = computed(() => {
-  return (itemPrices.value || []).filter(p => !p.buying)
+  return (itemPrices.value || []).filter(p => {
+    if (p.buying) return false
+    const name = (p.price_list || '').toLowerCase()
+    if (name.includes('buying')) return false
+    return true
+  })
 })
 
 const isExempted = computed(() => (taxTemplate.value || '').toLowerCase().includes('exempt'))
