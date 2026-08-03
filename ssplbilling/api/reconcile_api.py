@@ -552,6 +552,7 @@ def post_reconciliation(party_type, party, allocations):
 		elif p_type == "Payment Entry":
 			pe_unallocated = frappe.db.get_value("Payment Entry", p_name, "unallocated_amount") or 0.0
 			alloc["unreconciled_amount"] = float(pe_unallocated)
+			alloc["reference_row"] = None
 			normalized_allocations.append(alloc)
 		else:
 			normalized_allocations.append(alloc)

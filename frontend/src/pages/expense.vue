@@ -709,7 +709,7 @@ async function handleSubmit() {
           .map(a => ({
             payment_type: 'Payment Entry',
             payment_name: pe_name,
-            reference_row: a._row || null,
+            reference_row: null,
             invoice_type: a.reference_doctype,
             invoice_name: a.reference_name,
             amount: a.allocated_amount,
