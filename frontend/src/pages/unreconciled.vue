@@ -601,7 +601,11 @@ function addAllocation() {
   
   const amt = Number(allocAmount.value)
   if (amt <= 0 || amt > selectedPaymentObj.value.unallocated_amount) {
-    alert('Invalid allocation amount.')
+    alert('Allocation amount cannot exceed the payment\'s unallocated amount.')
+    return
+  }
+  if (amt > selectedInvoiceObj.value.outstanding_amount + 0.01) {
+    alert('Allocation amount cannot exceed the outstanding amount of the document.')
     return
   }
   
