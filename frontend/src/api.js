@@ -1005,7 +1005,11 @@ export async function calculateBillIncentive(doctype, name) {
 /* ── Cheque register (clearing-account flow) ─────────────────────────── */
 
 export async function fetchCheques(status = "Pending", direction = "All", company = "", party = null) {
-  return frappeGet("ssplbilling.api.cheque_api.get_cheques", { status, direction, company, party });
+  const params = { status, direction, company };
+  if (party) {
+    params.party = party;
+  }
+  return frappeGet("ssplbilling.api.cheque_api.get_cheques", params);
 }
 
 export async function fetchChequeParties(company = "") {
