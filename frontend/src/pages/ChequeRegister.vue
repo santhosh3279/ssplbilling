@@ -74,6 +74,20 @@
         </div>
         <div class="flex items-center gap-3">
           <select
+            v-model="partyFilter"
+            @change="loadCheques"
+            class="max-w-[200px] rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-1.5 text-xs font-black uppercase tracking-widest text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] truncate"
+          >
+            <option value="All">All Parties</option>
+            <option
+              v-for="p in parties"
+              :key="p.party"
+              :value="p.party"
+            >
+              {{ p.party_name || p.party }}
+            </option>
+          </select>
+          <select
             v-model="directionFilter"
             @change="loadCheques"
             class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-1.5 text-xs font-black uppercase tracking-widest text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)]"
@@ -83,7 +97,7 @@
             <option value="Issued">Issued</option>
           </select>
           <button
-            @click="loadCheques"
+            @click="onRefreshClick"
             class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-1.5 text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:border-[var(--color-highlight)] transition-all"
           >
             ↻ Refresh
@@ -440,6 +454,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   fetchCheques,
+  fetchChequeParties,
   createCheque,
   clearCheque,
   bounceCheque,
@@ -481,6 +496,8 @@ const STATUS_CLASSES = {
 
 const statusFilter = ref('Pending')
 const directionFilter = ref('All')
+const partyFilter = ref('All')
+const parties = ref([])
 const isLoading = ref(false)
 const isSaving = ref(false)
 const cheques = ref([])
@@ -744,6 +761,7 @@ function onKeydown(e) {
 
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
+  loadParties()
   loadCheques()
   loadBankBalance()
 })
@@ -761,13 +779,26 @@ watch(showPartySearch, (v) => {
   if (v) nextTick(() => partySearchRef.value?.focus())
 })
 
+async function loadParties() {
+  try {
+    parties.value = await fetchChequeParties(localStorage.getItem('wb-company') || '')
+  } catch (e) {
+    console.error('Failed to load cheque parties:', e)
+  }
+}
+
+async function onRefreshClick() {
+  await Promise.all([loadParties(), loadCheques()])
+}
+
 async function loadCheques() {
   isLoading.value = true
   try {
     const res = await fetchCheques(
       statusFilter.value,
       directionFilter.value,
-      localStorage.getItem('wb-company') || ''
+      localStorage.getItem('wb-company') || '',
+      partyFilter.value === 'All' ? null : partyFilter.value
     )
     const todayStr = getTodayIST()
     const allCheques = res.cheques || []
@@ -830,7 +861,7 @@ async function submitNewCheque(andPrint = false) {
       remarks: newForm.value.remarks,
     })
     showNewModal.value = false
-    await loadCheques()
+    await Promise.all([loadParties(), loadCheques()])
     if (andPrint && res && res.cheque) {
       printTargetName.value = res.cheque
       showPrintModal.value = true

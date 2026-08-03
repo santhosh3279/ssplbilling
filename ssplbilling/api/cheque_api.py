@@ -324,3 +324,26 @@ def get_bank_accounts():
         fields=["name", "account_name", "account_type"],
         order_by="account_type asc, name asc",
     )
+
+
+@frappe.whitelist()
+def get_cheque_parties(company=None):
+    """Return list of unique parties that have registered cheques."""
+    filters = {}
+    if company:
+        filters["company"] = company
+
+    res = frappe.get_all(
+        "SSPL Cheque",
+        filters=filters,
+        fields=["party", "party_name"],
+        order_by="party_name asc",
+    )
+
+    seen = set()
+    unique = []
+    for r in res:
+        if r.party and r.party not in seen:
+            seen.add(r.party)
+            unique.append(r)
+    return unique
