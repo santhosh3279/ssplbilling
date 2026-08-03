@@ -264,6 +264,18 @@ def clear_cheque(name, bank_account, clearance_date=None):
     je.insert()
     je.submit()
 
+    # Update the linked Payment Entry posting date to the clearance date
+    if doc.payment_entry:
+        frappe.db.set_value("Payment Entry", doc.payment_entry, "posting_date", clearance_date)
+        frappe.db.sql(
+            "UPDATE `tabGL Entry` SET posting_date = %s WHERE voucher_type = 'Payment Entry' AND voucher_no = %s",
+            (clearance_date, doc.payment_entry),
+        )
+        frappe.db.sql(
+            "UPDATE `tabPayment Ledger Entry` SET posting_date = %s WHERE voucher_type = 'Payment Entry' AND voucher_no = %s",
+            (clearance_date, doc.payment_entry),
+        )
+
     doc.db_set("clearance_entry", je.name)
     doc.db_set("clearance_date", clearance_date)
     doc.db_set("bank_account", bank_account)
