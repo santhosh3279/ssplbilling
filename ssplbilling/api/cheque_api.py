@@ -327,11 +327,17 @@ def get_bank_accounts():
 
 
 @frappe.whitelist()
-def get_cheque_parties(company=None):
-    """Return list of unique parties that have registered cheques."""
+def get_cheque_parties(status=None, company=None):
+    """Return list of unique parties that have registered cheques, optionally filtered by status."""
     filters = {}
     if company:
         filters["company"] = company
+
+    if status == "Today":
+        filters["status"] = "Pending"
+        filters["cheque_date"] = frappe.utils.today()
+    elif status and status != "All":
+        filters["status"] = status
 
     res = frappe.get_all(
         "SSPL Cheque",

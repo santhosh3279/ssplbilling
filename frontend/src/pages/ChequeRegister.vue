@@ -63,7 +63,7 @@
           <button
             v-for="s in STATUSES"
             :key="s"
-            @click="statusFilter = s; loadCheques()"
+            @click="onStatusTabClick(s)"
             class="px-2 py-[3px] rounded-xl text-[18px] font-black uppercase tracking-widest border transition-all"
             :class="statusFilter === s
               ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)] border-[var(--color-highlight)] shadow-md'
@@ -781,10 +781,16 @@ watch(showPartySearch, (v) => {
 
 async function loadParties() {
   try {
-    parties.value = await fetchChequeParties(localStorage.getItem('wb-company') || '')
+    parties.value = await fetchChequeParties(statusFilter.value, localStorage.getItem('wb-company') || '')
   } catch (e) {
     console.error('Failed to load cheque parties:', e)
   }
+}
+
+async function onStatusTabClick(s) {
+  statusFilter.value = s
+  partyFilter.value = 'All'
+  await Promise.all([loadParties(), loadCheques()])
 }
 
 async function onRefreshClick() {

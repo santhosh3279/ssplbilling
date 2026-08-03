@@ -1012,8 +1012,8 @@ export async function fetchCheques(status = "Pending", direction = "All", compan
   return frappeGet("ssplbilling.api.cheque_api.get_cheques", params);
 }
 
-export async function fetchChequeParties(company = "") {
-  return frappeGet("ssplbilling.api.cheque_api.get_cheque_parties", { company });
+export async function fetchChequeParties(status = "Pending", company = "") {
+  return frappeGet("ssplbilling.api.cheque_api.get_cheque_parties", { status, company });
 }
 
 export async function createCheque(payload) {
