@@ -271,16 +271,27 @@
             </div>
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Cheque Date (DD-MM-YYYY) *</label>
-              <input
-                ref="chequeDateInputRef"
-                v-model="newForm.cheque_date_display"
-                @input="onChequeDateInput"
-                @blur="autoCompleteChequeDate"
-                @keydown.enter.prevent="bankNameInputRef?.focus()"
-                class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)] font-mono text-[1.25rem]"
-                placeholder="DD-MM-YYYY"
-                maxlength="10"
-              />
+              <div class="relative">
+                <input
+                  ref="chequeDateInputRef"
+                  v-model="newForm.cheque_date_display"
+                  @input="onChequeDateInput"
+                  @blur="autoCompleteChequeDate"
+                  @keydown="onChequeDateKeydown"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-4 pr-10 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)] font-mono text-[1.25rem]"
+                  placeholder="DD-MM-YYYY"
+                  maxlength="10"
+                />
+                <button
+                  v-if="newForm.cheque_date_display"
+                  type="button"
+                  @click="clearChequeDate"
+                  class="absolute right-3 top-1/2 -translate-y-1/2 text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-danger)] focus:outline-none"
+                  title="Delete/Clear Date"
+                >
+                  ×
+                </button>
+              </div>
             </div>
             <div class="flex flex-col gap-1.5">
               <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Bank Name</label>
@@ -579,6 +590,21 @@ function autoCompleteChequeDate() {
       newForm.value.cheque_date = `${y}-${monthStr}-${dayStr}`
       newForm.value.cheque_date_display = `${dayStr}-${monthStr}-${y}`
     }
+  }
+}
+
+function clearChequeDate() {
+  newForm.value.cheque_date = ''
+  newForm.value.cheque_date_display = ''
+}
+
+function onChequeDateKeydown(e) {
+  if (e.key === 'Delete') {
+    e.preventDefault()
+    clearChequeDate()
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    bankNameInputRef.value?.focus()
   }
 }
 
