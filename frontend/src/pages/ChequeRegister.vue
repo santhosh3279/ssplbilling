@@ -387,14 +387,26 @@
 
           <div class="flex flex-col gap-1.5">
             <label class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Clearance Date (DD-MM-YYYY) *</label>
-            <input
-              v-model="settleForm.clearance_date_display"
-              @input="onClearanceDateInput"
-              @blur="autoCompleteClearanceDate"
-              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)] font-mono"
-              placeholder="DD-MM-YYYY"
-              maxlength="10"
-            />
+            <div class="relative">
+              <input
+                v-model="settleForm.clearance_date_display"
+                @input="onClearanceDateInput"
+                @blur="autoCompleteClearanceDate"
+                @keydown="onClearanceDateKeydown"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-4 pr-10 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)] font-mono"
+                placeholder="DD-MM-YYYY"
+                maxlength="10"
+              />
+              <button
+                v-if="settleForm.clearance_date_display"
+                type="button"
+                @click="clearClearanceDate"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-2xl text-[var(--color-text-muted)] hover:text-[var(--color-danger)] focus:outline-none"
+                title="Delete/Clear Date"
+              >
+                ×
+              </button>
+            </div>
           </div>
 
           <div class="flex flex-col gap-1.5">
@@ -678,6 +690,18 @@ function autoCompleteClearanceDate() {
       settleForm.value.clearance_date = `${y}-${monthStr}-${dayStr}`
       settleForm.value.clearance_date_display = `${dayStr}-${monthStr}-${y}`
     }
+  }
+}
+
+function clearClearanceDate() {
+  settleForm.value.clearance_date = ''
+  settleForm.value.clearance_date_display = ''
+}
+
+function onClearanceDateKeydown(e) {
+  if (e.key === 'Delete') {
+    e.preventDefault()
+    clearClearanceDate()
   }
 }
 
