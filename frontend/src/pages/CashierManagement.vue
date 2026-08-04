@@ -20,6 +20,9 @@
           <span>
             <span class="text-[var(--color-success)]">Cashier</span> <span class="text-[var(--color-text-muted)] font-light">Management</span>
           </span>
+          <span v-if="companyName" class="normal-case font-normal text-[var(--color-text-muted)] text-sm border-l border-[var(--color-border)] pl-2.5">
+            {{ companyName }}
+          </span>
           <span v-if="inheritedUser" class="normal-case font-normal text-[var(--color-text-muted)] text-sm">
             ({{ inheritedUser }})
           </span>
@@ -651,6 +654,7 @@ const inheritedUser = computed(() => {
 })
 
 const targetUser = computed(() => localStorage.getItem('wb-inherited-user') || session.user.value)
+const companyName = computed(() => localStorage.getItem('wb-company') || '')
 
 // --- SHORTCUTS ---
 useShortcuts({

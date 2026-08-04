@@ -13,7 +13,7 @@
         </button>
         <div class="h-5 w-px bg-[var(--color-surface-raised)]"></div>
         <div>
-          <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Contra Entry</div>
+          <div class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Contra Entry <span v-if="company">— {{ company }}</span></div>
           <div class="text-base font-black text-[var(--color-text)]">{{ entryType }} Cash Adjustment</div>
         </div>
         <span
