@@ -143,6 +143,7 @@ const props = defineProps({
   diff:        { type: Number, required: true },
   entryType:   { type: String, required: true },
   date:        { type: String, default: () => new Date().toLocaleDateString('en-CA') },
+  company:     { type: String, default: '' },
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -172,12 +173,16 @@ const totalCredit = computed(() => rows.value.reduce((s, r) => s + (r.credit || 
 
 async function resolveAccount(nameHint) {
   try {
+    const filters = [
+      ['account_name', 'like', `%${nameHint.split(' - ')[0]}%`],
+      ['is_group', '=', 0],
+    ]
+    if (props.company) {
+      filters.push(['company', '=', props.company])
+    }
     const res = await frappeGet('frappe.client.get_list', {
       doctype: 'Account',
-      filters: JSON.stringify([
-        ['account_name', 'like', `%${nameHint.split(' - ')[0]}%`],
-        ['is_group', '=', 0],
-      ]),
+      filters: JSON.stringify(filters),
       fields: ['name', 'account_type'],
       limit_page_length: 1,
     })
@@ -241,7 +246,7 @@ async function handleSave() {
     const payload = {
       voucher_type: 'Contra',
       posting_date: postingDate,
-      company: localStorage.getItem('wb-company') || null,
+      company: props.company || localStorage.getItem('wb-company') || null,
       user_remark: remarks.value,
       accounts: rows.value.map(r => ({
         account:                       r.account,

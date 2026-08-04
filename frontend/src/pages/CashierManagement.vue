@@ -611,6 +611,7 @@
       :diff="contraDiff"
       :entry-type="contraEntryType"
       :date="currentDate"
+      :company="localStorage.getItem('wb-company') || ''"
       @close="showContraModal = false"
       @saved="onContraSaved"
     />
