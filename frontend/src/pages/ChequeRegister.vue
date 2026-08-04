@@ -133,13 +133,13 @@
             <tbody>
               <template v-for="(chq, idx) in cheques" :key="chq.name">
                 <!-- Today's Header -->
-                <tr v-if="idx === 0 && chq.cheque_date === getTodayIST()" class="bg-[var(--color-warning)]/15 pointer-events-none">
+                <tr v-if="idx === 0 && chq.cheque_date <= getTodayIST()" class="bg-[var(--color-warning)]/15 pointer-events-none">
                   <td colspan="9" class="px-4 py-2.5 text-xs font-black uppercase tracking-widest text-[var(--color-warning)]">
                     ⭐ Today's Cheques (Due Today)
                   </td>
                 </tr>
                 <!-- Other Header -->
-                <tr v-if="idx > 0 && cheques[idx-1].cheque_date === getTodayIST() && chq.cheque_date !== getTodayIST()" class="bg-[var(--color-surface-raised)]/50 pointer-events-none border-t border-[var(--color-border)]">
+                <tr v-if="idx > 0 && cheques[idx-1].cheque_date <= getTodayIST() && chq.cheque_date > getTodayIST()" class="bg-[var(--color-surface-raised)]/50 pointer-events-none border-t border-[var(--color-border)]">
                   <td colspan="9" class="px-4 py-2.5 text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                     Other Cheques
                   </td>
@@ -151,7 +151,7 @@
                   class="border-t border-[var(--color-border)]/60 hover:bg-[var(--color-surface-raised)]/40 transition-colors cursor-pointer scroll-mt-[52px]"
                   :class="[
                     selectedChequeName === chq.name ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : '',
-                    chq.cheque_date === getTodayIST() && selectedChequeName !== chq.name ? 'bg-[var(--color-warning)]/5 border-l-4 border-l-[var(--color-warning)] shadow-inner' : ''
+                    chq.cheque_date <= getTodayIST() && selectedChequeName !== chq.name ? 'bg-[var(--color-warning)]/5 border-l-4 border-l-[var(--color-warning)] shadow-inner' : ''
                   ]"
                 >
                   <td class="px-4 py-3 font-mono font-bold">{{ chq.cheque_no }}</td>
@@ -832,8 +832,8 @@ async function loadCheques() {
     )
     const todayStr = getTodayIST()
     const allCheques = res.cheques || []
-    const todayList = allCheques.filter(c => c.cheque_date === todayStr)
-    const otherList = allCheques.filter(c => c.cheque_date !== todayStr)
+    const todayList = allCheques.filter(c => c.cheque_date <= todayStr)
+    const otherList = allCheques.filter(c => c.cheque_date > todayStr)
     cheques.value = [...todayList, ...otherList]
     summary.value = res.summary || summary.value
   } catch (e) {

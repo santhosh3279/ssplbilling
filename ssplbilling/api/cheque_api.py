@@ -179,7 +179,7 @@ def get_cheques(status="Pending", direction="All", party=None, company=None, lim
     filters = {}
     if status == "Today":
         filters["status"] = "Pending"
-        filters["cheque_date"] = frappe.utils.today()
+        filters["cheque_date"] = ["<=", frappe.utils.today()]
     elif status and status != "All":
         filters["status"] = status
     if direction and direction != "All":
