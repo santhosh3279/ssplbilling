@@ -215,7 +215,7 @@
               <tr v-for="uom in insightData.uoms" :key="uom" class="hover:bg-[var(--color-midlight)]/30">
                 <td class="border border-[var(--color-border)] px-2 py-1 text-xl text-[var(--color-text-muted)] truncate">{{ uom }}</td>
                 <td v-for="pl in insightData.priceLists" :key="pl.name" class="border border-[var(--color-border)] px-2 py-1 text-right font-mono text-[var(--color-warning)] text-3xl tracking-widest">
-                  {{ pl.rates[uom] != null ? encPrice(pl.rates[uom]) : '--' }}
+                  {{ pl.rates[uom] != null ? encPrice(pl.rates[uom]) : encPrice(0) }}
                 </td>
               </tr>
             </tbody>
@@ -476,6 +476,22 @@ const activePriceList = computed(() => {
   return props.priceList || (props.searchType === 'Purchase' ? 'Standard Buying' : 'Standard Selling')
 })
 
+const enabledPriceLists = ref([])
+
+async function fetchEnabledPriceLists() {
+  try {
+    const list = await frappeGet('frappe.client.get_list', {
+      doctype: 'Price List',
+      filters: { enabled: 1 },
+      fields: ['name', 'buying', 'selling'],
+      limit_page_length: 0
+    })
+    enabledPriceLists.value = list || []
+  } catch (e) {
+    console.error('[ItemSearch] Failed to fetch enabled price lists:', e)
+  }
+}
+
 // Qty column styling: while the cell has focus the whole column takes the
 // theme focus colour, and the row actually being typed into gets it solid.
 function qtyCellClass(idx) {
@@ -683,45 +699,62 @@ function updateItemInsight(item) {
   const priceListsMeta = []
   const plNamesSeen = new Set()
 
-  const isBuyingPl = (name) => {
-    if (name.toLowerCase().includes('buying')) return true
-    const found = (item.price_lists || []).find(p => p.name === name)
-    if (found) return !!found.buying
-    return false
+  const allPls = []
+  for (const pl of enabledPriceLists.value) {
+    if (!plNamesSeen.has(pl.name)) {
+      plNamesSeen.add(pl.name)
+      allPls.push({
+        name: pl.name,
+        buying: !!pl.buying,
+        selling: !!pl.selling
+      })
+    }
   }
 
   for (const pl of item.price_lists || []) {
-    if (props.searchType !== 'Purchase' && (pl.buying || isBuyingPl(pl.name))) continue
-
     if (!plNamesSeen.has(pl.name)) {
       plNamesSeen.add(pl.name)
-      priceListsMeta.push({
+      allPls.push({
         name: pl.name,
         buying: !!pl.buying,
-        selling: !!pl.selling,
-        rate: Number(pl.rate || 0)
+        selling: !!pl.selling
       })
     }
   }
 
   if (item.uom_price_lists) {
-    for (const [plName, uomMap] of Object.entries(item.uom_price_lists)) {
-      if (props.searchType !== 'Purchase' && isBuyingPl(plName)) continue
-
+    for (const plName of Object.keys(item.uom_price_lists)) {
       if (!plNamesSeen.has(plName)) {
         plNamesSeen.add(plName)
-        const rate = Number(Object.values(uomMap)[0] || 0)
-        // Per-UOM-only lists carry no buying/selling flags from the backend —
-        // fall back to the name convention so buying lists keep sorting first
         const lname = plName.toLowerCase()
-        priceListsMeta.push({
+        allPls.push({
           name: plName,
           buying: lname.includes('buying'),
-          selling: lname.includes('selling'),
-          rate
+          selling: lname.includes('selling')
         })
       }
     }
+  }
+
+  for (const pl of allPls) {
+    const isBuying = pl.buying || pl.name.toLowerCase().includes('buying')
+    if (props.searchType !== 'Purchase' && isBuying) continue
+
+    // Find the rate for this item in this price list (for sorting)
+    let rate = 0
+    const basePl = (item.price_lists || []).find(p => p.name === pl.name)
+    if (basePl) {
+      rate = Number(basePl.rate || 0)
+    } else if (item.uom_price_lists?.[pl.name]) {
+      rate = Number(Object.values(item.uom_price_lists[pl.name])[0] || 0)
+    }
+
+    priceListsMeta.push({
+      name: pl.name,
+      buying: pl.buying,
+      selling: pl.selling,
+      rate
+    })
   }
 
   priceListsMeta.sort((a, b) => {
@@ -842,7 +875,7 @@ watch(query, () => {
   selectedIdx.value = 0
 })
 
-watch([selectedIdx, results], () => {
+watch([selectedIdx, results, enabledPriceLists], () => {
   const item = results.value[selectedIdx.value]
   if (item) console.log('[ItemSearch] selected item warehouse_stock:', item.warehouse_stock)
   updateItemInsight(item)
@@ -958,6 +991,9 @@ watch(() => props.show, async (newVal) => {
     loadCipherMap()
     quickQtyMap.value = loadQuickQtyMap()
     focus()
+    if (!enabledPriceLists.value.length) {
+      fetchEnabledPriceLists()
+    }
     // Re-scope/refresh the shared cache to THIS modal's warehouse + price list.
     // The global cache may have been populated warehouse-less (e.g. by Dashboard),
     // which shows all-warehouse aggregate stock. preloadItems() only refetches when
