@@ -1082,9 +1082,9 @@ function formatDateShort(dateStr) {
 }
 
 function format(val) {
-  if (val === null || val === undefined || val === '') return '0.00'
+  if (val === null || val === undefined || val === '') return '0.000'
   const num = Number(val)
-  return isNaN(num) ? '0.00' : num.toFixed(2)
+  return isNaN(num) ? '0.000' : num.toFixed(3)
 }
 
 async function clearBill() {
