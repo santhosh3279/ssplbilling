@@ -318,7 +318,7 @@
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
             {{ format(isExempted ? 0 : (item.tax_rate ?? 0)) }}
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.amount) }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format2p(item.amount) }}</td>
           <td class="px-2 py-1 text-center">
             <button
               class="rounded px-1 py-0.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]"
@@ -532,7 +532,7 @@
             </div>
             <div class="flex items-baseline gap-2 font-bold" :class="parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
               <span class="text-[9mm] font-black">₹</span>
-              <span class="font-mono text-[15.75mm] font-black leading-none">{{ totalAmount }}</span>
+              <span class="font-mono text-[15.75mm] font-black leading-none">{{ format2p(totalAmount) }}</span>
             </div>
           </div>
           <div class="flex gap-2">
@@ -608,7 +608,7 @@
               {{ format(isExempted ? 0 : (pendingItem.tax_rate ?? 0)) }}
             </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums text-[var(--color-text)]">
-              {{ format((pendingItem.qty || 0) * (pendingItem.rate || 0) * (1 - getDiscPrecision(pendingItem.discount) / 100)) }}
+              {{ format2p((pendingItem.qty || 0) * (pendingItem.rate || 0) * (1 - getDiscPrecision(pendingItem.discount) / 100)) }}
             </td>
             <td class="px-2 text-[var(--color-text-muted)] italic text-lg text-center">
               <button class="text-2xl opacity-50 hover:opacity-100" @click="cancelPendingItem()">×</button>
@@ -1501,6 +1501,12 @@ function format(val) {
   if (val === null || val === undefined || val === '') return (0).toFixed(precision)
   const num = Number(val)
   return isNaN(num) ? (0).toFixed(precision) : num.toFixed(precision)
+}
+
+function format2p(val) {
+  if (val === null || val === undefined || val === '') return '0.00'
+  const num = Number(val)
+  return isNaN(num) ? '0.00' : num.toFixed(2)
 }
 
 async function clearBill() {
