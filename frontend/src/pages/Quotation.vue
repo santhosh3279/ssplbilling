@@ -172,7 +172,7 @@
           </td>
 
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
-            {{ format((item.rate || 0) * (1 - (item.discount || 0) / 100)) }}
+            {{ format((item.rate || 0) * (1 - getDisc3p(item.discount) / 100)) }}
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
             {{ format(isExempted ? 0 : (item.tax_rate ?? 0)) }}
@@ -594,6 +594,9 @@ import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice, getFloatPrecision } from '../encryption.js'
 
 const precision = getFloatPrecision()
+function getDisc3p(val) {
+  return parseFloat(Number(val || 0).toFixed(3))
+}
 import { useDiscountRules } from '../composables/useDiscountRules.js'
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useShortcuts } from '../services/shortcutManager'
@@ -843,7 +846,7 @@ async function loadQuotationData(data, forceHalfTaxFalse = false) {
     const discount = i.discount || 0
     const effectiveRate = i.rate || 0
     const preDiscountRate = discount > 0
-      ? parseFloat((effectiveRate / (1 - discount / 100)).toFixed(precision))
+      ? parseFloat((effectiveRate / (1 - getDisc3p(discount) / 100)).toFixed(precision))
       : effectiveRate
     
     const isManual = i.price_list_rate && Math.abs(i.price_list_rate - preDiscountRate) > 0.001
@@ -983,7 +986,7 @@ const itemDiscountTotal = computed(() => {
     const rate = item.rate || 0
     const qty = item.qty || 0
     const disc = item.discount || 0
-    return sum + ((rate * qty) * (disc / 100))
+    return sum + ((rate * qty) * (getDisc3p(disc) / 100))
   }, 0).toFixed(precision)
 })
 
@@ -1247,7 +1250,7 @@ async function handleSave() {
       item_code: i.item_code,
       qty: i.qty,
       uom: i.uom || 'Nos',
-      rate: parseFloat(((i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(precision)),
+      rate: parseFloat(((i.rate || 0) * (1 - getDisc3p(i.discount) / 100)).toFixed(precision)),
       price_list_rate: i._base_rate || i.price_list_rate || i.rate,
       discount_percentage: i.discount || 0,
     }))
@@ -1512,7 +1515,7 @@ function onCsvFileSelected(e) {
       const rate = parseFloat(get('rate')) || 0
       const discount = parseFloat(get('discount')) || 0
       const tax_rate = parseFloat(get('tax_rate')) || 0
-      const effectiveRate = discount > 0 ? parseFloat((rate * (1 - discount / 100)).toFixed(precision)) : rate
+      const effectiveRate = discount > 0 ? parseFloat((rate * (1 - getDisc3p(discount) / 100)).toFixed(precision)) : rate
       parsed.push({
         item_code,
         item_name: get('item_name') || item_code,
@@ -1552,7 +1555,7 @@ function detectPriceChange(item, focusTarget) {
   const currentDiscount = parseFloat(item.discount || 0)
 
   const effectiveRate = currentDiscount > 0.001
-    ? parseFloat((standardRate * (1 - currentDiscount / 100)).toFixed(precision))
+    ? parseFloat((standardRate * (1 - getDisc3p(currentDiscount) / 100)).toFixed(precision))
     : currentRate
 
   const priceListStandard = parseFloat((standardRate * combinedFactor(item.item_code)).toFixed(precision))
@@ -1851,7 +1854,7 @@ function finishRowEdit(idx) {
 function recalcAmount(idx) {
   const item = items.value[idx]
   if (!item) return
-  const netRate = parseFloat(((item.rate || 0) * (1 - (item.discount || 0) / 100)).toFixed(precision))
+  const netRate = parseFloat(((item.rate || 0) * (1 - getDisc3p(item.discount) / 100)).toFixed(precision))
   item.amount = parseFloat(((item.qty || 0) * netRate).toFixed(precision))
 }
 
@@ -1928,7 +1931,7 @@ watch(ignoreModifier, () => {
     const base = item._base_rate ?? item.rate
     item._base_rate = base
     item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
-    item.amount = parseFloat(((item.qty || 0) * item.rate * (1 - (item.discount || 0) / 100)).toFixed(precision))
+    item.amount = parseFloat(((item.qty || 0) * item.rate * (1 - getDisc3p(item.discount) / 100)).toFixed(precision))
   })
 })
 
@@ -1938,7 +1941,7 @@ watch(halfTaxDiscount, (enabled) => {
     if (item.deleted) return item
     if (enabled) {
       const t = item.tax_rate || 0
-      const disc = t > 0 ? parseFloat(((t / (2 * (100 + t))) * 100).toFixed(4)) : 0
+      const disc = t > 0 ? parseFloat(((t / (2 * (100 + t))) * 100).toFixed(3)) : 0
       return { ...item, discount: disc }
     } else {
       return { ...item, discount: 0 }

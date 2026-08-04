@@ -313,7 +313,7 @@
           </td>
 
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
-            {{ format((item.rate || 0) * (1 - (item.discount || 0) / 100)) }}
+            {{ format((item.rate || 0) * (1 - getDisc3p(item.discount) / 100)) }}
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
             {{ format(isExempted ? 0 : (item.tax_rate ?? 0)) }}
@@ -602,13 +602,13 @@
               />
             </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums text-[var(--color-warning)]/80">
-              {{ format((pendingItem.rate || 0) * (1 - (pendingItem.discount || 0) / 100)) }}
+              {{ format((pendingItem.rate || 0) * (1 - getDisc3p(pendingItem.discount) / 100)) }}
             </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums text-[var(--color-text-muted)]">
               {{ format(isExempted ? 0 : (pendingItem.tax_rate ?? 0)) }}
             </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums text-[var(--color-text)]">
-              {{ format((pendingItem.qty || 0) * (pendingItem.rate || 0) * (1 - (pendingItem.discount || 0) / 100)) }}
+              {{ format((pendingItem.qty || 0) * (pendingItem.rate || 0) * (1 - getDisc3p(pendingItem.discount) / 100)) }}
             </td>
             <td class="px-2 text-[var(--color-text-muted)] italic text-lg text-center">
               <button class="text-2xl opacity-50 hover:opacity-100" @click="cancelPendingItem()">×</button>
@@ -839,6 +839,9 @@ import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice, getFloatPrecision } from '../encryption.js'
 
 const precision = getFloatPrecision()
+function getDisc3p(val) {
+  return parseFloat(Number(val || 0).toFixed(3))
+}
 import { useShortcuts } from '../services/shortcutManager'
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
@@ -1225,7 +1228,7 @@ async function handleSelectSidebarItem(item) {
       const discount = i.discount || 0
       const effectiveRate = i.rate || 0
       const preDiscountRate = discount > 0
-        ? parseFloat((effectiveRate / (1 - discount / 100)).toFixed(precision))
+        ? parseFloat((effectiveRate / (1 - getDisc3p(discount) / 100)).toFixed(precision))
         : effectiveRate
       return {
         item_code: i.item_code,
@@ -1351,7 +1354,7 @@ const itemDiscountTotal = computed(() => {
     const rate = item.rate || 0
     const qty = item.qty || 0
     const disc = item.discount || 0
-    return sum + ((rate * qty) * (disc / 100))
+    return sum + ((rate * qty) * (getDisc3p(disc) / 100))
   }, 0).toFixed(precision)
 })
 
@@ -1657,7 +1660,7 @@ async function handleSave() {
       item_code: i.item_code,
       qty: i.qty,
       uom: i.uom || 'Nos',
-      rate: parseFloat(((i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(precision)),
+      rate: parseFloat(((i.rate || 0) * (1 - getDisc3p(i.discount) / 100)).toFixed(precision)),
       price_list_rate: i._base_rate || i.price_list_rate || i.rate,
       discount_percentage: i.discount || 0,
     }))
@@ -1882,7 +1885,7 @@ function onCsvFileSelected(e) {
       const rate = parseFloat(get('rate')) || 0
       const discount = parseFloat(get('discount')) || 0
       const tax_rate = parseFloat(get('tax_rate')) || 0
-      const effectiveRate = discount > 0 ? parseFloat((rate * (1 - discount / 100)).toFixed(precision)) : rate
+      const effectiveRate = discount > 0 ? parseFloat((rate * (1 - getDisc3p(discount) / 100)).toFixed(precision)) : rate
       parsed.push({
         item_code,
         item_name: get('item_name') || item_code,
@@ -1942,7 +1945,7 @@ function updateTableRates() {
 function recalcAmount(idx) {
   const item = items.value[idx]
   if (!item) return
-  const netRate = parseFloat(((item.rate || 0) * (1 - (item.discount || 0) / 100)).toFixed(precision))
+  const netRate = parseFloat(((item.rate || 0) * (1 - getDisc3p(item.discount) / 100)).toFixed(precision))
   item.amount = parseFloat(((item.qty || 0) * netRate).toFixed(precision))
 }
 
@@ -2147,7 +2150,7 @@ function onItemSearchSelectMultiple(entries) {
   for (const entry of entries) {
     const baseRate = getItemRateForPriceList(entry, entry.uom) || 0
     const qty = isReturn.value ? -Math.abs(entry.qty) : entry.qty
-    const netRate = parseFloat((baseRate * (1 - itemDiscount / 100)).toFixed(precision))
+    const netRate = parseFloat((baseRate * (1 - getDisc3p(itemDiscount) / 100)).toFixed(precision))
     items.value.push({
       item_code: entry.item_code, item_name: entry.item_name, qty, uom: entry.uom || 'Nos',
       rate: baseRate, _base_rate: baseRate,
@@ -2487,7 +2490,7 @@ function confirmPendingItem() {
   const p = pendingItem.value
   const qty = isReturn.value ? -Math.abs(p.qty) : p.qty
   const itemDiscount = p.discount || 0
-  const netRate = parseFloat(((p.rate || 0) * (1 - itemDiscount / 100)).toFixed(precision))
+  const netRate = parseFloat(((p.rate || 0) * (1 - getDisc3p(itemDiscount) / 100)).toFixed(precision))
   const newItem = {
     item_code: p.item_code, item_name: p.item_name, qty, uom: p.uom || 'Nos',
     rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0,
