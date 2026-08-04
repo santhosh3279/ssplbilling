@@ -1403,6 +1403,12 @@ async function syncBillingSettings(targetUser, force) {
     if (settings && settings.tax_paid_on_purchase) {
       localStorage.setItem('wb-tax-paid-on-purchase', settings.tax_paid_on_purchase)
     }
+    if (settings && settings.discount_account) {
+      localStorage.setItem('wb-discount-account', settings.discount_account)
+    }
+    if (settings && settings.short_or_excess_account) {
+      localStorage.setItem('wb-short-or-excess-account', settings.short_or_excess_account)
+    }
 
     // Sync roles to localStorage for permission inherited
     if (settings && settings.user_role) {

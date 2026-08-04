@@ -44,6 +44,7 @@
               />
             </div>
             <DropdownField v-model="settings.discount_account" :options="lists.accounts" label="Discount Account" />
+            <DropdownField v-model="settings.short_or_excess_account" :options="lists.accounts" label="Short or Excess Account" />
             <DropdownField v-model="settings.freight" :options="lists.accounts" label="Freight Account" />
             <DropdownField v-model="settings.tax_paid_on_purchase" :options="lists.accounts" label="Tax Paid on Purchase" />
             <DropdownField v-model="settings.packing_charge" :options="lists.accounts" label="Packing Charge" />

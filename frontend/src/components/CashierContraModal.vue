@@ -201,9 +201,10 @@ onMounted(async () => {
 
   // diff > 0 (excess): DR Cash, CR Short Or Excess
   // diff < 0 (short):  DR Short Or Excess, CR Cash
+  const shortOrExcessAcc = localStorage.getItem('wb-short-or-excess-account') || 'Short Or Excess'
   const [cashResolved, adjResolved] = await Promise.all([
     resolveAccount(props.cashAccount),
-    resolveAccount('Short Or Excess'),
+    resolveAccount(shortOrExcessAcc),
   ])
   const [cashBal, adjBal] = await Promise.all([
     fetchBalance(cashResolved.name),

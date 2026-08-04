@@ -607,6 +607,7 @@ def get_billing_settings(user=None):
 		"last_updated": last_updated,
 		"company_state": company_state,
 		"discount_account": settings.discount_account or "",
+		"short_or_excess_account": settings.short_or_excess_account or "",
 		"freight_account": settings.freight or "",
 		"tax_paid_on_purchase": settings.tax_paid_on_purchase or "",
 		"packing_charge": settings.packing_charge or "",

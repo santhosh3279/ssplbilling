@@ -97,6 +97,10 @@
                     <td class="px-3 py-1.5 font-medium text-[var(--color-text)]">{{ rawSettings.discount_account || '--' }}</td>
                   </tr>
                   <tr class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td class="whitespace-nowrap px-3 py-1.5 text-[var(--color-text-muted)]">Short or Excess Account</td>
+                    <td class="px-3 py-1.5 font-medium text-[var(--color-text)]">{{ rawSettings.short_or_excess_account || '--' }}</td>
+                  </tr>
+                  <tr class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
                     <td class="whitespace-nowrap px-3 py-1.5 text-[var(--color-text-muted)]">Freight Account</td>
                     <td class="px-3 py-1.5 font-medium text-[var(--color-text)]">{{ rawSettings.freight_account || '--' }}</td>
                   </tr>
@@ -406,6 +410,9 @@ function applyToLocalStorage(settings, targetUserArg) {
   }
   if (settings.discount_account) {
     localStorage.setItem('wb-discount-account', settings.discount_account)
+  }
+  if (settings.short_or_excess_account) {
+    localStorage.setItem('wb-short-or-excess-account', settings.short_or_excess_account)
   }
   if (settings.freight_account) {
     localStorage.setItem('wb_freight', settings.freight_account)

@@ -8,6 +8,7 @@
   "custom_version",
   "cipher_map",
   "discount_account",
+  "short_or_excess_account",
   "freight",
   "tax_paid_on_purchase",
   "column_break_ygme",
@@ -61,6 +62,12 @@
    "fieldname": "discount_account",
    "fieldtype": "Link",
    "label": "Discount Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "short_or_excess_account",
+   "fieldtype": "Link",
+   "label": "Short or Excess Account",
    "options": "Account"
   },
   {
