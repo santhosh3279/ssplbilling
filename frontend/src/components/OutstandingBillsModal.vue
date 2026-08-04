@@ -539,6 +539,10 @@ watch(() => props.modalAmounts, (newVal) => {
   }
 }, { immediate: true, deep: true })
 
+// Frappe returns YYYY-MM-DD, so string compare is chronological. Missing dates sink to the bottom.
+const byDateAsc = (a, b) =>
+  (a.posting_date || '9999-12-31').localeCompare(b.posting_date || '9999-12-31')
+
 const currentInvoices = computed(() => localInvoices.value.length ? localInvoices.value : props.invoices)
 const currentPayments = computed(() => localPayments.value.length ? localPayments.value : props.unlinkedPayments)
 const currentJournals = computed(() => localJournals.value.length ? localJournals.value : props.unlinkedJournals)
@@ -546,7 +550,7 @@ const currentJournals = computed(() => localJournals.value.length ? localJournal
 const filteredInvoices = computed(() => {
   if (!showTypeInv.value) return []
   const list = currentInvoices.value || []
-  return effectiveDirection.value === 'All' ? list : list.filter(i => i.direction === effectiveDirection.value)
+  return [...(effectiveDirection.value === 'All' ? list : list.filter(i => i.direction === effectiveDirection.value))].sort(byDateAsc)
 })
 const filteredPayments = computed(() => {
   if (!showTypePay.value) return []
@@ -554,12 +558,12 @@ const filteredPayments = computed(() => {
   if (props.mop) {
     list = list.filter(p => p.mode_of_payment && p.mode_of_payment.toLowerCase() === props.mop.toLowerCase())
   }
-  return effectiveDirection.value === 'All' ? list : list.filter(p => p.direction === effectiveDirection.value)
+  return [...(effectiveDirection.value === 'All' ? list : list.filter(p => p.direction === effectiveDirection.value))].sort(byDateAsc)
 })
 const filteredJournals = computed(() => {
   if (!showTypeJrn.value) return []
   const list = currentJournals.value || []
-  return effectiveDirection.value === 'All' ? list : list.filter(j => j.direction === effectiveDirection.value)
+  return [...(effectiveDirection.value === 'All' ? list : list.filter(j => j.direction === effectiveDirection.value))].sort(byDateAsc)
 })
 
 const totalAllocated = computed(() =>
