@@ -110,8 +110,8 @@
 
         <table v-else class="w-full table-fixed border-collapse">
           <colgroup>
-            <col style="width:24%" />
-            <col style="width:10%" />
+            <col style="width:22%" />
+            <col style="width:12%" />
             <col style="width:8%" />
             <col style="width:6%" />
             <col style="width:5%" />
@@ -145,10 +145,8 @@
                 <div v-if="row.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ row.remarks }}</div>
               </td>
               <td class="px-3 py-3">
-                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[20px] font-black uppercase whitespace-nowrap"
-                  :class="typeBadgeClass(row.kind)">
-                  <span class="w-2 h-2 rounded-full bg-current shrink-0 opacity-70"></span>{{ row.typeLabel }}
-                </span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[20px] font-black uppercase whitespace-nowrap"
+                  :class="typeBadgeClass(row.kind)">{{ row.typeLabel }}</span>
               </td>
               <td class="px-3 py-3 text-center text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(row.posting_date) }}</td>
               <td class="px-3 py-3 text-center text-[20px] font-black"
