@@ -831,9 +831,9 @@ function formatDate(dateString) {
 }
 
 function format(val) {
-  if (val === null || val === undefined || val === '') return '0.00'
+  if (val === null || val === undefined || val === '') return '0.000'
   const num = Number(val)
-  return isNaN(num) ? '0.00' : num.toFixed(2)
+  return isNaN(num) ? '0.000' : num.toFixed(3)
 }
 
 function formatQty(val, uom) {
@@ -844,7 +844,7 @@ function formatQty(val, uom) {
   if (uom === 'Nos' || !uom) {
     return Math.floor(num).toString()
   }
-  return num.toFixed(2)
+  return num.toFixed(3)
 }
 
 const partyType = computed(() => {
