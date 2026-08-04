@@ -215,7 +215,7 @@
               <tr v-for="uom in insightData.uoms" :key="uom" class="hover:bg-[var(--color-midlight)]/30">
                 <td class="border border-[var(--color-border)] px-2 py-1 text-xl text-[var(--color-text-muted)] truncate">{{ uom }}</td>
                 <td v-for="pl in insightData.priceLists" :key="pl.name" class="border border-[var(--color-border)] px-2 py-1 text-right font-mono text-[var(--color-warning)] text-3xl tracking-widest">
-                  {{ pl.rates[uom] != null ? encPrice(pl.rates[uom]) : encPrice(0) }}
+                  {{ pl.buying && !canViewBuying ? "" : (pl.rates[uom] != null ? encPrice(pl.rates[uom]) : encPrice(0)) }}
                 </td>
               </tr>
             </tbody>
@@ -478,6 +478,10 @@ const activePriceList = computed(() => {
 
 const enabledPriceLists = ref([])
 
+const canViewBuying = computed(() => {
+  return canAccessTile('purchase-invoice') || canAccessTile('purchase-order')
+})
+
 async function fetchEnabledPriceLists() {
   try {
     const list = await frappeGet('frappe.client.get_list', {
@@ -738,7 +742,6 @@ function updateItemInsight(item) {
 
   for (const pl of allPls) {
     const isBuying = pl.buying || pl.name.toLowerCase().includes('buying')
-    if (props.searchType !== 'Purchase' && isBuying) continue
 
     // Find the rate for this item in this price list (for sorting)
     let rate = 0
@@ -783,6 +786,7 @@ function updateItemInsight(item) {
     uoms: itemUoms,
     priceLists: priceListsMeta.map(meta => ({
       name: meta.name,
+      buying: meta.buying,
       rates: uomPricesMap[meta.name] || {}
     }))
   }
