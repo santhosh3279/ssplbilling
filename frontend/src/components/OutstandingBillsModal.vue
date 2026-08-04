@@ -102,7 +102,7 @@
         </div>
 
         <!-- Empty -->
-        <div v-else-if="!filteredInvoices.length && !filteredPayments.length && !filteredJournals.length"
+        <div v-else-if="!mergedRows.length"
           class="flex flex-col items-center justify-center py-24 gap-4 text-[var(--color-text-muted)]">
           <span class="text-[6rem] opacity-30">✓</span>
           <span class="text-3xl font-bold">No outstanding items found</span>
@@ -110,8 +110,8 @@
 
         <table v-else class="w-full table-fixed border-collapse">
           <colgroup>
-            <col style="width:26%" />
-            <col style="width:8%" />
+            <col style="width:24%" />
+            <col style="width:10%" />
             <col style="width:8%" />
             <col style="width:6%" />
             <col style="width:5%" />
@@ -137,180 +137,60 @@
 
           <tbody>
 
-            <!-- OUTSTANDING INVOICES -->
-            <template v-if="filteredInvoices.length">
-              <tr class="bg-[var(--color-danger)]/5 border-b border-[var(--color-danger)]/15">
-                <td colspan="9" class="px-6 py-2">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-[var(--color-danger)] shrink-0"></span>
-                    <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-danger)]">Outstanding Invoices & Returns</span>
-                    <span class="ml-auto text-[20px] font-bold text-[var(--color-danger)] opacity-60">{{ filteredInvoices.length }}</span>
-                  </div>
-                </td>
-              </tr>
-              <tr v-for="inv in filteredInvoices" :key="inv.name"
-                class="border-b border-[var(--color-border)] hover:bg-[var(--color-midlight)]/20 transition-colors">
-                <td class="px-6 py-3 max-w-0">
-                  <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ inv.name }}</div>
-                </td>
-                <td class="px-3 py-3 text-[20px] font-semibold text-[var(--color-text-muted)]">
-                  {{ inv.doctype === 'Sales Invoice' ? 'Sales Inv' : 'Purch Inv' }}
-                </td>
-                <td class="px-3 py-3 text-center text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(inv.posting_date) }}</td>
-                <td class="px-3 py-3 text-center text-[20px] font-black"
-                  :class="dueDays(inv.posting_date) > 30 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)] opacity-50'">
-                  {{ dueDays(inv.posting_date) }}d
-                </td>
-                <td class="px-3 py-3 text-center">
-                  <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
-                    :class="inv.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
-                    {{ inv.direction }}
-                  </span>
-                </td>
-                <td class="px-3 py-3 text-right">
-                  <span class="text-[20px] font-black font-mono"
-                    :class="inv.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                    ₹{{ fmt(getAdjustedOutstanding(inv)) }}
-                  </span>
-                  <span v-if="inv.grand_total && Math.abs(inv.grand_total - getAdjustedOutstanding(inv)) > 0.005"
-                    class="text-[20px] font-bold font-mono text-[var(--color-text-muted)] opacity-50 ml-1">
-                    / ₹{{ fmt(inv.grand_total) }}
-                  </span>
-                </td>
-                <td class="px-3 py-3 text-center">
-                  <span v-if="inv.linked_count > 0"
-                    @click="showLinkedDocs(inv.doctype, inv.name)"
-                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)] cursor-pointer hover:bg-[var(--color-highlight)]/30 transition-colors">
-                    {{ inv.linked_count }}
-                  </span>
-                  <span v-else class="text-[20px] text-[var(--color-text-muted)] opacity-30">—</span>
-                </td>
-                <td class="px-3 py-3">
-                  <input v-model.number="localAmounts[inv.name]" type="number" step="0.01" min="0"
-                    :max="getAdjustedOutstanding(inv)"
-                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
-                    @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(inv.name)" />
-                </td>
-                <td class="px-3 py-3 text-right">
-                  <span class="text-[20px] font-black font-mono"
-                    :class="balanceFor(inv.name, getAdjustedOutstanding(inv)) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
-                    ₹{{ fmt(balanceFor(inv.name, getAdjustedOutstanding(inv))) }}
-                  </span>
-                </td>
-              </tr>
-            </template>
-
-            <!-- UNLINKED PAYMENT ENTRIES -->
-            <template v-if="filteredPayments.length">
-              <tr class="bg-[var(--color-success)]/5 border-b border-[var(--color-success)]/15">
-                <td colspan="9" class="px-6 py-2">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-[var(--color-success)] shrink-0"></span>
-                    <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-success)]">Unlinked Payment Entries</span>
-                    <span class="ml-auto text-[20px] font-bold text-[var(--color-success)] opacity-60">{{ filteredPayments.length }}</span>
-                  </div>
-                </td>
-              </tr>
-              <tr v-for="pe in filteredPayments" :key="pe.name"
-                class="border-b border-[var(--color-border)] hover:bg-[var(--color-midlight)]/20 transition-colors">
-                <td class="px-6 py-3 max-w-0">
-                  <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ pe.name }}</div>
-                  <div v-if="pe.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ pe.remarks }}</div>
-                </td>
-                <td class="px-3 py-3 text-[20px] font-semibold text-[var(--color-text-muted)]">Payment</td>
-                <td class="px-3 py-3 text-center text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(pe.posting_date) }}</td>
-                <td class="px-3 py-3 text-center text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(pe.posting_date) }}d</td>
-                <td class="px-3 py-3 text-center">
-                  <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
-                    :class="pe.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
-                    {{ pe.direction }}
-                  </span>
-                </td>
-                <td class="px-3 py-3 text-right">
-                  <span class="text-[20px] font-black font-mono text-[var(--color-success)]">₹{{ fmt(getAdjustedOutstanding(pe)) }}</span>
-                  <span v-if="pe.paid_amount && Math.abs(pe.paid_amount - getAdjustedOutstanding(pe)) > 0.005"
-                    class="text-[20px] font-bold font-mono text-[var(--color-text-muted)] opacity-50 ml-1">
-                    / ₹{{ fmt(pe.paid_amount) }}
-                  </span>
-                </td>
-                <td class="px-3 py-3 text-center">
-                  <span v-if="pe.linked_count > 0"
-                    @click="showLinkedDocs('Payment Entry', pe.name)"
-                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)] cursor-pointer hover:bg-[var(--color-highlight)]/30 transition-colors">
-                    {{ pe.linked_count }}
-                  </span>
-                  <span v-else class="text-[20px] text-[var(--color-text-muted)] opacity-30">—</span>
-                </td>
-                <td class="px-3 py-3">
-                  <input v-model.number="localAmounts[pe.name]" type="number" step="0.01" min="0"
-                    :max="getAdjustedOutstanding(pe)"
-                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
-                    @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(pe.name)" />
-                </td>
-                <td class="px-3 py-3 text-right">
-                  <span class="text-[20px] font-black font-mono"
-                    :class="balanceFor(pe.name, getAdjustedOutstanding(pe)) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
-                    ₹{{ fmt(balanceFor(pe.name, getAdjustedOutstanding(pe))) }}
-                  </span>
-                </td>
-              </tr>
-            </template>
-
-            <!-- UNLINKED JOURNAL ENTRIES -->
-            <template v-if="filteredJournals.length">
-              <tr class="bg-[var(--color-info)]/5 border-b border-[var(--color-info)]/15">
-                <td colspan="9" class="px-6 py-2">
-                  <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-[var(--color-info)] shrink-0"></span>
-                    <span class="text-[20px] font-black uppercase tracking-widest text-[var(--color-info)]">Unlinked Journal Entries</span>
-                    <span class="ml-auto text-[20px] font-bold text-[var(--color-info)] opacity-60">{{ filteredJournals.length }}</span>
-                  </div>
-                </td>
-              </tr>
-              <tr v-for="je in filteredJournals" :key="je.reference_row || (je.name + je.account)"
-                class="border-b border-[var(--color-border)] hover:bg-[var(--color-midlight)]/20 transition-colors">
-                <td class="px-6 py-3 max-w-0">
-                  <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ je.name }}</div>
-                  <div v-if="je.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ je.remarks }}</div>
-                </td>
-                <td class="px-3 py-3 text-[20px] font-semibold text-[var(--color-text-muted)]">Journal</td>
-                <td class="px-3 py-3 text-center text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(je.posting_date) }}</td>
-                <td class="px-3 py-3 text-center text-[20px] font-black text-[var(--color-text-muted)] opacity-50">{{ dueDays(je.posting_date) }}d</td>
-                <td class="px-3 py-3 text-center">
-                  <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
-                    :class="je.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
-                    {{ je.direction }}
-                  </span>
-                </td>
-                <td class="px-3 py-3 text-right">
-                  <span class="text-[20px] font-black font-mono text-[var(--color-info)]">₹{{ fmt(getAdjustedOutstanding(je)) }}</span>
-                  <span v-if="(je.journal_total_debit || je.total_amount) && Math.abs((je.journal_total_debit || je.total_amount) - getAdjustedOutstanding(je)) > 0.005"
-                    class="text-[20px] font-bold font-mono text-[var(--color-text-muted)] opacity-50 ml-1">
-                    / ₹{{ fmt(je.journal_total_debit || je.total_amount) }}
-                  </span>
-                </td>
-                <td class="px-3 py-3 text-center">
-                  <span v-if="je.linked_count > 0"
-                    @click="showLinkedDocs('Journal Entry', je.name)"
-                    class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)] cursor-pointer hover:bg-[var(--color-highlight)]/30 transition-colors">
-                    {{ je.linked_count }}
-                  </span>
-                  <span v-else class="text-[20px] text-[var(--color-text-muted)] opacity-30">—</span>
-                </td>
-                <td class="px-3 py-3">
-                  <input v-model.number="localAmounts[je.reference_row]" type="number" step="0.01" min="0"
-                    :max="getAdjustedOutstanding(je)"
-                    class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
-                    @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(je.reference_row)" />
-                </td>
-                <td class="px-3 py-3 text-right">
-                  <span class="text-[20px] font-black font-mono"
-                    :class="balanceFor(je.reference_row, getAdjustedOutstanding(je)) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
-                    ₹{{ fmt(balanceFor(je.reference_row, getAdjustedOutstanding(je))) }}
-                  </span>
-                </td>
-              </tr>
-            </template>
+            <!-- ALL OUTSTANDING ITEMS, OLDEST FIRST -->
+            <tr v-for="row in mergedRows" :key="row.kind + ':' + row.key"
+              class="border-b border-[var(--color-border)] hover:bg-[var(--color-midlight)]/20 transition-colors">
+              <td class="px-6 py-3 max-w-0">
+                <div class="font-mono text-[20px] font-black text-[var(--color-text)] truncate">{{ row.docname }}</div>
+                <div v-if="row.remarks" class="text-[20px] italic text-[var(--color-text-muted)] truncate opacity-70">{{ row.remarks }}</div>
+              </td>
+              <td class="px-3 py-3">
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[20px] font-black uppercase whitespace-nowrap"
+                  :class="typeBadgeClass(row.kind)">
+                  <span class="w-2 h-2 rounded-full bg-current shrink-0 opacity-70"></span>{{ row.typeLabel }}
+                </span>
+              </td>
+              <td class="px-3 py-3 text-center text-[20px] font-bold text-[var(--color-text-muted)]">{{ fmtDate(row.posting_date) }}</td>
+              <td class="px-3 py-3 text-center text-[20px] font-black"
+                :class="row.kind === 'invoice' && dueDays(row.posting_date) > 30 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)] opacity-50'">
+                {{ dueDays(row.posting_date) }}d
+              </td>
+              <td class="px-3 py-3 text-center">
+                <span class="px-1.5 py-0.5 rounded text-[20px] font-black uppercase"
+                  :class="row.direction === 'Cr' ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'">
+                  {{ row.direction }}
+                </span>
+              </td>
+              <td class="px-3 py-3 text-right">
+                <span class="text-[20px] font-black font-mono" :class="amountClass(row)">
+                  ₹{{ fmt(getAdjustedOutstanding(row.item)) }}
+                </span>
+                <span v-if="row.total && Math.abs(row.total - getAdjustedOutstanding(row.item)) > 0.005"
+                  class="text-[20px] font-bold font-mono text-[var(--color-text-muted)] opacity-50 ml-1">
+                  / ₹{{ fmt(row.total) }}
+                </span>
+              </td>
+              <td class="px-3 py-3 text-center">
+                <span v-if="row.linked_count > 0"
+                  @click="showLinkedDocs(row.doctype, row.docname)"
+                  class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[20px] font-black bg-[var(--color-highlight)]/15 text-[var(--color-highlight)] cursor-pointer hover:bg-[var(--color-highlight)]/30 transition-colors">
+                  {{ row.linked_count }}
+                </span>
+                <span v-else class="text-[20px] text-[var(--color-text-muted)] opacity-30">—</span>
+              </td>
+              <td class="px-3 py-3">
+                <input v-model.number="localAmounts[row.key]" type="number" step="0.01" min="0"
+                  :max="getAdjustedOutstanding(row.item)"
+                  class="allocate-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-3 text-right font-mono text-[20px] font-black text-[var(--color-highlight)] focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/10 outline-none disabled:opacity-20 disabled:grayscale transition-all"
+                  @keydown.enter="focusNextAllocate($event)" @input="onAllocationChange(row.key)" />
+              </td>
+              <td class="px-3 py-3 text-right">
+                <span class="text-[20px] font-black font-mono"
+                  :class="balanceFor(row.key, getAdjustedOutstanding(row.item)) < 0.005 ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)] opacity-60'">
+                  ₹{{ fmt(balanceFor(row.key, getAdjustedOutstanding(row.item))) }}
+                </span>
+              </td>
+            </tr>
 
           </tbody>
         </table>
@@ -491,32 +371,8 @@ function autoFillAllocations(force = false) {
   const newAmounts = {}
   let remaining = props.enteredAmount
 
-  // Gather all items
-  const items = []
-  if (filteredInvoices.value) {
-    filteredInvoices.value.forEach(i => {
-      items.push({ key: i.name, posting_date: i.posting_date, item: i })
-    })
-  }
-  if (filteredPayments.value) {
-    filteredPayments.value.forEach(p => {
-      items.push({ key: p.name, posting_date: p.posting_date, item: p })
-    })
-  }
-  if (filteredJournals.value) {
-    filteredJournals.value.forEach(j => {
-      items.push({ key: j.reference_row, posting_date: j.posting_date, item: j })
-    })
-  }
-
-  // Sort oldest first
-  items.sort((a, b) => {
-    const da = a.posting_date ? new Date(a.posting_date) : new Date(0)
-    const db = b.posting_date ? new Date(b.posting_date) : new Date(0)
-    return da - db
-  })
-
-  for (const entry of items) {
+  // mergedRows is already the globally date-sorted list, oldest first.
+  for (const entry of mergedRows.value) {
     if (remaining <= 0.005) break
     const maxVal = getAdjustedOutstanding(entry.item)
     if (maxVal <= 0.005) continue
@@ -566,6 +422,71 @@ const filteredJournals = computed(() => {
   return [...(effectiveDirection.value === 'All' ? list : list.filter(j => j.direction === effectiveDirection.value))].sort(byDateAsc)
 })
 
+// Single date-ordered list across all three types. `key` must stay the raw localAmounts key
+// (i.name / p.name / j.reference_row) — emitAllocations and the modalAmounts watch read it literally.
+// `docname` is the parent document (a JE row's key is the child row, its docname is the parent JE).
+const mergedRows = computed(() => {
+  const rows = []
+  for (const i of filteredInvoices.value) {
+    rows.push({
+      kind: 'invoice',
+      key: i.name,
+      docname: i.name,
+      doctype: i.doctype,
+      typeLabel: i.doctype === 'Sales Invoice' ? 'Sales Inv' : 'Purch Inv',
+      posting_date: i.posting_date,
+      direction: i.direction,
+      remarks: '',
+      total: i.grand_total,
+      linked_count: i.linked_count,
+      item: i,
+    })
+  }
+  for (const p of filteredPayments.value) {
+    rows.push({
+      kind: 'payment',
+      key: p.name,
+      docname: p.name,
+      doctype: 'Payment Entry',
+      typeLabel: 'Payment',
+      posting_date: p.posting_date,
+      direction: p.direction,
+      remarks: p.remarks,
+      total: p.paid_amount,
+      linked_count: p.linked_count,
+      item: p,
+    })
+  }
+  for (const j of filteredJournals.value) {
+    rows.push({
+      kind: 'journal',
+      key: j.reference_row,
+      docname: j.name,
+      doctype: 'Journal Entry',
+      typeLabel: 'Journal',
+      posting_date: j.posting_date,
+      direction: j.direction,
+      remarks: j.remarks,
+      total: j.journal_total_debit || j.total_amount,
+      linked_count: j.linked_count,
+      item: j,
+    })
+  }
+  return rows.sort(byDateAsc)
+})
+
+function typeBadgeClass(kind) {
+  if (kind === 'payment') return 'bg-[var(--color-success)]/15 text-[var(--color-success)]'
+  if (kind === 'journal') return 'bg-[var(--color-info)]/15 text-[var(--color-info)]'
+  return 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'
+}
+
+function amountClass(row) {
+  if (row.kind === 'payment') return 'text-[var(--color-success)]'
+  if (row.kind === 'journal') return 'text-[var(--color-info)]'
+  return row.direction === 'Cr' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'
+}
+
 const totalAllocated = computed(() =>
   Object.values(localAmounts.value).reduce((s, v) => s + (isNaN(parseFloat(v)) ? 0 : parseFloat(v)), 0)
 )
@@ -579,7 +500,7 @@ const netOutstanding = computed(() => {
   return invBal + jeBal + peBal
 })
 
-const totalItemCount = computed(() => filteredInvoices.value.length + filteredPayments.value.length + filteredJournals.value.length)
+const totalItemCount = computed(() => mergedRows.value.length)
 const allocatedCount = computed(() => Object.values(localAmounts.value).filter(v => parseFloat(v) > 0).length)
 
 async function showLinkedDocs(doctype, docname) {
