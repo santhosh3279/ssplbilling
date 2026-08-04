@@ -9,7 +9,12 @@
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <h1 class="text-lg font-bold tracking-tight text-[var(--color-text)] uppercase">{{ entryType === 'Contra' ? 'CONTRA ENTRY' : (entryType === 'Opening Entry' ? 'OPENING ENTRY' : 'JOURNAL ENTRY') }}</h1>
+        <h1 class="text-lg font-bold tracking-tight text-[var(--color-text)] uppercase">
+          {{ entryType === 'Contra' ? 'CONTRA ENTRY' : (entryType === 'Opening Entry' ? 'OPENING ENTRY' : 'JOURNAL ENTRY') }}
+          <span v-if="companyName" class="normal-case font-normal text-[var(--color-text-muted)] text-sm border-l border-[var(--color-border)] pl-2.5 ml-2.5">
+            {{ companyName }}
+          </span>
+        </h1>
         <div class="h-4 w-px bg-[var(--color-surface-raised)] mx-2"></div>
         <div class="flex rounded-xl bg-[var(--color-surface-raised)] p-1.5 shadow-inner">
           <button
@@ -283,6 +288,7 @@ import { useShortcuts } from '../services/shortcutManager'
 import { journalContraShortcuts } from '../shortcuts/journalContraShortcuts'
 
 const router = useRouter()
+const companyName = computed(() => localStorage.getItem('wb-company') || '')
 
 // --- STATE ---
 const entryType = ref('Journal Entry')
