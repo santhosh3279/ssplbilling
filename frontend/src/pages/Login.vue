@@ -104,6 +104,9 @@ async function handleLogin() {
         if (settings.default_zoom) {
           localStorage.setItem('wb-zoom', settings.default_zoom)
         }
+        if (settings.float_precision !== undefined && settings.float_precision !== null) {
+          localStorage.setItem('wb-precision', String(settings.float_precision))
+        }
         // Save tax_type_incl from first series
         const firstSeries = (settings.billing_series || [])[0]
         if (firstSeries) {

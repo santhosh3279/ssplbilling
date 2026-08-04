@@ -40,3 +40,9 @@ export function getDefaultPriceList() {
 export function getDefaultSeries() {
   return localStorage.getItem('wb-series') || 'ACC-SINV-.YYYY.-'
 }
+
+// Float precision synced from System Settings by getBillingSettings
+export function getFloatPrecision() {
+  const p = parseInt(localStorage.getItem('wb-precision'), 10)
+  return isNaN(p) ? 3 : p
+}

@@ -563,6 +563,7 @@ def get_billing_settings(user=None):
 	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current or specified user."""
 	import ssplbilling
 	from datetime import datetime
+	from frappe.utils import cint
 	app_path = frappe.get_app_path("ssplbilling")
 	hooks_path = os.path.join(app_path, "hooks.py")
 	last_updated = ""
@@ -616,6 +617,7 @@ def get_billing_settings(user=None):
 		"other_charges": settings.other_charges or "",
 		"round_off": settings.round_off or "",
 		"cipher_map": settings.cipher_map or "",
+		"float_precision": cint(frappe.db.get_single_value("System Settings", "float_precision")) or 3,
 		"store_transfer_bill_limit": incentive_rule.store_transfer_bill_limit or 0,
 		"mop_map": mop_map,
 		"user_zoom": user_zoom,

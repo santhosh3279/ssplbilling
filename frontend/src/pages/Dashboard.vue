@@ -1412,6 +1412,9 @@ async function syncBillingSettings(targetUser, force) {
     if (settings && settings.short_or_excess_account) {
       localStorage.setItem('wb-short-or-excess-account', settings.short_or_excess_account)
     }
+    if (settings && settings.float_precision !== undefined && settings.float_precision !== null) {
+      localStorage.setItem('wb-precision', String(settings.float_precision))
+    }
 
     // Sync roles to localStorage for permission inherited
     if (settings && settings.user_role) {
