@@ -1388,6 +1388,9 @@ async function syncBillingSettings(targetUser, force) {
     }
     
     systemSettings.value = settings
+    if (settings && settings.currency_precision !== undefined && settings.currency_precision !== null) {
+      localStorage.setItem('wb-prcision', String(settings.currency_precision))
+    }
     // Sync user's zoom to localStorage so Sales Invoice can use it
     if (settings && settings.user_zoom) {
       localStorage.setItem('wb-zoom', settings.user_zoom)

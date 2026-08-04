@@ -405,6 +405,9 @@ function applyToLocalStorage(settings, targetUserArg) {
   if (settings.company_state) {
     localStorage.setItem('wb-company-state', settings.company_state)
   }
+  if (settings.currency_precision !== undefined && settings.currency_precision !== null) {
+    localStorage.setItem('wb-prcision', String(settings.currency_precision))
+  }
   if (settings.user_zoom) {
     localStorage.setItem('wb-zoom', String(settings.user_zoom))
   }

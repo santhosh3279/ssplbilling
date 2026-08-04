@@ -606,6 +606,7 @@ def get_billing_settings(user=None):
 		"app_version": settings.custom_version or ssplbilling.__version__,
 		"last_updated": last_updated,
 		"company_state": company_state,
+		"currency_precision": frappe.db.get_single_value('System Settings', 'currency_precision') or 2,
 		"discount_account": settings.discount_account or "",
 		"short_or_excess_account": settings.short_or_excess_account or "",
 		"freight_account": settings.freight or "",
