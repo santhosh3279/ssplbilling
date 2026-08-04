@@ -830,10 +830,17 @@ function formatDate(dateString) {
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')
 }
 
+function getPrecision() {
+  const stored = localStorage.getItem('wb-prcision')
+  const p = parseInt(stored, 10)
+  return isNaN(p) ? 2 : p
+}
+
 function format(val) {
-  if (val === null || val === undefined || val === '') return '0.000'
+  const p = getPrecision()
+  if (val === null || val === undefined || val === '') return (0).toFixed(p)
   const num = Number(val)
-  return isNaN(num) ? '0.000' : num.toFixed(3)
+  return isNaN(num) ? (0).toFixed(p) : num.toFixed(p)
 }
 
 function formatQty(val, uom) {
@@ -844,7 +851,8 @@ function formatQty(val, uom) {
   if (uom === 'Nos' || !uom) {
     return Math.floor(num).toString()
   }
-  return num.toFixed(3)
+  const p = getPrecision()
+  return num.toFixed(p)
 }
 
 const partyType = computed(() => {
