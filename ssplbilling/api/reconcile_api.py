@@ -11,6 +11,66 @@ def _get_party_account(party_type, party):
 	return get_party_account(party_type, party, _get_company())
 
 
+def _get_je_row_unadjusted_amount(reference_row, party_type):
+	"""Signed account-currency amount of a single Journal Entry Account row.
+
+	ERPNext's update_reference_in_journal_entry() *overwrites* the row with
+	(unadjusted_amount - allocated_amount) and appends a new row for
+	allocated_amount, so unadjusted_amount must be the row's raw amount. Passing
+	anything net of prior Payment Ledger links (as our unallocated_amount is)
+	shrinks the row by that difference and throws "Debit and Credit not equal".
+	This mirrors ERPNext's own get_jv_entries(), which selects credit - debit
+	with no link subtraction.
+	"""
+	import erpnext
+
+	row = frappe.db.get_value(
+		"Journal Entry Account",
+		reference_row,
+		["parent", "debit_in_account_currency", "credit_in_account_currency"],
+		as_dict=True,
+	)
+	if not row:
+		frappe.throw(f"Journal Entry row {reference_row} not found")
+
+	debit = float(row.debit_in_account_currency or 0)
+	credit = float(row.credit_in_account_currency or 0)
+
+	if erpnext.get_party_account_type(party_type) == "Receivable":
+		amount = credit - debit
+	else:
+		amount = debit - credit
+
+	# ERPNext's get_jv_entries() filters these out (dr_or_cr > 0). A row moving the
+	# other way needs a negated allocated_amount that we never send, so reconciling
+	# it here would silently unbalance the Journal Entry.
+	if amount <= 0.005:
+		frappe.throw(
+			f"Journal Entry row {reference_row} of {row.parent} moves against the party account "
+			f"and cannot be reconciled from this side."
+		)
+
+	return amount
+
+
+def _get_je_row_available_amount(party_type, party, reference_row):
+	"""Authoritative unallocated balance of a JE row, net of existing Payment Ledger links.
+
+	Grounding unadjusted_amount in the raw row amount removes ERPNext's own
+	over-allocation guard (validate_allocation compares against `amount`), so cap
+	the allocation here instead. Reuses get_unlinked_entries so the link maths
+	stays in one place, and never trusts the client-supplied figure.
+	"""
+	entries = get_unlinked_entries(party_type, party)
+	for je in entries["journal_entries"]:
+		if je.get("reference_row") == reference_row:
+			return float(je.get("unallocated_amount") or 0)
+
+	frappe.throw(
+		f"Journal Entry row {reference_row} is no longer unreconciled. Refresh and try again."
+	)
+
+
 @frappe.whitelist()
 def get_parties_with_unlinked_entries(show_all=False):
 	"""Return Customer/Supplier parties that have unallocated Payment Entries or
@@ -602,17 +662,34 @@ def post_reconciliation(party_type, party, allocations):
 
 	# 2. Build allocation rows.
 	for alloc in allocations:
+		allocated = float(alloc["amount"])
 		unreconciled = float(alloc.get("unreconciled_amount") or alloc["amount"])
+		ref_row = alloc.get("reference_row") or None
+
+		if alloc["payment_type"] == "Journal Entry" and ref_row:
+			# unadjusted_amount must be the JE row's raw amount, not its unallocated
+			# balance, or ERPNext rewrites the row short and unbalances the entry.
+			unadjusted = _get_je_row_unadjusted_amount(ref_row, party_type)
+			available = _get_je_row_available_amount(party_type, party, ref_row)
+			if allocated - available > 0.009:
+				frappe.throw(
+					f"Allocated amount {allocated} exceeds the unreconciled balance {available} "
+					f"of Journal Entry {alloc['payment_name']}."
+				)
+			unreconciled = available
+		else:
+			unadjusted = unreconciled
+
 		rec.append(
 			"allocation",
 			{
 				"reference_type": alloc["payment_type"],
 				"reference_name": alloc["payment_name"],
-				"reference_row": alloc.get("reference_row") or None,
+				"reference_row": ref_row,
 				"invoice_type": alloc["invoice_type"],
 				"invoice_number": alloc["invoice_name"],     # ERPNext field name
-				"allocated_amount": float(alloc["amount"]),
-				"amount": unreconciled,                      # payment's total unreconciled amount
+				"allocated_amount": allocated,
+				"amount": unadjusted,                        # ERPNext reads this as unadjusted_amount
 				"unreconciled_amount": unreconciled,
 			},
 		)
