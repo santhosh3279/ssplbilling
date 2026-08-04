@@ -218,7 +218,7 @@
                     <td class="py-1 pr-1 font-mono leading-none whitespace-nowrap">{{ h.name }}</td>
                     <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
                     <td class="py-1 px-1 text-right font-mono leading-none">{{ h.qty }}</td>
-                    <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(2) }}</td>
+                    <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(precision) }}</td>
                     <td class="py-1 pl-1 text-right font-mono leading-none text-[var(--color-warning)]">{{ h.discount || 0 }}%</td>
                   </tr>
                 </tbody>
@@ -591,7 +591,9 @@ import EWayBillModal from '../components/EWayBillModal.vue'
 import EWayBillOptionsModal from '../components/EWayBillOptionsModal.vue'
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
-import { encryptPrice } from '../encryption.js'
+import { encryptPrice, getFloatPrecision } from '../encryption.js'
+
+const precision = getFloatPrecision()
 import { useDiscountRules } from '../composables/useDiscountRules.js'
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useShortcuts } from '../services/shortcutManager'
@@ -841,7 +843,7 @@ async function loadQuotationData(data, forceHalfTaxFalse = false) {
     const discount = i.discount || 0
     const effectiveRate = i.rate || 0
     const preDiscountRate = discount > 0
-      ? parseFloat((effectiveRate / (1 - discount / 100)).toFixed(2))
+      ? parseFloat((effectiveRate / (1 - discount / 100)).toFixed(precision))
       : effectiveRate
     
     const isManual = i.price_list_rate && Math.abs(i.price_list_rate - preDiscountRate) > 0.001
@@ -858,7 +860,7 @@ async function loadQuotationData(data, forceHalfTaxFalse = false) {
       tax_rate: i.tax_rate || 0,
       deleted: false,
       _is_free: effectiveRate === 0,
-      amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(2)),
+      amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(precision)),
       _is_manual_rate: isManual
     }
   })
@@ -982,7 +984,7 @@ const itemDiscountTotal = computed(() => {
     const qty = item.qty || 0
     const disc = item.discount || 0
     return sum + ((rate * qty) * (disc / 100))
-  }, 0).toFixed(2)
+  }, 0).toFixed(precision)
 })
 
 const discountFactor = computed(() => {
@@ -1001,7 +1003,7 @@ const selectedItemHistory = computed(() => {
 })
 
 const totalTax = computed(() => {
-  if (isExempted.value) return '0.00'
+  if (isExempted.value) return (0).toFixed(precision)
   const factor = discountFactor.value
   return activeItems.value.reduce((sum, item) => {
     const rate = item.tax_rate || 0
@@ -1013,7 +1015,7 @@ const totalTax = computed(() => {
       tax = discountedAmt * (rate / 100)
     }
     return sum + tax
-  }, 0).toFixed(2)
+  }, 0).toFixed(precision)
 })
 
 const subtotal = computed(() => {
@@ -1026,7 +1028,7 @@ const subtotal = computed(() => {
       net = discountedAmt / (1 + rate / 100)
     }
     return sum + net
-  }, 0).toFixed(2)
+  }, 0).toFixed(precision)
 })
 
 const unroundedTotal = computed(() => {
@@ -1041,11 +1043,11 @@ const unroundedTotal = computed(() => {
 })
 
 const totalAmount = computed(() => {
-  return Math.round(unroundedTotal.value).toFixed(2)
+  return Math.round(unroundedTotal.value).toFixed(precision)
 })
 
 const roundOff = computed(() => {
-  return (parseFloat(totalAmount.value) - unroundedTotal.value).toFixed(2)
+  return (parseFloat(totalAmount.value) - unroundedTotal.value).toFixed(precision)
 })
 
 // --- Watchers ---
@@ -1082,9 +1084,9 @@ function formatDateShort(dateStr) {
 }
 
 function format(val) {
-  if (val === null || val === undefined || val === '') return '0.00'
+  if (val === null || val === undefined || val === '') return (0).toFixed(precision)
   const num = Number(val)
-  return isNaN(num) ? '0.00' : num.toFixed(2)
+  return isNaN(num) ? (0).toFixed(precision) : num.toFixed(precision)
 }
 
 async function clearBill() {
@@ -1245,7 +1247,7 @@ async function handleSave() {
       item_code: i.item_code,
       qty: i.qty,
       uom: i.uom || 'Nos',
-      rate: parseFloat(((i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(2)),
+      rate: parseFloat(((i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(precision)),
       price_list_rate: i._base_rate || i.price_list_rate || i.rate,
       discount_percentage: i.discount || 0,
     }))
@@ -1510,7 +1512,7 @@ function onCsvFileSelected(e) {
       const rate = parseFloat(get('rate')) || 0
       const discount = parseFloat(get('discount')) || 0
       const tax_rate = parseFloat(get('tax_rate')) || 0
-      const effectiveRate = discount > 0 ? parseFloat((rate * (1 - discount / 100)).toFixed(2)) : rate
+      const effectiveRate = discount > 0 ? parseFloat((rate * (1 - discount / 100)).toFixed(precision)) : rate
       parsed.push({
         item_code,
         item_name: get('item_name') || item_code,
@@ -1523,7 +1525,7 @@ function onCsvFileSelected(e) {
         tax_rate,
         deleted: false,
         _is_free: effectiveRate === 0,
-        amount: parseFloat((qty * effectiveRate).toFixed(2)),
+        amount: parseFloat((qty * effectiveRate).toFixed(precision)),
         _rowKey: makeRowKey(),
         _is_manual_rate: true
       })
@@ -1550,10 +1552,10 @@ function detectPriceChange(item, focusTarget) {
   const currentDiscount = parseFloat(item.discount || 0)
 
   const effectiveRate = currentDiscount > 0.001
-    ? parseFloat((standardRate * (1 - currentDiscount / 100)).toFixed(2))
+    ? parseFloat((standardRate * (1 - currentDiscount / 100)).toFixed(precision))
     : currentRate
 
-  const priceListStandard = parseFloat((standardRate * combinedFactor(item.item_code)).toFixed(2))
+  const priceListStandard = parseFloat((standardRate * combinedFactor(item.item_code)).toFixed(precision))
   const rateChanged = Math.abs(priceListStandard - currentRate) > 0.001
   const discountChanged = Math.abs(currentDiscount) > 0.001
 
@@ -1815,7 +1817,7 @@ function onUomChange(idx) {
   if (cached) {
     const newRate = getItemRateForPriceList(cached, item.uom)
     item._base_rate = newRate
-    item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(2))
+    item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(precision))
     item._is_manual_rate = false
     recalcAmount(idx)
   }
@@ -1828,7 +1830,7 @@ function onPendingUomChange() {
   if (cached) {
     const newRate = getItemRateForPriceList(cached, p.uom)
     p._base_rate = newRate
-    p.rate = parseFloat(((newRate || 0) * combinedFactor(p.item_code)).toFixed(2))
+    p.rate = parseFloat(((newRate || 0) * combinedFactor(p.item_code)).toFixed(precision))
   }
 }
 
@@ -1849,8 +1851,8 @@ function finishRowEdit(idx) {
 function recalcAmount(idx) {
   const item = items.value[idx]
   if (!item) return
-  const netRate = parseFloat(((item.rate || 0) * (1 - (item.discount || 0) / 100)).toFixed(2))
-  item.amount = parseFloat(((item.qty || 0) * netRate).toFixed(2))
+  const netRate = parseFloat(((item.rate || 0) * (1 - (item.discount || 0) / 100)).toFixed(precision))
+  item.amount = parseFloat(((item.qty || 0) * netRate).toFixed(precision))
 }
 
 function effectiveModifier() {
@@ -1859,7 +1861,7 @@ function effectiveModifier() {
 }
 
 function applyModifierToRate(baseRate) {
-  return parseFloat(((baseRate || 0) * effectiveModifier()).toFixed(2))
+  return parseFloat(((baseRate || 0) * effectiveModifier()).toFixed(precision))
 }
 
 function combinedFactor(item_code) {
@@ -1889,7 +1891,7 @@ function updateTableRates() {
     if (cached) {
       const newRate = getItemRateForPriceList(cached, item.uom)
       item._base_rate = newRate
-      item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(2))
+      item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(precision))
       item._is_manual_rate = false
       recalcAmount(idx)
     }
@@ -1914,7 +1916,7 @@ function reapplyCustomerPricing() {
     }
     const base = item.price_list_rate || item._base_rate || item.rate
     item._base_rate = base
-    item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(2))
+    item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
     item._cp_applied = customerPricing.value[item.item_code] != null
     recalcAmount(idx)
   })
@@ -1925,8 +1927,8 @@ watch(ignoreModifier, () => {
     if (item.deleted || item._is_manual_rate) return
     const base = item._base_rate ?? item.rate
     item._base_rate = base
-    item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(2))
-    item.amount = parseFloat(((item.qty || 0) * item.rate * (1 - (item.discount || 0) / 100)).toFixed(2))
+    item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
+    item.amount = parseFloat(((item.qty || 0) * item.rate * (1 - (item.discount || 0) / 100)).toFixed(precision))
   })
 })
 
@@ -2060,7 +2062,7 @@ function applyItemToRow(rowIdx, item) {
     row._base_rate = base
     const cpFactor = customerPricing.value[item.item_code]
     row._cp_applied = cpFactor != null
-    row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
+    row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
     // row.discount is handled by useDiscountRules watcher
   }
   recalcAmount(rowIdx)
@@ -2114,13 +2116,13 @@ function onItemSearchSelectMultiple(entries) {
   for (const entry of entries) {
     const baseRate = getItemRateForPriceList(entry, entry.uom) || 0
     const cpApplied = customerPricing.value[entry.item_code] != null
-    const rate = parseFloat((baseRate * combinedFactor(entry.item_code)).toFixed(2))
+    const rate = parseFloat((baseRate * combinedFactor(entry.item_code)).toFixed(precision))
     const qty = entry.qty
     items.value.push({
       item_code: entry.item_code, item_name: entry.item_name, qty, uom: entry.uom || 'Nos',
       rate, _base_rate: baseRate, _cp_applied: cpApplied,
       discount: 0, tax_rate: entry.tax_rate || 0,
-      amount: parseFloat((qty * rate).toFixed(2)),
+      amount: parseFloat((qty * rate).toFixed(precision)),
       deleted: false, _rowKey: makeRowKey()
     })
   }
@@ -2350,7 +2352,7 @@ function setPendingItem(item) {
   item._base_rate = base
   const cpFactor = customerPricing.value[item.item_code]
   item._cp_applied = cpFactor != null
-  item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(2))
+  item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
   pendingItem.value = item
   nextTick(() => {
     pendingQtyInput.value?.focus()
@@ -2366,7 +2368,7 @@ function confirmPendingItem() {
     item_code: p.item_code, item_name: p.item_name, qty, uom: p.uom || 'Nos',
     rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0, _cp_applied: !!p._cp_applied,
     discount: p.discount || 0, tax_rate: p.tax_rate || 0,
-    amount: parseFloat((qty * (p.rate || 0)).toFixed(2)),
+    amount: parseFloat((qty * (p.rate || 0)).toFixed(precision)),
     deleted: false, _rowKey: makeRowKey()
   }
   items.value.push(newItem)

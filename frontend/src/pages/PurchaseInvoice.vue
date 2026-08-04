@@ -363,7 +363,7 @@
                         <td class="py-1 pr-1 font-mono leading-none whitespace-nowrap">{{ h.name }}</td>
                         <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
                         <td class="py-1 px-1 text-right font-mono leading-none">{{ h.qty }}</td>
-                        <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(2) }}</td>
+                        <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(precision) }}</td>
                         <td class="py-1 pl-1 text-right font-mono leading-none text-[var(--color-warning)]">{{ h.discount || 0 }}%</td>
                       </tr>
                     </tbody>
@@ -397,7 +397,7 @@
                         <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ h.name }}</td>
                         <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
                         <td class="py-1 px-1 text-right font-mono leading-none">{{ h.qty }}</td>
-                        <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(2) }}</td>
+                        <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(precision) }}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -836,7 +836,9 @@ import Warning from '../components/Warning.vue'
 
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
-import { encryptPrice } from '../encryption.js'
+import { encryptPrice, getFloatPrecision } from '../encryption.js'
+
+const precision = getFloatPrecision()
 import { useShortcuts } from '../services/shortcutManager'
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
@@ -1223,7 +1225,7 @@ async function handleSelectSidebarItem(item) {
       const discount = i.discount || 0
       const effectiveRate = i.rate || 0
       const preDiscountRate = discount > 0
-        ? parseFloat((effectiveRate / (1 - discount / 100)).toFixed(2))
+        ? parseFloat((effectiveRate / (1 - discount / 100)).toFixed(precision))
         : effectiveRate
       return {
         item_code: i.item_code,
@@ -1237,7 +1239,7 @@ async function handleSelectSidebarItem(item) {
         tax_rate: i.tax_rate || 0,
         deleted: false,
         _is_free: effectiveRate === 0,
-        amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(2)),
+        amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(precision)),
       }
     })
 
@@ -1350,7 +1352,7 @@ const itemDiscountTotal = computed(() => {
     const qty = item.qty || 0
     const disc = item.discount || 0
     return sum + ((rate * qty) * (disc / 100))
-  }, 0).toFixed(2)
+  }, 0).toFixed(precision)
 })
 
 const discountFactor = computed(() => {
@@ -1369,7 +1371,7 @@ const selectedItemHistory = computed(() => {
 })
 
 const totalTax = computed(() => {
-  if (isExempted.value) return '0.00'
+  if (isExempted.value) return (0).toFixed(precision)
   const factor = discountFactor.value
   return activeItems.value.reduce((sum, item) => {
     const rate = item.tax_rate || 0
@@ -1381,7 +1383,7 @@ const totalTax = computed(() => {
       tax = discountedAmt * (rate / 100)
     }
     return sum + tax
-  }, 0).toFixed(2)
+  }, 0).toFixed(precision)
 })
 
 const subtotal = computed(() => {
@@ -1394,7 +1396,7 @@ const subtotal = computed(() => {
       net = discountedAmt / (1 + rate / 100)
     }
     return sum + net
-  }, 0).toFixed(2)
+  }, 0).toFixed(precision)
 })
 
 const unroundedTotal = computed(() => {
@@ -1409,11 +1411,11 @@ const unroundedTotal = computed(() => {
 })
 
 const totalAmount = computed(() => {
-  return Math.round(unroundedTotal.value).toFixed(2)
+  return Math.round(unroundedTotal.value).toFixed(precision)
 })
 
 const roundOff = computed(() => {
-  return (parseFloat(totalAmount.value) - unroundedTotal.value).toFixed(2)
+  return (parseFloat(totalAmount.value) - unroundedTotal.value).toFixed(precision)
 })
 
 // --- Watchers ---
@@ -1493,9 +1495,9 @@ function formatTime(timeStr) {
 }
 
 function format(val) {
-  if (val === null || val === undefined || val === '') return '0.00'
+  if (val === null || val === undefined || val === '') return (0).toFixed(precision)
   const num = Number(val)
-  return isNaN(num) ? '0.00' : num.toFixed(2)
+  return isNaN(num) ? (0).toFixed(precision) : num.toFixed(precision)
 }
 
 async function clearBill() {
@@ -1655,7 +1657,7 @@ async function handleSave() {
       item_code: i.item_code,
       qty: i.qty,
       uom: i.uom || 'Nos',
-      rate: parseFloat(((i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(2)),
+      rate: parseFloat(((i.rate || 0) * (1 - (i.discount || 0) / 100)).toFixed(precision)),
       price_list_rate: i._base_rate || i.price_list_rate || i.rate,
       discount_percentage: i.discount || 0,
     }))
@@ -1880,7 +1882,7 @@ function onCsvFileSelected(e) {
       const rate = parseFloat(get('rate')) || 0
       const discount = parseFloat(get('discount')) || 0
       const tax_rate = parseFloat(get('tax_rate')) || 0
-      const effectiveRate = discount > 0 ? parseFloat((rate * (1 - discount / 100)).toFixed(2)) : rate
+      const effectiveRate = discount > 0 ? parseFloat((rate * (1 - discount / 100)).toFixed(precision)) : rate
       parsed.push({
         item_code,
         item_name: get('item_name') || item_code,
@@ -1893,7 +1895,7 @@ function onCsvFileSelected(e) {
         tax_rate,
         deleted: false,
         _is_free: effectiveRate === 0,
-        amount: parseFloat((qty * effectiveRate).toFixed(2)),
+        amount: parseFloat((qty * effectiveRate).toFixed(precision)),
       })
     }
     if (!parsed.length) { alert('No valid rows found in CSV.'); return }
@@ -1940,8 +1942,8 @@ function updateTableRates() {
 function recalcAmount(idx) {
   const item = items.value[idx]
   if (!item) return
-  const netRate = parseFloat(((item.rate || 0) * (1 - (item.discount || 0) / 100)).toFixed(2))
-  item.amount = parseFloat(((item.qty || 0) * netRate).toFixed(2))
+  const netRate = parseFloat(((item.rate || 0) * (1 - (item.discount || 0) / 100)).toFixed(precision))
+  item.amount = parseFloat(((item.qty || 0) * netRate).toFixed(precision))
 }
 
 function scrollRowToEdge(idx, direction) {
@@ -2145,12 +2147,12 @@ function onItemSearchSelectMultiple(entries) {
   for (const entry of entries) {
     const baseRate = getItemRateForPriceList(entry, entry.uom) || 0
     const qty = isReturn.value ? -Math.abs(entry.qty) : entry.qty
-    const netRate = parseFloat((baseRate * (1 - itemDiscount / 100)).toFixed(2))
+    const netRate = parseFloat((baseRate * (1 - itemDiscount / 100)).toFixed(precision))
     items.value.push({
       item_code: entry.item_code, item_name: entry.item_name, qty, uom: entry.uom || 'Nos',
       rate: baseRate, _base_rate: baseRate,
       discount: itemDiscount, tax_rate: entry.tax_rate || 0,
-      amount: parseFloat((qty * netRate).toFixed(2)),
+      amount: parseFloat((qty * netRate).toFixed(precision)),
       deleted: false,
     })
   }
@@ -2485,12 +2487,12 @@ function confirmPendingItem() {
   const p = pendingItem.value
   const qty = isReturn.value ? -Math.abs(p.qty) : p.qty
   const itemDiscount = p.discount || 0
-  const netRate = parseFloat(((p.rate || 0) * (1 - itemDiscount / 100)).toFixed(2))
+  const netRate = parseFloat(((p.rate || 0) * (1 - itemDiscount / 100)).toFixed(precision))
   const newItem = {
     item_code: p.item_code, item_name: p.item_name, qty, uom: p.uom || 'Nos',
     rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0,
     discount: itemDiscount, tax_rate: p.tax_rate || 0,
-    amount: parseFloat((qty * netRate).toFixed(2)),
+    amount: parseFloat((qty * netRate).toFixed(precision)),
     deleted: false,
   }
   items.value.push(newItem)
@@ -2771,7 +2773,7 @@ function onUomChange(idx) {
   if (cached) {
     const newRate = getItemRateForPriceList(cached, item.uom)
     item._base_rate = newRate
-    item.rate = parseFloat((newRate || 0).toFixed(2))
+    item.rate = parseFloat((newRate || 0).toFixed(precision))
     recalcAmount(idx)
   }
 }
