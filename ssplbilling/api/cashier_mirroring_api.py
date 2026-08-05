@@ -78,7 +78,7 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
                      cash_account=None, upi_account=None, card_account=None,
                      discount_account=None, card_ref_no=None,
                      original_cash_pe=None, original_upi_pe=None, original_card_pe=None,
-                     original_discount_je=None, bypass_whitelist=True):
+                     original_discount_je=None, bypass_whitelist=True, cost_center=None):
 	"""Replicate the cash/UPI/card payments (and discount write-off) against the mirror
 	invoice `msi`. No-op if msi is None. Isolated with its own savepoint.
 	"""
@@ -123,7 +123,11 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 						je.voucher_type = "Journal Entry"
 						je.posting_date = msi.posting_date
 						je.company = msi.company
-						je.append("accounts", {"account": mapped_discount, "debit_in_account_currency": discount_amount})
+						je.append("accounts", {
+							"account": mapped_discount,
+							"debit_in_account_currency": discount_amount,
+							"cost_center": cost_center or msi.get("cost_center")
+						})
 						je.append("accounts", {
 							"account": msi.debit_to,
 							"credit_in_account_currency": discount_amount,
@@ -131,6 +135,7 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 							"party": msi.customer,
 							"reference_type": "Sales Invoice",
 							"reference_name": msi.name,
+							"cost_center": cost_center or msi.get("cost_center")
 						})
 						if original_discount_je:
 							cheque_no, cheque_date = frappe.db.get_value(

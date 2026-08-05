@@ -1411,7 +1411,8 @@ async function processPayment() {
       upi_account: seriesAccounts.value.upi,
       card_account: seriesAccounts.value.card,
       discount_account: seriesAccounts.value.discount,
-      custom_remarks: payments.value.remarks
+      custom_remarks: payments.value.remarks,
+      cost_center: localStorage.getItem('wb-cost-center') || null
     }
     
     const wasUpi = upi > 0.01

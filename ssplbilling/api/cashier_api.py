@@ -361,6 +361,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	si = frappe.get_doc("Sales Invoice", invoice_name)
 	grand_total = float(si.rounded_total or si.grand_total or 0)
 	company = si.company
+	cost_center = data.get("cost_center") or si.get("cost_center")
 
 	if not is_credit:
 		total_payment = cash_amount + upi_amount + card_amount + discount_amount + credit_amount
@@ -526,8 +527,20 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		je.voucher_type = "Journal Entry"
 		je.posting_date = posting_date
 		je.company = company
-		je.append("accounts", {"account": discount_account, "debit_in_account_currency": discount_amount})
-		je.append("accounts", {"account": si.debit_to, "credit_in_account_currency": discount_amount, "party_type": "Customer", "party": si.customer, "reference_type": "Sales Invoice", "reference_name": si.name})
+		je.append("accounts", {
+			"account": discount_account,
+			"debit_in_account_currency": discount_amount,
+			"cost_center": cost_center
+		})
+		je.append("accounts", {
+			"account": si.debit_to,
+			"credit_in_account_currency": discount_amount,
+			"party_type": "Customer",
+			"party": si.customer,
+			"reference_type": "Sales Invoice",
+			"reference_name": si.name,
+			"cost_center": cost_center
+		})
 		je.insert(); je.submit()
 		payment_entries.append(je.name)
 		original_discount_je = je.name
@@ -572,6 +585,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 				original_upi_pe=original_upi_pe,
 				original_card_pe=original_card_pe,
 				original_discount_je=original_discount_je,
+				cost_center=cost_center,
 			)
 	except Exception:
 		frappe.log_error(title="Automatic Entries: mirror bill and payments failed", message=frappe.get_traceback())
