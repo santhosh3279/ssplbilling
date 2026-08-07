@@ -1279,6 +1279,8 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 		return {
 			"summary": [],
 			"breakdown": [],
+			"internal_summary": [],
+			"internal_breakdown": [],
 			"company_name": "",
 			"company_address_lines": []
 		}
@@ -1289,14 +1291,12 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 	company_address_lines = company_details.get("address_lines", [])
 
 	company_condition = ""
-	sql_params_summary = [from_date, to_date, tuple(cash_bank_accounts)]
-	sql_params_breakdown = [from_date, to_date, tuple(cash_bank_accounts)]
+	sql_params = [from_date, to_date, tuple(cash_bank_accounts)]
 	if company:
 		company_condition = " AND gle.company = %s"
-		sql_params_summary.append(company)
-		sql_params_breakdown.append(company)
+		sql_params.append(company)
 
-	# 1. Summary grouped by Cost Center
+	# 1. Summary grouped by Cost Center (Payments & Receipts only, i.e., excluding Internal Transfer)
 	summary_rows = frappe.db.sql(
 		f"""
 		SELECT
@@ -1305,21 +1305,23 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 			SUM(gle.credit) as outflow
 		FROM
 			`tabGL Entry` gle
+			LEFT JOIN `tabPayment Entry` pe ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
 		WHERE
 			gle.posting_date BETWEEN %s AND %s
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
 			{company_condition}
+			AND COALESCE(pe.payment_type, '') != 'Internal Transfer'
 		GROUP BY
 			gle.cost_center
 		ORDER BY
 			gle.cost_center ASC
 		""",
-		tuple(sql_params_summary),
+		tuple(sql_params),
 		as_dict=1
 	)
 
-	# 2. Breakdown grouped by Cost Center and Account
+	# 2. Breakdown grouped by Cost Center and Account (Payments & Receipts only, i.e., excluding Internal Transfer)
 	breakdown_rows = frappe.db.sql(
 		f"""
 		SELECT
@@ -1329,52 +1331,94 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 			SUM(gle.credit) as outflow
 		FROM
 			`tabGL Entry` gle
+			LEFT JOIN `tabPayment Entry` pe ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
 		WHERE
 			gle.posting_date BETWEEN %s AND %s
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
 			{company_condition}
+			AND COALESCE(pe.payment_type, '') != 'Internal Transfer'
 		GROUP BY
 			gle.cost_center, gle.account
 		ORDER BY
 			gle.cost_center ASC, gle.account ASC
 		""",
-		tuple(sql_params_breakdown),
+		tuple(sql_params),
 		as_dict=1
 	)
 
-	# Formulate result
-	summary = []
-	for r in summary_rows:
-		row = dict(r)
-		if row["cost_center"]:
-			cc_name = frappe.db.get_value("Cost Center", row["cost_center"], "cost_center_name")
-			row["cost_center_name"] = cc_name or row["cost_center"].split(" - ")[0]
-		else:
-			row["cost_center_name"] = "No Cost Center"
-			row["cost_center"] = "Unspecified"
-		row["inflow"] = float(row["inflow"] or 0)
-		row["outflow"] = float(row["outflow"] or 0)
-		row["net_flow"] = row["inflow"] - row["outflow"]
-		summary.append(row)
+	# 3. Summary grouped by Cost Center (Internal Transfers only)
+	internal_summary_rows = frappe.db.sql(
+		f"""
+		SELECT
+			COALESCE(gle.cost_center, '') as cost_center,
+			SUM(gle.debit) as inflow,
+			SUM(gle.credit) as outflow
+		FROM
+			`tabGL Entry` gle
+			INNER JOIN `tabPayment Entry` pe ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
+		WHERE
+			gle.posting_date BETWEEN %s AND %s
+			AND gle.is_cancelled = 0
+			AND gle.account IN %s
+			{company_condition}
+			AND pe.payment_type = 'Internal Transfer'
+		GROUP BY
+			gle.cost_center
+		ORDER BY
+			gle.cost_center ASC
+		""",
+		tuple(sql_params),
+		as_dict=1
+	)
 
-	breakdown = []
-	for r in breakdown_rows:
-		row = dict(r)
-		if row["cost_center"]:
-			cc_name = frappe.db.get_value("Cost Center", row["cost_center"], "cost_center_name")
-			row["cost_center_name"] = cc_name or row["cost_center"].split(" - ")[0]
-		else:
-			row["cost_center_name"] = "No Cost Center"
-			row["cost_center"] = "Unspecified"
-		row["inflow"] = float(row["inflow"] or 0)
-		row["outflow"] = float(row["outflow"] or 0)
-		row["net_flow"] = row["inflow"] - row["outflow"]
-		breakdown.append(row)
+	# 4. Breakdown grouped by Cost Center and Account (Internal Transfers only)
+	internal_breakdown_rows = frappe.db.sql(
+		f"""
+		SELECT
+			COALESCE(gle.cost_center, '') as cost_center,
+			gle.account,
+			SUM(gle.debit) as inflow,
+			SUM(gle.credit) as outflow
+		FROM
+			`tabGL Entry` gle
+			INNER JOIN `tabPayment Entry` pe ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
+		WHERE
+			gle.posting_date BETWEEN %s AND %s
+			AND gle.is_cancelled = 0
+			AND gle.account IN %s
+			{company_condition}
+			AND pe.payment_type = 'Internal Transfer'
+		GROUP BY
+			gle.cost_center, gle.account
+		ORDER BY
+			gle.cost_center ASC, gle.account ASC
+		""",
+		tuple(sql_params),
+		as_dict=1
+	)
+
+	def process_rows(rows):
+		processed = []
+		for r in rows:
+			row = dict(r)
+			if row["cost_center"]:
+				cc_name = frappe.db.get_value("Cost Center", row["cost_center"], "cost_center_name")
+				row["cost_center_name"] = cc_name or row["cost_center"].split(" - ")[0]
+			else:
+				row["cost_center_name"] = "No Cost Center"
+				row["cost_center"] = "Unspecified"
+			row["inflow"] = float(row["inflow"] or 0)
+			row["outflow"] = float(row["outflow"] or 0)
+			row["net_flow"] = row["inflow"] - row["outflow"]
+			processed.append(row)
+		return processed
 
 	return {
-		"summary": summary,
-		"breakdown": breakdown,
+		"summary": process_rows(summary_rows),
+		"breakdown": process_rows(breakdown_rows),
+		"internal_summary": process_rows(internal_summary_rows),
+		"internal_breakdown": process_rows(internal_breakdown_rows),
 		"company_name": company_name,
 		"company_address_lines": company_address_lines
 	}

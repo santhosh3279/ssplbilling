@@ -98,13 +98,33 @@
           <button
             class="flex items-center gap-2 rounded-lg bg-[var(--color-info)] px-4 py-2 text-sm font-semibold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] active:scale-95 transition-all shadow-lg shadow-violet-900/20"
             @click="exportToExcel"
-            :disabled="loading || summaryData.length === 0"
+            :disabled="loading || currentSummaryData.length === 0"
           >
             <span>⬇</span> Export Excel
           </button>
         </div>
       </div>
     </header>
+
+    <!-- Tabs -->
+    <div class="flex border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 overflow-x-auto">
+      <button
+        @click="activeTab = 'payments'; expandedRows.clear()"
+        class="px-8 py-4 text-base font-bold transition-all relative shrink-0 uppercase tracking-wider"
+        :class="activeTab === 'payments' ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+      >
+        Payments & Receipts
+        <div v-if="activeTab === 'payments'" class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--color-info)]"></div>
+      </button>
+      <button
+        @click="activeTab = 'internal'; expandedRows.clear()"
+        class="px-8 py-4 text-base font-bold transition-all relative shrink-0 uppercase tracking-wider"
+        :class="activeTab === 'internal' ? 'text-[var(--color-info)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+      >
+        Internal Transfer Expenses
+        <div v-if="activeTab === 'internal'" class="absolute bottom-0 left-0 right-0 h-[3px] bg-[var(--color-info)]"></div>
+      </button>
+    </div>
 
     <main class="flex-1 overflow-auto p-6">
       <div v-if="loading" class="flex h-64 items-center justify-center">
@@ -126,7 +146,7 @@
         </button>
       </div>
 
-      <div v-else-if="summaryData.length === 0" class="flex h-96 items-center justify-center text-center">
+      <div v-else-if="currentSummaryData.length === 0" class="flex h-96 items-center justify-center text-center">
         <div class="max-w-xs">
           <div class="mb-6 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-[var(--color-surface)] text-4xl border border-[var(--color-border)] shadow-inner">
             📭
@@ -169,7 +189,7 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-700/50">
-              <template v-for="(row, idx) in summaryData" :key="row.cost_center">
+              <template v-for="(row, idx) in currentSummaryData" :key="row.cost_center">
                 <!-- Summary Row -->
                 <tr
                   class="hover:bg-[var(--color-surface-raised)]/30 transition-colors group cursor-pointer"
@@ -267,8 +287,13 @@ const router = useRouter()
 
 const loading = ref(false)
 const error = ref('')
+const activeTab = ref('payments') // 'payments' or 'internal'
+
 const summaryData = ref([])
 const breakdownData = ref([])
+const internalSummaryData = ref([])
+const internalBreakdownData = ref([])
+
 const expandedRows = ref(new Set())
 const companyName = ref('')
 const companyAddressLines = ref([])
@@ -278,16 +303,24 @@ const today = new Date().toISOString().slice(0, 10)
 const fromDate = ref(today)
 const toDate = ref(today)
 
+const currentSummaryData = computed(() => {
+  return activeTab.value === 'payments' ? summaryData.value : internalSummaryData.value
+})
+
+const currentBreakdownData = computed(() => {
+  return activeTab.value === 'payments' ? breakdownData.value : internalBreakdownData.value
+})
+
 const grandInflowTotal = computed(() => {
-  return summaryData.value.reduce((sum, r) => sum + (r.inflow || 0), 0)
+  return currentSummaryData.value.reduce((sum, r) => sum + (r.inflow || 0), 0)
 })
 
 const grandOutflowTotal = computed(() => {
-  return summaryData.value.reduce((sum, r) => sum + (r.outflow || 0), 0)
+  return currentSummaryData.value.reduce((sum, r) => sum + (r.outflow || 0), 0)
 })
 
 const grandNetTotal = computed(() => {
-  return summaryData.value.reduce((sum, r) => sum + (r.net_flow || 0), 0)
+  return currentSummaryData.value.reduce((sum, r) => sum + (r.net_flow || 0), 0)
 })
 
 async function fetchData() {
@@ -297,6 +330,8 @@ async function fetchData() {
     const res = await getCashflowReport(fromDate.value, toDate.value)
     summaryData.value = res.summary || []
     breakdownData.value = res.breakdown || []
+    internalSummaryData.value = res.internal_summary || []
+    internalBreakdownData.value = res.internal_breakdown || []
     companyName.value = res.company_name || ''
     companyAddressLines.value = res.company_address_lines || []
   } catch (e) {
@@ -315,7 +350,7 @@ function toggleRow(costCenter) {
 }
 
 function getBreakdownForCostCenter(costCenter) {
-  return breakdownData.value.filter(b => b.cost_center === costCenter)
+  return currentBreakdownData.value.filter(b => b.cost_center === costCenter)
 }
 
 function adjustDate(type, days) {
@@ -384,12 +419,15 @@ function fmt(n) {
 }
 
 async function exportToExcel() {
-  if (summaryData.value.length === 0) return
+  const activeSummary = currentSummaryData.value
+  const activeBreakdown = currentBreakdownData.value
+  if (activeSummary.length === 0) return
 
   const workbook = new ExcelJS.Workbook()
+  const titleSuffix = activeTab.value === 'payments' ? 'Payments & Receipts' : 'Internal Transfers'
 
   // ── SHEET 1: SUMMARY ──
-  const summarySheet = workbook.addWorksheet('Cashflow Summary')
+  const summarySheet = workbook.addWorksheet(`${titleSuffix} Summary`)
   summarySheet.columns = [
     { key: 'cc_name', width: 25 },
     { key: 'cc_code', width: 25 },
@@ -415,7 +453,7 @@ async function exportToExcel() {
   }
 
   // Report Title
-  const titleRow = summarySheet.addRow([`Cashflow Summary Report (${fromDate.value} to ${toDate.value})`])
+  const titleRow = summarySheet.addRow([`Cashflow Summary Report - ${titleSuffix} (${fromDate.value} to ${toDate.value})`])
   titleRow.getCell(1).font = { name: 'Arial', size: 11, bold: true }
   titleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
   summarySheet.mergeCells(6, 1, 6, 5)
@@ -440,7 +478,7 @@ async function exportToExcel() {
   let totalOutflow = 0
   let totalNetFlow = 0
 
-  for (const r of summaryData.value) {
+  for (const r of activeSummary) {
     summarySheet.addRow([
       r.cost_center_name,
       r.cost_center,
@@ -472,7 +510,7 @@ async function exportToExcel() {
   })
 
   // ── SHEET 2: BREAKDOWN ──
-  const breakdownSheet = workbook.addWorksheet('Cashflow Breakdown')
+  const breakdownSheet = workbook.addWorksheet(`${titleSuffix} Breakdown`)
   breakdownSheet.columns = [
     { key: 'cc_name', width: 25 },
     { key: 'account', width: 35 },
@@ -498,7 +536,7 @@ async function exportToExcel() {
   }
 
   // Report Title
-  const bTitleRow = breakdownSheet.addRow([`Cashflow Account-wise Breakdown (${fromDate.value} to ${toDate.value})`])
+  const bTitleRow = breakdownSheet.addRow([`Cashflow Account-wise Breakdown - ${titleSuffix} (${fromDate.value} to ${toDate.value})`])
   bTitleRow.getCell(1).font = { name: 'Arial', size: 11, bold: true }
   bTitleRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
   breakdownSheet.mergeCells(6, 1, 6, 5)
@@ -519,7 +557,7 @@ async function exportToExcel() {
   })
 
   // Rows
-  for (const r of breakdownData.value) {
+  for (const r of activeBreakdown) {
     breakdownSheet.addRow([
       r.cost_center_name,
       r.account,
@@ -555,7 +593,8 @@ async function exportToExcel() {
 
   const from = fromDate.value || 'all'
   const to = toDate.value || 'all'
-  link.download = `CashflowReport_${from}_to_${to}.xlsx`
+  const fileLabel = activeTab.value === 'payments' ? 'CashflowReport' : 'InternalTransfersReport'
+  link.download = `${fileLabel}_${from}_to_${to}.xlsx`
   link.click()
 }
 
