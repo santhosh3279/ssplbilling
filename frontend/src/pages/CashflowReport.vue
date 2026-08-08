@@ -45,51 +45,73 @@
           </div>
 
           <!-- Date Filter -->
-          <div class="flex items-center gap-1 bg-[var(--color-bg)]/50 rounded-xl border border-[var(--color-border)] p-1">
+          <div class="flex items-center gap-2">
             <button
-              @click="adjustDate('from', -1)"
-              class="p-1.5 rounded-lg hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+              @click="shiftRange(-1)"
+              class="p-2 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors hover:bg-[var(--color-border)] active:scale-95"
+              title="Shift date range back by 1 day"
             >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <input
-              v-model="fromDate"
-              type="date"
-              class="bg-transparent border-none text-lg text-[var(--color-text)] focus:ring-0 px-1 py-1"
-              @change="fetchData"
-            />
-            <button
-              @click="adjustDate('from', 1)"
-              class="p-1.5 rounded-lg hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
 
-            <span class="text-[var(--color-text-muted)] text-lg px-1">to</span>
+            <div class="flex items-center gap-1 bg-[var(--color-bg)]/50 rounded-xl border border-[var(--color-border)] p-1">
+              <button
+                @click="adjustDate('from', -1)"
+                class="p-1.5 rounded-lg hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <input
+                v-model="fromDate"
+                type="date"
+                class="bg-transparent border-none text-lg text-[var(--color-text)] focus:ring-0 px-1 py-1"
+                @change="fetchData"
+              />
+              <button
+                @click="adjustDate('from', 1)"
+                class="p-1.5 rounded-lg hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              <span class="text-[var(--color-text-muted)] text-lg px-1">to</span>
+
+              <button
+                @click="adjustDate('to', -1)"
+                class="p-1.5 rounded-lg hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <input
+                v-model="toDate"
+                type="date"
+                class="bg-transparent border-none text-lg text-[var(--color-text)] focus:ring-0 px-1 py-1"
+                @change="fetchData"
+              />
+              <button
+                @click="adjustDate('to', 1)"
+                class="p-1.5 rounded-lg hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
 
             <button
-              @click="adjustDate('to', -1)"
-              class="p-1.5 rounded-lg hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+              @click="shiftRange(1)"
+              class="p-2 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors hover:bg-[var(--color-border)] active:scale-95"
+              title="Shift date range forward by 1 day"
             >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-            <input
-              v-model="toDate"
-              type="date"
-              class="bg-transparent border-none text-lg text-[var(--color-text)] focus:ring-0 px-1 py-1"
-              @change="fetchData"
-            />
-            <button
-              @click="adjustDate('to', 1)"
-              class="p-1.5 rounded-lg hover:bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-            >
-              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </button>
@@ -358,6 +380,18 @@ function adjustDate(type, days) {
   const d = new Date(ref_.value)
   d.setDate(d.getDate() + days)
   ref_.value = d.toISOString().slice(0, 10)
+  fetchData()
+}
+
+function shiftRange(days) {
+  const from = new Date(fromDate.value)
+  from.setDate(from.getDate() + days)
+  fromDate.value = from.toISOString().slice(0, 10)
+
+  const to = new Date(toDate.value)
+  to.setDate(to.getDate() + days)
+  toDate.value = to.toISOString().slice(0, 10)
+
   fetchData()
 }
 
