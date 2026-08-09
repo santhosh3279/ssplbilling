@@ -176,7 +176,7 @@
               </div>
 
               <div class="flex items-center gap-2">
-                <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Supp. Date</label>
+                <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">INV Date</label>
                 <div class="flex items-center gap-1 border-b border-[var(--color-border)]" :class="suppDateFocused ? 'bg-[var(--color-focus)]' : ''">
                   <button
                     @click="handleSupplierInvoiceDateChange(-1)"
