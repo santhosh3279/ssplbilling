@@ -128,9 +128,9 @@
 
         <div class="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] shadow-md overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm border-collapse text-[var(--color-text)]">
+            <table class="w-full text-left text-2xl border-collapse text-[var(--color-text)]">
               <thead>
-                <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 font-bold text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
+                <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 font-bold text-sm uppercase tracking-wider text-[var(--color-text-muted)]">
                   <th class="px-6 py-4">ID</th>
                   <th class="px-6 py-4">Name</th>
                   <th class="px-6 py-4">Designation</th>
