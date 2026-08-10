@@ -43,6 +43,8 @@ export const BILLER_ROUTES = new Set([
   'OfferDisplay',
   'PurchaseOrder',
   'LandCostVoucher',
+  'Hrms',
+  'Employee',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -241,6 +243,8 @@ const TILE_ROUTE_MAP = {
   'sales':             'SalesInvoice',
   'purchase-invoice':  'PurchaseInvoice',
   'quotation':         'Quotation',
+  'hrms':              'Hrms',
+  'employee':          'Employee',
   'sales-order':       'SalesOrderEntry',
   'cashier':           'CashierDesk',
   'purchase-submit':   'PurchaseSubmit',

@@ -1094,4 +1094,27 @@ export async function releaseTab(tabId) {
   return frappePost("ssplbilling.api.tab_session_api.release_tab", { tab_id: tabId });
 }
 
+/* ── Employee / HRMS ─────────────────────────── */
+
+export async function fetchEmployees(status) {
+  return frappeGet("ssplbilling.api.employee_api.get_employee_list", { status });
+}
+
+export async function createEmployee(payload) {
+  return frappePost("ssplbilling.api.employee_api.create_employee", {
+    data: JSON.stringify(payload),
+  });
+}
+
+export async function getEmployeeDetails(employee) {
+  return frappeGet("ssplbilling.api.employee_api.get_employee_details", { employee });
+}
+
+export async function updateEmployee(payload) {
+  return frappePost("ssplbilling.api.employee_api.update_employee", {
+    data: JSON.stringify(payload),
+  });
+}
+
+
 

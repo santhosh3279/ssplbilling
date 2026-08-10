@@ -56,8 +56,22 @@ import ChequeRegister from './pages/ChequeRegister.vue'
 import CashflowReport from './pages/CashflowReport.vue'
 import LandCostVoucher from './pages/land_cost_voucher.vue'
 import AccountTree from './pages/AccountTree.vue'
+import Hrms from './pages/Hrms.vue'
+import Employee from './pages/Employee.vue'
 
 const routes = [
+  {
+    path: '/hrms',
+    name: 'Hrms',
+    component: Hrms,
+    meta: { title: 'HRMS' },
+  },
+  {
+    path: '/hrms/employee',
+    name: 'Employee',
+    component: Employee,
+    meta: { title: 'Employee Management' },
+  },
   {
     path: '/offer-display',
     name: 'OfferDisplay',

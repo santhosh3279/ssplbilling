@@ -71,3 +71,29 @@ def update_employee(data):
 	emp.save(ignore_permissions=True)
 
 	return {"name": emp.name, "employee_name": emp.employee_name}
+
+
+@frappe.whitelist()
+def get_employee_list(status=None):
+	"""Return a list of employees."""
+	filters = {}
+	if status:
+		filters["status"] = status
+	return frappe.get_all(
+		"Employee",
+		filters=filters,
+		fields=[
+			"name",
+			"first_name",
+			"last_name",
+			"employee_name",
+			"designation",
+			"gender",
+			"status",
+			"cell_number",
+			"personal_email",
+			"date_of_joining",
+		],
+		order_by="employee_name asc",
+	)
+
