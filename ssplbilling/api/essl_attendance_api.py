@@ -382,10 +382,15 @@ def sync_attendance(machine=None, from_date=None):
 		# already made on the others.
 		frappe.db.commit()
 
-	totals = {
-		key: sum(r.get(key) or 0 for r in results)
-		for key in ("logs", "mapped", "checkins_created", "attendance_created", "attendance_updated", "skipped_future")
-	}
+	counters = (
+		"logs",
+		"mapped",
+		"checkins_created",
+		"attendance_created",
+		"attendance_updated",
+		"skipped_future",
+	)
+	totals = {key: sum(r.get(key) or 0 for r in results) for key in counters}
 	unmapped = sorted({uid for r in results for uid in (r.get("unmapped_ids") or [])})
 
 	return {

@@ -181,7 +181,9 @@ export function getLicenseInfo() {
 // HRMS sub-pages every user may open. Checked before the license and tile gates
 // on purpose — these pages carry no billing data and are reached from the HRMS
 // sidebar, so no role, tile or license feature may lock them out.
-export const PUBLIC_HRMS_ROUTES = ['Employees', 'EsslMachines', 'EsslMapping', 'EsslAttendance']
+// 'Hrms' is included because the portal is the only way into the sidebar that
+// links the other four — public sub-pages nobody can navigate to are useless.
+export const PUBLIC_HRMS_ROUTES = ['Hrms', 'Employees', 'EsslMachines', 'EsslMapping', 'EsslAttendance']
 
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'Login'].includes(routeName)) return true
