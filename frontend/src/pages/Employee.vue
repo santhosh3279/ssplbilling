@@ -120,9 +120,9 @@
         <!-- Table Card -->
         <div class="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] shadow-md overflow-hidden">
           <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm border-collapse text-[var(--color-text)]">
+            <table class="w-full text-left text-2xl border-collapse text-[var(--color-text)]">
               <thead>
-                <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 font-bold text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
+                <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 font-bold text-lg uppercase tracking-wider text-[var(--color-text-muted)]">
                   <th class="px-6 py-4">ID</th>
                   <th class="px-6 py-4">Name</th>
                   <th class="px-6 py-4">Designation</th>
@@ -140,7 +140,7 @@
                   :key="emp.name"
                   class="hover:bg-[var(--color-midlight)]/40 transition-colors"
                 >
-                  <td class="px-6 py-4 font-mono text-xs font-bold text-[var(--color-employee)]">
+                  <td class="px-6 py-4 font-mono text-lg font-bold text-[var(--color-employee)]">
                     {{ emp.name }}
                   </td>
                   <td class="px-6 py-4 font-bold text-[var(--color-text)]">
@@ -149,21 +149,21 @@
                   <td class="px-6 py-4 font-semibold text-[var(--color-text-muted)]">
                     {{ emp.designation || 'Staff' }}
                   </td>
-                  <td class="px-6 py-4 text-xs font-semibold">
+                  <td class="px-6 py-4 text-lg font-semibold">
                     {{ emp.gender }}
                   </td>
-                  <td class="px-6 py-4 font-mono text-xs">
+                  <td class="px-6 py-4 font-mono text-lg">
                     {{ emp.cell_number || '—' }}
                   </td>
-                  <td class="px-6 py-4 text-xs truncate max-w-[150px]" :title="emp.personal_email">
+                  <td class="px-6 py-4 text-lg truncate max-w-[300px]" :title="emp.personal_email">
                     {{ emp.personal_email || '—' }}
                   </td>
-                  <td class="px-6 py-4 font-mono text-xs">
+                  <td class="px-6 py-4 font-mono text-lg">
                     {{ formatDate(emp.date_of_joining) }}
                   </td>
                   <td class="px-6 py-4">
                     <span
-                      class="px-2.5 py-1 text-[10px] font-black rounded-full uppercase tracking-wider"
+                      class="px-3.5 py-1.5 text-sm font-black rounded-full uppercase tracking-wider"
                       :class="getStatusClass(emp.status)"
                     >
                       ● {{ emp.status || 'Active' }}
@@ -173,7 +173,7 @@
                     <div class="flex items-center justify-end gap-2">
                       <button
                         @click="openEditModal(emp)"
-                        class="p-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-employee)] hover:text-white transition-all duration-200 active:scale-90"
+                        class="p-3 text-lg rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-employee)] hover:text-white transition-all duration-200 active:scale-90"
                         title="Edit profile"
                       >
                         ✏️
@@ -182,7 +182,7 @@
                   </td>
                 </tr>
                 <tr v-if="filteredEmployees.length === 0 && !loading">
-                  <td colspan="9" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
+                  <td colspan="9" class="px-6 py-12 text-center text-lg text-[var(--color-text-muted)] italic">
                     No employees matching the filters were found.
                   </td>
                 </tr>
