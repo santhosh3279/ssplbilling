@@ -77,8 +77,7 @@ def update_employee(data):
 def get_employee_list(status=None):
 	"""Return a list of employees."""
 	filters = {}
-	# Query params arrive as strings; treat the JS placeholders as "no filter"
-	if status and status not in ("undefined", "null", "All"):
+	if status and status not in ("undefined", "All"):
 		filters["status"] = status
 	return frappe.get_all(
 		"Employee",
