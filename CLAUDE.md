@@ -159,6 +159,32 @@ After completing a task, always include a line-count table for every affected fi
 
 Use `wc -l` to get accurate counts. Never estimate or skip this table.
 
+## Adding a New Page
+
+> **MANDATORY — a new page is not done until its tile is registered in the dashboard tile access list.**
+> Skipping the tile registration means the page exists but no non-admin user can ever be granted it.
+
+1. **Page** — create `frontend/src/pages/<Name>.vue`.
+2. **Route** — `frontend/src/router.js`: add the import and a route entry with a unique `name`.
+3. **Tile master (the tile access list)** — add a `("<tile-id>", "<Label>", "<Bucket>")` tuple to `DASHBOARD_TILES` in `ssplbilling/setup.py`. `sync_dashboard_tiles()` upserts the **SSPL Dashboard Tile** records on every `bench migrate` (via the `after_migrate` hook); those records are exactly what the **SSPL Dashboard Tile Access** doctype offers for selection. Existing buckets: `Sales`, `Purchase`, `Stock`, `Accounts`, `Ledger View`, `SSPL Special`, `Report`.
+4. **Dashboard tile** — add `{ id, bucket, name, desc, icon, shortcut }` to the `allTiles` array in `frontend/src/pages/Dashboard.vue`. Bucket keys there are lowercase: `sales | purchase | stock | accounts | ledger | sspl | report`.
+5. **Tile navigation** — `openModule()` in `Dashboard.vue` pushes `/<tile-id>`. If the route path differs from the tile id, add `'<tile-id>': '/actual/path'` to `routeAliases`. Either way add the tile id to `readyModules`, or clicking the tile alerts "Coming soon".
+6. **Route permission** — `frontend/src/composables/usePermission.js`: add `'<tile-id>': '<RouteName>'` to `TILE_ROUTE_MAP`, and add `<RouteName>` to the relevant role set (`BILLER_ROUTES` / `CASHIER_EXTRA_ROUTES` / `ACCOUNTS_ROUTES`), which is the fallback used when no tile access record is configured.
+7. **Apply** — `bench --site <site> migrate` (syncs the tile), then `yarn build` in `frontend/`.
+
+Verify the tile landed:
+
+```bash
+bench --site <site> execute frappe.client.get_value \
+  --kwargs "{'doctype':'SSPL Dashboard Tile','filters':{'name':'<tile-id>'},'fieldname':'tile_label'}"
+```
+
+**Sub-pages that have no tile of their own** (e.g. `/hrms/employees`, `/hrms/essl-machines`): skip steps 3–5, and do **not** add them to `TILE_ROUTE_MAP` — that map is reverse-searched by the license `features` gate, so a route mapped to a tile id absent from the license is blocked outright. Grant them explicitly inside the tile-override block of `canAccessRoute` instead, keyed on the parent tile:
+
+```js
+if (tileIds.includes('hrms')) allowed.add('EsslMachines')
+```
+
 ## Key Conventions
 
 - **Python style**: ruff, `line-length = 110`, tab indentation, `target-version = "py314"`, double-quote strings.

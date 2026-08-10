@@ -69,6 +69,31 @@ The application syncs up to 15,000 items and customers to IndexedDB on dashboard
 - Python unit tests are located within the `ssplbilling` package.
 - CI/CD is managed via GitHub Actions (`ci.yml` and `linter.yml`).
 
+## Adding a New Page (CRITICAL)
+
+A new page is **not** complete until its tile is registered in the dashboard tile access list. Without it the page exists but cannot be granted to any non-admin user.
+
+1.  **Page**: create `frontend/src/pages/<Name>.vue`.
+2.  **Route**: add the import and a route entry with a unique `name` in `frontend/src/router.js`.
+3.  **Tile master (the tile access list)**: add a `("<tile-id>", "<Label>", "<Bucket>")` tuple to `DASHBOARD_TILES` in `ssplbilling/setup.py`. `sync_dashboard_tiles()` upserts the **SSPL Dashboard Tile** records on every `bench migrate` (`after_migrate` hook), and those records are what **SSPL Dashboard Tile Access** offers for selection. Buckets: `Sales`, `Purchase`, `Stock`, `Accounts`, `Ledger View`, `SSPL Special`, `Report`.
+4.  **Dashboard tile**: add `{ id, bucket, name, desc, icon, shortcut }` to the `allTiles` array in `frontend/src/pages/Dashboard.vue` (bucket keys are lowercase: `sales | purchase | stock | accounts | ledger | sspl | report`).
+5.  **Tile navigation**: `openModule()` pushes `/<tile-id>`. If the path differs, add `'<tile-id>': '/actual/path'` to `routeAliases`. Add the tile id to `readyModules` or the tile alerts "Coming soon".
+6.  **Route permission**: in `frontend/src/composables/usePermission.js` add `'<tile-id>': '<RouteName>'` to `TILE_ROUTE_MAP`, plus `<RouteName>` in the relevant role set (`BILLER_ROUTES` / `CASHIER_EXTRA_ROUTES` / `ACCOUNTS_ROUTES`) used when no tile access record exists.
+7.  **Apply**: `bench --site <site> migrate`, then `yarn build` in `frontend/`.
+
+Verify:
+
+```bash
+bench --site <site> execute frappe.client.get_value \
+  --kwargs "{'doctype':'SSPL Dashboard Tile','filters':{'name':'<tile-id>'},'fieldname':'tile_label'}"
+```
+
+**Sub-pages with no tile of their own** (e.g. `/hrms/employees`, `/hrms/essl-machines`): skip steps 3–5 and keep them **out** of `TILE_ROUTE_MAP` — that map is reverse-searched by the license `features` gate and would block the page. Grant them in the tile-override block of `canAccessRoute` keyed on the parent tile:
+
+```js
+if (tileIds.includes('hrms')) allowed.add('EsslMachines')
+```
+
 ## Git Workflow (CRITICAL)
 
 - **ALWAYS Pre-Task Commit**: Immediately upon receiving a new prompt, before starting any work, you MUST check for uncommitted changes. If any exist, stage them (`git add .`) and commit them (`git commit -m "pre-task: capture changes before <brief summary of prompt>"`). This ensures a clean baseline for each task.
