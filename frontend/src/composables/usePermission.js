@@ -46,6 +46,7 @@ export const BILLER_ROUTES = new Set([
   'Hrms',
   'Employee',
   'Employees',
+  'EsslMachines',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -216,6 +217,8 @@ export function canAccessRoute(routeName) {
     // Employees is a sub-page of the HRMS portal and has no tile of its own,
     // so the 'hrms' tile grants it (the 'employee' tile does too, when configured)
     if (tileIds.includes('hrms') || tileIds.includes('employee')) allowed.add('Employees')
+    // Same for the eSSL machines list — HRMS sub-page, no tile of its own
+    if (tileIds.includes('hrms')) allowed.add('EsslMachines')
     if (allowed.has('Reports')) {
       allowed.add('StoreSalesReport')
       allowed.add('CostCenterSalesReport')

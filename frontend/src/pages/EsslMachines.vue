@@ -20,14 +20,14 @@
         </button>
 
         <button
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 bg-[var(--color-employee)] text-white shadow-lg shadow-[var(--color-employee)]/20"
+          @click="router.push('/hrms/employees')"
+          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 hover:bg-[var(--color-midlight)] text-[var(--color-text)]"
         >
           <span class="text-lg">👥</span> Employees
         </button>
 
         <button
-          @click="router.push('/hrms/essl-machines')"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 hover:bg-[var(--color-midlight)] text-[var(--color-text)]"
+          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 bg-[var(--color-employee)] text-white shadow-lg shadow-[var(--color-employee)]/20"
         >
           <span class="text-lg">🖥️</span> eSSL Machines
         </button>
@@ -69,19 +69,19 @@
       <header class="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 flex items-center justify-between shrink-0">
         <div>
           <h1 class="text-2xl font-black uppercase tracking-wider text-[var(--color-text)]">
-            Employees
+            eSSL Machines
           </h1>
           <p class="text-xs text-[var(--color-text-muted)] font-medium">
-            Employee list from the Employee doctype
+            Attendance devices registered in eSSL Machines Attendance
           </p>
         </div>
 
         <div class="flex items-center gap-3">
           <span class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
-            {{ filteredEmployees.length }} / {{ employeesList.length }}
+            {{ filteredMachines.length }} / {{ machinesList.length }}
           </span>
           <button
-            @click="loadEmployees"
+            @click="loadMachines"
             :disabled="loading"
             class="flex items-center gap-2 rounded-xl bg-[var(--color-employee)] text-white px-5 py-3 font-bold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-md shadow-[var(--color-employee)]/15 disabled:opacity-50"
           >
@@ -99,31 +99,30 @@
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search by ID, name, designation, email or phone..."
+            placeholder="Search by IP, serial number or store..."
             class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-employee)] focus:ring-2 focus:ring-[var(--color-employee)]/15 transition-all duration-200"
           />
         </div>
 
         <div class="flex items-center gap-2 self-stretch md:self-auto ml-auto">
-          <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Status:</span>
+          <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Store:</span>
           <select
-            v-model="statusFilter"
+            v-model="storeFilter"
             class="px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)] text-[var(--color-text)]"
           >
-            <option value="All">All Statuses</option>
-            <option value="Active">Active Only</option>
-            <option value="Inactive">Inactive Only</option>
-            <option value="Suspended">Suspended</option>
-            <option value="Left">Left</option>
+            <option value="All">All Stores</option>
+            <option v-for="store in storeOptions" :key="store" :value="store">
+              {{ store }}
+            </option>
           </select>
         </div>
       </div>
 
-      <!-- Employee list -->
+      <!-- Machine list -->
       <div class="flex-1 overflow-y-auto p-8 relative">
         <div v-if="loading" class="absolute inset-0 bg-[var(--color-bg)]/80 flex flex-col items-center justify-center gap-3 z-20">
           <div class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-employee)] border-t-transparent"></div>
-          <p class="text-sm font-semibold text-[var(--color-text-muted)]">Loading employees...</p>
+          <p class="text-sm font-semibold text-[var(--color-text-muted)]">Loading machines...</p>
         </div>
 
         <div
@@ -138,55 +137,39 @@
             <table class="w-full text-left text-2xl border-collapse text-[var(--color-text)]">
               <thead>
                 <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 font-bold text-sm uppercase tracking-wider text-[var(--color-text-muted)]">
-                  <th class="px-6 py-4">ID</th>
-                  <th class="px-6 py-4">Name</th>
-                  <th class="px-6 py-4">Designation</th>
-                  <th class="px-6 py-4">Gender</th>
-                  <th class="px-6 py-4">Mobile</th>
-                  <th class="px-6 py-4">Email</th>
-                  <th class="px-6 py-4">Joining Date</th>
-                  <th class="px-6 py-4">Status</th>
+                  <th class="px-6 py-4">IP Address</th>
+                  <th class="px-6 py-4">Serial Number</th>
+                  <th class="px-6 py-4">Comm Key</th>
+                  <th class="px-6 py-4">Store</th>
+                  <th class="px-6 py-4">Last Updated</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
+                <!-- name === ip_address (autoname is field:ip_address), so no separate ID column -->
                 <tr
-                  v-for="emp in filteredEmployees"
-                  :key="emp.name"
+                  v-for="machine in filteredMachines"
+                  :key="machine.name"
                   class="hover:bg-[var(--color-midlight)]/40 transition-colors"
                 >
-                  <td class="px-6 py-4 font-mono text-xs font-bold text-[var(--color-employee)]">
-                    {{ emp.name }}
+                  <td class="px-6 py-4 font-mono font-bold text-[var(--color-employee)]">
+                    {{ machine.ip_address || '—' }}
                   </td>
-                  <td class="px-6 py-4 font-bold text-[var(--color-text)]">
-                    {{ emp.employee_name }}
+                  <td class="px-6 py-4 font-mono">
+                    {{ machine.serial_number || '—' }}
                   </td>
-                  <td class="px-6 py-4 font-semibold text-[var(--color-text-muted)]">
-                    {{ emp.designation || 'Staff' }}
+                  <td class="px-6 py-4 font-mono">
+                    {{ machine.comm_key || '—' }}
                   </td>
-                  <td class="px-6 py-4 text-xs font-semibold">
-                    {{ emp.gender || '—' }}
+                  <td class="px-6 py-4 font-bold">
+                    {{ machine.store || '—' }}
                   </td>
-                  <td class="px-6 py-4 font-mono text-xs">
-                    {{ emp.cell_number || '—' }}
-                  </td>
-                  <td class="px-6 py-4 text-xs truncate max-w-[150px]" :title="emp.personal_email">
-                    {{ emp.personal_email || '—' }}
-                  </td>
-                  <td class="px-6 py-4 font-mono text-xs">
-                    {{ formatDate(emp.date_of_joining) }}
-                  </td>
-                  <td class="px-6 py-4">
-                    <span
-                      class="px-2.5 py-1 text-[10px] font-black rounded-full uppercase tracking-wider"
-                      :class="getStatusClass(emp.status)"
-                    >
-                      ● {{ emp.status || 'Active' }}
-                    </span>
+                  <td class="px-6 py-4 font-mono text-xs text-[var(--color-text-muted)]">
+                    {{ formatDate(machine.modified) }}
                   </td>
                 </tr>
-                <tr v-if="filteredEmployees.length === 0 && !loading">
-                  <td colspan="8" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
-                    No employees matching the filters were found.
+                <tr v-if="filteredMachines.length === 0 && !loading">
+                  <td colspan="5" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
+                    No eSSL machines matching the filters were found.
                   </td>
                 </tr>
               </tbody>
@@ -201,51 +184,52 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchEmployees } from '../api.js'
+import { fetchEsslMachines } from '../api.js'
 
 const router = useRouter()
 
 const loading = ref(false)
 const error = ref('')
-const employeesList = ref([])
+const machinesList = ref([])
 
 const searchQuery = ref('')
-const statusFilter = ref('All')
+const storeFilter = ref('All')
 
-async function loadEmployees() {
+async function loadMachines() {
   loading.value = true
   error.value = ''
   try {
-    // Empty string (not undefined) — frappeGet stringifies every param, so an
-    // undefined status would reach the server as the literal "undefined".
-    const list = await fetchEmployees('')
-    employeesList.value = list || []
+    const list = await fetchEsslMachines()
+    machinesList.value = list || []
   } catch (err) {
-    console.error('Failed to load employee list:', err)
-    error.value = err.message || 'Failed to load employee list.'
-    employeesList.value = []
+    console.error('Failed to load eSSL machines:', err)
+    error.value = err.message || 'Failed to load eSSL machines.'
+    machinesList.value = []
   } finally {
     loading.value = false
   }
 }
 
-const filteredEmployees = computed(() => {
-  let list = employeesList.value
+const storeOptions = computed(() => {
+  const stores = machinesList.value.map((m) => (m.store || '').trim()).filter(Boolean)
+  return [...new Set(stores)].sort()
+})
+
+const filteredMachines = computed(() => {
+  let list = machinesList.value
 
   const query = searchQuery.value.trim().toLowerCase()
   if (query) {
-    list = list.filter((emp) => {
-      const nameMatch = (emp.employee_name || '').toLowerCase().includes(query)
-      const codeMatch = (emp.name || '').toLowerCase().includes(query)
-      const desigMatch = (emp.designation || '').toLowerCase().includes(query)
-      const phoneMatch = (emp.cell_number || '').includes(query)
-      const emailMatch = (emp.personal_email || '').toLowerCase().includes(query)
-      return nameMatch || codeMatch || desigMatch || phoneMatch || emailMatch
+    list = list.filter((machine) => {
+      const ipMatch = (machine.ip_address || '').toLowerCase().includes(query)
+      const serialMatch = (machine.serial_number || '').toLowerCase().includes(query)
+      const storeMatch = (machine.store || '').toLowerCase().includes(query)
+      return ipMatch || serialMatch || storeMatch
     })
   }
 
-  if (statusFilter.value !== 'All') {
-    list = list.filter((emp) => (emp.status || 'Active') === statusFilter.value)
+  if (storeFilter.value !== 'All') {
+    list = list.filter((machine) => (machine.store || '').trim() === storeFilter.value)
   }
 
   return list
@@ -253,28 +237,15 @@ const filteredEmployees = computed(() => {
 
 function formatDate(dateStr) {
   if (!dateStr) return '—'
-  const parts = String(dateStr).split('-')
+  const [datePart, timePart] = String(dateStr).split(' ')
+  const parts = (datePart || '').split('-')
   if (parts.length === 3) {
-    return `${parts[2]}-${parts[1]}-${parts[0]}` // dd-mm-yyyy
+    return `${parts[2]}-${parts[1]}-${parts[0]}${timePart ? ' ' + timePart.slice(0, 5) : ''}` // dd-mm-yyyy hh:mm
   }
   return dateStr
 }
 
-function getStatusClass(status) {
-  const stat = status || 'Active'
-  if (stat === 'Active') {
-    return 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
-  }
-  if (stat === 'Left') {
-    return 'bg-rose-500/10 text-rose-500 border border-rose-500/20'
-  }
-  if (stat === 'Suspended') {
-    return 'bg-amber-500/10 text-amber-500 border border-amber-500/20'
-  }
-  return 'bg-[var(--color-text-muted)]/10 text-[var(--color-text-muted)] border border-[var(--color-text-muted)]/20'
-}
-
 onMounted(() => {
-  loadEmployees()
+  loadMachines()
 })
 </script>

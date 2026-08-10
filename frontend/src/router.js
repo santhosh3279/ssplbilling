@@ -59,6 +59,7 @@ import AccountTree from './pages/AccountTree.vue'
 import Hrms from './pages/Hrms.vue'
 import Employee from './pages/Employee.vue'
 import Employees from './pages/employees.vue'
+import EsslMachines from './pages/EsslMachines.vue'
 
 const routes = [
   {
@@ -78,6 +79,12 @@ const routes = [
     name: 'Employees',
     component: Employees,
     meta: { title: 'Employees' },
+  },
+  {
+    path: '/hrms/essl-machines',
+    name: 'EsslMachines',
+    component: EsslMachines,
+    meta: { title: 'eSSL Machines' },
   },
   {
     path: '/offer-display',

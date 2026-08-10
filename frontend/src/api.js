@@ -1118,5 +1118,13 @@ export async function updateEmployee(payload) {
   });
 }
 
+/* ── eSSL attendance machines ────────────────── */
+
+// No params by design: frappeGet stringifies every value, so an optional filter
+// would arrive as the literal "undefined". Filtering happens client-side.
+export async function fetchEsslMachines() {
+  return frappeGet("ssplbilling.api.essl_machine_api.get_essl_machines");
+}
+
 
 
