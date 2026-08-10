@@ -1,7 +1,7 @@
 {
  "actions": [],
  "allow_rename": 1,
- "autoname": "field:serial_number",
+ "autoname": "field:ip_address",
  "creation": "2026-08-10 18:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -17,15 +17,15 @@
    "fieldname": "serial_number",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Serial Number",
-   "reqd": 1,
-   "unique": 1
+   "label": "Serial Number"
   },
   {
    "fieldname": "ip_address",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "IP Address"
+   "label": "IP Address",
+   "reqd": 1,
+   "unique": 1
   },
   {
    "fieldname": "column_break_main",
