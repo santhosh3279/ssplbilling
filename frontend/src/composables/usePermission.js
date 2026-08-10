@@ -178,8 +178,14 @@ export function getLicenseInfo() {
   }
 }
 
+// HRMS sub-pages every user may open. Checked before the license and tile gates
+// on purpose — these pages carry no billing data and are reached from the HRMS
+// sidebar, so no role, tile or license feature may lock them out.
+export const PUBLIC_HRMS_ROUTES = ['Employees', 'EsslMachines', 'EsslMapping', 'EsslAttendance']
+
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'Login'].includes(routeName)) return true
+  if (PUBLIC_HRMS_ROUTES.includes(routeName)) return true
 
   if (routeName === 'PriceListUpdate') {
     return canAccessTile('purchase-invoice')

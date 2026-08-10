@@ -10,7 +10,8 @@
   "ip_address",
   "column_break_main",
   "comm_key",
-  "store"
+  "store",
+  "last_sync"
  ],
  "fields": [
   {
@@ -41,6 +42,13 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Store"
+  },
+  {
+   "description": "Watermark of the last successful attendance pull from this device",
+   "fieldname": "last_sync",
+   "fieldtype": "Datetime",
+   "label": "Last Sync",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,

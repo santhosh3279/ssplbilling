@@ -303,7 +303,14 @@ scheduler_events = {
 	],
 	"daily": [
 		"ssplbilling.ssplbilling.doctype.version_purge_settings.version_purge_settings.daily_purge"
-	]
+	],
+	"cron": {
+		# Pull the eSSL attendance devices and create Employee Checkin / Attendance.
+		# Idempotent, so a missed or repeated tick costs nothing.
+		"*/10 * * * *": [
+			"ssplbilling.api.essl_attendance_api.run_auto_sync"
+		]
+	}
 }
 
 # Testing

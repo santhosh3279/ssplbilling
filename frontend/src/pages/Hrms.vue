@@ -37,9 +37,15 @@
         </button>
 
         <button
-          @click="activeSubTab = 'attendance'"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200"
-          :class="activeSubTab === 'attendance' ? 'bg-[var(--color-employee)] text-white shadow-lg shadow-[var(--color-employee)]/20' : 'hover:bg-[var(--color-midlight)] text-[var(--color-text)]'"
+          @click="router.push('/hrms/essl-mapping')"
+          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 hover:bg-[var(--color-midlight)] text-[var(--color-text)]"
+        >
+          <span class="text-lg">🔗</span> Employee Mapping
+        </button>
+
+        <button
+          @click="router.push('/hrms/attendance')"
+          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 hover:bg-[var(--color-midlight)] text-[var(--color-text)]"
         >
           <span class="text-lg">📅</span> Attendance
         </button>

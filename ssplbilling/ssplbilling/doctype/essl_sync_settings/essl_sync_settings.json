@@ -1,0 +1,79 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-10 19:05:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enable_auto_sync",
+  "lookback_days",
+  "column_break_main",
+  "create_checkins",
+  "create_attendance",
+  "mark_half_day_below_hours"
+ ],
+ "fields": [
+  {
+   "default": "1",
+   "description": "Runs the device pull every 10 minutes via the scheduler",
+   "fieldname": "enable_auto_sync",
+   "fieldtype": "Check",
+   "label": "Enable Auto Sync"
+  },
+  {
+   "default": "2",
+   "description": "How many days back to re-read on each sync, counted from the machine's last sync. Covers device clock drift.",
+   "fieldname": "lookback_days",
+   "fieldtype": "Int",
+   "label": "Lookback Days"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "create_checkins",
+   "fieldtype": "Check",
+   "label": "Create Employee Checkin Records"
+  },
+  {
+   "default": "1",
+   "fieldname": "create_attendance",
+   "fieldtype": "Check",
+   "label": "Create Attendance Records"
+  },
+  {
+   "default": "0",
+   "description": "Mark the day Half Day when the worked hours fall below this. 0 keeps every day with a punch as Present.",
+   "fieldname": "mark_half_day_below_hours",
+   "fieldtype": "Float",
+   "label": "Mark Half Day Below Hours"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-08-10 19:05:00.000000",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "eSSL Sync Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

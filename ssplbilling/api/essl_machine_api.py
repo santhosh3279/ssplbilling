@@ -22,6 +22,35 @@ def get_essl_machines():
 	)
 
 
+def connect_machine(row):
+	"""Open a ZK connection to one device. Caller is responsible for disconnect()."""
+	from zk import ZK
+
+	if not row.ip_address:
+		frappe.throw("No IP address configured")
+
+	# comm_key is optional and free text — anything non-numeric means "no key"
+	try:
+		password = int(row.comm_key or 0)
+	except (TypeError, ValueError):
+		password = 0
+
+	# ommit_ping: the devices do not answer ICMP even when TCP 4370 is open
+	zk = ZK(row.ip_address, port=4370, timeout=10, password=password, ommit_ping=True)
+	return zk.connect()
+
+
+def get_machine_rows(machine=None):
+	"""Machine records, one or all. get_all so the System-Manager-only read perm on
+	the doctype does not blank the list for billers reaching this via the hrms tile."""
+	return frappe.get_all(
+		ESSL_MACHINE_DOCTYPE,
+		filters={"name": machine} if machine else {},
+		fields=["name", "serial_number", "ip_address", "comm_key", "store", "last_sync"],
+		order_by="store asc, ip_address asc",
+	)
+
+
 @frappe.whitelist()
 def sync_essl_attendance(machine=None, from_date=None):
 	"""Pull attendance logs straight off the eSSL devices over the ZK protocol (TCP 4370).
@@ -30,18 +59,10 @@ def sync_essl_attendance(machine=None, from_date=None):
 	One unreachable or misconfigured device never aborts the whole sync: its error
 	is reported in its own row of the "machines" list and the rest keep going.
 	"""
-	from zk import ZK
-
 	if from_date:
 		from_date = frappe.utils.getdate(from_date)
 
-	filters = {"name": machine} if machine else {}
-	machines = frappe.get_all(
-		ESSL_MACHINE_DOCTYPE,
-		filters=filters,
-		fields=["name", "serial_number", "ip_address", "comm_key", "store"],
-		order_by="store asc, ip_address asc",
-	)
+	machines = get_machine_rows(machine)
 
 	logs = []
 	results = []
@@ -62,14 +83,7 @@ def sync_essl_attendance(machine=None, from_date=None):
 
 		conn = None
 		try:
-			# comm_key is optional and free text — anything non-numeric means "no key"
-			try:
-				password = int(row.comm_key or 0)
-			except (TypeError, ValueError):
-				password = 0
-
-			zk = ZK(row.ip_address, port=4370, timeout=10, password=password, ommit_ping=True)
-			conn = zk.connect()
+			conn = connect_machine(row)
 			summary["device_serial"] = conn.get_serialnumber()
 
 			for att in conn.get_attendance() or []:

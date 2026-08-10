@@ -60,6 +60,8 @@ import Hrms from './pages/Hrms.vue'
 import Employee from './pages/Employee.vue'
 import Employees from './pages/employees.vue'
 import EsslMachines from './pages/EsslMachines.vue'
+import EsslMapping from './pages/EsslMapping.vue'
+import EsslAttendance from './pages/EsslAttendance.vue'
 
 const routes = [
   {
@@ -85,6 +87,18 @@ const routes = [
     name: 'EsslMachines',
     component: EsslMachines,
     meta: { title: 'eSSL Machines' },
+  },
+  {
+    path: '/hrms/essl-mapping',
+    name: 'EsslMapping',
+    component: EsslMapping,
+    meta: { title: 'Employee Mapping' },
+  },
+  {
+    path: '/hrms/attendance',
+    name: 'EsslAttendance',
+    component: EsslAttendance,
+    meta: { title: 'Attendance' },
   },
   {
     path: '/offer-display',

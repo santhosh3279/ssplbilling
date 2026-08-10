@@ -1136,5 +1136,50 @@ export async function syncEsslAttendance({ machine = null, fromDate = null } = {
   });
 }
 
+/* ── eSSL employee mapping + attendance creation ── */
+
+export async function fetchEsslMappings() {
+  return frappeGet("ssplbilling.api.essl_attendance_api.get_mappings");
+}
+
+export async function saveEsslMapping(payload) {
+  return frappePost("ssplbilling.api.essl_attendance_api.save_mapping", {
+    data: JSON.stringify(payload),
+  });
+}
+
+export async function deleteEsslMapping(name) {
+  return frappePost("ssplbilling.api.essl_attendance_api.delete_mapping", { name });
+}
+
+export async function fetchEsslDeviceUsers(machine = null) {
+  return frappePost("ssplbilling.api.essl_attendance_api.get_device_users", { machine });
+}
+
+export async function autoMapEsslUsers(machine = null) {
+  return frappePost("ssplbilling.api.essl_attendance_api.auto_map_by_name", { machine });
+}
+
+// Creates Employee Checkin + Attendance documents. Idempotent — a punch already
+// recorded is skipped, so calling it twice changes nothing the second time.
+export async function syncEsslAttendanceToErp({ machine = null, fromDate = null } = {}) {
+  return frappePost("ssplbilling.api.essl_attendance_api.sync_attendance", {
+    machine,
+    from_date: fromDate,
+  });
+}
+
+export async function fetchAttendanceRecords({ fromDate = null, toDate = null, employee = null } = {}) {
+  return frappePost("ssplbilling.api.essl_attendance_api.get_attendance_records", {
+    from_date: fromDate,
+    to_date: toDate,
+    employee,
+  });
+}
+
+export async function fetchEsslSyncSettings() {
+  return frappeGet("ssplbilling.api.essl_attendance_api.get_sync_settings");
+}
+
 
 
