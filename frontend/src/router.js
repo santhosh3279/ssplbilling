@@ -394,6 +394,10 @@ const routes = [
     component: AccountTree,
     meta: { title: 'Chart of Accounts' },
   },
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/',
+  },
 ]
 
 const router = createRouter({
