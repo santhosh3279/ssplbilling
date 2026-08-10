@@ -1126,5 +1126,15 @@ export async function fetchEsslMachines() {
   return frappeGet("ssplbilling.api.essl_machine_api.get_essl_machines");
 }
 
+// Pulls logs off the devices themselves (ZK protocol, TCP 4370). Nothing is
+// stored server-side — the caller caches the result. POST so the params travel
+// as JSON instead of being stringified into a query string.
+export async function syncEsslAttendance({ machine = null, fromDate = null } = {}) {
+  return frappePost("ssplbilling.api.essl_machine_api.sync_essl_attendance", {
+    machine,
+    from_date: fromDate,
+  });
+}
+
 
 

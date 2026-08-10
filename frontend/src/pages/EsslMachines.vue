@@ -83,9 +83,17 @@
           <button
             @click="loadMachines"
             :disabled="loading"
-            class="flex items-center gap-2 rounded-xl bg-[var(--color-employee)] text-white px-5 py-3 font-bold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-md shadow-[var(--color-employee)]/15 disabled:opacity-50"
+            class="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] px-5 py-3 font-bold hover:bg-[var(--color-midlight)] active:scale-95 transition-all duration-200 disabled:opacity-50"
           >
             <span>🔄</span> Refresh
+          </button>
+          <button
+            @click="syncAttendance"
+            :disabled="syncing || loading"
+            class="flex items-center gap-2 rounded-xl bg-[var(--color-employee)] text-white px-5 py-3 font-bold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-md shadow-[var(--color-employee)]/15 disabled:opacity-50"
+          >
+            <span>{{ syncing ? '⏳' : '⬇️' }}</span>
+            {{ syncing ? 'Syncing...' : 'Sync Attendance' }}
           </button>
         </div>
       </header>
@@ -101,6 +109,15 @@
             type="text"
             placeholder="Search by IP, serial number or store..."
             class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:outline-none focus:border-[var(--color-employee)] focus:ring-2 focus:ring-[var(--color-employee)]/15 transition-all duration-200"
+          />
+        </div>
+
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Logs from:</span>
+          <input
+            v-model="fromDate"
+            type="date"
+            class="px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)] text-[var(--color-text)]"
           />
         </div>
 
@@ -130,6 +147,54 @@
           class="mb-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-5 py-3 text-sm font-semibold text-rose-500"
         >
           {{ error }}
+        </div>
+
+        <!-- Attendance sync summary (cached in localStorage, nothing stored server-side) -->
+        <div
+          v-if="lastSync"
+          class="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-md overflow-hidden"
+        >
+          <div class="flex flex-wrap items-center gap-4 px-6 py-4 border-b border-[var(--color-border)]">
+            <span class="text-sm font-black uppercase tracking-wider text-[var(--color-text)]">
+              Attendance Cache
+            </span>
+            <span class="text-xs font-bold text-[var(--color-text-muted)]">
+              Last sync: {{ formatDate(lastSync.syncedAt) }}
+            </span>
+            <span class="text-xs font-bold text-[var(--color-employee)]">
+              {{ lastSync.stored }} of {{ lastSync.total }} logs cached locally
+            </span>
+            <span v-if="lastSync.fromDate" class="text-xs font-bold text-[var(--color-text-muted)]">
+              From {{ lastSync.fromDate }}
+            </span>
+            <button
+              @click="clearAttendanceCache"
+              class="ml-auto rounded-xl border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] transition-colors"
+            >
+              Clear cache
+            </button>
+          </div>
+
+          <div
+            v-if="cacheError"
+            class="px-6 py-3 text-xs font-bold text-amber-500 bg-amber-500/10 border-b border-[var(--color-border)]"
+          >
+            {{ cacheError }}
+          </div>
+
+          <div class="flex flex-wrap gap-3 px-6 py-4">
+            <div
+              v-for="m in lastSync.machines"
+              :key="m.machine"
+              class="rounded-xl border px-4 py-2 text-xs font-bold"
+              :class="m.error
+                ? 'border-rose-500/20 bg-rose-500/10 text-rose-500'
+                : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'"
+            >
+              {{ m.store || m.machine }} · {{ m.ip_address }} —
+              {{ m.error ? m.error : m.logs + ' logs' }}
+            </div>
+          </div>
         </div>
 
         <div class="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] shadow-md overflow-hidden">
@@ -184,16 +249,27 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchEsslMachines } from '../api.js'
+import { fetchEsslMachines, syncEsslAttendance } from '../api.js'
 
 const router = useRouter()
+
+// Attendance logs live only in localStorage — the sync writes nothing server-side.
+const ATTENDANCE_KEY = 'wb-essl-attendance-v1'
+// ~90 bytes per log, so 5000 is roughly 450 KB — well inside the 5 MB origin quota
+// even alongside the item/customer caches.
+const MAX_STORED_LOGS = 5000
 
 const loading = ref(false)
 const error = ref('')
 const machinesList = ref([])
 
+const syncing = ref(false)
+const cacheError = ref('')
+const lastSync = ref(null)
+
 const searchQuery = ref('')
 const storeFilter = ref('All')
+const fromDate = ref(defaultFromDate())
 
 async function loadMachines() {
   loading.value = true
@@ -245,7 +321,83 @@ function formatDate(dateStr) {
   return dateStr
 }
 
+function defaultFromDate() {
+  const d = new Date()
+  d.setDate(d.getDate() - 30)
+  return d.toISOString().slice(0, 10)
+}
+
+function loadCachedSync() {
+  try {
+    const raw = localStorage.getItem(ATTENDANCE_KEY)
+    if (!raw) return
+    const cached = JSON.parse(raw)
+    lastSync.value = {
+      syncedAt: cached.syncedAt,
+      fromDate: cached.fromDate,
+      total: cached.total,
+      stored: (cached.logs || []).length,
+      machines: cached.machines || [],
+    }
+  } catch {
+    localStorage.removeItem(ATTENDANCE_KEY)
+  }
+}
+
+async function syncAttendance() {
+  syncing.value = true
+  error.value = ''
+  cacheError.value = ''
+  try {
+    const res = await syncEsslAttendance({ fromDate: fromDate.value || null })
+    const logs = res?.logs || []
+    // Server already sorts newest first; keep only what fits comfortably in localStorage
+    const stored = logs.slice(0, MAX_STORED_LOGS)
+
+    const payload = {
+      syncedAt: res?.synced_at || '',
+      fromDate: res?.from_date || fromDate.value || null,
+      total: res?.total ?? logs.length,
+      machines: res?.machines || [],
+      logs: stored,
+    }
+
+    try {
+      localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(payload))
+      if (payload.total > stored.length) {
+        cacheError.value = `Only the newest ${stored.length} of ${payload.total} logs were cached. Narrow the date range to keep fewer.`
+      }
+    } catch (quotaErr) {
+      // Quota blown — keep the summary so the sync result is still visible
+      console.error('Could not cache attendance logs:', quotaErr)
+      localStorage.setItem(ATTENDANCE_KEY, JSON.stringify({ ...payload, logs: [] }))
+      payload.logs = []
+      cacheError.value = 'Too many logs to cache locally — narrow the date range and sync again.'
+    }
+
+    lastSync.value = {
+      syncedAt: payload.syncedAt,
+      fromDate: payload.fromDate,
+      total: payload.total,
+      stored: payload.logs.length,
+      machines: payload.machines,
+    }
+  } catch (err) {
+    console.error('Attendance sync failed:', err)
+    error.value = err.message || 'Attendance sync failed.'
+  } finally {
+    syncing.value = false
+  }
+}
+
+function clearAttendanceCache() {
+  localStorage.removeItem(ATTENDANCE_KEY)
+  lastSync.value = null
+  cacheError.value = ''
+}
+
 onMounted(() => {
   loadMachines()
+  loadCachedSync()
 })
 </script>
