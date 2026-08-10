@@ -252,6 +252,7 @@ const TILE_ROUTE_MAP = {
   'quotation':         'Quotation',
   'hrms':              'Hrms',
   'employee':          'Employee',
+  'essl-machines':     'EsslMachines',
   'sales-order':       'SalesOrderEntry',
   'cashier':           'CashierDesk',
   'purchase-submit':   'PurchaseSubmit',

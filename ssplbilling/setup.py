@@ -180,6 +180,7 @@ DASHBOARD_TILES = [
 	("offer-display", "Offer Display", "SSPL Special"),
 	("hrms", "HRMS Dashboard", "SSPL Special"),
 	("employee", "Employee Directory", "SSPL Special"),
+	("essl-machines", "eSSL Machines", "SSPL Special"),
 	# Report
 	("daily-report", "Daily Report", "Report"),
 	("reports", "Reports", "Report"),
