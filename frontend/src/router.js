@@ -58,6 +58,7 @@ import LandCostVoucher from './pages/land_cost_voucher.vue'
 import AccountTree from './pages/AccountTree.vue'
 import Hrms from './pages/Hrms.vue'
 import Employee from './pages/Employee.vue'
+import Employees from './pages/employees.vue'
 
 const routes = [
   {
@@ -71,6 +72,12 @@ const routes = [
     name: 'Employee',
     component: Employee,
     meta: { title: 'Employee Management' },
+  },
+  {
+    path: '/hrms/employees',
+    name: 'Employees',
+    component: Employees,
+    meta: { title: 'Employees' },
   },
   {
     path: '/offer-display',

@@ -45,6 +45,7 @@ export const BILLER_ROUTES = new Set([
   'LandCostVoucher',
   'Hrms',
   'Employee',
+  'Employees',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -212,6 +213,7 @@ export function canAccessRoute(routeName) {
     const allowed = new Set(tileIds.map((id) => TILE_ROUTE_MAP[id]).filter(Boolean))
     // Tiles that reach pages indirectly (via search modals) rather than TILE_ROUTE_MAP
     if (tileIds.includes('outstanding-bills')) allowed.add('CustomerLedger')
+    if (tileIds.includes('employee')) allowed.add('Employees')
     if (allowed.has('Reports')) {
       allowed.add('StoreSalesReport')
       allowed.add('CostCenterSalesReport')
