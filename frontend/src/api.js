@@ -1096,7 +1096,9 @@ export async function releaseTab(tabId) {
 
 /* ── Employee / HRMS ─────────────────────────── */
 
-export async function fetchEmployees(status) {
+// status defaults to "" — frappeGet stringifies every param, so an undefined
+// status would reach the server as the literal "undefined" and filter out every row
+export async function fetchEmployees(status = "") {
   return frappeGet("ssplbilling.api.employee_api.get_employee_list", { status });
 }
 
