@@ -178,6 +178,8 @@ DASHBOARD_TILES = [
 	("barcode-print", "Print Barcodes", "SSPL Special"),
 	("catelogue", "Catalogues", "SSPL Special"),
 	("offer-display", "Offer Display", "SSPL Special"),
+	("hrms", "HRMS Dashboard", "SSPL Special"),
+	("employee", "Employee Directory", "SSPL Special"),
 	# Report
 	("daily-report", "Daily Report", "Report"),
 	("reports", "Reports", "Report"),

@@ -196,7 +196,7 @@ export function canAccessRoute(routeName) {
           break
         }
       }
-      if (tileId && !license.features.includes(tileId)) {
+      if (tileId && !license.features.includes(tileId) && !license.features.includes('*')) {
         return false
       }
     }
@@ -308,7 +308,7 @@ export function canAccessTile(tileId) {
     if (!license.valid || license.days_remaining < 0) {
       return false
     }
-    if (Array.isArray(license.features) && !license.features.includes(tileId)) {
+    if (Array.isArray(license.features) && !license.features.includes(tileId) && !license.features.includes('*')) {
       return false
     }
   }

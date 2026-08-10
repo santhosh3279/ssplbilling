@@ -49,6 +49,20 @@ def _load_license_status():
 	Internal helper (not whitelisted) so other server-side modules (e.g. tab-limit
 	enforcement) can read a verified license without going through the HTTP layer.
 	"""
+	if frappe.conf.developer_mode:
+		return {
+			"valid": True,
+			"message": "Bypassed on Dev Server",
+			"site": frappe.local.site,
+			"expiry_date": "",
+			"features": ["*"],
+			"max_tabs": None,
+			"customer_name": "Dev Server (Bypassed)",
+			"watch_text": "Dev Mode Active",
+			"days_remaining": None,
+			"site_name": frappe.local.site
+		}
+
 	# Location: sites/<site>/license.json
 	license_path = frappe.get_site_path("license.json")
 
