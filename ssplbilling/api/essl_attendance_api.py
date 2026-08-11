@@ -596,3 +596,58 @@ def get_attendance_records(from_date=None, to_date=None, employee=None):
 		order_by="attendance_date desc, employee_name asc",
 		limit_page_length=2000,
 	)
+
+
+@frappe.whitelist()
+def get_attendance_summary(from_date=None, to_date=None, group_by="date", employee=None):
+	"""Attendance counts per day or per employee, for the bar chart.
+
+	Aggregated in SQL on purpose: get_attendance_records caps at 2000 rows, which
+	would silently clip the oldest days of a wide range and draw wrong bars.
+	"""
+	if group_by not in ("date", "employee"):
+		frappe.throw("group_by must be 'date' or 'employee'")
+
+	from frappe.query_builder.functions import Count
+
+	table = frappe.qb.DocType("Attendance")
+	key_columns = [table.attendance_date] if group_by == "date" else [table.employee, table.employee_name]
+
+	query = frappe.qb.from_(table).select(*key_columns, table.status, Count(table.name).as_("count"))
+	query = query.where(table.docstatus < 2)
+	if from_date:
+		query = query.where(table.attendance_date >= getdate(from_date))
+	if to_date:
+		query = query.where(table.attendance_date <= getdate(to_date))
+	if employee:
+		query = query.where(table.employee == employee)
+
+	for column in key_columns:
+		query = query.groupby(column)
+	query = query.groupby(table.status)
+	query = query.orderby(table.attendance_date if group_by == "date" else table.employee_name)
+
+	rows = query.run(as_dict=True)
+
+	buckets = {}
+	order = []
+	for row in rows:
+		if group_by == "date":
+			key = str(row.attendance_date)
+			label = key
+		else:
+			key = row.employee
+			label = row.employee_name or row.employee
+		if key not in buckets:
+			buckets[key] = {"key": key, "label": label, "total": 0, "counts": {}}
+			order.append(key)
+		bucket = buckets[key]
+		bucket["counts"][row.status or "Unknown"] = bucket["counts"].get(row.status or "Unknown", 0) + row.count
+		bucket["total"] += row.count
+
+	statuses = sorted({r.status or "Unknown" for r in rows})
+	return {
+		"group_by": group_by,
+		"statuses": statuses,
+		"buckets": [buckets[k] for k in order],
+	}

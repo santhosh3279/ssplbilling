@@ -184,7 +184,15 @@ export function getLicenseInfo() {
 // sidebar, so no role, tile or license feature may lock them out.
 // 'Hrms' is included because the portal is the only way into the sidebar that
 // links the other four — public sub-pages nobody can navigate to are useless.
-export const PUBLIC_HRMS_ROUTES = ['Hrms', 'Employees', 'EsslMachines', 'EsslMapping', 'EsslAttendance', 'DeviceUsers']
+export const PUBLIC_HRMS_ROUTES = [
+  'Hrms',
+  'Employees',
+  'EsslMachines',
+  'EsslMapping',
+  'EsslAttendance',
+  'DeviceUsers',
+  'AttendanceChart',
+]
 
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'Login'].includes(routeName)) return true

@@ -63,6 +63,7 @@ import EsslMachines from './pages/EsslMachines.vue'
 import EsslMapping from './pages/EsslMapping.vue'
 import EsslAttendance from './pages/EsslAttendance.vue'
 import DeviceUsers from './pages/DeviceUsers.vue'
+import AttendanceChart from './pages/AttendanceChart.vue'
 
 const routes = [
   {
@@ -106,6 +107,12 @@ const routes = [
     name: 'DeviceUsers',
     component: DeviceUsers,
     meta: { title: 'Device Users' },
+  },
+  {
+    path: '/hrms/attendance-chart',
+    name: 'AttendanceChart',
+    component: AttendanceChart,
+    meta: { title: 'Attendance Chart' },
   },
   {
     path: '/offer-display',

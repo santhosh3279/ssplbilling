@@ -1236,6 +1236,21 @@ export async function fetchAttendanceRecords({ fromDate = null, toDate = null, e
   });
 }
 
+// Counts per day or per employee, aggregated server-side for the bar chart.
+export async function fetchAttendanceSummary({
+  fromDate = null,
+  toDate = null,
+  groupBy = "date",
+  employee = null,
+} = {}) {
+  return frappePost("ssplbilling.api.essl_attendance_api.get_attendance_summary", {
+    from_date: fromDate,
+    to_date: toDate,
+    group_by: groupBy,
+    employee,
+  });
+}
+
 export async function createManualAttendance(payload) {
   return frappePost("ssplbilling.api.essl_attendance_api.create_manual_attendance", {
     data: JSON.stringify(payload),
