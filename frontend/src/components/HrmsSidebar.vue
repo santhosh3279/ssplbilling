@@ -38,7 +38,7 @@
 import { useRouter } from 'vue-router'
 
 defineProps({
-  // key of the link to highlight: dashboard | employees | machines | mapping | attendance
+  // key of the link to highlight: dashboard | employees | machines | mapping | enroll | attendance
   active: { type: String, default: '' },
 })
 
@@ -49,6 +49,7 @@ const links = [
   { key: 'employees',  label: 'Employees',        icon: '👥', path: '/hrms/employees' },
   { key: 'machines',   label: 'eSSL Machines',    icon: '🖥️', path: '/hrms/essl-machines' },
   { key: 'mapping',    label: 'Employee Mapping', icon: '🔗', path: '/hrms/essl-mapping' },
+  { key: 'enroll',     label: 'Device Users',     icon: '👆', path: '/hrms/device-users' },
   { key: 'attendance', label: 'Attendance',       icon: '📅', path: '/hrms/attendance' },
 ]
 </script>

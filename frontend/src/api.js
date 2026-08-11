@@ -1153,6 +1153,56 @@ export async function syncEsslAttendance({ machine = null, fromDate = null } = {
   });
 }
 
+/* ── eSSL enrollment (device users, fingerprints) ── */
+
+export async function fetchMachineUsers(machine) {
+  return frappePost("ssplbilling.api.essl_enroll_api.get_machine_users", { machine });
+}
+
+export async function fetchDeviceUserRegistry() {
+  return frappeGet("ssplbilling.api.essl_enroll_api.get_device_user_registry");
+}
+
+// Machine to machine. Fingerprints travel with the user; face templates cannot.
+export async function copyMachineUsers({ source, target, userIds = null }) {
+  return frappePost("ssplbilling.api.essl_enroll_api.copy_users", {
+    source,
+    target,
+    user_ids: JSON.stringify(userIds || []),
+  });
+}
+
+export async function pullUsersToErp({ machine, userIds = null }) {
+  return frappePost("ssplbilling.api.essl_enroll_api.pull_users_to_erp", {
+    machine,
+    user_ids: JSON.stringify(userIds || []),
+  });
+}
+
+export async function pushUsersToMachine({ machine, employeeCodes = null }) {
+  return frappePost("ssplbilling.api.essl_enroll_api.push_users_to_machine", {
+    machine,
+    employee_codes: JSON.stringify(employeeCodes || []),
+  });
+}
+
+export async function fetchNextEmployeeCode() {
+  return frappeGet("ssplbilling.api.essl_enroll_api.next_employee_code");
+}
+
+export async function createEmployeeAndEnroll(payload) {
+  return frappePost("ssplbilling.api.essl_enroll_api.create_employee_and_enroll", {
+    data: JSON.stringify(payload),
+  });
+}
+
+export async function deleteMachineUser({ machine, userId }) {
+  return frappePost("ssplbilling.api.essl_enroll_api.delete_machine_user", {
+    machine,
+    user_id: userId,
+  });
+}
+
 /* ── eSSL employee mapping + attendance creation ── */
 
 export async function fetchEsslMappings() {

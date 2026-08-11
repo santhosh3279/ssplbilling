@@ -62,6 +62,7 @@ import Employees from './pages/employees.vue'
 import EsslMachines from './pages/EsslMachines.vue'
 import EsslMapping from './pages/EsslMapping.vue'
 import EsslAttendance from './pages/EsslAttendance.vue'
+import DeviceUsers from './pages/DeviceUsers.vue'
 
 const routes = [
   {
@@ -99,6 +100,12 @@ const routes = [
     name: 'EsslAttendance',
     component: EsslAttendance,
     meta: { title: 'Attendance' },
+  },
+  {
+    path: '/hrms/device-users',
+    name: 'DeviceUsers',
+    component: DeviceUsers,
+    meta: { title: 'Device Users' },
   },
   {
     path: '/offer-display',

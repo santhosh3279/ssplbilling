@@ -1,0 +1,57 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-08-11 09:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "fid",
+  "valid",
+  "size",
+  "template_hex"
+ ],
+ "fields": [
+  {
+   "description": "Finger index on the device, 0-9",
+   "fieldname": "fid",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Finger Index"
+  },
+  {
+   "default": "1",
+   "fieldname": "valid",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Valid"
+  },
+  {
+   "description": "Template length in bytes, used to sanity check the stored hex on push",
+   "fieldname": "size",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Size"
+  },
+  {
+   "description": "Fingerprint template, hex encoded exactly as pyzk Finger.json_pack() emits it",
+   "fieldname": "template_hex",
+   "fieldtype": "Long Text",
+   "label": "Template (hex)"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-08-11 09:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "eSSL Device Template",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,0 +1,172 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:employee_code",
+ "creation": "2026-08-11 09:05:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "employee_code",
+  "employee",
+  "employee_name",
+  "device_name",
+  "column_break_main",
+  "privilege",
+  "password",
+  "card",
+  "group_id",
+  "enrollment_section",
+  "source_machine",
+  "template_count",
+  "column_break_enroll",
+  "pulled_on",
+  "last_pushed",
+  "templates_section",
+  "fingerprints"
+ ],
+ "fields": [
+  {
+   "description": "The user id on the device — the same value the attendance mapping uses",
+   "fieldname": "employee_code",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Employee Code",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "employee",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Employee",
+   "options": "Employee"
+  },
+  {
+   "fetch_from": "employee.employee_name",
+   "fieldname": "employee_name",
+   "fieldtype": "Data",
+   "label": "Employee Name",
+   "read_only": 1
+  },
+  {
+   "description": "Name shown on the device. Truncated to 24 bytes when written.",
+   "fieldname": "device_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Device Name"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "User",
+   "fieldname": "privilege",
+   "fieldtype": "Select",
+   "label": "Privilege",
+   "options": "User\nAdmin"
+  },
+  {
+   "fieldname": "password",
+   "fieldtype": "Data",
+   "label": "Device Password"
+  },
+  {
+   "default": "0",
+   "fieldname": "card",
+   "fieldtype": "Data",
+   "label": "Card Number"
+  },
+  {
+   "fieldname": "group_id",
+   "fieldtype": "Data",
+   "label": "Group ID"
+  },
+  {
+   "fieldname": "enrollment_section",
+   "fieldtype": "Section Break",
+   "label": "Enrollment"
+  },
+  {
+   "fieldname": "source_machine",
+   "fieldtype": "Link",
+   "label": "Pulled From",
+   "options": "eSSL Machines Attendance"
+  },
+  {
+   "fieldname": "template_count",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Fingerprints",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_enroll",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "pulled_on",
+   "fieldtype": "Datetime",
+   "label": "Pulled On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_pushed",
+   "fieldtype": "Datetime",
+   "label": "Last Pushed",
+   "read_only": 1
+  },
+  {
+   "fieldname": "templates_section",
+   "fieldtype": "Section Break",
+   "label": "Fingerprint Templates"
+  },
+  {
+   "fieldname": "fingerprints",
+   "fieldtype": "Table",
+   "label": "Fingerprints",
+   "options": "eSSL Device Template"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-08-11 09:05:00.000000",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "eSSL Device User",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HR Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "device_name"
+}
