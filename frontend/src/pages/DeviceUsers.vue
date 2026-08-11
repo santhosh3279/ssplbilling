@@ -105,7 +105,6 @@
                     <th class="px-6 py-4">Fingerprints</th>
                     <th class="px-6 py-4">Privilege</th>
                     <th class="px-6 py-4">Employee</th>
-                    <th class="px-6 py-4">In ERP</th>
                     <th class="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -132,7 +131,6 @@
                     </td>
                     <td class="px-6 py-3 text-sm font-semibold">{{ user.privilege }}</td>
                     <td class="px-6 py-3 text-sm">{{ user.employee || '— unmapped —' }}</td>
-                    <td class="px-6 py-3 text-sm">{{ user.in_erp ? '✅' : '—' }}</td>
                     <td class="px-6 py-3 text-right whitespace-nowrap">
                       <button
                         @click="removeFromMachine(user)"
@@ -143,7 +141,7 @@
                     </td>
                   </tr>
                   <tr v-if="!visibleUsers.length && !busy">
-                    <td colspan="8" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
+                    <td colspan="7" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
                       <template v-if="targetMachine && machineUsers.length">
                         Every user on the source machine is already enrolled on the target.
                       </template>
