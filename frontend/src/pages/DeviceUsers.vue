@@ -73,6 +73,7 @@
               <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Target machine</label>
               <select
                 v-model="targetMachine"
+                @change="loadTargetUsers"
                 class="mt-1 block px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
               >
                 <option value="">— Select —</option>
@@ -105,6 +106,14 @@
             >
               🔄 Reload
             </button>
+
+            <p
+              v-if="targetMachine"
+              class="w-full text-[11px] font-semibold text-[var(--color-text-muted)]"
+            >
+              Showing only the {{ visibleUsers.length }} user(s) missing on the target —
+              {{ machineUsers.length - visibleUsers.length }} already enrolled there are hidden.
+            </p>
           </div>
 
           <div class="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] shadow-md overflow-hidden">
@@ -126,7 +135,7 @@
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
                   <tr
-                    v-for="user in machineUsers"
+                    v-for="user in visibleUsers"
                     :key="user.user_id"
                     class="hover:bg-[var(--color-midlight)]/40 transition-colors"
                   >
@@ -157,9 +166,14 @@
                       </button>
                     </td>
                   </tr>
-                  <tr v-if="!machineUsers.length && !busy">
+                  <tr v-if="!visibleUsers.length && !busy">
                     <td colspan="8" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
-                      Pick a source machine to read the users enrolled on it.
+                      <template v-if="targetMachine && machineUsers.length">
+                        Every user on the source machine is already enrolled on the target.
+                      </template>
+                      <template v-else>
+                        Pick a source machine to read the users enrolled on it.
+                      </template>
                     </td>
                   </tr>
                 </tbody>
@@ -370,6 +384,7 @@ const notice = ref('')
 
 const machines = ref([])
 const machineUsers = ref([])
+const targetUserIds = ref([])
 const registry = ref([])
 
 const sourceMachine = ref('')
@@ -395,15 +410,22 @@ function blankEnroll() {
   }
 }
 
+// With a target picked, only the users the target does not have yet are worth copying.
+const visibleUsers = computed(() => {
+  if (!targetMachine.value) return machineUsers.value
+  const have = new Set(targetUserIds.value.map(String))
+  return machineUsers.value.filter((u) => !have.has(String(u.user_id)))
+})
+
 const allSelected = computed(
-  () => machineUsers.value.length > 0 && selected.value.length === machineUsers.value.length,
+  () => visibleUsers.value.length > 0 && selected.value.length === visibleUsers.value.length,
 )
 const allCodesSelected = computed(
   () => registry.value.length > 0 && selectedCodes.value.length === registry.value.length,
 )
 
 function toggleAll(event) {
-  selected.value = event.target.checked ? machineUsers.value.map((u) => u.user_id) : []
+  selected.value = event.target.checked ? visibleUsers.value.map((u) => u.user_id) : []
 }
 
 function toggleAllCodes(event) {
@@ -446,6 +468,18 @@ async function loadMachineUsers() {
   })
 }
 
+async function loadTargetUsers() {
+  targetUserIds.value = []
+  if (!targetMachine.value) return
+  await run('Reading users already on the target device...', async () => {
+    const res = await fetchMachineUsers(targetMachine.value)
+    targetUserIds.value = (res?.users || []).map((u) => u.user_id)
+  })
+  // Anything now hidden must not stay selected.
+  const shown = new Set(visibleUsers.value.map((u) => String(u.user_id)))
+  selected.value = selected.value.filter((id) => shown.has(String(id)))
+}
+
 async function loadRegistry() {
   await run('Loading registry...', async () => {
     registry.value = (await fetchDeviceUserRegistry()) || []
@@ -460,6 +494,11 @@ async function copyToTarget() {
     notice.value = `${res.copied} user(s) copied to ${res.target}${res.failed ? `, ${res.failed} failed` : ''}.`
     const failed = (res.users || []).filter((u) => u.error)
     if (failed.length) error.value = failed.map((u) => `${u.user_id}: ${u.error}`).join(' · ')
+    const copyNotice = notice.value
+    const copyError = error.value
+    await loadTargetUsers()
+    notice.value = copyNotice
+    error.value = copyError
   }
 }
 
