@@ -414,6 +414,21 @@ def run_auto_sync():
 # ─────────────────────────── attendance read ───────────────────────────
 
 
+def _stamp_on(day, value):
+	"""'HH:MM' from the form becomes a full datetime on the attendance date. A value
+	that already carries a date is taken as is."""
+	if not value:
+		return None
+	value = str(value)
+	return get_datetime(f"{day} {value}:00" if len(value) <= 5 else value)
+
+
+def _worked_hours(in_time, out_time):
+	if in_time and out_time and out_time > in_time:
+		return flt((out_time - in_time).total_seconds() / 3600.0, 2)
+	return 0.0
+
+
 @frappe.whitelist()
 def create_manual_attendance(data):
 	"""Create one Attendance record by hand, for days the devices never captured.
@@ -446,18 +461,9 @@ def create_manual_attendance(data):
 	if not emp:
 		frappe.throw(f"Employee {employee} not found")
 
-	def _stamp(value):
-		# "HH:MM" from the form becomes a full datetime on the attendance date
-		if not value:
-			return None
-		return get_datetime(f"{attendance_date} {value}:00" if len(str(value)) <= 5 else value)
-
-	in_time = _stamp(data.get("in_time"))
-	out_time = _stamp(data.get("out_time"))
-
-	hours = 0.0
-	if in_time and out_time and out_time > in_time:
-		hours = flt((out_time - in_time).total_seconds() / 3600.0, 2)
+	in_time = _stamp_on(attendance_date, data.get("in_time"))
+	out_time = _stamp_on(attendance_date, data.get("out_time"))
+	hours = _worked_hours(in_time, out_time)
 
 	doc = frappe.new_doc("Attendance")
 	doc.employee = employee
@@ -477,6 +483,87 @@ def create_manual_attendance(data):
 		"attendance_date": str(doc.attendance_date),
 		"status": doc.status,
 	}
+
+
+@frappe.whitelist()
+def update_attendance(data):
+	"""Edit one Attendance record.
+
+	Attendance is submittable, so a submitted record cannot simply be re-saved: it is
+	cancelled and replaced by an amendment (name gains a -1 suffix) which keeps the
+	audit trail intact. Drafts are edited in place.
+	"""
+	if isinstance(data, str):
+		data = json.loads(data)
+
+	name = data.get("name")
+	if not name:
+		frappe.throw("Attendance id is required")
+
+	old = frappe.get_doc("Attendance", name)
+	if old.docstatus == 2:
+		frappe.throw(f"Attendance {name} is cancelled and can no longer be edited")
+
+	day = getdate(data.get("attendance_date") or old.attendance_date)
+	if day > getdate(now_datetime()):
+		frappe.throw("Attendance cannot be dated in the future")
+
+	employee = data.get("employee") or old.employee
+	# Moving the record onto a day/employee that already has one would break the
+	# one-record-per-employee-per-day rule hrms enforces.
+	clash = frappe.db.get_value(
+		"Attendance",
+		{
+			"employee": employee,
+			"attendance_date": day,
+			"docstatus": ("<", 2),
+			"name": ("!=", name),
+		},
+		"name",
+	)
+	if clash:
+		frappe.throw(f"Attendance {clash} already exists for this employee on {day}")
+
+	in_time = _stamp_on(day, data.get("in_time"))
+	out_time = _stamp_on(day, data.get("out_time"))
+	status = data.get("status") or old.status
+	company = old.company or frappe.db.get_value("Employee", employee, "company")
+
+	if old.docstatus == 0:
+		old.employee = employee
+		old.attendance_date = day
+		old.status = status
+		old.in_time = in_time
+		old.out_time = out_time
+		old.working_hours = _worked_hours(in_time, out_time)
+		old.save(ignore_permissions=True)
+		return {"name": old.name, "amended": False}
+
+	old.cancel()
+
+	doc = frappe.new_doc("Attendance")
+	doc.amended_from = old.name
+	doc.employee = employee
+	doc.attendance_date = day
+	doc.status = status
+	doc.company = company
+	doc.in_time = in_time
+	doc.out_time = out_time
+	doc.working_hours = _worked_hours(in_time, out_time)
+	doc.insert(ignore_permissions=True)
+	doc.submit()
+
+	return {"name": doc.name, "amended": True, "replaced": old.name}
+
+
+@frappe.whitelist()
+def delete_attendance(name):
+	"""Cancel (when submitted) and delete one Attendance record."""
+	doc = frappe.get_doc("Attendance", name)
+	if doc.docstatus == 1:
+		doc.cancel()
+	frappe.delete_doc("Attendance", name, ignore_permissions=True, force=True)
+	return {"deleted": name}
 
 
 @frappe.whitelist()

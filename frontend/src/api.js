@@ -1189,6 +1189,18 @@ export async function createManualAttendance(payload) {
   });
 }
 
+// A submitted Attendance is cancelled and replaced by an amendment server-side,
+// so the returned name may differ from the one passed in.
+export async function updateAttendance(payload) {
+  return frappePost("ssplbilling.api.essl_attendance_api.update_attendance", {
+    data: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAttendance(name) {
+  return frappePost("ssplbilling.api.essl_attendance_api.delete_attendance", { name });
+}
+
 export async function fetchEsslSyncSettings() {
   return frappeGet("ssplbilling.api.essl_attendance_api.get_sync_settings");
 }

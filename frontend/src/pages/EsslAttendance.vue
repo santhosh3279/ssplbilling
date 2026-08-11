@@ -132,6 +132,7 @@
                   <th class="px-6 py-4">In</th>
                   <th class="px-6 py-4">Out</th>
                   <th class="px-6 py-4">Hours</th>
+                  <th class="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
@@ -155,9 +156,23 @@
                   <td class="px-6 py-4 font-mono text-sm">{{ formatTime(row.in_time) }}</td>
                   <td class="px-6 py-4 font-mono text-sm">{{ formatTime(row.out_time) }}</td>
                   <td class="px-6 py-4 font-mono text-sm">{{ (row.working_hours || 0).toFixed(2) }}</td>
+                  <td class="px-6 py-4 text-right whitespace-nowrap">
+                    <button
+                      @click="openEditor(row)"
+                      class="rounded-xl border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold hover:bg-[var(--color-midlight)] transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      @click="removeRecord(row)"
+                      class="ml-2 rounded-xl border border-rose-500/30 text-rose-500 px-3 py-1.5 text-xs font-bold hover:bg-rose-500/10 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
                 <tr v-if="filteredRecords.length === 0 && !busy">
-                  <td colspan="6" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
+                  <td colspan="7" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
                     No attendance records in this range. Map the device users, then run a sync.
                   </td>
                 </tr>
@@ -176,7 +191,7 @@
     >
       <div class="w-[560px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
         <div class="px-6 py-4 border-b border-[var(--color-border)] text-lg font-black uppercase tracking-wider">
-          Manual Attendance
+          {{ newRecord.name ? 'Edit Attendance' : 'Manual Attendance' }}
         </div>
 
         <div class="p-6 space-y-4">
@@ -240,9 +255,13 @@
               />
             </div>
           </div>
-          <p class="text-[11px] text-[var(--color-text-muted)]">
+          <p v-if="!newRecord.name" class="text-[11px] text-[var(--color-text-muted)]">
             Times are optional — worked hours are computed from them. The record is submitted
             straight away, and a day that already has attendance is refused.
+          </p>
+          <p v-else class="text-[11px] text-[var(--color-text-muted)]">
+            {{ newRecord.name }} is already submitted, so saving cancels it and files an
+            amendment in its place (the id gains a -1 suffix).
           </p>
 
           <div v-if="creatorError" class="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 text-xs font-bold text-rose-500">
@@ -262,7 +281,7 @@
             :disabled="!newRecord.employee || !newRecord.attendance_date || saving"
             class="rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110 disabled:opacity-50"
           >
-            {{ saving ? 'Saving...' : 'Create' }}
+            {{ saving ? 'Saving...' : newRecord.name ? 'Save' : 'Create' }}
           </button>
         </div>
       </div>
@@ -279,6 +298,8 @@ import {
   syncEsslAttendanceToErp,
   fetchEsslSyncSettings,
   createManualAttendance,
+  updateAttendance,
+  deleteAttendance,
   fetchEmployees,
 } from '../api.js'
 
@@ -303,6 +324,7 @@ const saving = ref(false)
 const creatorError = ref('')
 const today = daysAgo(0)
 const newRecord = ref({
+  name: '',
   employee: '',
   attendance_date: today,
   status: 'Present',
@@ -364,8 +386,20 @@ async function syncNow() {
   }
 }
 
+async function loadEmployeeOptions() {
+  if (employees.value.length) return
+  try {
+    const list = await fetchEmployees('')
+    employees.value = (list || []).filter((e) => (e.status || 'Active') === 'Active')
+  } catch (err) {
+    console.error('Failed to load employees:', err)
+    creatorError.value = err.message || 'Failed to load the employee list.'
+  }
+}
+
 async function openCreator() {
   newRecord.value = {
+    name: '',
     employee: '',
     attendance_date: today,
     status: 'Present',
@@ -374,15 +408,22 @@ async function openCreator() {
   }
   creatorError.value = ''
   showCreator.value = true
-  if (!employees.value.length) {
-    try {
-      const list = await fetchEmployees('')
-      employees.value = (list || []).filter((e) => (e.status || 'Active') === 'Active')
-    } catch (err) {
-      console.error('Failed to load employees:', err)
-      creatorError.value = err.message || 'Failed to load the employee list.'
-    }
+  await loadEmployeeOptions()
+}
+
+async function openEditor(row) {
+  newRecord.value = {
+    name: row.name,
+    employee: row.employee,
+    attendance_date: row.attendance_date,
+    status: row.status,
+    // The form takes HH:MM; the stored value is a full datetime
+    in_time: (String(row.in_time || '').split(' ')[1] || '').slice(0, 5),
+    out_time: (String(row.out_time || '').split(' ')[1] || '').slice(0, 5),
   }
+  creatorError.value = ''
+  showCreator.value = true
+  await loadEmployeeOptions()
 }
 
 async function saveManualAttendance() {
@@ -390,14 +431,35 @@ async function saveManualAttendance() {
   saving.value = true
   creatorError.value = ''
   try {
-    await createManualAttendance(newRecord.value)
+    if (newRecord.value.name) {
+      await updateAttendance(newRecord.value)
+    } else {
+      await createManualAttendance(newRecord.value)
+    }
     showCreator.value = false
     await loadRecords()
   } catch (err) {
-    console.error('Failed to create attendance:', err)
-    creatorError.value = err.message || 'Failed to create attendance.'
+    console.error('Failed to save attendance:', err)
+    creatorError.value = err.message || 'Failed to save attendance.'
   } finally {
     saving.value = false
+  }
+}
+
+async function removeRecord(row) {
+  const label = `${row.employee_name || row.employee} on ${formatDate(row.attendance_date)}`
+  if (!confirm(`Delete attendance for ${label}? A submitted record is cancelled first.`)) return
+  busy.value = true
+  busyLabel.value = 'Deleting...'
+  error.value = ''
+  try {
+    await deleteAttendance(row.name)
+    await loadRecords()
+  } catch (err) {
+    console.error('Failed to delete attendance:', err)
+    error.value = err.message || 'Failed to delete attendance.'
+  } finally {
+    busy.value = false
   }
 }
 
