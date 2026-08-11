@@ -1185,6 +1185,16 @@ export async function deleteMachineUser({ machine, userId }) {
   });
 }
 
+// Rewrites the user in place; the uid and code stay put so fingerprints survive.
+export async function updateMachineUser({ machine, userId, name, privilege }) {
+  return frappePost("ssplbilling.api.essl_enroll_api.update_machine_user", {
+    machine,
+    user_id: userId,
+    name,
+    privilege,
+  });
+}
+
 /* ── eSSL employee mapping + attendance creation ── */
 
 export async function fetchEsslMappings() {

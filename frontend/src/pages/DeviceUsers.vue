@@ -133,6 +133,12 @@
                     <td class="px-6 py-3 text-sm">{{ user.employee || '— unmapped —' }}</td>
                     <td class="px-6 py-3 text-right whitespace-nowrap">
                       <button
+                        @click="openEdit(user)"
+                        class="mr-2 rounded-xl border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold hover:bg-[var(--color-midlight)] transition-colors"
+                      >
+                        Edit
+                      </button>
+                      <button
                         @click="removeFromMachine(user)"
                         class="rounded-xl border border-rose-500/30 text-rose-500 px-3 py-1.5 text-xs font-bold hover:bg-rose-500/10 transition-colors"
                       >
@@ -157,6 +163,73 @@
         </div>
       </div>
     </main>
+
+    <!-- Edit device user modal -->
+    <div
+      v-if="showEdit"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+      @click.self="showEdit = false"
+    >
+      <div class="w-[480px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl">
+        <div class="px-6 py-4 border-b border-[var(--color-border)] text-lg font-black uppercase tracking-wider">
+          Edit Device User
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Code</label>
+            <input
+              :value="edit.user_id"
+              type="text"
+              disabled
+              class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-midlight)] text-sm font-mono font-semibold opacity-70"
+            />
+            <p class="mt-1 text-[11px] text-[var(--color-text-muted)]">
+              The code cannot change — the fingerprints on the device are stored against it.
+            </p>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Name on device</label>
+            <input
+              v-model="edit.name"
+              type="text"
+              :maxlength="24"
+              class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+            />
+            <p class="mt-1 text-[11px] text-[var(--color-text-muted)]">Max 24 characters.</p>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Privilege</label>
+            <select
+              v-model="edit.privilege"
+              class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+            >
+              <option>User</option>
+              <option>Admin</option>
+            </select>
+          </div>
+
+          <div v-if="editError" class="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 text-xs font-bold text-rose-500">
+            {{ editError }}
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-[var(--color-border)] flex justify-end gap-3">
+          <button @click="showEdit = false" class="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-bold hover:bg-[var(--color-midlight)]">
+            Cancel
+          </button>
+          <button
+            @click="saveEdit"
+            :disabled="!edit.name || editSaving"
+            class="rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110 disabled:opacity-50"
+          >
+            {{ editSaving ? 'Saving...' : 'Save to device' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- Enroll modal -->
     <div
@@ -266,6 +339,7 @@ import {
   fetchNextEmployeeCode,
   createEmployeeAndEnroll,
   deleteMachineUser,
+  updateMachineUser,
 } from '../api.js'
 
 const busy = ref(false)
@@ -280,6 +354,11 @@ const targetUserIds = ref([])
 const sourceMachine = ref('')
 const targetMachine = ref('')
 const selected = ref([])
+
+const showEdit = ref(false)
+const editSaving = ref(false)
+const editError = ref('')
+const edit = ref({ user_id: '', name: '', privilege: 'User' })
 
 const showEnroll = ref(false)
 const saving = ref(false)
@@ -385,6 +464,39 @@ async function removeFromMachine(user) {
   if (res) {
     notice.value = `${res.deleted} removed from ${res.machine}.`
     await loadMachineUsers()
+  }
+}
+
+function openEdit(user) {
+  edit.value = {
+    user_id: String(user.user_id),
+    name: user.name || '',
+    privilege: user.privilege || 'User',
+  }
+  editError.value = ''
+  showEdit.value = true
+}
+
+async function saveEdit() {
+  editSaving.value = true
+  editError.value = ''
+  try {
+    const res = await updateMachineUser({
+      machine: sourceMachine.value,
+      userId: edit.value.user_id,
+      name: edit.value.name,
+      privilege: edit.value.privilege,
+    })
+    showEdit.value = false
+    // loadMachineUsers clears the banners, so the notice is set after it runs.
+    await loadMachineUsers()
+    notice.value = `${res.user_id} updated on ${res.machine}.`
+    if (res.name_truncated) notice.value += ' The name was shortened to 24 characters.'
+  } catch (err) {
+    console.error('Failed to update the device user:', err)
+    editError.value = err.message || 'Failed to update the device user.'
+  } finally {
+    editSaving.value = false
   }
 }
 

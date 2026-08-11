@@ -428,3 +428,63 @@ def delete_machine_user(machine, user_id):
 				pass
 
 	return {"machine": row.name, "deleted": str(user_id)}
+
+
+@frappe.whitelist()
+def update_machine_user(machine, user_id, name=None, privilege=None, password=None, card=None):
+	"""Rewrite the details of one user already on a device.
+
+	The uid and user_id are kept as they are — the templates are stored against the
+	uid, so changing it would strand the fingerprints already enrolled on the device.
+	"""
+	row = _machine_row(machine)
+	conn = None
+	try:
+		conn = connect_machine(row)
+		users = conn.get_users() or []
+		match = [u for u in users if str(u.user_id) == str(user_id)]
+		if not match:
+			frappe.throw(f"User {user_id} is not on {row.name}")
+		current = match[0]
+
+		new_name = current.name if name is None else name
+		new_privilege = (
+			int(current.privilege or 0)
+			if privilege is None
+			else (1 if str(privilege).lower() in ("admin", "1", "true") else 0)
+		)
+		new_password = current.password if password is None else password
+		new_card = current.card if card is None else card
+
+		conn.disable_device()
+		_write_user(
+			conn,
+			current.uid,
+			current.user_id,
+			new_name,
+			new_privilege,
+			new_password,
+			current.group_id,
+			new_card,
+			None,
+		)
+		conn.refresh_data()
+	finally:
+		if conn:
+			try:
+				conn.enable_device()
+			except Exception:
+				pass
+			try:
+				conn.disconnect()
+			except Exception:
+				pass
+
+	truncated = bool(new_name and len(str(new_name)) > DEVICE_NAME_MAX)
+	return {
+		"machine": row.name,
+		"user_id": str(user_id),
+		"name": str(new_name or "")[:DEVICE_NAME_MAX],
+		"privilege": "Admin" if new_privilege else "User",
+		"name_truncated": truncated,
+	}
