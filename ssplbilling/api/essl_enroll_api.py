@@ -217,76 +217,10 @@ def copy_users(source, target, user_ids=None):
 	}
 
 
-@frappe.whitelist()
-def pull_users_to_erp(machine, user_ids=None):
-	"""Store device users and their fingerprints as eSSL Device User records so they
-	can later be pushed to any machine without the source device being present."""
-	if isinstance(user_ids, str):
-		user_ids = json.loads(user_ids)
-	wanted = {str(u) for u in (user_ids or [])}
+def _push_users_to_machine(machine, employee_codes=None):
+	"""Write eSSL Device User records (fingerprints included) onto a device.
 
-	row = _machine_row(machine)
-	conn = None
-	try:
-		conn = connect_machine(row)
-		users, fingers = _read_machine(conn)
-	finally:
-		if conn:
-			try:
-				conn.disconnect()
-			except Exception:
-				pass
-
-	mapped = {
-		str(m.machine_user_id): m.employee
-		for m in frappe.get_all(MAPPING_DOCTYPE, fields=["machine_user_id", "employee"])
-	}
-
-	saved = []
-	for user in users:
-		code = str(user.user_id)
-		if wanted and code not in wanted:
-			continue
-
-		if frappe.db.exists(DEVICE_USER_DOCTYPE, code):
-			doc = frappe.get_doc(DEVICE_USER_DOCTYPE, code)
-			doc.fingerprints = []
-		else:
-			doc = frappe.new_doc(DEVICE_USER_DOCTYPE)
-			doc.employee_code = code
-
-		doc.device_name = user.name or ""
-		doc.privilege = "Admin" if int(user.privilege or 0) else "User"
-		doc.password = str(user.password or "")
-		doc.card = str(int(user.card or 0))
-		doc.group_id = str(user.group_id or "")
-		doc.source_machine = row.name
-		doc.pulled_on = now_datetime()
-		if not doc.employee and mapped.get(code):
-			doc.employee = mapped[code]
-
-		for finger in fingers.get(user.uid, []):
-			packed = finger.json_pack()
-			doc.append(
-				"fingerprints",
-				{
-					"fid": packed["fid"],
-					"valid": packed["valid"],
-					"size": packed["size"],
-					"template_hex": packed["template"],
-				},
-			)
-
-		doc.save(ignore_permissions=True)
-		saved.append({"employee_code": code, "device_name": doc.device_name, "templates": len(doc.fingerprints)})
-
-	frappe.db.commit()
-	return {"machine": row.name, "saved": len(saved), "users": saved}
-
-
-@frappe.whitelist()
-def push_users_to_machine(machine, employee_codes=None):
-	"""Write eSSL Device User records (fingerprints included) onto a device."""
+	Internal helper for create_employee_and_enroll — not a whitelisted endpoint."""
 	if isinstance(employee_codes, str):
 		employee_codes = json.loads(employee_codes)
 
@@ -456,7 +390,7 @@ def create_employee_and_enroll(data):
 	frappe.db.commit()
 
 	machines = data.get("machines") or []
-	pushes = [push_users_to_machine(m, [code]) for m in machines]
+	pushes = [_push_users_to_machine(m, [code]) for m in machines]
 
 	return {
 		"employee": emp.name,
@@ -494,24 +428,3 @@ def delete_machine_user(machine, user_id):
 				pass
 
 	return {"machine": row.name, "deleted": str(user_id)}
-
-
-@frappe.whitelist()
-def get_device_user_registry():
-	"""The ERP-side registry of enrollable users."""
-	return frappe.get_all(
-		DEVICE_USER_DOCTYPE,
-		fields=[
-			"name as employee_code",
-			"employee",
-			"employee_name",
-			"device_name",
-			"privilege",
-			"template_count",
-			"source_machine",
-			"pulled_on",
-			"last_pushed",
-		],
-		order_by="modified desc",
-		limit_page_length=2000,
-	)

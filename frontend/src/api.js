@@ -1159,30 +1159,12 @@ export async function fetchMachineUsers(machine) {
   return frappePost("ssplbilling.api.essl_enroll_api.get_machine_users", { machine });
 }
 
-export async function fetchDeviceUserRegistry() {
-  return frappeGet("ssplbilling.api.essl_enroll_api.get_device_user_registry");
-}
-
 // Machine to machine. Fingerprints travel with the user; face templates cannot.
 export async function copyMachineUsers({ source, target, userIds = null }) {
   return frappePost("ssplbilling.api.essl_enroll_api.copy_users", {
     source,
     target,
     user_ids: JSON.stringify(userIds || []),
-  });
-}
-
-export async function pullUsersToErp({ machine, userIds = null }) {
-  return frappePost("ssplbilling.api.essl_enroll_api.pull_users_to_erp", {
-    machine,
-    user_ids: JSON.stringify(userIds || []),
-  });
-}
-
-export async function pushUsersToMachine({ machine, employeeCodes = null }) {
-  return frappePost("ssplbilling.api.essl_enroll_api.push_users_to_machine", {
-    machine,
-    employee_codes: JSON.stringify(employeeCodes || []),
   });
 }
 
