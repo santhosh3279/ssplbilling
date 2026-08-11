@@ -151,6 +151,7 @@
                   <th class="px-6 py-4">Comm Key</th>
                   <th class="px-6 py-4">Store</th>
                   <th class="px-6 py-4">Last Updated</th>
+                  <th class="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
@@ -175,9 +176,23 @@
                   <td class="px-6 py-4 font-mono text-xs text-[var(--color-text-muted)]">
                     {{ formatDate(machine.modified) }}
                   </td>
+                  <td class="px-6 py-4 text-right whitespace-nowrap">
+                    <button
+                      @click="openEditor(machine)"
+                      class="rounded-xl border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold hover:bg-[var(--color-midlight)] transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      @click="removeMachine(machine)"
+                      class="ml-2 rounded-xl border border-rose-500/30 text-rose-500 px-3 py-1.5 text-xs font-bold hover:bg-rose-500/10 transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </td>
                 </tr>
                 <tr v-if="filteredMachines.length === 0 && !loading">
-                  <td colspan="5" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
+                  <td colspan="6" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
                     No eSSL machines matching the filters were found.
                   </td>
                 </tr>
@@ -196,7 +211,7 @@
     >
       <div class="w-[520px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
         <div class="px-6 py-4 border-b border-[var(--color-border)] text-lg font-black uppercase tracking-wider">
-          New eSSL Machine
+          {{ newMachine.name ? 'Edit eSSL Machine' : 'New eSSL Machine' }}
         </div>
 
         <div class="p-6 space-y-4">
@@ -212,7 +227,8 @@
               @keyup.enter="saveMachine"
             />
             <p class="mt-1 text-[11px] text-[var(--color-text-muted)]">
-              Doubles as the record id, so it has to be unique.
+              Doubles as the record id, so it has to be unique. Changing it on an existing
+              machine renames the record and repoints its employee mappings.
             </p>
           </div>
 
@@ -268,7 +284,7 @@
             :disabled="!newMachine.ip_address || saving"
             class="rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110 disabled:opacity-50"
           >
-            {{ saving ? 'Saving...' : 'Save' }}
+            {{ saving ? 'Saving...' : newMachine.name ? 'Save' : 'Create' }}
           </button>
         </div>
       </div>
@@ -279,7 +295,13 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
-import { fetchEsslMachines, saveEsslMachine, syncEsslAttendance } from '../api.js'
+import {
+  fetchEsslMachines,
+  saveEsslMachine,
+  updateEsslMachine,
+  deleteEsslMachine,
+  syncEsslAttendance,
+} from '../api.js'
 
 // Attendance logs live only in localStorage — the sync writes nothing server-side.
 const ATTENDANCE_KEY = 'wb-essl-attendance-v1'
@@ -302,7 +324,7 @@ const fromDate = ref(defaultFromDate())
 const showCreator = ref(false)
 const saving = ref(false)
 const creatorError = ref('')
-const newMachine = ref({ ip_address: '', store: '', comm_key: '', serial_number: '' })
+const newMachine = ref({ name: '', ip_address: '', store: '', comm_key: '', serial_number: '' })
 
 async function loadMachines() {
   loading.value = true
@@ -424,9 +446,37 @@ async function syncAttendance() {
 }
 
 function openCreator() {
-  newMachine.value = { ip_address: '', store: '', comm_key: '', serial_number: '' }
+  newMachine.value = { name: '', ip_address: '', store: '', comm_key: '', serial_number: '' }
   creatorError.value = ''
   showCreator.value = true
+}
+
+function openEditor(machine) {
+  newMachine.value = {
+    name: machine.name,
+    ip_address: machine.ip_address || '',
+    store: machine.store || '',
+    comm_key: machine.comm_key || '',
+    serial_number: machine.serial_number || '',
+  }
+  creatorError.value = ''
+  showCreator.value = true
+}
+
+async function removeMachine(machine) {
+  const label = machine.store ? `${machine.store} (${machine.ip_address})` : machine.ip_address
+  if (!confirm(`Delete machine ${label}?`)) return
+  loading.value = true
+  error.value = ''
+  try {
+    await deleteEsslMachine(machine.name)
+    await loadMachines()
+  } catch (err) {
+    console.error('Failed to delete machine:', err)
+    error.value = err.message || 'Failed to delete machine.'
+  } finally {
+    loading.value = false
+  }
 }
 
 async function saveMachine() {
@@ -434,7 +484,11 @@ async function saveMachine() {
   saving.value = true
   creatorError.value = ''
   try {
-    await saveEsslMachine(newMachine.value)
+    if (newMachine.value.name) {
+      await updateEsslMachine(newMachine.value)
+    } else {
+      await saveEsslMachine(newMachine.value)
+    }
     showCreator.value = false
     await loadMachines()
   } catch (err) {

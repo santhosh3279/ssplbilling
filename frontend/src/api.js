@@ -1132,6 +1132,17 @@ export async function saveEsslMachine(payload) {
   });
 }
 
+// Changing the IP renames the record, so the returned name may differ from the one sent.
+export async function updateEsslMachine(payload) {
+  return frappePost("ssplbilling.api.essl_machine_api.update_essl_machine", {
+    data: JSON.stringify(payload),
+  });
+}
+
+export async function deleteEsslMachine(name) {
+  return frappePost("ssplbilling.api.essl_machine_api.delete_essl_machine", { name });
+}
+
 // Pulls logs off the devices themselves (ZK protocol, TCP 4370). Nothing is
 // stored server-side — the caller caches the result. POST so the params travel
 // as JSON instead of being stringified into a query string.

@@ -48,6 +48,52 @@ def save_essl_machine(data):
 	return {"name": doc.name, "ip_address": doc.ip_address, "store": doc.store}
 
 
+@frappe.whitelist()
+def update_essl_machine(data):
+	"""Edit a machine. The IP is the record name, so changing it renames the record —
+	Frappe repoints the mappings that link to it as part of the rename."""
+	import json
+
+	if isinstance(data, str):
+		data = json.loads(data)
+
+	name = data.get("name")
+	if not name:
+		frappe.throw("Machine id is required")
+
+	new_ip = (data.get("ip_address") or "").strip()
+	if not new_ip:
+		frappe.throw("IP Address is required")
+
+	if new_ip != name:
+		if frappe.db.exists(ESSL_MACHINE_DOCTYPE, new_ip):
+			frappe.throw(f"A machine with IP {new_ip} already exists")
+		frappe.rename_doc(ESSL_MACHINE_DOCTYPE, name, new_ip, force=True, show_alert=False)
+		name = new_ip
+
+	doc = frappe.get_doc(ESSL_MACHINE_DOCTYPE, name)
+	doc.serial_number = (data.get("serial_number") or "").strip()
+	doc.comm_key = (data.get("comm_key") or "").strip()
+	doc.store = (data.get("store") or "").strip()
+	doc.save(ignore_permissions=True)
+
+	return {"name": doc.name, "ip_address": doc.ip_address, "store": doc.store}
+
+
+@frappe.whitelist()
+def delete_essl_machine(name):
+	"""Delete a machine. Refused while employee mappings still point at it."""
+	linked = frappe.db.count("eSSL Employee Mapping", {"machine": name})
+	if linked:
+		frappe.throw(
+			f"{linked} employee mapping(s) still point at this machine. "
+			"Remove or re-scope them on the Employee Mapping page first."
+		)
+
+	frappe.delete_doc(ESSL_MACHINE_DOCTYPE, name, ignore_permissions=True)
+	return {"deleted": name}
+
+
 def connect_machine(row):
 	"""Open a ZK connection to one device. Caller is responsible for disconnect()."""
 	from zk import ZK
