@@ -600,7 +600,7 @@ def get_attendance_records(from_date=None, to_date=None, employee=None):
 
 @frappe.whitelist()
 def get_attendance_summary(from_date=None, to_date=None, group_by="date", employee=None):
-	"""Attendance counts per day or per employee, for the bar chart.
+	"""Attendance counts and working hours per day or per employee, for the bar chart.
 
 	Aggregated in SQL on purpose: get_attendance_records caps at 2000 rows, which
 	would silently clip the oldest days of a wide range and draw wrong bars.
@@ -608,12 +608,17 @@ def get_attendance_summary(from_date=None, to_date=None, group_by="date", employ
 	if group_by not in ("date", "employee"):
 		frappe.throw("group_by must be 'date' or 'employee'")
 
-	from frappe.query_builder.functions import Count
+	from frappe.query_builder.functions import Count, Sum
 
 	table = frappe.qb.DocType("Attendance")
 	key_columns = [table.attendance_date] if group_by == "date" else [table.employee, table.employee_name]
 
-	query = frappe.qb.from_(table).select(*key_columns, table.status, Count(table.name).as_("count"))
+	query = frappe.qb.from_(table).select(
+		*key_columns,
+		table.status,
+		Count(table.name).as_("count"),
+		Sum(table.working_hours).as_("hours"),
+	)
 	query = query.where(table.docstatus < 2)
 	if from_date:
 		query = query.where(table.attendance_date >= getdate(from_date))
@@ -639,11 +644,12 @@ def get_attendance_summary(from_date=None, to_date=None, group_by="date", employ
 			key = row.employee
 			label = row.employee_name or row.employee
 		if key not in buckets:
-			buckets[key] = {"key": key, "label": label, "total": 0, "counts": {}}
+			buckets[key] = {"key": key, "label": label, "total": 0, "hours": 0.0, "counts": {}}
 			order.append(key)
 		bucket = buckets[key]
 		bucket["counts"][row.status or "Unknown"] = bucket["counts"].get(row.status or "Unknown", 0) + row.count
 		bucket["total"] += row.count
+		bucket["hours"] = flt(bucket["hours"] + flt(row.hours), 2)
 
 	statuses = sorted({r.status or "Unknown" for r in rows})
 	return {
