@@ -76,14 +76,6 @@
             </button>
 
             <button
-              @click="pullSelected"
-              :disabled="!sourceMachine || !selected.length || busy"
-              class="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-bold hover:bg-[var(--color-midlight)] disabled:opacity-50"
-            >
-              Pull {{ selected.length }} into ERP
-            </button>
-
-            <button
               @click="loadMachineUsers"
               :disabled="!sourceMachine || busy"
               class="ml-auto rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-bold hover:bg-[var(--color-midlight)] disabled:opacity-50"
@@ -240,7 +232,7 @@
             </div>
             <p class="mt-2 text-[11px] text-[var(--color-text-muted)]">
               The user is created on the device with no fingerprint — enroll the finger on the
-              device itself, then pull it into the ERP and push it to the other machines.
+              device itself, then copy the user to the other machines from here.
             </p>
           </div>
 
@@ -273,7 +265,6 @@ import {
   fetchEsslMachines,
   fetchMachineUsers,
   copyMachineUsers,
-  pullUsersToErp,
   fetchNextEmployeeCode,
   createEmployeeAndEnroll,
   deleteMachineUser,
@@ -385,15 +376,6 @@ async function copyToTarget() {
     await loadTargetUsers()
     notice.value = copyNotice
     error.value = copyError
-  }
-}
-
-async function pullSelected() {
-  const res = await run('Storing users in the ERP...', () =>
-    pullUsersToErp({ machine: sourceMachine.value, userIds: selected.value }),
-  )
-  if (res) {
-    notice.value = `${res.saved} user(s) stored in the ERP.`
   }
 }
 
