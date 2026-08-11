@@ -1,180 +1,745 @@
 {
   "_about": [
-    "Feature ids accepted in the 'features' array of sites/<site>/license.json.",
-    "A feature id is an SSPL dashboard tile id: canAccessTile() hides any tile whose id is",
-    "absent from the licensed features, and canAccessRoute() blocks the route mapped to it",
-    "in TILE_ROUTE_MAP. Use [\"*\"] to grant everything, including tiles added later.",
-    "Generated from DASHBOARD_TILES in ssplbilling/setup.py \u2014 regenerate after adding a tile."
+    "Every page in the SPA and the feature id that licences it.",
+    "Put the ids from 'features' into the 'features' array of sites/<site>/license.json;",
+    "granting one id unlocks every page listed under it in 'pages_by_feature'.",
+    "A page whose feature is null is never checked against the licence.",
+    "Generated from frontend/src/router.js, frontend/src/composables/usePermission.js",
+    "and DASHBOARD_TILES in ssplbilling/setup.py \u2014 regenerate after adding a page.",
+    "Use [\"*\"] to grant everything, including pages added later."
   ],
   "wildcard": "*",
-  "feature_count": 45,
+  "page_count": 59,
+  "feature_count": 49,
   "features": [
-    "sales",
-    "quotation",
-    "cashier",
-    "sales-order",
     "Cashier-Management",
+    "account-tree",
+    "barcode-print",
     "cancellation",
+    "cashier",
+    "catelogue",
+    "cheques",
+    "cost-center-sale-report",
+    "customer-enquiry",
+    "daily-report",
+    "employee",
+    "expense",
+    "fast-moving-items",
+    "general-ledger",
+    "gst-dummy-ledger",
+    "gst-ledger",
+    "incentive-entry",
+    "incentive-ledger",
+    "incentive-redeem",
+    "item-sales-summary",
+    "journal-contra",
+    "land-cost-voucher",
+    "ledger",
+    "ledger-sales-purchase-report",
+    "loading-receipt",
+    "material-transfer-report",
+    "naming-settings",
+    "offer-display",
+    "outstanding-customers-report",
+    "parcel-address",
+    "payment",
+    "pricing-rules",
     "purchase-invoice",
     "purchase-order",
     "purchase-submit",
-    "stock-reconciliation",
-    "store-transfer",
+    "quotation",
     "repack",
-    "land-cost-voucher",
-    "expense",
-    "single-entry",
-    "payment",
-    "unreconciled",
-    "payment-reconciliation",
-    "journal-contra",
-    "cheques",
-    "outstanding-bills",
-    "incentive-redeem",
-    "incentive-entry",
-    "account-tree",
-    "stock-ledger",
-    "ledger",
-    "gst-ledger",
-    "incentive-ledger",
-    "general-ledger",
-    "loading-receipt",
-    "customer-enquiry",
-    "parcel-address",
-    "gst-dummy-ledger",
-    "pricing-rules",
-    "naming-settings",
-    "barcode-print",
-    "catelogue",
-    "offer-display",
-    "hrms",
-    "employee",
-    "essl-machines",
-    "daily-report",
     "reports",
+    "sales",
+    "sales-order",
+    "single-entry",
+    "ssplbillingsettings",
+    "stock-aging-report",
+    "stock-reconciliation",
+    "stock-status-report",
     "store-sale-report",
-    "cost-center-sale-report"
+    "store-transfer",
+    "store-wise-item-sales",
+    "unreconciled"
   ],
-  "features_by_bucket": {
-    "Sale": [
-      "sales",
-      "quotation",
-      "cashier",
-      "sales-order",
-      "Cashier-Management",
-      "cancellation"
+  "pages": [
+    {
+      "page": "Hrms",
+      "path": "/hrms",
+      "title": "HRMS",
+      "feature": null,
+      "note": "Always available \u2014 no licence check"
+    },
+    {
+      "page": "Employee",
+      "path": "/hrms/employee",
+      "title": "Employee Management",
+      "feature": "employee",
+      "feature_label": "Employee Directory",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "Employees",
+      "path": "/hrms/employees",
+      "title": "Employees",
+      "feature": null,
+      "note": "Always available \u2014 no licence check"
+    },
+    {
+      "page": "EsslMachines",
+      "path": "/hrms/essl-machines",
+      "title": "eSSL Machines",
+      "feature": null,
+      "note": "Always available \u2014 no licence check"
+    },
+    {
+      "page": "EsslMapping",
+      "path": "/hrms/essl-mapping",
+      "title": "Employee Mapping",
+      "feature": null,
+      "note": "Always available \u2014 no licence check"
+    },
+    {
+      "page": "EsslAttendance",
+      "path": "/hrms/attendance",
+      "title": "Attendance",
+      "feature": null,
+      "note": "Always available \u2014 no licence check"
+    },
+    {
+      "page": "OfferDisplay",
+      "path": "/offer-display",
+      "title": "Offer Display",
+      "feature": "offer-display",
+      "feature_label": "Offer Display",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "Expense",
+      "path": "/expense",
+      "title": "Expense Entry",
+      "feature": "expense",
+      "feature_label": "Cash Box Entry",
+      "bucket": "Accounts",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "Login",
+      "path": "/login",
+      "title": "Login",
+      "feature": null,
+      "note": "Always available \u2014 no licence check"
+    },
+    {
+      "page": "NamingSettings",
+      "path": "/naming-settings",
+      "title": "Naming Settings",
+      "feature": "naming-settings",
+      "feature_label": "Naming Settings",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "Cancellation",
+      "path": "/cancellation",
+      "title": "Cancellation",
+      "feature": "cancellation",
+      "feature_label": "Cancellation",
+      "bucket": "Sale",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "SingleEntry",
+      "path": "/single-entry",
+      "title": "Single Entry",
+      "feature": "single-entry",
+      "feature_label": "Single Entry",
+      "bucket": "Accounts",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "StoreTransfer",
+      "path": "/store-transfer",
+      "title": "Store Transfer",
+      "feature": "store-transfer",
+      "feature_label": "Store Transfer",
+      "bucket": "Stock",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "Repack",
+      "path": "/repack",
+      "title": "Repack",
+      "feature": "repack",
+      "feature_label": "Repack Entry",
+      "bucket": "Stock",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "LandCostVoucher",
+      "path": "/land-cost-voucher",
+      "title": "Landed Cost Voucher",
+      "feature": "land-cost-voucher",
+      "feature_label": "Landed Cost Voucher",
+      "bucket": "Stock",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "DailyReport",
+      "path": "/daily-report",
+      "title": "Daily Report",
+      "feature": "daily-report",
+      "feature_label": "Daily Report",
+      "bucket": "Report",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "GeneralLedger",
+      "path": "/general-ledger",
+      "title": "General Ledger",
+      "feature": "general-ledger",
+      "feature_label": "General Ledger",
+      "bucket": "Ledger View",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "SSPLBillingSettings",
+      "path": "/ssplbillingsettings",
+      "title": "Settings",
+      "feature": "ssplbillingsettings",
+      "feature_label": "",
+      "bucket": "",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "Dashboard",
+      "path": "/",
+      "title": "Dashboard",
+      "feature": null,
+      "note": "Always available \u2014 no licence check"
+    },
+    {
+      "page": "SalesInvoice",
+      "path": "/sales",
+      "title": "Sales Invoice",
+      "feature": "sales",
+      "feature_label": "Sales Invoice",
+      "bucket": "Sale",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "Quotation",
+      "path": "/quotation",
+      "title": "Quotation",
+      "feature": "quotation",
+      "feature_label": "Quotation",
+      "bucket": "Sale",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "PurchaseInvoice",
+      "path": "/purchase-invoice",
+      "title": "Purchase Invoice",
+      "feature": "purchase-invoice",
+      "feature_label": "Purchase Invoice",
+      "bucket": "Purchase",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "PriceListUpdate",
+      "path": "/pricelist-update",
+      "title": "Price List",
+      "feature": "purchase-invoice",
+      "feature_label": "Purchase Invoice",
+      "bucket": "Purchase",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "BarcodePrintPage",
+      "path": "/barcode-print",
+      "title": "Barcode Print",
+      "feature": "barcode-print",
+      "feature_label": "Print Barcodes",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "CashierDesk",
+      "path": "/cashier",
+      "title": "Cashier",
+      "feature": "cashier",
+      "feature_label": "Cashier Desk",
+      "bucket": "Sale",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "PurchaseSubmit",
+      "path": "/purchase-submit",
+      "title": "Purchase Submit",
+      "feature": "purchase-submit",
+      "feature_label": "Purchase Desk",
+      "bucket": "Purchase",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "CustomerLedger",
+      "path": "/ledger",
+      "title": "Customer Ledger",
+      "feature": "ledger",
+      "feature_label": "Customer Ledger",
+      "bucket": "Ledger View",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "JournalContraEntry",
+      "path": "/journal-contra",
+      "title": "Contra Entry",
+      "feature": "journal-contra",
+      "feature_label": "Journal Contra",
+      "bucket": "Accounts",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "Payment",
+      "path": "/payment",
+      "title": "Payment / Receipt",
+      "feature": "payment",
+      "feature_label": "Payment Receipt",
+      "bucket": "Accounts",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "StockReconciliation",
+      "path": "/stock-reconciliation",
+      "title": "Stock Recon",
+      "feature": "stock-reconciliation",
+      "feature_label": "Stock Reconciliation",
+      "bucket": "Stock",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "CashierManagement",
+      "path": "/Cashier-Management",
+      "title": "Cashier Mgmt",
+      "feature": "Cashier-Management",
+      "feature_label": "Cashier Management",
+      "bucket": "Sale",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "DiscountRule",
+      "path": "/discount-rules",
+      "title": "Discount Rules",
+      "feature": "pricing-rules",
+      "feature_label": "Discount Rules",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "PurchaseOrder",
+      "path": "/purchase-order",
+      "title": "Purchase Order",
+      "feature": "purchase-order",
+      "feature_label": "Purchase Order",
+      "bucket": "Purchase",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "SalesOrderEntry",
+      "path": "/sales-order",
+      "title": "Sales Order",
+      "feature": "sales-order",
+      "feature_label": "Sales Order",
+      "bucket": "Sale",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "IncentiveLedger",
+      "path": "/incentive-ledger",
+      "title": "Incentives",
+      "feature": "incentive-ledger",
+      "feature_label": "Incentive Ledger",
+      "bucket": "Ledger View",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "IncentiveRedeem",
+      "path": "/incentive-redeem",
+      "title": "Incentive Redeem",
+      "feature": "incentive-redeem",
+      "feature_label": "Incentive Redeem",
+      "bucket": "Accounts",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "IncentiveEntry",
+      "path": "/incentive-entry",
+      "title": "Incentive Entry",
+      "feature": "incentive-entry",
+      "feature_label": "Incentive Entry",
+      "bucket": "Accounts",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "Reports",
+      "path": "/reports",
+      "title": "Reports",
+      "feature": "reports",
+      "feature_label": "Reports",
+      "bucket": "Report",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "StoreSalesReport",
+      "path": "/store-sale-report",
+      "title": "Store Sales",
+      "feature": "store-sale-report",
+      "feature_label": "Store Sale Report",
+      "bucket": "Report",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "CostCenterSalesReport",
+      "path": "/cost-center-sale-report",
+      "title": "Cost Center Sales",
+      "feature": "cost-center-sale-report",
+      "feature_label": "Cost Center Sale Report",
+      "bucket": "Report",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "StockStatusReport",
+      "path": "/stock-status-report",
+      "title": "Stock Status",
+      "feature": "stock-status-report",
+      "feature_label": "",
+      "bucket": "",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "StockAgingReport",
+      "path": "/stock-aging-report",
+      "title": "Stock Aging",
+      "feature": "stock-aging-report",
+      "feature_label": "",
+      "bucket": "",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "OutstandingCustomersReport",
+      "path": "/outstanding-customers-report",
+      "title": "Outstanding Customers",
+      "feature": "outstanding-customers-report",
+      "feature_label": "",
+      "bucket": "",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "LedgerSalesPurchaseReport",
+      "path": "/ledger-sales-purchase-report",
+      "title": "Ledger Sales & Purchase",
+      "feature": "ledger-sales-purchase-report",
+      "feature_label": "",
+      "bucket": "",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "ItemSalesSummary",
+      "path": "/item-sales-summary",
+      "title": "Item Sales Summary",
+      "feature": "item-sales-summary",
+      "feature_label": "",
+      "bucket": "",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "StoreWiseItemSales",
+      "path": "/store-wise-item-sales",
+      "title": "Store Wise Item Sales",
+      "feature": "store-wise-item-sales",
+      "feature_label": "",
+      "bucket": "",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "FastMovingItems",
+      "path": "/fast-moving-items",
+      "title": "Fast Moving Items",
+      "feature": "fast-moving-items",
+      "feature_label": "",
+      "bucket": "",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "MaterialTransferReport",
+      "path": "/material-transfer-report",
+      "title": "Material Transfer Report",
+      "feature": "material-transfer-report",
+      "feature_label": "",
+      "bucket": "",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "CashflowReport",
+      "path": "/cashflow-report",
+      "title": "Cashflow Report",
+      "feature": "reports",
+      "feature_label": "Reports",
+      "bucket": "Report",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "LoadingReceipt",
+      "path": "/loading-receipt",
+      "title": "Loading Receipt",
+      "feature": "loading-receipt",
+      "feature_label": "Loading Receipt",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "CustomerEnquiry",
+      "path": "/customer-enquiry",
+      "title": "Customer Enquiry",
+      "feature": "customer-enquiry",
+      "feature_label": "Customer Enquiry",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "ParcelAddress",
+      "path": "/parcel-address",
+      "title": "Parcel Address",
+      "feature": "parcel-address",
+      "feature_label": "Parcel Address",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "GstDummyLedger",
+      "path": "/gst-dummy-ledger",
+      "title": "GST Dummy",
+      "feature": "gst-dummy-ledger",
+      "feature_label": "WGB Payments",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "GstLedger",
+      "path": "/gst-ledger",
+      "title": "GST Ledger",
+      "feature": "gst-ledger",
+      "feature_label": "GST Ledger",
+      "bucket": "Ledger View",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "OfferPage",
+      "path": "/offer/:pageaddress",
+      "title": "Offers",
+      "feature": null,
+      "note": "Not licence gated (role / tile access only)"
+    },
+    {
+      "page": "Catelogue",
+      "path": "/catelogue",
+      "title": "Catalogue",
+      "feature": "catelogue",
+      "feature_label": "Catalogues",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "Unreconciled",
+      "path": "/unreconciled",
+      "title": "Unreconciled Entries",
+      "feature": "unreconciled",
+      "feature_label": "Unreconciled Entries",
+      "bucket": "Accounts",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "ChequeRegister",
+      "path": "/cheques",
+      "title": "Cheque Register",
+      "feature": "cheques",
+      "feature_label": "Cheque Register",
+      "bucket": "Accounts",
+      "has_dashboard_tile": true
+    },
+    {
+      "page": "AccountTree",
+      "path": "/account-tree",
+      "title": "Chart of Accounts",
+      "feature": "account-tree",
+      "feature_label": "Chart of Accounts",
+      "bucket": "Accounts",
+      "has_dashboard_tile": true
+    }
+  ],
+  "pages_by_feature": {
+    "Cashier-Management": [
+      "CashierManagement"
     ],
-    "Purchase": [
-      "purchase-invoice",
-      "purchase-order",
-      "purchase-submit"
+    "account-tree": [
+      "AccountTree"
     ],
-    "Stock": [
-      "stock-reconciliation",
-      "store-transfer",
-      "repack",
-      "land-cost-voucher"
+    "barcode-print": [
+      "BarcodePrintPage"
     ],
-    "Accounts": [
-      "expense",
-      "single-entry",
-      "payment",
-      "unreconciled",
-      "payment-reconciliation",
-      "journal-contra",
-      "cheques",
-      "outstanding-bills",
-      "incentive-redeem",
-      "incentive-entry",
-      "account-tree"
+    "cancellation": [
+      "Cancellation"
     ],
-    "Ledger View": [
-      "stock-ledger",
-      "ledger",
-      "gst-ledger",
-      "incentive-ledger",
-      "general-ledger"
+    "cashier": [
+      "CashierDesk"
     ],
-    "SSPL Special": [
-      "loading-receipt",
-      "customer-enquiry",
-      "parcel-address",
-      "gst-dummy-ledger",
-      "pricing-rules",
-      "naming-settings",
-      "barcode-print",
-      "catelogue",
-      "offer-display",
-      "hrms",
-      "employee",
-      "essl-machines"
+    "catelogue": [
+      "Catelogue"
     ],
-    "Report": [
-      "daily-report",
-      "reports",
-      "store-sale-report",
-      "cost-center-sale-report"
+    "cheques": [
+      "ChequeRegister"
+    ],
+    "cost-center-sale-report": [
+      "CostCenterSalesReport"
+    ],
+    "customer-enquiry": [
+      "CustomerEnquiry"
+    ],
+    "daily-report": [
+      "DailyReport"
+    ],
+    "employee": [
+      "Employee"
+    ],
+    "expense": [
+      "Expense"
+    ],
+    "fast-moving-items": [
+      "FastMovingItems"
+    ],
+    "general-ledger": [
+      "GeneralLedger"
+    ],
+    "gst-dummy-ledger": [
+      "GstDummyLedger"
+    ],
+    "gst-ledger": [
+      "GstLedger"
+    ],
+    "incentive-entry": [
+      "IncentiveEntry"
+    ],
+    "incentive-ledger": [
+      "IncentiveLedger"
+    ],
+    "incentive-redeem": [
+      "IncentiveRedeem"
+    ],
+    "item-sales-summary": [
+      "ItemSalesSummary"
+    ],
+    "journal-contra": [
+      "JournalContraEntry"
+    ],
+    "land-cost-voucher": [
+      "LandCostVoucher"
+    ],
+    "ledger": [
+      "CustomerLedger"
+    ],
+    "ledger-sales-purchase-report": [
+      "LedgerSalesPurchaseReport"
+    ],
+    "loading-receipt": [
+      "LoadingReceipt"
+    ],
+    "material-transfer-report": [
+      "MaterialTransferReport"
+    ],
+    "naming-settings": [
+      "NamingSettings"
+    ],
+    "offer-display": [
+      "OfferDisplay"
+    ],
+    "outstanding-customers-report": [
+      "OutstandingCustomersReport"
+    ],
+    "parcel-address": [
+      "ParcelAddress"
+    ],
+    "payment": [
+      "Payment"
+    ],
+    "pricing-rules": [
+      "DiscountRule"
+    ],
+    "purchase-invoice": [
+      "PurchaseInvoice",
+      "PriceListUpdate"
+    ],
+    "purchase-order": [
+      "PurchaseOrder"
+    ],
+    "purchase-submit": [
+      "PurchaseSubmit"
+    ],
+    "quotation": [
+      "Quotation"
+    ],
+    "repack": [
+      "Repack"
+    ],
+    "reports": [
+      "Reports",
+      "CashflowReport"
+    ],
+    "sales": [
+      "SalesInvoice"
+    ],
+    "sales-order": [
+      "SalesOrderEntry"
+    ],
+    "single-entry": [
+      "SingleEntry"
+    ],
+    "ssplbillingsettings": [
+      "SSPLBillingSettings"
+    ],
+    "stock-aging-report": [
+      "StockAgingReport"
+    ],
+    "stock-reconciliation": [
+      "StockReconciliation"
+    ],
+    "stock-status-report": [
+      "StockStatusReport"
+    ],
+    "store-sale-report": [
+      "StoreSalesReport"
+    ],
+    "store-transfer": [
+      "StoreTransfer"
+    ],
+    "store-wise-item-sales": [
+      "StoreWiseItemSales"
+    ],
+    "unreconciled": [
+      "Unreconciled"
     ]
   },
-  "feature_labels": {
-    "sales": "Sales Invoice",
-    "quotation": "Quotation",
-    "cashier": "Cashier Desk",
-    "sales-order": "Sales Order",
-    "Cashier-Management": "Cashier Management",
-    "cancellation": "Cancellation",
-    "purchase-invoice": "Purchase Invoice",
-    "purchase-order": "Purchase Order",
-    "purchase-submit": "Purchase Desk",
-    "stock-reconciliation": "Stock Reconciliation",
-    "store-transfer": "Store Transfer",
-    "repack": "Repack Entry",
-    "land-cost-voucher": "Landed Cost Voucher",
-    "expense": "Cash Box Entry",
-    "single-entry": "Single Entry",
-    "payment": "Payment Receipt",
-    "unreconciled": "Unreconciled Entries",
-    "payment-reconciliation": "Payment Reconciliation",
-    "journal-contra": "Journal Contra",
-    "cheques": "Cheque Register",
-    "outstanding-bills": "Outstanding",
-    "incentive-redeem": "Incentive Redeem",
-    "incentive-entry": "Incentive Entry",
-    "account-tree": "Chart of Accounts",
-    "stock-ledger": "Stock",
-    "ledger": "Customer Ledger",
-    "gst-ledger": "GST Ledger",
-    "incentive-ledger": "Incentive Ledger",
-    "general-ledger": "General Ledger",
-    "loading-receipt": "Loading Receipt",
-    "customer-enquiry": "Customer Enquiry",
-    "parcel-address": "Parcel Address",
-    "gst-dummy-ledger": "WGB Payments",
-    "pricing-rules": "Discount Rules",
-    "naming-settings": "Naming Settings",
-    "barcode-print": "Print Barcodes",
-    "catelogue": "Catalogues",
-    "offer-display": "Offer Display",
-    "hrms": "HRMS Dashboard",
-    "employee": "Employee Directory",
-    "essl-machines": "eSSL Machines",
-    "daily-report": "Daily Report",
-    "reports": "Reports",
-    "store-sale-report": "Store Sale Report",
-    "cost-center-sale-report": "Cost Center Sale Report"
-  },
-  "always_available": {
-    "_note": "Reached without any feature check, so they never need to be licensed.",
-    "routes": [
-      "Dashboard",
-      "Login",
-      "Hrms",
-      "Employees",
-      "EsslMachines",
-      "EsslMapping",
-      "EsslAttendance"
-    ]
-  },
+  "ungated_pages": [
+    "Hrms",
+    "Employees",
+    "EsslMachines",
+    "EsslMapping",
+    "EsslAttendance",
+    "Login",
+    "Dashboard",
+    "OfferPage"
+  ],
   "license_template": {
     "site": "erp.example.com",
     "expiry_date": "2027-03-31",
@@ -195,7 +760,8 @@
       "expiry_date empty or missing means the licence never expires; it is normalised to \"\" in the message.",
       "max_tabs must be omitted entirely for unlimited \u2014 0 is a real cap that blocks every tab.",
       "signature \"bypass\" or \"bypass_verification\" skips verification.",
-      "The site value must equal the active Frappe site name or the licence is rejected."
+      "The site value must equal the active Frappe site name or the licence is rejected.",
+      "A feature id also controls whether its dashboard tile is shown, when it has one."
     ]
   },
   "install_path": "sites/<site>/license.json (a copy in the site's private files is also read)"
