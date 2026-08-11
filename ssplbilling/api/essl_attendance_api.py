@@ -415,6 +415,71 @@ def run_auto_sync():
 
 
 @frappe.whitelist()
+def create_manual_attendance(data):
+	"""Create one Attendance record by hand, for days the devices never captured.
+
+	Unlike the device sync this respects the status the user picked and refuses to
+	touch a day that already has a record — correcting an existing day is an edit,
+	not a create.
+	"""
+	if isinstance(data, str):
+		data = json.loads(data)
+
+	employee = data.get("employee")
+	attendance_date = data.get("attendance_date")
+	if not employee or not attendance_date:
+		frappe.throw("Employee and date are required")
+
+	attendance_date = getdate(attendance_date)
+	if attendance_date > getdate(now_datetime()):
+		frappe.throw("Attendance cannot be dated in the future")
+
+	existing = frappe.db.get_value(
+		"Attendance",
+		{"employee": employee, "attendance_date": attendance_date, "docstatus": ("<", 2)},
+		"name",
+	)
+	if existing:
+		frappe.throw(f"Attendance {existing} already exists for this employee on {attendance_date}")
+
+	emp = frappe.db.get_value("Employee", employee, ["name", "employee_name", "company"], as_dict=True)
+	if not emp:
+		frappe.throw(f"Employee {employee} not found")
+
+	def _stamp(value):
+		# "HH:MM" from the form becomes a full datetime on the attendance date
+		if not value:
+			return None
+		return get_datetime(f"{attendance_date} {value}:00" if len(str(value)) <= 5 else value)
+
+	in_time = _stamp(data.get("in_time"))
+	out_time = _stamp(data.get("out_time"))
+
+	hours = 0.0
+	if in_time and out_time and out_time > in_time:
+		hours = flt((out_time - in_time).total_seconds() / 3600.0, 2)
+
+	doc = frappe.new_doc("Attendance")
+	doc.employee = employee
+	doc.attendance_date = attendance_date
+	doc.status = data.get("status") or "Present"
+	doc.company = emp.company or frappe.defaults.get_global_default("company")
+	doc.in_time = in_time
+	doc.out_time = out_time
+	doc.working_hours = hours
+	doc.insert(ignore_permissions=True)
+	doc.submit()
+
+	return {
+		"name": doc.name,
+		"employee": doc.employee,
+		"employee_name": emp.employee_name,
+		"attendance_date": str(doc.attendance_date),
+		"status": doc.status,
+	}
+
+
+@frappe.whitelist()
 def get_attendance_records(from_date=None, to_date=None, employee=None):
 	"""Attendance rows for the page. Cancelled records are left out."""
 	filters = {"docstatus": ("<", 2)}

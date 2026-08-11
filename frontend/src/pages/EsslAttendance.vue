@@ -28,6 +28,12 @@
             <span>🔄</span> Refresh
           </button>
           <button
+            @click="openCreator"
+            class="flex items-center gap-2 rounded-xl border border-[var(--color-employee)]/40 bg-[var(--color-employee)]/10 text-[var(--color-employee)] px-5 py-3 font-bold hover:bg-[var(--color-employee)]/20 active:scale-95 transition-all duration-200"
+          >
+            <span>➕</span> Add Attendance
+          </button>
+          <button
             @click="syncNow"
             :disabled="busy"
             class="flex items-center gap-2 rounded-xl bg-[var(--color-employee)] text-white px-5 py-3 font-bold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-md shadow-[var(--color-employee)]/15 disabled:opacity-50"
@@ -161,6 +167,106 @@
         </div>
       </div>
     </main>
+
+    <!-- Manual attendance modal -->
+    <div
+      v-if="showCreator"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+      @click.self="showCreator = false"
+    >
+      <div class="w-[560px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--color-border)] text-lg font-black uppercase tracking-wider">
+          Manual Attendance
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+              Employee <span class="text-rose-500">*</span>
+            </label>
+            <select
+              v-model="newRecord.employee"
+              class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+            >
+              <option value="">— Select employee —</option>
+              <option v-for="emp in employees" :key="emp.name" :value="emp.name">
+                {{ emp.employee_name }} ({{ emp.name }})
+              </option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                Date <span class="text-rose-500">*</span>
+              </label>
+              <input
+                v-model="newRecord.attendance_date"
+                type="date"
+                :max="today"
+                class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+              />
+            </div>
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Status</label>
+              <select
+                v-model="newRecord.status"
+                class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+              >
+                <option>Present</option>
+                <option>Absent</option>
+                <option>Half Day</option>
+                <option>On Leave</option>
+                <option>Work From Home</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">In Time</label>
+              <input
+                v-model="newRecord.in_time"
+                type="time"
+                class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+              />
+            </div>
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Out Time</label>
+              <input
+                v-model="newRecord.out_time"
+                type="time"
+                class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+              />
+            </div>
+          </div>
+          <p class="text-[11px] text-[var(--color-text-muted)]">
+            Times are optional — worked hours are computed from them. The record is submitted
+            straight away, and a day that already has attendance is refused.
+          </p>
+
+          <div v-if="creatorError" class="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 text-xs font-bold text-rose-500">
+            {{ creatorError }}
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-[var(--color-border)] flex justify-end gap-3">
+          <button
+            @click="showCreator = false"
+            class="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-bold hover:bg-[var(--color-midlight)]"
+          >
+            Cancel
+          </button>
+          <button
+            @click="saveManualAttendance"
+            :disabled="!newRecord.employee || !newRecord.attendance_date || saving"
+            class="rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110 disabled:opacity-50"
+          >
+            {{ saving ? 'Saving...' : 'Create' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -172,6 +278,8 @@ import {
   fetchAttendanceRecords,
   syncEsslAttendanceToErp,
   fetchEsslSyncSettings,
+  createManualAttendance,
+  fetchEmployees,
 } from '../api.js'
 
 const router = useRouter()
@@ -188,6 +296,19 @@ const searchQuery = ref('')
 
 const fromDate = ref(daysAgo(30))
 const toDate = ref(daysAgo(0))
+
+const employees = ref([])
+const showCreator = ref(false)
+const saving = ref(false)
+const creatorError = ref('')
+const today = daysAgo(0)
+const newRecord = ref({
+  employee: '',
+  attendance_date: today,
+  status: 'Present',
+  in_time: '',
+  out_time: '',
+})
 
 function daysAgo(n) {
   const d = new Date()
@@ -240,6 +361,43 @@ async function syncNow() {
   } finally {
     syncing.value = false
     busy.value = false
+  }
+}
+
+async function openCreator() {
+  newRecord.value = {
+    employee: '',
+    attendance_date: today,
+    status: 'Present',
+    in_time: '',
+    out_time: '',
+  }
+  creatorError.value = ''
+  showCreator.value = true
+  if (!employees.value.length) {
+    try {
+      const list = await fetchEmployees('')
+      employees.value = (list || []).filter((e) => (e.status || 'Active') === 'Active')
+    } catch (err) {
+      console.error('Failed to load employees:', err)
+      creatorError.value = err.message || 'Failed to load the employee list.'
+    }
+  }
+}
+
+async function saveManualAttendance() {
+  if (saving.value) return
+  saving.value = true
+  creatorError.value = ''
+  try {
+    await createManualAttendance(newRecord.value)
+    showCreator.value = false
+    await loadRecords()
+  } catch (err) {
+    console.error('Failed to create attendance:', err)
+    creatorError.value = err.message || 'Failed to create attendance.'
+  } finally {
+    saving.value = false
   }
 }
 

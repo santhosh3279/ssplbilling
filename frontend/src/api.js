@@ -1183,6 +1183,12 @@ export async function fetchAttendanceRecords({ fromDate = null, toDate = null, e
   });
 }
 
+export async function createManualAttendance(payload) {
+  return frappePost("ssplbilling.api.essl_attendance_api.create_manual_attendance", {
+    data: JSON.stringify(payload),
+  });
+}
+
 export async function fetchEsslSyncSettings() {
   return frappeGet("ssplbilling.api.essl_attendance_api.get_sync_settings");
 }
