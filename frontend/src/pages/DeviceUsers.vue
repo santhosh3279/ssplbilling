@@ -24,21 +24,6 @@
         </div>
       </header>
 
-      <!-- Tabs -->
-      <div class="bg-[var(--color-surface)] px-8 pt-4 border-b border-[var(--color-border)] flex gap-2 shrink-0">
-        <button
-          v-for="tab in tabs"
-          :key="tab.key"
-          @click="activeTab = tab.key"
-          class="rounded-t-xl px-5 py-3 text-sm font-bold transition-colors"
-          :class="activeTab === tab.key
-            ? 'bg-[var(--color-employee)] text-white'
-            : 'text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]'"
-        >
-          {{ tab.label }}
-        </button>
-      </div>
-
       <div class="flex-1 overflow-y-auto p-8 relative">
         <div v-if="busy" class="absolute inset-0 bg-[var(--color-bg)]/80 flex flex-col items-center justify-center gap-3 z-20">
           <div class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-employee)] border-t-transparent"></div>
@@ -52,8 +37,7 @@
           {{ notice }}
         </div>
 
-        <!-- ============ MACHINE TAB ============ -->
-        <div v-show="activeTab === 'machine'">
+        <div>
           <div class="mb-6 flex flex-wrap items-end gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-md">
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Source machine</label>
@@ -181,80 +165,6 @@
             </div>
           </div>
         </div>
-
-        <!-- ============ REGISTRY TAB ============ -->
-        <div v-show="activeTab === 'registry'">
-          <div class="mb-6 flex flex-wrap items-end gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-md">
-            <div>
-              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Push to machine</label>
-              <select
-                v-model="pushMachine"
-                class="mt-1 block px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
-              >
-                <option value="">— Select —</option>
-                <option v-for="m in machines" :key="m.name" :value="m.name">
-                  {{ m.store || m.name }} ({{ m.ip_address }})
-                </option>
-              </select>
-            </div>
-            <button
-              @click="pushSelected"
-              :disabled="!pushMachine || !selectedCodes.length || busy"
-              class="rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110 disabled:opacity-50"
-            >
-              Push {{ selectedCodes.length }} to machine →
-            </button>
-            <button
-              @click="loadRegistry"
-              :disabled="busy"
-              class="ml-auto rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-bold hover:bg-[var(--color-midlight)] disabled:opacity-50"
-            >
-              🔄 Reload
-            </button>
-          </div>
-
-          <div class="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] shadow-md overflow-hidden">
-            <div class="overflow-x-auto">
-              <table class="w-full text-left text-lg border-collapse">
-                <thead>
-                  <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 font-bold text-sm uppercase tracking-wider text-[var(--color-text-muted)]">
-                    <th class="px-6 py-4">
-                      <input type="checkbox" :checked="allCodesSelected" @change="toggleAllCodes" class="h-4 w-4" />
-                    </th>
-                    <th class="px-6 py-4">Code</th>
-                    <th class="px-6 py-4">Employee</th>
-                    <th class="px-6 py-4">Name on device</th>
-                    <th class="px-6 py-4">Fingerprints</th>
-                    <th class="px-6 py-4">Pulled from</th>
-                    <th class="px-6 py-4">Last pushed</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-[var(--color-border)]">
-                  <tr
-                    v-for="row in registry"
-                    :key="row.employee_code"
-                    class="hover:bg-[var(--color-midlight)]/40 transition-colors"
-                  >
-                    <td class="px-6 py-3">
-                      <input type="checkbox" :value="row.employee_code" v-model="selectedCodes" class="h-4 w-4" />
-                    </td>
-                    <td class="px-6 py-3 font-mono font-bold text-[var(--color-employee)]">{{ row.employee_code }}</td>
-                    <td class="px-6 py-3 font-bold">{{ row.employee_name || row.employee || '—' }}</td>
-                    <td class="px-6 py-3">{{ row.device_name || '—' }}</td>
-                    <td class="px-6 py-3 text-sm font-semibold">{{ row.template_count }} 👆</td>
-                    <td class="px-6 py-3 text-sm">{{ row.source_machine || '—' }}</td>
-                    <td class="px-6 py-3 text-xs font-mono text-[var(--color-text-muted)]">{{ row.last_pushed || 'never' }}</td>
-                  </tr>
-                  <tr v-if="!registry.length && !busy">
-                    <td colspan="7" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
-                      Nothing stored yet. Pull users from a machine, or create an employee and enroll them.
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
       </div>
     </main>
 
@@ -362,20 +272,12 @@ import HrmsSidebar from '../components/HrmsSidebar.vue'
 import {
   fetchEsslMachines,
   fetchMachineUsers,
-  fetchDeviceUserRegistry,
   copyMachineUsers,
   pullUsersToErp,
-  pushUsersToMachine,
   fetchNextEmployeeCode,
   createEmployeeAndEnroll,
   deleteMachineUser,
 } from '../api.js'
-
-const tabs = [
-  { key: 'machine', label: 'Machine users' },
-  { key: 'registry', label: 'ERP registry' },
-]
-const activeTab = ref('machine')
 
 const busy = ref(false)
 const busyLabel = ref('Loading...')
@@ -385,13 +287,10 @@ const notice = ref('')
 const machines = ref([])
 const machineUsers = ref([])
 const targetUserIds = ref([])
-const registry = ref([])
 
 const sourceMachine = ref('')
 const targetMachine = ref('')
-const pushMachine = ref('')
 const selected = ref([])
-const selectedCodes = ref([])
 
 const showEnroll = ref(false)
 const saving = ref(false)
@@ -420,16 +319,9 @@ const visibleUsers = computed(() => {
 const allSelected = computed(
   () => visibleUsers.value.length > 0 && selected.value.length === visibleUsers.value.length,
 )
-const allCodesSelected = computed(
-  () => registry.value.length > 0 && selectedCodes.value.length === registry.value.length,
-)
 
 function toggleAll(event) {
   selected.value = event.target.checked ? visibleUsers.value.map((u) => u.user_id) : []
-}
-
-function toggleAllCodes(event) {
-  selectedCodes.value = event.target.checked ? registry.value.map((r) => r.employee_code) : []
 }
 
 async function run(label, fn) {
@@ -480,12 +372,6 @@ async function loadTargetUsers() {
   selected.value = selected.value.filter((id) => shown.has(String(id)))
 }
 
-async function loadRegistry() {
-  await run('Loading registry...', async () => {
-    registry.value = (await fetchDeviceUserRegistry()) || []
-  })
-}
-
 async function copyToTarget() {
   const res = await run('Copying users to the target device...', () =>
     copyMachineUsers({ source: sourceMachine.value, target: targetMachine.value, userIds: selected.value }),
@@ -507,19 +393,7 @@ async function pullSelected() {
     pullUsersToErp({ machine: sourceMachine.value, userIds: selected.value }),
   )
   if (res) {
-    notice.value = `${res.saved} user(s) stored in the ERP registry.`
-    await loadRegistry()
-  }
-}
-
-async function pushSelected() {
-  const res = await run('Writing users onto the device...', () =>
-    pushUsersToMachine({ machine: pushMachine.value, employeeCodes: selectedCodes.value }),
-  )
-  if (res) {
-    notice.value = `${res.pushed} user(s) written to ${res.machine}${res.failed ? `, ${res.failed} failed` : ''}.`
-    const failed = (res.users || []).filter((u) => u.error)
-    if (failed.length) error.value = failed.map((u) => `${u.employee_code}: ${u.error}`).join(' · ')
+    notice.value = `${res.saved} user(s) stored in the ERP.`
   }
 }
 
@@ -567,7 +441,6 @@ async function saveEnroll() {
     if (res.name_truncated) {
       notice.value += ' The name was shortened to 24 characters on the device.'
     }
-    await loadRegistry()
     await loadMachineUsers()
   } catch (err) {
     console.error('Enrollment failed:', err)
@@ -579,6 +452,5 @@ async function saveEnroll() {
 
 onMounted(async () => {
   await loadMachines()
-  await loadRegistry()
 })
 </script>
