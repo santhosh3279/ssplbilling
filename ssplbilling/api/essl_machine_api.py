@@ -22,6 +22,32 @@ def get_essl_machines():
 	)
 
 
+@frappe.whitelist()
+def save_essl_machine(data):
+	"""Create a machine record. ip_address is the record name (autoname), so it must
+	be unique — a repeat IP is reported as such instead of surfacing a raw DB error."""
+	import json
+
+	if isinstance(data, str):
+		data = json.loads(data)
+
+	ip_address = (data.get("ip_address") or "").strip()
+	if not ip_address:
+		frappe.throw("IP Address is required")
+
+	if frappe.db.exists(ESSL_MACHINE_DOCTYPE, ip_address):
+		frappe.throw(f"A machine with IP {ip_address} already exists")
+
+	doc = frappe.new_doc(ESSL_MACHINE_DOCTYPE)
+	doc.ip_address = ip_address
+	doc.serial_number = (data.get("serial_number") or "").strip()
+	doc.comm_key = (data.get("comm_key") or "").strip()
+	doc.store = (data.get("store") or "").strip()
+	doc.insert(ignore_permissions=True)
+
+	return {"name": doc.name, "ip_address": doc.ip_address, "store": doc.store}
+
+
 def connect_machine(row):
 	"""Open a ZK connection to one device. Caller is responsible for disconnect()."""
 	from zk import ZK

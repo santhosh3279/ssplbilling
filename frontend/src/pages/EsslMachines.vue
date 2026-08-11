@@ -26,6 +26,12 @@
             <span>🔄</span> Refresh
           </button>
           <button
+            @click="openCreator"
+            class="flex items-center gap-2 rounded-xl border border-[var(--color-employee)]/40 bg-[var(--color-employee)]/10 text-[var(--color-employee)] px-5 py-3 font-bold hover:bg-[var(--color-employee)]/20 active:scale-95 transition-all duration-200"
+          >
+            <span>➕</span> Add Machine
+          </button>
+          <button
             @click="syncAttendance"
             :disabled="syncing || loading"
             class="flex items-center gap-2 rounded-xl bg-[var(--color-employee)] text-white px-5 py-3 font-bold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-md shadow-[var(--color-employee)]/15 disabled:opacity-50"
@@ -181,13 +187,99 @@
         </div>
       </div>
     </main>
+
+    <!-- Add machine modal -->
+    <div
+      v-if="showCreator"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+      @click.self="showCreator = false"
+    >
+      <div class="w-[520px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--color-border)] text-lg font-black uppercase tracking-wider">
+          New eSSL Machine
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+              IP Address <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="newMachine.ip_address"
+              type="text"
+              placeholder="192.168.1.201"
+              class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold font-mono focus:outline-none focus:border-[var(--color-employee)]"
+              @keyup.enter="saveMachine"
+            />
+            <p class="mt-1 text-[11px] text-[var(--color-text-muted)]">
+              Doubles as the record id, so it has to be unique.
+            </p>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Store</label>
+            <input
+              v-model="newMachine.store"
+              type="text"
+              placeholder="NCK SHOP"
+              class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+              @keyup.enter="saveMachine"
+            />
+          </div>
+
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Comm Key</label>
+            <input
+              v-model="newMachine.comm_key"
+              type="text"
+              placeholder="0"
+              class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold font-mono focus:outline-none focus:border-[var(--color-employee)]"
+              @keyup.enter="saveMachine"
+            />
+            <p class="mt-1 text-[11px] text-[var(--color-text-muted)]">
+              The device password. Leave blank when the device has none.
+            </p>
+          </div>
+
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Serial Number</label>
+            <input
+              v-model="newMachine.serial_number"
+              type="text"
+              class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold font-mono focus:outline-none focus:border-[var(--color-employee)]"
+              @keyup.enter="saveMachine"
+            />
+          </div>
+
+          <div v-if="creatorError" class="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 text-xs font-bold text-rose-500">
+            {{ creatorError }}
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-[var(--color-border)] flex justify-end gap-3">
+          <button
+            @click="showCreator = false"
+            class="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-bold hover:bg-[var(--color-midlight)]"
+          >
+            Cancel
+          </button>
+          <button
+            @click="saveMachine"
+            :disabled="!newMachine.ip_address || saving"
+            class="rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110 disabled:opacity-50"
+          >
+            {{ saving ? 'Saving...' : 'Save' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
-import { fetchEsslMachines, syncEsslAttendance } from '../api.js'
+import { fetchEsslMachines, saveEsslMachine, syncEsslAttendance } from '../api.js'
 
 // Attendance logs live only in localStorage — the sync writes nothing server-side.
 const ATTENDANCE_KEY = 'wb-essl-attendance-v1'
@@ -206,6 +298,11 @@ const lastSync = ref(null)
 const searchQuery = ref('')
 const storeFilter = ref('All')
 const fromDate = ref(defaultFromDate())
+
+const showCreator = ref(false)
+const saving = ref(false)
+const creatorError = ref('')
+const newMachine = ref({ ip_address: '', store: '', comm_key: '', serial_number: '' })
 
 async function loadMachines() {
   loading.value = true
@@ -323,6 +420,28 @@ async function syncAttendance() {
     error.value = err.message || 'Attendance sync failed.'
   } finally {
     syncing.value = false
+  }
+}
+
+function openCreator() {
+  newMachine.value = { ip_address: '', store: '', comm_key: '', serial_number: '' }
+  creatorError.value = ''
+  showCreator.value = true
+}
+
+async function saveMachine() {
+  if (!newMachine.value.ip_address || saving.value) return
+  saving.value = true
+  creatorError.value = ''
+  try {
+    await saveEsslMachine(newMachine.value)
+    showCreator.value = false
+    await loadMachines()
+  } catch (err) {
+    console.error('Failed to save machine:', err)
+    creatorError.value = err.message || 'Failed to save machine.'
+  } finally {
+    saving.value = false
   }
 }
 
