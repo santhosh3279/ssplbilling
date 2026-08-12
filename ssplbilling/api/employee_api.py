@@ -169,8 +169,9 @@ def get_pending_leave_applications():
 	current_user = frappe.session.user
 	filters = {"docstatus": 0}
 
-	# Allow Administrator to see all pending leave applications
-	if current_user != "Administrator":
+	# Allow Administrator, System Manager, or HR Manager to see all pending applications
+	user_roles = frappe.get_roles(current_user)
+	if not any(role in user_roles for role in ["Administrator", "System Manager", "HR Manager"]):
 		filters["leave_approver"] = current_user
 
 	apps = frappe.get_all(
@@ -197,7 +198,10 @@ def get_pending_leave_applications():
 def approve_leave_application(leave_application):
 	"""Approve a Leave Application."""
 	doc = frappe.get_doc("Leave Application", leave_application)
-	if doc.leave_approver != frappe.session.user and frappe.session.user != "Administrator":
+	user_roles = frappe.get_roles(frappe.session.user)
+	if doc.leave_approver != frappe.session.user and not any(
+		role in user_roles for role in ["Administrator", "System Manager", "HR Manager"]
+	):
 		frappe.throw("You are not authorized to approve this leave application")
 
 	doc.status = "Approved"
@@ -209,7 +213,10 @@ def approve_leave_application(leave_application):
 def reject_leave_application(leave_application):
 	"""Reject a Leave Application."""
 	doc = frappe.get_doc("Leave Application", leave_application)
-	if doc.leave_approver != frappe.session.user and frappe.session.user != "Administrator":
+	user_roles = frappe.get_roles(frappe.session.user)
+	if doc.leave_approver != frappe.session.user and not any(
+		role in user_roles for role in ["Administrator", "System Manager", "HR Manager"]
+	):
 		frappe.throw("You are not authorized to reject this leave application")
 
 	doc.status = "Rejected"
