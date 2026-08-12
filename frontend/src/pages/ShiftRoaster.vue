@@ -60,6 +60,14 @@
             <option value="All">All shifts</option>
             <option v-for="s in shiftTypes" :key="s.name" :value="s.name">{{ s.name }}</option>
           </select>
+          <button
+            v-if="shiftFilter !== 'All'"
+            @click="openShiftTypeEditor(shiftFilter)"
+            class="px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-xs font-bold hover:bg-[var(--color-midlight)] active:scale-95 transition-all duration-200"
+            title="Edit selected Shift Type"
+          >
+            ✏️ Edit
+          </button>
         </div>
 
         <div class="flex items-center gap-2">
@@ -199,13 +207,22 @@
               <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                 Shift Type <span class="text-rose-500">*</span>
               </label>
-              <button
-                v-if="!locked"
-                @click="openShiftTypeEditor"
-                class="text-xs font-bold text-[var(--color-employee)] hover:underline"
-              >
-                + New Shift Type
-              </button>
+              <div class="flex items-center gap-2" v-if="!locked">
+                <button
+                  @click="openShiftTypeEditor(null)"
+                  class="text-xs font-bold text-[var(--color-employee)] hover:underline"
+                >
+                  + New
+                </button>
+                <span class="text-xs text-[var(--color-text-muted)]">|</span>
+                <button
+                  @click="openShiftTypeEditor(draft.shift_type)"
+                  :disabled="!draft.shift_type"
+                  class="text-xs font-bold text-[var(--color-employee)] hover:underline disabled:opacity-50 disabled:no-underline"
+                >
+                  ✏️ Edit
+                </button>
+              </div>
             </div>
             <select
               v-model="draft.shift_type"
@@ -289,7 +306,7 @@
     >
       <div class="w-[440px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
         <div class="px-6 py-4 border-b border-[var(--color-border)] text-lg font-black uppercase tracking-wider">
-          Create Shift Type
+          {{ shiftTypeDraft.is_new ? 'Create Shift Type' : 'Edit Shift Type' }}
         </div>
 
         <div class="p-6 space-y-4">
@@ -300,8 +317,9 @@
             <input
               v-model="shiftTypeDraft.name"
               type="text"
+              :disabled="!shiftTypeDraft.is_new"
               placeholder="e.g. Morning Shift, Night Shift"
-              class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold text-[var(--color-text)] focus:outline-none focus:border-[var(--color-employee)]"
+              class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold text-[var(--color-text)] focus:outline-none focus:border-[var(--color-employee)] disabled:opacity-60"
             />
           </div>
 
@@ -345,7 +363,7 @@
             :disabled="savingShiftType || !shiftTypeDraft.name || !shiftTypeDraft.start_time || !shiftTypeDraft.end_time"
             class="rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110 disabled:opacity-50"
           >
-            {{ savingShiftType ? 'Saving...' : 'Create' }}
+            {{ savingShiftType ? 'Saving...' : shiftTypeDraft.is_new ? 'Create' : 'Save' }}
           </button>
         </div>
       </div>
@@ -387,6 +405,7 @@ const showShiftTypeEditor = ref(false)
 const savingShiftType = ref(false)
 const shiftTypeError = ref('')
 const shiftTypeDraft = ref({
+  is_new: true,
   name: '',
   start_time: '09:00:00',
   end_time: '18:00:00',
@@ -547,12 +566,32 @@ async function removeRow(row) {
   }
 }
 
-function openShiftTypeEditor() {
+function openShiftTypeEditor(selectedShiftName = null) {
   shiftTypeError.value = ''
-  shiftTypeDraft.value = {
-    name: '',
-    start_time: '09:00:00',
-    end_time: '18:00:00',
+  if (selectedShiftName) {
+    const shift = shiftTypes.value.find((s) => s.name === selectedShiftName)
+    if (shift) {
+      shiftTypeDraft.value = {
+        is_new: false,
+        name: shift.name,
+        start_time: shift.start_time ? trimTime(shift.start_time) : '09:00',
+        end_time: shift.end_time ? trimTime(shift.end_time) : '18:00',
+      }
+    } else {
+      shiftTypeDraft.value = {
+        is_new: true,
+        name: selectedShiftName,
+        start_time: '09:00',
+        end_time: '18:00',
+      }
+    }
+  } else {
+    shiftTypeDraft.value = {
+      is_new: true,
+      name: '',
+      start_time: '09:00',
+      end_time: '18:00',
+    }
   }
   showShiftTypeEditor.value = true
 }
@@ -571,21 +610,32 @@ async function saveNewShiftType() {
       formattedEndTime = `${formattedEndTime}:00`
     }
 
-    const newShift = await saveShiftType({
+    const savedShift = await saveShiftType({
       name: shiftTypeDraft.value.name,
       start_time: formattedStartTime,
       end_time: formattedEndTime,
+      is_new: shiftTypeDraft.value.is_new ? 1 : 0,
     })
 
-    shiftTypes.value.push(newShift)
-    // If Assign Shift Editor is open, select the newly created shift
-    if (showEditor.value) {
-      draft.value.shift_type = newShift.name
+    if (shiftTypeDraft.value.is_new) {
+      shiftTypes.value.push(savedShift)
+      // If Assign Shift Editor is open, select the newly created shift
+      if (showEditor.value) {
+        draft.value.shift_type = savedShift.name
+      }
+    } else {
+      // Update existing in local ref list
+      const idx = shiftTypes.value.findIndex((s) => s.name === savedShift.name)
+      if (idx !== -1) {
+        shiftTypes.value[idx] = savedShift
+      }
+      // Reload assignments to ensure updated timing/representations are shown
+      await loadRows()
     }
     showShiftTypeEditor.value = false
   } catch (err) {
-    console.error('Failed to create shift type:', err)
-    shiftTypeError.value = err.message || 'Failed to create shift type.'
+    console.error('Failed to save shift type:', err)
+    shiftTypeError.value = err.message || 'Failed to save shift type.'
   } finally {
     savingShiftType.value = false
   }
