@@ -46,6 +46,16 @@
           >
             <span>➕</span> Add Attendance
           </button>
+          <!-- Incremental sync only reaches back to each machine's watermark, so punches
+               that were unmapped (or predate the mapping) need an explicit backfill. -->
+          <button
+            @click="backfill"
+            :disabled="busy"
+            class="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-3 font-bold hover:bg-[var(--color-midlight)] active:scale-95 transition-all duration-200 disabled:opacity-50"
+            :title="'Re-pull every punch from ' + fromDate + ' onwards, ignoring the last-sync watermark'"
+          >
+            <span>⏪</span> Backfill from {{ fromDate }}
+          </button>
           <button
             @click="syncNow"
             :disabled="busy"
@@ -402,14 +412,38 @@ async function loadRecords() {
   }
 }
 
+// Same sync, but from an explicit date so the machine watermark is bypassed. Use
+// after mapping a device user whose earlier punches were skipped as unmapped.
+async function backfill() {
+  if (!fromDate.value) {
+    error.value = 'Pick a From date first — that is where the backfill starts.'
+    return
+  }
+  if (
+    !confirm(
+      `Re-pull every punch from ${fromDate.value} onwards on all devices and create the ` +
+        `missing attendance? Existing records are widened, not duplicated.`
+    )
+  ) {
+    return
+  }
+  await runSync(fromDate.value)
+}
+
 async function syncNow() {
+  // No from_date: each machine resumes from its own last_sync watermark
+  await runSync(null)
+}
+
+async function runSync(from) {
   syncing.value = true
   busy.value = true
-  busyLabel.value = 'Pulling devices and creating attendance...'
+  busyLabel.value = from
+    ? `Re-pulling every punch from ${from}...`
+    : 'Pulling devices and creating attendance...'
   error.value = ''
   try {
-    // No from_date: each machine resumes from its own last_sync watermark
-    lastSync.value = await syncEsslAttendanceToErp({})
+    lastSync.value = await syncEsslAttendanceToErp({ fromDate: from })
     const failed = (lastSync.value?.machines || []).filter((m) => m.error)
     if (failed.length) {
       error.value = failed.map((m) => `${m.ip_address || m.machine}: ${m.error}`).join(' · ')
