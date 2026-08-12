@@ -119,7 +119,7 @@
           </div>
 
           <div v-else class="overflow-x-auto">
-            <div class="flex" :style="{ minWidth: days.length * 52 + 60 + 'px' }">
+            <div class="flex" :style="{ minWidth: processedDays.length * 52 + 60 + 'px' }">
               <!-- Y axis: working hours. The spacer keeps the ticks level with the
                    plot band, which starts below the row of hour labels. -->
               <div class="w-12 shrink-0">
@@ -129,9 +129,9 @@
                     v-for="tick in yTicks"
                     :key="tick"
                     class="absolute right-2 -translate-y-1/2 text-[10px] font-bold text-[var(--color-text-muted)]"
-                    :style="{ bottom: (tick / yMax) * PLOT_HEIGHT + 'px' }"
+                    :style="{ bottom: ((tick - shiftStart) / (yMax - shiftStart)) * PLOT_HEIGHT + 'px' }"
                   >
-                    {{ tick }}h
+                    {{ formatHour(tick) }}
                   </div>
                 </div>
               </div>
@@ -147,13 +147,23 @@
                     v-for="tick in yTicks"
                     :key="tick"
                     class="absolute inset-x-0 border-t border-dashed border-[var(--color-border)] opacity-60"
-                    :style="{ bottom: (tick / yMax) * PLOT_HEIGHT + 'px' }"
+                    :style="{ bottom: ((tick - shiftStart) / (yMax - shiftStart)) * PLOT_HEIGHT + 'px' }"
                   ></div>
+
+                  <!-- Shift End reference line -->
+                  <div
+                    class="absolute inset-x-0 border-t-2 border-red-500/40 z-10"
+                    :style="{ bottom: ((shiftEnd - shiftStart) / (yMax - shiftStart)) * PLOT_HEIGHT + 'px' }"
+                  >
+                    <span class="bg-red-500 text-white px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider absolute left-2 -translate-y-1/2 shadow-sm">
+                      Shift End ({{ formatHour(shiftEnd) }})
+                    </span>
+                  </div>
                 </div>
 
                 <div class="flex items-end gap-2">
                   <div
-                    v-for="day in days"
+                    v-for="day in processedDays"
                     :key="day.date"
                     class="flex min-w-[44px] flex-1 flex-col items-center"
                   >
@@ -165,15 +175,36 @@
                     >
                       {{ day.hours ? day.hours.toFixed(2) + 'h' : '—' }}
                     </span>
-                    <div class="flex w-full items-end" :style="{ height: PLOT_HEIGHT + 'px' }">
+                    <div class="relative w-full" :style="{ height: PLOT_HEIGHT + 'px' }">
                       <div
-                        class="w-full rounded-t-lg transition-all"
+                        v-if="day.barHeightPx > 0"
+                        class="absolute w-full transition-all flex flex-col justify-end"
                         :style="{
-                          height: barHeight(day.hours) + 'px',
-                          background: day.sunday ? SUNDAY_COLOR : WEEKDAY_COLOR,
+                          bottom: day.barBottomPx + 'px',
+                          height: day.barHeightPx + 'px',
                         }"
-                        :title="tooltip(day)"
-                      ></div>
+                      >
+                        <!-- Overtime segment -->
+                        <div
+                          v-if="day.overtimeShare > 0"
+                          class="w-full hatch-overtime rounded-t-lg border-b border-black/20"
+                          :style="{
+                            height: day.overtimeShare + '%',
+                            backgroundColor: day.sunday ? SUNDAY_COLOR : WEEKDAY_COLOR,
+                          }"
+                          :title="tooltip(day)"
+                        ></div>
+                        <!-- Regular segment -->
+                        <div
+                          class="w-full"
+                          :class="day.overtimeShare === 0 ? 'rounded-t-lg' : ''"
+                          :style="{
+                            height: day.regularShare + '%',
+                            backgroundColor: day.sunday ? SUNDAY_COLOR : WEEKDAY_COLOR,
+                          }"
+                          :title="tooltip(day)"
+                        ></div>
+                      </div>
                     </div>
                     <!-- X axis: the date, with the weekday under it -->
                     <span class="mt-2 text-[10px] font-bold" :class="day.sunday ? 'text-amber-500' : 'text-[var(--color-text-muted)]'">
@@ -257,22 +288,125 @@ const totalHours = computed(() => days.value.reduce((sum, d) => sum + d.hours, 0
 const markedDays = computed(() => days.value.filter((d) => d.total > 0).length)
 const averageHours = computed(() => (markedDays.value ? totalHours.value / markedDays.value : 0))
 
-const maxHours = computed(() => days.value.reduce((max, d) => Math.max(max, d.hours), 0))
-// Scale rounded up to a whole hour so the gridline labels stay tidy.
-const yMax = computed(() => Math.max(1, Math.ceil(maxHours.value)))
+function timeToHours(timeStr) {
+  if (!timeStr) return null
+  const parts = timeStr.includes(' ') ? timeStr.split(' ')[1].split(':') : timeStr.split(':')
+  if (parts.length < 2) return null
+  const h = parseInt(parts[0], 10)
+  const m = parseInt(parts[1], 10)
+  const s = parts[2] ? parseInt(parts[2], 10) : 0
+  return h + m / 60 + s / 3600
+}
+
+function formatHour(h) {
+  const hrs = Math.floor(h)
+  const mins = Math.round((h - hrs) * 60)
+  return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}`
+}
+
+const shiftStart = computed(() => {
+  const dayWithShift = days.value.find(d => d.shift_start)
+  return dayWithShift ? timeToHours(dayWithShift.shift_start) : 9.5 // default 09:30
+})
+
+const shiftEnd = computed(() => {
+  const dayWithShift = days.value.find(d => d.shift_end)
+  return dayWithShift ? timeToHours(dayWithShift.shift_end) : 18.5 // default 18:30
+})
+
+const maxOutTime = computed(() => {
+  let maxVal = shiftEnd.value
+  for (const day of days.value) {
+    if (day.out_time) {
+      const outHours = timeToHours(day.out_time)
+      if (outHours && outHours > maxVal) {
+        maxVal = outHours
+      }
+    }
+  }
+  return maxVal
+})
+
+const yMax = computed(() => Math.ceil(maxOutTime.value + 1))
+
 const yTicks = computed(() => {
-  const step = yMax.value <= 4 ? 1 : Math.ceil(yMax.value / 4)
+  const start = shiftStart.value
+  const end = yMax.value
   const ticks = []
-  for (let h = 0; h <= yMax.value; h += step) ticks.push(h)
-  if (ticks[ticks.length - 1] !== yMax.value) ticks.push(yMax.value)
+  for (let h = start; h <= end; h += 1) {
+    ticks.push(h)
+  }
   return ticks
 })
 
-// A day with hours never drops below 3px, so a short shift stays visible.
-function barHeight(hours) {
-  if (!hours) return 0
-  return Math.max(3, Math.round((hours / yMax.value) * PLOT_HEIGHT))
+function getDayTimes(day) {
+  let inH = null
+  let outH = null
+  if (day.in_time) {
+    inH = timeToHours(day.in_time)
+  }
+  if (day.out_time) {
+    outH = timeToHours(day.out_time)
+  }
+  
+  if (day.hours > 0) {
+    if (inH === null && outH === null) {
+      inH = shiftStart.value
+      outH = shiftStart.value + day.hours
+    } else if (inH === null) {
+      inH = Math.max(shiftStart.value, outH - day.hours)
+    } else if (outH === null) {
+      outH = inH + day.hours
+    }
+  }
+  return { inHours: inH, outHours: outH }
 }
+
+const processedDays = computed(() => {
+  const sStart = shiftStart.value
+  const sEnd = shiftEnd.value
+  const range = yMax.value - sStart
+  if (range <= 0) return []
+
+  return days.value.map(day => {
+    const { inHours, outHours } = getDayTimes(day)
+    
+    let barHeightPx = 0
+    let overtimeShare = 0
+    let regularShare = 0
+    let barBottomPx = 0
+    
+    if (day.hours > 0 && inHours !== null && outHours !== null) {
+      const duration = outHours - inHours
+      barHeightPx = Math.max(3, Math.round((duration / range) * PLOT_HEIGHT))
+      
+      const bottomOffset = inHours - sStart
+      barBottomPx = Math.round((Math.max(0, bottomOffset) / range) * PLOT_HEIGHT)
+      
+      const regularDuration = Math.max(0, Math.min(outHours, sEnd) - inHours)
+      const overtimeDuration = Math.max(0, outHours - Math.max(inHours, sEnd))
+      const totalDur = regularDuration + overtimeDuration
+      
+      if (totalDur > 0) {
+        regularShare = (regularDuration / totalDur) * 100
+        overtimeShare = (overtimeDuration / totalDur) * 100
+      } else {
+        regularShare = 100
+        overtimeShare = 0
+      }
+    }
+    
+    return {
+      ...day,
+      inHours,
+      outHours,
+      barHeightPx,
+      barBottomPx,
+      regularShare,
+      overtimeShare,
+    }
+  })
+})
 
 function tooltip(day) {
   const parts = Object.entries(day.counts || {}).map(([status, count]) => `${status}: ${count}`)
@@ -299,6 +433,11 @@ function buildDays(buckets) {
       hours: Number(bucket?.hours || 0),
       total: bucket?.total || 0,
       counts: bucket?.counts || {},
+      shift: bucket?.shift || null,
+      shift_start: bucket?.shift_start || null,
+      shift_end: bucket?.shift_end || null,
+      in_time: bucket?.in_time || null,
+      out_time: bucket?.out_time || null,
     })
   }
   return out
@@ -344,3 +483,15 @@ onMounted(async () => {
   await load()
 })
 </script>
+
+<style scoped>
+.hatch-overtime {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(0, 0, 0, 0.3) 0px,
+    rgba(0, 0, 0, 0.3) 2px,
+    transparent 2px,
+    transparent 8px
+  );
+}
+</style>

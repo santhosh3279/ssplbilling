@@ -608,7 +608,7 @@ def get_attendance_summary(from_date=None, to_date=None, group_by="date", employ
 	if group_by not in ("date", "employee"):
 		frappe.throw("group_by must be 'date' or 'employee'")
 
-	from frappe.query_builder.functions import Count, Sum
+	from frappe.query_builder.functions import Count, Sum, Min, Max
 
 	table = frappe.qb.DocType("Attendance")
 	key_columns = [table.attendance_date] if group_by == "date" else [table.employee, table.employee_name]
@@ -618,6 +618,9 @@ def get_attendance_summary(from_date=None, to_date=None, group_by="date", employ
 		table.status,
 		Count(table.name).as_("count"),
 		Sum(table.working_hours).as_("hours"),
+		Min(table.in_time).as_("in_time"),
+		Max(table.out_time).as_("out_time"),
+		Min(table.shift).as_("shift"),
 	)
 	query = query.where(table.docstatus < 2)
 	if from_date:
@@ -634,6 +637,23 @@ def get_attendance_summary(from_date=None, to_date=None, group_by="date", employ
 
 	rows = query.run(as_dict=True)
 
+	shift_types = frappe.get_all("Shift Type", fields=["name", "start_time", "end_time"])
+	shift_map = {}
+	for st in shift_types:
+		shift_map[st.name] = {
+			"start_time": str(st.start_time) if st.start_time else None,
+			"end_time": str(st.end_time) if st.end_time else None,
+		}
+
+	fallback_shift = None
+	if employee:
+		fallback_shift = frappe.db.get_value(
+			"Shift Assignment",
+			{"employee": employee, "status": "Active", "docstatus": 1},
+			"shift_type",
+			order_by="start_date desc",
+		)
+
 	buckets = {}
 	order = []
 	for row in rows:
@@ -644,7 +664,20 @@ def get_attendance_summary(from_date=None, to_date=None, group_by="date", employ
 			key = row.employee
 			label = row.employee_name or row.employee
 		if key not in buckets:
-			buckets[key] = {"key": key, "label": label, "total": 0, "hours": 0.0, "counts": {}}
+			shift_name = row.shift or fallback_shift
+			shift_info = shift_map.get(shift_name) if shift_name else None
+			buckets[key] = {
+				"key": key,
+				"label": label,
+				"total": 0,
+				"hours": 0.0,
+				"counts": {},
+				"shift": shift_name,
+				"shift_start": shift_info["start_time"] if shift_info else None,
+				"shift_end": shift_info["end_time"] if shift_info else None,
+				"in_time": str(row.in_time) if row.in_time else None,
+				"out_time": str(row.out_time) if row.out_time else None,
+			}
 			order.append(key)
 		bucket = buckets[key]
 		bucket["counts"][row.status or "Unknown"] = bucket["counts"].get(row.status or "Unknown", 0) + row.count
