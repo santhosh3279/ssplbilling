@@ -167,7 +167,7 @@ def get_leave_approvers():
 def get_pending_leave_applications():
 	"""Get pending Leave Applications where current user is the leave approver."""
 	current_user = frappe.session.user
-	filters = {"status": "Open"}
+	filters = {"docstatus": 0}
 
 	# Allow Administrator to see all pending leave applications
 	if current_user != "Administrator":
