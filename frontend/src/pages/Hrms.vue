@@ -157,7 +157,7 @@
                 </div>
               </div>
               <div v-if="!pendingLeaves.length" class="text-center py-8 text-sm text-[var(--color-text-muted)] italic">
-                No pending leave requests today
+                No pending leave requests
               </div>
             </div>
           </div>
