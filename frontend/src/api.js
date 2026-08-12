@@ -1153,6 +1153,40 @@ export async function syncEsslAttendance({ machine = null, fromDate = null } = {
   });
 }
 
+/* ── Shift roaster (hrms Shift Assignment) ── */
+
+export async function fetchShiftTypes() {
+  return frappeGet("ssplbilling.api.shift_api.get_shift_types");
+}
+
+export async function fetchShiftAssignments({
+  employee = "",
+  shiftType = "",
+  fromDate = "",
+  toDate = "",
+} = {}) {
+  return frappeGet("ssplbilling.api.shift_api.get_shift_assignments", {
+    employee,
+    shift_type: shiftType,
+    from_date: fromDate,
+    to_date: toDate,
+  });
+}
+
+export async function saveShiftAssignment(payload) {
+  return frappePost("ssplbilling.api.shift_api.save_shift_assignment", {
+    data: JSON.stringify(payload),
+  });
+}
+
+export async function cancelShiftAssignment(name) {
+  return frappePost("ssplbilling.api.shift_api.cancel_shift_assignment", { name });
+}
+
+export async function deleteShiftAssignment(name) {
+  return frappePost("ssplbilling.api.shift_api.delete_shift_assignment", { name });
+}
+
 // Serial number + clock read straight off the device. IP/comm key come from the
 // form, so this also works for a machine that has not been saved yet.
 export async function fetchEsslMachineInfo({ ipAddress, commKey = null } = {}) {

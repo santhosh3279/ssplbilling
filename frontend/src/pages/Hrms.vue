@@ -58,6 +58,13 @@
         </button>
 
         <button
+          @click="router.push('/hrms/shift-roaster')"
+          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 hover:bg-[var(--color-midlight)] text-[var(--color-text)]"
+        >
+          <span class="text-lg">🗓️</span> Shift Roaster
+        </button>
+
+        <button
           @click="activeSubTab = 'payroll'"
           class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200"
           :class="activeSubTab === 'payroll' ? 'bg-[var(--color-employee)] text-white shadow-lg shadow-[var(--color-employee)]/20' : 'hover:bg-[var(--color-midlight)] text-[var(--color-text)]'"

@@ -192,6 +192,7 @@ export const PUBLIC_HRMS_ROUTES = [
   'EsslAttendance',
   'DeviceUsers',
   'AttendanceChart',
+  'ShiftRoaster',
 ]
 
 export function canAccessRoute(routeName) {

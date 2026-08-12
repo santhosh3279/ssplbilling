@@ -64,6 +64,7 @@ import EsslMapping from './pages/EsslMapping.vue'
 import EsslAttendance from './pages/EsslAttendance.vue'
 import DeviceUsers from './pages/DeviceUsers.vue'
 import AttendanceChart from './pages/AttendanceChart.vue'
+import ShiftRoaster from './pages/ShiftRoaster.vue'
 
 const routes = [
   {
@@ -113,6 +114,12 @@ const routes = [
     name: 'AttendanceChart',
     component: AttendanceChart,
     meta: { title: 'Attendance Chart' },
+  },
+  {
+    path: '/hrms/shift-roaster',
+    name: 'ShiftRoaster',
+    component: ShiftRoaster,
+    meta: { title: 'Shift Roaster' },
   },
   {
     path: '/offer-display',
