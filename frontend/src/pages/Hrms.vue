@@ -119,7 +119,12 @@
 
           <!-- Pending leave approvals list -->
           <div class="lg:col-span-2 bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] shadow-md">
-            <h3 class="text-base font-bold uppercase tracking-wider text-[var(--color-text)] border-b border-[var(--color-border)] pb-3 mb-4">Pending Leave Requests</h3>
+            <h3 class="text-base font-bold uppercase tracking-wider text-[var(--color-text)] border-b border-[var(--color-border)] pb-3 mb-4 flex items-center justify-between">
+              <span>Pending Leave Requests</span>
+              <span v-if="session.fullName.value || session.user.value" class="text-xs text-[var(--color-text-muted)] font-medium normal-case">
+                Approver: <strong class="text-[var(--color-employee)]">{{ session.fullName.value || session.user.value }}</strong>
+              </span>
+            </h3>
             <div class="space-y-4">
               <div
                 v-for="leave in pendingLeaves"
@@ -515,6 +520,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
 import { fetchEmployees, fetchLeaveTypes, createLeaveApplication, fetchLeaveApprovers, fetchPendingLeaveApplications, approveLeaveApplication, rejectLeaveApplication } from '../api.js'
+import { session } from '../session.js'
 
 const router = useRouter()
 const activeSubTab = ref('dashboard')
