@@ -1,96 +1,7 @@
 <template>
   <div class="flex h-screen overflow-hidden bg-[var(--color-bg)] text-[var(--color-text)]">
     <!-- ===================== HRMS SIDEBAR ===================== -->
-    <aside class="flex w-64 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
-      <!-- Portal Brand -->
-      <div class="border-b border-[var(--color-border)] px-6 py-5">
-        <div class="text-xl font-black tracking-wider text-[var(--color-employee)] flex items-center gap-2">
-          <span>👥</span> SSPL HRMS
-        </div>
-        <div class="mt-1 text-xs text-[var(--color-text-muted)] uppercase tracking-widest font-semibold">
-          Workforce Hub
-        </div>
-      </div>
-
-      <!-- Navigation Links -->
-      <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-        <button
-          @click="activeSubTab = 'dashboard'"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200"
-          :class="activeSubTab === 'dashboard' ? 'bg-[var(--color-employee)] text-white shadow-lg shadow-[var(--color-employee)]/20' : 'hover:bg-[var(--color-midlight)] text-[var(--color-text)]'"
-        >
-          <span class="text-lg">📊</span> Dashboard
-        </button>
-
-        <button
-          @click="router.push('/hrms/employee')"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 hover:bg-[var(--color-midlight)] text-[var(--color-text)]"
-        >
-          <span class="text-lg">👥</span> Employees
-        </button>
-
-        <button
-          @click="router.push('/hrms/essl-machines')"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 hover:bg-[var(--color-midlight)] text-[var(--color-text)]"
-        >
-          <span class="text-lg">🖥️</span> eSSL Machines
-        </button>
-
-        <button
-          @click="router.push('/hrms/essl-mapping')"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 hover:bg-[var(--color-midlight)] text-[var(--color-text)]"
-        >
-          <span class="text-lg">🔗</span> Employee Mapping
-        </button>
-
-        <button
-          @click="router.push('/hrms/attendance')"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 hover:bg-[var(--color-midlight)] text-[var(--color-text)]"
-        >
-          <span class="text-lg">📅</span> Attendance
-        </button>
-
-        <button
-          @click="router.push('/hrms/attendance-chart')"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 hover:bg-[var(--color-midlight)] text-[var(--color-text)]"
-        >
-          <span class="text-lg">📊</span> Attendance Chart
-        </button>
-
-        <button
-          @click="router.push('/hrms/shift-roaster')"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200 hover:bg-[var(--color-midlight)] text-[var(--color-text)]"
-        >
-          <span class="text-lg">🗓️</span> Shift Roaster
-        </button>
-
-        <button
-          @click="activeSubTab = 'payroll'"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200"
-          :class="activeSubTab === 'payroll' ? 'bg-[var(--color-employee)] text-white shadow-lg shadow-[var(--color-employee)]/20' : 'hover:bg-[var(--color-midlight)] text-[var(--color-text)]'"
-        >
-          <span class="text-lg">💸</span> Payroll & Salary
-        </button>
-
-        <button
-          @click="activeSubTab = 'leave'"
-          class="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold transition-all duration-200"
-          :class="activeSubTab === 'leave' ? 'bg-[var(--color-employee)] text-white shadow-lg shadow-[var(--color-employee)]/20' : 'hover:bg-[var(--color-midlight)] text-[var(--color-text)]'"
-        >
-          <span class="text-lg">✉️</span> Leave Tracker
-        </button>
-      </nav>
-
-      <!-- Back to wholesale billing -->
-      <div class="border-t border-[var(--color-border)] p-4">
-        <button
-          @click="router.push('/')"
-          class="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-3 text-xs font-bold hover:bg-[var(--color-midlight)] transition-all duration-200 active:scale-95 text-[var(--color-text)]"
-        >
-          ← Back to Billing
-        </button>
-      </div>
-    </aside>
+    <HrmsSidebar active="dashboard" />
 
     <!-- ===================== MAIN HUB PANEL ===================== -->
     <main class="flex-1 overflow-y-auto bg-[var(--color-bg)] flex flex-col">
@@ -446,6 +357,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import HrmsSidebar from '../components/HrmsSidebar.vue'
 import { fetchEmployees } from '../api.js'
 
 const router = useRouter()

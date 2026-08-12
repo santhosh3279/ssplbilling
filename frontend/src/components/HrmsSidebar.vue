@@ -46,7 +46,7 @@ const router = useRouter()
 
 const links = [
   { key: 'dashboard',  label: 'Dashboard',        icon: '📊', path: '/hrms' },
-  { key: 'employees',  label: 'Employees',        icon: '👥', path: '/hrms/employees' },
+  { key: 'employees',  label: 'Employees',        icon: '👥', path: '/hrms/employee' },
   { key: 'machines',   label: 'eSSL Machines',    icon: '🖥️', path: '/hrms/essl-machines' },
   { key: 'mapping',    label: 'Employee Mapping', icon: '🔗', path: '/hrms/essl-mapping' },
   { key: 'enroll',     label: 'Device Users',     icon: '👆', path: '/hrms/device-users' },
