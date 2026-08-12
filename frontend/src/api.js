@@ -1132,6 +1132,22 @@ export async function fetchLeaveApprovers() {
   return frappeGet("ssplbilling.api.employee_api.get_leave_approvers");
 }
 
+export async function fetchPendingLeaveApplications() {
+  return frappeGet("ssplbilling.api.employee_api.get_pending_leave_applications");
+}
+
+export async function approveLeaveApplication(leaveApplication) {
+  return frappePost("ssplbilling.api.employee_api.approve_leave_application", {
+    leave_application: leaveApplication,
+  });
+}
+
+export async function rejectLeaveApplication(leaveApplication) {
+  return frappePost("ssplbilling.api.employee_api.reject_leave_application", {
+    leave_application: leaveApplication,
+  });
+}
+
 /* ── eSSL attendance machines ────────────────── */
 
 // No params by design: frappeGet stringifies every value, so an optional filter

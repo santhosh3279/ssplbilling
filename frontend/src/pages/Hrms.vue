@@ -514,7 +514,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
-import { fetchEmployees, fetchLeaveTypes, createLeaveApplication, fetchLeaveApprovers } from '../api.js'
+import { fetchEmployees, fetchLeaveTypes, createLeaveApplication, fetchLeaveApprovers, fetchPendingLeaveApplications, approveLeaveApplication, rejectLeaveApplication } from '../api.js'
 
 const router = useRouter()
 const activeSubTab = ref('dashboard')
@@ -539,10 +539,7 @@ const todayDay = computed(() => {
 })
 
 // Pending leaves list
-const pendingLeaves = ref([
-  { id: 1, name: 'Anjali Sharma', initials: 'AS', type: 'Sick Leave', dates: '11 Aug - 12 Aug (2 Days)' },
-  { id: 2, name: 'Vikram Singh', initials: 'VS', type: 'Casual Leave', dates: '14 Aug (1 Day)' }
-])
+const pendingLeaves = ref([])
 
 const mockAttendance = ref([
   { id: 'EMP-001', name: 'Ramesh Kumar', in: '08:54 AM', out: '06:05 PM', status: 'Present' },
@@ -645,11 +642,55 @@ async function submitLeaveRequest() {
     const res = await createLeaveApplication(payload)
     alert(`Leave Request submitted successfully: ${res.name}`)
     closeLeaveModal()
+    await loadPendingLeaves()
   } catch (err) {
     console.error('Failed to submit leave request:', err)
     alert(err.message || 'Failed to submit leave request.')
   } finally {
     submittingLeave.value = false
+  }
+}
+
+async function loadPendingLeaves() {
+  try {
+    const list = await fetchPendingLeaveApplications()
+    pendingLeaves.value = (list || []).map(doc => {
+      const empName = doc.employee_name || doc.employee || 'Staff Member'
+      const initials = empName
+        .split(' ')
+        .map(p => p[0])
+        .filter(Boolean)
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+
+      const formatDate = (dateStr) => {
+        if (!dateStr) return ''
+        const parts = dateStr.split('-')
+        if (parts.length === 3) {
+          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+          return `${parseInt(parts[2], 10)} ${months[parseInt(parts[1], 10) - 1]}`
+        }
+        return dateStr
+      }
+
+      const dateRange = doc.from_date === doc.to_date
+        ? formatDate(doc.from_date)
+        : `${formatDate(doc.from_date)} - ${formatDate(doc.to_date)}`
+
+      const daysLabel = doc.total_leave_days === 1 ? '1 Day' : `${doc.total_leave_days} Days`
+
+      return {
+        id: doc.name,
+        name: empName,
+        initials: initials || 'EE',
+        type: doc.leave_type,
+        dates: `${dateRange} (${daysLabel})`,
+        reason: doc.reason || ''
+      }
+    })
+  } catch (err) {
+    console.error('Failed to load pending leave requests:', err)
   }
 }
 
@@ -666,14 +707,26 @@ async function loadStats() {
   }
 }
 
-function approveLeave(leave) {
-  alert(`Leave request approved for ${leave.name}`)
-  pendingLeaves.value = pendingLeaves.value.filter(l => l.id !== leave.id)
+async function approveLeave(leave) {
+  try {
+    await approveLeaveApplication(leave.id)
+    alert(`Leave request approved successfully!`)
+    await loadPendingLeaves()
+  } catch (err) {
+    console.error('Failed to approve leave request:', err)
+    alert(err.message || 'Failed to approve leave request.')
+  }
 }
 
-function rejectLeave(leave) {
-  alert(`Leave request rejected for ${leave.name}`)
-  pendingLeaves.value = pendingLeaves.value.filter(l => l.id !== leave.id)
+async function rejectLeave(leave) {
+  try {
+    await rejectLeaveApplication(leave.id)
+    alert(`Leave request rejected successfully.`)
+    await loadPendingLeaves()
+  } catch (err) {
+    console.error('Failed to reject leave request:', err)
+    alert(err.message || 'Failed to reject leave request.')
+  }
 }
 
 function triggerAction(action) {
@@ -684,7 +737,8 @@ function triggerAction(action) {
   }
 }
 
-onMounted(() => {
-  loadStats()
+onMounted(async () => {
+  await loadStats()
+  await loadPendingLeaves()
 })
 </script>

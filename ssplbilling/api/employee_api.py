@@ -162,3 +162,57 @@ def get_leave_approvers():
 		order_by="full_name asc",
 	)
 
+
+@frappe.whitelist()
+def get_pending_leave_applications():
+	"""Get pending Leave Applications where current user is the leave approver."""
+	current_user = frappe.session.user
+	filters = {"status": "Open"}
+
+	# Allow Administrator to see all pending leave applications
+	if current_user != "Administrator":
+		filters["leave_approver"] = current_user
+
+	apps = frappe.get_all(
+		"Leave Application",
+		filters=filters,
+		fields=[
+			"name",
+			"employee",
+			"employee_name",
+			"leave_type",
+			"from_date",
+			"to_date",
+			"half_day",
+			"half_day_date",
+			"total_leave_days",
+			"reason",
+		],
+		order_by="creation desc",
+	)
+	return apps
+
+
+@frappe.whitelist()
+def approve_leave_application(leave_application):
+	"""Approve a Leave Application."""
+	doc = frappe.get_doc("Leave Application", leave_application)
+	if doc.leave_approver != frappe.session.user and frappe.session.user != "Administrator":
+		frappe.throw("You are not authorized to approve this leave application")
+
+	doc.status = "Approved"
+	doc.submit()
+	return {"name": doc.name, "status": doc.status}
+
+
+@frappe.whitelist()
+def reject_leave_application(leave_application):
+	"""Reject a Leave Application."""
+	doc = frappe.get_doc("Leave Application", leave_application)
+	if doc.leave_approver != frappe.session.user and frappe.session.user != "Administrator":
+		frappe.throw("You are not authorized to reject this leave application")
+
+	doc.status = "Rejected"
+	doc.submit()
+	return {"name": doc.name, "status": doc.status}
+
