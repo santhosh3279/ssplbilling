@@ -118,6 +118,7 @@ def create_leave_application(data):
 	half_day = data.get("half_day") or 0
 	half_day_date = data.get("half_day_date") or None
 	reason = data.get("reason") or ""
+	leave_approver = data.get("leave_approver") or None
 
 	if not employee:
 		frappe.throw("Employee is required")
@@ -143,9 +144,21 @@ def create_leave_application(data):
 	if doc.half_day:
 		doc.half_day_date = half_day_date or from_date
 	doc.reason = reason
+	doc.leave_approver = leave_approver
 	doc.posting_date = frappe.utils.today()
 	doc.status = "Open"
 	doc.insert(ignore_permissions=True)
 
 	return {"name": doc.name, "employee": doc.employee, "status": doc.status}
+
+
+@frappe.whitelist()
+def get_leave_approvers():
+	"""Get list of active system users who can approve leaves."""
+	return frappe.get_all(
+		"User",
+		filters={"enabled": 1, "user_type": "System User"},
+		fields=["name", "full_name"],
+		order_by="full_name asc",
+	)
 

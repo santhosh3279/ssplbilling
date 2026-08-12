@@ -413,6 +413,20 @@
             </select>
           </div>
 
+          <!-- Leave Approver -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Leave Approver</label>
+            <select
+              v-model="leaveForm.leave_approver"
+              class="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-warning)] text-[var(--color-text)]"
+            >
+              <option value="">Select approver...</option>
+              <option v-for="user in leaveApprovers" :key="user.name" :value="user.name">
+                {{ user.full_name || user.name }} ({{ user.name }})
+              </option>
+            </select>
+          </div>
+
           <div class="grid grid-cols-2 gap-4">
             <!-- From Date -->
             <div class="space-y-1">
@@ -500,7 +514,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
-import { fetchEmployees, fetchLeaveTypes, createLeaveApplication } from '../api.js'
+import { fetchEmployees, fetchLeaveTypes, createLeaveApplication, fetchLeaveApprovers } from '../api.js'
 
 const router = useRouter()
 const activeSubTab = ref('dashboard')
@@ -567,11 +581,13 @@ function calculatePresentCount() {
 
 const employeesList = ref([])
 const leaveTypes = ref([])
+const leaveApprovers = ref([])
 const showLeaveModal = ref(false)
 const submittingLeave = ref(false)
 const leaveForm = ref({
   employee: '',
   leave_type: '',
+  leave_approver: '',
   from_date: '',
   to_date: '',
   half_day: false,
@@ -589,6 +605,14 @@ async function openLeaveModal() {
       console.error('Failed to load leave types:', err)
     }
   }
+  if (!leaveApprovers.value.length) {
+    try {
+      const res = await fetchLeaveApprovers()
+      leaveApprovers.value = res || []
+    } catch (err) {
+      console.error('Failed to load leave approvers:', err)
+    }
+  }
 }
 
 function closeLeaveModal() {
@@ -596,6 +620,7 @@ function closeLeaveModal() {
   leaveForm.value = {
     employee: '',
     leave_type: '',
+    leave_approver: '',
     from_date: '',
     to_date: '',
     half_day: false,
@@ -610,6 +635,7 @@ async function submitLeaveRequest() {
     const payload = {
       employee: leaveForm.value.employee,
       leave_type: leaveForm.value.leave_type,
+      leave_approver: leaveForm.value.leave_approver || undefined,
       from_date: leaveForm.value.from_date,
       to_date: leaveForm.value.to_date,
       half_day: leaveForm.value.half_day ? 1 : 0,
