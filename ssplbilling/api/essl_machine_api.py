@@ -94,8 +94,16 @@ def delete_essl_machine(name):
 	return {"deleted": name}
 
 
-def connect_machine(row):
-	"""Open a ZK connection to one device. Caller is responsible for disconnect()."""
+def connect_machine(row, attempts=3):
+	"""Open a ZK connection to one device. Caller is responsible for disconnect().
+
+	The devices serve one session at a time and drop the TCP socket outright when a
+	previous session is still held (pyzk surfaces that as "[Errno 32] Broken pipe"
+	on the very first command). The stale session times out on the device within a
+	few seconds, so a short retry turns that into a normal connect instead of a 500.
+	"""
+	import time
+
 	from zk import ZK
 
 	if not row.ip_address:
@@ -107,9 +115,25 @@ def connect_machine(row):
 	except (TypeError, ValueError):
 		password = 0
 
-	# ommit_ping: the devices do not answer ICMP even when TCP 4370 is open
-	zk = ZK(row.ip_address, port=4370, timeout=10, password=password, ommit_ping=True)
-	return zk.connect()
+	last_error = None
+	for attempt in range(attempts):
+		# ommit_ping: the devices do not answer ICMP even when TCP 4370 is open
+		zk = ZK(row.ip_address, port=4370, timeout=10, password=password, ommit_ping=True)
+		try:
+			return zk.connect()
+		except Exception as e:
+			last_error = e
+			try:
+				zk.disconnect()
+			except Exception:
+				pass
+			if attempt < attempts - 1:
+				time.sleep(2)
+
+	frappe.throw(
+		f"Could not reach {row.ip_address} on port 4370 — the device may be busy with "
+		f"another sync, powered off, or on a different network. ({last_error})"
+	)
 
 
 @frappe.whitelist()
