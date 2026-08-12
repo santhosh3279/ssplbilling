@@ -103,6 +103,17 @@
                   <div class="text-[10px] text-[var(--color-text-muted)] group-hover:text-white/80">Process salary slips</div>
                 </div>
               </button>
+
+              <button
+                @click="openLeaveModal"
+                class="flex items-center gap-3 rounded-xl bg-[var(--color-warning)]/10 border border-[var(--color-warning)]/30 p-4 hover:bg-[var(--color-warning)] hover:text-white transition-all duration-300 group active:scale-95"
+              >
+                <span class="text-2xl group-hover:scale-110 transition-transform duration-200">✉️</span>
+                <div class="text-left">
+                  <div class="font-bold text-sm">Leave Request</div>
+                  <div class="text-[10px] text-[var(--color-text-muted)] group-hover:text-white/80">Submit new leave request</div>
+                </div>
+              </button>
             </div>
           </div>
 
@@ -351,6 +362,137 @@
         </div>
       </div>
     </main>
+    <!-- ===================== LEAVE REQUEST MODAL ===================== -->
+    <div
+      v-if="showLeaveModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+    >
+      <div class="w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+        <!-- Modal Header -->
+        <div class="border-b border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface-raised)]/50 flex items-center justify-between">
+          <h3 class="text-base font-black uppercase tracking-wider text-[var(--color-text)] flex items-center gap-2">
+            <span>✉️</span> Leave Request
+          </h3>
+          <button
+            @click="closeLeaveModal"
+            class="text-xl text-[var(--color-text-muted)] hover:text-[var(--color-text)] focus:outline-none"
+          >
+            &times;
+          </button>
+        </div>
+
+        <!-- Modal Body (Form) -->
+        <form @submit.prevent="submitLeaveRequest" class="p-6 space-y-4 overflow-y-auto">
+          <!-- Employee -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Employee <span class="text-rose-500">*</span></label>
+            <select
+              v-model="leaveForm.employee"
+              required
+              class="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-warning)] text-[var(--color-text)]"
+            >
+              <option value="">Select employee...</option>
+              <option v-for="emp in employeesList" :key="emp.name" :value="emp.name">
+                {{ emp.employee_name }} ({{ emp.name }})
+              </option>
+            </select>
+          </div>
+
+          <!-- Leave Type -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Leave Type <span class="text-rose-500">*</span></label>
+            <select
+              v-model="leaveForm.leave_type"
+              required
+              class="w-full px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-warning)] text-[var(--color-text)]"
+            >
+              <option value="">Select type...</option>
+              <option v-for="t in leaveTypes" :key="t.name" :value="t.name">
+                {{ t.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <!-- From Date -->
+            <div class="space-y-1">
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">From Date <span class="text-rose-500">*</span></label>
+              <input
+                v-model="leaveForm.from_date"
+                type="date"
+                required
+                class="w-full px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-warning)] text-[var(--color-text)]"
+              />
+            </div>
+
+            <!-- To Date -->
+            <div class="space-y-1">
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">To Date <span class="text-rose-500">*</span></label>
+              <input
+                v-model="leaveForm.to_date"
+                type="date"
+                required
+                class="w-full px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-warning)] text-[var(--color-text)]"
+              />
+            </div>
+          </div>
+
+          <!-- Half Day Checkbox -->
+          <div class="flex items-center gap-2 py-1">
+            <input
+              v-model="leaveForm.half_day"
+              id="half_day"
+              type="checkbox"
+              class="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-warning)] focus:ring-[var(--color-warning)]/30"
+            />
+            <label for="half_day" class="text-xs font-bold uppercase tracking-wider text-[var(--color-text)] cursor-pointer select-none">
+              Half Day
+            </label>
+          </div>
+
+          <!-- Half Day Date -->
+          <div v-if="leaveForm.half_day" class="space-y-1">
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Half Day Date <span class="text-rose-500">*</span></label>
+            <input
+              v-model="leaveForm.half_day_date"
+              type="date"
+              required
+              class="w-full px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-warning)] text-[var(--color-text)]"
+            />
+          </div>
+
+          <!-- Reason -->
+          <div class="space-y-1">
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Reason</label>
+            <textarea
+              v-model="leaveForm.reason"
+              rows="3"
+              placeholder="Enter reason for leave..."
+              class="w-full px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-warning)] text-[var(--color-text)]"
+            ></textarea>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <button
+              type="button"
+              @click="closeLeaveModal"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-3 text-xs font-bold hover:bg-[var(--color-midlight)] transition-all duration-200 text-[var(--color-text)]"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              :disabled="submittingLeave"
+              class="rounded-xl bg-[var(--color-warning)] text-white px-6 py-3 text-xs font-bold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-md shadow-[var(--color-warning)]/15 disabled:opacity-50 flex items-center gap-2"
+            >
+              <span v-if="submittingLeave" class="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
+              <span>Submit Request</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -358,7 +500,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
-import { fetchEmployees } from '../api.js'
+import { fetchEmployees, fetchLeaveTypes, createLeaveApplication } from '../api.js'
 
 const router = useRouter()
 const activeSubTab = ref('dashboard')
@@ -423,9 +565,72 @@ function calculatePresentCount() {
   }
 }
 
+const employeesList = ref([])
+const leaveTypes = ref([])
+const showLeaveModal = ref(false)
+const submittingLeave = ref(false)
+const leaveForm = ref({
+  employee: '',
+  leave_type: '',
+  from_date: '',
+  to_date: '',
+  half_day: false,
+  half_day_date: '',
+  reason: ''
+})
+
+async function openLeaveModal() {
+  showLeaveModal.value = true
+  if (!leaveTypes.value.length) {
+    try {
+      const res = await fetchLeaveTypes()
+      leaveTypes.value = res || []
+    } catch (err) {
+      console.error('Failed to load leave types:', err)
+    }
+  }
+}
+
+function closeLeaveModal() {
+  showLeaveModal.value = false
+  leaveForm.value = {
+    employee: '',
+    leave_type: '',
+    from_date: '',
+    to_date: '',
+    half_day: false,
+    half_day_date: '',
+    reason: ''
+  }
+}
+
+async function submitLeaveRequest() {
+  submittingLeave.value = true
+  try {
+    const payload = {
+      employee: leaveForm.value.employee,
+      leave_type: leaveForm.value.leave_type,
+      from_date: leaveForm.value.from_date,
+      to_date: leaveForm.value.to_date,
+      half_day: leaveForm.value.half_day ? 1 : 0,
+      half_day_date: leaveForm.value.half_day ? leaveForm.value.half_day_date : undefined,
+      reason: leaveForm.value.reason
+    }
+    const res = await createLeaveApplication(payload)
+    alert(`Leave Request submitted successfully: ${res.name}`)
+    closeLeaveModal()
+  } catch (err) {
+    console.error('Failed to submit leave request:', err)
+    alert(err.message || 'Failed to submit leave request.')
+  } finally {
+    submittingLeave.value = false
+  }
+}
+
 async function loadStats() {
   try {
     const list = await fetchEmployees()
+    employeesList.value = list || []
     employeeCount.value = list?.length || 0
     calculatePresentCount()
   } catch (err) {

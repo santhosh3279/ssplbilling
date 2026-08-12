@@ -1118,6 +1118,16 @@ export async function updateEmployee(payload) {
   });
 }
 
+export async function fetchLeaveTypes() {
+  return frappeGet("ssplbilling.api.employee_api.get_leave_types");
+}
+
+export async function createLeaveApplication(payload) {
+  return frappePost("ssplbilling.api.employee_api.create_leave_application", {
+    data: JSON.stringify(payload),
+  });
+}
+
 /* ── eSSL attendance machines ────────────────── */
 
 // No params by design: frappeGet stringifies every value, so an optional filter

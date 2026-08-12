@@ -97,3 +97,55 @@ def get_employee_list(status=None):
 		order_by="employee_name asc",
 	)
 
+
+@frappe.whitelist()
+def get_leave_types():
+	"""Get all active Leave Types."""
+	return frappe.get_all("Leave Type", fields=["name"])
+
+
+@frappe.whitelist()
+def create_leave_application(data):
+	"""Create a new Leave Application."""
+	import json
+	if isinstance(data, str):
+		data = json.loads(data)
+
+	employee = data.get("employee")
+	leave_type = data.get("leave_type")
+	from_date = data.get("from_date")
+	to_date = data.get("to_date")
+	half_day = data.get("half_day") or 0
+	half_day_date = data.get("half_day_date") or None
+	reason = data.get("reason") or ""
+
+	if not employee:
+		frappe.throw("Employee is required")
+	if not leave_type:
+		frappe.throw("Leave Type is required")
+	if not from_date:
+		frappe.throw("From Date is required")
+	if not to_date:
+		frappe.throw("To Date is required")
+
+	# Fetch company from Employee
+	company = frappe.db.get_value("Employee", employee, "company")
+	if not company:
+		company = frappe.defaults.get_global_default("company")
+
+	doc = frappe.new_doc("Leave Application")
+	doc.employee = employee
+	doc.leave_type = leave_type
+	doc.company = company
+	doc.from_date = from_date
+	doc.to_date = to_date
+	doc.half_day = int(half_day)
+	if doc.half_day:
+		doc.half_day_date = half_day_date or from_date
+	doc.reason = reason
+	doc.posting_date = frappe.utils.today()
+	doc.status = "Open"
+	doc.insert(ignore_permissions=True)
+
+	return {"name": doc.name, "employee": doc.employee, "status": doc.status}
+
