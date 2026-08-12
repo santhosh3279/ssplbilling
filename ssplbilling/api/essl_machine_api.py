@@ -112,6 +112,76 @@ def connect_machine(row):
 	return zk.connect()
 
 
+@frappe.whitelist()
+def get_machine_info(ip_address, comm_key=None):
+	"""Read the serial number and clock off a device in one connection.
+
+	Takes the IP/comm key straight from the form so it works for a machine that has
+	not been saved yet. The devices allow one session at a time, hence a single
+	connect for both values instead of an endpoint each.
+	"""
+	ip_address = (ip_address or "").strip()
+	if not ip_address:
+		frappe.throw("IP Address is required")
+
+	row = frappe._dict(ip_address=ip_address, comm_key=comm_key)
+
+	conn = None
+	try:
+		conn = connect_machine(row)
+		serial = conn.get_serialnumber()
+		device_time = conn.get_time()
+	finally:
+		if conn:
+			try:
+				conn.disconnect()
+			except Exception:
+				pass
+
+	return {
+		"ip_address": ip_address,
+		"serial_number": str(serial or "").strip(),
+		# "YYYY-MM-DD HH:MM:SS" — same wire format the attendance logs use
+		"device_time": str(device_time) if device_time else None,
+		"server_time": str(frappe.utils.now_datetime().replace(microsecond=0)),
+	}
+
+
+@frappe.whitelist()
+def set_machine_time(ip_address, comm_key=None, timestamp=None):
+	"""Write a clock to the device. `timestamp` is the caller's local wall-clock time
+	as "YYYY-MM-DD HH:MM:SS"; without it the site's own time is used."""
+	ip_address = (ip_address or "").strip()
+	if not ip_address:
+		frappe.throw("IP Address is required")
+
+	if timestamp:
+		target = frappe.utils.get_datetime(timestamp)
+	else:
+		target = frappe.utils.now_datetime()
+	target = target.replace(microsecond=0)
+
+	row = frappe._dict(ip_address=ip_address, comm_key=comm_key)
+
+	conn = None
+	try:
+		conn = connect_machine(row)
+		conn.set_time(target)
+		device_time = conn.get_time()
+	finally:
+		if conn:
+			try:
+				conn.disconnect()
+			except Exception:
+				pass
+
+	return {
+		"ip_address": ip_address,
+		"set_to": str(target),
+		"device_time": str(device_time) if device_time else None,
+	}
+
+
 def get_machine_rows(machine=None):
 	"""Machine records, one or all. get_all so the System-Manager-only read perm on
 	the doctype does not blank the list for billers reaching this via the hrms tile."""

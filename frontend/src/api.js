@@ -1153,6 +1153,25 @@ export async function syncEsslAttendance({ machine = null, fromDate = null } = {
   });
 }
 
+// Serial number + clock read straight off the device. IP/comm key come from the
+// form, so this also works for a machine that has not been saved yet.
+export async function fetchEsslMachineInfo({ ipAddress, commKey = null } = {}) {
+  return frappePost("ssplbilling.api.essl_machine_api.get_machine_info", {
+    ip_address: ipAddress,
+    comm_key: commKey,
+  });
+}
+
+// timestamp must be local wall-clock "YYYY-MM-DD HH:MM:SS" — never toISOString(),
+// which is UTC and would leave IST devices 5:30 off.
+export async function setEsslMachineTime({ ipAddress, commKey = null, timestamp = null } = {}) {
+  return frappePost("ssplbilling.api.essl_machine_api.set_machine_time", {
+    ip_address: ipAddress,
+    comm_key: commKey,
+    timestamp,
+  });
+}
+
 /* ── eSSL enrollment (device users, fingerprints) ── */
 
 export async function fetchMachineUsers(machine) {

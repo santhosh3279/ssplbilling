@@ -258,13 +258,55 @@
           </div>
 
           <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Serial Number</label>
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Serial Number</label>
+              <button
+                @click="fetchFromDevice"
+                :disabled="!newMachine.ip_address || probing"
+                class="rounded-xl border border-[var(--color-border)] px-3 py-1 text-[11px] font-bold hover:bg-[var(--color-midlight)] disabled:opacity-50 transition-colors"
+              >
+                {{ probing ? 'Reading device...' : 'Read from device' }}
+              </button>
+            </div>
             <input
               v-model="newMachine.serial_number"
               type="text"
               class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold font-mono focus:outline-none focus:border-[var(--color-employee)]"
               @keyup.enter="saveMachine"
             />
+            <p v-if="probing" class="mt-1 text-[11px] text-[var(--color-text-muted)]">
+              Reading serial number and clock from the device...
+            </p>
+            <p v-else-if="!newMachine.serial_number" class="mt-1 text-[11px] text-[var(--color-text-muted)]">
+              Left blank it is pulled from the device automatically when this dialog opens.
+            </p>
+          </div>
+
+          <!-- Device clock: read on probe, corrected against this computer's clock -->
+          <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3">
+            <div class="flex items-center justify-between gap-3">
+              <div>
+                <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                  Machine Time
+                </div>
+                <div class="mt-1 text-sm font-mono font-bold text-[var(--color-text)]">
+                  {{ deviceTime ? formatDate(deviceTime) : '—' }}
+                </div>
+                <div class="text-[11px] font-bold" :class="driftClass">
+                  {{ driftLabel }}
+                </div>
+              </div>
+              <button
+                @click="correctMachineTime"
+                :disabled="!newMachine.ip_address || probing || settingTime"
+                class="rounded-xl border border-[var(--color-employee)]/40 bg-[var(--color-employee)]/10 text-[var(--color-employee)] px-4 py-2 text-xs font-bold hover:bg-[var(--color-employee)]/20 disabled:opacity-50 transition-colors"
+              >
+                {{ settingTime ? 'Setting...' : 'Set to computer time' }}
+              </button>
+            </div>
+            <p class="mt-2 text-[11px] text-[var(--color-text-muted)]">
+              This computer: <span class="font-mono">{{ formatDate(computerTime) }}</span>
+            </p>
           </div>
 
           <div v-if="creatorError" class="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 text-xs font-bold text-rose-500">
@@ -293,7 +335,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
 import {
   fetchEsslMachines,
@@ -301,6 +343,8 @@ import {
   updateEsslMachine,
   deleteEsslMachine,
   syncEsslAttendance,
+  fetchEsslMachineInfo,
+  setEsslMachineTime,
 } from '../api.js'
 
 // Attendance logs live only in localStorage — the sync writes nothing server-side.
@@ -325,6 +369,54 @@ const showCreator = ref(false)
 const saving = ref(false)
 const creatorError = ref('')
 const newMachine = ref({ name: '', ip_address: '', store: '', comm_key: '', serial_number: '' })
+
+const probing = ref(false)
+const settingTime = ref(false)
+const deviceTime = ref('')
+// Computer clock at the instant the device clock was read — drift is measured
+// against that snapshot, not against the ticking clock.
+const deviceReadAt = ref('')
+const computerTime = ref(localTimestamp())
+let clockTimer = null
+
+// Local wall-clock "YYYY-MM-DD HH:MM:SS". Deliberately not toISOString(), which is
+// UTC and would set every device 5:30 off on IST.
+function localTimestamp(d = new Date()) {
+  const p = (n) => String(n).padStart(2, '0')
+  return (
+    `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ` +
+    `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+  )
+}
+
+function parseLocal(str) {
+  if (!str) return null
+  const d = new Date(String(str).replace(' ', 'T'))
+  return isNaN(d.getTime()) ? null : d
+}
+
+const driftSeconds = computed(() => {
+  const dev = parseLocal(deviceTime.value)
+  const pc = parseLocal(deviceReadAt.value)
+  if (!dev || !pc) return null
+  return Math.round((dev.getTime() - pc.getTime()) / 1000)
+})
+
+const driftLabel = computed(() => {
+  const drift = driftSeconds.value
+  if (drift === null) return deviceTime.value ? '' : 'Not read yet'
+  const abs = Math.abs(drift)
+  if (abs <= 60) return `In sync (${abs}s off)`
+  const mins = Math.round(abs / 60)
+  const span = mins >= 120 ? `${Math.round(mins / 60)}h` : `${mins}m`
+  return drift > 0 ? `Device ${span} ahead of this computer` : `Device ${span} behind this computer`
+})
+
+const driftClass = computed(() => {
+  const drift = driftSeconds.value
+  if (drift === null) return 'text-[var(--color-text-muted)]'
+  return Math.abs(drift) <= 60 ? 'text-emerald-500' : 'text-amber-500'
+})
 
 async function loadMachines() {
   loading.value = true
@@ -445,9 +537,17 @@ async function syncAttendance() {
   }
 }
 
+function resetDeviceProbe() {
+  deviceTime.value = ''
+  deviceReadAt.value = ''
+  probing.value = false
+  settingTime.value = false
+}
+
 function openCreator() {
   newMachine.value = { name: '', ip_address: '', store: '', comm_key: '', serial_number: '' }
   creatorError.value = ''
+  resetDeviceProbe()
   showCreator.value = true
 }
 
@@ -460,7 +560,61 @@ function openEditor(machine) {
     serial_number: machine.serial_number || '',
   }
   creatorError.value = ''
+  resetDeviceProbe()
   showCreator.value = true
+
+  // Serial missing — pull it off the device. Fire and forget so the 10s connect
+  // timeout never blocks the modal from opening.
+  if (!newMachine.value.serial_number && newMachine.value.ip_address) {
+    fetchFromDevice()
+  }
+}
+
+// Reads serial + clock in one device connection. Uses the form values so it also
+// works before the machine is saved.
+async function fetchFromDevice() {
+  if (!newMachine.value.ip_address || probing.value) return
+  probing.value = true
+  creatorError.value = ''
+  const askedFor = newMachine.value.ip_address
+  try {
+    const info = await fetchEsslMachineInfo({
+      ipAddress: askedFor,
+      commKey: newMachine.value.comm_key || null,
+    })
+    // The user may have moved on to another machine while the connect was pending
+    if (!showCreator.value || newMachine.value.ip_address !== askedFor) return
+    if (info?.serial_number) newMachine.value.serial_number = info.serial_number
+    deviceTime.value = info?.device_time || ''
+    deviceReadAt.value = localTimestamp()
+  } catch (err) {
+    console.error('Failed to read device:', err)
+    creatorError.value = err.message || 'Could not reach the device.'
+  } finally {
+    probing.value = false
+  }
+}
+
+async function correctMachineTime() {
+  if (!newMachine.value.ip_address || settingTime.value) return
+  const now = localTimestamp()
+  if (!confirm(`Set the clock on ${newMachine.value.ip_address} to ${now}?`)) return
+  settingTime.value = true
+  creatorError.value = ''
+  try {
+    const res = await setEsslMachineTime({
+      ipAddress: newMachine.value.ip_address,
+      commKey: newMachine.value.comm_key || null,
+      timestamp: now,
+    })
+    deviceTime.value = res?.device_time || now
+    deviceReadAt.value = localTimestamp()
+  } catch (err) {
+    console.error('Failed to set device time:', err)
+    creatorError.value = err.message || 'Could not set the device time.'
+  } finally {
+    settingTime.value = false
+  }
 }
 
 async function removeMachine(machine) {
@@ -508,5 +662,12 @@ function clearAttendanceCache() {
 onMounted(() => {
   loadMachines()
   loadCachedSync()
+  clockTimer = setInterval(() => {
+    computerTime.value = localTimestamp()
+  }, 1000)
+})
+
+onUnmounted(() => {
+  if (clockTimer) clearInterval(clockTimer)
 })
 </script>
