@@ -143,7 +143,6 @@ def get_machine_info(ip_address, comm_key=None):
 		"serial_number": str(serial or "").strip(),
 		# "YYYY-MM-DD HH:MM:SS" — same wire format the attendance logs use
 		"device_time": str(device_time) if device_time else None,
-		"server_time": str(frappe.utils.now_datetime().replace(microsecond=0)),
 	}
 
 
@@ -166,8 +165,17 @@ def set_machine_time(ip_address, comm_key=None, timestamp=None):
 	conn = None
 	try:
 		conn = connect_machine(row)
-		conn.set_time(target)
-		device_time = conn.get_time()
+		# Same idiom as the enrollment writes: the device is taken offline for the
+		# write, and enable_device lives in finally so it never stays disabled.
+		conn.disable_device()
+		try:
+			conn.set_time(target)
+			device_time = conn.get_time()
+		finally:
+			try:
+				conn.enable_device()
+			except Exception:
+				pass
 	finally:
 		if conn:
 			try:

@@ -540,8 +540,9 @@ async function syncAttendance() {
 function resetDeviceProbe() {
   deviceTime.value = ''
   deviceReadAt.value = ''
-  probing.value = false
   settingTime.value = false
+  // probing is deliberately left alone — an earlier device read may still be in
+  // flight, and clearing it here would let a second connection open alongside it.
 }
 
 function openCreator() {
