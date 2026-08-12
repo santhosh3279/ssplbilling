@@ -299,7 +299,7 @@ const draft = ref(emptyDraft())
 
 // hrms marks only end_date and status allow_on_submit, so a submitted row keeps the
 // rest of its fields frozen — the modal mirrors that instead of failing on save.
-const locked = computed(() => draft.value.name && draft.value.docstatus === 1)
+const locked = computed(() => !!(draft.value.name && draft.value.docstatus === 1))
 
 function emptyDraft() {
   return {
