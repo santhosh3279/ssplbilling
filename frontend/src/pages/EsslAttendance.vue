@@ -20,6 +20,19 @@
           <span class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
             {{ records.length }} records
           </span>
+          <!-- Device reachability from the last sync — offline devices are the usual
+               reason punches go missing, so it stays visible in the header -->
+          <span
+            v-if="deviceStatus"
+            class="rounded-xl border px-4 py-2 text-xs font-bold uppercase tracking-wider"
+            :class="deviceStatus.offline
+              ? 'border-rose-500/30 bg-rose-500/10 text-rose-500'
+              : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500'"
+            :title="deviceStatus.offline ? 'Offline: ' + deviceStatus.offlineNames.join(', ') : 'All devices responded'"
+          >
+            {{ deviceStatus.online }}/{{ deviceStatus.total }} devices synced
+            <template v-if="deviceStatus.offline"> · {{ deviceStatus.offline }} offline</template>
+          </span>
           <button
             @click="loadRecords"
             :disabled="busy"
@@ -98,6 +111,17 @@
               {{ lastSync.totals.attendance_created }} attendance created ·
               {{ lastSync.totals.attendance_updated }} updated ·
               {{ lastSync.totals.checkins_created }} checkins
+            </span>
+            <span
+              v-if="deviceStatus"
+              class="text-xs font-bold"
+              :class="deviceStatus.offline ? 'text-rose-500' : 'text-emerald-500'"
+            >
+              {{ deviceStatus.online }} of {{ deviceStatus.total }} devices synced
+              <template v-if="deviceStatus.offline">
+                · {{ deviceStatus.offline }} offline ({{ deviceStatus.offlineNames.join(', ') }}) —
+                their punches are not in this run
+              </template>
             </span>
             <span v-if="lastSync.totals.skipped_future" class="text-xs font-bold text-amber-500">
               {{ lastSync.totals.skipped_future }} punches dated in the future were skipped (device clock)
@@ -314,6 +338,20 @@ const records = ref([])
 const settings = ref(null)
 const lastSync = ref(null)
 const searchQuery = ref('')
+
+// A machine row carries an `error` string when the device could not be reached
+// (offline, busy with another session, wrong IP) — everything else was synced.
+const deviceStatus = computed(() => {
+  const machines = lastSync.value?.machines || []
+  if (!machines.length) return null
+  const offline = machines.filter((m) => m.error)
+  return {
+    total: machines.length,
+    offline: offline.length,
+    online: machines.length - offline.length,
+    offlineNames: offline.map((m) => m.store || m.ip_address || m.machine),
+  }
+})
 
 const fromDate = ref(daysAgo(30))
 const toDate = ref(daysAgo(0))

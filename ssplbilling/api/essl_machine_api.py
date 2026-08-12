@@ -130,9 +130,12 @@ def connect_machine(row, attempts=3):
 			if attempt < attempts - 1:
 				time.sleep(2)
 
-	frappe.throw(
-		f"Could not reach {row.ip_address} on port 4370 — the device may be busy with "
-		f"another sync, powered off, or on a different network. ({last_error})"
+	# A plain exception, not frappe.throw: the sync loops catch this per machine and
+	# report it in that machine's summary row, and a throw would also push the text
+	# into the response message log as if the whole request had failed.
+	raise ConnectionError(
+		f"Device offline — could not reach {row.ip_address} on port 4370. It may be "
+		f"powered off, on another network, or busy with another sync. ({last_error})"
 	)
 
 
@@ -152,7 +155,12 @@ def get_machine_info(ip_address, comm_key=None):
 
 	conn = None
 	try:
-		conn = connect_machine(row)
+		# Interactive call, so the failure is turned into a clean message for the
+		# dialog instead of a 500 traceback.
+		try:
+			conn = connect_machine(row)
+		except ConnectionError as e:
+			frappe.throw(str(e))
 		serial = conn.get_serialnumber()
 		device_time = conn.get_time()
 	finally:
@@ -188,7 +196,10 @@ def set_machine_time(ip_address, comm_key=None, timestamp=None):
 
 	conn = None
 	try:
-		conn = connect_machine(row)
+		try:
+			conn = connect_machine(row)
+		except ConnectionError as e:
+			frappe.throw(str(e))
 		# Same idiom as the enrollment writes: the device is taken offline for the
 		# write, and enable_device lives in finally so it never stays disabled.
 		conn.disable_device()

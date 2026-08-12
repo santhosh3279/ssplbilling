@@ -18,6 +18,18 @@
           <span class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">
             {{ filteredMachines.length }} / {{ machinesList.length }}
           </span>
+          <!-- Device reachability from the last pull — same badge as the Attendance page -->
+          <span
+            v-if="deviceStatus"
+            class="rounded-xl border px-4 py-2 text-xs font-bold uppercase tracking-wider"
+            :class="deviceStatus.offline
+              ? 'border-rose-500/30 bg-rose-500/10 text-rose-500'
+              : 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500'"
+            :title="deviceStatus.offline ? 'Offline: ' + deviceStatus.offlineNames.join(', ') : 'All devices responded'"
+          >
+            {{ deviceStatus.online }}/{{ deviceStatus.total }} devices synced
+            <template v-if="deviceStatus.offline"> · {{ deviceStatus.offline }} offline</template>
+          </span>
           <button
             @click="loadMachines"
             :disabled="loading"
@@ -432,6 +444,20 @@ async function loadMachines() {
     loading.value = false
   }
 }
+
+// A machine row carries an `error` string when the device could not be reached
+// (offline, busy with another session, wrong IP) — everything else was synced.
+const deviceStatus = computed(() => {
+  const machines = lastSync.value?.machines || []
+  if (!machines.length) return null
+  const offline = machines.filter((m) => m.error)
+  return {
+    total: machines.length,
+    offline: offline.length,
+    online: machines.length - offline.length,
+    offlineNames: offline.map((m) => m.store || m.ip_address || m.machine),
+  }
+})
 
 const storeOptions = computed(() => {
   const stores = machinesList.value.map((m) => (m.store || '').trim()).filter(Boolean)
