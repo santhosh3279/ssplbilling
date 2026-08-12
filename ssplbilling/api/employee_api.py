@@ -143,7 +143,7 @@ def create_leave_application(data):
 	doc.half_day = int(half_day)
 	if doc.half_day:
 		doc.half_day_date = half_day_date or from_date
-	doc.reason = reason
+	doc.description = reason
 	doc.leave_approver = leave_approver
 	doc.posting_date = frappe.utils.today()
 	doc.status = "Open"
@@ -187,9 +187,14 @@ def get_pending_leave_applications():
 			"half_day",
 			"half_day_date",
 			"total_leave_days",
-			"reason",
+			# hrms stores the free-text reason in `description`; there is no `reason`
+			# column, and selecting one made this whole query fail with a SQL error.
+			"description as reason",
+			"status",
+			"posting_date",
+			"leave_approver",
 		],
-		order_by="creation desc",
+		order_by="from_date desc, creation desc",
 	)
 	return apps
 

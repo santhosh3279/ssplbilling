@@ -126,6 +126,10 @@
               </span>
             </h3>
             <div class="space-y-4">
+              <div v-if="leaveListError" class="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-xs font-bold text-rose-500">
+                {{ leaveListError }}
+              </div>
+
               <div
                 v-for="leave in pendingLeaves"
                 :key="leave.id"
@@ -136,11 +140,29 @@
                     {{ leave.initials }}
                   </div>
                   <div>
-                    <h4 class="font-bold text-sm">{{ leave.name }}</h4>
+                    <h4 class="font-bold text-sm flex items-center gap-2">
+                      {{ leave.name }}
+                      <span
+                        class="rounded-lg border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider"
+                        :class="leave.status === 'Open'
+                          ? 'border-amber-500/30 bg-amber-500/10 text-amber-500'
+                          : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'"
+                      >
+                        {{ leave.status }}
+                      </span>
+                    </h4>
                     <p class="text-xs text-[var(--color-text-muted)]">{{ leave.type }} — {{ leave.dates }}</p>
+                    <p class="text-[10px] text-[var(--color-text-muted)]">
+                      <span class="font-mono">{{ leave.id }}</span>
+                      <span v-if="leave.appliedOn"> · Applied {{ leave.appliedOn }}</span>
+                      <span v-if="leave.approver"> · Approver {{ leave.approver }}</span>
+                    </p>
+                    <p v-if="leave.reason" class="mt-1 text-[11px] italic text-[var(--color-text-muted)]">
+                      “{{ leave.reason }}”
+                    </p>
                   </div>
                 </div>
-                
+
                 <div class="flex gap-2">
                   <button
                     @click="approveLeave(leave)"
@@ -156,7 +178,10 @@
                   </button>
                 </div>
               </div>
-              <div v-if="!pendingLeaves.length" class="text-center py-8 text-sm text-[var(--color-text-muted)] italic">
+              <div v-if="loadingLeaves" class="text-center py-8 text-sm text-[var(--color-text-muted)] italic">
+                Loading leave requests...
+              </div>
+              <div v-else-if="!pendingLeaves.length && !leaveListError" class="text-center py-8 text-sm text-[var(--color-text-muted)] italic">
                 No pending leave requests
               </div>
             </div>
@@ -544,8 +569,10 @@ const todayDay = computed(() => {
   })
 })
 
-// Pending leaves list
+// Pending leaves list — unsubmitted Leave Application rows (docstatus 0)
 const pendingLeaves = ref([])
+const loadingLeaves = ref(false)
+const leaveListError = ref('')
 
 const mockAttendance = ref([
   { id: 'EMP-001', name: 'Ramesh Kumar', in: '08:54 AM', out: '06:05 PM', status: 'Present' },
@@ -658,6 +685,8 @@ async function submitLeaveRequest() {
 }
 
 async function loadPendingLeaves() {
+  leaveListError.value = ''
+  loadingLeaves.value = true
   try {
     const list = await fetchPendingLeaveApplications()
     pendingLeaves.value = (list || []).map(doc => {
@@ -692,12 +721,31 @@ async function loadPendingLeaves() {
         initials: initials || 'EE',
         type: doc.leave_type,
         dates: `${dateRange} (${daysLabel})`,
-        reason: doc.reason || ''
+        reason: doc.reason || '',
+        // status is the Leave Application workflow state; the row is still docstatus 0,
+        // so an "Approved"/"Rejected" label here means a submit that never went through.
+        status: doc.status || 'Open',
+        approver: doc.leave_approver || '',
+        appliedOn: formatDate(doc.posting_date)
       }
     })
   } catch (err) {
     console.error('Failed to load pending leave requests:', err)
+    leaveListError.value = stripHtml(err.message) || 'Failed to load pending leave requests.'
+    pendingLeaves.value = []
+  } finally {
+    loadingLeaves.value = false
   }
+}
+
+// frappe.throw() ships HTML (links, <strong>), which reads as markup in an alert box.
+function stripHtml(text) {
+  if (!text) return ''
+  return String(text)
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 async function loadStats() {
@@ -720,7 +768,9 @@ async function approveLeave(leave) {
     await loadPendingLeaves()
   } catch (err) {
     console.error('Failed to approve leave request:', err)
-    alert(err.message || 'Failed to approve leave request.')
+    const msg = stripHtml(err.message) || 'Failed to approve leave request.'
+    leaveListError.value = msg
+    alert(msg)
   }
 }
 
@@ -731,7 +781,9 @@ async function rejectLeave(leave) {
     await loadPendingLeaves()
   } catch (err) {
     console.error('Failed to reject leave request:', err)
-    alert(err.message || 'Failed to reject leave request.')
+    const msg = stripHtml(err.message) || 'Failed to reject leave request.'
+    leaveListError.value = msg
+    alert(msg)
   }
 }
 
