@@ -1159,6 +1159,10 @@ export async function fetchShiftTypes() {
   return frappeGet("ssplbilling.api.shift_api.get_shift_types");
 }
 
+export async function saveShiftType(payload) {
+  return frappePost("ssplbilling.api.shift_api.save_shift_type", payload);
+}
+
 export async function fetchShiftAssignments({
   employee = "",
   shiftType = "",

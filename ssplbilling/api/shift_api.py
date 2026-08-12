@@ -162,3 +162,30 @@ def delete_shift_assignment(name):
 		doc.cancel()
 	frappe.delete_doc(SHIFT_ASSIGNMENT, name, ignore_permissions=True, force=True)
 	return {"deleted": name}
+
+
+@frappe.whitelist()
+def save_shift_type(name, start_time, end_time):
+	"""Create a new Shift Type."""
+	if not name:
+		frappe.throw("Shift Name is required")
+	if not start_time:
+		frappe.throw("Start Time is required")
+	if not end_time:
+		frappe.throw("End Time is required")
+
+	# Check if it already exists
+	if frappe.db.exists("Shift Type", name.strip()):
+		frappe.throw(f"Shift Type {name.strip()} already exists")
+
+	doc = frappe.new_doc("Shift Type")
+	doc.name = name.strip()
+	doc.start_time = start_time
+	doc.end_time = end_time
+	doc.insert(ignore_permissions=True)
+
+	return {
+		"name": doc.name,
+		"start_time": str(doc.start_time) if doc.start_time else None,
+		"end_time": str(doc.end_time) if doc.end_time else None,
+	}

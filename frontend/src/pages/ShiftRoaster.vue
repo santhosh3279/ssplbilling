@@ -25,6 +25,12 @@
             <span>🔄</span> Refresh
           </button>
           <button
+            @click="openShiftTypeEditor"
+            class="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-3 font-bold hover:bg-[var(--color-midlight)] active:scale-95 transition-all duration-200"
+          >
+            <span>➕</span> Add Shift Type
+          </button>
+          <button
             @click="openEditor(null)"
             class="flex items-center gap-2 rounded-xl bg-[var(--color-employee)] text-white px-5 py-3 font-bold hover:brightness-110 active:scale-95 transition-all duration-200 shadow-md shadow-[var(--color-employee)]/15"
           >
@@ -189,9 +195,18 @@
           </div>
 
           <div>
-            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-              Shift Type <span class="text-rose-500">*</span>
-            </label>
+            <div class="flex items-center justify-between">
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                Shift Type <span class="text-rose-500">*</span>
+              </label>
+              <button
+                v-if="!locked"
+                @click="openShiftTypeEditor"
+                class="text-xs font-bold text-[var(--color-employee)] hover:underline"
+              >
+                + New Shift Type
+              </button>
+            </div>
             <select
               v-model="draft.shift_type"
               :disabled="locked"
@@ -265,6 +280,76 @@
         </div>
       </div>
     </div>
+
+    <!-- Add Shift Type Modal -->
+    <div
+      v-if="showShiftTypeEditor"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+      @click.self="showShiftTypeEditor = false"
+    >
+      <div class="w-[440px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--color-border)] text-lg font-black uppercase tracking-wider">
+          Create Shift Type
+        </div>
+
+        <div class="p-6 space-y-4">
+          <div>
+            <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+              Shift Name <span class="text-rose-500">*</span>
+            </label>
+            <input
+              v-model="shiftTypeDraft.name"
+              type="text"
+              placeholder="e.g. Morning Shift, Night Shift"
+              class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold text-[var(--color-text)] focus:outline-none focus:border-[var(--color-employee)]"
+            />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                Start Time <span class="text-rose-500">*</span>
+              </label>
+              <input
+                v-model="shiftTypeDraft.start_time"
+                type="time"
+                class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold text-[var(--color-text)] focus:outline-none focus:border-[var(--color-employee)]"
+              />
+            </div>
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                End Time <span class="text-rose-500">*</span>
+              </label>
+              <input
+                v-model="shiftTypeDraft.end_time"
+                type="time"
+                class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold text-[var(--color-text)] focus:outline-none focus:border-[var(--color-employee)]"
+              />
+            </div>
+          </div>
+
+          <div v-if="shiftTypeError" class="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 text-xs font-bold text-rose-500">
+            {{ shiftTypeError }}
+          </div>
+        </div>
+
+        <div class="px-6 py-4 border-t border-[var(--color-border)] flex justify-end gap-3">
+          <button
+            @click="showShiftTypeEditor = false"
+            class="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-bold hover:bg-[var(--color-midlight)]"
+          >
+            Cancel
+          </button>
+          <button
+            @click="saveNewShiftType"
+            :disabled="savingShiftType || !shiftTypeDraft.name || !shiftTypeDraft.start_time || !shiftTypeDraft.end_time"
+            class="rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110 disabled:opacity-50"
+          >
+            {{ savingShiftType ? 'Saving...' : 'Create' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -277,6 +362,7 @@ import {
   saveShiftAssignment,
   deleteShiftAssignment,
   fetchEmployees,
+  saveShiftType,
 } from '../api.js'
 
 const busy = ref(false)
@@ -296,6 +382,15 @@ const showEditor = ref(false)
 const saving = ref(false)
 const editorError = ref('')
 const draft = ref(emptyDraft())
+
+const showShiftTypeEditor = ref(false)
+const savingShiftType = ref(false)
+const shiftTypeError = ref('')
+const shiftTypeDraft = ref({
+  name: '',
+  start_time: '09:00:00',
+  end_time: '18:00:00',
+})
 
 // hrms marks only end_date and status allow_on_submit, so a submitted row keeps the
 // rest of its fields frozen — the modal mirrors that instead of failing on save.
@@ -449,6 +544,50 @@ async function removeRow(row) {
     error.value = err.message || 'Failed to delete the assignment.'
   } finally {
     busy.value = false
+  }
+}
+
+function openShiftTypeEditor() {
+  shiftTypeError.value = ''
+  shiftTypeDraft.value = {
+    name: '',
+    start_time: '09:00:00',
+    end_time: '18:00:00',
+  }
+  showShiftTypeEditor.value = true
+}
+
+async function saveNewShiftType() {
+  if (savingShiftType.value) return
+  savingShiftType.value = true
+  shiftTypeError.value = ''
+  try {
+    let formattedStartTime = shiftTypeDraft.value.start_time
+    let formattedEndTime = shiftTypeDraft.value.end_time
+    if (formattedStartTime && formattedStartTime.split(':').length === 2) {
+      formattedStartTime = `${formattedStartTime}:00`
+    }
+    if (formattedEndTime && formattedEndTime.split(':').length === 2) {
+      formattedEndTime = `${formattedEndTime}:00`
+    }
+
+    const newShift = await saveShiftType({
+      name: shiftTypeDraft.value.name,
+      start_time: formattedStartTime,
+      end_time: formattedEndTime,
+    })
+
+    shiftTypes.value.push(newShift)
+    // If Assign Shift Editor is open, select the newly created shift
+    if (showEditor.value) {
+      draft.value.shift_type = newShift.name
+    }
+    showShiftTypeEditor.value = false
+  } catch (err) {
+    console.error('Failed to create shift type:', err)
+    shiftTypeError.value = err.message || 'Failed to create shift type.'
+  } finally {
+    savingShiftType.value = false
   }
 }
 
