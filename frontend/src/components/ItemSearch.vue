@@ -33,7 +33,7 @@
             ref="searchInput"
             v-model="query"
             class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-[8px] text-4xl text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/20"
-            :placeholder="quickQtyMode ? 'Qty Mode Active (Press / to Search)' : 'Type item code or name...'"
+            :placeholder="quickQtyMode ? 'Qty Mode Active' : 'Type item code or name...'"
             @keydown="onSearchInputKeydown"
           />
           <div v-if="loading && !allItems.length" class="absolute right-4 top-1/2 -translate-y-1/2">
@@ -238,7 +238,6 @@
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F7</kbd> Supplier</span>
         <span v-if="enableQuickQty"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F6</kbd> {{ quickQtyMode ? 'Exit Qty Mode' : 'Qty Mode' }}</span>
         <span v-if="quickQtyMode"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+Enter</kbd> Add Batch</span>
-        <span v-if="quickQtyMode"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">/</kbd> Search</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Esc</kbd> Close</span>
       </div>
 
@@ -542,13 +541,6 @@ function onSearchInputKeydown(e) {
   if (e.key === 'Escape') {
     e.stopPropagation()
     emit('close')
-    return
-  }
-  if (e.key === '/') {
-    e.preventDefault()
-    quickQtyMode.value = false
-    qtyCellActive.value = false
-    focus()
     return
   }
   if (!quickQtyMode.value || !qtyCellActive.value) return
