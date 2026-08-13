@@ -211,9 +211,9 @@
                       ● {{ row.status }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 font-mono text-sm">{{ formatTime(row.in_time) }}</td>
-                  <td class="px-6 py-4 font-mono text-sm">{{ formatTime(row.out_time) }}</td>
-                  <td class="px-6 py-4 font-mono text-sm">{{ (row.working_hours || 0).toFixed(2) }}</td>
+                  <td class="px-6 py-4 font-mono text-xl">{{ formatTime(row.in_time) }}</td>
+                  <td class="px-6 py-4 font-mono text-xl">{{ formatTime(row.out_time) }}</td>
+                  <td class="px-6 py-4 font-mono text-xl">{{ (row.working_hours || 0).toFixed(2) }}</td>
                   <td class="px-6 py-4 text-right whitespace-nowrap">
                     <template v-if="row.name">
                       <button
