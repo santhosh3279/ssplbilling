@@ -262,15 +262,30 @@ const days = ref([])
 const punchesByDate = ref({})
 const todayIso = isoDate(new Date())
 
+// Each preset returns the [from, to] it selects. Last month is a calendar month,
+// not the trailing 30 days — payroll is run on the month, so the two differ.
 const presets = [
-  { label: 'This month', days: null },
-  { label: 'Last 7 days', days: 7 },
-  { label: 'Last 30 days', days: 30 },
+  { label: 'This month', range: () => [startOfMonth(), new Date()] },
+  { label: 'Last month', range: () => lastMonth() },
+  { label: 'Last 7 days', range: () => [daysBack(7), new Date()] },
+  { label: 'Last 30 days', range: () => [daysBack(30), new Date()] },
 ]
 
 function startOfMonth() {
   const d = new Date()
   return new Date(d.getFullYear(), d.getMonth(), 1)
+}
+
+function lastMonth() {
+  const d = new Date()
+  // Day 0 of this month is the last day of the previous one
+  return [new Date(d.getFullYear(), d.getMonth() - 1, 1), new Date(d.getFullYear(), d.getMonth(), 0)]
+}
+
+function daysBack(n) {
+  const d = new Date()
+  d.setDate(d.getDate() - (n - 1))
+  return d
 }
 
 function isoDate(date) {
@@ -286,15 +301,9 @@ function parseDate(iso) {
 }
 
 function applyPreset(preset) {
-  const today = new Date()
-  if (preset.days === null) {
-    fromDate.value = isoDate(startOfMonth())
-  } else {
-    const start = new Date()
-    start.setDate(today.getDate() - (preset.days - 1))
-    fromDate.value = isoDate(start)
-  }
-  toDate.value = isoDate(today)
+  const [start, end] = preset.range()
+  fromDate.value = isoDate(start)
+  toDate.value = isoDate(end)
   load()
 }
 
