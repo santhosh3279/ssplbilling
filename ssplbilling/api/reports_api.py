@@ -332,6 +332,178 @@ def get_quotation_series():
 	return ["QTN-"]
 
 
+@frappe.whitelist()
+def get_purchase_series():
+	"""Return naming series options defined on the Purchase Invoice doctype."""
+	try:
+		prop_value = frappe.db.get_value(
+			"Property Setter",
+			{"doc_type": "Purchase Invoice", "field_name": "naming_series", "property": "options"},
+			"value",
+		)
+		if prop_value:
+			series = [s.strip() for s in prop_value.split("\n") if s.strip()]
+			if series:
+				return series
+	except Exception:
+		pass
+
+	try:
+		meta = frappe.get_meta("Purchase Invoice")
+		sf = meta.get_field("naming_series")
+		if sf and sf.options:
+			return [s.strip() for s in sf.options.split("\n") if s.strip()]
+	except Exception:
+		pass
+	return []
+
+
+@frappe.whitelist()
+def get_purchase_tax_register(series, from_date=None, to_date=None, company=None):
+	"""Return Purchase Tax Account Register rows for the given naming series and date range.
+
+	Each row represents one submitted Purchase Invoice with its CGST/SGST/IGST breakdown.
+	"""
+	if not company:
+		company = frappe.db.get_value("Purchase Invoice", {"naming_series": series}, "company") or frappe.defaults.get_user_default("company")
+	if not company:
+		company = frappe.db.get_value("Company", {}, "name")
+
+	templates = frappe.get_all(
+		"Item Tax Template",
+		filters={"disabled": 0, "company": ["in", [company, None]]},
+		fields=["name", "title", "gst_rate"],
+		order_by="gst_rate asc, title asc",
+	)
+
+	template_map = {t.name: t for t in templates}
+	rate_to_template = {}
+	for t in templates:
+		if t.gst_rate not in rate_to_template:
+			rate_to_template[t.gst_rate] = t.name
+
+	filters = [
+		["Purchase Invoice", "naming_series", "=", series],
+		["Purchase Invoice", "docstatus", "=", 1],
+	]
+	if company:
+		filters.append(["Purchase Invoice", "company", "=", company])
+	if from_date:
+		filters.append(["Purchase Invoice", "posting_date", ">=", from_date])
+	if to_date:
+		filters.append(["Purchase Invoice", "posting_date", "<=", to_date])
+
+	invoices = frappe.get_all(
+		"Purchase Invoice",
+		filters=filters,
+		fields=[
+			"name",
+			"posting_date",
+			"supplier",
+			"supplier_name",
+			"net_total",
+			"total_taxes_and_charges",
+			"grand_total",
+			"naming_series",
+			"supplier_gstin",
+		],
+		order_by="posting_date asc, name asc",
+	)
+
+	result = []
+	for inv in invoices:
+		supplier_gstin = inv.supplier_gstin
+		if not supplier_gstin and inv.supplier:
+			supplier_gstin = frappe.db.get_value("Supplier", inv.supplier, "gstin") or ""
+		supplier_gstin = supplier_gstin or ""
+
+		taxes = frappe.get_all(
+			"Purchase Taxes and Charges",
+			filters={"parent": inv.name, "parenttype": "Purchase Invoice"},
+			fields=["account_head", "rate", "tax_amount"],
+			order_by="idx asc",
+		)
+
+		cgst_rate = cgst_amount = 0.0
+		sgst_rate = sgst_amount = 0.0
+		igst_rate = igst_amount = 0.0
+		other_tax = 0.0
+
+		for tax in taxes:
+			bucket = _classify_tax(tax.account_head)
+			if bucket == "cgst":
+				cgst_rate = float(tax.rate or 0)
+				cgst_amount += float(tax.tax_amount or 0)
+			elif bucket == "sgst":
+				sgst_rate = float(tax.rate or 0)
+				sgst_amount += float(tax.tax_amount or 0)
+			elif bucket == "igst":
+				igst_rate = float(tax.rate or 0)
+				igst_amount += float(tax.tax_amount or 0)
+			else:
+				other_tax += float(tax.tax_amount or 0)
+
+		# Fetch items to calculate template-wise taxable and tax values
+		items = frappe.get_all(
+			"Purchase Invoice Item",
+			filters={"parent": inv.name},
+			fields=[
+				"net_amount", "item_tax_template", "cgst_rate", "sgst_rate", "igst_rate",
+				"cgst_amount", "sgst_amount", "igst_amount"
+			],
+		)
+		template_sums = {t.name: {"taxable": 0.0, "cgst": 0.0, "sgst": 0.0, "igst": 0.0} for t in templates}
+		for item in items:
+			net_amt = float(item.net_amount or 0)
+			item_cgst = float(item.cgst_amount or 0)
+			item_sgst = float(item.sgst_amount or 0)
+			item_igst = float(item.igst_amount or 0)
+			template_name = item.item_tax_template
+			
+			if not template_name or template_name not in template_map:
+				# Fallback: match by rate
+				igst = float(item.igst_rate or 0)
+				cgst = float(item.cgst_rate or 0)
+				sgst = float(item.sgst_rate or 0)
+				total_rate = round(igst if igst > 0 else (cgst + sgst), 2)
+				template_name = rate_to_template.get(total_rate)
+
+			if template_name in template_sums:
+				template_sums[template_name]["taxable"] += net_amt
+				template_sums[template_name]["cgst"] += item_cgst
+				template_sums[template_name]["sgst"] += item_sgst
+				template_sums[template_name]["igst"] += item_igst
+
+		result.append(
+			{
+				"invoice_no": inv.name,
+				"date": str(inv.posting_date),
+				"supplier": inv.supplier,
+				"supplier_name": inv.supplier_name,
+				"supplier_gstin": supplier_gstin,
+				"taxable_amount": float(inv.net_total or 0),
+				"template_values": template_sums,
+				"cgst_rate": cgst_rate,
+				"cgst_amount": cgst_amount,
+				"sgst_rate": sgst_rate,
+				"sgst_amount": sgst_amount,
+				"igst_rate": igst_rate,
+				"igst_amount": igst_amount,
+				"other_tax": other_tax,
+				"total_tax": float(inv.total_taxes_and_charges or 0),
+				"grand_total": float(inv.grand_total or 0),
+			}
+		)
+
+	comp = get_company_details(company)
+	return {
+		"rows": result,
+		"active_templates": [{"name": t.name, "title": t.title, "gst_rate": t.gst_rate} for t in templates],
+		"company_name": comp["company_name"],
+		"company_address_lines": comp["address_lines"]
+	}
+
+
 def get_company_details(company=None):
 	from erpnext import get_default_company
 	if not company:

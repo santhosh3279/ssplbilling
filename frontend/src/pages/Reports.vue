@@ -41,6 +41,17 @@
 
             <button
               class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="openModal('purchase_tax')"
+            >
+              <span class="text-xl">📊</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Purchase Tax Register</div>
+                <div class="text-base text-[var(--color-text-muted)]">Submitted Purchase Invoices</div>
+              </div>
+            </button>
+
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
               @click="openModal('quotation')"
             >
               <span class="text-xl">📊</span>
@@ -328,7 +339,19 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { utils, writeFile } from 'xlsx'
 import ExcelJS from 'exceljs'
-import { getSalesTaxRegister, getQuotationTaxRegister, getQuotationSeries, getHsnSummaryReport, getQuotationHsnSummaryReport, getItemSummaryReport, getStoreWiseItemSalesReport, getIncomeAccounts, getLedgerWiseSalesPurchaseReport } from '../api.js'
+import {
+  getSalesTaxRegister,
+  getPurchaseTaxRegister,
+  getPurchaseSeries,
+  getQuotationTaxRegister,
+  getQuotationSeries,
+  getHsnSummaryReport,
+  getQuotationHsnSummaryReport,
+  getItemSummaryReport,
+  getStoreWiseItemSalesReport,
+  getIncomeAccounts,
+  getLedgerWiseSalesPurchaseReport,
+} from '../api.js'
 import { dashboardApi } from '../services/dashboard'
 
 const router = useRouter()
@@ -336,6 +359,7 @@ const router = useRouter()
 // ── Series & Account data ───────────────────────────────────────────────────
 const invoiceSeriesList = ref([])
 const quotationSeriesList = ref([])
+const purchaseSeriesList = ref([])
 const incomeAccountList = ref([])
 
 onMounted(async () => {
@@ -350,14 +374,21 @@ onMounted(async () => {
   // Quotation series (from doctype meta)
   try {
     quotationSeriesList.value = await getQuotationSeries() || []
-  } catch {
+  } catch (e) {
     quotationSeriesList.value = []
+  }
+
+  // Purchase series (from doctype meta)
+  try {
+    purchaseSeriesList.value = await getPurchaseSeries() || []
+  } catch (e) {
+    purchaseSeriesList.value = []
   }
 
   // Income Accounts
   try {
     incomeAccountList.value = await getIncomeAccounts() || []
-  } catch {
+  } catch (e) {
     incomeAccountList.value = []
   }
 })
@@ -474,6 +505,18 @@ const modalConfig = computed(() => {
       docLabel: 'Account',
     }
   }
+  if (reportType.value === 'purchase_tax') {
+    return {
+      title: 'Purchase Tax Register',
+      subtitle: 'GST-wise summary of submitted purchase invoices',
+      seriesLabel: 'Purchase Series',
+      btnClass: 'bg-[var(--color-info)] hover:bg-[var(--color-info)]',
+      sheetName: 'Purchase Tax Register',
+      filePrefix: 'PurchaseTaxRegister',
+      noDataMsg: 'No submitted purchase invoices found for the selected criteria.',
+      docLabel: 'Invoice No',
+    }
+  }
   return {
     title: 'Sales Tax Register',
     subtitle: 'GST-wise summary of submitted sales invoices',
@@ -488,17 +531,17 @@ const modalConfig = computed(() => {
 
 const currentSeriesList = computed(() => {
   if (reportType.value === 'quotation' || reportType.value === 'quotation_hsn') return quotationSeriesList.value
+  if (reportType.value === 'purchase_tax') return purchaseSeriesList.value
   return invoiceSeriesList.value
 })
 
 function openModal(type) {
   reportType.value = type
   modalError.value = ''
-  selectedIncomeAccount.value = ''
   let list = []
   if (type === 'quotation' || type === 'quotation_hsn') list = quotationSeriesList.value
+  else if (type === 'purchase_tax') list = purchaseSeriesList.value
   else list = invoiceSeriesList.value
-
   selectedSeries.value = list.length ? list[0] : ''
   const d = defaultDates()
   fromDate.value = d.from
@@ -548,6 +591,12 @@ async function generateReport() {
       showModal.value = false
       return
     // Cashflow report is now handled in CashflowReport.vue
+    } else if (reportType.value === 'purchase_tax') {
+      const res = await getPurchaseTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
+      rows = res.rows || []
+      activeTemplates.value = res.active_templates || []
+      companyName = res.company_name || ''
+      companyAddressLines = res.company_address_lines || []
     } else {
       const res = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
       rows = res.rows || []
@@ -953,7 +1002,10 @@ async function buildExcel(rows, companyName, companyAddressLines) {
 
   // Table header row: columns/headers
   const headers = [
-    docLabel, 'Date', 'Customer Code', 'Customer Name', 'Customer GSTIN',
+    docLabel, 'Date',
+    rType === 'purchase_tax' ? 'Supplier Code' : 'Customer Code',
+    rType === 'purchase_tax' ? 'Supplier Name' : 'Customer Name',
+    rType === 'purchase_tax' ? 'Supplier GSTIN' : 'Customer GSTIN',
     'Taxable Amount',
   ]
   for (const t of activeTemplates.value) {
@@ -986,9 +1038,9 @@ async function buildExcel(rows, companyName, companyAddressLines) {
     const rowValues = [
       rType === 'order' ? r.order_no : (rType === 'quotation' ? r.quotation_no : r.invoice_no),
       r.date || '',
-      r.customer || '',
-      r.customer_name || '',
-      r.customer_gstin || '',
+      rType === 'purchase_tax' ? (r.supplier || '') : (r.customer || ''),
+      rType === 'purchase_tax' ? (r.supplier_name || '') : (r.customer_name || ''),
+      rType === 'purchase_tax' ? (r.supplier_gstin || '') : (r.customer_gstin || ''),
       fmt(r.taxable_amount),
     ]
     for (const t of activeTemplates.value) {

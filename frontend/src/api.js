@@ -868,6 +868,19 @@ export async function getSalesTaxRegister(series, fromDate, toDate) {
   });
 }
 
+export async function getPurchaseTaxRegister(series, fromDate, toDate) {
+  return frappeGet("ssplbilling.api.reports_api.get_purchase_tax_register", {
+    series,
+    from_date: fromDate,
+    to_date: toDate,
+    company: localStorage.getItem("wb-company") || undefined,
+  });
+}
+
+export async function getPurchaseSeries() {
+  return frappeGet("ssplbilling.api.reports_api.get_purchase_series", {});
+}
+
 /**
  * Fetch naming series options for Quotation doctype.
  */
