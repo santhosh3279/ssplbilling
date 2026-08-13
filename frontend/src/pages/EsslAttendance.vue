@@ -215,18 +215,28 @@
                   <td class="px-6 py-4 font-mono text-sm">{{ formatTime(row.out_time) }}</td>
                   <td class="px-6 py-4 font-mono text-sm">{{ (row.working_hours || 0).toFixed(2) }}</td>
                   <td class="px-6 py-4 text-right whitespace-nowrap">
-                    <button
-                      @click="openEditor(row)"
-                      class="rounded-xl border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold hover:bg-[var(--color-midlight)] transition-colors"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      @click="removeRecord(row)"
-                      class="ml-2 rounded-xl border border-rose-500/30 text-rose-500 px-3 py-1.5 text-xs font-bold hover:bg-rose-500/10 transition-colors"
-                    >
-                      Delete
-                    </button>
+                    <template v-if="row.name">
+                      <button
+                        @click="openEditor(row)"
+                        class="rounded-xl border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold hover:bg-[var(--color-midlight)] transition-colors"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        @click="removeRecord(row)"
+                        class="ml-2 rounded-xl border border-rose-500/30 text-rose-500 px-3 py-1.5 text-xs font-bold hover:bg-rose-500/10 transition-colors"
+                      >
+                        Delete
+                      </button>
+                    </template>
+                    <template v-else>
+                      <button
+                        @click="openEditor(row)"
+                        class="rounded-xl bg-[var(--color-employee)] text-white px-3 py-1.5 text-xs font-bold hover:brightness-110 active:scale-95 transition-all"
+                      >
+                        Mark Present
+                      </button>
+                    </template>
                   </td>
                 </tr>
                 <tr v-if="filteredRecords.length === 0 && !busy">
@@ -443,10 +453,44 @@ async function loadRecords() {
   busyLabel.value = 'Loading attendance...'
   error.value = ''
   try {
-    records.value = (await fetchAttendanceRecords({
+    const atts = await fetchAttendanceRecords({
       fromDate: selectedDate.value || null,
       toDate: selectedDate.value || null,
-    })) || []
+    }) || []
+
+    if (!employees.value.length) {
+      const list = await fetchEmployees('')
+      employees.value = (list || []).filter((e) => (e.status || 'Active') === 'Active')
+    }
+
+    const attMap = {}
+    atts.forEach((r) => {
+      attMap[r.employee] = r
+    })
+
+    const merged = []
+    employees.value.forEach((emp) => {
+      const att = attMap[emp.name]
+      if (att) {
+        merged.push({
+          ...att,
+          employee_name: emp.employee_name || att.employee_name,
+        })
+      } else {
+        merged.push({
+          name: '', // virtual record
+          employee: emp.name,
+          employee_name: emp.employee_name,
+          attendance_date: selectedDate.value,
+          status: 'Absent',
+          in_time: null,
+          out_time: null,
+          working_hours: 0,
+        })
+      }
+    })
+
+    records.value = merged
   } catch (err) {
     console.error('Failed to load attendance:', err)
     error.value = err.message || 'Failed to load attendance.'
@@ -529,13 +573,13 @@ async function openCreator() {
 
 async function openEditor(row) {
   newRecord.value = {
-    name: row.name,
+    name: row.name || '',
     employee: row.employee,
     attendance_date: row.attendance_date,
-    status: row.status,
-    // The form takes HH:MM; the stored value is a full datetime
-    in_time: (String(row.in_time || '').split(' ')[1] || '').slice(0, 5),
-    out_time: (String(row.out_time || '').split(' ')[1] || '').slice(0, 5),
+    status: row.status || 'Present',
+    // The form takes HH:MM; stored value is datetime or null
+    in_time: row.in_time ? (String(row.in_time || '').split(' ')[1] || '').slice(0, 5) : '09:00',
+    out_time: row.out_time ? (String(row.out_time || '').split(' ')[1] || '').slice(0, 5) : '18:00',
   }
   creatorError.value = ''
   showCreator.value = true
