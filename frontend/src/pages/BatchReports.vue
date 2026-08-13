@@ -1,55 +1,55 @@
 <template>
   <div class="flex min-h-screen flex-col bg-[var(--color-bg)]">
     <!-- Top Bar -->
-    <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
+    <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
       <div class="flex items-center justify-between">
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-4">
           <button
-            class="rounded-lg px-3 py-1.5 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition"
+            class="rounded-lg px-4 py-2 text-base font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition cursor-pointer"
             @click="router.push('/')"
           >
             ← Back
           </button>
           <div>
-            <h1 class="text-3xl font-normal text-[var(--color-text)] uppercase tracking-wider">Batch Report Exporter</h1>
-            <p class="text-xs text-[var(--color-text-muted)]">Consolidate multiple report registers into a single ZIP archive</p>
+            <h1 class="text-4xl font-bold text-[var(--color-text)] uppercase tracking-wider">Batch Report Exporter</h1>
+            <p class="text-base text-[var(--color-text-muted)] mt-1">Consolidate multiple report registers into a single ZIP archive</p>
           </div>
         </div>
       </div>
     </header>
 
     <main class="flex-1 bg-[var(--color-surface)]/30 p-6 overflow-y-auto">
-      <div class="max-w-4xl mx-auto space-y-6">
+      <div class="max-w-6xl mx-auto space-y-8">
         <!-- Date Range Selection Card -->
-        <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
-          <h2 class="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)] pb-2 mb-4">
+        <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm">
+          <h2 class="text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)] pb-3 mb-6">
             📅 Select Date Range & Period
           </h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">From Date</label>
+              <label class="mb-2 block text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">From Date</label>
               <input
                 v-model="fromDate"
                 type="date"
-                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-lg text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
               />
             </div>
             <div>
-              <label class="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">To Date</label>
+              <label class="mb-2 block text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">To Date</label>
               <input
                 v-model="toDate"
                 type="date"
-                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-lg text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
               />
             </div>
           </div>
           <!-- Presets -->
-          <div class="flex flex-wrap gap-2 mt-4 pt-2 border-t border-[var(--color-border)]/50">
+          <div class="flex flex-wrap gap-2.5 mt-6 pt-3 border-t border-[var(--color-border)]/50">
             <button
               v-for="p in presets"
               :key="p.label"
               @click="setPreset(p.key)"
-              class="rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition cursor-pointer"
+              class="rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition cursor-pointer"
             >
               {{ p.label }}
             </button>
@@ -57,66 +57,66 @@
         </div>
 
         <!-- Reports Selection Card -->
-        <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
-          <div class="flex justify-between items-center border-b border-[var(--color-border)] pb-2 mb-4">
-            <h2 class="text-sm font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+        <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm">
+          <div class="flex justify-between items-center border-b border-[var(--color-border)] pb-3 mb-6">
+            <h2 class="text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
               📋 Select Reports to Export
             </h2>
-            <div class="flex gap-2">
+            <div class="flex gap-3 text-sm">
               <button
                 @click="selectAll(true)"
-                class="text-xs text-[var(--color-info)] hover:underline transition"
+                class="font-semibold text-[var(--color-info)] hover:underline transition cursor-pointer"
               >
                 Select All
               </button>
               <span class="text-[var(--color-border)]">|</span>
               <button
                 @click="selectAll(false)"
-                class="text-xs text-[var(--color-text-muted)] hover:underline transition"
+                class="font-semibold text-[var(--color-text-muted)] hover:underline transition cursor-pointer"
               >
                 Clear Selection
               </button>
             </div>
           </div>
 
-          <div class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div
               v-for="report in reports"
               :key="report.id"
-              class="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border transition-all"
-              :class="report.selected ? 'bg-[var(--color-info)]/5 border-[var(--color-info)]/30' : 'bg-[var(--color-surface-raised)]/30 border-[var(--color-border)]'"
+              class="flex flex-col justify-between p-6 rounded-2xl border transition-all bg-[var(--color-bg)]/20 min-h-[190px]"
+              :class="report.selected ? 'bg-[var(--color-info)]/5 border-[var(--color-info)]/40 shadow-sm shadow-[var(--color-info)]/5' : 'bg-[var(--color-surface-raised)]/30 border-[var(--color-border)]'"
             >
-              <div class="flex items-start gap-3">
+              <div class="flex items-start gap-4">
                 <input
                   type="checkbox"
                   v-model="report.selected"
                   :id="report.id"
-                  class="mt-1 h-5 w-5 rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-info)]/30 cursor-pointer"
+                  class="mt-1 h-6 w-6 rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-info)]/30 cursor-pointer"
                 />
                 <label :for="report.id" class="cursor-pointer select-none">
-                  <div class="text-lg font-semibold text-[var(--color-text)]">{{ report.name }}</div>
-                  <div class="text-xs text-[var(--color-text-muted)]">{{ report.description }}</div>
+                  <div class="text-xl font-bold text-[var(--color-text)]">{{ report.name }}</div>
+                  <div class="text-sm text-[var(--color-text-muted)] mt-1.5">{{ report.description }}</div>
                 </label>
               </div>
 
               <!-- Multi-series Selector -->
-              <div class="mt-3 md:mt-0 flex flex-col gap-1.5 min-w-[240px]">
-                <span class="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">Select Series:</span>
-                <div class="flex flex-wrap gap-1.5">
+              <div class="mt-4 flex flex-col gap-2 pt-3 border-t border-[var(--color-border)]/40">
+                <span class="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-bold">Select Series:</span>
+                <div class="flex flex-wrap gap-2">
                   <button
                     v-for="s in getSeriesListForType(report.seriesType)"
                     :key="s"
                     :disabled="!report.selected"
                     @click="toggleSeries(report, s)"
                     type="button"
-                    class="px-2.5 py-1 rounded-full text-xs font-semibold border transition cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed"
+                    class="px-3.5 py-1.5 rounded-full text-sm font-semibold border transition cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed"
                     :class="report.selectedSeries.includes(s) 
                       ? 'bg-[var(--color-info)] border-[var(--color-info)] text-[var(--color-text-on-highlight)] shadow-sm shadow-[var(--color-info)]/10'
                       : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
                   >
                     {{ s }}
                   </button>
-                  <span v-if="!getSeriesListForType(report.seriesType).length" class="text-xs text-[var(--color-text-muted)] italic">
+                  <span v-if="!getSeriesListForType(report.seriesType).length" class="text-sm text-[var(--color-text-muted)] italic">
                     No series found
                   </span>
                 </div>
@@ -126,27 +126,27 @@
         </div>
 
         <!-- Global Messages & Exporters -->
-        <div v-if="error" class="rounded-xl bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30 p-4 text-sm text-[var(--color-danger)]">
+        <div v-if="error" class="rounded-xl bg-[var(--color-danger)]/10 border border-[var(--color-danger)]/30 p-5 text-base text-[var(--color-danger)]">
           ⚠️ {{ error }}
         </div>
 
-        <div v-if="successSummary" class="rounded-xl bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 p-4 text-sm text-[var(--color-success)] space-y-1">
+        <div v-if="successSummary" class="rounded-xl bg-[var(--color-success)]/10 border border-[var(--color-success)]/30 p-5 text-base text-[var(--color-success)] space-y-1">
           <div class="font-bold">🎉 Export Completed Successfully!</div>
-          <div class="text-xs text-[var(--color-text-muted)]">{{ successSummary }}</div>
+          <div class="text-sm text-[var(--color-text-muted)]">{{ successSummary }}</div>
         </div>
 
         <!-- Actions -->
-        <div class="flex justify-end gap-3 items-center">
+        <div class="flex justify-end gap-4 items-center">
           <!-- Spinner & status -->
-          <div v-if="generating" class="flex items-center gap-2 text-sm text-[var(--color-text-muted)]">
-            <span class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent"></span>
+          <div v-if="generating" class="flex items-center gap-3 text-base text-[var(--color-text-muted)]">
+            <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent"></span>
             <span>{{ progressMsg }}</span>
           </div>
 
           <button
             @click="generateZip"
             :disabled="generating || !hasSelection"
-            class="rounded-xl px-6 py-3 text-lg font-semibold text-[var(--color-text-on-highlight)] transition active:scale-95 shadow-lg cursor-pointer disabled:opacity-50"
+            class="rounded-2xl px-8 py-4 text-xl font-bold text-[var(--color-text-on-highlight)] transition active:scale-95 shadow-lg cursor-pointer disabled:opacity-50"
             :class="hasSelection ? 'bg-[var(--color-info)] hover:bg-[var(--color-info)]/90 shadow-[var(--color-info)]/15' : 'bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)] shadow-none'"
           >
             ⚡ Export as ZIP
