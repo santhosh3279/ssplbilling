@@ -9,7 +9,8 @@
             Attendance Chart
           </h1>
           <p class="text-xs text-[var(--color-text-muted)] font-medium">
-            Working hours per day for one employee. Sundays are marked in orange.
+            Working hours per day for one employee. Each block is a stretch between two
+            punches, so the gaps are the breaks. Sundays are marked in orange.
           </p>
         </div>
 
@@ -106,6 +107,12 @@
             <span class="flex items-center gap-2">
               <span class="h-3 w-3 rounded-full" :style="{ background: SUNDAY_COLOR }"></span> Sunday
             </span>
+            <span class="flex items-center gap-2">
+              <span class="h-3 w-3 rounded-sm border border-dashed border-rose-500/60 hatch-absent"></span> Absent
+            </span>
+            <span class="flex items-center gap-2">
+              <span class="h-3 w-3 rounded-sm hatch-overtime" :style="{ background: WEEKDAY_COLOR }"></span> Overtime
+            </span>
           </div>
         </div>
 
@@ -176,35 +183,39 @@
                       {{ day.hours ? day.hours.toFixed(2) + 'h' : '—' }}
                     </span>
                     <div class="relative w-full" :style="{ height: PLOT_HEIGHT + 'px' }">
+                      <!-- A day nobody worked: hollow across the shift, so the gap is
+                           visible without pretending hours were logged -->
                       <div
-                        v-if="day.barHeightPx > 0"
-                        class="absolute w-full transition-all flex flex-col justify-end"
+                        v-if="day.absent"
+                        class="absolute w-full rounded-lg border-2 border-dashed border-rose-500/50 hatch-absent"
+                        :style="{ bottom: day.absentBottomPx + 'px', height: day.absentHeightPx + 'px' }"
+                        :title="tooltip(day)"
+                      ></div>
+
+                      <!-- One block per worked stretch; the gaps between them are the
+                           breaks the employee punched out for -->
+                      <div
+                        v-for="(block, bi) in day.blocks"
+                        :key="bi"
+                        class="absolute w-full rounded-lg transition-all"
+                        :class="block.overtime ? 'hatch-overtime' : ''"
                         :style="{
-                          bottom: day.barBottomPx + 'px',
-                          height: day.barHeightPx + 'px',
+                          bottom: block.bottomPx + 'px',
+                          height: block.heightPx + 'px',
+                          backgroundColor: day.sunday ? SUNDAY_COLOR : WEEKDAY_COLOR,
                         }"
-                      >
-                        <!-- Overtime segment -->
-                        <div
-                          v-if="day.overtimeShare > 0"
-                          class="w-full hatch-overtime rounded-t-lg border-b border-black/20"
-                          :style="{
-                            height: day.overtimeShare + '%',
-                            backgroundColor: day.sunday ? SUNDAY_COLOR : WEEKDAY_COLOR,
-                          }"
-                          :title="tooltip(day)"
-                        ></div>
-                        <!-- Regular segment -->
-                        <div
-                          class="w-full"
-                          :class="day.overtimeShare === 0 ? 'rounded-t-lg' : ''"
-                          :style="{
-                            height: day.regularShare + '%',
-                            backgroundColor: day.sunday ? SUNDAY_COLOR : WEEKDAY_COLOR,
-                          }"
-                          :title="tooltip(day)"
-                        ></div>
-                      </div>
+                        :title="tooltip(day)"
+                      ></div>
+
+                      <!-- An unpaired punch has no stretch to sit in, so it is drawn as
+                           the single reading it is -->
+                      <div
+                        v-for="(tick, ti) in day.ticks"
+                        :key="'t' + ti"
+                        class="absolute w-full border-t-2 border-dotted"
+                        :style="{ bottom: tick + 'px', borderColor: day.sunday ? SUNDAY_COLOR : WEEKDAY_COLOR }"
+                        :title="tooltip(day)"
+                      ></div>
                     </div>
                     <!-- X axis: the date, with the weekday under it -->
                     <span class="mt-2 text-[10px] font-bold" :class="day.sunday ? 'text-amber-500' : 'text-[var(--color-text-muted)]'">
@@ -227,7 +238,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
-import { fetchAttendanceSummary, fetchEmployees } from '../api.js'
+import { fetchAttendanceSummary, fetchEmployees, fetchEmployeeCheckinDays } from '../api.js'
 
 // The band the bars are drawn in, plus the strip above it holding the hour label.
 const PLOT_HEIGHT = 300
@@ -247,6 +258,9 @@ const fromDate = ref(isoDate(startOfMonth()))
 const toDate = ref(isoDate(new Date()))
 
 const days = ref([])
+// { '2026-08-12': [{ hours: 9.5, auto: 0 }, ...] } — the punches behind each bar
+const punchesByDate = ref({})
+const todayIso = isoDate(new Date())
 
 const presets = [
   { label: 'This month', days: null },
@@ -362,6 +376,23 @@ function getDayTimes(day) {
   return { inHours: inH, outHours: outH }
 }
 
+// One drawn block per worked stretch. A stretch that runs past the shift end is cut
+// in two so only the overtime part carries the hatch.
+function buildBlocks(fromH, toH, sEnd, sStart, range) {
+  const blocks = []
+  const push = (a, b, overtime) => {
+    if (b <= a) return
+    blocks.push({
+      bottomPx: Math.round((Math.max(0, a - sStart) / range) * PLOT_HEIGHT),
+      heightPx: Math.max(3, Math.round(((b - a) / range) * PLOT_HEIGHT)),
+      overtime,
+    })
+  }
+  push(fromH, Math.min(toH, sEnd), false)
+  push(Math.max(fromH, sEnd), toH, true)
+  return blocks
+}
+
 const processedDays = computed(() => {
   const sStart = shiftStart.value
   const sEnd = shiftEnd.value
@@ -370,47 +401,56 @@ const processedDays = computed(() => {
 
   return days.value.map(day => {
     const { inHours, outHours } = getDayTimes(day)
-    
-    let barHeightPx = 0
-    let overtimeShare = 0
-    let regularShare = 0
-    let barBottomPx = 0
-    
-    if (day.hours > 0 && inHours !== null && outHours !== null) {
-      const duration = outHours - inHours
-      barHeightPx = Math.max(3, Math.round((duration / range) * PLOT_HEIGHT))
-      
-      const bottomOffset = inHours - sStart
-      barBottomPx = Math.round((Math.max(0, bottomOffset) / range) * PLOT_HEIGHT)
-      
-      const regularDuration = Math.max(0, Math.min(outHours, sEnd) - inHours)
-      const overtimeDuration = Math.max(0, outHours - Math.max(inHours, sEnd))
-      const totalDur = regularDuration + overtimeDuration
-      
-      if (totalDur > 0) {
-        regularShare = (regularDuration / totalDur) * 100
-        overtimeShare = (overtimeDuration / totalDur) * 100
-      } else {
-        regularShare = 100
-        overtimeShare = 0
+    const punches = punchesByDate.value[day.date] || []
+
+    let blocks = []
+    // Ticks for punches that no block edge already shows — an odd punch count leaves
+    // the last one unpaired, and it would otherwise vanish from the chart entirely.
+    let ticks = []
+
+    if (punches.length >= 2) {
+      // Even index is an entry, odd its exit — the same pairing the sync uses for
+      // working_hours, so the gaps drawn here are the breaks it excluded.
+      for (let i = 0; i + 1 < punches.length; i += 2) {
+        blocks = blocks.concat(buildBlocks(punches[i].hours, punches[i + 1].hours, sEnd, sStart, range))
       }
+      if (punches.length % 2 === 1) {
+        const last = punches[punches.length - 1]
+        ticks.push(Math.round((Math.max(0, last.hours - sStart) / range) * PLOT_HEIGHT))
+      }
+    } else if (day.hours > 0 && inHours !== null && outHours !== null) {
+      // No punches recorded (a hand-written Attendance), so the outer window is all
+      // there is to draw.
+      blocks = buildBlocks(inHours, outHours, sEnd, sStart, range)
+    } else if (punches.length === 1) {
+      ticks.push(Math.round((Math.max(0, punches[0].hours - sStart) / range) * PLOT_HEIGHT))
     }
-    
+
+    // A day the employee did not work, drawn hollow across the shift so the gap in
+    // the month reads as absence rather than as missing data. Sundays are left blank
+    // — nobody is expected in — and so is anything still in the future.
+    const absent = !blocks.length && !ticks.length && !day.sunday && day.date <= todayIso
+
     return {
       ...day,
       inHours,
       outHours,
-      barHeightPx,
-      barBottomPx,
-      regularShare,
-      overtimeShare,
+      punches,
+      blocks,
+      ticks,
+      absent,
+      absentBottomPx: 0,
+      absentHeightPx: Math.max(3, Math.round(((sEnd - sStart) / range) * PLOT_HEIGHT)),
     }
   })
 })
 
 function tooltip(day) {
   const parts = Object.entries(day.counts || {}).map(([status, count]) => `${status}: ${count}`)
-  return `${day.date} (${day.weekday})\n${day.hours.toFixed(2)} hours\n${parts.join('\n')}`
+  const punches = (day.punches || []).map((p) => formatHour(p.hours) + (p.auto ? ' (auto)' : ''))
+  const lines = [`${day.date} (${day.weekday})`, `${day.hours.toFixed(2)} hours`, ...parts]
+  if (punches.length) lines.push(`Punches: ${punches.join(' · ')}`)
+  return lines.join('\n')
 }
 
 // Every date in the range gets a bar — days with no attendance stay at zero so
@@ -462,17 +502,33 @@ async function load() {
   busy.value = true
   error.value = ''
   try {
-    const res = await fetchAttendanceSummary({
-      fromDate: fromDate.value || null,
-      toDate: toDate.value || null,
-      groupBy: 'date',
-      employee: employee.value,
+    const [res, punches] = await Promise.all([
+      fetchAttendanceSummary({
+        fromDate: fromDate.value || null,
+        toDate: toDate.value || null,
+        groupBy: 'date',
+        employee: employee.value,
+      }),
+      fetchEmployeeCheckinDays({
+        employee: employee.value,
+        fromDate: fromDate.value,
+        toDate: toDate.value,
+      }),
+    ])
+    const grouped = {}
+    ;(punches || []).forEach((p) => {
+      const hours = timeToHours(p.time)
+      if (hours === null) return
+      if (!grouped[p.date]) grouped[p.date] = []
+      grouped[p.date].push({ hours, auto: p.auto })
     })
+    punchesByDate.value = grouped
     days.value = buildDays(res?.buckets || [])
   } catch (err) {
     console.error('Failed to load the attendance summary:', err)
     error.value = err.message || 'Failed to load the attendance summary.'
     days.value = []
+    punchesByDate.value = {}
   } finally {
     busy.value = false
   }
@@ -490,6 +546,17 @@ onMounted(async () => {
     -45deg,
     rgba(0, 0, 0, 0.3) 0px,
     rgba(0, 0, 0, 0.3) 2px,
+    transparent 2px,
+    transparent 8px
+  );
+}
+
+/* Hollow on purpose — no fill colour, only the hatch and the dashed outline */
+.hatch-absent {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    rgba(244, 63, 94, 0.28) 0px,
+    rgba(244, 63, 94, 0.28) 2px,
     transparent 2px,
     transparent 8px
   );

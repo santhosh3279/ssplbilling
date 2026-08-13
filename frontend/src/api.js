@@ -1392,6 +1392,16 @@ export async function fetchEmployeeCheckins({ employee, date }) {
   });
 }
 
+// [{date, time, auto}] — every punch one employee made across a range, for the chart
+// to draw the worked stretches between them.
+export async function fetchEmployeeCheckinDays({ employee, fromDate, toDate = null }) {
+  return frappePost("ssplbilling.api.essl_attendance_api.get_employee_checkin_days", {
+    employee,
+    from_date: fromDate,
+    to_date: toDate,
+  });
+}
+
 // [{employee, date, count}] — counted server-side so the list can show the number
 // of punches per employee without fetching the punches themselves.
 export async function fetchCheckinCounts({ fromDate, toDate = null }) {

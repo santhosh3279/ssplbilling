@@ -811,6 +811,37 @@ def get_employee_checkins(employee, date):
 
 
 @frappe.whitelist()
+def get_employee_checkin_days(employee, from_date, to_date=None):
+	"""Every punch one employee made across a range, earliest first.
+
+	The chart draws the worked stretches between the punches, so it needs the punches
+	themselves — the Attendance record only carries the outer in/out window and the
+	break in the middle is invisible in it.
+	"""
+	rows = frappe.get_all(
+		"Employee Checkin",
+		filters={
+			"employee": employee,
+			"time": (
+				"between",
+				(f"{getdate(from_date)} 00:00:00", f"{getdate(to_date or from_date)} 23:59:59.999999"),
+			),
+		},
+		fields=["name", "time", "device_id"],
+		order_by="time asc",
+		limit_page_length=0,
+	)
+	return [
+		{
+			"date": str(getdate(row.time)),
+			"time": str(row.time),
+			"auto": 1 if (row.device_id or "").endswith(AUTO_CHECKIN_SUFFIX) else 0,
+		}
+		for row in rows
+	]
+
+
+@frappe.whitelist()
 def get_checkin_counts(from_date, to_date=None):
 	"""[{employee, date, count}] for the range — one row per employee-day with punches.
 
