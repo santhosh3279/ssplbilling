@@ -10,7 +10,11 @@ dynamic = ["version"]
 dependencies = [
     # "frappe~=16.0.0" # Installed and managed by bench.
     "paho-mqtt",
-    "cryptography"
+    "cryptography",
+    # Driver for the eSSL/ZKTeco attendance devices (api/essl_machine_api.py).
+    # Must be declared here so `bench get-app` installs it inside the Docker
+    # image — otherwise every device row reports "No module named 'zk'".
+    "pyzk"
 ]
 
 [build-system]
