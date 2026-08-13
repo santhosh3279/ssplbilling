@@ -52,6 +52,7 @@ export const BILLER_ROUTES = new Set([
   'DeviceUsers',
   'AttendanceChart',
   'ShiftRoaster',
+  'BatchReports',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -108,6 +109,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'DeviceUsers',
   'AttendanceChart',
   'ShiftRoaster',
+  'BatchReports',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
@@ -131,6 +133,7 @@ export const ADMIN_ROUTES = new Set([
   'CustomerEnquiry',
   'DiscountRule',
   'ChequeRegister',
+  'BatchReports',
 ])
 
 /**
@@ -271,6 +274,7 @@ export function canAccessRoute(routeName) {
       allowed.add('FastMovingItems')
       allowed.add('MaterialTransferReport')
       allowed.add('CashflowReport')
+      allowed.add('BatchReports')
     }
     return allowed.has(routeName)
   }
@@ -345,6 +349,7 @@ const TILE_ROUTE_MAP = {
   'material-transfer-report': 'MaterialTransferReport',
   'land-cost-voucher': 'LandCostVoucher',
   'account-tree':      'AccountTree',
+  'batch-reports':     'BatchReports',
 }
 
 export function canAccessTile(tileId) {

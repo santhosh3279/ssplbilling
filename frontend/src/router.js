@@ -65,6 +65,7 @@ import EsslAttendance from './pages/EsslAttendance.vue'
 import DeviceUsers from './pages/DeviceUsers.vue'
 import AttendanceChart from './pages/AttendanceChart.vue'
 import ShiftRoaster from './pages/ShiftRoaster.vue'
+import BatchReports from './pages/BatchReports.vue'
 
 const routes = [
   {
@@ -442,6 +443,12 @@ const routes = [
     name: 'AccountTree',
     component: AccountTree,
     meta: { title: 'Chart of Accounts' },
+  },
+  {
+    path: '/batch-reports',
+    name: 'BatchReports',
+    component: BatchReports,
+    meta: { title: 'Batch Reports' },
   },
   {
     path: '/:pathMatch(.*)*',

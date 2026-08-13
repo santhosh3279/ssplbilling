@@ -915,9 +915,9 @@ const allTiles = [
   { id: 'hrms',               bucket: 'sspl',   name: 'HRMS Dashboard',        desc: 'Human Resource Management',                icon: '👥', shortcut: ''    },
   { id: 'essl-machines',      bucket: 'sspl',   name: 'eSSL Machines',         desc: 'Attendance devices and their stores',      icon: '🖥️', shortcut: ''    },
 
-  // ── Report ──
   { id: 'daily-report',       bucket: 'report',   name: 'Daily Report',          desc: 'Daily operations summary',                 icon: '📊', shortcut: ''    },
   { id: 'reports',            bucket: 'report',   name: 'Reports',               desc: 'Business reports and analytics',           icon: '📈', shortcut: ''    },
+  { id: 'batch-reports',      bucket: 'report',   name: 'Batch Reports',         desc: 'Batch download reports as ZIP',            icon: '📦', shortcut: ''    },
 ]
 
 // Per-user/group tile selection from SSPL Dashboard Tile Access.
@@ -1160,7 +1160,7 @@ function tilesInBucket(bucketId) {
   return filteredTiles.value.filter(t => t.bucket === bucketId)
 }
 
-const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines']
+const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
@@ -1191,6 +1191,7 @@ const routeAliases = {
   'store-transfer': '/store-transfer',
   'general-ledger': '/general-ledger',
   reports: '/reports',
+  'batch-reports': '/batch-reports',
   cancellation: '/cancellation',
   'naming-settings': '/naming-settings',
   catelogue: '/catelogue',
