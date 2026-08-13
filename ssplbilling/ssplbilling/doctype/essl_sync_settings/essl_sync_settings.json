@@ -10,7 +10,8 @@
   "column_break_main",
   "create_checkins",
   "create_attendance",
-  "mark_half_day_below_hours"
+  "mark_half_day_below_hours",
+  "auto_checkin_hours"
  ],
  "fields": [
   {
@@ -49,6 +50,13 @@
    "fieldname": "mark_half_day_below_hours",
    "fieldtype": "Float",
    "label": "Mark Half Day Below Hours"
+  },
+  {
+   "default": "0",
+   "description": "When a day ends on an unpaired punch (the exit was never recorded), write a stand-in checkout this many hours after it so the punches pair up. 0 disables it and the day falls back to its first-to-last span.",
+   "fieldname": "auto_checkin_hours",
+   "fieldtype": "Float",
+   "label": "Auto Checkin Hours"
   }
  ],
  "grid_page_length": 50,

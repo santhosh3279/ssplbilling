@@ -7,6 +7,7 @@ the 10-minute scheduler tick can run forever without duplicating a single punch.
 """
 
 import json
+from datetime import timedelta
 
 import frappe
 from frappe.utils import flt, get_datetime, getdate, now_datetime
@@ -21,6 +22,11 @@ SETTINGS_DOCTYPE = "eSSL Sync Settings"
 # Attendance records — the manual sync takes an explicit from_date for backfills.
 DEFAULT_INITIAL_DAYS = 7
 
+# Checkins this sync fabricates for a day with a punch missing carry this suffix on
+# device_id. It is the only way to tell a stand-in apart from a real punch, so the
+# cleanup below can withdraw one once the real punch turns up.
+AUTO_CHECKIN_SUFFIX = "-AUTO"
+
 
 def _settings():
 	doc = frappe.get_cached_doc(SETTINGS_DOCTYPE)
@@ -30,6 +36,9 @@ def _settings():
 		"create_checkins": bool(doc.create_checkins),
 		"create_attendance": bool(doc.create_attendance),
 		"mark_half_day_below_hours": flt(doc.mark_half_day_below_hours),
+		# doc.get() rather than an attribute — the field is missing from a doc cached
+		# before this app version migrated.
+		"auto_checkin_hours": flt(doc.get("auto_checkin_hours")),
 	}
 
 
@@ -218,6 +227,120 @@ def _create_checkin(employee, timestamp, machine):
 	return True
 
 
+def _real_stamps_for_day(employee, day, fallback):
+	"""(real punches, synthetic checkin rows) for one employee-day, across every device.
+
+	Machines are synced one at a time, so the stamps a single device just returned are
+	only part of the day whenever two devices log the same employee (a mapping with no
+	machine is the fallback for all of them). Pairing has to run over the whole day or
+	the second machine's partial total overwrites the first machine's.
+	"""
+	rows = frappe.get_all(
+		"Employee Checkin",
+		filters={
+			"employee": employee,
+			"time": ("between", (f"{day} 00:00:00", f"{day} 23:59:59.999999")),
+		},
+		fields=["name", "time", "device_id"],
+		order_by="time asc",
+	)
+	if not rows:
+		# create_checkins is off, so there is nothing to read back — this machine's own
+		# stamps are all the day has.
+		return sorted(fallback), []
+
+	real = []
+	synthetic = []
+	for row in rows:
+		if (row.device_id or "").endswith(AUTO_CHECKIN_SUFFIX):
+			synthetic.append(row)
+		else:
+			real.append(get_datetime(row.time))
+	return real, synthetic
+
+
+def _missing_checkin_stamp(real, auto_hours):
+	"""Where the entry that nobody punched belongs, or None.
+
+	An odd punch count means one entry is missing from the middle of the day: the
+	employee punched out for a break and never punched back in, so every punch after
+	that break pairs up shifted by one. The stand-in goes Auto Checkin Hours after the
+	exit that opens the widest break — for 09:30 / 12:00 / 20:00 with two hours set
+	that is 14:00, and the day pairs as 09:30-12:00 plus 14:00-20:00.
+
+	Only the odd-indexed gaps can hold it. The day opens with an entry, so those are
+	the gaps that follow a completed pair — a break. The even-indexed ones are the
+	worked periods themselves, and dropping an entry inside one would split a stretch
+	the employee actually worked.
+	"""
+	if not auto_hours or len(real) % 2 == 0 or len(real) < 3:
+		# One lone punch has no break to place an entry in, so it keeps the span (0.0h)
+		# it had before this setting existed.
+		return None
+
+	breaks = range(1, len(real) - 1, 2)
+	widest = max(breaks, key=lambda i: real[i + 1] - real[i])
+	stamp = real[widest] + timedelta(hours=auto_hours)
+	if stamp >= real[widest + 1]:
+		# The break is shorter than Auto Checkin Hours, so the stand-in would land after
+		# the punch it is meant to precede. Leave the day on its span instead.
+		return None
+	return stamp
+
+
+def _resolve_auto_checkin(employee, real, synthetic, machine, auto_hours, create_checkins):
+	"""Write the missing entry punch, and withdraw a stand-in that is no longer wanted.
+	Returns (effective synthetic stamp or None, whether a row was created)."""
+	if not create_checkins:
+		# Nothing is written to Employee Checkin at all, so there is no stand-in to
+		# write and none of this employee's rows are this sync's to withdraw.
+		return None, False
+
+	desired = _missing_checkin_stamp(real, auto_hours)
+
+	kept = None
+	for row in synthetic:
+		if desired and get_datetime(row.time) == desired:
+			kept = desired
+			continue
+		# The real punch arrived (or the setting changed) — a stale stand-in would flip
+		# the parity and corrupt every pair after it.
+		frappe.delete_doc("Employee Checkin", row.name, ignore_permissions=True, force=True)
+
+	if not desired or kept:
+		return desired, False
+
+	if not _create_checkin(employee, desired, f"{machine}{AUTO_CHECKIN_SUFFIX}"):
+		# Something else already holds that timestamp, so no stand-in row exists.
+		# Returning it anyway would hand the caller a stamp with nothing behind it and
+		# the day would flip between paired and span on alternate ticks.
+		return None, False
+
+	return desired, True
+
+
+def _paired_hours(stamps):
+	"""Sum of entry/exit pairs — even index is an entry, odd index is its exit. The
+	14:00 / 14:30 lunch punches of a 09:00-20:30 day are excluded instead of paid."""
+	total = 0.0
+	for entry, exit_time in zip(stamps[0::2], stamps[1::2], strict=False):
+		if exit_time > entry:
+			total += (exit_time - entry).total_seconds()
+	return flt(total / 3600.0, 2)
+
+
+def _day_hours(stamps):
+	"""Paired hours when the punches pair up. An odd count is a missing punch that the
+	auto checkin could not place, and pairing would silently drop the last stamp — so
+	the day falls back to its first-to-last span, which is what this sync did for every
+	day before pairing existed."""
+	if len(stamps) < 2:
+		return 0.0
+	if len(stamps) % 2 == 0:
+		return _paired_hours(stamps)
+	return flt((stamps[-1] - stamps[0]).total_seconds() / 3600.0, 2)
+
+
 # Statuses this sync assigns itself. Anything else on an existing record was set
 # by a human (or by Leave Application) and is never overwritten by a later tick.
 SYNC_OWNED_STATUSES = ("Present", "Half Day")
@@ -229,30 +352,29 @@ def _attendance_status(hours, half_day_below):
 	return "Present"
 
 
-def _upsert_attendance(employee, emp_row, day, in_time, out_time, half_day_below):
+def _upsert_attendance(employee, emp_row, day, in_time, out_time, hours, half_day_below):
 	"""Insert (and submit) Attendance for the day, or widen the existing record's
-	in/out window. Returns 'created', 'updated' or None."""
+	in/out window. `hours` is the worked total for the whole day (see _day_hours) —
+	it is deliberately not derived from the in/out window, because the middle punches
+	that the window hides are exactly what the pairing subtracts. Returns 'created',
+	'updated' or None."""
 	existing = frappe.db.get_value(
 		"Attendance",
 		{"employee": employee, "attendance_date": day, "docstatus": ("<", 2)},
-		["name", "in_time", "out_time", "status", "docstatus"],
+		["name", "in_time", "out_time", "working_hours", "status", "docstatus"],
 		as_dict=True,
 	)
-
-	hours = 0.0
-	if in_time and out_time and out_time > in_time:
-		hours = flt((out_time - in_time).total_seconds() / 3600.0, 2)
 
 	if existing:
 		old_in = get_datetime(existing.in_time) if existing.in_time else None
 		old_out = get_datetime(existing.out_time) if existing.out_time else None
 		new_in = min([t for t in (in_time, old_in) if t], default=None)
 		new_out = max([t for t in (out_time, old_out) if t], default=None)
-		if new_in == old_in and new_out == old_out:
+		new_hours = flt(hours, 2)
+		# The hours have to be compared too: a lunch pair recorded after the first tick
+		# changes the total without moving either end of the window.
+		if new_in == old_in and new_out == old_out and flt(existing.working_hours, 2) == new_hours:
 			return None
-		new_hours = 0.0
-		if new_in and new_out and new_out > new_in:
-			new_hours = flt((new_out - new_in).total_seconds() / 3600.0, 2)
 		# Submitted Attendance cannot be re-saved through the ORM, so the window is
 		# widened with a direct field update.
 		values = {"in_time": new_in, "out_time": new_out, "working_hours": new_hours}
@@ -295,6 +417,7 @@ def _sync_machine(row, settings, from_date=None):
 		"mapped": 0,
 		"unmapped_ids": [],
 		"checkins_created": 0,
+		"auto_checkins_created": 0,
 		"attendance_created": 0,
 		"attendance_updated": 0,
 		"skipped_future": 0,
@@ -357,13 +480,33 @@ def _sync_machine(row, settings, from_date=None):
 					if _create_checkin(employee, stamp, row.name):
 						summary["checkins_created"] += 1
 
+			day_stamps, synthetic = _real_stamps_for_day(employee, day, stamps)
+			auto_stamp, auto_created = _resolve_auto_checkin(
+				employee,
+				day_stamps,
+				synthetic,
+				row.name,
+				settings["auto_checkin_hours"],
+				settings["create_checkins"],
+			)
+			if auto_stamp:
+				# The stand-in belongs in the middle of the day, so the list is re-sorted
+				# rather than appended to.
+				day_stamps = sorted([*day_stamps, auto_stamp])
+			if auto_created:
+				summary["auto_checkins_created"] += 1
+
+			if not day_stamps:
+				continue
+
 			if settings["create_attendance"]:
 				action = _upsert_attendance(
 					employee,
 					employees.get(employee) or frappe._dict({"company": None}),
 					day,
-					stamps[0],
-					stamps[-1],
+					day_stamps[0],
+					day_stamps[-1],
+					_day_hours(day_stamps),
 					settings["mark_half_day_below_hours"],
 				)
 				if action == "created":
@@ -401,6 +544,7 @@ def sync_attendance(machine=None, from_date=None):
 		"logs",
 		"mapped",
 		"checkins_created",
+		"auto_checkins_created",
 		"attendance_created",
 		"attendance_updated",
 		"skipped_future",
