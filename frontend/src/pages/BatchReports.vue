@@ -48,8 +48,8 @@
             <button
               v-for="p in presets"
               :key="p.label"
-              @click="setPreset(p.days)"
-              class="rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition"
+              @click="setPreset(p.key)"
+              class="rounded bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition cursor-pointer"
             >
               {{ p.label }}
             </button>
@@ -193,10 +193,13 @@ const purchaseSeriesList = ref([])
 
 // Preset options
 const presets = [
-  { label: 'Today', days: 0 },
-  { label: 'Yesterday', days: 1 },
-  { label: 'Last 7 Days', days: 7 },
-  { label: 'Last 30 Days', days: 30 },
+  { label: 'Today', key: 'today' },
+  { label: 'Yesterday', key: 'yesterday' },
+  { label: 'This Month', key: 'this_month' },
+  { label: 'Last Month', key: 'last_month' },
+  { label: 'Financial Year (FY)', key: 'fy' },
+  { label: 'Last 7 Days', key: 'last_7' },
+  { label: 'Last 30 Days', key: 'last_30' },
 ]
 
 // Available report definitions
@@ -287,18 +290,49 @@ function defaultDates() {
   return { from: todayStr, to: todayStr }
 }
 
-function setPreset(days) {
-  const end = new Date()
-  const start = new Date()
-  start.setDate(end.getDate() - days)
-  
+function setPreset(key) {
   const formatDateStr = (date) => {
     const y = date.getFullYear()
     const m = String(date.getMonth() + 1).padStart(2, '0')
     const d = String(date.getDate()).padStart(2, '0')
     return `${y}-${m}-${d}`
   }
-  
+
+  const today = new Date()
+  let start = new Date()
+  let end = new Date()
+
+  if (key === 'today') {
+    start = today
+    end = today
+  } else if (key === 'yesterday') {
+    const yesterday = new Date()
+    yesterday.setDate(today.getDate() - 1)
+    start = yesterday
+    end = yesterday
+  } else if (key === 'this_month') {
+    start = new Date(today.getFullYear(), today.getMonth(), 1)
+    end = today
+  } else if (key === 'last_month') {
+    start = new Date(today.getFullYear(), today.getMonth() - 1, 1)
+    end = new Date(today.getFullYear(), today.getMonth(), 0) // last day of previous month
+  } else if (key === 'fy') {
+    const currentYear = today.getFullYear()
+    const currentMonth = today.getMonth()
+    let fyStartYear = currentYear
+    if (currentMonth < 3) { // Jan, Feb, Mar
+      fyStartYear = currentYear - 1
+    }
+    start = new Date(fyStartYear, 3, 1) // April 1st
+    end = new Date(fyStartYear + 1, 2, 31) // March 31st
+  } else if (key === 'last_7') {
+    start.setDate(today.getDate() - 7)
+    end = today
+  } else if (key === 'last_30') {
+    start.setDate(today.getDate() - 30)
+    end = today
+  }
+
   fromDate.value = formatDateStr(start)
   toDate.value = formatDateStr(end)
 }
