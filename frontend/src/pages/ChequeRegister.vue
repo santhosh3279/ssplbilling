@@ -478,6 +478,7 @@ import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Warning from '../components/Warning.vue'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 const receivedBtnRef = ref(null)
@@ -547,9 +548,7 @@ const printTargetName = ref('')
 const today = () => new Date().toISOString().slice(0, 10)
 
 function formatDateToDisplay(iso) {
-  if (!iso) return ''
-  const [y, m, d] = iso.split('-')
-  return `${d}-${m}-${y}`
+  return formatDMY(iso, '')
 }
 
 function getLocalDateParts() {
@@ -585,21 +584,21 @@ function onChequeDateInput(e) {
       const monthStr = month.toString().padStart(2, '0')
       
       newForm.value.cheque_date = `${year}-${monthStr}-${dayStr}`
-      newForm.value.cheque_date_display = `${dayStr}-${monthStr}-${year}`
+      newForm.value.cheque_date_display = `${dayStr}/${monthStr}/${year}`
       return
     }
   }
 
   if (val.length > 2 && val.length <= 4) {
-    val = val.slice(0, 2) + '-' + val.slice(2)
+    val = val.slice(0, 2) + '/' + val.slice(2)
   } else if (val.length > 4) {
-    val = val.slice(0, 2) + '-' + val.slice(2, 4) + '-' + val.slice(4, 8)
+    val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4, 8)
   }
 
   newForm.value.cheque_date_display = val
 
   if (val.length === 10) {
-    const [d, m, y] = val.split('-')
+    const [d, m, y] = val.split(/[-/]/)
     if (d && m && y && y.length === 4) {
       newForm.value.cheque_date = `${y}-${m}-${d}`
     }
@@ -617,7 +616,7 @@ function autoCompleteChequeDate() {
       const monthStr = m.toString().padStart(2, '0')
       
       newForm.value.cheque_date = `${y}-${monthStr}-${dayStr}`
-      newForm.value.cheque_date_display = `${dayStr}-${monthStr}-${y}`
+      newForm.value.cheque_date_display = `${dayStr}/${monthStr}/${y}`
     }
   }
 }
@@ -656,21 +655,21 @@ function onClearanceDateInput(e) {
       const monthStr = month.toString().padStart(2, '0')
       
       settleForm.value.clearance_date = `${year}-${monthStr}-${dayStr}`
-      settleForm.value.clearance_date_display = `${dayStr}-${monthStr}-${year}`
+      settleForm.value.clearance_date_display = `${dayStr}/${monthStr}/${year}`
       return
     }
   }
 
   if (val.length > 2 && val.length <= 4) {
-    val = val.slice(0, 2) + '-' + val.slice(2)
+    val = val.slice(0, 2) + '/' + val.slice(2)
   } else if (val.length > 4) {
-    val = val.slice(0, 2) + '-' + val.slice(2, 4) + '-' + val.slice(4, 8)
+    val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4, 8)
   }
 
   settleForm.value.clearance_date_display = val
 
   if (val.length === 10) {
-    const [d, m, y] = val.split('-')
+    const [d, m, y] = val.split(/[-/]/)
     if (d && m && y && y.length === 4) {
       settleForm.value.clearance_date = `${y}-${m}-${d}`
     }
@@ -688,7 +687,7 @@ function autoCompleteClearanceDate() {
       const monthStr = m.toString().padStart(2, '0')
       
       settleForm.value.clearance_date = `${y}-${monthStr}-${dayStr}`
-      settleForm.value.clearance_date_display = `${dayStr}-${monthStr}-${y}`
+      settleForm.value.clearance_date_display = `${dayStr}/${monthStr}/${y}`
     }
   }
 }
@@ -962,7 +961,6 @@ function fmt(val) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+  return formatDMY(dateStr, '')
 }
 </script>

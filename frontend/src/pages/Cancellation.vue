@@ -389,6 +389,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 
+import { formatDMY } from '../utils/date'
 const API = 'ssplbilling.api.cancellation_api'
 
 const tabs = [
@@ -436,8 +437,7 @@ function fmt(val) {
 }
 
 function formatDate(d) {
-  if (!d) return ''
-  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+  return formatDMY(d, '')
 }
 
 function docParty(doc) {

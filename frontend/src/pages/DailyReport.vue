@@ -208,6 +208,7 @@ import { frappeGet } from '../api.js'
 import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 const showDetail = ref(false)
 const selectedDoc = ref('')
@@ -233,9 +234,7 @@ function getTodayIST() {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  const [y, m, d] = dateStr.split('-')
-  return `${d}-${m}-${y}`
+  return formatDMY(dateStr, '')
 }
 
 function formatTime(timeStr) {

@@ -297,6 +297,7 @@
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { frappeGet } from '../api.js'
 
+import { formatDMY } from '../utils/date'
 const props = defineProps({
   show: Boolean,
   loading: { type: Boolean, default: false },
@@ -595,10 +596,7 @@ function fmt(val) {
 }
 
 function fmtDate(dateStr) {
-  if (!dateStr) return '—'
-  const d = new Date(dateStr)
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-  return `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]}`
+  return formatDMY(dateStr, '—')
 }
 
 function dueDays(dateStr) {

@@ -150,7 +150,7 @@
                   </span>
                   <span v-else :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]/50' : 'text-[var(--color-text-muted)]'">—</span>
                 </td>
-                <td class="px-6 py-2 text-lg" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ row.last_transaction_date }}</td>
+                <td class="px-6 py-2 text-lg" :class="focusedRowIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ formatDMY(row.last_transaction_date, '') }}</td>
               </tr>
             </tbody>
             <tfoot>
@@ -176,6 +176,7 @@ import { useRouter } from 'vue-router'
 import { getOutstandingCustomersReport } from '../api.js'
 import { utils, writeFile } from 'xlsx'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 const loading = ref(false)
@@ -225,7 +226,7 @@ function exportToExcel() {
       r.phone_number || '',
       isCr ? '' : amt,
       isCr ? amt : '',
-      r.last_transaction_date,
+      formatDMY(r.last_transaction_date, ''),
     ]
   })
   data.push(['', '', 'GRAND TOTAL', '', Math.round(totalDebit.value || 0), Math.round(totalCredit.value || 0), ''])

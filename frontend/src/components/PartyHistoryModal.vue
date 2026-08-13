@@ -79,7 +79,7 @@
             <!-- Invoice-wise Rows -->
             <template v-if="viewMode === 'invoice'">
               <tr v-for="(h, idx) in sortedHistory" :key="idx" class="hover:bg-[var(--color-surface-raised)]/30 transition-colors">
-                <td class="px-2 py-1.5 font-mono text-xl">{{ h.date }}</td>
+                <td class="px-2 py-1.5 font-mono text-xl">{{ formatDMY(h.date, '') }}</td>
                 <td class="px-2 py-1.5 font-mono font-bold text-2xl text-[var(--color-highlight)]">{{ h.item_code }}</td>
                 <td class="px-2 py-1.5 text-3xl font-medium">{{ h.item_name }}</td>
                 <td class="px-2 py-1.5 font-mono text-lg text-[var(--color-text-muted)]">{{ h.barcodes }}</td>
@@ -132,6 +132,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 
+import { formatDMY } from '../utils/date'
 // Reusable "Purchase History" modal shared by Sales Invoice (customer) and Purchase
 // Invoice (supplier). The page owns the open state (v-model:show) so its keyboard
 // handlers can still read/close it; viewMode + the item-wise aggregation live here.

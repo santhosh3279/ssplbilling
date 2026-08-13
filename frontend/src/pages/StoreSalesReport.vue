@@ -232,6 +232,7 @@ import { useRouter } from 'vue-router'
 import { getStoreSaleReport } from '../api.js'
 import { utils, writeFile } from 'xlsx'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 const loading = ref(false)
@@ -391,7 +392,7 @@ function exportToExcel() {
     const sheetRows = accBills.map((b, idx) => [
       idx + 1,
       b.bill_no,
-      b.posting_date,
+      formatDMY(b.posting_date, ''),
       b.customer,
       b.customer_name,
       b.selling_price_list || 'Other/Direct',

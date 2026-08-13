@@ -616,6 +616,7 @@ import { purchaseOrderShortcuts } from '../shortcuts/purchaseOrderShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 // --- Data Fetching & State Management ---
@@ -1013,9 +1014,7 @@ watch(priceList, (newList) => {
 function goBack() { router.push('/') }
 
 function formatDateShort(dateStr) {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  return `${String(d.getDate()).padStart(2, '0')}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getFullYear()).slice(-2)}`
+  return formatDMY(dateStr, '-')
 }
 
 function format(val) {

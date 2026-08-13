@@ -122,6 +122,7 @@ import { frappeGet } from '../api.js'
 import { session } from '../session'
 import { canAccessRoute } from '../composables/usePermission'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 const loading = ref(true)
@@ -164,17 +165,7 @@ function goCreateOffer() {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  try {
-    const d = new Date(dateStr)
-    return d.toLocaleDateString(undefined, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    })
-  } catch (e) {
-    return dateStr
-  }
+  return formatDMY(dateStr, '')
 }
 
 onMounted(async () => {

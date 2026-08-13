@@ -676,6 +676,7 @@ import Quotation from './Quotation.vue'
 import PurchaseInvoice from './PurchaseInvoice.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
+import { formatDMY } from '../utils/date'
 const props = defineProps({
   isSubWindow: { type: Boolean, default: false },
   ledgerName: { type: String, default: '' },
@@ -1299,9 +1300,7 @@ function fmt(n) {
 }
 
 function fmtDate(d) {
-  if (!d) return '—'
-  const [y, m, day] = d.split('-')
-  return `${day}-${m}-${y}`
+  return formatDMY(d, '—')
 }
 
 function fmtTime(dt) {

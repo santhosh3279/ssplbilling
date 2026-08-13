@@ -320,6 +320,7 @@ import JumpToRowModal from '../components/JumpToRowModal.vue'
 import { frappePost } from '../api'
 import { useItemCache } from '../services/itemCache.js'
 
+import { formatDMY } from '../utils/date'
 const showPrintModal = ref(false)
 const showJumpModal = ref(false)
 const defaultTemplate = ref('')
@@ -875,9 +876,7 @@ async function handleSelectSidebarItem(item) {
 }
 
 function formatDate(dateString) {
-  if (!dateString) return ''
-  const d = new Date(dateString)
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')
+  return formatDMY(dateString, '')
 }
 
 function handlePrint() {

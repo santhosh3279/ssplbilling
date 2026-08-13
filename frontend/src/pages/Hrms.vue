@@ -548,6 +548,7 @@ import {
 } from '../api.js'
 import { session } from '../session.js'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 const activeSubTab = ref('dashboard')
 
@@ -743,15 +744,7 @@ async function loadPendingLeaves() {
         .toUpperCase()
         .slice(0, 2)
 
-      const formatDate = (dateStr) => {
-        if (!dateStr) return ''
-        const parts = dateStr.split('-')
-        if (parts.length === 3) {
-          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-          return `${parseInt(parts[2], 10)} ${months[parseInt(parts[1], 10) - 1]}`
-        }
-        return dateStr
-      }
+      const formatDate = (dateStr) => formatDMY(dateStr, '')
 
       const dateRange = doc.from_date === doc.to_date
         ? formatDate(doc.from_date)

@@ -765,6 +765,7 @@ import BillMirrorCreator from '../components/BillMirrorCreator.vue'
 import Warning from '../components/Warning.vue'
 import { canAccessTile } from '../composables/usePermission'
 
+import { formatDMY } from '../utils/date'
 /**
  * HELPER: getTodayIST
  * Defined early to ensure it's available for ref initialization.
@@ -1119,14 +1120,7 @@ function updatePayment(field, value) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  // Use T00:00:00 to ensure local timezone parsing for YYYY-MM-DD strings
-  const date = new Date(dateStr.includes('T') ? dateStr : dateStr + 'T00:00:00')
-  const day = String(date.getDate()).padStart(2, '0')
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  const month = months[date.getMonth()]
-  const year = String(date.getFullYear()).slice(-2)
-  return `${day}-${month}-${year}`
+  return formatDMY(dateStr, '')
 }
 
 // "14:23:45.123456" → "2:23 PM"

@@ -607,6 +607,7 @@ import { session } from '../session'
 import { frappeGet } from '../api.js'
 import { patchLedgerInCache } from '../services/ledgerCache.js'
 
+import { formatDMY } from '../utils/date'
 const inheritedUser = computed(() => localStorage.getItem('wb-inherited-user'))
 
 const props = defineProps({
@@ -823,11 +824,7 @@ function formatTime(timeStr) {
 }
 
 function formatDate(dateString) {
-  if (!dateString) return 'Select Date'
-  const d = new Date(dateString)
-  if (isNaN(d)) return dateString
-  // Format as DD-MMM-YYYY
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')
+  return formatDMY(dateString, 'Select Date')
 }
 
 function format2p(val) {

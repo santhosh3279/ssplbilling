@@ -225,6 +225,7 @@ import { useRouter } from 'vue-router'
 import { frappePost } from '../api.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 const API = 'ssplbilling.api.parcel_address_api'
 
@@ -245,7 +246,7 @@ function formatDateLabel(dateStr) {
   if (diff === 0) return 'Today'
   if (diff === -1) return 'Yesterday'
   if (diff === 1) return 'Tomorrow'
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+  return formatDMY(dateStr, '')
 }
 
 // ── FORM STATE ───────────────────────────────────────────────────────

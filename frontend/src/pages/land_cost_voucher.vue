@@ -448,6 +448,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 
+import { formatDMY } from '../utils/date'
 const props = defineProps({
   isSubwindow: Boolean,
   prelinkDocType: { type: String, default: 'Purchase Invoice' },
@@ -572,10 +573,7 @@ function fmtCurrency(val) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'short', year: 'numeric'
-  })
+  return formatDMY(dateStr, '')
 }
 
 function goBack() {

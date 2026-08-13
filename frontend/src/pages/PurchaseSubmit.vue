@@ -387,6 +387,7 @@ import PurchaseInvoice from './PurchaseInvoice.vue'
 import Warning from '../components/Warning.vue'
 import LandCostVoucher from './land_cost_voucher.vue'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 // --- STATE ---
@@ -449,10 +450,9 @@ function navigateBills(dir) {
 
 // --- COMPUTED ---
 const todayStr = computed(() => {
-  return new Date().toLocaleDateString('en-IN', { 
-    timeZone: 'Asia/Kolkata',
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
-  })
+  const now = new Date()
+  const weekday = now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long' })
+  return `${weekday}, ${formatDMY(now, '')}`
 })
 
 const invoicesByDate = computed(() => {
@@ -482,10 +482,7 @@ function fmt(val) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: '2-digit', month: 'short', year: 'numeric'
-  })
+  return formatDMY(dateStr, '')
 }
 
 async function loadInvoices() {

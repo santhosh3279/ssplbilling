@@ -280,6 +280,7 @@
 import { ref, watch, nextTick, computed } from 'vue'
 import { session } from '../session'
 
+import { formatDMY } from '../utils/date'
 const inheritedUser = computed(() => localStorage.getItem('wb-inherited-user'))
 
 const props = defineProps({
@@ -392,10 +393,7 @@ defineExpose({
 })
 
 function formatDate(dateString) {
-  if (!dateString) return 'Select Date'
-  const d = new Date(dateString)
-  if (isNaN(d)) return dateString
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')
+  return formatDMY(dateString, 'Select Date')
 }
 
 function formatQty(val, uom) {

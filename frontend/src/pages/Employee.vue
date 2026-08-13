@@ -282,6 +282,7 @@ import { useRouter } from 'vue-router'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
 import { fetchEmployees, createEmployee, getEmployeeDetails, updateEmployee } from '../api.js'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 const loading = ref(false)
@@ -357,14 +358,7 @@ const filteredEmployees = computed(() => {
 })
 
 function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  try {
-    const parts = dateStr.split('-')
-    if (parts.length === 3) {
-      return `${parts[2]}-${parts[1]}-${parts[0]}` // dd-mm-yyyy
-    }
-  } catch (_) {}
-  return dateStr
+  return formatDMY(dateStr, '—')
 }
 
 function getStatusClass(status) {

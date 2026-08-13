@@ -686,6 +686,7 @@ import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import { canAccessTile } from '../composables/usePermission'
 
+import { formatDMY } from '../utils/date'
 const props = defineProps({
   isSubwindow: Boolean,
   invoiceName: String
@@ -1009,7 +1010,7 @@ async function handleSelectSidebarItem(item) {
         customerModifier.value = custDetails.pricelist_multiplication_factor ?? null
         if (custDetails.last_invoice_date) {
           const d = new Date(custDetails.last_invoice_date)
-          customerLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+          customerLastInvDate.value = formatDMY(d, '')
         } else {
           customerLastInvDate.value = 'None'
         }
@@ -1297,12 +1298,7 @@ function goBack() {
 }
 
 function formatDateShort(dateStr) {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  const day = String(d.getDate()).padStart(2, '0')
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const year = String(d.getFullYear()).slice(-2)
-  return `${day}-${month}-${year}`
+  return formatDMY(dateStr, '-')
 }
 
 function format(val) {
@@ -2723,7 +2719,7 @@ function handleCustomerSelected(cust) {
 
   if (cust.last_invoice_date) {
     const d = new Date(cust.last_invoice_date)
-    customerLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+    customerLastInvDate.value = formatDMY(d, '')
   } else {
     customerLastInvDate.value = 'None'
   }

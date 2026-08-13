@@ -166,7 +166,7 @@
               class="hover:bg-[var(--color-surface)]/50 transition-colors"
               :class="row.voucher_type === 'Incentive Redeem' ? 'bg-[var(--color-danger)]/10' : ''"
             >
-              <td class="px-4 py-2 font-mono text-[22px] text-[var(--color-text-muted)]">{{ row.date }}</td>
+              <td class="px-4 py-2 font-mono text-[22px] text-[var(--color-text-muted)]">{{ formatDMY(row.date, '') }}</td>
               <td class="px-4 py-2">
                 <span class="font-mono text-4xl text-[var(--color-info)]">{{ row.voucher_no }}</span>
               </td>
@@ -209,6 +209,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 // ── State ──────────────────────────────────────────────────────────────────

@@ -374,6 +374,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
+import { formatDMY } from '../utils/date'
 import {
   fetchShiftTypes,
   fetchShiftAssignments,
@@ -434,9 +435,7 @@ function today() {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  const parts = String(dateStr).split('-')
-  return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr
+  return formatDMY(dateStr, '—')
 }
 
 function trimTime(value) {

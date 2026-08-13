@@ -145,6 +145,7 @@ import { ref, computed, onMounted } from 'vue'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
 import { fetchEmployees } from '../api.js'
 
+import { formatDMY } from '../utils/date'
 const loading = ref(false)
 const error = ref('')
 const employeesList = ref([])
@@ -192,12 +193,7 @@ const filteredEmployees = computed(() => {
 })
 
 function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  const parts = String(dateStr).split('-')
-  if (parts.length === 3) {
-    return `${parts[2]}-${parts[1]}-${parts[0]}` // dd-mm-yyyy
-  }
-  return dateStr
+  return formatDMY(dateStr, '—')
 }
 
 function getStatusClass(status) {

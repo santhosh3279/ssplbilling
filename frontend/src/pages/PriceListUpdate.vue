@@ -329,6 +329,7 @@ import { useItemCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { canAccessTile } from '../composables/usePermission'
 
+import { formatDMY } from '../utils/date'
 const props = defineProps({
   isSubWindow: { type: Boolean, default: false },
   itemCode: { type: String, default: '' },
@@ -391,12 +392,7 @@ const sameSupplierHistory = computed(() => {
 })
 
 function formatDateShort(dateStr) {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  const day = String(d.getDate()).padStart(2, '0')
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const year = String(d.getFullYear()).slice(-2)
-  return `${day}-${month}-${year}`
+  return formatDMY(dateStr, '-')
 }
 
 function showToast(message, type = 'success') {

@@ -422,6 +422,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import LoadingItemManager from '../components/LoadingItemManager.vue'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 const API = 'ssplbilling.api.loading_receipt_api'
 
@@ -442,7 +443,7 @@ function formatDateLabel(dateStr) {
   if (diff === 0) return 'Today'
   if (diff === -1) return 'Yesterday'
   if (diff === 1) return 'Tomorrow'
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })
+  return formatDMY(dateStr, '')
 }
 
 // ── TODAY'S TOTAL ────────────────────────────────────────────────────

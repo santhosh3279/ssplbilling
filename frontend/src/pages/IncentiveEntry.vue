@@ -87,7 +87,7 @@
             </span>
           </div>
           <div class="mt-3 text-xl text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">
-            {{ bill.date }}
+            {{ formatDMY(bill.date, '') }}
           </div>
         </div>
       </div>
@@ -115,7 +115,7 @@
         <div class="flex items-center gap-6 text-sm text-[var(--color-text-muted)] shrink-0">
           <div class="flex flex-col items-end">
             <span class="uppercase tracking-widest font-black text-xs text-[var(--color-text-muted)]">Posting Date</span>
-            <span class="font-mono font-bold text-2xl text-[var(--color-text)] mt-0.5">{{ doc.date }}</span>
+            <span class="font-mono font-bold text-2xl text-[var(--color-text)] mt-0.5">{{ formatDMY(doc.date, '') }}</span>
           </div>
           <span class="h-10 w-px bg-[var(--color-border)]"></span>
           <div class="flex flex-col items-end">
@@ -146,7 +146,7 @@
                 <span class="text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Selected Document:</span>
                 <span class="font-mono text-3xl">{{ selectedBill.name }}</span>
                 <span class="text-xs font-semibold text-[var(--color-text-muted)] tracking-wider uppercase ml-2 bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2.5 py-0.5 rounded-lg">
-                  {{ selectedBill.doctype }} · {{ selectedBill.date }}
+                  {{ selectedBill.doctype }} · {{ formatDMY(selectedBill.date, '') }}
                 </span>
               </div>
               <!-- Net Total Value -->
@@ -309,6 +309,7 @@ import { useRouter } from 'vue-router'
 import { session } from '../session'
 import { frappeGet, frappePost, getUnpostedBills, calculateBillIncentive } from '../api.js'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 // ── State ──────────────────────────────────────────────────────────────────

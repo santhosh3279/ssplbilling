@@ -173,7 +173,7 @@
               <!-- Opening Balance Row -->
               <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface)]/50">
                 <td colspan="4" class="px-6 py-3 font-bold text-[var(--color-text-muted)] uppercase tracking-widest text-[10px]">
-                  Opening Balance <span class="ml-2 font-normal lowercase opacity-60">(before {{ ledgerData.from_date }})</span>
+                  Opening Balance <span class="ml-2 font-normal lowercase opacity-60">(before {{ formatDMY(ledgerData.from_date, '') }})</span>
                 </td>
                 <td class="px-6 py-3 text-right font-mono font-black text-[var(--color-text-muted)] bg-[var(--color-surface)]/30">
                   ₹{{ fmt(ledgerData.opening_balance) }}
@@ -187,7 +187,7 @@
                 :class="{ 'bg-[var(--color-info)]/10': selectedEntry?.voucher_no === entry.voucher_no }"
                 @click="onRowClick(entry)"
               >
-                <td class="px-6 py-3 font-mono text-[var(--color-text-muted)]">{{ entry.date }}</td>
+                <td class="px-6 py-3 font-mono text-[var(--color-text-muted)]">{{ formatDMY(entry.date, '') }}</td>
                 <td class="px-6 py-3 font-mono text-[var(--color-info)] font-bold underline decoration-blue-400/30 underline-offset-2">{{ entry.voucher_no }}</td>
                 <td class="px-6 py-3 text-right font-mono font-bold text-[var(--color-success)]">
                   {{ entry.debit ? '₹' + fmt(entry.debit) : '—' }}
@@ -229,7 +229,7 @@
               </div>
               <div class="flex justify-between items-center">
                 <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase">Posting Date</span>
-                <span class="text-sm font-bold text-[var(--color-text)]">{{ selectedEntry.date }}</span>
+                <span class="text-sm font-bold text-[var(--color-text)]">{{ formatDMY(selectedEntry.date, '') }}</span>
               </div>
             </div>
 
@@ -289,6 +289,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 import { utils, writeFile } from 'xlsx'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 const API = 'ssplbilling.api.gst_ledger_api'
 
@@ -424,7 +425,7 @@ function exportExcel() {
 
   const headers = ['Date', 'Voucher No', 'Debit', 'Credit', 'Balance']
   const data = ledgerData.value.entries.map(e => [
-    e.date,
+    formatDMY(e.date, ''),
     e.voucher_no,
     e.debit || 0,
     e.credit || 0,

@@ -378,6 +378,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 const showSearchModal = ref(false)
@@ -684,11 +685,6 @@ function fmt(val) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  })
+  return formatDMY(dateStr, '')
 }
 </script>

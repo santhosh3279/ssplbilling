@@ -643,6 +643,7 @@ import CahierContraModal from '../components/CashierContraModal.vue'
 
 import { generateCashierReport } from '../services/cashierReportExport.js'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 const localStorage = window.localStorage
 const showBoxCash = ref(false)
@@ -678,8 +679,10 @@ function shiftDate(days) {
 }
 
 function formatDateDisplay(dateStr) {
+  if (!dateStr) return ''
   const d = new Date(dateStr + 'T00:00:00')
-  return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+  const weekday = isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-IN', { weekday: 'short' }) + ', '
+  return `${weekday}${formatDMY(dateStr, '')}`
 }
 
 // UPI balances

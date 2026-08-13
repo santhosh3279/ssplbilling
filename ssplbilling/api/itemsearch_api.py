@@ -632,9 +632,20 @@ def print_party_history_pdf(party, party_type, limit=50, view_mode="item", curre
 	frappe.response.filecontent = get_pdf(html)
 
 
+def _dmy(val):
+	"""Render a date-ish value as dd/mm/yyyy for print output."""
+	if not val:
+		return ""
+	s = str(val).split(" ")[0]
+	parts = s.split("-")
+	if len(parts) == 3 and len(parts[0]) == 4:
+		return f"{parts[2].zfill(2)}/{parts[1].zfill(2)}/{parts[0]}"
+	return str(val)
+
+
 def _generate_history_html(title, party_noun, party, view_mode, rows):
 	import datetime
-	generated_on = datetime.datetime.now().strftime("%d-%b-%Y %I:%M %p")
+	generated_on = datetime.datetime.now().strftime("%d/%m/%Y %I:%M %p")
 
 	# Mode label
 	if view_mode == "invoice":
@@ -680,7 +691,7 @@ def _generate_history_html(title, party_noun, party, view_mode, rows):
 				qty_val = float(r.get("qty") or 0)
 				qty_str = f"{qty_val:.3f}" if qty_val % 1 != 0 else f"{int(qty_val)}"
 				cols = [
-					r.get("date", ""),
+					_dmy(r.get("date")),
 					r.get("item_code", ""),
 					r.get("item_name", ""),
 					r.get("barcodes", ""),
@@ -697,7 +708,7 @@ def _generate_history_html(title, party_noun, party, view_mode, rows):
 					r.get("barcodes", ""),
 					total_qty_str,
 					f'{float(r.get("last_rate") or 0):.2f}',
-					r.get("last_date", ""),
+					_dmy(r.get("last_date")),
 					r.get("last_invoice", "")
 				]
 

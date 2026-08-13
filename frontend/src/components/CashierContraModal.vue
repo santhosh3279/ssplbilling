@@ -138,6 +138,7 @@ import { ref, computed, onMounted } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 import { useShortcuts } from '../services/shortcutManager'
 
+import { formatDMY } from '../utils/date'
 const props = defineProps({
   cashAccount: { type: String, required: true },
   diff:        { type: Number, required: true },
@@ -152,12 +153,8 @@ useShortcuts({
   'ESCAPE': () => emit('close')
 }, 'subwindow')
 
-const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 function formatDate(dateStr) {
-  if (!dateStr) return ""
-  const [y, m, d] = dateStr.split("-")
-  const month = monthNames[parseInt(m) - 1]
-  return `${d}-${month}-${y}`
+  return formatDMY(dateStr, "")
 }
 
 const postingDate = props.date

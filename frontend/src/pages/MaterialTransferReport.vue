@@ -249,7 +249,7 @@
                   {{ row.stock_entry }}
                 </td>
                 <td class="px-6 py-3 text-sm text-[var(--color-text)] border-b border-[var(--color-border)]/50">
-                  {{ row.posting_date }} <span class="text-xs text-[var(--color-text-muted)] ml-1">{{ formatTime(row.posting_time) }}</span>
+                  {{ formatDMY(row.posting_date, '') }} <span class="text-xs text-[var(--color-text-muted)] ml-1">{{ formatTime(row.posting_time) }}</span>
                 </td>
                 <td class="px-6 py-3 text-sm text-[var(--color-text)] border-b border-[var(--color-border)]/50 font-medium">
                   {{ row.source_warehouse }}
@@ -297,6 +297,7 @@ import { useRouter } from 'vue-router'
 import { getMaterialTransferReport } from '../api.js'
 import { utils, writeFile } from 'xlsx'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 const loading = ref(false)
@@ -482,7 +483,7 @@ function exportToExcel() {
   const data = filteredData.value.map((r, idx) => [
     idx + 1,
     r.stock_entry,
-    r.posting_date,
+    formatDMY(r.posting_date, ''),
     formatTime(r.posting_time),
     r.source_warehouse,
     r.target_warehouse,

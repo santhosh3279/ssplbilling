@@ -603,6 +603,7 @@ import { useShortcuts } from '../services/shortcutManager'
 import { quotationShortcuts } from '../shortcuts/quotationShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
 
+import { formatDMY } from '../utils/date'
 const props = defineProps({
   isSubwindow: Boolean,
   quotationName: String
@@ -1078,12 +1079,7 @@ watch(taxTemplate, (val) => {
 function goBack() { router.push('/') }
 
 function formatDateShort(dateStr) {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  const day = String(d.getDate()).padStart(2, '0')
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const year = String(d.getFullYear()).slice(-2)
-  return `${day}-${month}-${year}`
+  return formatDMY(dateStr, '-')
 }
 
 function format(val) {

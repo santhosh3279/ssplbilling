@@ -361,6 +361,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
+import { formatDMY } from '../utils/date'
 import {
   fetchAttendanceRecords,
   syncEsslAttendanceToErp,
@@ -624,9 +625,7 @@ async function removeRecord(row) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  const parts = String(dateStr).split('-')
-  return parts.length === 3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : dateStr
+  return formatDMY(dateStr, '—')
 }
 
 function formatTime(stamp) {

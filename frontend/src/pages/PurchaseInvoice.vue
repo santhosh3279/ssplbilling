@@ -849,6 +849,7 @@ import ShortcutPage from '../components/ShortcutPage.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 import BarcodePrintPage from './BarcodePrintPage.vue'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 const props = defineProps({
@@ -1479,12 +1480,7 @@ function goBack() {
 }
 
 function formatDateShort(dateStr) {
-  if (!dateStr) return '-'
-  const d = new Date(dateStr)
-  const day = String(d.getDate()).padStart(2, '0')
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const year = String(d.getFullYear()).slice(-2)
-  return `${day}-${month}-${year}`
+  return formatDMY(dateStr, '-')
 }
 
 function formatTime(timeStr) {

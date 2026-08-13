@@ -398,7 +398,7 @@
               <tbody>
                 <tr v-for="p in selectedItemData.previousPurchases" :key="p.name" class="hover:bg-[var(--color-surface)]/40">
                   <td class="px-1 py-0.5 font-medium text-[var(--color-info)] border border-[var(--color-border)] truncate max-w-[70px]" :title="p.name">{{ p.name }}</td>
-                  <td class="px-1 py-0.5 text-[var(--color-text-muted)] border border-[var(--color-border)] whitespace-nowrap">{{ p.date }}</td>
+                  <td class="px-1 py-0.5 text-[var(--color-text-muted)] border border-[var(--color-border)] whitespace-nowrap">{{ formatDMY(p.date, '') }}</td>
                   <td class="px-1 py-0.5 text-right font-mono font-bold text-[var(--color-text)] border border-[var(--color-border)]">&#8377;{{ p.rate.toFixed(2) }}</td>
                   <td class="px-1 py-0.5 text-right font-mono text-[var(--color-text-muted)] border border-[var(--color-border)]">{{ p.qty }}</td>
                   <td class="px-1 py-0.5 text-right font-bold border border-[var(--color-border)]" :class="p.discount > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">{{ p.discount > 0 ? p.discount + '%' : '—' }}</td>
@@ -682,6 +682,7 @@ import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 import { salesOrderShortcuts } from '../shortcuts/salesOrderShortcuts'
 import * as XLSX from 'xlsx'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 const inheritedUser = computed(() => {

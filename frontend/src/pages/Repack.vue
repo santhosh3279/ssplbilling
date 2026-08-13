@@ -246,6 +246,7 @@ import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { frappePost } from '../api'
 import { useItemCache } from '../services/itemCache.js'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 useShortcuts({
@@ -634,9 +635,7 @@ async function handleSelectSidebarItem(item) {
 }
 
 function formatDate(dateString) {
-  if (!dateString) return ''
-  const d = new Date(dateString)
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')
+  return formatDMY(dateString, '')
 }
 
 function handlePrint() {

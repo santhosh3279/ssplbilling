@@ -186,6 +186,7 @@ import {
 } from '../api.js'
 import { dashboardApi } from '../services/dashboard'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 // Date filter variables
@@ -563,8 +564,8 @@ async function buildRegisterExcelBuffer(type, rows, companyName, companyAddressL
     worksheet.mergeCells(rowNum, 1, rowNum, totalColsCount)
   }
 
-  const fromStr = fromDate.value || 'All'
-  const toStr = toDate.value || 'All'
+  const fromStr = formatDMY(fromDate.value, 'All')
+  const toStr = formatDMY(toDate.value, 'All')
   const dateRow = worksheet.addRow([`Period: ${fromStr} to ${toStr} | Series: ${targetSeries}`])
   dateRow.getCell(1).font = { name: 'Arial', size: 11, bold: true, italic: true }
   dateRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
@@ -608,7 +609,7 @@ async function buildRegisterExcelBuffer(type, rows, companyName, companyAddressL
   for (const r of rows) {
     const rowValues = [
       type === 'quotation' ? r.quotation_no : r.invoice_no,
-      r.date || '',
+      formatDMY(r.date, ''),
       type === 'purchase_tax' ? (r.supplier || '') : (r.customer || ''),
       type === 'purchase_tax' ? (r.supplier_name || '') : (r.customer_name || ''),
       type === 'purchase_tax' ? (r.supplier_gstin || '') : (r.customer_gstin || ''),
@@ -705,8 +706,8 @@ async function buildHSNExcelBuffer(type, rows, companyName, companyAddressLines,
     worksheet.mergeCells(rowNum, 1, rowNum, 9)
   }
 
-  const fromStr = fromDate.value || 'All'
-  const toStr = toDate.value || 'All'
+  const fromStr = formatDMY(fromDate.value, 'All')
+  const toStr = formatDMY(toDate.value, 'All')
   const dateRow = worksheet.addRow([`Period: ${fromStr} to ${toStr} | Series: ${targetSeries}`])
   dateRow.getCell(1).font = { name: 'Arial', size: 11, bold: true, italic: true }
   dateRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
@@ -777,7 +778,7 @@ async function buildHSNExcelBuffer(type, rows, companyName, companyAddressLines,
       const val = fmt(taxable + tax)
 
       worksheet.addRow([
-        r.date || '',
+        formatDMY(r.date, ''),
         r.bill_no || '',
         qty,
         taxable,

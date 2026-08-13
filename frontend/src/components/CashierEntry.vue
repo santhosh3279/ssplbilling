@@ -184,6 +184,7 @@ import { reactive, ref, computed, onMounted, watch, onBeforeUpdate, nextTick } f
 import { session } from '../session'
 import { frappeGet, frappePost } from '../api.js'
 
+import { formatDMY } from '../utils/date'
 const props = defineProps({
   title: {
     type: String,
@@ -205,13 +206,9 @@ const denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1]
 const denomInputRefs = ref([])
 onBeforeUpdate(() => { denomInputRefs.value = [] })
 
-const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 function formatDate(dateStr) {
-  if (!dateStr) return ""
-  const [y, m, d] = dateStr.split("-")
-  const month = monthNames[parseInt(m) - 1]
-  return `${d}-${month}-${y}`
+  return formatDMY(dateStr, "")
 }
 
 function onDenomEnter(index) {

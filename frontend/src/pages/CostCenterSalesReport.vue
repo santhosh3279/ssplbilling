@@ -425,6 +425,7 @@ import { useRouter } from 'vue-router'
 import { getCostCenterSaleReport, getCompanies } from '../api.js'
 import { utils, writeFile } from 'xlsx'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 const loading = ref(false)
@@ -675,7 +676,7 @@ function exportToExcel() {
     const detRows = directExpenseEntries.value.map((e, idx) => [
       idx + 1,
       (e.cost_center || '').split(' - ')[0],
-      e.posting_date,
+      formatDMY(e.posting_date, ''),
       e.voucher_type,
       e.voucher_no,
       e.account,
@@ -702,7 +703,7 @@ function exportToExcel() {
     const detRows = indirectExpenseEntries.value.map((e, idx) => [
       idx + 1,
       (e.cost_center || '').split(' - ')[0],
-      e.posting_date,
+      formatDMY(e.posting_date, ''),
       e.voucher_type,
       e.voucher_no,
       e.account,
@@ -883,7 +884,7 @@ function exportToExcel() {
     const sheetRows = ccBills.map((b, idx) => [
       idx + 1,
       b.bill_no,
-      b.posting_date,
+      formatDMY(b.posting_date, ''),
       b.customer,
       b.customer_name,
       b.selling_price_list || 'Other/Direct',
@@ -932,7 +933,7 @@ function exportToExcel() {
     if (sortedDates.length > 0) {
       const dailyHeaders = ['Date', ...priceLists.value, 'Day Total']
       const dailyRows = sortedDates.map(date => {
-        const row = [date]
+        const row = [formatDMY(date, date)]
         priceLists.value.forEach(pl => {
           row.push(salesByDate[date][pl] || 0)
         })

@@ -115,6 +115,7 @@
 import { ref, nextTick, watch } from 'vue'
 import { useSubwindow } from '../services/shortcutManager'
 
+import { formatDMY } from '../utils/date'
 useSubwindow()
 
 const props = defineProps({
@@ -202,9 +203,7 @@ function handleBackspace(e, field) {
 }
 
 function formatDateToDisplay(iso) {
-  if (!iso) return ''
-  const [y, m, d] = iso.split('-')
-  return `${d}-${m}-${y}`
+  return formatDMY(iso, '')
 }
 
 function getLocalDateParts() {
@@ -311,7 +310,7 @@ function onInput(e, field) {
       const monthStr = month.toString().padStart(2, '0')
       
       const iso = `${year}-${monthStr}-${dayStr}`
-      const display = `${dayStr}-${monthStr}-${year}`
+      const display = `${dayStr}/${monthStr}/${year}`
 
       if (field === 'from') {
         dateData.value.fromISO = iso
@@ -326,9 +325,9 @@ function onInput(e, field) {
 
   // Basic formatting as user types beyond 4 digits or manual entry
   if (val.length > 2 && val.length <= 4) {
-    val = val.slice(0, 2) + '-' + val.slice(2)
+    val = val.slice(0, 2) + '/' + val.slice(2)
   } else if (val.length > 4) {
-    val = val.slice(0, 2) + '-' + val.slice(2, 4) + '-' + val.slice(4, 8)
+    val = val.slice(0, 2) + '/' + val.slice(2, 4) + '/' + val.slice(4, 8)
   }
 
   if (field === 'from') dateData.value.fromDisplay = val
@@ -336,7 +335,7 @@ function onInput(e, field) {
 
   // Try to update ISO if we have a full valid date
   if (val.length === 10) {
-    const [d, m, y] = val.split('-')
+    const [d, m, y] = val.split(/[-/]/)
     if (d && m && y && y.length === 4) {
       const iso = `${y}-${m}-${d}`
       if (field === 'from') dateData.value.fromISO = iso
@@ -378,7 +377,7 @@ function autoCompleteDate(field) {
       const monthStr = m.toString().padStart(2, '0')
       
       dateData.value[isoField] = `${y}-${monthStr}-${dayStr}`
-      dateData.value[displayField] = `${dayStr}-${monthStr}-${y}`
+      dateData.value[displayField] = `${dayStr}/${monthStr}/${y}`
     }
   }
 }
@@ -392,8 +391,8 @@ function confirmDate() {
     emit('close')
   } else if (dateData.value.fromDisplay.length === 10 && dateData.value.toDisplay.length === 10) {
     // Backup: try to parse from display if ISO not set
-    const [df, mf, yf] = dateData.value.fromDisplay.split('-')
-    const [dt, mt, yt] = dateData.value.toDisplay.split('-')
+    const [df, mf, yf] = dateData.value.fromDisplay.split(/[-/]/)
+    const [dt, mt, yt] = dateData.value.toDisplay.split(/[-/]/)
     emit('confirm', { 
       from: `${yf}-${mf}-${df}`, 
       to: `${yt}-${mt}-${dt}` 

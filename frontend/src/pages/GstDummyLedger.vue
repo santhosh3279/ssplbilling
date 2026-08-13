@@ -241,6 +241,7 @@ import { frappeGet, frappePost } from '../api.js'
 import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 const API = 'ssplbilling.api.gst_ledger_api'
 
@@ -467,9 +468,7 @@ async function selectEntry(e) {
 }
 
 function formatDate(dateString) {
-  if (!dateString) return ''
-  const d = new Date(dateString)
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')
+  return formatDMY(dateString, '')
 }
 
 function fmt(n) {

@@ -243,6 +243,7 @@ import Stock_Template from '../components/Stock_Template.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { useItemCache } from '../services/itemCache.js'
 
+import { formatDMY } from '../utils/date'
 const router = useRouter()
 const API = 'ssplbilling.api.stock_reconciliation_api'
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
@@ -338,9 +339,7 @@ function changeDate(dir) {
 }
 
 function formatDate(dateString) {
-  if (!dateString) return ''
-  const d = new Date(dateString)
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')
+  return formatDMY(dateString, '')
 }
 
 // ==================== NAVIGATION ====================

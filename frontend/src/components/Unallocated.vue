@@ -110,6 +110,7 @@
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { frappePost } from '../api'
 
+import { formatDMY } from '../utils/date'
 const props = defineProps({
   show: Boolean,
   invoice: Object,
@@ -217,11 +218,6 @@ function fmt(val) {
 }
 
 function formatDate(dateStr) {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  })
+  return formatDMY(dateStr, '')
 }
 </script>

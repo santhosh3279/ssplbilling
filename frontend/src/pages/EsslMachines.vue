@@ -349,6 +349,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
+import { formatDMYTime } from '../utils/date'
 import {
   fetchEsslMachines,
   saveEsslMachine,
@@ -485,13 +486,7 @@ const filteredMachines = computed(() => {
 })
 
 function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  const [datePart, timePart] = String(dateStr).split(' ')
-  const parts = (datePart || '').split('-')
-  if (parts.length === 3) {
-    return `${parts[2]}-${parts[1]}-${parts[0]}${timePart ? ' ' + timePart.slice(0, 5) : ''}` // dd-mm-yyyy hh:mm
-  }
-  return dateStr
+  return formatDMYTime(dateStr, '—')
 }
 
 function defaultFromDate() {

@@ -416,6 +416,7 @@ import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 import { searchLedgersInCache } from '../services/ledgerCache'
 import { useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
 
+import { formatDMY } from '../utils/date'
 const props = defineProps({
   isSubWindow: { type: Boolean, default: false },
   itemCode: { type: String, default: '' },
@@ -616,14 +617,7 @@ function fmt(n) {
 }
 
 function fmtDate(d) {
-  if (!d) return ''
-  const datePart = String(d).split(' ')[0]
-  const parts = datePart.split('-')
-  if (parts.length === 3) {
-    const [yyyy, mm, dd] = parts
-    return `${dd.padStart(2, '0')}-${mm.padStart(2, '0')}-${yyyy}`
-  }
-  return d
+  return formatDMY(d, '')
 }
 
 const VOUCHER_CONFIG = {
