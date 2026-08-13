@@ -2,7 +2,7 @@
   <div class="flex min-h-screen flex-col bg-[var(--color-bg)]">
     <!-- Top Bar -->
     <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div class="flex items-center gap-4">
           <button
             class="rounded-lg px-4 py-2 text-base font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition cursor-pointer"
@@ -16,46 +16,45 @@
           </div>
         </div>
 
-        <!-- Date Presets (header right) -->
-        <div class="flex flex-wrap justify-end gap-2 max-w-xl">
-          <button
-            v-for="p in presets"
-            :key="p.label"
-            @click="setPreset(p.key)"
-            class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition cursor-pointer"
-          >
-            {{ p.label }}
-          </button>
+        <!-- Date Inputs & Presets (header right) -->
+        <div class="flex flex-col items-start lg:items-end gap-2.5">
+          <!-- Date Fields -->
+          <div class="flex flex-wrap items-center gap-3">
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">From</span>
+              <input
+                v-model="fromDate"
+                type="date"
+                class="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-sm font-medium text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+              />
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">To</span>
+              <input
+                v-model="toDate"
+                type="date"
+                class="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-sm font-medium text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <!-- Date Presets -->
+          <div class="flex flex-wrap gap-1.5 max-w-xl lg:justify-end">
+            <button
+              v-for="p in presets"
+              :key="p.label"
+              @click="setPreset(p.key)"
+              class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2.5 py-1 text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition cursor-pointer"
+            >
+              {{ p.label }}
+            </button>
+          </div>
         </div>
       </div>
     </header>
 
     <main class="flex-1 bg-[var(--color-surface)]/30 p-6 overflow-y-auto">
       <div class="max-w-7xl mx-auto space-y-8">
-        <!-- Date Range Selection Card -->
-        <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm">
-          <h2 class="text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)] pb-3 mb-6">
-            📅 Select Date Range & Period
-          </h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label class="mb-2 block text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">From Date</label>
-              <input
-                v-model="fromDate"
-                type="date"
-                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-              />
-            </div>
-            <div>
-              <label class="mb-2 block text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)]">To Date</label>
-              <input
-                v-model="toDate"
-                type="date"
-                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
 
         <!-- Reports Selection Card -->
         <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm">
