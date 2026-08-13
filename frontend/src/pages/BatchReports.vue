@@ -39,12 +39,12 @@
           </div>
 
           <!-- Date Presets -->
-          <div class="flex flex-wrap gap-1.5 max-w-xl lg:justify-end">
+          <div class="flex flex-nowrap gap-1.5 whitespace-nowrap overflow-x-auto max-w-full lg:justify-end">
             <button
               v-for="p in presets"
               :key="p.label"
               @click="setPreset(p.key)"
-              class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2.5 py-1 text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition cursor-pointer"
+              class="flex-shrink-0 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2.5 py-1 text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition cursor-pointer"
             >
               {{ p.label }}
             </button>
