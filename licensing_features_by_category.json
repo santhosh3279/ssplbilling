@@ -1,0 +1,71 @@
+{
+  "Sales & Customers": [
+    { "id": "sales", "name": "Sales Invoice" },
+    { "id": "sales-order", "name": "Sales Order" },
+    { "id": "quotation", "name": "Quotation" },
+    { "id": "ledger", "name": "Customer Ledger" },
+    { "id": "cheques", "name": "Cheque Register" },
+    { "id": "customer-enquiry", "name": "Customer Enquiry" },
+    { "id": "offer-display", "name": "Offer Display" },
+    { "id": "catelogue", "name": "Catalogue" }
+  ],
+  "Purchase & Suppliers": [
+    { "id": "purchase-invoice", "name": "Purchase Invoice" },
+    { "id": "purchase-submit", "name": "Purchase Desk" },
+    { "id": "purchase-order", "name": "Purchase Order" },
+    { "id": "pricelist-update", "name": "Price List Update" },
+    { "id": "land-cost-voucher", "name": "Landed Cost Voucher" }
+  ],
+  "HRMS & Employees": [
+    { "id": "hrms", "name": "HRMS Dashboard" },
+    { "id": "employee", "name": "Employee Directory" }
+  ],
+  "Cashier & Financials": [
+    { "id": "cashier", "name": "Cashier Desk" },
+    { "id": "Cashier-Management", "name": "Cashier Management" },
+    { "id": "general-ledger", "name": "General Ledger" },
+    { "id": "journal-contra", "name": "Journal Contra" },
+    { "id": "payment", "name": "Payment Receipt" },
+    { "id": "payment-reconciliation", "name": "Payment Reconciliation" },
+    { "id": "expense", "name": "Cash Box Entry" },
+    { "id": "single-entry", "name": "Single Entry" },
+    { "id": "account-tree", "name": "Chart of Accounts" },
+    { "id": "cancellation", "name": "Cancellation" }
+  ],
+  "Inventory & Stock": [
+    { "id": "stock-reconciliation", "name": "Stock Reconciliation" },
+    { "id": "stock-ledger", "name": "Stock Ledger" },
+    { "id": "store-transfer", "name": "Store Transfer" },
+    { "id": "repack", "name": "Repack Entry" },
+    { "id": "pricing-rules", "name": "Discount Rules (Pricing Rules)" },
+    { "id": "discount-rules", "name": "Discount Rules" },
+    { "id": "barcode-print", "name": "Print Barcodes" },
+    { "id": "loading-receipt", "name": "Loading Receipt" },
+    { "id": "parcel-address", "name": "Parcel Address" }
+  ],
+  "Tax & Reporting": [
+    { "id": "gst-dummy-ledger", "name": "WGB Payments (GST Dummy Ledger)" },
+    { "id": "gst-ledger", "name": "GST Ledger" },
+    { "id": "daily-report", "name": "Daily Report" },
+    { "id": "reports", "name": "Reports" },
+    { "id": "store-sale-report", "name": "Store Sale Report" },
+    { "id": "cost-center-sale-report", "name": "Cost Center Sale Report" },
+    { "id": "stock-status-report", "name": "Stock Status Report" },
+    { "id": "stock-aging-report", "name": "Stock Aging Report" },
+    { "id": "outstanding-customers-report", "name": "Outstanding Customers Report" },
+    { "id": "ledger-sales-purchase-report", "name": "Ledger Sales & Purchase" },
+    { "id": "item-sales-summary", "name": "Item Sales Summary" },
+    { "id": "store-wise-item-sales", "name": "Store Wise Item Sales" },
+    { "id": "fast-moving-items", "name": "Fast Moving Items" },
+    { "id": "material-transfer-report", "name": "Material Transfer Report" }
+  ],
+  "Incentives": [
+    { "id": "incentive-ledger", "name": "Incentive Ledger" },
+    { "id": "incentive-redeem", "name": "Incentive Redeem" },
+    { "id": "incentive-entry", "name": "Incentive Entry" }
+  ],
+  "System Settings": [
+    { "id": "ssplbillingsettings", "name": "SSPL Billing Settings" },
+    { "id": "naming-settings", "name": "Naming Settings" }
+  ]
+}

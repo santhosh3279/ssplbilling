@@ -9,8 +9,8 @@
     "Use [\"*\"] to grant everything, including pages added later."
   ],
   "wildcard": "*",
-  "page_count": 59,
-  "feature_count": 49,
+  "page_count": 62,
+  "feature_count": 50,
   "features": [
     "Cashier-Management",
     "account-tree",
@@ -28,6 +28,7 @@
     "general-ledger",
     "gst-dummy-ledger",
     "gst-ledger",
+    "hrms",
     "incentive-entry",
     "incentive-ledger",
     "incentive-redeem",
@@ -67,8 +68,10 @@
       "page": "Hrms",
       "path": "/hrms",
       "title": "HRMS",
-      "feature": null,
-      "note": "Always available \u2014 no licence check"
+      "feature": "hrms",
+      "feature_label": "HRMS Dashboard",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true
     },
     {
       "page": "Employee",
@@ -83,29 +86,64 @@
       "page": "Employees",
       "path": "/hrms/employees",
       "title": "Employees",
-      "feature": null,
-      "note": "Always available \u2014 no licence check"
+      "feature": "hrms",
+      "feature_label": "HRMS Dashboard",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": false
     },
     {
       "page": "EsslMachines",
       "path": "/hrms/essl-machines",
       "title": "eSSL Machines",
-      "feature": null,
-      "note": "Always available \u2014 no licence check"
+      "feature": "hrms",
+      "feature_label": "HRMS Dashboard",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": false
     },
     {
       "page": "EsslMapping",
       "path": "/hrms/essl-mapping",
       "title": "Employee Mapping",
-      "feature": null,
-      "note": "Always available \u2014 no licence check"
+      "feature": "hrms",
+      "feature_label": "HRMS Dashboard",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": false
     },
     {
       "page": "EsslAttendance",
       "path": "/hrms/attendance",
       "title": "Attendance",
-      "feature": null,
-      "note": "Always available \u2014 no licence check"
+      "feature": "hrms",
+      "feature_label": "HRMS Dashboard",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "DeviceUsers",
+      "path": "/hrms/device-users",
+      "title": "Device Users",
+      "feature": "hrms",
+      "feature_label": "HRMS Dashboard",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "AttendanceChart",
+      "path": "/hrms/attendance-chart",
+      "title": "Attendance Chart",
+      "feature": "hrms",
+      "feature_label": "HRMS Dashboard",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": false
+    },
+    {
+      "page": "ShiftRoaster",
+      "path": "/hrms/shift-roaster",
+      "title": "Shift Roaster",
+      "feature": "hrms",
+      "feature_label": "HRMS Dashboard",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": false
     },
     {
       "page": "OfferDisplay",
@@ -613,6 +651,16 @@
     "employee": [
       "Employee"
     ],
+    "hrms": [
+      "Hrms",
+      "Employees",
+      "EsslMachines",
+      "EsslMapping",
+      "EsslAttendance",
+      "DeviceUsers",
+      "AttendanceChart",
+      "ShiftRoaster"
+    ],
     "expense": [
       "Expense"
     ],
@@ -731,11 +779,6 @@
     ]
   },
   "ungated_pages": [
-    "Hrms",
-    "Employees",
-    "EsslMachines",
-    "EsslMapping",
-    "EsslAttendance",
     "Login",
     "Dashboard",
     "OfferPage"
