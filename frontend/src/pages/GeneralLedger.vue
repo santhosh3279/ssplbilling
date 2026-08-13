@@ -782,9 +782,11 @@ const filteredEntries = computed(() => {
   return ledgerData.value.entries.filter(entry => {
     // Date filter: check raw and formatted date
     if (filters.value.date) {
-      const query = filters.value.date.toLowerCase()
-      const rawDate = entry.date.toLowerCase()
-      const formattedDate = fmtDate(entry.date).toLowerCase()
+      // Separators are normalised away so "13-08", "13/08" and "1308" all match
+      const norm = v => String(v || '').toLowerCase().replace(/[-/]/g, '')
+      const query = norm(filters.value.date)
+      const rawDate = norm(entry.date)
+      const formattedDate = norm(fmtDate(entry.date))
       if (!rawDate.includes(query) && !formattedDate.includes(query)) return false
     }
 
