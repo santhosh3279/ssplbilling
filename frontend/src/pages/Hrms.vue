@@ -50,17 +50,17 @@
           <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] shadow-md flex items-center justify-between relative overflow-hidden group hover:shadow-xl transition-all duration-300">
             <div class="space-y-1 z-10">
               <span class="text-xs font-black uppercase tracking-wider text-[var(--color-text-muted)]">On Leave</span>
-              <h2 class="text-4xl font-black text-[var(--color-warning)]">3</h2>
-              <p class="text-[10px] text-[var(--color-text-muted)] font-medium">Planned leaves today</p>
+              <h2 class="text-4xl font-black text-[var(--color-warning)]">{{ onLeaveCount }}</h2>
+              <p class="text-[10px] text-[var(--color-text-muted)] font-medium">Approved leaves today</p>
             </div>
             <span class="text-5xl opacity-25 group-hover:scale-110 transition-transform duration-300">✉️</span>
           </div>
 
           <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] shadow-md flex items-center justify-between relative overflow-hidden group hover:shadow-xl transition-all duration-300">
             <div class="space-y-1 z-10">
-              <span class="text-xs font-black uppercase tracking-wider text-[var(--color-text-muted)]">Payroll (August)</span>
-              <h2 class="text-4xl font-black text-[var(--color-info)]">92%</h2>
-              <p class="text-[10px] text-[var(--color-success)] font-bold">Processed</p>
+              <span class="text-xs font-black uppercase tracking-wider text-[var(--color-text-muted)]">Payroll ({{ payrollMonth }})</span>
+              <h2 class="text-4xl font-black text-[var(--color-info)]">{{ payrollPercent }}%</h2>
+              <p class="text-[10px] text-[var(--color-success)] font-bold">{{ payrollProcessedCount }}/{{ payrollTotalCount }} Processed</p>
             </div>
             <span class="text-5xl opacity-25 group-hover:scale-110 transition-transform duration-300">💸</span>
           </div>
@@ -195,7 +195,7 @@
           <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-4 mb-4">
             <h3 class="text-lg font-bold text-[var(--color-text)]">Daily Attendance Tracker</h3>
             <button
-              @click="alert('Bulk attendance submission coming soon')"
+              @click="alert('Bulk attendance submission is handled automatically from device sync')"
               class="px-4 py-2 bg-[var(--color-employee)] text-white text-xs font-bold rounded-lg shadow-sm hover:brightness-110 active:scale-95 transition-all"
             >
               ✓ Submit Attendance
@@ -216,7 +216,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
-                <tr v-for="emp in mockAttendance" :key="emp.id" class="hover:bg-[var(--color-midlight)]/40 transition-colors">
+                <tr v-for="emp in attendanceList" :key="emp.id" class="hover:bg-[var(--color-midlight)]/40 transition-colors">
                   <td class="px-6 py-4 font-mono font-bold">{{ emp.id }}</td>
                   <td class="px-6 py-4 font-bold">{{ emp.name }}</td>
                   <td class="px-6 py-4 font-mono">{{ emp.in }}</td>
@@ -224,7 +224,7 @@
                   <td class="px-6 py-4">
                     <span
                       class="px-2.5 py-1 text-xs font-bold rounded-full"
-                      :class="emp.status === 'Present' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'"
+                      :class="emp.status === 'Present' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : emp.status === 'Half Day' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-rose-500/10 text-rose-500 border border-rose-500/20'"
                     >
                       ● {{ emp.status }}
                     </span>
@@ -232,10 +232,16 @@
                   <td class="px-6 py-4 text-right">
                     <button
                       @click="toggleAttendanceStatus(emp)"
-                      class="px-3 py-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-midlight)] text-xs font-bold active:scale-95 transition-all"
+                      :disabled="togglingId === emp.id"
+                      class="px-3 py-1 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-midlight)] text-xs font-bold active:scale-95 transition-all disabled:opacity-50 min-w-[70px]"
                     >
-                      Toggle
+                      {{ togglingId === emp.id ? 'Saving...' : 'Toggle' }}
                     </button>
+                  </td>
+                </tr>
+                <tr v-if="!attendanceList.length">
+                  <td colspan="6" class="text-center py-8 text-sm text-[var(--color-text-muted)] italic">
+                    No employee attendance records found
                   </td>
                 </tr>
               </tbody>
@@ -248,7 +254,7 @@
       <div v-else-if="activeSubTab === 'payroll'" class="flex-1 p-8 space-y-6">
         <div class="bg-[var(--color-surface)] p-6 rounded-2xl border border-[var(--color-border)] shadow-md">
           <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-4 mb-4">
-            <h3 class="text-lg font-bold text-[var(--color-text)]">Payroll Processing (August 2026)</h3>
+            <h3 class="text-lg font-bold text-[var(--color-text)]">Payroll Processing ({{ payrollMonth }} {{ payrollYear }})</h3>
             <button
               @click="alert('Payroll generation script triggered. Salary slips created.')"
               class="px-4 py-2 bg-[var(--color-success)] text-white text-xs font-bold rounded-lg shadow-sm hover:brightness-110 active:scale-95 transition-all"
@@ -260,15 +266,15 @@
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div class="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] text-center">
               <div class="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider">Salary Pool</div>
-              <div class="text-xl font-bold mt-1 text-[var(--color-text)]">₹ 8,45,000.00</div>
+              <div class="text-xl font-bold mt-1 text-[var(--color-text)]">{{ formatCurrency(salaryPool) }}</div>
             </div>
             <div class="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] text-center">
               <div class="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider">Processed Slips</div>
-              <div class="text-xl font-bold mt-1 text-[var(--color-success)]">44 Slips (100%)</div>
+              <div class="text-xl font-bold mt-1 text-[var(--color-success)]">{{ payrollProcessedCount }} Slips ({{ payrollPercent }}%)</div>
             </div>
             <div class="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] text-center">
               <div class="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider">Disbursement Date</div>
-              <div class="text-xl font-bold mt-1 text-[var(--color-info)]">01-Sep-2026</div>
+              <div class="text-xl font-bold mt-1 text-[var(--color-info)]">{{ disbursementDate }}</div>
             </div>
           </div>
 
@@ -278,36 +284,23 @@
                 <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 font-bold text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
                   <th class="px-6 py-4">Slip ID</th>
                   <th class="px-6 py-4">Employee</th>
-                  <th class="px-6 py-4">Basic Pay</th>
-                  <th class="px-6 py-4">Incentives</th>
+                  <th class="px-6 py-4">Gross Pay</th>
                   <th class="px-6 py-4">Deductions</th>
                   <th class="px-6 py-4 text-right">Net Amount</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
-                <tr class="hover:bg-[var(--color-midlight)]/40 transition-colors">
-                  <td class="px-6 py-4 font-mono text-xs">SAL-SLIP-00891</td>
-                  <td class="px-6 py-4 font-bold">Ramesh Kumar</td>
-                  <td class="px-6 py-4 font-mono">₹ 24,000.00</td>
-                  <td class="px-6 py-4 font-mono text-emerald-500">+ ₹ 1,450.00</td>
-                  <td class="px-6 py-4 font-mono text-rose-500">- ₹ 200.00</td>
-                  <td class="px-6 py-4 text-right font-black text-emerald-500">₹ 25,250.00</td>
+                <tr v-for="slip in payrollList" :key="slip.name" class="hover:bg-[var(--color-midlight)]/40 transition-colors">
+                  <td class="px-6 py-4 font-mono text-xs">{{ slip.name }}</td>
+                  <td class="px-6 py-4 font-bold">{{ slip.employee_name }}</td>
+                  <td class="px-6 py-4 font-mono">{{ formatCurrency(slip.gross_pay) }}</td>
+                  <td class="px-6 py-4 font-mono text-rose-500">- {{ formatCurrency(slip.total_deduction) }}</td>
+                  <td class="px-6 py-4 text-right font-black text-emerald-500">{{ formatCurrency(slip.net_pay) }}</td>
                 </tr>
-                <tr class="hover:bg-[var(--color-midlight)]/40 transition-colors">
-                  <td class="px-6 py-4 font-mono text-xs">SAL-SLIP-00892</td>
-                  <td class="px-6 py-4 font-bold">Siddharth Sen</td>
-                  <td class="px-6 py-4 font-bold">₹ 35,000.00</td>
-                  <td class="px-6 py-4 font-mono text-emerald-500">+ ₹ 2,800.00</td>
-                  <td class="px-6 py-4 font-mono text-rose-500">- ₹ 500.00</td>
-                  <td class="px-6 py-4 text-right font-black text-emerald-500">₹ 37,300.00</td>
-                </tr>
-                <tr class="hover:bg-[var(--color-midlight)]/40 transition-colors">
-                  <td class="px-6 py-4 font-mono text-xs">SAL-SLIP-00893</td>
-                  <td class="px-6 py-4 font-bold">Karthik Raja</td>
-                  <td class="px-6 py-4 font-bold">₹ 18,000.00</td>
-                  <td class="px-6 py-4 font-mono text-emerald-500">+ ₹ 0.00</td>
-                  <td class="px-6 py-4 font-mono text-rose-500">- ₹ 150.00</td>
-                  <td class="px-6 py-4 text-right font-black text-emerald-500">₹ 17,850.00</td>
+                <tr v-if="!payrollList.length">
+                  <td colspan="5" class="text-center py-8 text-sm text-[var(--color-text-muted)] italic">
+                    No salary slips processed for this period
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -331,15 +324,15 @@
           <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div class="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] text-center">
               <div class="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider">Annual Casual Leaves</div>
-              <div class="text-2xl font-bold mt-1 text-[var(--color-employee)]">12 Days</div>
+              <div class="text-2xl font-bold mt-1 text-[var(--color-employee)]">{{ totalCasualAllocated }} Days</div>
             </div>
             <div class="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] text-center">
               <div class="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider">Annual Sick Leaves</div>
-              <div class="text-2xl font-bold mt-1 text-[var(--color-employee)]">10 Days</div>
+              <div class="text-2xl font-bold mt-1 text-[var(--color-employee)]">{{ totalSickAllocated }} Days</div>
             </div>
             <div class="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] text-center">
-              <div class="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider">Earned Leaves Balance</div>
-              <div class="text-2xl font-bold mt-1 text-[var(--color-employee)]">18 Days</div>
+              <div class="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider">Annual Privilege Leaves</div>
+              <div class="text-2xl font-bold mt-1 text-[var(--color-employee)]">{{ totalPrivilegeAllocated }} Days</div>
             </div>
             <div class="p-4 bg-[var(--color-bg)] rounded-xl border border-[var(--color-border)] text-center">
               <div class="text-[10px] text-[var(--color-text-muted)] font-black uppercase tracking-wider">Maternity/Paternity</div>
@@ -352,38 +345,34 @@
               <thead>
                 <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 font-bold text-xs uppercase tracking-wider text-[var(--color-text-muted)]">
                   <th class="px-6 py-4">Employee</th>
-                  <th class="px-6 py-4">Casual Leaves Taken</th>
-                  <th class="px-6 py-4">Sick Leaves Taken</th>
+                  <th class="px-6 py-4">Casual Leaves (Taken/Allocated)</th>
+                  <th class="px-6 py-4">Sick Leaves (Taken/Allocated)</th>
                   <th class="px-6 py-4">Remaining Balance</th>
                   <th class="px-6 py-4 text-right">Status</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
-                <tr class="hover:bg-[var(--color-midlight)]/40 transition-colors">
-                  <td class="px-6 py-4 font-bold">Ramesh Kumar</td>
-                  <td class="px-6 py-4">4 / 12</td>
-                  <td class="px-6 py-4">2 / 10</td>
-                  <td class="px-6 py-4 font-bold">24 Days</td>
+                <tr v-for="emp in leaveBalancesList" :key="emp.employee" class="hover:bg-[var(--color-midlight)]/40 transition-colors">
+                  <td class="px-6 py-4 font-bold">{{ emp.employee_name }} ({{ emp.employee }})</td>
+                  <td class="px-6 py-4">{{ emp.casual_taken }} / {{ emp.casual_allocated }}</td>
+                  <td class="px-6 py-4">{{ emp.sick_taken }} / {{ emp.sick_allocated }}</td>
+                  <td class="px-6 py-4 font-bold">{{ emp.remaining_balance }} Days</td>
                   <td class="px-6 py-4 text-right">
-                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Good Standing</span>
+                    <span
+                      class="px-2.5 py-1 text-[10px] font-bold rounded-full border"
+                      :class="emp.status === 'Good Standing'
+                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                        : emp.status === 'Low Balance'
+                          ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                          : 'bg-gray-500/10 text-gray-500 border-gray-500/20'"
+                    >
+                      {{ emp.status }}
+                    </span>
                   </td>
                 </tr>
-                <tr class="hover:bg-[var(--color-midlight)]/40 transition-colors">
-                  <td class="px-6 py-4 font-bold">Siddharth Sen</td>
-                  <td class="px-6 py-4">8 / 12</td>
-                  <td class="px-6 py-4">1 / 10</td>
-                  <td class="px-6 py-4 font-bold">13 Days</td>
-                  <td class="px-6 py-4 text-right">
-                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">Good Standing</span>
-                  </td>
-                </tr>
-                <tr class="hover:bg-[var(--color-midlight)]/40 transition-colors">
-                  <td class="px-6 py-4 font-bold">Karthik Raja</td>
-                  <td class="px-6 py-4">11 / 12</td>
-                  <td class="px-6 py-4">5 / 10</td>
-                  <td class="px-6 py-4 font-bold">6 Days</td>
-                  <td class="px-6 py-4 text-right">
-                    <span class="px-2.5 py-1 text-[10px] font-bold rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20">Low Balance</span>
+                <tr v-if="!leaveBalancesList.length">
+                  <td colspan="5" class="text-center py-8 text-sm text-[var(--color-text-muted)] italic">
+                    No employee leave details available
                   </td>
                 </tr>
               </tbody>
@@ -544,7 +533,19 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
-import { fetchEmployees, fetchLeaveTypes, createLeaveApplication, fetchLeaveApprovers, fetchPendingLeaveApplications, approveLeaveApplication, rejectLeaveApplication } from '../api.js'
+import {
+  fetchEmployees,
+  fetchLeaveTypes,
+  createLeaveApplication,
+  fetchLeaveApprovers,
+  fetchPendingLeaveApplications,
+  approveLeaveApplication,
+  rejectLeaveApplication,
+  fetchHrmsDashboardData,
+  updateAttendance,
+  createManualAttendance,
+  deleteAttendance
+} from '../api.js'
 import { session } from '../session.js'
 
 const router = useRouter()
@@ -552,6 +553,7 @@ const activeSubTab = ref('dashboard')
 
 const employeeCount = ref(0)
 const presentCount = ref(0)
+const onLeaveCount = ref(0)
 
 const now = ref(new Date())
 
@@ -569,43 +571,85 @@ const todayDay = computed(() => {
   })
 })
 
+// Real Lists & Metrics
+const attendanceList = ref([])
+const payrollList = ref([])
+const leaveBalancesList = ref([])
+const payrollMonth = ref('')
+const payrollPercent = ref(0)
+const payrollProcessedCount = ref(0)
+const payrollTotalCount = ref(0)
+const salaryPool = ref(0)
+const togglingId = ref('')
+
+const payrollYear = computed(() => now.value.getFullYear())
+const disbursementDate = computed(() => {
+  const d = new Date(now.value.getFullYear(), now.value.getMonth() + 1, 1)
+  return d.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  })
+})
+
+const totalCasualAllocated = computed(() => {
+  return leaveBalancesList.value.reduce((sum, item) => sum + item.casual_allocated, 0)
+})
+const totalSickAllocated = computed(() => {
+  return leaveBalancesList.value.reduce((sum, item) => sum + item.sick_allocated, 0)
+})
+const totalPrivilegeAllocated = computed(() => {
+  return leaveBalancesList.value.reduce((sum, item) => sum + item.privilege_allocated, 0)
+})
+
 // Pending leaves list — unsubmitted Leave Application rows (docstatus 0)
 const pendingLeaves = ref([])
 const loadingLeaves = ref(false)
 const leaveListError = ref('')
 
-const mockAttendance = ref([
-  { id: 'EMP-001', name: 'Ramesh Kumar', in: '08:54 AM', out: '06:05 PM', status: 'Present' },
-  { id: 'EMP-002', name: 'Siddharth Sen', in: '09:02 AM', out: '05:45 PM', status: 'Present' },
-  { id: 'EMP-003', name: 'Anjali Sharma', in: '--:--', out: '--:--', status: 'Absent' },
-  { id: 'EMP-004', name: 'Vikram Singh', in: '09:15 AM', out: '06:00 PM', status: 'Present' },
-  { id: 'EMP-005', name: 'Karthik Raja', in: '08:42 AM', out: '06:00 PM', status: 'Present' }
-])
-
-function toggleAttendanceStatus(emp) {
-  if (emp.status === 'Present') {
-    emp.status = 'Absent'
-    emp.in = '--:--'
-    emp.out = '--:--'
-  } else {
-    emp.status = 'Present'
-    emp.in = '09:00 AM'
-    emp.out = '06:00 PM'
-  }
-  calculatePresentCount()
+const getISODateStr = (date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
-function calculatePresentCount() {
-  const present = mockAttendance.value.filter(a => a.status === 'Present').length
-  const absent = mockAttendance.value.filter(a => a.status === 'Absent').length
-  const total = employeeCount.value || mockAttendance.value.length
-  
-  // scale proportional to actual count
-  if (employeeCount.value > 0) {
-    const ratio = present / (present + absent)
-    presentCount.value = Math.round(employeeCount.value * ratio)
-  } else {
-    presentCount.value = present
+const formatCurrency = (val) => {
+  return '₹ ' + Number(val || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+async function toggleAttendanceStatus(emp) {
+  if (togglingId.value) return
+  togglingId.value = emp.id
+  try {
+    const todayStr = getISODateStr(now.value)
+    if (emp.attendance_record_name) {
+      const newStatus = emp.status === 'Present' ? 'Absent' : 'Present'
+      const inTime = newStatus === 'Present' ? '09:00' : ''
+      const outTime = newStatus === 'Present' ? '18:00' : ''
+      await updateAttendance({
+        name: emp.attendance_record_name,
+        attendance_date: todayStr,
+        employee: emp.id,
+        status: newStatus,
+        in_time: inTime,
+        out_time: outTime
+      })
+    } else {
+      await createManualAttendance({
+        employee: emp.id,
+        attendance_date: todayStr,
+        status: 'Present',
+        in_time: '09:00',
+        out_time: '18:00'
+      })
+    }
+    await loadDashboard()
+  } catch (err) {
+    console.error('Failed to toggle attendance:', err)
+    alert(err.message || 'Failed to update attendance status.')
+  } finally {
+    togglingId.value = ''
   }
 }
 
@@ -752,12 +796,35 @@ async function loadStats() {
   try {
     const list = await fetchEmployees()
     employeesList.value = list || []
-    employeeCount.value = list?.length || 0
-    calculatePresentCount()
   } catch (err) {
-    console.error('Failed to load employee list for stats:', err)
-    employeeCount.value = 5 // fallback
-    calculatePresentCount()
+    console.error('Failed to load employee list for dropdowns:', err)
+  }
+}
+
+const isLoadingDashboard = ref(false)
+const dashboardError = ref('')
+
+async function loadDashboard() {
+  isLoadingDashboard.value = true
+  dashboardError.value = ''
+  try {
+    const res = await fetchHrmsDashboardData()
+    employeeCount.value = res.stats.employee_count
+    presentCount.value = res.stats.present_count
+    onLeaveCount.value = res.stats.on_leave_count
+    payrollMonth.value = res.stats.payroll.month_name
+    payrollPercent.value = res.stats.payroll.percent
+    payrollProcessedCount.value = res.stats.payroll.processed_count
+    payrollTotalCount.value = res.stats.payroll.total_count
+    salaryPool.value = res.stats.payroll.salary_pool
+    attendanceList.value = res.attendance || []
+    payrollList.value = res.payroll || []
+    leaveBalancesList.value = res.leave_balances || []
+  } catch (err) {
+    console.error('Failed to load HRMS dashboard data:', err)
+    dashboardError.value = err.message || 'Failed to load dashboard data.'
+  } finally {
+    isLoadingDashboard.value = false
   }
 }
 
@@ -766,6 +833,7 @@ async function approveLeave(leave) {
     await approveLeaveApplication(leave.id)
     alert(`Leave request approved successfully!`)
     await loadPendingLeaves()
+    await loadDashboard()
   } catch (err) {
     console.error('Failed to approve leave request:', err)
     const msg = stripHtml(err.message) || 'Failed to approve leave request.'
@@ -779,6 +847,7 @@ async function rejectLeave(leave) {
     await rejectLeaveApplication(leave.id)
     alert(`Leave request rejected successfully.`)
     await loadPendingLeaves()
+    await loadDashboard()
   } catch (err) {
     console.error('Failed to reject leave request:', err)
     const msg = stripHtml(err.message) || 'Failed to reject leave request.'
@@ -796,6 +865,7 @@ function triggerAction(action) {
 }
 
 onMounted(async () => {
+  await loadDashboard()
   await loadStats()
   await loadPendingLeaves()
 })

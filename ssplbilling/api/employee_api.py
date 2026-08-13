@@ -228,3 +228,169 @@ def reject_leave_application(leave_application):
 	doc.submit()
 	return {"name": doc.name, "status": doc.status}
 
+
+@frappe.whitelist()
+def get_hrms_dashboard_data():
+	"""Get real metrics, attendance records, payroll, and leave balances for the HRMS dashboard."""
+	import datetime
+	import calendar
+	from frappe.utils import getdate, get_datetime, today as frappe_today
+
+	today = getdate(frappe_today())
+	year_start = datetime.date(today.year, 1, 1)
+	year_end = datetime.date(today.year, 12, 31)
+
+	# 1. Active Employees
+	active_employees = frappe.get_all(
+		"Employee",
+		filters={"status": "Active"},
+		fields=["name", "employee_name"],
+		order_by="employee_name asc"
+	)
+	employee_count = len(active_employees)
+
+	# 2. Present count today
+	attendances = frappe.get_all(
+		"Attendance",
+		filters={"attendance_date": today, "docstatus": ("<", 2)},
+		fields=["name", "employee", "status", "in_time", "out_time"]
+	)
+	att_map = {att.employee: att for att in attendances}
+	present_count = sum(1 for att in attendances if att.status in ("Present", "Half Day"))
+
+	# 3. On leave count today
+	on_leave_count = frappe.db.count("Leave Application", {
+		"from_date": ("<=", today),
+		"to_date": (">=", today),
+		"status": "Approved",
+		"docstatus": 1
+	})
+
+	# 4. Payroll stats for current month
+	current_month_start = datetime.date(today.year, today.month, 1)
+	latest_slip = frappe.get_all("Salary Slip", order_by="end_date desc", limit=1, fields=["start_date", "end_date"])
+	if latest_slip:
+		p_start = latest_slip[0].start_date
+		p_end = latest_slip[0].end_date
+		month_name = getdate(p_start).strftime("%B")
+	else:
+		p_start = current_month_start
+		last_day = calendar.monthrange(today.year, today.month)[1]
+		p_end = datetime.date(today.year, today.month, last_day)
+		month_name = today.strftime("%B")
+
+	slips = frappe.get_all(
+		"Salary Slip",
+		filters={"start_date": p_start, "end_date": p_end, "docstatus": ("<", 2)},
+		fields=["name", "employee", "employee_name", "gross_pay", "net_pay", "total_deduction", "docstatus"]
+	)
+
+	salary_pool = sum(float(s.net_pay or 0) for s in slips)
+	processed_count = sum(1 for s in slips if s.docstatus == 1)
+	total_count = employee_count
+	percent = int((processed_count / total_count * 100)) if total_count > 0 else 0
+
+	payroll_status = {
+		"month_name": month_name,
+		"processed_count": processed_count,
+		"total_count": total_count,
+		"percent": percent,
+		"salary_pool": salary_pool
+	}
+
+	# 5. Attendance details list
+	attendance_list = []
+	for emp in active_employees:
+		att = att_map.get(emp.name)
+		in_time_str = "--:--"
+		out_time_str = "--:--"
+		if att:
+			if att.in_time:
+				try:
+					in_dt = get_datetime(att.in_time)
+					in_time_str = in_dt.strftime("%I:%M %p")
+				except Exception:
+					pass
+			if att.out_time:
+				try:
+					out_dt = get_datetime(att.out_time)
+					out_time_str = out_dt.strftime("%I:%M %p")
+				except Exception:
+					pass
+		attendance_list.append({
+			"id": emp.name,
+			"name": emp.employee_name,
+			"in": in_time_str,
+			"out": out_time_str,
+			"status": att.status if att else "Absent",
+			"attendance_record_name": att.name if att else None
+		})
+
+	# 6. Leave Balance Details
+	allocations = frappe.get_all(
+		"Leave Allocation",
+		filters={"docstatus": 1, "from_date": ("<=", today), "to_date": (">=", today)},
+		fields=["employee", "leave_type", "total_leaves_allocated"]
+	)
+	alloc_map = {}
+	for alloc in allocations:
+		alloc_map.setdefault(alloc.employee, {})[alloc.leave_type] = float(alloc.total_leaves_allocated or 0)
+
+	leaves_taken = frappe.get_all(
+		"Leave Application",
+		filters={"status": "Approved", "docstatus": 1, "from_date": (">=", year_start), "to_date": ("<=", year_end)},
+		fields=["employee", "leave_type", "total_leave_days"]
+	)
+	taken_map = {}
+	for l in leaves_taken:
+		taken_map.setdefault(l.employee, {}).setdefault(l.leave_type, 0.0)
+		taken_map[l.employee][l.leave_type] += float(l.total_leave_days or 0)
+
+	leave_balances = []
+	for emp in active_employees:
+		emp_alloc = alloc_map.get(emp.name, {})
+		emp_taken = taken_map.get(emp.name, {})
+
+		casual_allocated = emp_alloc.get("Casual Leave", 0.0)
+		casual_taken = emp_taken.get("Casual Leave", 0.0)
+
+		sick_allocated = emp_alloc.get("Sick Leave", 0.0)
+		sick_taken = emp_taken.get("Sick Leave", 0.0)
+
+		privilege_allocated = emp_alloc.get("Privilege Leave", 0.0)
+		privilege_taken = emp_taken.get("Privilege Leave", 0.0)
+
+		total_allocated = sum(emp_alloc.values())
+		total_taken = sum(emp_taken.values())
+		remaining = max(0.0, total_allocated - total_taken)
+
+		status = "Low Balance" if (total_allocated > 0 and remaining / total_allocated < 0.2) else "Good Standing"
+		if total_allocated == 0:
+			status = "No Allocation"
+
+		leave_balances.append({
+			"employee": emp.name,
+			"employee_name": emp.employee_name,
+			"casual_taken": casual_taken,
+			"casual_allocated": casual_allocated,
+			"sick_taken": sick_taken,
+			"sick_allocated": sick_allocated,
+			"privilege_taken": privilege_taken,
+			"privilege_allocated": privilege_allocated,
+			"remaining_balance": remaining,
+			"status": status
+		})
+
+	return {
+		"stats": {
+			"employee_count": employee_count,
+			"present_count": present_count,
+			"on_leave_count": on_leave_count,
+			"payroll": payroll_status
+		},
+		"attendance": attendance_list,
+		"payroll": slips,
+		"leave_balances": leave_balances
+	}
+
+

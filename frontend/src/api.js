@@ -1102,6 +1102,10 @@ export async function fetchEmployees(status = "") {
   return frappeGet("ssplbilling.api.employee_api.get_employee_list", { status });
 }
 
+export async function fetchHrmsDashboardData() {
+  return frappeGet("ssplbilling.api.employee_api.get_hrms_dashboard_data");
+}
+
 export async function createEmployee(payload) {
   return frappePost("ssplbilling.api.employee_api.create_employee", {
     data: JSON.stringify(payload),
