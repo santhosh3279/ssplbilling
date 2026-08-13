@@ -420,6 +420,24 @@
         </div>
 
         <div class="px-6 py-4 border-t border-[var(--color-border)] space-y-3">
+          <div v-if="showCheckinForm && shiftEndPresets.length" class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Shift end</span>
+            <button
+              v-for="preset in shiftEndPresets"
+              :key="preset.time"
+              @click="newCheckinTime = preset.time"
+              :title="preset.shifts"
+              class="rounded-xl border px-3 py-1.5 font-mono text-sm font-bold transition-colors"
+              :class="
+                newCheckinTime === preset.time
+                  ? 'border-[var(--color-employee)] bg-[var(--color-employee)] text-white'
+                  : 'border-[var(--color-border)] hover:bg-[var(--color-midlight)]'
+              "
+            >
+              {{ preset.time }}
+            </button>
+          </div>
+
           <div v-if="showCheckinForm" class="flex items-end gap-3">
             <div class="flex-1">
               <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Time</label>
@@ -482,6 +500,7 @@ import {
   fetchEmployeeCheckins,
   fetchCheckinCounts,
   createEmployeeCheckin,
+  fetchShiftTypes,
 } from '../api.js'
 
 const router = useRouter()
@@ -535,6 +554,22 @@ const showCheckinForm = ref(false)
 const newCheckinTime = ref('')
 const savingCheckin = ref(false)
 const checkinError = ref('')
+const shiftTypes = ref([])
+
+// One button per distinct shift end time — several shifts often finish together, and
+// two buttons reading 20:00 would be indistinguishable.
+const shiftEndPresets = computed(() => {
+  const byTime = {}
+  ;(shiftTypes.value || []).forEach((shift) => {
+    const time = (shift.end_time || '').slice(0, 5)
+    if (!time) return
+    if (!byTime[time]) byTime[time] = []
+    byTime[time].push(shift.name)
+  })
+  return Object.keys(byTime)
+    .sort()
+    .map((time) => ({ time, shifts: byTime[time].join(', ') }))
+})
 
 function daysAgo(n) {
   const d = new Date()
@@ -790,8 +825,15 @@ async function loadCheckins() {
   }
 }
 
-function startCheckinForm() {
+async function startCheckinForm() {
   checkinError.value = ''
+  if (!shiftTypes.value.length) {
+    try {
+      shiftTypes.value = (await fetchShiftTypes()) || []
+    } catch (err) {
+      console.error('Failed to load shift types:', err)
+    }
+  }
   // Seeded from the last punch so a forgotten one is typed near where it belongs
   const last = checkins.value[checkins.value.length - 1]
   newCheckinTime.value = last ? formatTime(last.time) : '09:00'
