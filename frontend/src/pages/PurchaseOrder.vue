@@ -617,6 +617,7 @@ import ShortcutPage from '../components/ShortcutPage.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 
 import { formatDMY } from '../utils/date'
+import { serverToday, toLocalISO } from '../services/serverTime'
 const router = useRouter()
 
 // --- Data Fetching & State Management ---
@@ -684,8 +685,8 @@ const lastEnterTime = ref(0)
 const orderNo = ref('NEW')
 const selectedSeries = ref('')
 const defaultTemplate = ref('')
-const orderDate = ref(new Date().toISOString().split('T')[0])
-const sidebarDate = ref(new Date().toISOString().split('T')[0])
+const orderDate = ref(serverToday())
+const sidebarDate = ref(serverToday())
 const sidebarSearch = ref('')
 const sidebarSeries = ref([])
 const draftOnly = ref(false)
@@ -726,7 +727,7 @@ const saveButtonText = computed(() => {
 function handleDocDateChange(days) {
   const d = new Date(orderDate.value)
   d.setDate(d.getDate() + days)
-  orderDate.value = d.toISOString().split('T')[0]
+  orderDate.value = toLocalISO(d)
 }
 
 async function fetchRecentOrders() {
@@ -748,7 +749,7 @@ async function fetchRecentOrders() {
 function handleSidebarDateChange(days) {
   const d = new Date(sidebarDate.value)
   d.setDate(d.getDate() + days)
-  sidebarDate.value = d.toISOString().split('T')[0]
+  sidebarDate.value = toLocalISO(d)
 }
 
 watch([sidebarDate, sidebarSeries, draftOnly], () => {

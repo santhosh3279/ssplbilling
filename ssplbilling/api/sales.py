@@ -75,7 +75,7 @@ def _apply_payload_to_doc(doc, payload):
     doc.mop = payload.get("mop")
     doc.update_stock = frappe.utils.cint(payload.get("update_stock", 1))
     doc.set_posting_time = 1
-    doc.posting_date = payload.get("posting_date")
+    doc.posting_date = payload.get("posting_date") or frappe.utils.nowdate()
     doc.selling_price_list = payload.get("price_list")
     doc.cost_center = payload.get("cost_center")
     doc.ignore_pricing_rule = 1

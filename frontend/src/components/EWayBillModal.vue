@@ -179,6 +179,7 @@
 import { ref, nextTick, onMounted, watch } from 'vue'
 import { frappeGet } from '../api'
 
+import { serverToday } from '../services/serverTime'
 const props = defineProps({
   loading: { type: Boolean, default: false }
 })
@@ -193,7 +194,7 @@ const form = ref({
   gst_transporter_id: '',
   transporter_name: '',
   lr_no: '',
-  lr_date: new Date().toISOString().split('T')[0]
+  lr_date: serverToday()
 })
 
 // Input Element Refs

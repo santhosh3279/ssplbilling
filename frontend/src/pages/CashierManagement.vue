@@ -47,7 +47,7 @@
           class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
         </button>
-        <button v-if="!isToday" @click="currentDate = new Date().toLocaleDateString('en-CA')"
+        <button v-if="!isToday" @click="currentDate = serverToday()"
           class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-2.5 py-1 text-[9px] font-black uppercase tracking-widest text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]">
           Today
         </button>
@@ -644,6 +644,7 @@ import CahierContraModal from '../components/CashierContraModal.vue'
 import { generateCashierReport } from '../services/cashierReportExport.js'
 
 import { formatDMY } from '../utils/date'
+import { serverToday, toLocalISO } from '../services/serverTime'
 const router = useRouter()
 const localStorage = window.localStorage
 const showBoxCash = ref(false)
@@ -669,13 +670,13 @@ useShortcuts({
 })
 
 // ── Date navigation ───────────────────────────────────────────────────────────
-const currentDate = ref(new Date().toLocaleDateString('en-CA'))
-const isToday = computed(() => currentDate.value === new Date().toLocaleDateString('en-CA'))
+const currentDate = ref(serverToday())
+const isToday = computed(() => currentDate.value === serverToday())
 
 function shiftDate(days) {
   const d = new Date(currentDate.value + 'T00:00:00')
   d.setDate(d.getDate() + days)
-  currentDate.value = d.toLocaleDateString('en-CA')
+  currentDate.value = toLocalISO(d)
 }
 
 function formatDateDisplay(dateStr) {
@@ -752,7 +753,7 @@ async function refreshLiveLedger() {
     if (!isToday.value) {
       const d = new Date(currentDate.value + 'T00:00:00')
       d.setDate(d.getDate() + 1)
-      params.date = d.toLocaleDateString('en-CA')
+      params.date = toLocalISO(d)
     }
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', params)
     liveLedgerBalance.value = res.balance ?? 0
@@ -1073,7 +1074,7 @@ async function refreshAll() {
       const d = new Date(today + 'T00:00:00')
       d.setDate(d.getDate() + 1)
       const balanceRes = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', { 
-        account, date: d.toLocaleDateString('en-CA') 
+        account, date: toLocalISO(d) 
       })
       closingLedger.value = balanceRes.balance || 0
     } else {

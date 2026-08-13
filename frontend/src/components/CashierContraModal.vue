@@ -139,11 +139,12 @@ import { frappeGet, frappePost } from '../api.js'
 import { useShortcuts } from '../services/shortcutManager'
 
 import { formatDMY } from '../utils/date'
+import { serverToday } from '../services/serverTime'
 const props = defineProps({
   cashAccount: { type: String, required: true },
   diff:        { type: Number, required: true },
   entryType:   { type: String, required: true },
-  date:        { type: String, default: () => new Date().toLocaleDateString('en-CA') },
+  date:        { type: String, default: () => serverToday() },
   company:     { type: String, default: '' },
 })
 

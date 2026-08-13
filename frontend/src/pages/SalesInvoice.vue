@@ -687,6 +687,7 @@ import ShortcutPage from '../components/ShortcutPage.vue'
 import { canAccessTile } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
+import { serverToday, toLocalISO } from '../services/serverTime'
 const props = defineProps({
   isSubwindow: Boolean,
   invoiceName: String
@@ -823,8 +824,8 @@ const displayedDocNumber = computed(() => {
 const postingTime = ref('')
 const selectedSeries = ref('')
 const defaultTemplate = ref('')
-const invoiceDate = ref(new Date().toISOString().split('T')[0])
-const sidebarDate = ref(new Date().toISOString().split('T')[0])
+const invoiceDate = ref(serverToday())
+const sidebarDate = ref(serverToday())
 const sidebarSearch = ref('')
 const sidebarSeries = ref([])
 watch(availableSeries, (newVal) => {
@@ -896,7 +897,7 @@ function handleDocDateChange(days) {
   }
   const d = new Date(invoiceDate.value)
   d.setDate(d.getDate() + days)
-  invoiceDate.value = d.toISOString().split('T')[0]
+  invoiceDate.value = toLocalISO(d)
 }
 
 // Same-date bills must stay adjacent so the sidebar's date headers form one
@@ -970,7 +971,7 @@ function applySidebarPanelEvent(data) {
 function handleSidebarDateChange(days) {
   const d = new Date(sidebarDate.value)
   d.setDate(d.getDate() + days)
-  sidebarDate.value = d.toISOString().split('T')[0]
+  sidebarDate.value = toLocalISO(d)
 }
 
 watch([sidebarDate, sidebarSeries, draftOnly], () => {

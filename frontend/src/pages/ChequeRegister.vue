@@ -479,6 +479,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Warning from '../components/Warning.vue'
 
 import { formatDMY } from '../utils/date'
+import { serverToday } from '../services/serverTime'
 const router = useRouter()
 
 const receivedBtnRef = ref(null)
@@ -559,10 +560,7 @@ function getLocalDateParts() {
 }
 
 function getTodayIST() {
-  const [y, m, d] = getLocalDateParts()
-  const mm = String(m).padStart(2, '0')
-  const dd = String(d).padStart(2, '0')
-  return `${y}-${mm}-${dd}`
+  return serverToday()
 }
 
 function onChequeDateInput(e) {

@@ -587,6 +587,7 @@ import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
 
 import { formatDMY } from '../utils/date'
+import { serverToday, toLocalISO } from '../services/serverTime'
 const router = useRouter()
 
 const inheritedUser = computed(() => {
@@ -673,8 +674,8 @@ const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: numbe
 const invoiceNo = ref('NEW')
 const selectedSeries = ref('')
 const defaultTemplate = ref('')
-const invoiceDate = ref(new Date().toISOString().split('T')[0])
-const sidebarDate = ref(new Date().toISOString().split('T')[0])
+const invoiceDate = ref(serverToday())
+const sidebarDate = ref(serverToday())
 const sidebarSearch = ref('')
 const sidebarSeries = ref([])
 const draftOnly = ref(false)
@@ -715,7 +716,7 @@ const saveButtonText = computed(() => {
 function handleDocDateChange(days) {
   const d = new Date(invoiceDate.value)
   d.setDate(d.getDate() + days)
-  invoiceDate.value = d.toISOString().split('T')[0]
+  invoiceDate.value = toLocalISO(d)
 }
 
 async function fetchRecentInvoices() {
@@ -737,7 +738,7 @@ async function fetchRecentInvoices() {
 function handleSidebarDateChange(days) {
   const d = new Date(sidebarDate.value)
   d.setDate(d.getDate() + days)
-  sidebarDate.value = d.toISOString().split('T')[0]
+  sidebarDate.value = toLocalISO(d)
 }
 
 watch([sidebarDate, sidebarSeries, draftOnly], () => {

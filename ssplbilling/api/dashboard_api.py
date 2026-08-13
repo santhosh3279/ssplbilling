@@ -811,3 +811,24 @@ def update_custom_version(version):
 	frappe.clear_cache(doctype="SSPL Billing Settings")
 	return {"success": True, "version": version}
 
+
+
+@frappe.whitelist()
+def get_server_time():
+	"""Authoritative clock for the SPA.
+
+	The front-end seeds every transaction date from this instead of the
+	workstation clock, so a drifting or mis-zoned till PC cannot post
+	invoices on the wrong day.
+	"""
+	import time
+
+	return {
+		"date": frappe.utils.nowdate(),
+		"time": frappe.utils.nowtime(),
+		"datetime": str(frappe.utils.now_datetime()),
+		# Timezone-independent anchor: the client derives its clock offset from
+		# this, so a workstation in the wrong timezone still lands on the right day.
+		"epoch_ms": int(time.time() * 1000),
+		"timezone": frappe.db.get_single_value("System Settings", "time_zone") or "Asia/Kolkata",
+	}

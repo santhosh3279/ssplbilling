@@ -449,6 +449,7 @@ import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 
 import { formatDMY } from '../utils/date'
+import { serverToday, toLocalISO } from '../services/serverTime'
 const props = defineProps({
   isSubwindow: Boolean,
   prelinkDocType: { type: String, default: 'Purchase Invoice' },
@@ -472,7 +473,7 @@ const wb_company = computed(() => localStorage.getItem('wb-company') || '')
 const doc = reactive({
   name: '',
   company: wb_company.value,
-  posting_date: new Date().toISOString().split('T')[0],
+  posting_date: serverToday(),
   distribute_charges_based_on: 'Qty',
   purchase_receipts: [{
     receipt_document_type: 'Purchase Receipt',
@@ -562,7 +563,7 @@ function adjustDate(days) {
   if (isReadOnly.value || !doc.posting_date) return
   const d = new Date(doc.posting_date)
   d.setDate(d.getDate() + days)
-  doc.posting_date = d.toISOString().split('T')[0]
+  doc.posting_date = toLocalISO(d)
 }
 
 // --- UTILS ---
@@ -619,7 +620,7 @@ async function loadVouchersList() {
 
 function initNewDoc() {
   doc.name = ''
-  doc.posting_date = new Date().toISOString().split('T')[0]
+  doc.posting_date = serverToday()
   doc.distribute_charges_based_on = 'Qty'
   doc.purchase_receipts = [{
     receipt_document_type: 'Purchase Receipt',

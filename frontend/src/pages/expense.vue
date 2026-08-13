@@ -355,6 +355,7 @@ import Warning from '../components/Warning.vue'
 
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 
+import { serverToday, toLocalISO } from '../services/serverTime'
 const router = useRouter()
 
 // --- State ---
@@ -369,7 +370,7 @@ const selectionOverlayRef = ref(null)
 useSubwindowWatcher(showExitWarning, {
   'ESCAPE': () => { showExitWarning.value = false }
 })
-const postingDate = ref(new Date().toISOString().split('T')[0])
+const postingDate = ref(serverToday())
 const cashAccount = ref({
   account: localStorage.getItem('wb-cash') || '',
   name: '',
@@ -384,7 +385,7 @@ const form = reactive({
     { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {} }
   ],
   reference_no: '',
-  reference_date: new Date().toISOString().split('T')[0]
+  reference_date: serverToday()
 })
 
 const expenseSearchRefs = ref([])
@@ -415,7 +416,7 @@ const isFormValid = computed(() => {
 })
 
 const isNotToday = computed(() => {
-  return postingDate.value !== new Date().toISOString().split('T')[0]
+  return postingDate.value !== serverToday()
 })
 
 const totalRows = computed(() => form.rows.filter(r => r.account && r.amount > 0).length)
@@ -472,7 +473,7 @@ function focusPostButton() {
 function adjustDate(days) {
   const d = new Date(postingDate.value)
   d.setDate(d.getDate() + days)
-  postingDate.value = d.toISOString().split('T')[0]
+  postingDate.value = toLocalISO(d)
 }
 
 async function fetchCashAccountDetails() {

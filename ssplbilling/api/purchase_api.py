@@ -213,7 +213,7 @@ def create_purchase_invoice(data=None, **kwargs):
         pi.company = data["company"]
     pi.bill_no = data.get("bill_no")
     pi.bill_date = data.get("bill_date")
-    pi.posting_date = data.get("date", frappe.utils.today())
+    pi.posting_date = data.get("date") or frappe.utils.today()
     pi.set_posting_time = 1
     pi.posting_time = frappe.utils.nowtime()
     pi.naming_series = data.get("naming_series", "PINV-.YY.-")
@@ -510,7 +510,7 @@ def update_purchase_invoice(data=None, **kwargs):
         pi.set_warehouse = data["set_warehouse"]
     pi.bill_no = data.get("bill_no")
     pi.bill_date = data.get("bill_date")
-    pi.posting_date = data.get("date", frappe.utils.today())
+    pi.posting_date = data.get("date") or frappe.utils.today()
     pi.set_posting_time = 1
 
     pi.custom_remarks = data.get("custom_remarks") or ""

@@ -24,6 +24,7 @@ import {
   createSalesInvoice,
 } from "../api.js";
 import { searchCustomers } from "../customersearch.js";
+import { serverToday } from "../services/serverTime";
 
 // ─── Row factory ──────────────────────────────────────────────────────────────
 
@@ -392,8 +393,5 @@ export function useBilling() {
 // ─── Utility ──────────────────────────────────────────────────────────────────
 
 function todayISO() {
-  const date = new Date()
-  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
-  const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
-  return formatter.format(date)
+  return serverToday()
 }

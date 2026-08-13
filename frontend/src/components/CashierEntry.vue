@@ -185,6 +185,7 @@ import { session } from '../session'
 import { frappeGet, frappePost } from '../api.js'
 
 import { formatDMY } from '../utils/date'
+import { serverToday, toLocalISO } from '../services/serverTime'
 const props = defineProps({
   title: {
     type: String,
@@ -196,7 +197,7 @@ const props = defineProps({
   },
   date: {
     type: String,
-    default: () => new Date().toLocaleDateString('en-CA'),
+    default: () => serverToday(),
   },
 })
 
@@ -366,7 +367,7 @@ async function fetchLedgerBalanceManual(account) {
       // So we pass the next day's date to get its opening balance.
       const d = new Date(form.date + 'T00:00:00')
       d.setDate(d.getDate() + 1)
-      params.date = d.toLocaleDateString('en-CA')
+      params.date = toLocalISO(d)
     }
     const res = await frappeGet('ssplbilling.api.cahierlog_api.get_cash_ledger_balance', params)
     ledgerBalance.value = res.balance ?? 0

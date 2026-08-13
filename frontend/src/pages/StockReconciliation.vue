@@ -244,6 +244,7 @@ import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { useItemCache } from '../services/itemCache.js'
 
 import { formatDMY } from '../utils/date'
+import { serverToday, toLocalISO } from '../services/serverTime'
 const router = useRouter()
 const API = 'ssplbilling.api.stock_reconciliation_api'
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
@@ -265,7 +266,7 @@ const purpose = ref('Stock Reconciliation')
 const entryName = ref(null)
 const entryDocStatus = ref(0)
 const submitting = ref(false)
-const entryDate = ref(new Date().toISOString().split('T')[0])
+const entryDate = ref(serverToday())
 const availableWarehouses = ref([])
 const availablePurposes = ref(['Stock Reconciliation', 'Opening Stock'])
 const zoomPercent = ref(parseInt(localStorage.getItem('wb-zoom')) || 120)
@@ -285,7 +286,7 @@ const quickSearchRef = ref(null)
 const quickSearchAnchor = ref(null)
 
 // Sidebar state
-const sidebarDate = ref(new Date().toISOString().split('T')[0])
+const sidebarDate = ref(serverToday())
 const sidebarSearch = ref('')
 const sidebarEntries = ref([])
 const sidebarLoading = ref(false)
@@ -329,13 +330,13 @@ function navigateSidebarEntry(idx, dir) {
 function changeSidebarDate(days) {
   const d = new Date(sidebarDate.value)
   d.setDate(d.getDate() + days)
-  sidebarDate.value = d.toISOString().split('T')[0]
+  sidebarDate.value = toLocalISO(d)
 }
 
 function changeDate(dir) {
   const d = new Date(entryDate.value)
   d.setDate(d.getDate() + dir)
-  entryDate.value = d.toISOString().split('T')[0]
+  entryDate.value = toLocalISO(d)
 }
 
 function formatDate(dateString) {

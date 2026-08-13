@@ -321,6 +321,7 @@ import { frappePost } from '../api'
 import { useItemCache } from '../services/itemCache.js'
 
 import { formatDMY } from '../utils/date'
+import { serverToday, toLocalISO } from '../services/serverTime'
 const showPrintModal = ref(false)
 const showJumpModal = ref(false)
 const defaultTemplate = ref('')
@@ -338,7 +339,7 @@ useShortcuts({
 const { refreshItemCache, lookupItemInCache, searchItemsInCache } = useItemCache()
 
 const transferNo = ref('')
-const transferDate = ref(new Date().toISOString().split('T')[0])
+const transferDate = ref(serverToday())
 const fromWarehouse = ref('')
 const toWarehouse = ref('')
 const items = ref([])
@@ -371,7 +372,7 @@ const quickSearchAnchor = ref(null)
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
 
-const sidebarDate = ref(new Date().toISOString().split('T')[0])
+const sidebarDate = ref(serverToday())
 const recentTransfers = ref([])
 const sidebarSearch = ref('')
 const sidebarSeries = ref([])
@@ -844,14 +845,14 @@ function handleJump(targetNo) {
 function handleSidebarDateChange(dir) {
   const d = new Date(sidebarDate.value)
   d.setDate(d.getDate() + dir)
-  sidebarDate.value = d.toISOString().split('T')[0]
+  sidebarDate.value = toLocalISO(d)
   fetchRecentTransfers()
 }
 
 function handleDocDateChange(dir) {
   const d = new Date(transferDate.value)
   d.setDate(d.getDate() + dir)
-  transferDate.value = d.toISOString().split('T')[0]
+  transferDate.value = toLocalISO(d)
 }
 
 async function handleSelectSidebarItem(item) {

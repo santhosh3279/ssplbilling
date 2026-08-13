@@ -474,6 +474,7 @@ import Warning from '../components/Warning.vue'
 import { useShortcuts } from '../services/shortcutManager'
 import { paymentShortcuts } from '../shortcuts/paymentShortcuts'
 
+import { serverToday, toLocalISO } from '../services/serverTime'
 const router = useRouter()
 
 // --- State ---
@@ -601,7 +602,7 @@ watch(showInitialSelection, (val) => {
 useShortcuts(paymentShortcuts({
   cycleTab,
 }))
-const postingDate = ref(new Date().toISOString().split('T')[0])
+const postingDate = ref(serverToday())
 const displayDate = computed(() => {
   if (!postingDate.value) return ''
   const d = new Date(postingDate.value)
@@ -615,7 +616,7 @@ const displayDate = computed(() => {
 function adjustDate(days) {
   const d = new Date(postingDate.value)
   d.setDate(d.getDate() + days)
-  postingDate.value = d.toISOString().split('T')[0]
+  postingDate.value = toLocalISO(d)
 }
 
 const form = reactive({
@@ -626,7 +627,7 @@ const form = reactive({
   amount: null,
   mop_rows: [], // Will contain { account, name, type, amount, balance, query }
   reference_no: '',
-  reference_date: new Date().toISOString().split('T')[0],
+  reference_date: serverToday(),
   remarks: ''
 })
 
@@ -1019,7 +1020,7 @@ function handlePartyTypeChange() {
 }
 
 function resetForm() {
-  postingDate.value = new Date().toISOString().split('T')[0]
+  postingDate.value = serverToday()
   form.party = ''
   form.party_name = ''
   partyQuery.value = ''
@@ -1041,7 +1042,7 @@ function resetForm() {
   }
   
   form.reference_no = ''
-  form.reference_date = new Date().toISOString().split('T')[0]
+  form.reference_date = serverToday()
 }
 
 async function handleSubmit() {

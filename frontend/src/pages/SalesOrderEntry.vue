@@ -683,6 +683,7 @@ import { salesOrderShortcuts } from '../shortcuts/salesOrderShortcuts'
 import * as XLSX from 'xlsx'
 
 import { formatDMY } from '../utils/date'
+import { toLocalISO } from '../services/serverTime'
 const router = useRouter()
 
 const inheritedUser = computed(() => {
@@ -810,13 +811,13 @@ async function fetchDropdownOptions() {
 
 // ==================== HELPERS ====================
 function getTodayIST() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  return serverToday()
 }
 
 function addDays(dateStr, days) {
   const d = new Date(dateStr + 'T00:00:00')
   d.setDate(d.getDate() + days)
-  return d.toISOString().split('T')[0]
+  return toLocalISO(d)
 }
 
 async function apiPost(method, params) {
@@ -1178,7 +1179,7 @@ async function fetchSidebarBills() {
 function changeSidebarDate(days) {
   const d = new Date(sidebarDate.value)
   d.setDate(d.getDate() + days)
-  sidebarDate.value = d.toISOString().split('T')[0]
+  sidebarDate.value = toLocalISO(d)
 }
 
 function toggleAllSeries() {

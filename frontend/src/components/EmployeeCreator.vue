@@ -173,6 +173,7 @@ import { ref, reactive, watch, nextTick } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 
+import { serverToday } from '../services/serverTime'
 useSubwindow()
 
 const props = defineProps({
@@ -230,7 +231,7 @@ function handleKeydown(e) {
 
 // ─── Init / populate form ─────────────────────────────────────────────────────
 function getTodayIST() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  return serverToday()
 }
 
 function resetForm() {

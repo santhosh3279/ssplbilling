@@ -232,6 +232,7 @@ import { frappeGet, frappePost } from '../api.js'
 import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 import { useLedgerCache } from '../services/ledgerCache'
 
+import { serverToday, toLocalISO } from '../services/serverTime'
 const router = useRouter()
 const { searchLedgersInCache, refreshLedgerCache } = useLedgerCache()
 
@@ -251,7 +252,7 @@ const empInput = ref(null)
 const doc = reactive({
   employee: '',
   employee_name: '',
-  posting_date: new Date().toISOString().split('T')[0],
+  posting_date: serverToday(),
   company: '',
   balance_points: 0,
   redeem_points: 0,
@@ -273,7 +274,7 @@ const displayDate = computed(() => {
 function adjustDate(days) {
   const d = new Date(doc.posting_date)
   d.setDate(d.getDate() + days)
-  doc.posting_date = d.toISOString().split('T')[0]
+  doc.posting_date = toLocalISO(d)
 }
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────

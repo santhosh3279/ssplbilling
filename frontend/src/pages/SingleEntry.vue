@@ -315,6 +315,7 @@ import Warning from '../components/Warning.vue'
 
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 
+import { serverToday, toLocalISO } from '../services/serverTime'
 const router = useRouter()
 
 // --- State ---
@@ -323,7 +324,7 @@ const showExitWarning = ref(false)
 useSubwindowWatcher(showExitWarning, {
   'ESCAPE': () => { showExitWarning.value = false }
 })
-const postingDate = ref(new Date().toISOString().split('T')[0])
+const postingDate = ref(serverToday())
 const cashAccount = ref({
   account: localStorage.getItem('wb-cash') || '',
   name: '',
@@ -337,7 +338,7 @@ const searchTarget = ref('row') // 'row' or 'cash_account'
 const form = reactive({
   rows: [
     { 
-      posting_date: new Date().toISOString().split('T')[0], 
+      posting_date: serverToday(), 
       account: '', 
       account_name: '', 
       payment: null, 
@@ -351,7 +352,7 @@ const form = reactive({
     }
   ],
   reference_no: '',
-  reference_date: new Date().toISOString().split('T')[0]
+  reference_date: serverToday()
 })
 
 const cashAccountBtnRef = ref(null)
@@ -449,7 +450,7 @@ function focusPostButton() {
 function adjustDate(days) {
   const d = new Date(postingDate.value)
   d.setDate(d.getDate() + days)
-  postingDate.value = d.toISOString().split('T')[0]
+  postingDate.value = toLocalISO(d)
 }
 
 async function fetchCashAccountDetails() {
@@ -580,7 +581,7 @@ async function handleAmountEnter(idx) {
 function handleRowRemarksEnter(idx) {
   if (idx === form.rows.length - 1) {
     form.rows.push({ 
-      posting_date: new Date().toISOString().split('T')[0], 
+      posting_date: serverToday(), 
       account: '', 
       account_name: '', 
       payment: null, 

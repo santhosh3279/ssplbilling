@@ -242,6 +242,7 @@ import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 
 import { formatDMY } from '../utils/date'
+import { toLocalISO } from '../services/serverTime'
 const router = useRouter()
 const API = 'ssplbilling.api.gst_ledger_api'
 
@@ -340,7 +341,7 @@ const newBalance = computed(() => {
 function adjustDate(dir) {
   const d = new Date(form.value.date)
   d.setDate(d.getDate() + dir)
-  form.value.date = d.toISOString().split('T')[0]
+  form.value.date = toLocalISO(d)
 }
 
 function openSearch() {

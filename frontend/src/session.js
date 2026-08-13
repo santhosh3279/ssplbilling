@@ -1,6 +1,7 @@
 import { ref } from 'vue'
 import { createResource } from 'frappe-ui'
 import { destroyTabSession } from './services/tabSession'
+import { primeServerTime } from './services/serverTime'
 
 const isLoggedIn = ref(false)
 const user = ref(null)
@@ -59,7 +60,9 @@ async function init() {
   initialized = true
   await userResource.fetch()
   if (isLoggedIn.value) {
-    await Promise.all([userInfoResource.fetch(), refreshCsrfToken()])
+    // primeServerTime must resolve before any page's setup() runs — every
+    // transaction date is seeded from the server clock, not the workstation.
+    await Promise.all([userInfoResource.fetch(), refreshCsrfToken(), primeServerTime()])
   }
 }
 

@@ -247,6 +247,7 @@ import { frappePost } from '../api'
 import { useItemCache } from '../services/itemCache.js'
 
 import { formatDMY } from '../utils/date'
+import { serverToday, toLocalISO } from '../services/serverTime'
 const router = useRouter()
 
 useShortcuts({
@@ -257,7 +258,7 @@ useShortcuts({
 const { refreshItemCache, lookupItemInCache, searchItemsInCache } = useItemCache()
 
 const repackNo = ref('')
-const repackDate = ref(new Date().toISOString().split('T')[0])
+const repackDate = ref(serverToday())
 const fromWarehouse = ref('')
 const toWarehouse = ref('')
 const items = ref([])
@@ -284,7 +285,7 @@ const pendingQtyInput = ref(null)
 const pendingTypeInput = ref(null)
 const typeRefs = ref([])
 
-const sidebarDate = ref(new Date().toISOString().split('T')[0])
+const sidebarDate = ref(serverToday())
 const recentRepacks = ref([])
 const sidebarSearch = ref('')
 const sidebarSeries = ref([])
@@ -604,14 +605,14 @@ function goBack() {
 function handleSidebarDateChange(dir) {
   const d = new Date(sidebarDate.value)
   d.setDate(d.getDate() + dir)
-  sidebarDate.value = d.toISOString().split('T')[0]
+  sidebarDate.value = toLocalISO(d)
   fetchRecentRepacks()
 }
 
 function handleDocDateChange(dir) {
   const d = new Date(repackDate.value)
   d.setDate(d.getDate() + dir)
-  repackDate.value = d.toISOString().split('T')[0]
+  repackDate.value = toLocalISO(d)
 }
 
 async function handleSelectSidebarItem(item) {

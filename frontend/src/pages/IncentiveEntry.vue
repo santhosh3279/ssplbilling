@@ -310,6 +310,7 @@ import { session } from '../session'
 import { frappeGet, frappePost, getUnpostedBills, calculateBillIncentive } from '../api.js'
 
 import { formatDMY } from '../utils/date'
+import { serverToday } from '../services/serverTime'
 const router = useRouter()
 
 // ── State ──────────────────────────────────────────────────────────────────
@@ -338,7 +339,7 @@ const billDetails = ref({
 
 const doc = reactive({
   inv_no: '',
-  date: new Date().toISOString().split('T')[0],
+  date: serverToday(),
   time: new Date().toTimeString().split(' ')[0],
   user: '',
   incentive_system: []

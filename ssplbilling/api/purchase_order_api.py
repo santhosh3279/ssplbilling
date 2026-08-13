@@ -211,7 +211,7 @@ def create_purchase_order(data=None, **kwargs):
     if data.get("company"):
         po.company = data["company"]
     po.supplier = data["supplier"]
-    po.transaction_date = data.get("date", frappe.utils.today())
+    po.transaction_date = data.get("date") or frappe.utils.today()
     po.naming_series = data.get("naming_series", "PUR-ORD-.YY.-")
     po.is_subcontracted = data.get("is_subcontracted", 0)
     
@@ -444,7 +444,7 @@ def update_purchase_order(data=None, **kwargs):
         po.supplier_gstin = None
         po.place_of_supply = None
 
-    po.transaction_date = data.get("date", frappe.utils.today())
+    po.transaction_date = data.get("date") or frappe.utils.today()
     po.additional_discount_percentage = float(data.get("discount_percentage") or 0)
     
     if data.get("tax_template"):
