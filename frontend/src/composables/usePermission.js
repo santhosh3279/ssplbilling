@@ -47,7 +47,11 @@ export const BILLER_ROUTES = new Set([
   'Employee',
   'Employees',
   'EsslMachines',
+  'EsslMapping',
+  'EsslAttendance',
   'DeviceUsers',
+  'AttendanceChart',
+  'ShiftRoaster',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -95,6 +99,15 @@ export const ACCOUNTS_ROUTES = new Set([
   'CashflowReport',
   'AccountTree',
   'GeneralLedger',
+  'Hrms',
+  'Employee',
+  'Employees',
+  'EsslMachines',
+  'EsslMapping',
+  'EsslAttendance',
+  'DeviceUsers',
+  'AttendanceChart',
+  'ShiftRoaster',
 ])
 
 // Route names accessible by admin (excluding sale, purchase, accounts, ledger, stock, and sspl special sections)
@@ -179,21 +192,30 @@ export function getLicenseInfo() {
   }
 }
 
-// HRMS sub-pages every user may open. Checked before the license and tile gates
-// on purpose — these pages carry no billing data and are reached from the HRMS
-// sidebar, so no role, tile or license feature may lock them out.
-// 'Hrms' is included because the portal is the only way into the sidebar that
-// links the other four — public sub-pages nobody can navigate to are useless.
-export const PUBLIC_HRMS_ROUTES = [
-  'Hrms',
-  'Employees',
-  'EsslMachines',
-  'EsslMapping',
-  'EsslAttendance',
-  'DeviceUsers',
-  'AttendanceChart',
-  'ShiftRoaster',
-]
+// HRMS sub-pages are now restricted under the 'hrms' license feature.
+export const PUBLIC_HRMS_ROUTES = []
+
+function getTileIdForRoute(routeName) {
+  const hrmsRoutes = [
+    'Hrms',
+    'Employees',
+    'EsslMachines',
+    'EsslMapping',
+    'EsslAttendance',
+    'DeviceUsers',
+    'AttendanceChart',
+    'ShiftRoaster',
+  ]
+  if (hrmsRoutes.includes(routeName)) return 'hrms'
+  if (routeName === 'Employee') return 'employee'
+
+  for (const [tid, rname] of Object.entries(TILE_ROUTE_MAP)) {
+    if (rname === routeName) {
+      return tid
+    }
+  }
+  return null
+}
 
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'Login'].includes(routeName)) return true
@@ -209,13 +231,7 @@ export function canAccessRoute(routeName) {
       return false
     }
     if (Array.isArray(license.features)) {
-      let tileId = null
-      for (const [tid, rname] of Object.entries(TILE_ROUTE_MAP)) {
-        if (rname === routeName) {
-          tileId = tid
-          break
-        }
-      }
+      const tileId = getTileIdForRoute(routeName)
       if (tileId && !license.features.includes(tileId) && !license.features.includes('*')) {
         return false
       }
@@ -235,8 +251,15 @@ export function canAccessRoute(routeName) {
     // Employees is a sub-page of the HRMS portal and has no tile of its own,
     // so the 'hrms' tile grants it (the 'employee' tile does too, when configured)
     if (tileIds.includes('hrms') || tileIds.includes('employee')) allowed.add('Employees')
-    // Same for the eSSL machines list — HRMS sub-page, no tile of its own
-    if (tileIds.includes('hrms')) allowed.add('EsslMachines')
+    // Same for the eSSL machines list and other HRMS sub-pages — HRMS sub-pages, no tile of their own
+    if (tileIds.includes('hrms')) {
+      allowed.add('EsslMachines')
+      allowed.add('EsslMapping')
+      allowed.add('EsslAttendance')
+      allowed.add('DeviceUsers')
+      allowed.add('AttendanceChart')
+      allowed.add('ShiftRoaster')
+    }
     if (allowed.has('Reports')) {
       allowed.add('StoreSalesReport')
       allowed.add('CostCenterSalesReport')
