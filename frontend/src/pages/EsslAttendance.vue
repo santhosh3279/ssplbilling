@@ -196,7 +196,7 @@
               <tbody class="divide-y divide-[var(--color-border)]">
                 <tr
                   v-for="row in filteredRecords"
-                  :key="row.name"
+                  :key="row.employee"
                   class="hover:bg-[var(--color-midlight)]/40 transition-colors"
                 >
                   <td class="px-6 py-4 font-mono font-bold text-[var(--color-employee)]">
