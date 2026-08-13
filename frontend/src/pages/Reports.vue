@@ -82,6 +82,17 @@
                 <div class="text-base text-[var(--color-text-muted)]">Quotation HSN-wise summary</div>
               </div>
             </button>
+
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-info)]/20 hover:border-[var(--color-info)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="router.push('/batch-reports')"
+            >
+              <span class="text-xl">📦</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Batch Reports Exporter</div>
+                <div class="text-base text-[var(--color-text-muted)]">Download multiple registers in a ZIP</div>
+              </div>
+            </button>
           </div>
 
           <!-- Column 2: Sale Report -->
