@@ -99,19 +99,27 @@
                 </label>
               </div>
 
-              <!-- Series Dropdown -->
-              <div class="mt-3 md:mt-0 flex items-center gap-2">
-                <span class="text-xs text-[var(--color-text-muted)] uppercase tracking-wider">Series:</span>
-                <select
-                  v-model="report.series"
-                  :disabled="!report.selected"
-                  class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm text-[var(--color-text)] focus:outline-none focus:border-[var(--color-info)] disabled:opacity-50 transition w-44"
-                >
-                  <option value="" disabled>— Select Series —</option>
-                  <option v-for="s in getSeriesListForType(report.seriesType)" :key="s" :value="s">
+              <!-- Multi-series Selector -->
+              <div class="mt-3 md:mt-0 flex flex-col gap-1.5 min-w-[240px]">
+                <span class="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-semibold">Select Series:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  <button
+                    v-for="s in getSeriesListForType(report.seriesType)"
+                    :key="s"
+                    :disabled="!report.selected"
+                    @click="toggleSeries(report, s)"
+                    type="button"
+                    class="px-2.5 py-1 rounded-full text-xs font-semibold border transition cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed"
+                    :class="report.selectedSeries.includes(s) 
+                      ? 'bg-[var(--color-info)] border-[var(--color-info)] text-[var(--color-text-on-highlight)] shadow-sm shadow-[var(--color-info)]/10'
+                      : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
+                  >
                     {{ s }}
-                  </option>
-                </select>
+                  </button>
+                  <span v-if="!getSeriesListForType(report.seriesType).length" class="text-xs text-[var(--color-text-muted)] italic">
+                    No series found
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -198,7 +206,7 @@ const reports = ref([
     description: 'GST-wise summary of submitted Sales Invoices',
     selected: true,
     seriesType: 'invoice',
-    series: '',
+    selectedSeries: [],
   },
   {
     id: 'purchase_tax',
@@ -206,7 +214,7 @@ const reports = ref([
     description: 'GST-wise summary of submitted Purchase Invoices',
     selected: true,
     seriesType: 'purchase',
-    series: '',
+    selectedSeries: [],
   },
   {
     id: 'hsn_summary',
@@ -214,7 +222,7 @@ const reports = ref([
     description: 'HSN-wise summary of submitted Sales Invoices',
     selected: false,
     seriesType: 'invoice',
-    series: '',
+    selectedSeries: [],
   },
   {
     id: 'quotation_tax',
@@ -222,7 +230,7 @@ const reports = ref([
     description: 'GST-wise summary of Quotations (Draft & Submitted)',
     selected: false,
     seriesType: 'quotation',
-    series: '',
+    selectedSeries: [],
   },
   {
     id: 'quotation_hsn',
@@ -230,7 +238,7 @@ const reports = ref([
     description: 'HSN-wise summary of Quotations (Draft & Submitted)',
     selected: false,
     seriesType: 'quotation',
-    series: '',
+    selectedSeries: [],
   },
   {
     id: 'item_sales_summary',
@@ -238,9 +246,17 @@ const reports = ref([
     description: 'Consolidated sales volumes by item code',
     selected: false,
     seriesType: 'invoice',
-    series: '',
+    selectedSeries: [],
   },
 ])
+
+function toggleSeries(report, s) {
+  if (report.selectedSeries.includes(s)) {
+    report.selectedSeries = report.selectedSeries.filter(val => val !== s)
+  } else {
+    report.selectedSeries.push(s)
+  }
+}
 
 // Returns correct series list depending on report's target doctype
 function getSeriesListForType(type) {
@@ -312,10 +328,10 @@ onMounted(async () => {
     purchaseSeriesList.value = []
   }
 
-  // Set initial default series in dropdown selectors
+  // Set initial default series in multi-select badge arrays
   reports.value.forEach(r => {
     const list = getSeriesListForType(r.seriesType)
-    if (list.length) r.series = list[0]
+    if (list.length) r.selectedSeries = [list[0]]
   })
 })
 
@@ -339,8 +355,8 @@ async function generateZip() {
   
   // Validate series selections
   for (const r of selectedReports) {
-    if (!r.series) {
-      error.value = `Please select a Naming Series for "${r.name}".`
+    if (!r.selectedSeries || !r.selectedSeries.length) {
+      error.value = `Please select at least one Naming Series for "${r.name}".`
       return
     }
   }
@@ -354,52 +370,54 @@ async function generateZip() {
 
   try {
     for (const r of selectedReports) {
-      progressMsg.value = `Fetching data for: ${r.name}...`
-      
-      const cleanSeries = r.series.replace(/[^A-Za-z0-9]/g, '')
-      const filePrefix = r.id.toUpperCase()
-      const filename = `${filePrefix}_${cleanSeries}_${fromDate.value}_to_${toDate.value}.xlsx`
+      for (const s of r.selectedSeries) {
+        progressMsg.value = `Fetching data for: ${r.name} (${s})...`
+        
+        const cleanSeries = s.replace(/[^A-Za-z0-9]/g, '')
+        const filePrefix = r.id.toUpperCase()
+        const filename = `${filePrefix}_${cleanSeries}_${fromDate.value}_to_${toDate.value}.xlsx`
 
-      let fileBuffer = null
+        let fileBuffer = null
 
-      if (r.id === 'sales_tax') {
-        const res = await getSalesTaxRegister(r.series, fromDate.value, toDate.value)
-        if (res.rows && res.rows.length) {
-          fileBuffer = await buildRegisterExcelBuffer('sales_tax', res.rows, res.company_name, res.company_address_lines, res.active_templates)
+        if (r.id === 'sales_tax') {
+          const res = await getSalesTaxRegister(s, fromDate.value, toDate.value)
+          if (res.rows && res.rows.length) {
+            fileBuffer = await buildRegisterExcelBuffer('sales_tax', res.rows, res.company_name, res.company_address_lines, res.active_templates, s)
+          }
+        } else if (r.id === 'purchase_tax') {
+          const res = await getPurchaseTaxRegister(s, fromDate.value, toDate.value)
+          if (res.rows && res.rows.length) {
+            fileBuffer = await buildRegisterExcelBuffer('purchase_tax', res.rows, res.company_name, res.company_address_lines, res.active_templates, s)
+          }
+        } else if (r.id === 'hsn_summary') {
+          const res = await getHsnSummaryReport(s, fromDate.value, toDate.value)
+          if (res.rows && res.rows.length) {
+            fileBuffer = await buildHSNExcelBuffer('hsn_summary', res.rows, res.company_name, res.company_address_lines, s)
+          }
+        } else if (r.id === 'quotation_tax') {
+          const res = await getQuotationTaxRegister(s, fromDate.value, toDate.value)
+          if (res.rows && res.rows.length) {
+            fileBuffer = await buildRegisterExcelBuffer('quotation', res.rows, res.company_name, res.company_address_lines, res.active_templates, s)
+          }
+        } else if (r.id === 'quotation_hsn') {
+          const res = await getQuotationHsnSummaryReport(s, fromDate.value, toDate.value)
+          if (res.rows && res.rows.length) {
+            fileBuffer = await buildHSNExcelBuffer('quotation_hsn', res.rows, res.company_name, res.company_address_lines, s)
+          }
+        } else if (r.id === 'item_sales_summary') {
+          const rows = await getItemSummaryReport(s, fromDate.value, toDate.value)
+          if (rows && rows.length) {
+            fileBuffer = buildItemSummaryExcelBuffer(rows)
+          }
         }
-      } else if (r.id === 'purchase_tax') {
-        const res = await getPurchaseTaxRegister(r.series, fromDate.value, toDate.value)
-        if (res.rows && res.rows.length) {
-          fileBuffer = await buildRegisterExcelBuffer('purchase_tax', res.rows, res.company_name, res.company_address_lines, res.active_templates)
-        }
-      } else if (r.id === 'hsn_summary') {
-        const res = await getHsnSummaryReport(r.series, fromDate.value, toDate.value)
-        if (res.rows && res.rows.length) {
-          fileBuffer = await buildHSNExcelBuffer('hsn_summary', res.rows, res.company_name, res.company_address_lines)
-        }
-      } else if (r.id === 'quotation_tax') {
-        const res = await getQuotationTaxRegister(r.series, fromDate.value, toDate.value)
-        if (res.rows && res.rows.length) {
-          fileBuffer = await buildRegisterExcelBuffer('quotation', res.rows, res.company_name, res.company_address_lines, res.active_templates)
-        }
-      } else if (r.id === 'quotation_hsn') {
-        const res = await getQuotationHsnSummaryReport(r.series, fromDate.value, toDate.value)
-        if (res.rows && res.rows.length) {
-          fileBuffer = await buildHSNExcelBuffer('quotation_hsn', res.rows, res.company_name, res.company_address_lines)
-        }
-      } else if (r.id === 'item_sales_summary') {
-        const rows = await getItemSummaryReport(r.series, fromDate.value, toDate.value)
-        if (rows && rows.length) {
-          fileBuffer = buildItemSummaryExcelBuffer(rows)
-        }
-      }
 
-      if (fileBuffer) {
-        progressMsg.value = `Packaging: ${filename}...`
-        zip.file(filename, fileBuffer)
-        generatedFiles.push(r.name)
-      } else {
-        skippedFiles.push(`${r.name} (No data)`)
+        if (fileBuffer) {
+          progressMsg.value = `Packaging: ${filename}...`
+          zip.file(filename, fileBuffer)
+          generatedFiles.push(`${r.name} (${s})`)
+        } else {
+          skippedFiles.push(`${r.name} (${s} - No data)`)
+        }
       }
     }
 
@@ -432,7 +450,7 @@ async function generateZip() {
 
 // ── Generic excel builder helpers generating ArrayBuffers for JSZip package ──
 
-async function buildRegisterExcelBuffer(type, rows, companyName, companyAddressLines, activeTemplates) {
+async function buildRegisterExcelBuffer(type, rows, companyName, companyAddressLines, activeTemplates, targetSeries) {
   const workbook = new ExcelJS.Workbook()
   const sheetName = type === 'purchase_tax' ? 'Purchase Tax Register' : (type === 'quotation' ? 'Quotation Tax Register' : 'Sales Tax Register')
   const worksheet = workbook.addWorksheet(sheetName)
@@ -482,7 +500,7 @@ async function buildRegisterExcelBuffer(type, rows, companyName, companyAddressL
 
   const fromStr = fromDate.value || 'All'
   const toStr = toDate.value || 'All'
-  const dateRow = worksheet.addRow([`Period: ${fromStr} to ${toStr}`])
+  const dateRow = worksheet.addRow([`Period: ${fromStr} to ${toStr} | Series: ${targetSeries}`])
   dateRow.getCell(1).font = { name: 'Arial', size: 11, bold: true, italic: true }
   dateRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
   worksheet.mergeCells(6, 1, 6, totalColsCount)
@@ -591,7 +609,7 @@ async function buildRegisterExcelBuffer(type, rows, companyName, companyAddressL
   return await workbook.xlsx.writeBuffer()
 }
 
-async function buildHSNExcelBuffer(type, rows, companyName, companyAddressLines) {
+async function buildHSNExcelBuffer(type, rows, companyName, companyAddressLines, targetSeries) {
   const workbook = new ExcelJS.Workbook()
   const sheetName = type === 'quotation_hsn' ? 'Quotation HSN Summary' : 'HSN Summary'
   const worksheet = workbook.addWorksheet(sheetName)
@@ -621,6 +639,13 @@ async function buildHSNExcelBuffer(type, rows, companyName, companyAddressLines)
     row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
     worksheet.mergeCells(rowNum, 1, rowNum, 9)
   }
+
+  const fromStr = fromDate.value || 'All'
+  const toStr = toDate.value || 'All'
+  const dateRow = worksheet.addRow([`Period: ${fromStr} to ${toStr} | Series: ${targetSeries}`])
+  dateRow.getCell(1).font = { name: 'Arial', size: 11, bold: true, italic: true }
+  dateRow.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' }
+  worksheet.mergeCells(6, 1, 6, 9)
 
   worksheet.addRow([])
 
