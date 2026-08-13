@@ -104,6 +104,19 @@
             class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
           />
         </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Status</span>
+          <select
+            v-model="statusFilter"
+            class="px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)] text-[var(--color-text)]"
+          >
+            <option value="All">All Statuses</option>
+            <option value="Present">Present Only</option>
+            <option value="Absent">Absent Only</option>
+            <option value="Half Day">Half Day Only</option>
+            <option value="On Leave">On Leave Only</option>
+          </select>
+        </div>
         <button
           @click="loadRecords"
           class="rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-xs font-bold hover:bg-[var(--color-midlight)] transition-colors"
@@ -375,6 +388,7 @@ const deviceStatus = computed(() => {
 })
 
 const selectedDate = ref(daysAgo(0))
+const statusFilter = ref('All')
 
 const employees = ref([])
 const showCreator = ref(false)
@@ -406,11 +420,22 @@ function changeDate(offset) {
 }
 
 const filteredRecords = computed(() => {
+  let result = records.value || []
+
+  // Status Filter
+  if (statusFilter.value && statusFilter.value !== 'All') {
+    result = result.filter((row) => row.status === statusFilter.value)
+  }
+
+  // Search Query
   const query = searchQuery.value.trim().toLowerCase()
-  if (!query) return records.value
-  return records.value.filter((row) =>
-    [row.employee, row.employee_name].some((v) => (v || '').toLowerCase().includes(query)),
-  )
+  if (query) {
+    result = result.filter((row) =>
+      [row.employee, row.employee_name].some((v) => (v || '').toLowerCase().includes(query))
+    )
+  }
+
+  return result
 })
 
 async function loadRecords() {
