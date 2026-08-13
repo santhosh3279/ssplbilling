@@ -218,13 +218,24 @@ def _create_checkin(employee, timestamp, machine):
 	return True
 
 
+# Statuses this sync assigns itself. Anything else on an existing record was set
+# by a human (or by Leave Application) and is never overwritten by a later tick.
+SYNC_OWNED_STATUSES = ("Present", "Half Day")
+
+
+def _attendance_status(hours, half_day_below):
+	if half_day_below and hours < half_day_below:
+		return "Half Day"
+	return "Present"
+
+
 def _upsert_attendance(employee, emp_row, day, in_time, out_time, half_day_below):
 	"""Insert (and submit) Attendance for the day, or widen the existing record's
 	in/out window. Returns 'created', 'updated' or None."""
 	existing = frappe.db.get_value(
 		"Attendance",
 		{"employee": employee, "attendance_date": day, "docstatus": ("<", 2)},
-		["name", "in_time", "out_time", "docstatus"],
+		["name", "in_time", "out_time", "status", "docstatus"],
 		as_dict=True,
 	)
 
@@ -244,17 +255,21 @@ def _upsert_attendance(employee, emp_row, day, in_time, out_time, half_day_below
 			new_hours = flt((new_out - new_in).total_seconds() / 3600.0, 2)
 		# Submitted Attendance cannot be re-saved through the ORM, so the window is
 		# widened with a direct field update.
+		values = {"in_time": new_in, "out_time": new_out, "working_hours": new_hours}
+		# A mid-day tick stamps the status from a partial window (9am-2pm looks like a
+		# Half Day); once the evening punch widens the window the status has to follow,
+		# or the employee stays Half Day for a full shift.
+		if existing.status in SYNC_OWNED_STATUSES:
+			values["status"] = _attendance_status(new_hours, half_day_below)
 		frappe.db.set_value(
 			"Attendance",
 			existing.name,
-			{"in_time": new_in, "out_time": new_out, "working_hours": new_hours},
+			values,
 			update_modified=False,
 		)
 		return "updated"
 
-	status = "Present"
-	if half_day_below and hours < half_day_below:
-		status = "Half Day"
+	status = _attendance_status(hours, half_day_below)
 
 	doc = frappe.new_doc("Attendance")
 	doc.employee = employee
