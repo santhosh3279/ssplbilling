@@ -52,9 +52,9 @@
             @click="backfill"
             :disabled="busy"
             class="flex items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-3 font-bold hover:bg-[var(--color-midlight)] active:scale-95 transition-all duration-200 disabled:opacity-50"
-            :title="'Re-pull every punch from ' + fromDate + ' onwards, ignoring the last-sync watermark'"
+            :title="'Re-pull every punch from ' + selectedDate + ' onwards, ignoring the last-sync watermark'"
           >
-            <span>⏪</span> Backfill from {{ fromDate }}
+            <span>⏪</span> Backfill from {{ selectedDate }}
           </button>
           <button
             @click="syncNow"
@@ -69,18 +69,11 @@
 
       <div class="bg-[var(--color-surface)] px-8 py-4 border-b border-[var(--color-border)] flex flex-wrap items-center gap-4 shrink-0 shadow-sm">
         <div class="flex items-center gap-2">
-          <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">From</span>
+          <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Date</span>
           <input
-            v-model="fromDate"
+            v-model="selectedDate"
             type="date"
-            class="px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
-          />
-        </div>
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">To</span>
-          <input
-            v-model="toDate"
-            type="date"
+            @change="loadRecords"
             class="px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
           />
         </div>
@@ -363,8 +356,7 @@ const deviceStatus = computed(() => {
   }
 })
 
-const fromDate = ref(daysAgo(30))
-const toDate = ref(daysAgo(0))
+const selectedDate = ref(daysAgo(0))
 
 const employees = ref([])
 const showCreator = ref(false)
@@ -400,8 +392,8 @@ async function loadRecords() {
   error.value = ''
   try {
     records.value = (await fetchAttendanceRecords({
-      fromDate: fromDate.value || null,
-      toDate: toDate.value || null,
+      fromDate: selectedDate.value || null,
+      toDate: selectedDate.value || null,
     })) || []
   } catch (err) {
     console.error('Failed to load attendance:', err)
@@ -415,19 +407,19 @@ async function loadRecords() {
 // Same sync, but from an explicit date so the machine watermark is bypassed. Use
 // after mapping a device user whose earlier punches were skipped as unmapped.
 async function backfill() {
-  if (!fromDate.value) {
-    error.value = 'Pick a From date first — that is where the backfill starts.'
+  if (!selectedDate.value) {
+    error.value = 'Pick a date first — that is where the backfill starts.'
     return
   }
   if (
     !confirm(
-      `Re-pull every punch from ${fromDate.value} onwards on all devices and create the ` +
+      `Re-pull every punch from ${selectedDate.value} onwards on all devices and create the ` +
         `missing attendance? Existing records are widened, not duplicated.`
     )
   ) {
     return
   }
-  await runSync(fromDate.value)
+  await runSync(selectedDate.value)
 }
 
 async function syncNow() {
