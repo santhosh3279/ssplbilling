@@ -76,6 +76,7 @@
             <table class="w-full text-left text-2xl border-collapse text-[var(--color-text)]">
               <thead>
                 <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 font-bold text-sm uppercase tracking-wider text-[var(--color-text-muted)]">
+                  <th class="px-6 py-4 min-w-[60px]">#</th>
                   <th class="px-6 py-4">ID</th>
                   <th class="px-6 py-4">Name</th>
                   <th class="px-6 py-4">Designation</th>
@@ -88,10 +89,13 @@
               </thead>
               <tbody class="divide-y divide-[var(--color-border)]">
                 <tr
-                  v-for="emp in filteredEmployees"
+                  v-for="(emp, index) in filteredEmployees"
                   :key="emp.name"
                   class="hover:bg-[var(--color-midlight)]/40 transition-colors"
                 >
+                  <td class="px-6 py-4 font-mono text-xs font-bold text-[var(--color-text-muted)]">
+                    {{ index + 1 }}
+                  </td>
                   <td class="px-6 py-4 font-mono text-xs font-bold text-[var(--color-employee)]">
                     {{ emp.name }}
                   </td>
