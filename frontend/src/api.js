@@ -911,11 +911,17 @@ export async function getQuotationTaxRegister(series, fromDate, toDate) {
   });
 }
 
-/**
- * Fetch HSN Summary Report for Sales Invoices.
- */
 export async function getHsnSummaryReport(series, fromDate, toDate) {
   return frappeGet("ssplbilling.api.reports_api.get_hsn_summary_report", {
+    series,
+    from_date: fromDate,
+    to_date: toDate,
+    company: localStorage.getItem("wb-company") || undefined,
+  });
+}
+
+export async function getPurchaseHsnSummaryReport(series, fromDate, toDate) {
+  return frappeGet("ssplbilling.api.reports_api.get_purchase_hsn_summary_report", {
     series,
     from_date: fromDate,
     to_date: toDate,

@@ -168,6 +168,7 @@ import {
   getPurchaseTaxRegister,
   getQuotationTaxRegister,
   getHsnSummaryReport,
+  getPurchaseHsnSummaryReport,
   getQuotationHsnSummaryReport,
   getItemSummaryReport,
   getPurchaseSeries,
@@ -222,6 +223,14 @@ const reports = ref([
     description: 'HSN-wise summary of submitted Sales Invoices',
     selected: false,
     seriesType: 'invoice',
+    selectedSeries: [],
+  },
+  {
+    id: 'purchase_hsn',
+    name: 'Purchase HSN Summary',
+    description: 'HSN-wise summary of submitted Purchase Invoices',
+    selected: false,
+    seriesType: 'purchase',
     selectedSeries: [],
   },
   {
@@ -393,6 +402,11 @@ async function generateZip() {
           const res = await getHsnSummaryReport(s, fromDate.value, toDate.value)
           if (res.rows && res.rows.length) {
             fileBuffer = await buildHSNExcelBuffer('hsn_summary', res.rows, res.company_name, res.company_address_lines, s)
+          }
+        } else if (r.id === 'purchase_hsn') {
+          const res = await getPurchaseHsnSummaryReport(s, fromDate.value, toDate.value)
+          if (res.rows && res.rows.length) {
+            fileBuffer = await buildHSNExcelBuffer('purchase_hsn', res.rows, res.company_name, res.company_address_lines, s)
           }
         } else if (r.id === 'quotation_tax') {
           const res = await getQuotationTaxRegister(s, fromDate.value, toDate.value)
@@ -611,7 +625,7 @@ async function buildRegisterExcelBuffer(type, rows, companyName, companyAddressL
 
 async function buildHSNExcelBuffer(type, rows, companyName, companyAddressLines, targetSeries) {
   const workbook = new ExcelJS.Workbook()
-  const sheetName = type === 'quotation_hsn' ? 'Quotation HSN Summary' : 'HSN Summary'
+  const sheetName = type === 'quotation_hsn' ? 'Quotation HSN Summary' : (type === 'purchase_hsn' ? 'Purchase HSN Summary' : 'HSN Summary')
   const worksheet = workbook.addWorksheet(sheetName)
 
   worksheet.columns = [

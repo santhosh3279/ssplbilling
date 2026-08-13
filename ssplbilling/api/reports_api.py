@@ -619,6 +619,78 @@ def get_hsn_summary_report(series, from_date=None, to_date=None, company=None):
 
 
 @frappe.whitelist()
+def get_purchase_hsn_summary_report(series, from_date=None, to_date=None, company=None):
+	"""Return HSN Summary Report for Purchase Invoices for the given naming series and date range.
+	Group by HSN code and invoice to show bill details.
+	"""
+	query_filters = [series]
+	date_condition = ""
+	if from_date:
+		date_condition += " AND inv.posting_date >= %s"
+		query_filters.append(from_date)
+	if to_date:
+		date_condition += " AND inv.posting_date <= %s"
+		query_filters.append(to_date)
+	if company:
+		date_condition += " AND inv.company = %s"
+		query_filters.append(company)
+
+	rows = frappe.db.sql(f"""
+		SELECT 
+			it.gst_hsn_code as hsn_code,
+			inv.posting_date as date,
+			inv.name as bill_no,
+			SUM(it.qty) as qty,
+			SUM(it.taxable_value) as taxable_value,
+			SUM(it.cgst_amount) as cgst,
+			SUM(it.sgst_amount) as sgst,
+			SUM(it.igst_amount) as igst
+		FROM 
+			`tabPurchase Invoice` inv
+		JOIN 
+			`tabPurchase Invoice Item` it ON it.parent = inv.name
+		WHERE 
+			inv.naming_series = %s 
+			AND inv.docstatus = 1
+			{date_condition}
+		GROUP BY 
+			it.gst_hsn_code,
+			inv.name
+		ORDER BY 
+			it.gst_hsn_code,
+			inv.posting_date,
+			inv.name
+	""", tuple(query_filters), as_dict=1)
+	
+	# Handle None in hsn_code and convert types
+	result = []
+	for row in rows:
+		r = dict(row)
+		if not r.get("hsn_code"):
+			r["hsn_code"] = "N/A"
+		
+		if r.get("date") and hasattr(r["date"], "strftime"):
+			r["date"] = r["date"].strftime("%Y-%m-%d")
+		elif r.get("date"):
+			r["date"] = str(r["date"])
+		
+		r["qty"] = float(r.get("qty") or 0)
+		r["taxable_value"] = float(r.get("taxable_value") or 0)
+		r["cgst"] = float(r.get("cgst") or 0)
+		r["sgst"] = float(r.get("sgst") or 0)
+		r["igst"] = float(r.get("igst") or 0)
+		
+		result.append(r)
+
+	comp = get_company_details(company)
+	return {
+		"rows": result,
+		"company_name": comp["company_name"],
+		"company_address_lines": comp["address_lines"]
+	}
+
+
+@frappe.whitelist()
 def get_quotation_hsn_summary_report(series, from_date=None, to_date=None, company=None):
 	"""Return HSN Summary Report for Quotations for the given naming series and date range.
 	Includes both Draft and Submitted quotations. Group by HSN code and quotation name to show bill details.

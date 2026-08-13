@@ -74,6 +74,17 @@
 
             <button
               class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
+              @click="openModal('purchase_hsn')"
+            >
+              <span class="text-xl">📋</span>
+              <div class="text-left">
+                <div class="text-lg font-semibold">Purchase HSN Summary</div>
+                <div class="text-base text-[var(--color-text-muted)]">Purchase HSN-wise summary</div>
+              </div>
+            </button>
+
+            <button
+              class="flex items-center gap-3 rounded-xl bg-[var(--color-surface)]/50 border border-[var(--color-border)] px-4 py-3 text-sm font-medium text-[var(--color-text)] hover:bg-[var(--color-success)]/20 hover:border-[var(--color-success)]/50 hover:text-[var(--color-text)] transition-all active:scale-[0.98]"
               @click="openModal('quotation_hsn')"
             >
               <span class="text-xl">📊</span>
@@ -357,6 +368,7 @@ import {
   getQuotationTaxRegister,
   getQuotationSeries,
   getHsnSummaryReport,
+  getPurchaseHsnSummaryReport,
   getQuotationHsnSummaryReport,
   getItemSummaryReport,
   getStoreWiseItemSalesReport,
@@ -528,6 +540,18 @@ const modalConfig = computed(() => {
       docLabel: 'Invoice No',
     }
   }
+  if (reportType.value === 'purchase_hsn') {
+    return {
+      title: 'Purchase HSN Summary',
+      subtitle: 'HSN-wise summary of submitted purchase invoices',
+      seriesLabel: 'Purchase Series',
+      btnClass: 'bg-[var(--color-success)] hover:bg-[var(--color-success)]',
+      sheetName: 'Purchase HSN Summary',
+      filePrefix: 'PurchaseHSNSummary',
+      noDataMsg: 'No HSN data found for the selected criteria.',
+      docLabel: 'HSN Code',
+    }
+  }
   return {
     title: 'Sales Tax Register',
     subtitle: 'GST-wise summary of submitted sales invoices',
@@ -542,7 +566,7 @@ const modalConfig = computed(() => {
 
 const currentSeriesList = computed(() => {
   if (reportType.value === 'quotation' || reportType.value === 'quotation_hsn') return quotationSeriesList.value
-  if (reportType.value === 'purchase_tax') return purchaseSeriesList.value
+  if (reportType.value === 'purchase_tax' || reportType.value === 'purchase_hsn') return purchaseSeriesList.value
   return invoiceSeriesList.value
 })
 
@@ -551,7 +575,7 @@ function openModal(type) {
   modalError.value = ''
   let list = []
   if (type === 'quotation' || type === 'quotation_hsn') list = quotationSeriesList.value
-  else if (type === 'purchase_tax') list = purchaseSeriesList.value
+  else if (type === 'purchase_tax' || type === 'purchase_hsn') list = purchaseSeriesList.value
   else list = invoiceSeriesList.value
   selectedSeries.value = list.length ? list[0] : ''
   const d = defaultDates()
@@ -608,6 +632,11 @@ async function generateReport() {
       activeTemplates.value = res.active_templates || []
       companyName = res.company_name || ''
       companyAddressLines = res.company_address_lines || []
+    } else if (reportType.value === 'purchase_hsn') {
+      const res = await getPurchaseHsnSummaryReport(selectedSeries.value, fromDate.value, toDate.value)
+      rows = res.rows || []
+      companyName = res.company_name || ''
+      companyAddressLines = res.company_address_lines || []
     } else {
       const res = await getSalesTaxRegister(selectedSeries.value, fromDate.value, toDate.value)
       rows = res.rows || []
@@ -621,7 +650,7 @@ async function generateReport() {
       return
     }
 
-    if (reportType.value === 'hsn' || reportType.value === 'quotation_hsn') {
+    if (reportType.value === 'hsn' || reportType.value === 'quotation_hsn' || reportType.value === 'purchase_hsn') {
       buildHSNExcel(rows, companyName, companyAddressLines)
     } else if (reportType.value === 'item_summary') {
       buildItemSummaryExcel(rows)
