@@ -40,7 +40,7 @@
             <select
               v-model="employee"
               @change="load"
-              class="mt-1 block min-w-[220px] px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+              class="mt-1 block min-w-[220px] px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-[21px] leading-6 font-semibold focus:outline-none focus:border-[var(--color-employee)]"
             >
               <option value="">— Select —</option>
               <option v-for="emp in employees" :key="emp.name" :value="emp.name">
@@ -54,7 +54,7 @@
             <input
               v-model="fromDate"
               type="date"
-              class="mt-1 block px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+              class="mt-1 block px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-[21px] leading-6 font-semibold focus:outline-none focus:border-[var(--color-employee)]"
             />
           </div>
           <div>
@@ -62,14 +62,14 @@
             <input
               v-model="toDate"
               type="date"
-              class="mt-1 block px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+              class="mt-1 block px-3 py-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-[21px] leading-6 font-semibold focus:outline-none focus:border-[var(--color-employee)]"
             />
           </div>
 
           <button
             @click="load"
             :disabled="busy || !employee"
-            class="rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110 disabled:opacity-50"
+            class="rounded-xl bg-[var(--color-employee)] text-white px-4 py-2 text-[21px] leading-6 font-bold hover:brightness-110 disabled:opacity-50"
           >
             Apply
           </button>
