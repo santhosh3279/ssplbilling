@@ -100,6 +100,27 @@
             <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Average hours / marked day</div>
             <div class="text-2xl font-black">{{ averageHours.toFixed(2) }}</div>
           </div>
+          <div
+            class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
+            :title="`Days worked at least the shift length (${shiftLength.toFixed(2)}h)`"
+          >
+            <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Full days</div>
+            <div class="text-2xl font-black text-emerald-500">{{ dayStats.fullDays }}</div>
+          </div>
+          <div
+            class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
+            title="Days holding one continuous break of an hour or more"
+          >
+            <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Days with 1h break</div>
+            <div class="text-2xl font-black">{{ dayStats.breakDays }}</div>
+          </div>
+          <div
+            class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
+            title="Days the Attendance record is marked Half Day"
+          >
+            <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Half days</div>
+            <div class="text-2xl font-black text-amber-500">{{ dayStats.halfDays }}</div>
+          </div>
           <div class="flex items-center gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
             <span class="flex items-center gap-2">
               <span class="h-3 w-3 rounded-full" :style="{ background: WEEKDAY_COLOR }"></span> Weekday
@@ -310,6 +331,35 @@ function applyPreset(preset) {
 const totalHours = computed(() => days.value.reduce((sum, d) => sum + d.hours, 0))
 const markedDays = computed(() => days.value.filter((d) => d.total > 0).length)
 const averageHours = computed(() => (markedDays.value ? totalHours.value / markedDays.value : 0))
+
+// The shift's own length, which is what a full day is measured against
+const shiftLength = computed(() => Math.max(0, shiftEnd.value - shiftStart.value))
+
+// The longest continuous break of a day, in hours. Only the odd-indexed gaps are
+// breaks: the day opens with an entry, so those are the gaps that follow a
+// completed pair — the even ones are the worked stretches themselves.
+function longestBreak(punches) {
+  let longest = 0
+  for (let i = 1; i + 1 < punches.length; i += 2) {
+    longest = Math.max(longest, punches[i + 1].hours - punches[i].hours)
+  }
+  return longest
+}
+
+const dayStats = computed(() => {
+  // Device clocks put a full day a minute or two under the shift, so the comparison
+  // needs a little slack or nothing ever counts as full.
+  const full = Math.max(0, shiftLength.value - 0.02)
+  let fullDays = 0
+  let breakDays = 0
+  let halfDays = 0
+  for (const day of days.value) {
+    if (full > 0 && day.hours >= full) fullDays += 1
+    if (longestBreak(punchesByDate.value[day.date] || []) >= 1) breakDays += 1
+    if ((day.counts || {})['Half Day']) halfDays += 1
+  }
+  return { fullDays, breakDays, halfDays }
+})
 
 function timeToHours(timeStr) {
   if (!timeStr) return null
