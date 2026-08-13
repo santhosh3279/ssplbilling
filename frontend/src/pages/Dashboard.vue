@@ -592,7 +592,7 @@
             Logout
           </button>
           <button
-            @click="syncSettings"
+            @click="reverifyLicense"
             class="flex-1 rounded-xl bg-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/90 py-2.5 text-sm font-semibold text-[var(--color-text-on-highlight)] transition active:scale-95 shadow-lg shadow-[var(--color-highlight)]/15 cursor-pointer"
           >
             Re-verify License
@@ -1345,6 +1345,16 @@ async function syncSettings() {
     await refreshDiscountRuleCache()
   } catch (e) {
     console.warn('[Dashboard] refreshDiscountRuleCache failed:', e)
+  }
+}
+
+async function reverifyLicense() {
+  await syncSettings()
+  if (licenseInfo.value && licenseInfo.value.valid) {
+    const isDevServer = licenseInfo.value.message === "Bypassed on Dev Server" || licenseInfo.value.customer_name === "Dev Server (Bypassed)"
+    if (isDevServer) {
+      alert(`License is valid: ${licenseInfo.value.message}`)
+    }
   }
 }
 

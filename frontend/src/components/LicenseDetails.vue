@@ -12,7 +12,7 @@
         <h1 class="text-sm font-bold text-[var(--color-text)]">🪪 License Details</h1>
         <div class="flex items-center gap-2">
           <button
-            @click="refresh"
+            @click="manualReverify"
             :disabled="loading"
             class="flex items-center gap-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition disabled:opacity-50"
           >
@@ -128,6 +128,16 @@ async function refresh() {
     console.warn('[LicenseDetails] failed to fetch license status:', e)
   } finally {
     loading.value = false
+  }
+}
+
+async function manualReverify() {
+  await refresh()
+  if (license.value && license.value.valid) {
+    const isDevServer = license.value.message === "Bypassed on Dev Server" || license.value.customer_name === "Dev Server (Bypassed)"
+    if (isDevServer) {
+      alert(`License is valid: ${license.value.message}`)
+    }
   }
 }
 
