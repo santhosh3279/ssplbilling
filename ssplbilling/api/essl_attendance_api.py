@@ -27,6 +27,9 @@ DEFAULT_INITIAL_DAYS = 7
 # cleanup below can withdraw one once the real punch turns up.
 AUTO_CHECKIN_SUFFIX = "-AUTO"
 
+# device_id stamped on a punch somebody typed in on the attendance page.
+MANUAL_DEVICE_ID = "MANUAL"
+
 
 def _settings():
 	doc = frappe.get_cached_doc(SETTINGS_DOCTYPE)
@@ -755,6 +758,106 @@ def get_attendance_records(from_date=None, to_date=None, employee=None):
 		order_by="attendance_date desc, employee_name asc",
 		limit_page_length=2000,
 	)
+
+
+# ─────────────────────────── checkins behind a day ───────────────────────────
+
+
+def _recompute_attendance_for_day(employee, day):
+	"""Rebuild one day's Attendance from whatever checkins it now holds.
+
+	The device sync only revisits days inside its lookback window, so a punch added by
+	hand to an older day would otherwise never reach the Attendance record it belongs
+	to. Returns 'created', 'updated' or None.
+	"""
+	settings = _settings()
+	real, synthetic = _real_stamps_for_day(employee, day, [])
+	auto_stamp, _created = _resolve_auto_checkin(
+		employee, real, synthetic, MANUAL_DEVICE_ID, settings["auto_checkin_hours"], settings["create_checkins"]
+	)
+	stamps = sorted([*real, auto_stamp]) if auto_stamp else real
+	if not stamps or not settings["create_attendance"]:
+		return None
+
+	emp_row = frappe.db.get_value("Employee", employee, ["name", "company"], as_dict=True)
+	return _upsert_attendance(
+		employee,
+		emp_row or frappe._dict({"company": None}),
+		day,
+		stamps[0],
+		stamps[-1],
+		_day_hours(stamps),
+		settings["mark_half_day_below_hours"],
+	)
+
+
+@frappe.whitelist()
+def get_employee_checkins(employee, date):
+	"""Every punch recorded for one employee on one day, earliest first."""
+	rows = frappe.get_all(
+		"Employee Checkin",
+		filters={
+			"employee": employee,
+			"time": ("between", (f"{getdate(date)} 00:00:00", f"{getdate(date)} 23:59:59.999999")),
+		},
+		fields=["name", "time", "device_id", "log_type"],
+		order_by="time asc",
+	)
+	for row in rows:
+		# The stand-in the sync writes for a missed punch is not a real reading, and the
+		# list has to say so — its only marker is the device_id suffix.
+		row["auto"] = 1 if (row.get("device_id") or "").endswith(AUTO_CHECKIN_SUFFIX) else 0
+	return rows
+
+
+@frappe.whitelist()
+def get_checkin_counts(from_date, to_date=None):
+	"""[{employee, date, count}] for the range — one row per employee-day with punches.
+
+	Counted in SQL so the page can show the number beside every employee without
+	pulling thousands of checkin rows into the browser.
+	"""
+	from frappe.query_builder.functions import Count, Date
+
+	table = frappe.qb.DocType("Employee Checkin")
+	day = Date(table.time).as_("date")
+	query = (
+		frappe.qb.from_(table)
+		.select(table.employee, day, Count(table.name).as_("count"))
+		.where(table.time >= f"{getdate(from_date)} 00:00:00")
+		.where(table.time <= f"{getdate(to_date or from_date)} 23:59:59.999999")
+		.groupby(table.employee, day)
+	)
+	rows = query.run(as_dict=True)
+	for row in rows:
+		row["date"] = str(row["date"])
+	return rows
+
+
+@frappe.whitelist()
+def create_employee_checkin(employee, date, time):
+	"""Add a punch by hand, then rebuild the day's Attendance around it.
+
+	Written with skip_auto_attendance like every checkin this app creates, so hrms
+	shift processing stays out of a day this sync owns.
+	"""
+	if not employee or not date or not time:
+		frappe.throw("Employee, date and time are required")
+
+	day = getdate(date)
+	stamp = _stamp_on(day, time)
+	if not stamp:
+		frappe.throw("A valid time is required")
+	if stamp > now_datetime():
+		frappe.throw("A checkin cannot be dated in the future")
+	if not frappe.db.exists("Employee", employee):
+		frappe.throw(f"Employee {employee} not found")
+
+	if not _create_checkin(employee, stamp, MANUAL_DEVICE_ID):
+		frappe.throw(f"A checkin already exists for this employee at {stamp}")
+
+	action = _recompute_attendance_for_day(employee, day)
+	return {"employee": employee, "time": str(stamp), "attendance": action}
 
 
 @frappe.whitelist()

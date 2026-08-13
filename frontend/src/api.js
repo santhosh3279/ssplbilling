@@ -1383,5 +1383,32 @@ export async function fetchEsslSyncSettings() {
   return frappeGet("ssplbilling.api.essl_attendance_api.get_sync_settings");
 }
 
+// The individual punches behind one employee's day, earliest first. A row with
+// auto=1 is the stand-in the sync writes for a punch nobody made.
+export async function fetchEmployeeCheckins({ employee, date }) {
+  return frappePost("ssplbilling.api.essl_attendance_api.get_employee_checkins", {
+    employee,
+    date,
+  });
+}
+
+// [{employee, date, count}] — counted server-side so the list can show the number
+// of punches per employee without fetching the punches themselves.
+export async function fetchCheckinCounts({ fromDate, toDate = null }) {
+  return frappePost("ssplbilling.api.essl_attendance_api.get_checkin_counts", {
+    from_date: fromDate,
+    to_date: toDate,
+  });
+}
+
+// Adds a punch and rebuilds that day's Attendance around it.
+export async function createEmployeeCheckin({ employee, date, time }) {
+  return frappePost("ssplbilling.api.essl_attendance_api.create_employee_checkin", {
+    employee,
+    date,
+    time,
+  });
+}
+
 
 

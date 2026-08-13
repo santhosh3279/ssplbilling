@@ -190,6 +190,7 @@
                   <th class="px-6 py-4">In</th>
                   <th class="px-6 py-4">Out</th>
                   <th class="px-6 py-4">Hours</th>
+                  <th class="px-6 py-4">Checkins</th>
                   <th class="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
@@ -214,6 +215,16 @@
                   <td class="px-6 py-4 font-mono text-xl">{{ formatTime(row.in_time) }}</td>
                   <td class="px-6 py-4 font-mono text-xl">{{ formatTime(row.out_time) }}</td>
                   <td class="px-6 py-4 font-mono text-xl">{{ (row.working_hours || 0).toFixed(2) }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <button
+                      @click="openCheckins(row)"
+                      class="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-1.5 hover:bg-[var(--color-midlight)] transition-colors"
+                      :title="`Show the punches behind ${row.employee_name || row.employee}`"
+                    >
+                      <span class="font-mono text-xl font-bold">{{ row.checkin_count || 0 }}</span>
+                      <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">View</span>
+                    </button>
+                  </td>
                   <td class="px-6 py-4 text-right whitespace-nowrap">
                     <template v-if="row.name">
                       <button
@@ -240,7 +251,7 @@
                   </td>
                 </tr>
                 <tr v-if="filteredRecords.length === 0 && !busy">
-                  <td colspan="7" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
+                  <td colspan="8" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
                     No attendance records in this range. Map the device users, then run a sync.
                   </td>
                 </tr>
@@ -354,6 +365,104 @@
         </div>
       </div>
     </div>
+
+    <!-- Checkins behind one employee-day -->
+    <div
+      v-if="showCheckins"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4"
+      @click.self="showCheckins = false"
+    >
+      <div class="w-[560px] rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-[var(--color-border)]">
+          <div class="text-lg font-black uppercase tracking-wider">Checkins</div>
+          <div class="text-xs font-bold text-[var(--color-text-muted)] mt-1">
+            {{ checkinContext.employee_name || checkinContext.employee }} · {{ formatDate(checkinContext.date) }}
+          </div>
+        </div>
+
+        <div class="max-h-[45vh] overflow-y-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                <th class="px-6 py-3">#</th>
+                <th class="px-6 py-3">Time</th>
+                <th class="px-6 py-3">Source</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-[var(--color-border)]">
+              <tr v-for="(punch, i) in checkins" :key="punch.name">
+                <td class="px-6 py-3 font-mono text-sm text-[var(--color-text-muted)]">{{ i + 1 }}</td>
+                <td class="px-6 py-3 font-mono text-xl font-bold">{{ formatTime(punch.time) }}</td>
+                <td class="px-6 py-3">
+                  <span
+                    v-if="punch.auto"
+                    class="px-2.5 py-1 text-[11px] font-black rounded-full uppercase tracking-wider bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                  >
+                    Auto
+                  </span>
+                  <span v-else class="text-xs font-bold text-[var(--color-text-muted)]">
+                    {{ punch.device_id || '—' }}
+                  </span>
+                </td>
+              </tr>
+              <tr v-if="!checkins.length && !checkinsBusy">
+                <td colspan="3" class="px-6 py-10 text-center text-sm text-[var(--color-text-muted)] italic">
+                  No punches recorded for this day.
+                </td>
+              </tr>
+              <tr v-if="checkinsBusy">
+                <td colspan="3" class="px-6 py-10 text-center text-sm text-[var(--color-text-muted)] italic">
+                  Loading...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="px-6 py-4 border-t border-[var(--color-border)] space-y-3">
+          <div v-if="showCheckinForm" class="flex items-end gap-3">
+            <div class="flex-1">
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Time</label>
+              <input
+                v-model="newCheckinTime"
+                type="time"
+                class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
+              />
+            </div>
+            <button
+              @click="saveCheckin"
+              :disabled="!newCheckinTime || savingCheckin"
+              class="rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110 disabled:opacity-50"
+            >
+              {{ savingCheckin ? 'Saving...' : 'Save' }}
+            </button>
+          </div>
+          <p v-if="showCheckinForm" class="text-[11px] text-[var(--color-text-muted)]">
+            The day's Attendance is rebuilt from every punch once this is saved.
+          </p>
+
+          <div v-if="checkinError" class="rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-2.5 text-xs font-bold text-rose-500">
+            {{ checkinError }}
+          </div>
+
+          <div class="flex justify-end gap-3">
+            <button
+              @click="showCheckins = false"
+              class="rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-bold hover:bg-[var(--color-midlight)]"
+            >
+              Close
+            </button>
+            <button
+              v-if="!showCheckinForm"
+              @click="startCheckinForm"
+              class="rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110"
+            >
+              Add Checkin
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -370,6 +479,9 @@ import {
   updateAttendance,
   deleteAttendance,
   fetchEmployees,
+  fetchEmployeeCheckins,
+  fetchCheckinCounts,
+  createEmployeeCheckin,
 } from '../api.js'
 
 const router = useRouter()
@@ -414,6 +526,15 @@ const newRecord = ref({
   in_time: '',
   out_time: '',
 })
+
+const showCheckins = ref(false)
+const checkins = ref([])
+const checkinsBusy = ref(false)
+const checkinContext = ref({ employee: '', employee_name: '', date: '' })
+const showCheckinForm = ref(false)
+const newCheckinTime = ref('')
+const savingCheckin = ref(false)
+const checkinError = ref('')
 
 function daysAgo(n) {
   const d = new Date()
@@ -469,6 +590,18 @@ async function loadRecords() {
       attMap[r.employee] = r
     })
 
+    // Punch counts come from their own aggregate — an employee can have checkins on a
+    // day that carries no Attendance record at all.
+    const countMap = {}
+    try {
+      const counts = (await fetchCheckinCounts({ fromDate: selectedDate.value })) || []
+      counts.forEach((c) => {
+        countMap[c.employee] = c.count
+      })
+    } catch (err) {
+      console.error('Failed to load checkin counts:', err)
+    }
+
     const merged = []
     employees.value.forEach((emp) => {
       const att = attMap[emp.name]
@@ -476,6 +609,7 @@ async function loadRecords() {
         merged.push({
           ...att,
           employee_name: emp.employee_name || att.employee_name,
+          checkin_count: countMap[emp.name] || 0,
         })
       } else {
         merged.push({
@@ -487,6 +621,7 @@ async function loadRecords() {
           in_time: null,
           out_time: null,
           working_hours: 0,
+          checkin_count: countMap[emp.name] || 0,
         })
       }
     })
@@ -621,6 +756,68 @@ async function removeRecord(row) {
     error.value = err.message || 'Failed to delete attendance.'
   } finally {
     busy.value = false
+  }
+}
+
+async function openCheckins(row) {
+  checkinContext.value = {
+    employee: row.employee,
+    employee_name: row.employee_name,
+    date: row.attendance_date || selectedDate.value,
+  }
+  checkins.value = []
+  checkinError.value = ''
+  showCheckinForm.value = false
+  newCheckinTime.value = ''
+  showCheckins.value = true
+  await loadCheckins()
+}
+
+async function loadCheckins() {
+  checkinsBusy.value = true
+  try {
+    checkins.value =
+      (await fetchEmployeeCheckins({
+        employee: checkinContext.value.employee,
+        date: checkinContext.value.date,
+      })) || []
+  } catch (err) {
+    console.error('Failed to load checkins:', err)
+    checkinError.value = err.message || 'Failed to load the checkins.'
+    checkins.value = []
+  } finally {
+    checkinsBusy.value = false
+  }
+}
+
+function startCheckinForm() {
+  checkinError.value = ''
+  // Seeded from the last punch so a forgotten one is typed near where it belongs
+  const last = checkins.value[checkins.value.length - 1]
+  newCheckinTime.value = last ? formatTime(last.time) : '09:00'
+  showCheckinForm.value = true
+}
+
+async function saveCheckin() {
+  if (savingCheckin.value) return
+  savingCheckin.value = true
+  checkinError.value = ''
+  try {
+    await createEmployeeCheckin({
+      employee: checkinContext.value.employee,
+      date: checkinContext.value.date,
+      time: newCheckinTime.value,
+    })
+    showCheckinForm.value = false
+    newCheckinTime.value = ''
+    await loadCheckins()
+    // The punch changes the day's hours and status, so the row behind the modal is stale
+    await loadRecords()
+  } catch (err) {
+    console.error('Failed to create checkin:', err)
+    checkinError.value = err.message || 'Failed to create the checkin.'
+  } finally {
+    savingCheckin.value = false
   }
 }
 
