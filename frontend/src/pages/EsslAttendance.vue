@@ -70,12 +70,30 @@
       <div class="bg-[var(--color-surface)] px-8 py-4 border-b border-[var(--color-border)] flex flex-wrap items-center gap-4 shrink-0 shadow-sm">
         <div class="flex items-center gap-2">
           <span class="text-xs font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Date</span>
-          <input
-            v-model="selectedDate"
-            type="date"
-            @change="loadRecords"
-            class="px-3 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
-          />
+          <div class="flex items-center">
+            <button
+              @click="changeDate(-1)"
+              type="button"
+              class="px-3 py-2.5 bg-[var(--color-surface-raised)] border border-[var(--color-border)] border-r-0 rounded-l-xl hover:bg-[var(--color-midlight)] font-bold active:scale-95 transition-all text-xs text-[var(--color-text)]"
+              title="Previous Day"
+            >
+              ◀
+            </button>
+            <input
+              v-model="selectedDate"
+              type="date"
+              @change="loadRecords"
+              class="px-3 py-2.5 border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)] text-[var(--color-text)]"
+            />
+            <button
+              @click="changeDate(1)"
+              type="button"
+              class="px-3 py-2.5 bg-[var(--color-surface-raised)] border border-[var(--color-border)] border-l-0 rounded-r-xl hover:bg-[var(--color-midlight)] font-bold active:scale-95 transition-all text-xs text-[var(--color-text)]"
+              title="Next Day"
+            >
+              ▶
+            </button>
+          </div>
         </div>
         <div class="relative w-full max-w-xs">
           <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-[var(--color-text-muted)]">🔍</span>
@@ -376,6 +394,15 @@ function daysAgo(n) {
   const d = new Date()
   d.setDate(d.getDate() - n)
   return d.toISOString().slice(0, 10)
+}
+
+function changeDate(offset) {
+  if (!selectedDate.value) return
+  const d = new Date(selectedDate.value)
+  if (isNaN(d.getTime())) return
+  d.setDate(d.getDate() + offset)
+  selectedDate.value = d.toISOString().slice(0, 10)
+  loadRecords()
 }
 
 const filteredRecords = computed(() => {
