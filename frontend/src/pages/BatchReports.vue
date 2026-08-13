@@ -15,11 +15,23 @@
             <p class="text-base text-[var(--color-text-muted)] mt-1">Consolidate multiple report registers into a single ZIP archive</p>
           </div>
         </div>
+
+        <!-- Date Presets (header right) -->
+        <div class="flex flex-wrap justify-end gap-2 max-w-xl">
+          <button
+            v-for="p in presets"
+            :key="p.label"
+            @click="setPreset(p.key)"
+            class="rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition cursor-pointer"
+          >
+            {{ p.label }}
+          </button>
+        </div>
       </div>
     </header>
 
     <main class="flex-1 bg-[var(--color-surface)]/30 p-6 overflow-y-auto">
-      <div class="max-w-6xl mx-auto space-y-8">
+      <div class="max-w-7xl mx-auto space-y-8">
         <!-- Date Range Selection Card -->
         <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 shadow-sm">
           <h2 class="text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)] pb-3 mb-6">
@@ -42,17 +54,6 @@
                 class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
               />
             </div>
-          </div>
-          <!-- Presets -->
-          <div class="flex flex-wrap gap-2.5 mt-6 pt-3 border-t border-[var(--color-border)]/50">
-            <button
-              v-for="p in presets"
-              :key="p.label"
-              @click="setPreset(p.key)"
-              class="rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition cursor-pointer"
-            >
-              {{ p.label }}
-            </button>
           </div>
         </div>
 
@@ -79,46 +80,53 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div
-              v-for="report in reports"
-              :key="report.id"
-              class="flex flex-col justify-between p-6 rounded-2xl border transition-all bg-[var(--color-bg)]/20 min-h-[190px]"
-              :class="report.selected ? 'bg-[var(--color-info)]/5 border-[var(--color-info)]/40 shadow-sm shadow-[var(--color-info)]/5' : 'bg-[var(--color-surface-raised)]/30 border-[var(--color-border)]'"
-            >
-              <div class="flex items-start gap-4">
-                <input
-                  type="checkbox"
-                  v-model="report.selected"
-                  :id="report.id"
-                  class="mt-1 h-6 w-6 rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-info)]/30 cursor-pointer"
-                />
-                <label :for="report.id" class="cursor-pointer select-none">
-                  <div class="text-xl font-bold text-[var(--color-text)]">{{ report.name }}</div>
-                  <div class="text-sm text-[var(--color-text-muted)] mt-1.5">{{ report.description }}</div>
-                </label>
+          <!-- Column layout: Sales → Purchase → Quotation -->
+          <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div v-for="col in reportColumns" :key="col.key" class="flex flex-col gap-4">
+              <div class="text-sm font-bold uppercase tracking-wider text-[var(--color-text-muted)] pb-2 border-b border-[var(--color-border)]/60">
+                {{ col.title }}
               </div>
 
-              <!-- Multi-series Selector -->
-              <div class="mt-4 flex flex-col gap-2 pt-3 border-t border-[var(--color-border)]/40">
-                <span class="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-bold">Select Series:</span>
-                <div class="flex flex-wrap gap-2">
-                  <button
-                    v-for="s in getSeriesListForType(report.seriesType)"
-                    :key="s"
-                    :disabled="!report.selected"
-                    @click="toggleSeries(report, s)"
-                    type="button"
-                    class="px-3.5 py-1.5 rounded-full text-sm font-semibold border transition cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed"
-                    :class="report.selectedSeries.includes(s) 
-                      ? 'bg-[var(--color-info)] border-[var(--color-info)] text-[var(--color-text-on-highlight)] shadow-sm shadow-[var(--color-info)]/10'
-                      : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
-                  >
-                    {{ s }}
-                  </button>
-                  <span v-if="!getSeriesListForType(report.seriesType).length" class="text-sm text-[var(--color-text-muted)] italic">
-                    No series found
-                  </span>
+              <div
+                v-for="report in col.items"
+                :key="report.id"
+                class="flex flex-col justify-between p-5 rounded-2xl border transition-all"
+                :class="report.selected ? 'bg-[var(--color-info)]/5 border-[var(--color-info)]/40 shadow-sm shadow-[var(--color-info)]/5' : 'bg-[var(--color-surface-raised)]/30 border-[var(--color-border)]'"
+              >
+                <div class="flex items-start gap-4">
+                  <input
+                    type="checkbox"
+                    v-model="report.selected"
+                    :id="report.id"
+                    class="mt-1 h-6 w-6 rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-info)]/30 cursor-pointer"
+                  />
+                  <label :for="report.id" class="cursor-pointer select-none">
+                    <div class="text-xl font-bold text-[var(--color-text)]">{{ report.name }}</div>
+                    <div class="text-sm text-[var(--color-text-muted)] mt-1.5">{{ report.description }}</div>
+                  </label>
+                </div>
+
+                <!-- Multi-series Selector -->
+                <div class="mt-4 flex flex-col gap-2 pt-3 border-t border-[var(--color-border)]/40">
+                  <span class="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-bold">Select Series:</span>
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      v-for="s in getSeriesListForType(report.seriesType)"
+                      :key="s"
+                      :disabled="!report.selected"
+                      @click="toggleSeries(report, s)"
+                      type="button"
+                      class="px-3.5 py-1.5 rounded-full text-sm font-semibold border transition cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed"
+                      :class="report.selectedSeries.includes(s)
+                        ? 'bg-[var(--color-info)] border-[var(--color-info)] text-[var(--color-text-on-highlight)] shadow-sm shadow-[var(--color-info)]/10'
+                        : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)]'"
+                    >
+                      {{ s }}
+                    </button>
+                    <span v-if="!getSeriesListForType(report.seriesType).length" class="text-sm text-[var(--color-text-muted)] italic">
+                      No series found
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -135,25 +143,28 @@
           <div class="text-sm text-[var(--color-text-muted)]">{{ successSummary }}</div>
         </div>
 
-        <!-- Actions -->
-        <div class="flex justify-end gap-4 items-center">
-          <!-- Spinner & status -->
-          <div v-if="generating" class="flex items-center gap-3 text-base text-[var(--color-text-muted)]">
-            <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent"></span>
-            <span>{{ progressMsg }}</span>
-          </div>
-
-          <button
-            @click="generateZip"
-            :disabled="generating || !hasSelection"
-            class="rounded-2xl px-8 py-4 text-xl font-bold text-[var(--color-text-on-highlight)] transition active:scale-95 shadow-lg cursor-pointer disabled:opacity-50"
-            :class="hasSelection ? 'bg-[var(--color-info)] hover:bg-[var(--color-info)]/90 shadow-[var(--color-info)]/15' : 'bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)] shadow-none'"
-          >
-            ⚡ Export as ZIP
-          </button>
-        </div>
       </div>
     </main>
+
+    <!-- Footer Actions -->
+    <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
+      <div class="max-w-7xl mx-auto flex justify-end gap-4 items-center">
+        <!-- Spinner & status -->
+        <div v-if="generating" class="flex items-center gap-3 text-base text-[var(--color-text-muted)]">
+          <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent"></span>
+          <span>{{ progressMsg }}</span>
+        </div>
+
+        <button
+          @click="generateZip"
+          :disabled="generating || !hasSelection"
+          class="rounded-2xl px-8 py-4 text-xl font-bold text-[var(--color-text-on-highlight)] transition active:scale-95 shadow-lg cursor-pointer disabled:opacity-50"
+          :class="hasSelection ? 'bg-[var(--color-info)] hover:bg-[var(--color-info)]/90 shadow-[var(--color-info)]/15' : 'bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)] shadow-none'"
+        >
+          ⚡ Export as ZIP
+        </button>
+      </div>
+    </footer>
   </div>
 </template>
 
@@ -279,6 +290,13 @@ function getSeriesListForType(type) {
 
 // Check if any report is checked
 const hasSelection = computed(() => reports.value.some(r => r.selected))
+
+// Column grouping — same object refs so v-model / toggleSeries stay reactive
+const reportColumns = computed(() => [
+  { key: 'invoice', title: '🧾 Sales', items: reports.value.filter(r => r.seriesType === 'invoice') },
+  { key: 'purchase', title: '📦 Purchase', items: reports.value.filter(r => r.seriesType === 'purchase') },
+  { key: 'quotation', title: '📄 Quotation', items: reports.value.filter(r => r.seriesType === 'quotation') },
+])
 
 // Setup date values on load
 function defaultDates() {
