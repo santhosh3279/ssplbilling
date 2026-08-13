@@ -79,7 +79,7 @@
               v-for="preset in presets"
               :key="preset.label"
               @click="applyPreset(preset)"
-              class="rounded-xl border border-[var(--color-border)] px-4 py-2.5 text-xs font-bold hover:bg-[var(--color-midlight)]"
+              class="rounded-xl border border-[var(--color-border)] px-3 py-2 text-[18px] leading-5 font-bold hover:bg-[var(--color-midlight)]"
             >
               {{ preset.label }}
             </button>
