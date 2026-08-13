@@ -205,7 +205,7 @@
                   <td class="px-6 py-4 font-bold">{{ row.employee_name || row.employee }}</td>
                   <td class="px-6 py-4">
                     <span
-                      class="px-2.5 py-1 text-[10px] font-black rounded-full uppercase tracking-wider"
+                      class="px-2.5 py-1 text-[15px] font-black rounded-full uppercase tracking-wider"
                       :class="statusClass(row.status)"
                     >
                       ● {{ row.status }}
