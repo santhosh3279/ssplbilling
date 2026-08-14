@@ -50,6 +50,7 @@
     { "id": "reports", "name": "Reports" },
     { "id": "store-sale-report", "name": "Store Sale Report" },
     { "id": "cost-center-sale-report", "name": "Cost Center Sale Report" },
+    { "id": "batch-reports", "name": "Batch Reports" },
     { "id": "stock-status-report", "name": "Stock Status Report" },
     { "id": "stock-aging-report", "name": "Stock Aging Report" },
     { "id": "outstanding-customers-report", "name": "Outstanding Customers Report" },

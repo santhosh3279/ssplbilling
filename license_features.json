@@ -9,12 +9,13 @@
     "Use [\"*\"] to grant everything, including pages added later."
   ],
   "wildcard": "*",
-  "page_count": 62,
-  "feature_count": 50,
+  "page_count": 63,
+  "feature_count": 51,
   "features": [
     "Cashier-Management",
     "account-tree",
     "barcode-print",
+    "batch-reports",
     "cancellation",
     "cashier",
     "catelogue",
@@ -615,6 +616,15 @@
       "feature_label": "Chart of Accounts",
       "bucket": "Accounts",
       "has_dashboard_tile": true
+    },
+    {
+      "page": "BatchReports",
+      "path": "/batch-reports",
+      "title": "Batch Reports",
+      "feature": "batch-reports",
+      "feature_label": "Batch Reports",
+      "bucket": "Report",
+      "has_dashboard_tile": true
     }
   ],
   "pages_by_feature": {
@@ -626,6 +636,9 @@
     ],
     "barcode-print": [
       "BarcodePrintPage"
+    ],
+    "batch-reports": [
+      "BatchReports"
     ],
     "cancellation": [
       "Cancellation"
