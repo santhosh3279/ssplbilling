@@ -387,6 +387,7 @@
                 <th class="px-6 py-3">#</th>
                 <th class="px-6 py-3">Time</th>
                 <th class="px-6 py-3">Source</th>
+                <th class="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody class="divide-y divide-[var(--color-border)]">
@@ -404,14 +405,22 @@
                     {{ punch.device_id || '—' }}
                   </span>
                 </td>
+                <td class="px-6 py-3 text-right">
+                  <button
+                    @click="deleteCheckin(punch)"
+                    class="text-rose-500 hover:text-rose-700 text-xs font-bold transition-colors"
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
               <tr v-if="!checkins.length && !checkinsBusy">
-                <td colspan="3" class="px-6 py-10 text-center text-sm text-[var(--color-text-muted)] italic">
+                <td colspan="4" class="px-6 py-10 text-center text-sm text-[var(--color-text-muted)] italic">
                   No punches recorded for this day.
                 </td>
               </tr>
               <tr v-if="checkinsBusy">
-                <td colspan="3" class="px-6 py-10 text-center text-sm text-[var(--color-text-muted)] italic">
+                <td colspan="4" class="px-6 py-10 text-center text-sm text-[var(--color-text-muted)] italic">
                   Loading...
                 </td>
               </tr>
@@ -500,6 +509,7 @@ import {
   fetchEmployeeCheckins,
   fetchCheckinCounts,
   createEmployeeCheckin,
+  deleteEmployeeCheckin,
   fetchShiftTypes,
 } from '../api.js'
 
@@ -860,6 +870,22 @@ async function saveCheckin() {
     checkinError.value = err.message || 'Failed to create the checkin.'
   } finally {
     savingCheckin.value = false
+  }
+}
+
+async function deleteCheckin(punch) {
+  if (!confirm(`Are you sure you want to delete the checkin at ${formatTime(punch.time)}?`)) {
+    return
+  }
+  checkinError.value = ''
+  try {
+    await deleteEmployeeCheckin(punch.name)
+    await loadCheckins()
+    // The punch deletion changes the day's hours and status, so the row behind the modal is stale
+    await loadRecords()
+  } catch (err) {
+    console.error('Failed to delete checkin:', err)
+    checkinError.value = err.message || 'Failed to delete the checkin.'
   }
 }
 

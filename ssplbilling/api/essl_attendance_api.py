@@ -355,8 +355,8 @@ def _attendance_status(hours, half_day_below):
 	return "Present"
 
 
-def _upsert_attendance(employee, emp_row, day, in_time, out_time, hours, half_day_below):
-	"""Insert (and submit) Attendance for the day, or widen the existing record's
+def _upsert_attendance(employee, emp_row, day, in_time, out_time, hours, half_day_below, overwrite_window=False):
+	"""Insert (and submit) Attendance for the day, or widen/update the existing record's
 	in/out window. `hours` is the worked total for the whole day (see _day_hours) —
 	it is deliberately not derived from the in/out window, because the middle punches
 	that the window hides are exactly what the pairing subtracts. Returns 'created',
@@ -371,15 +371,19 @@ def _upsert_attendance(employee, emp_row, day, in_time, out_time, hours, half_da
 	if existing:
 		old_in = get_datetime(existing.in_time) if existing.in_time else None
 		old_out = get_datetime(existing.out_time) if existing.out_time else None
-		new_in = min([t for t in (in_time, old_in) if t], default=None)
-		new_out = max([t for t in (out_time, old_out) if t], default=None)
+		if overwrite_window:
+			new_in = in_time
+			new_out = out_time
+		else:
+			new_in = min([t for t in (in_time, old_in) if t], default=None)
+			new_out = max([t for t in (out_time, old_out) if t], default=None)
 		new_hours = flt(hours, 2)
 		# The hours have to be compared too: a lunch pair recorded after the first tick
 		# changes the total without moving either end of the window.
 		if new_in == old_in and new_out == old_out and flt(existing.working_hours, 2) == new_hours:
 			return None
 		# Submitted Attendance cannot be re-saved through the ORM, so the window is
-		# widened with a direct field update.
+		# widened or overwritten with a direct field update.
 		values = {"in_time": new_in, "out_time": new_out, "working_hours": new_hours}
 		# A mid-day tick stamps the status from a partial window (9am-2pm looks like a
 		# Half Day); once the evening punch widens the window the status has to follow,
@@ -777,6 +781,18 @@ def _recompute_attendance_for_day(employee, day):
 	)
 	stamps = sorted([*real, auto_stamp]) if auto_stamp else real
 	if not stamps or not settings["create_attendance"]:
+		if not stamps and settings["create_attendance"]:
+			existing = frappe.db.get_value(
+				"Attendance",
+				{"employee": employee, "attendance_date": day, "docstatus": ("<", 2)},
+				"name",
+			)
+			if existing:
+				doc = frappe.get_doc("Attendance", existing)
+				if doc.docstatus == 1:
+					doc.cancel()
+				frappe.delete_doc("Attendance", existing, ignore_permissions=True, force=True)
+				return "deleted"
 		return None
 
 	emp_row = frappe.db.get_value("Employee", employee, ["name", "company"], as_dict=True)
@@ -788,6 +804,7 @@ def _recompute_attendance_for_day(employee, day):
 		stamps[-1],
 		_day_hours(stamps),
 		settings["mark_half_day_below_hours"],
+		overwrite_window=True,
 	)
 
 
@@ -889,6 +906,25 @@ def create_employee_checkin(employee, date, time):
 
 	action = _recompute_attendance_for_day(employee, day)
 	return {"employee": employee, "time": str(stamp), "attendance": action}
+
+
+@frappe.whitelist()
+def delete_employee_checkin(name):
+	"""Delete a checkin, and rebuild the day's Attendance around what remains."""
+	if not name:
+		frappe.throw("Checkin name is required")
+
+	if not frappe.db.exists("Employee Checkin", name):
+		frappe.throw(f"Checkin {name} not found")
+
+	checkin = frappe.get_doc("Employee Checkin", name)
+	employee = checkin.employee
+	day = getdate(checkin.time)
+
+	frappe.delete_doc("Employee Checkin", name, ignore_permissions=True, force=True)
+
+	action = _recompute_attendance_for_day(employee, day)
+	return {"deleted": name, "attendance": action}
 
 
 @frappe.whitelist()

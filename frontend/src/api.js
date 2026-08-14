@@ -1411,12 +1411,17 @@ export async function fetchCheckinCounts({ fromDate, toDate = null }) {
   });
 }
 
-// Adds a punch and rebuilds that day's Attendance around it.
 export async function createEmployeeCheckin({ employee, date, time }) {
   return frappePost("ssplbilling.api.essl_attendance_api.create_employee_checkin", {
     employee,
     date,
     time,
+  });
+}
+
+export async function deleteEmployeeCheckin(name) {
+  return frappePost("ssplbilling.api.essl_attendance_api.delete_employee_checkin", {
+    name,
   });
 }
 
