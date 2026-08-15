@@ -104,11 +104,12 @@
                 >
                   <td class="px-6 py-4 font-mono font-bold text-[var(--color-employee)]">#{{ row.machine_user_id }}</td>
                   <td class="px-6 py-4 font-bold">{{ row.employee_name || '—' }}</td>
-                  <td class="px-6 py-4 font-mono text-xs">{{ row.employee }}</td>
-                  <td class="px-6 py-4 text-sm">{{ row.machine || 'All machines' }}</td>
+                  <!-- No text-* override: these read at the table's text-xl, same as Employee -->
+                  <td class="px-6 py-4 font-mono">{{ row.employee }}</td>
+                  <td class="px-6 py-4">{{ row.machine || 'All machines' }}</td>
                   <td class="px-6 py-4">
                     <span
-                      class="px-2.5 py-1 text-[10px] font-black rounded-full uppercase tracking-wider"
+                      class="px-2.5 py-1 font-black rounded-full uppercase tracking-wider"
                       :class="row.enabled && row.employee_status === 'Active'
                         ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'
                         : 'bg-[var(--color-text-muted)]/10 text-[var(--color-text-muted)] border border-[var(--color-text-muted)]/20'"
