@@ -75,6 +75,35 @@ def _create_mirror_payment_entry(msi, amount, original_account, allowed_accounts
 	return pe.name
 
 
+def _resolve_mirror_je_naming(ae, original_je_name, target_company):
+	"""Decide how a mirrored Journal Entry is named, following the same rule as the
+	Payment Entry mirror: a configured naming series wins, otherwise the mirror keeps
+	the source name with a trailing slash.
+
+	Under a naming series the mirror cannot carry the source name, so it is tied back to
+	its origin through the user_remark marker instead — that marker is also what makes
+	the duplicate check work.
+
+	Returns (existing, set_name, marker). A non-empty `existing` means the mirror is
+	already there and nothing should be created.
+	"""
+	marker = f"Mirrored from {original_je_name}" if original_je_name else None
+	series = ae.get("journal_entry_naming_settings")
+
+	if series and original_je_name:
+		existing = frappe.db.get_value(
+			"Journal Entry",
+			{"company": target_company, "user_remark": ["like", f"%{marker}%"], "docstatus": ["!=", 2]},
+			"name",
+		)
+		return existing, None, marker
+
+	set_name = f"{original_je_name}/" if original_je_name else None
+	if set_name and frappe.db.exists("Journal Entry", set_name):
+		return set_name, set_name, marker
+	return None, set_name, marker
+
+
 def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_amount=0,
                      cash_account=None, upi_account=None, card_account=None,
                      discount_account=None, card_ref_no=None,
@@ -122,9 +151,11 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 					mirror_cost_center = ensure_cost_center_in_company(
 						cost_center or msi.get("cost_center"), msi.company
 					)
-					mirror_je_name = f"{original_discount_je}/" if original_discount_je else None
-					if mirror_je_name and frappe.db.exists("Journal Entry", mirror_je_name):
-						entries.append(mirror_je_name)
+					existing_je, mirror_je_name, je_marker = _resolve_mirror_je_naming(
+						ae, original_discount_je, msi.company
+					)
+					if existing_je:
+						entries.append(existing_je)
 					else:
 						je = frappe.new_doc("Journal Entry")
 						je.voucher_type = "Journal Entry"
@@ -154,7 +185,12 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 								je.cheque_date = cheque_date
 
 						je.flags.ignore_permissions = True
-						if mirror_je_name:
+						if je_marker:
+							je.user_remark = je_marker
+						if ae.get("journal_entry_naming_settings"):
+							je.naming_series = ae.get("journal_entry_naming_settings")
+							je.insert()
+						elif mirror_je_name:
 							je.insert(set_name=mirror_je_name)
 						else:
 							je.insert()
@@ -202,8 +238,8 @@ def mirror_payments_for_gst_conversion(si, msi, ae):
 	)
 	unique_je_names = list(set(ref.parent for ref in je_references))
 	for je_name in unique_je_names:
-		mirror_je_name = f"{je_name}/"
-		if frappe.db.exists("Journal Entry", mirror_je_name):
+		existing_je, mirror_je_name, je_marker = _resolve_mirror_je_naming(ae, je_name, msi.company)
+		if existing_je:
 			continue
 
 		je_doc = frappe.get_doc("Journal Entry", je_name)
@@ -253,5 +289,13 @@ def mirror_payments_for_gst_conversion(si, msi, ae):
 					je.cheque_date = je_doc.cheque_date
 
 				je.flags.ignore_permissions = True
-				je.insert(set_name=mirror_je_name)
+				if je_marker:
+					je.user_remark = je_marker
+				if ae.get("journal_entry_naming_settings"):
+					je.naming_series = ae.get("journal_entry_naming_settings")
+					je.insert()
+				elif mirror_je_name:
+					je.insert(set_name=mirror_je_name)
+				else:
+					je.insert()
 				je.submit()

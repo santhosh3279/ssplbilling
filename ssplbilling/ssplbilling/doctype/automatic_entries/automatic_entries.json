@@ -7,6 +7,7 @@
   "alternative_company",
   "warehouse",
   "payment_entry_naming_settings",
+  "journal_entry_naming_settings",
   "section_break_tables",
   "series",
   "accounts"
@@ -28,6 +29,13 @@
    "fieldname": "payment_entry_naming_settings",
    "fieldtype": "Select",
    "label": "Payment Entry Naming Settings",
+   "options": ""
+  },
+  {
+   "description": "Naming series for mirrored Journal Entries. Blank keeps the original name with a trailing slash.",
+   "fieldname": "journal_entry_naming_settings",
+   "fieldtype": "Select",
+   "label": "Journal Entry Naming Settings",
    "options": ""
   },
   {

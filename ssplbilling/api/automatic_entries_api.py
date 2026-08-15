@@ -902,16 +902,28 @@ def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_li
 	return {"status": "success", "invoice_name": msi.name, "company": msi.company}
 
 
-@frappe.whitelist()
-def get_payment_entry_series():
-	"""Return naming series configured for Payment Entry as a list of strings."""
+def _naming_series_options(doctype):
+	"""Naming series configured for `doctype`, as a list of strings. Property Setter
+	first, since that is where a site's customised series lives."""
 	options = frappe.db.get_value(
 		"Property Setter",
-		{"doc_type": "Payment Entry", "field_name": "naming_series", "property": "options"},
+		{"doc_type": doctype, "field_name": "naming_series", "property": "options"},
 		"value",
 	)
 	if not options:
-		field = frappe.get_meta("Payment Entry").get_field("naming_series")
+		field = frappe.get_meta(doctype).get_field("naming_series")
 		options = field.options if field else ""
 	return [opt.strip() for opt in (options or "").split("\n") if opt.strip()]
+
+
+@frappe.whitelist()
+def get_payment_entry_series():
+	"""Return naming series configured for Payment Entry as a list of strings."""
+	return _naming_series_options("Payment Entry")
+
+
+@frappe.whitelist()
+def get_journal_entry_series():
+	"""Return naming series configured for Journal Entry as a list of strings."""
+	return _naming_series_options("Journal Entry")
 
