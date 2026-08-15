@@ -282,7 +282,7 @@ useShortcuts({
     goBack()
   }
 })
-const { refreshItemCache, lookupItemInCache, searchItemsInCache } = useItemCache()
+const { refreshItemCache, lookupItemInCache, searchItemsInCache, items: cachedItems } = useItemCache()
 
 const repackNo = ref('')
 const repackDate = ref(serverToday())
@@ -380,6 +380,55 @@ function formatRate(val) {
   const num = parseFloat(val)
   return isNaN(num) ? '0.00' : num.toFixed(2)
 }
+
+function autoCalculateProduceRates() {
+  const consumeItems = items.value.filter(i => i.type === 'Consume')
+  const produceItems = items.value.filter(i => i.type === 'Produce')
+  
+  if (!produceItems.length) return
+  
+  // Calculate total consumed valuation
+  const totalConsumedValuation = consumeItems.reduce((sum, item) => {
+    const rate = item.rate || getPriceListRate(item, 'Buying') || 0
+    return sum + (item.qty * rate)
+  }, 0)
+  
+  // Calculate total produced quantity
+  const totalProduceQty = produceItems.reduce((sum, item) => sum + item.qty, 0)
+  
+  if (totalProduceQty <= 0) {
+    for (const item of produceItems) {
+      if (item.rate !== 0) item.rate = 0
+    }
+    return
+  }
+  
+  // Distribute the valuation
+  const ratePerQty = totalConsumedValuation / totalProduceQty
+  const newRate = parseFloat(ratePerQty.toFixed(4))
+  for (const item of produceItems) {
+    if (item.rate !== newRate) {
+      item.rate = newRate
+    }
+  }
+}
+
+watch(
+  items,
+  () => {
+    if (isReadOnly.value) return
+    autoCalculateProduceRates()
+  },
+  { deep: true }
+)
+
+watch(
+  cachedItems,
+  () => {
+    if (isReadOnly.value) return
+    autoCalculateProduceRates()
+  }
+)
 
 onMounted(async () => {
   await fetchMetadata()
