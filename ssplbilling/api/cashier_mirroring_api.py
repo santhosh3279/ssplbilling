@@ -3,6 +3,7 @@ from ssplbilling.api.automatic_entries_api import (
 	get_automatic_entries,
 	_allowed_accounts,
 	resolve_target_account,
+	ensure_cost_center_in_company,
 	_mop_for_account
 )
 
@@ -115,6 +116,12 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 			if bypass_whitelist or discount_account in allowed_accounts:
 				mapped_discount = resolve_target_account(discount_account, allowed_accounts, msi.company)
 				if mapped_discount:
+					# The caller's cost center belongs to the source company; the JE is
+					# posted in msi.company, so map it across or ERPNext rejects the
+					# dimension ("CTR - SSPL does not belong to <mirror company>")
+					mirror_cost_center = ensure_cost_center_in_company(
+						cost_center or msi.get("cost_center"), msi.company
+					)
 					mirror_je_name = f"{original_discount_je}/" if original_discount_je else None
 					if mirror_je_name and frappe.db.exists("Journal Entry", mirror_je_name):
 						entries.append(mirror_je_name)
@@ -126,7 +133,7 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 						je.append("accounts", {
 							"account": mapped_discount,
 							"debit_in_account_currency": discount_amount,
-							"cost_center": cost_center or msi.get("cost_center")
+							"cost_center": mirror_cost_center
 						})
 						je.append("accounts", {
 							"account": msi.debit_to,
@@ -135,7 +142,7 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 							"party": msi.customer,
 							"reference_type": "Sales Invoice",
 							"reference_name": msi.name,
-							"cost_center": cost_center or msi.get("cost_center")
+							"cost_center": mirror_cost_center
 						})
 						if original_discount_je:
 							cheque_no, cheque_date = frappe.db.get_value(
@@ -216,11 +223,21 @@ def mirror_payments_for_gst_conversion(si, msi, ae):
 		if True:  # bypass whitelist
 			mapped_discount = resolve_target_account(discount_account, allowed_accounts, msi.company)
 			if mapped_discount:
+				# Same cross-company mapping as mirror_payments: the source JE's cost
+				# center is in si's company, this JE posts in msi.company
+				source_cost_center = (
+					discount_acc_row.cost_center or si_acc_row.cost_center or si.get("cost_center")
+				)
+				mirror_cost_center = ensure_cost_center_in_company(source_cost_center, msi.company)
 				je = frappe.new_doc("Journal Entry")
 				je.voucher_type = "Journal Entry"
 				je.posting_date = msi.posting_date
 				je.company = msi.company
-				je.append("accounts", {"account": mapped_discount, "debit_in_account_currency": amount})
+				je.append("accounts", {
+					"account": mapped_discount,
+					"debit_in_account_currency": amount,
+					"cost_center": mirror_cost_center,
+				})
 				je.append("accounts", {
 					"account": msi.debit_to,
 					"credit_in_account_currency": amount,
@@ -228,6 +245,7 @@ def mirror_payments_for_gst_conversion(si, msi, ae):
 					"party": msi.customer,
 					"reference_type": "Sales Invoice",
 					"reference_name": msi.name,
+					"cost_center": mirror_cost_center,
 				})
 				if je_doc.cheque_no:
 					je.cheque_no = je_doc.cheque_no
