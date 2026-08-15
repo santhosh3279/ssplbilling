@@ -30,7 +30,8 @@
     { "id": "expense", "name": "Cash Box Entry" },
     { "id": "single-entry", "name": "Single Entry" },
     { "id": "account-tree", "name": "Chart of Accounts" },
-    { "id": "cancellation", "name": "Cancellation" }
+    { "id": "cancellation", "name": "Cancellation" },
+    { "id": "unreconciled", "name": "Unreconciled Entries" }
   ],
   "Inventory & Stock": [
     { "id": "stock-reconciliation", "name": "Stock Reconciliation" },
