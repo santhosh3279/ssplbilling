@@ -598,6 +598,17 @@
                     Credit Ledger Posting Enabled
                   </div>
                 </div>
+                <!-- Same ref as the cash-mode box: v-if/v-else means only one is ever mounted -->
+                <div class="group relative">
+                  <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-focus)] transition-colors uppercase">Remarks</div>
+                  <input
+                    ref="remarksInput"
+                    type="text"
+                    v-model="payments.remarks"
+                    @focus="$event.target.select()"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-32 pr-6 text-right font-mono text-[20px] font-black text-[var(--color-text)] focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/20 transition-all"
+                  />
+                </div>
               </div>
 
               <!-- Status Messages -->
@@ -1170,7 +1181,9 @@ async function selectInvoice(inv) {
     const details = await getInvoiceDetails(inv.name)
     selectedInvoice.value = details
     previewItems.value = details.items || []
-    payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: '' }
+    // Carry the entry-time remark in: submit writes the box back to custom_remarks,
+    // so starting blank would silently wipe whatever Sales Entry saved
+    payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: details.custom_remarks || '' }
     await loadSeriesSettings(details.naming_series)
 
     // Check for Unallocated Cash
@@ -1267,7 +1280,9 @@ function toggleCredit(val) {
   }
 
   isCredit.value = targetVal
-  payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: '' }
+  // Amounts are mode-specific and get cleared; the remark is not, so it survives the flip
+  const keptRemarks = payments.value.remarks || ''
+  payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: keptRemarks }
   if (isCredit.value) {
     nextTick(() => dueDateInput.value?.focus())
   } else {
@@ -1597,6 +1612,11 @@ function navigateBills(dir) {
 function handleArrowUp() {
   const active = document.activeElement
   if (active.tagName === 'INPUT') {
+    // Credit mode only mounts Due Date + Remarks, so it walks its own two-step chain
+    if (isCredit.value) {
+      if (active === remarksInput.value) dueDateInput.value?.focus()
+      return
+    }
     if (active === upiInput.value) { cashInput.value?.focus(); cashInput.value?.select() }
     else if (active === cardInput.value) { upiInput.value?.focus(); upiInput.value?.select() }
     else if (active === creditInput.value) { cardInput.value?.focus(); cardInput.value?.select() }
@@ -1610,6 +1630,10 @@ function handleArrowUp() {
 function handleArrowDown() {
   const active = document.activeElement
   if (active.tagName === 'INPUT') {
+    if (isCredit.value) {
+      if (active === dueDateInput.value) { remarksInput.value?.focus(); remarksInput.value?.select() }
+      return
+    }
     if (active === cashInput.value) { upiInput.value?.focus(); upiInput.value?.select() }
     else if (active === upiInput.value) { cardInput.value?.focus(); cardInput.value?.select() }
     else if (active === cardInput.value) { creditInput.value?.focus(); creditInput.value?.select() }
@@ -1672,6 +1696,9 @@ function handleEnter(e) {
 
   if (isCredit.value) {
     if (active === dueDateInput.value) {
+      remarksInput.value?.focus()
+      remarksInput.value?.select()
+    } else if (active === remarksInput.value) {
       if (canSubmit.value) postButton.value?.focus()
       else processPayment() // will show error if not valid
     } else if (active === postButton.value) {
