@@ -12,7 +12,12 @@ from datetime import timedelta
 import frappe
 from frappe.utils import flt, get_datetime, getdate, now_datetime
 
-from ssplbilling.api.essl_machine_api import ESSL_MACHINE_DOCTYPE, connect_machine, get_machine_rows
+from ssplbilling.api.essl_machine_api import (
+	ESSL_MACHINE_DOCTYPE,
+	connect_machine,
+	get_inactive_machine_rows,
+	get_machine_rows,
+)
 
 MAPPING_DOCTYPE = "eSSL Employee Mapping"
 SETTINGS_DOCTYPE = "eSSL Sync Settings"
@@ -562,6 +567,7 @@ def sync_attendance(machine=None, from_date=None):
 	return {
 		"synced_at": frappe.utils.now(),
 		"machines": results,
+		"skipped_inactive": get_inactive_machine_rows(machine),
 		"totals": totals,
 		"unmapped_ids": unmapped,
 	}

@@ -252,6 +252,20 @@ def get_machine_rows(machine=None, active_only=False):
 	)
 
 
+def get_inactive_machine_rows(machine=None):
+	"""Machines a sync deliberately skipped. Reported alongside the results so an
+	unticked device is visibly skipped rather than silently missing from the summary."""
+	filters = {"is_active": 0}
+	if machine:
+		filters["name"] = machine
+	return frappe.get_all(
+		ESSL_MACHINE_DOCTYPE,
+		filters=filters,
+		fields=["name", "ip_address", "store"],
+		order_by="store asc, ip_address asc",
+	)
+
+
 @frappe.whitelist()
 def sync_essl_attendance(machine=None, from_date=None):
 	"""Pull attendance logs straight off the eSSL devices over the ZK protocol (TCP 4370).
@@ -320,5 +334,6 @@ def sync_essl_attendance(machine=None, from_date=None):
 		"from_date": str(from_date) if from_date else None,
 		"total": len(logs),
 		"machines": results,
+		"skipped_inactive": get_inactive_machine_rows(machine),
 		"logs": logs,
 	}

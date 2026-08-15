@@ -157,6 +157,10 @@
                 their punches are not in this run
               </template>
             </span>
+            <span v-if="skippedInactive.length" class="text-xs font-bold text-[var(--color-text-muted)]">
+              {{ skippedInactive.length }} inactive
+              {{ skippedInactive.length === 1 ? 'machine was' : 'machines were' }} skipped
+            </span>
             <span v-if="lastSync.totals.skipped_future" class="text-xs font-bold text-amber-500">
               {{ lastSync.totals.skipped_future }} punches dated in the future were skipped (device clock)
             </span>
@@ -175,6 +179,15 @@
                 : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-500'"
             >
               {{ m.store || m.machine }} — {{ m.error ? m.error : m.logs + ' punches' }}
+            </div>
+            <!-- Machines unticked on the eSSL Machines page — never contacted by this run -->
+            <div
+              v-for="m in skippedInactive"
+              :key="'skipped-' + m.name"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-xs font-bold text-[var(--color-text-muted)]"
+              title="Inactive — tick Active on the eSSL Machines page to include it"
+            >
+              {{ m.store || m.name }} — skipped (inactive)
             </div>
           </div>
         </div>
@@ -524,6 +537,10 @@ const records = ref([])
 const settings = ref(null)
 const lastSync = ref(null)
 const searchQuery = ref('')
+
+// Machines the sync left out because Active is unticked on the eSSL Machines page.
+// Reported so an unticked device reads as skipped rather than silently missing.
+const skippedInactive = computed(() => lastSync.value?.skipped_inactive || [])
 
 // A machine row carries an `error` string when the device could not be reached
 // (offline, busy with another session, wrong IP) — everything else was synced.

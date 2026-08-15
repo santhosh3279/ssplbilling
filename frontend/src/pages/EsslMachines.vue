@@ -120,6 +120,10 @@
             <span class="text-xs font-bold text-[var(--color-employee)]">
               {{ lastSync.stored }} of {{ lastSync.total }} logs cached locally
             </span>
+            <span v-if="skippedInactive.length" class="text-xs font-bold text-[var(--color-text-muted)]">
+              {{ skippedInactive.length }} inactive
+              {{ skippedInactive.length === 1 ? 'machine was' : 'machines were' }} skipped
+            </span>
             <span v-if="lastSync.fromDate" class="text-xs font-bold text-[var(--color-text-muted)]">
               From {{ lastSync.fromDate }}
             </span>
@@ -149,6 +153,15 @@
             >
               {{ m.store || m.machine }} · {{ m.ip_address }} —
               {{ m.error ? m.error : m.logs + ' logs' }}
+            </div>
+            <!-- Unticked machines: never contacted, listed so the gap is explained -->
+            <div
+              v-for="m in skippedInactive"
+              :key="'skipped-' + m.name"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-xs font-bold text-[var(--color-text-muted)]"
+              title="Inactive — tick Active on this machine to include it"
+            >
+              {{ m.store || m.name }} · {{ m.ip_address }} — skipped (inactive)
             </div>
           </div>
         </div>
@@ -486,6 +499,9 @@ const deviceStatus = computed(() => {
   }
 })
 
+// Machines the sync left out because Active is unticked
+const skippedInactive = computed(() => lastSync.value?.skippedInactive || [])
+
 const storeOptions = computed(() => {
   const stores = machinesList.value.map((m) => (m.store || '').trim()).filter(Boolean)
   return [...new Set(stores)].sort()
@@ -532,6 +548,7 @@ function loadCachedSync() {
       total: cached.total,
       stored: (cached.logs || []).length,
       machines: cached.machines || [],
+      skippedInactive: cached.skippedInactive || [],
     }
   } catch {
     localStorage.removeItem(ATTENDANCE_KEY)
@@ -553,6 +570,7 @@ async function syncAttendance() {
       fromDate: res?.from_date || fromDate.value || null,
       total: res?.total ?? logs.length,
       machines: res?.machines || [],
+      skippedInactive: res?.skipped_inactive || [],
       logs: stored,
     }
 
@@ -575,6 +593,7 @@ async function syncAttendance() {
       total: payload.total,
       stored: payload.logs.length,
       machines: payload.machines,
+      skippedInactive: payload.skippedInactive,
     }
   } catch (err) {
     console.error('Attendance sync failed:', err)
