@@ -122,7 +122,7 @@
                   <th class="border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
                   <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Barcode</th>
                   <th class="w-24 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">UOM</th>
-                  <th v-for="pl in availablePriceLists" :key="pl"
+                  <th v-for="pl in visiblePriceLists" :key="pl"
                     class="w-32 border-r border-[var(--color-border)] px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                     {{ pl }}
                   </th>
@@ -193,7 +193,7 @@
                     <span v-else class="block px-2 py-1.5 font-mono text-xl text-[var(--color-text-muted)]">{{ item.uom || 'Nos' }}</span>
                   </td>
                   <!-- Price List Rates -->
-                  <td v-for="pl in availablePriceLists" :key="pl"
+                  <td v-for="pl in visiblePriceLists" :key="pl"
                     class="px-2 py-1.5 border-r border-[var(--color-border)] text-right font-mono text-xl text-[var(--color-text-muted)]">
                     {{ item.rates?.[pl]?.toFixed(2) || '0.00' }}
                   </td>
@@ -270,7 +270,7 @@
                     <span v-else class="block px-2 py-1.5 font-mono text-xl text-[var(--color-text-muted)]">{{ newPending.uom || '—' }}</span>
                   </td>
                   <!-- Pending Rates -->
-                  <td v-for="pl in availablePriceLists" :key="pl"
+                  <td v-for="pl in visiblePriceLists" :key="pl"
                     class="px-2 py-1.5 border-r border-[var(--color-border)] text-right font-mono text-xl text-[var(--color-text-muted)] italic">
                     {{ newPending.rates?.[pl]?.toFixed(2) || '0.00' }}
                   </td>
@@ -317,6 +317,7 @@ import { useItemCache, searchItemsInCache } from '../services/itemCache.js'
 import { frappeGet, frappePost, fetchItemPrice } from '../api.js'
 import { useShortcuts, useSubwindow } from '../services/shortcutManager'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
+import { canAccessTile } from '../composables/usePermission'
 
 const props = defineProps({
   isSubWindow: Boolean,
@@ -342,6 +343,14 @@ try {
 } catch (e) {
   availablePriceLists.value = []
 }
+
+const visiblePriceLists = computed(() => {
+  const hasPurchaseAccess = canAccessTile('purchase-invoice') || canAccessTile('purchase-order')
+  if (hasPurchaseAccess) {
+    return availablePriceLists.value
+  }
+  return availablePriceLists.value.filter(pl => !pl.toLowerCase().includes('buying'))
+})
 
 async function fetchAllRates(item) {
   if (!item.item_code) return
