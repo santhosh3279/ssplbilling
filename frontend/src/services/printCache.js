@@ -125,9 +125,8 @@ export function clearPrintCache() {
 }
 
 // Fire-and-forget warm-up for several template buckets at once. Every print dialog
-// shares one printer list, so this fetches it a single time no matter how many
-// buckets are being warmed — calling prefetchPrintLists() per doctype would refetch
-// the printers once per call.
+// shares one printer list, so this fetches it a single time no matter how many buckets
+// are being warmed — warming one doctype per call would refetch the printers each time.
 export function warmPrintCache(doctypesOrSpecs = ['Sales Invoice']) {
   const specs = doctypesOrSpecs.map(toSpec)
   const staleBuckets = specs.filter(spec => !readCache(TEMPLATES_KEY, spec.bucket)?.fresh)
@@ -138,9 +137,4 @@ export function warmPrintCache(doctypesOrSpecs = ['Sales Invoice']) {
     ...staleBuckets.map(spec => fetchTemplates(spec)),
     printersStale ? fetchPrinters() : Promise.resolve(),
   ]).catch(() => {})
-}
-
-// Single-bucket convenience wrapper around warmPrintCache().
-export function prefetchPrintLists(doctypeOrSpec = 'Sales Invoice') {
-  warmPrintCache([doctypeOrSpec])
 }

@@ -1468,10 +1468,13 @@ async function syncBillingSettings(targetUser, force) {
     }
 
     // Warm the Print Template / Printer lists so PrintOptionsModal opens with no round
-    // trip. The '' bucket holds the ledger templates (Customer Ledger / Customer Ledger
-    // Thermal are stored with an empty document_type), which is what GstLedger and
-    // GeneralLedger's ledger print ask for.
-    warmPrintCache(['Sales Invoice', '', 'Purchase Invoice'])
+    // trip. One bucket per doctype the print dialogs actually ask for:
+    //   ''                 → GstLedger (Customer Ledger templates are stored with an
+    //                        empty document_type)
+    //   'General Ledger'   → GeneralLedger's ledger print
+    //   'Sales Invoice' / 'Purchase Invoice' → the invoice pages and GeneralLedger's
+    //                        voucher print
+    warmPrintCache(['Sales Invoice', 'Purchase Invoice', '', 'General Ledger'])
 
     // Sync Automatic Entries (single doctype) values to localStorage under ae-* keys
     if (settings && settings.automatic_entries) {
