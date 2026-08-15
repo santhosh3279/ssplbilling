@@ -1,5 +1,9 @@
 <template>
-  <div class="flex h-full overflow-hidden bg-[var(--color-bg)] text-[var(--color-text)] font-sans">
+  <div 
+    class="flex h-full overflow-hidden bg-[var(--color-bg)] text-[var(--color-text)] font-sans"
+    @keydown.up="preventArrowIncrement"
+    @keydown.down="preventArrowIncrement"
+  >
     <!-- Optional Sidebar (based on SalesEntry) -->
     <aside 
       v-if="showSidebar" 
@@ -442,6 +446,8 @@
                             :value="discountPct"
                             @input="$emit('update:discountPct', $event.target.value)"
                             @keydown="$emit('discount-pct-keydown', $event)"
+                            @keydown.up.prevent
+                            @keydown.down.prevent
                             :disabled="isReadOnly"
                             class="w-full h-full bg-transparent text-[var(--color-text)] font-mono text-3xl text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                           />
@@ -455,6 +461,8 @@
                             @input="$emit('update:discountDirectAmt', $event.target.value)"
                             @keydown.enter.prevent="freightRef?.focus(); freightRef?.select()"
                             @keydown="$emit('discount-amt-keydown', $event)"
+                            @keydown.up.prevent
+                            @keydown.down.prevent
                             :disabled="isReadOnly"
                             class="w-full h-full bg-transparent text-[var(--color-text)] font-mono text-3xl text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-[var(--color-text-muted)]/20 disabled:opacity-50"
                             placeholder="Amt"
@@ -486,6 +494,8 @@
                         :value="freightEntry"
                         @input="$emit('update:freightEntry', $event.target.value)"
                         @keydown.enter.prevent="packingRef?.focus(); packingRef?.select()"
+                        @keydown.up.prevent
+                        @keydown.down.prevent
                         :disabled="isReadOnly"
                         class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                       />
@@ -502,6 +512,8 @@
                         :value="packingEntry"
                         @input="$emit('update:packingEntry', $event.target.value)"
                         @keydown.enter.prevent="loadingRef?.focus(); loadingRef?.select()"
+                        @keydown.up.prevent
+                        @keydown.down.prevent
                         :disabled="isReadOnly"
                         class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                       />
@@ -518,6 +530,8 @@
                         :value="loadingEntry"
                         @input="$emit('update:loadingEntry', $event.target.value)"
                         @keydown.enter.prevent="otherRef?.focus(); otherRef?.select()"
+                        @keydown.up.prevent
+                        @keydown.down.prevent
                         :disabled="isReadOnly"
                         class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                       />
@@ -534,6 +548,8 @@
                         :value="otherEntry"
                         @input="$emit('update:otherEntry', $event.target.value)"
                         @keydown.enter.prevent="$emit('other-entry-enter'); saveBtnRef?.focus()"
+                        @keydown.up.prevent
+                        @keydown.down.prevent
                         :disabled="isReadOnly"
                         class="w-full h-full block bg-transparent text-[var(--color-text)] font-mono text-3xl py-2 text-right px-2 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none disabled:opacity-50"
                       />
@@ -609,6 +625,12 @@ import { patchLedgerInCache } from '../services/ledgerCache.js'
 
 import { formatDMY } from '../utils/date'
 const inheritedUser = computed(() => localStorage.getItem('wb-inherited-user'))
+
+function preventArrowIncrement(e) {
+  if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'number') {
+    e.preventDefault()
+  }
+}
 
 const props = defineProps({
   title: { type: String, default: 'Invoice' },
