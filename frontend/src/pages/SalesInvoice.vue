@@ -76,6 +76,34 @@
       <!-- Custom slots for additional logic if needed -->
       <template #header-right>
         <div class="flex items-center gap-4">
+          <!-- Discount Rules Banner -->
+          <div v-if="activeItemCode && activeItemDiscountRules.length" class="flex items-center gap-2.5 bg-[var(--color-warning)]/15 text-[var(--color-warning)] border border-[var(--color-warning)]/40 rounded-xl px-4 py-2 font-mono shrink-0 font-bold max-w-[400px] shadow-sm">
+            <span class="text-3xl">🏷️</span>
+            <div class="flex flex-col text-left leading-tight">
+              <span class="text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-sans">Active Offer</span>
+              <span class="truncate font-sans font-black text-2xl text-[var(--color-text)]">
+                {{ activeItemDiscountRules[0].rule_name }}
+              </span>
+              <span class="text-sm text-[var(--color-text-muted)] font-sans mt-0.5 font-normal">
+                <span v-if="activeItemDiscountRules[0].discount_type === 'Percentage Discount'">
+                  {{ activeItemDiscountRules[0].percentage_discount }}% Off (Min Qty: {{ activeItemDiscountRules[0].min_quantity }})
+                </span>
+                <span v-else-if="activeItemDiscountRules[0].discount_type === 'Product Discount'">
+                  Buy {{ activeItemDiscountRules[0].min_quantity }} Get {{ activeItemDiscountRules[0].free_quantity }} Free
+                </span>
+                <span v-else-if="activeItemDiscountRules[0].discount_type === 'X to Y product discount'">
+                  X to Y Offer Active
+                </span>
+                <span v-else-if="activeItemDiscountRules[0].discount_type === 'Custom Logic'">
+                  Tiered Offer Active
+                </span>
+              </span>
+            </div>
+            <span v-if="activeItemDiscountRules.length > 1" class="text-sm bg-[var(--color-midlight)]/45 text-[var(--color-text)] rounded px-1.5 py-0.5 ml-1 font-sans shrink-0 font-extrabold">
+              +{{ activeItemDiscountRules.length - 1 }}
+            </span>
+          </div>
+
           <div v-if="ewaybill" class="flex items-center gap-2 bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 rounded-xl px-4 py-1.5 font-mono text-2xl shrink-0 font-bold">
             E-Way Bill: {{ ewaybill }} ({{ ewaybillStatus }})
           </div>
@@ -268,59 +296,6 @@
                     </tr>
                   </tbody>
                 </table>
-              </div>
-
-              <!-- Discount Rules -->
-              <div v-if="activeItemCode && activeItemDiscountRules.length" class="border-t border-[var(--color-border)]/50 pt-2 mt-2">
-                <div class="mb-1 text-[var(--color-text-muted)] text-lg font-bold uppercase tracking-wider">Applicable Discount Rules:</div>
-                <div class="space-y-2 max-h-[180px] overflow-y-auto custom-scrollbar">
-                  <div v-for="rule in activeItemDiscountRules" :key="rule.name" class="text-xl bg-[var(--color-surface)] rounded border border-[var(--color-border)]/50 p-3 flex flex-col gap-1.5">
-                    <div class="font-bold text-[var(--color-text)] leading-tight flex justify-between items-center">
-                      <span class="truncate mr-2 text-2xl">{{ rule.rule_name }}</span>
-                      <span class="rounded px-2 py-0.5 text-sm font-bold uppercase tracking-wider flex-shrink-0"
-                        :class="{
-                          'bg-[var(--color-employee)]/20 text-[var(--color-employee)]': rule.discount_type === 'Product Discount',
-                          'bg-[var(--color-warning)]/20 text-[var(--color-warning)]': rule.discount_type === 'Percentage Discount',
-                          'bg-[var(--color-info)]/20 text-[var(--color-info)]': rule.discount_type === 'Custom Logic',
-                          'bg-[var(--color-highlight)]/20 text-[var(--color-highlight)]': rule.discount_type === 'X to Y product discount'
-                        }">
-                        {{ rule.discount_type }}
-                      </span>
-                    </div>
-                    
-                    <div class="text-lg text-[var(--color-text-muted)] leading-normal space-y-1">
-                      <!-- Percentage Discount Details -->
-                      <div v-if="rule.discount_type === 'Percentage Discount'">
-                        <span class="font-bold text-[var(--color-warning)] font-mono text-xl">{{ rule.percentage_discount }}%</span> discount
-                        <span v-if="rule.min_quantity > 0"> on min qty <span class="font-bold font-mono text-xl">{{ rule.min_quantity }}</span></span>
-                      </div>
-                      
-                      <!-- Product Discount Details -->
-                      <div v-else-if="rule.discount_type === 'Product Discount'">
-                        Buy <span class="font-bold font-mono text-xl">{{ rule.min_quantity }}</span>, get <span class="font-bold font-mono text-[var(--color-employee)] text-xl">{{ rule.free_quantity }}</span> Free
-                        <span v-if="rule.recursive" class="text-xs uppercase font-bold text-[var(--color-success)] ml-1.5">(Recursive)</span>
-                      </div>
-                      
-                      <!-- X to Y Product Discount Details -->
-                      <div v-else-if="rule.discount_type === 'X to Y product discount'">
-                        <div v-for="(row, idx) in (rule.x_to_y_table || []).filter(r => (r.item_code || '').toLowerCase() === activeItemCode.toLowerCase())" :key="idx">
-                          Buy <span class="font-bold font-mono text-xl">{{ row.min_quantity }}</span>, get <span class="font-bold font-mono text-xl">{{ row.free_item_quantity }}</span> of <span class="underline text-[var(--color-text)]">{{ row.free_item_name || row.free_item_code }}</span> 
-                          <span v-if="row.free_item_price > 0"> at <span class="font-bold font-mono text-xl">{{ format(row.free_item_price) }}</span></span>
-                          <span v-else class="text-[var(--color-success)] font-bold"> Free</span>
-                        </div>
-                      </div>
-                      
-                      <!-- Custom Logic Details -->
-                      <div v-else-if="rule.discount_type === 'Custom Logic'" class="space-y-1 pl-2 border-l-2 border-[var(--color-border)]/50">
-                        <div v-for="(tier, idx) in (rule.custom_logic_rows || [])" :key="idx" class="flex justify-between items-center">
-                          <span>Qty &ge; <span class="font-bold font-mono text-xl">{{ tier.min_quantity }}</span>:</span>
-                          <span v-if="tier.percentage > 0" class="font-bold text-[var(--color-info)] font-mono text-xl">{{ tier.percentage }}% Off</span>
-                          <span v-else-if="tier.nos > 0" class="font-bold text-[var(--color-employee)] font-mono text-xl">{{ tier.nos }} Free</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
               </div>
             </template>
 
