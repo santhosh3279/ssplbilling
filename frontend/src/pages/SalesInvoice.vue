@@ -269,6 +269,59 @@
                   </tbody>
                 </table>
               </div>
+
+              <!-- Discount Rules -->
+              <div v-if="activeItemCode && activeItemDiscountRules.length" class="border-t border-[var(--color-border)]/50 pt-2 mt-2">
+                <div class="mb-1 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider">Applicable Discount Rules:</div>
+                <div class="space-y-1.5 max-h-[120px] overflow-y-auto custom-scrollbar">
+                  <div v-for="rule in activeItemDiscountRules" :key="rule.name" class="text-sm bg-[var(--color-surface)] rounded border border-[var(--color-border)]/50 p-2 flex flex-col gap-1">
+                    <div class="font-bold text-[var(--color-text)] leading-tight flex justify-between items-center">
+                      <span class="truncate mr-2">{{ rule.rule_name }}</span>
+                      <span class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+                        :class="{
+                          'bg-[var(--color-employee)]/20 text-[var(--color-employee)]': rule.discount_type === 'Product Discount',
+                          'bg-[var(--color-warning)]/20 text-[var(--color-warning)]': rule.discount_type === 'Percentage Discount',
+                          'bg-[var(--color-info)]/20 text-[var(--color-info)]': rule.discount_type === 'Custom Logic',
+                          'bg-[var(--color-highlight)]/20 text-[var(--color-highlight)]': rule.discount_type === 'X to Y product discount'
+                        }">
+                        {{ rule.discount_type }}
+                      </span>
+                    </div>
+                    
+                    <div class="text-xs text-[var(--color-text-muted)] leading-normal space-y-0.5">
+                      <!-- Percentage Discount Details -->
+                      <div v-if="rule.discount_type === 'Percentage Discount'">
+                        <span class="font-bold text-[var(--color-warning)] font-mono">{{ rule.percentage_discount }}%</span> discount
+                        <span v-if="rule.min_quantity > 0"> on min qty <span class="font-bold font-mono">{{ rule.min_quantity }}</span></span>
+                      </div>
+                      
+                      <!-- Product Discount Details -->
+                      <div v-else-if="rule.discount_type === 'Product Discount'">
+                        Buy <span class="font-bold font-mono">{{ rule.min_quantity }}</span>, get <span class="font-bold font-mono text-[var(--color-employee)]">{{ rule.free_quantity }}</span> Free
+                        <span v-if="rule.recursive" class="text-[10px] uppercase font-bold text-[var(--color-success)] ml-1">(Recursive)</span>
+                      </div>
+                      
+                      <!-- X to Y Product Discount Details -->
+                      <div v-else-if="rule.discount_type === 'X to Y product discount'">
+                        <div v-for="(row, idx) in (rule.x_to_y_table || []).filter(r => (r.item_code || '').toLowerCase() === activeItemCode.toLowerCase())" :key="idx">
+                          Buy <span class="font-bold font-mono">{{ row.min_quantity }}</span>, get <span class="font-bold font-mono">{{ row.free_item_quantity }}</span> of <span class="underline text-[var(--color-text)]">{{ row.free_item_name || row.free_item_code }}</span> 
+                          <span v-if="row.free_item_price > 0"> at <span class="font-bold font-mono">{{ format(row.free_item_price) }}</span></span>
+                          <span v-else class="text-[var(--color-success)] font-bold"> Free</span>
+                        </div>
+                      </div>
+                      
+                      <!-- Custom Logic Details -->
+                      <div v-else-if="rule.discount_type === 'Custom Logic'" class="space-y-0.5 pl-1.5 border-l border-[var(--color-border)]/50">
+                        <div v-for="(tier, idx) in (rule.custom_logic_rows || [])" :key="idx" class="flex justify-between items-center">
+                          <span>Qty &ge; <span class="font-bold font-mono">{{ tier.min_quantity }}</span>:</span>
+                          <span v-if="tier.percentage > 0" class="font-bold text-[var(--color-info)] font-mono">{{ tier.percentage }}% Off</span>
+                          <span v-else-if="tier.nos > 0" class="font-bold text-[var(--color-employee)] font-mono">{{ tier.nos }} Free</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </template>
 
             <!-- Warehouse Stock -->
@@ -703,7 +756,7 @@ const inheritedUser = computed(() => {
 })
 
 // --- Data Fetching & State Management ---
-const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
+const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache, discountRules } = useItemCache()
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 const { 
   fetchCustomerSalesHistory, hasHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading, 
@@ -1149,6 +1202,41 @@ const activeItemCode = computed(() => {
   if (pendingItem.value) return pendingItem.value.item_code
   if (selectedRowIdx.value !== -1) return items.value[selectedRowIdx.value]?.item_code
   return null
+})
+
+const activeItemDiscountRules = computed(() => {
+  if (!activeItemCode.value || !discountRules.value || !discountRules.value.length) return []
+  const itemCode = activeItemCode.value
+  const code = itemCode.toLowerCase()
+
+  return discountRules.value.filter(rule => {
+    if (!rule.enabled) return false
+
+    // Check validity dates
+    const today = new Date().toISOString().slice(0, 10)
+    if (rule.start_date && today < rule.start_date) return false
+    if (rule.end_date   && today > rule.end_date)   return false
+
+    // Check price list restriction if any
+    if (rule.price_list && rule.price_list !== priceList.value) return false
+
+    // Check matches scope
+    if (rule.discount_type === 'X to Y product discount') {
+      const codes = (rule.x_to_y_table || []).map(i => (i.item_code || '').toLowerCase())
+      if (codes.includes(code)) return true
+    }
+    if (rule.applies_to === 'Item Code') {
+      const codes = (rule.items || []).map(i => (i.item_code || '').toLowerCase())
+      if (codes.includes(code)) return true
+    }
+    if (rule.applies_to === 'Product Group') {
+      const cached = lookupItemInCache(itemCode)
+      if (cached?.item_group && rule.product_group) {
+        if (cached.item_group.toLowerCase() === rule.product_group.toLowerCase()) return true
+      }
+    }
+    return false
+  })
 })
 
 const filteredItemPrices = computed(() => {
