@@ -392,7 +392,7 @@ const saveButtonText = computed(() => {
 onMounted(async () => {
   await fetchMetadata()
   await fetchRecentTransfers()
-  refreshItemCache('Stock')
+  refreshItemCache('Sales')
   focusFromWarehouse()
 })
 

@@ -433,7 +433,7 @@ watch(
 onMounted(async () => {
   await fetchMetadata()
   await fetchRecentRepacks()
-  refreshItemCache('Stock')
+  refreshItemCache('Sales')
   focusBarcodeInput()
 
   if (!priceLists.value.length) {

@@ -540,7 +540,7 @@ const isInitialLoad = ref(true)
 
 watch(warehouse, (newWarehouse) => {
   if (newWarehouse) {
-    refreshItemCache('Stock', null, newWarehouse)
+    refreshItemCache('Sales', null, newWarehouse)
     if (!isReadOnly.value && items.value.length === 0) {
       if (isInitialLoad.value) {
         isInitialLoad.value = false
@@ -670,7 +670,7 @@ onMounted(() => {
   fetchAllowedSeries('Stock Reconciliation')
   fetchConfig()
   fetchSidebarEntries()
-  refreshItemCache('Stock')
+  refreshItemCache('Sales')
   if (props.name) loadEntry(props.name)
 })
 </script>
