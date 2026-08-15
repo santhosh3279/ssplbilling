@@ -75,6 +75,9 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
   //   discount = N     → apply N% to disc column
 
   function _buildResult(row, rule) {
+    if (row._paid_qty === undefined || row.qty !== row._paid_qty) {
+      row._total_qty = row.qty
+    }
     const cached = lookupItemInCache(row.item_code)
     const freeBase = {
       item_code: row.item_code,
@@ -118,13 +121,30 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
     // ── Product Discount ────────────────────────────────────────────────────
     if (rule.discount_type === 'Product Discount') {
       const minQty = rule.min_quantity || 1
-      if (row.qty < minQty) return { freeRows: [], discount: null }
       const freeBase_ = rule.free_quantity || 0
-      const totalFree = rule.recursive
-        ? Math.floor(row.qty / minQty) * freeBase_
-        : freeBase_
-      if (totalFree <= 0) return { freeRows: [], discount: null }
-      return { freeRows: [{ ...freeBase, qty: totalFree }], discount: null }
+      const totalQty = row._total_qty || 0
+
+      let totalFree = 0
+      if (minQty > 0 && freeBase_ > 0) {
+        const packSize = minQty + freeBase_
+        if (rule.recursive) {
+          totalFree = Math.floor(totalQty / packSize) * freeBase_
+        } else {
+          if (totalQty >= packSize) {
+            totalFree = freeBase_
+          }
+        }
+      }
+
+      if (totalFree > 0) {
+        row.qty = totalQty - totalFree
+        row._paid_qty = row.qty
+        return { freeRows: [{ ...freeBase, qty: totalFree }], discount: null }
+      } else {
+        row.qty = totalQty
+        row._paid_qty = totalQty
+        return { freeRows: [], discount: null }
+      }
     }
 
     // ── Percentage Discount ─────────────────────────────────────────────────
@@ -179,6 +199,11 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
       row.discount = 0
       row._rule_discount = null
     }
+    if (row._total_qty !== undefined) {
+      row.qty = row._total_qty
+    }
+    delete row._paid_qty
+    delete row._total_qty
   }
 
   // ── public API ────────────────────────────────────────────────────────────

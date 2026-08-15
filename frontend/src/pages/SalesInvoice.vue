@@ -485,14 +485,14 @@
     </Item_Invoice_Template>
 
     <!-- Discount Rules Overlay Badge -->
-    <div v-if="activeItemCode && activeItemDiscountRules.length" class="fixed top-3 right-6 z-[120] flex items-center gap-3.5 bg-[var(--color-focus)]/30 backdrop-blur-md text-[var(--color-text)] border border-[var(--color-focus)]/40 rounded-2xl px-5 py-3 font-mono shrink-0 font-bold max-w-[450px] shadow-2xl">
-      <span class="text-4xl leading-none">🏷️</span>
+    <div v-if="activeItemCode && activeItemDiscountRules.length" class="fixed top-3 right-6 z-[120] flex items-center gap-5 bg-[var(--color-focus)]/30 backdrop-blur-md text-[var(--color-text)] border border-[var(--color-focus)]/40 rounded-3xl px-7 py-4.5 font-mono shrink-0 font-bold max-w-[600px] shadow-2xl">
+      <span class="text-6xl leading-none">🏷️</span>
       <div class="flex flex-col text-left leading-tight">
-        <span class="text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-sans font-black">Active Offer</span>
-        <span class="truncate font-sans font-black text-2xl text-[var(--color-text)]">
+        <span class="text-lg uppercase tracking-wider text-[var(--color-text-muted)] font-sans font-black">Active Offer</span>
+        <span class="truncate font-sans font-black text-4xl text-[var(--color-text)]">
           {{ activeItemDiscountRules[0].rule_name }}
         </span>
-        <span class="text-sm text-[var(--color-text-muted)] font-sans mt-0.5 font-normal">
+        <span class="text-xl text-[var(--color-text-muted)] font-sans mt-1.5 font-normal">
           <span v-if="activeItemDiscountRules[0].discount_type === 'Percentage Discount'">
             {{ activeItemDiscountRules[0].percentage_discount }}% Off (Min Qty: {{ activeItemDiscountRules[0].min_quantity }})
           </span>
@@ -507,7 +507,7 @@
           </span>
         </span>
       </div>
-      <span v-if="activeItemDiscountRules.length > 1" class="text-sm bg-[var(--color-midlight)]/45 text-[var(--color-text)] rounded px-1.5 py-0.5 ml-1 font-sans shrink-0 font-extrabold">
+      <span v-if="activeItemDiscountRules.length > 1" class="text-xl bg-[var(--color-midlight)]/45 text-[var(--color-text)] rounded-lg px-2 py-1 ml-1.5 font-sans shrink-0 font-extrabold">
         +{{ activeItemDiscountRules.length - 1 }}
       </span>
     </div>
