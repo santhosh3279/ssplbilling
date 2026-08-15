@@ -617,6 +617,7 @@ import AnalogueClock from '../components/AnalogueClock.vue'
 import { fetchAllowedTiles, frappeGet, frappePost } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 import { syncNamingSeries } from '../services/seriesCache.js'
+import { prefetchPrintLists } from '../services/printCache.js'
 import { useLedgerCache } from '../services/ledgerCache.js'
 import { useShortcuts, isSubwindowActive } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
@@ -1464,6 +1465,9 @@ async function syncBillingSettings(targetUser, force) {
     if (settings && settings.printer_settings) {
        localStorage.setItem('wb-printer-templates', JSON.stringify(settings.printer_settings))
     }
+
+    // Warm the Print Template / Printer lists so PrintOptionsModal opens with no round trip
+    prefetchPrintLists('Sales Invoice')
 
     // Sync Automatic Entries (single doctype) values to localStorage under ae-* keys
     if (settings && settings.automatic_entries) {

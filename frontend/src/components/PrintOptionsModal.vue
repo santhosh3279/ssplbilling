@@ -106,8 +106,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { frappeGet, frappePost } from '../api.js'
+import { frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
+import { getCachedPrintLists, refreshPrintCache, loadPrintLists } from '../services/printCache'
 
 useSubwindow()
 
@@ -264,91 +265,128 @@ onUnmounted(() => {
   })
 })
 
-async function loadSettings() {
-  loading.value = true
+// Cache-first load: when both lists are already in localStorage the modal renders
+// with no network wait at all; a stale hit still renders instantly and revalidates
+// in the background. Only a cold cache pays for a fetch, and that fetch runs both
+// requests in parallel instead of sequentially.
+function loadSettings() {
   error.value = ''
-  try {
-    const userRows = getUserPrinterSettings()
+  const cached = getCachedPrintLists(props.doctype)
 
-    // Locked template mode: template is fixed by the caller, only the printer is selectable.
-    // Output is an A4 PDF (e-Way Bill), so only PDF printers are shown — narrowed to the
-    // user's allowed printers, falling back to all PDF printers if none of theirs qualify.
-    if (props.lockTemplate && props.initialTemplate) {
-      const fetchedPrinters = await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')
-      const pdfPrinters = (fetchedPrinters || []).filter(pr => /pdf/i.test(pr.printer_name || pr.name))
-      const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
-      const filteredPrinters = pdfPrinters.filter(p => uniquePrinterNames.includes(p.name))
-      printers.value  = filteredPrinters.length ? filteredPrinters : pdfPrinters
-      templates.value = [{ name: props.initialTemplate }]
-      selectedTemplate.value = props.initialTemplate
-      syncPrinter()
-      return
-    }
-
-    // 1. Fetch all valid print templates for this doctype, including their format_type
-    //    (Thermal/PDF/Custom PDF/Barcode), so the printer list can be narrowed to printers
-    //    built for whichever format the selected template uses.
-    const validTemplates = await frappeGet('frappe.client.get_list', {
-      doctype: 'Print Template',
-      filters: { document_type: props.doctype },
-      fields: ['name', 'format_type'],
-      limit: 100
-    })
-    const validTemplateNames = validTemplates.map(f => f.name)
-    templateFormatMap.value = Object.fromEntries(validTemplates.map(t => [t.name, t.format_type]))
-
-    allPrinters.value = (await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')) || []
-
-    if (userRows.length) {
-      // 2. Filter cached user templates to only those that exist for this doctype
-      const filteredTemplates = userRows
-        .filter(r => r.template && validTemplateNames.includes(r.template))
-        .map(r => ({ name: r.template }))
-
-      // Deduplicate
-      const uniqueTemplates = [...new Map(filteredTemplates.map(t => [t.name, t])).values()]
-
-      // If no cached templates matched the doctype, fall back to all valid templates
-      templates.value = uniqueTemplates.length ? uniqueTemplates : validTemplates
-    } else {
-      // No user-specific rows — fall back to all templates for this doctype
-      templates.value = validTemplates
-    }
-
-    let initialTemplate = props.initialTemplate
-
-    try {
-      const cachedSettings = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
-      const billingSeries = cachedSettings?.data?.billing_series || []
-      
-      let matchedSeries = null
-      if (props.series) {
-        matchedSeries = billingSeries.find(bs => bs.series === props.series)
-      }
-      if (!matchedSeries && props.invoiceName) {
-        matchedSeries = billingSeries.find(bs => bs.series && props.invoiceName.startsWith(bs.series))
-      }
-
-      if (matchedSeries?.print_format) {
-        initialTemplate = matchedSeries.print_format
-      }
-    } catch (e) {
-      console.warn('[PrintOptionsModal] Failed to resolve series print template:', e)
-    }
-
-    if (initialTemplate && templates.value.some(tmp => tmp.name === initialTemplate)) {
-      selectedTemplate.value = initialTemplate
-    } else if (templates.value.length) {
-      selectedTemplate.value = templates.value[0].name
-    }
-
-    filterPrintersForTemplate(selectedTemplate.value)
-    syncPrinter()
-  } catch (e) {
-    error.value = e.message
-  } finally {
+  if (cached) {
+    applyLists(cached)
     loading.value = false
+    if (!cached.fresh) revalidate()
+    return
   }
+
+  loading.value = true
+  loadPrintLists(props.doctype)
+    .then(lists => applyLists(lists))
+    .catch(e => { error.value = e.message })
+    .finally(() => { loading.value = false })
+}
+
+// Background refresh after a stale cache hit. Must not disturb what the operator is
+// already looking at, so selections are preserved whenever they survive the new lists.
+function revalidate() {
+  refreshPrintCache(props.doctype)
+    .then(lists => applyLists(lists, true))
+    .catch(() => {
+      // stale lists are still usable; a failed revalidate is not worth an error banner
+    })
+}
+
+function applyLists({ templates: fetchedTemplates, printers: fetchedPrinters }, isRevalidate = false) {
+  const previousTemplate = selectedTemplate.value
+  const previousPrinter = selectedPrinter.value
+  const userRows = getUserPrinterSettings()
+
+  // Locked template mode: template is fixed by the caller, only the printer is selectable.
+  // Output is an A4 PDF (e-Way Bill), so only PDF printers are shown — narrowed to the
+  // user's allowed printers, falling back to all PDF printers if none of theirs qualify.
+  if (props.lockTemplate && props.initialTemplate) {
+    const pdfPrinters = (fetchedPrinters || []).filter(pr => /pdf/i.test(pr.printer_name || pr.name))
+    const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
+    const filteredPrinters = pdfPrinters.filter(p => uniquePrinterNames.includes(p.name))
+    printers.value  = filteredPrinters.length ? filteredPrinters : pdfPrinters
+    templates.value = [{ name: props.initialTemplate }]
+    selectedTemplate.value = props.initialTemplate
+    if (isRevalidate && previousPrinter && printers.value.some(pr => pr.name === previousPrinter)) {
+      selectedPrinter.value = previousPrinter
+    } else {
+      syncPrinter()
+    }
+    return
+  }
+
+  // Print Templates carry their format_type (Thermal/PDF/Custom PDF/Barcode), so the
+  // printer list can be narrowed to printers built for whichever format the selected
+  // template uses.
+  const validTemplates = fetchedTemplates || []
+  const validTemplateNames = validTemplates.map(f => f.name)
+  templateFormatMap.value = Object.fromEntries(validTemplates.map(t => [t.name, t.format_type]))
+
+  allPrinters.value = fetchedPrinters || []
+
+  if (userRows.length) {
+    // Filter cached user templates to only those that exist for this doctype
+    const filteredTemplates = userRows
+      .filter(r => r.template && validTemplateNames.includes(r.template))
+      .map(r => ({ name: r.template }))
+
+    // Deduplicate
+    const uniqueTemplates = [...new Map(filteredTemplates.map(t => [t.name, t])).values()]
+
+    // If no cached templates matched the doctype, fall back to all valid templates
+    templates.value = uniqueTemplates.length ? uniqueTemplates : validTemplates
+  } else {
+    // No user-specific rows — fall back to all templates for this doctype
+    templates.value = validTemplates
+  }
+
+  // A background revalidate keeps whatever is already selected as long as it survived
+  // the refreshed lists, so the dropdowns never jump under the operator's hands.
+  if (isRevalidate && previousTemplate && templates.value.some(tmp => tmp.name === previousTemplate)) {
+    selectedTemplate.value = previousTemplate
+    filterPrintersForTemplate(previousTemplate)
+    if (previousPrinter && printers.value.some(pr => pr.name === previousPrinter)) {
+      selectedPrinter.value = previousPrinter
+    } else {
+      syncPrinter()
+    }
+    return
+  }
+
+  let initialTemplate = props.initialTemplate
+
+  try {
+    const cachedSettings = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
+    const billingSeries = cachedSettings?.data?.billing_series || []
+
+    let matchedSeries = null
+    if (props.series) {
+      matchedSeries = billingSeries.find(bs => bs.series === props.series)
+    }
+    if (!matchedSeries && props.invoiceName) {
+      matchedSeries = billingSeries.find(bs => bs.series && props.invoiceName.startsWith(bs.series))
+    }
+
+    if (matchedSeries?.print_format) {
+      initialTemplate = matchedSeries.print_format
+    }
+  } catch (e) {
+    console.warn('[PrintOptionsModal] Failed to resolve series print template:', e)
+  }
+
+  if (initialTemplate && templates.value.some(tmp => tmp.name === initialTemplate)) {
+    selectedTemplate.value = initialTemplate
+  } else if (templates.value.length) {
+    selectedTemplate.value = templates.value[0].name
+  }
+
+  filterPrintersForTemplate(selectedTemplate.value)
+  syncPrinter()
 }
 
 async function sendPrint() {
