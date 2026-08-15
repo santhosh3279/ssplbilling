@@ -2084,8 +2084,17 @@ function finishRowEdit(idx) {
   if (item && isReturn.value) item.qty = -Math.abs(item.qty || 0)
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
 
-  const nextTarget = idx < items.value.length - 1
-    ? { type: 'row', index: idx + 1 } 
+  let nextRowIdx = -1
+  for (let j = idx + 1; j < items.value.length; j++) {
+    const nextItem = items.value[j]
+    if (nextItem && !nextItem._is_free && !nextItem.deleted) {
+      nextRowIdx = j
+      break
+    }
+  }
+
+  const nextTarget = nextRowIdx !== -1
+    ? { type: 'row', index: nextRowIdx } 
     : { type: 'barcode' }
 
   if (!detectPriceChange(item, nextTarget)) {
@@ -2644,11 +2653,21 @@ function handleCellNavigation(e, idx, field) {
         e.preventDefault()
         focusEditField(prev, idx)
         return true
-      } else if (idx > 0) {
-        e.preventDefault()
-        recalcAmount(idx)
-        focusEditField('disc', idx - 1)
-        return true
+      } else {
+        let prevRowIdx = -1
+        for (let j = idx - 1; j >= 0; j--) {
+          const pItem = items.value[j]
+          if (pItem && !pItem._is_free && !pItem.deleted) {
+            prevRowIdx = j
+            break
+          }
+        }
+        if (prevRowIdx !== -1) {
+          e.preventDefault()
+          recalcAmount(idx)
+          focusEditField('disc', prevRowIdx)
+          return true
+        }
       }
     }
   } else if (e.key === 'ArrowRight') {
@@ -2658,35 +2677,67 @@ function handleCellNavigation(e, idx, field) {
         e.preventDefault()
         focusEditField(next, idx)
         return true
-      } else if (idx < items.value.length - 1) {
-        e.preventDefault()
-        recalcAmount(idx)
-        focusEditField('code', idx + 1)
-        return true
+      } else {
+        let nextRowIdx = -1
+        for (let j = idx + 1; j < items.value.length; j++) {
+          const nextItem = items.value[j]
+          if (nextItem && !nextItem._is_free && !nextItem.deleted) {
+            nextRowIdx = j
+            break
+          }
+        }
+        if (nextRowIdx !== -1) {
+          e.preventDefault()
+          recalcAmount(idx)
+          focusEditField('code', nextRowIdx)
+          return true
+        } else {
+          e.preventDefault()
+          recalcAmount(idx)
+          exitEditMode(idx)
+          focusBarcodeInput()
+          return true
+        }
       }
     }
   } else if (e.key === 'ArrowUp') {
-    if (field !== 'uom' && idx > 0) {
+    let prevRowIdx = -1
+    for (let j = idx - 1; j >= 0; j--) {
+      const pItem = items.value[j]
+      if (pItem && !pItem._is_free && !pItem.deleted) {
+        prevRowIdx = j
+        break
+      }
+    }
+    if (field !== 'uom' && prevRowIdx !== -1) {
       e.preventDefault()
       recalcAmount(idx)
-      const targetItem = items.value[idx - 1]
+      const targetItem = items.value[prevRowIdx]
       let targetField = field
       if (targetField === 'uom' && getItemUoms(targetItem.item_code).length <= 1) {
         targetField = 'rate'
       }
-      focusEditField(targetField, idx - 1)
+      focusEditField(targetField, prevRowIdx)
       return true
     }
   } else if (e.key === 'ArrowDown') {
-    if (field !== 'uom' && idx < items.value.length - 1) {
+    let nextRowIdx = -1
+    for (let j = idx + 1; j < items.value.length; j++) {
+      const nextItem = items.value[j]
+      if (nextItem && !nextItem._is_free && !nextItem.deleted) {
+        nextRowIdx = j
+        break
+      }
+    }
+    if (field !== 'uom' && nextRowIdx !== -1) {
       e.preventDefault()
       recalcAmount(idx)
-      const targetItem = items.value[idx + 1]
+      const targetItem = items.value[nextRowIdx]
       let targetField = field
       if (targetField === 'uom' && getItemUoms(targetItem.item_code).length <= 1) {
         targetField = 'rate'
       }
-      focusEditField(targetField, idx + 1)
+      focusEditField(targetField, nextRowIdx)
       return true
     }
   }
