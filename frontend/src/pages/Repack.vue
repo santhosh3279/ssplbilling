@@ -131,7 +131,7 @@
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom }}</td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl text-[var(--color-text)]/80 tabular-nums bg-transparent">
-            {{ formatRate(getPriceListRate(item, 'Standard Buying')) }}
+            {{ formatRate(getPriceListRate(item, 'Buying')) }}
           </td>
           <td class="p-0 border-r border-[var(--color-border)]">
             <input 
@@ -191,7 +191,7 @@
             </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ pendingItem.uom || 'Nos' }}</td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl text-[var(--color-text)]/70 tabular-nums bg-transparent">
-              {{ formatRate(getPriceListRate(pendingItem, 'Standard Buying')) }}
+              {{ formatRate(getPriceListRate(pendingItem, 'Buying')) }}
             </td>
             <td class="p-0 border-r border-[var(--color-border)]">
               <input
