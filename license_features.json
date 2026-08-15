@@ -5,12 +5,14 @@
     "granting one id unlocks every page listed under it in 'pages_by_feature'.",
     "A page whose feature is null is never checked against the licence.",
     "Generated from frontend/src/router.js, frontend/src/composables/usePermission.js",
-    "and DASHBOARD_TILES in ssplbilling/setup.py \u2014 regenerate after adding a page.",
-    "Use [\"*\"] to grant everything, including pages added later."
+    "and DASHBOARD_TILES in ssplbilling/setup.py — regenerate after adding a page.",
+    "Use [\"*\"] to grant everything, including pages added later.",
+    "features_by_category groups the same ids in \"features\" for licence picking; \"features\" itself stays a flat sorted array because the signature is computed over it."
   ],
   "wildcard": "*",
   "page_count": 63,
   "feature_count": 51,
+  "category_count": 8,
   "features": [
     "Cashier-Management",
     "account-tree",
@@ -64,6 +66,390 @@
     "store-wise-item-sales",
     "unreconciled"
   ],
+  "features_by_category": {
+    "Sales & Customers": [
+      {
+        "id": "sales",
+        "name": "Sales Invoice",
+        "pages": [
+          "SalesInvoice"
+        ]
+      },
+      {
+        "id": "sales-order",
+        "name": "Sales Order",
+        "pages": [
+          "SalesOrderEntry"
+        ]
+      },
+      {
+        "id": "quotation",
+        "name": "Quotation",
+        "pages": [
+          "Quotation"
+        ]
+      },
+      {
+        "id": "ledger",
+        "name": "Customer Ledger",
+        "pages": [
+          "CustomerLedger"
+        ]
+      },
+      {
+        "id": "cheques",
+        "name": "Cheque Register",
+        "pages": [
+          "ChequeRegister"
+        ]
+      },
+      {
+        "id": "customer-enquiry",
+        "name": "Customer Enquiry",
+        "pages": [
+          "CustomerEnquiry"
+        ]
+      },
+      {
+        "id": "offer-display",
+        "name": "Offer Display",
+        "pages": [
+          "OfferDisplay"
+        ]
+      },
+      {
+        "id": "catelogue",
+        "name": "Catalogue",
+        "pages": [
+          "Catelogue"
+        ]
+      }
+    ],
+    "Purchase & Suppliers": [
+      {
+        "id": "purchase-invoice",
+        "name": "Purchase Invoice",
+        "pages": [
+          "PurchaseInvoice",
+          "PriceListUpdate"
+        ]
+      },
+      {
+        "id": "purchase-submit",
+        "name": "Purchase Desk",
+        "pages": [
+          "PurchaseSubmit"
+        ]
+      },
+      {
+        "id": "purchase-order",
+        "name": "Purchase Order",
+        "pages": [
+          "PurchaseOrder"
+        ]
+      },
+      {
+        "id": "land-cost-voucher",
+        "name": "Landed Cost Voucher",
+        "pages": [
+          "LandCostVoucher"
+        ]
+      }
+    ],
+    "HRMS & Employees": [
+      {
+        "id": "hrms",
+        "name": "HRMS Dashboard",
+        "pages": [
+          "Hrms",
+          "Employees",
+          "EsslMachines",
+          "EsslMapping",
+          "EsslAttendance",
+          "DeviceUsers",
+          "AttendanceChart",
+          "ShiftRoaster"
+        ]
+      },
+      {
+        "id": "employee",
+        "name": "Employee Directory",
+        "pages": [
+          "Employee"
+        ]
+      }
+    ],
+    "Cashier & Financials": [
+      {
+        "id": "cashier",
+        "name": "Cashier Desk",
+        "pages": [
+          "CashierDesk"
+        ]
+      },
+      {
+        "id": "Cashier-Management",
+        "name": "Cashier Management",
+        "pages": [
+          "CashierManagement"
+        ]
+      },
+      {
+        "id": "general-ledger",
+        "name": "General Ledger",
+        "pages": [
+          "GeneralLedger"
+        ]
+      },
+      {
+        "id": "journal-contra",
+        "name": "Journal Contra",
+        "pages": [
+          "JournalContraEntry"
+        ]
+      },
+      {
+        "id": "payment",
+        "name": "Payment Receipt",
+        "pages": [
+          "Payment"
+        ]
+      },
+      {
+        "id": "expense",
+        "name": "Cash Box Entry",
+        "pages": [
+          "Expense"
+        ]
+      },
+      {
+        "id": "single-entry",
+        "name": "Single Entry",
+        "pages": [
+          "SingleEntry"
+        ]
+      },
+      {
+        "id": "account-tree",
+        "name": "Chart of Accounts",
+        "pages": [
+          "AccountTree"
+        ]
+      },
+      {
+        "id": "cancellation",
+        "name": "Cancellation",
+        "pages": [
+          "Cancellation"
+        ]
+      },
+      {
+        "id": "unreconciled",
+        "name": "Unreconciled Entries",
+        "pages": [
+          "Unreconciled"
+        ]
+      }
+    ],
+    "Inventory & Stock": [
+      {
+        "id": "stock-reconciliation",
+        "name": "Stock Reconciliation",
+        "pages": [
+          "StockReconciliation"
+        ]
+      },
+      {
+        "id": "store-transfer",
+        "name": "Store Transfer",
+        "pages": [
+          "StoreTransfer"
+        ]
+      },
+      {
+        "id": "repack",
+        "name": "Repack Entry",
+        "pages": [
+          "Repack"
+        ]
+      },
+      {
+        "id": "pricing-rules",
+        "name": "Discount Rules (Pricing Rules)",
+        "pages": [
+          "DiscountRule"
+        ]
+      },
+      {
+        "id": "barcode-print",
+        "name": "Print Barcodes",
+        "pages": [
+          "BarcodePrintPage"
+        ]
+      },
+      {
+        "id": "loading-receipt",
+        "name": "Loading Receipt",
+        "pages": [
+          "LoadingReceipt"
+        ]
+      },
+      {
+        "id": "parcel-address",
+        "name": "Parcel Address",
+        "pages": [
+          "ParcelAddress"
+        ]
+      }
+    ],
+    "Tax & Reporting": [
+      {
+        "id": "gst-dummy-ledger",
+        "name": "WGB Payments (GST Dummy Ledger)",
+        "pages": [
+          "GstDummyLedger"
+        ]
+      },
+      {
+        "id": "gst-ledger",
+        "name": "GST Ledger",
+        "pages": [
+          "GstLedger"
+        ]
+      },
+      {
+        "id": "daily-report",
+        "name": "Daily Report",
+        "pages": [
+          "DailyReport"
+        ]
+      },
+      {
+        "id": "reports",
+        "name": "Reports",
+        "pages": [
+          "Reports",
+          "CashflowReport"
+        ]
+      },
+      {
+        "id": "store-sale-report",
+        "name": "Store Sale Report",
+        "pages": [
+          "StoreSalesReport"
+        ]
+      },
+      {
+        "id": "cost-center-sale-report",
+        "name": "Cost Center Sale Report",
+        "pages": [
+          "CostCenterSalesReport"
+        ]
+      },
+      {
+        "id": "stock-status-report",
+        "name": "Stock Status Report",
+        "pages": [
+          "StockStatusReport"
+        ]
+      },
+      {
+        "id": "stock-aging-report",
+        "name": "Stock Aging Report",
+        "pages": [
+          "StockAgingReport"
+        ]
+      },
+      {
+        "id": "outstanding-customers-report",
+        "name": "Outstanding Customers Report",
+        "pages": [
+          "OutstandingCustomersReport"
+        ]
+      },
+      {
+        "id": "ledger-sales-purchase-report",
+        "name": "Ledger Sales & Purchase",
+        "pages": [
+          "LedgerSalesPurchaseReport"
+        ]
+      },
+      {
+        "id": "item-sales-summary",
+        "name": "Item Sales Summary",
+        "pages": [
+          "ItemSalesSummary"
+        ]
+      },
+      {
+        "id": "store-wise-item-sales",
+        "name": "Store Wise Item Sales",
+        "pages": [
+          "StoreWiseItemSales"
+        ]
+      },
+      {
+        "id": "fast-moving-items",
+        "name": "Fast Moving Items",
+        "pages": [
+          "FastMovingItems"
+        ]
+      },
+      {
+        "id": "material-transfer-report",
+        "name": "Material Transfer Report",
+        "pages": [
+          "MaterialTransferReport"
+        ]
+      },
+      {
+        "id": "batch-reports",
+        "name": "Batch Reports",
+        "pages": [
+          "BatchReports"
+        ]
+      }
+    ],
+    "Incentives": [
+      {
+        "id": "incentive-ledger",
+        "name": "Incentive Ledger",
+        "pages": [
+          "IncentiveLedger"
+        ]
+      },
+      {
+        "id": "incentive-redeem",
+        "name": "Incentive Redeem",
+        "pages": [
+          "IncentiveRedeem"
+        ]
+      },
+      {
+        "id": "incentive-entry",
+        "name": "Incentive Entry",
+        "pages": [
+          "IncentiveEntry"
+        ]
+      }
+    ],
+    "System Settings": [
+      {
+        "id": "ssplbillingsettings",
+        "name": "SSPL Billing Settings",
+        "pages": [
+          "SSPLBillingSettings"
+        ]
+      },
+      {
+        "id": "naming-settings",
+        "name": "Naming Settings",
+        "pages": [
+          "NamingSettings"
+        ]
+      }
+    ]
+  },
   "pages": [
     {
       "page": "Hrms",
@@ -72,7 +458,8 @@
       "feature": "hrms",
       "feature_label": "HRMS Dashboard",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "HRMS & Employees"
     },
     {
       "page": "Employee",
@@ -81,7 +468,8 @@
       "feature": "employee",
       "feature_label": "Employee Directory",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "HRMS & Employees"
     },
     {
       "page": "Employees",
@@ -90,7 +478,8 @@
       "feature": "hrms",
       "feature_label": "HRMS Dashboard",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "HRMS & Employees"
     },
     {
       "page": "EsslMachines",
@@ -99,7 +488,8 @@
       "feature": "hrms",
       "feature_label": "HRMS Dashboard",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "HRMS & Employees"
     },
     {
       "page": "EsslMapping",
@@ -108,7 +498,8 @@
       "feature": "hrms",
       "feature_label": "HRMS Dashboard",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "HRMS & Employees"
     },
     {
       "page": "EsslAttendance",
@@ -117,7 +508,8 @@
       "feature": "hrms",
       "feature_label": "HRMS Dashboard",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "HRMS & Employees"
     },
     {
       "page": "DeviceUsers",
@@ -126,7 +518,8 @@
       "feature": "hrms",
       "feature_label": "HRMS Dashboard",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "HRMS & Employees"
     },
     {
       "page": "AttendanceChart",
@@ -135,7 +528,8 @@
       "feature": "hrms",
       "feature_label": "HRMS Dashboard",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "HRMS & Employees"
     },
     {
       "page": "ShiftRoaster",
@@ -144,7 +538,8 @@
       "feature": "hrms",
       "feature_label": "HRMS Dashboard",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "HRMS & Employees"
     },
     {
       "page": "OfferDisplay",
@@ -153,7 +548,8 @@
       "feature": "offer-display",
       "feature_label": "Offer Display",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Sales & Customers"
     },
     {
       "page": "Expense",
@@ -162,14 +558,16 @@
       "feature": "expense",
       "feature_label": "Cash Box Entry",
       "bucket": "Accounts",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials"
     },
     {
       "page": "Login",
       "path": "/login",
       "title": "Login",
       "feature": null,
-      "note": "Always available \u2014 no licence check"
+      "note": "Always available — no licence check",
+      "category": null
     },
     {
       "page": "NamingSettings",
@@ -178,7 +576,8 @@
       "feature": "naming-settings",
       "feature_label": "Naming Settings",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "System Settings"
     },
     {
       "page": "Cancellation",
@@ -187,7 +586,8 @@
       "feature": "cancellation",
       "feature_label": "Cancellation",
       "bucket": "Sale",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials"
     },
     {
       "page": "SingleEntry",
@@ -196,7 +596,8 @@
       "feature": "single-entry",
       "feature_label": "Single Entry",
       "bucket": "Accounts",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials"
     },
     {
       "page": "StoreTransfer",
@@ -205,7 +606,8 @@
       "feature": "store-transfer",
       "feature_label": "Store Transfer",
       "bucket": "Stock",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Inventory & Stock"
     },
     {
       "page": "Repack",
@@ -214,7 +616,8 @@
       "feature": "repack",
       "feature_label": "Repack Entry",
       "bucket": "Stock",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Inventory & Stock"
     },
     {
       "page": "LandCostVoucher",
@@ -223,7 +626,8 @@
       "feature": "land-cost-voucher",
       "feature_label": "Landed Cost Voucher",
       "bucket": "Stock",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Purchase & Suppliers"
     },
     {
       "page": "DailyReport",
@@ -232,7 +636,8 @@
       "feature": "daily-report",
       "feature_label": "Daily Report",
       "bucket": "Report",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Tax & Reporting"
     },
     {
       "page": "GeneralLedger",
@@ -241,7 +646,8 @@
       "feature": "general-ledger",
       "feature_label": "General Ledger",
       "bucket": "Ledger View",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials"
     },
     {
       "page": "SSPLBillingSettings",
@@ -250,14 +656,16 @@
       "feature": "ssplbillingsettings",
       "feature_label": "",
       "bucket": "",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "System Settings"
     },
     {
       "page": "Dashboard",
       "path": "/",
       "title": "Dashboard",
       "feature": null,
-      "note": "Always available \u2014 no licence check"
+      "note": "Always available — no licence check",
+      "category": null
     },
     {
       "page": "SalesInvoice",
@@ -266,7 +674,8 @@
       "feature": "sales",
       "feature_label": "Sales Invoice",
       "bucket": "Sale",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Sales & Customers"
     },
     {
       "page": "Quotation",
@@ -275,7 +684,8 @@
       "feature": "quotation",
       "feature_label": "Quotation",
       "bucket": "Sale",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Sales & Customers"
     },
     {
       "page": "PurchaseInvoice",
@@ -284,7 +694,8 @@
       "feature": "purchase-invoice",
       "feature_label": "Purchase Invoice",
       "bucket": "Purchase",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Purchase & Suppliers"
     },
     {
       "page": "PriceListUpdate",
@@ -293,7 +704,8 @@
       "feature": "purchase-invoice",
       "feature_label": "Purchase Invoice",
       "bucket": "Purchase",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Purchase & Suppliers"
     },
     {
       "page": "BarcodePrintPage",
@@ -302,7 +714,8 @@
       "feature": "barcode-print",
       "feature_label": "Print Barcodes",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Inventory & Stock"
     },
     {
       "page": "CashierDesk",
@@ -311,7 +724,8 @@
       "feature": "cashier",
       "feature_label": "Cashier Desk",
       "bucket": "Sale",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials"
     },
     {
       "page": "PurchaseSubmit",
@@ -320,7 +734,8 @@
       "feature": "purchase-submit",
       "feature_label": "Purchase Desk",
       "bucket": "Purchase",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Purchase & Suppliers"
     },
     {
       "page": "CustomerLedger",
@@ -329,7 +744,8 @@
       "feature": "ledger",
       "feature_label": "Customer Ledger",
       "bucket": "Ledger View",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Sales & Customers"
     },
     {
       "page": "JournalContraEntry",
@@ -338,7 +754,8 @@
       "feature": "journal-contra",
       "feature_label": "Journal Contra",
       "bucket": "Accounts",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials"
     },
     {
       "page": "Payment",
@@ -347,7 +764,8 @@
       "feature": "payment",
       "feature_label": "Payment Receipt",
       "bucket": "Accounts",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials"
     },
     {
       "page": "StockReconciliation",
@@ -356,7 +774,8 @@
       "feature": "stock-reconciliation",
       "feature_label": "Stock Reconciliation",
       "bucket": "Stock",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Inventory & Stock"
     },
     {
       "page": "CashierManagement",
@@ -365,7 +784,8 @@
       "feature": "Cashier-Management",
       "feature_label": "Cashier Management",
       "bucket": "Sale",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials"
     },
     {
       "page": "DiscountRule",
@@ -374,7 +794,8 @@
       "feature": "pricing-rules",
       "feature_label": "Discount Rules",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Inventory & Stock"
     },
     {
       "page": "PurchaseOrder",
@@ -383,7 +804,8 @@
       "feature": "purchase-order",
       "feature_label": "Purchase Order",
       "bucket": "Purchase",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Purchase & Suppliers"
     },
     {
       "page": "SalesOrderEntry",
@@ -392,7 +814,8 @@
       "feature": "sales-order",
       "feature_label": "Sales Order",
       "bucket": "Sale",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Sales & Customers"
     },
     {
       "page": "IncentiveLedger",
@@ -401,7 +824,8 @@
       "feature": "incentive-ledger",
       "feature_label": "Incentive Ledger",
       "bucket": "Ledger View",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Incentives"
     },
     {
       "page": "IncentiveRedeem",
@@ -410,7 +834,8 @@
       "feature": "incentive-redeem",
       "feature_label": "Incentive Redeem",
       "bucket": "Accounts",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Incentives"
     },
     {
       "page": "IncentiveEntry",
@@ -419,7 +844,8 @@
       "feature": "incentive-entry",
       "feature_label": "Incentive Entry",
       "bucket": "Accounts",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Incentives"
     },
     {
       "page": "Reports",
@@ -428,7 +854,8 @@
       "feature": "reports",
       "feature_label": "Reports",
       "bucket": "Report",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Tax & Reporting"
     },
     {
       "page": "StoreSalesReport",
@@ -437,7 +864,8 @@
       "feature": "store-sale-report",
       "feature_label": "Store Sale Report",
       "bucket": "Report",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Tax & Reporting"
     },
     {
       "page": "CostCenterSalesReport",
@@ -446,7 +874,8 @@
       "feature": "cost-center-sale-report",
       "feature_label": "Cost Center Sale Report",
       "bucket": "Report",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Tax & Reporting"
     },
     {
       "page": "StockStatusReport",
@@ -455,7 +884,8 @@
       "feature": "stock-status-report",
       "feature_label": "",
       "bucket": "",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "Tax & Reporting"
     },
     {
       "page": "StockAgingReport",
@@ -464,7 +894,8 @@
       "feature": "stock-aging-report",
       "feature_label": "",
       "bucket": "",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "Tax & Reporting"
     },
     {
       "page": "OutstandingCustomersReport",
@@ -473,7 +904,8 @@
       "feature": "outstanding-customers-report",
       "feature_label": "",
       "bucket": "",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "Tax & Reporting"
     },
     {
       "page": "LedgerSalesPurchaseReport",
@@ -482,7 +914,8 @@
       "feature": "ledger-sales-purchase-report",
       "feature_label": "",
       "bucket": "",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "Tax & Reporting"
     },
     {
       "page": "ItemSalesSummary",
@@ -491,7 +924,8 @@
       "feature": "item-sales-summary",
       "feature_label": "",
       "bucket": "",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "Tax & Reporting"
     },
     {
       "page": "StoreWiseItemSales",
@@ -500,7 +934,8 @@
       "feature": "store-wise-item-sales",
       "feature_label": "",
       "bucket": "",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "Tax & Reporting"
     },
     {
       "page": "FastMovingItems",
@@ -509,7 +944,8 @@
       "feature": "fast-moving-items",
       "feature_label": "",
       "bucket": "",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "Tax & Reporting"
     },
     {
       "page": "MaterialTransferReport",
@@ -518,7 +954,8 @@
       "feature": "material-transfer-report",
       "feature_label": "",
       "bucket": "",
-      "has_dashboard_tile": false
+      "has_dashboard_tile": false,
+      "category": "Tax & Reporting"
     },
     {
       "page": "CashflowReport",
@@ -527,7 +964,8 @@
       "feature": "reports",
       "feature_label": "Reports",
       "bucket": "Report",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Tax & Reporting"
     },
     {
       "page": "LoadingReceipt",
@@ -536,7 +974,8 @@
       "feature": "loading-receipt",
       "feature_label": "Loading Receipt",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Inventory & Stock"
     },
     {
       "page": "CustomerEnquiry",
@@ -545,7 +984,8 @@
       "feature": "customer-enquiry",
       "feature_label": "Customer Enquiry",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Sales & Customers"
     },
     {
       "page": "ParcelAddress",
@@ -554,7 +994,8 @@
       "feature": "parcel-address",
       "feature_label": "Parcel Address",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Inventory & Stock"
     },
     {
       "page": "GstDummyLedger",
@@ -563,7 +1004,8 @@
       "feature": "gst-dummy-ledger",
       "feature_label": "WGB Payments",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Tax & Reporting"
     },
     {
       "page": "GstLedger",
@@ -572,14 +1014,16 @@
       "feature": "gst-ledger",
       "feature_label": "GST Ledger",
       "bucket": "Ledger View",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Tax & Reporting"
     },
     {
       "page": "OfferPage",
       "path": "/offer/:pageaddress",
       "title": "Offers",
       "feature": null,
-      "note": "Not licence gated (role / tile access only)"
+      "note": "Not licence gated (role / tile access only)",
+      "category": null
     },
     {
       "page": "Catelogue",
@@ -588,7 +1032,8 @@
       "feature": "catelogue",
       "feature_label": "Catalogues",
       "bucket": "SSPL Special",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Sales & Customers"
     },
     {
       "page": "Unreconciled",
@@ -597,7 +1042,8 @@
       "feature": "unreconciled",
       "feature_label": "Unreconciled Entries",
       "bucket": "Accounts",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials"
     },
     {
       "page": "ChequeRegister",
@@ -606,7 +1052,8 @@
       "feature": "cheques",
       "feature_label": "Cheque Register",
       "bucket": "Accounts",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Sales & Customers"
     },
     {
       "page": "AccountTree",
@@ -615,7 +1062,8 @@
       "feature": "account-tree",
       "feature_label": "Chart of Accounts",
       "bucket": "Accounts",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials"
     },
     {
       "page": "BatchReports",
@@ -624,7 +1072,8 @@
       "feature": "batch-reports",
       "feature_label": "Batch Reports",
       "bucket": "Report",
-      "has_dashboard_tile": true
+      "has_dashboard_tile": true,
+      "category": "Tax & Reporting"
     }
   ],
   "pages_by_feature": {
@@ -814,7 +1263,7 @@
     "optional_suffixes": "Appended only when present, in this order: |<max_tabs> |<customer_name> |<watch_text>",
     "notes": [
       "expiry_date empty or missing means the licence never expires; it is normalised to \"\" in the message.",
-      "max_tabs must be omitted entirely for unlimited \u2014 0 is a real cap that blocks every tab.",
+      "max_tabs must be omitted entirely for unlimited — 0 is a real cap that blocks every tab.",
       "signature \"bypass\" or \"bypass_verification\" skips verification.",
       "The site value must equal the active Frappe site name or the licence is rejected.",
       "A feature id also controls whether its dashboard tile is shown, when it has one."
