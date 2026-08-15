@@ -1123,7 +1123,10 @@ function openInvoiceDetail(voucherType, voucherNo) {
 function openLedgerPrint() {
   if (!ledgerData.value) return
   printModalInvoiceName.value = ledgerData.value.party
-  printModalDoctype.value = 'General Ledger'
+  // The ledger print formats (Customer Ledger / Customer Ledger Thermal) are stored with
+  // an empty document_type, so 'General Ledger' matched no templates at all and the dialog
+  // opened with an empty dropdown. GstLedger already passes '' for the same reason.
+  printModalDoctype.value = ''
   printModalVisible.value = true
 }
 
