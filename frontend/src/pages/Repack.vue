@@ -341,15 +341,38 @@ try {
 
 function getPriceListRate(item, priceListName) {
   if (!item) return 0.0
+  
   if (item.price_lists) {
     const pl = item.price_lists.find(p => p.name === priceListName)
     if (pl) return pl.rate
   }
-  const cached = lookupItemInCache(item.item_code)
-  if (cached && cached.price_lists) {
-    const pl = cached.price_lists.find(p => p.name === priceListName)
-    if (pl) return pl.rate
+  
+  if (item.uom_price_lists?.[priceListName]) {
+    const targetUom = item.uom || 'Nos'
+    if (item.uom_price_lists[priceListName][targetUom] != null) {
+      return item.uom_price_lists[priceListName][targetUom]
+    }
+    const rates = Object.values(item.uom_price_lists[priceListName])
+    if (rates.length) return rates[0]
   }
+  
+  const cached = lookupItemInCache(item.item_code)
+  if (cached) {
+    if (cached.uom_price_lists?.[priceListName]) {
+      const targetUom = item.uom || cached.uom || 'Nos'
+      if (cached.uom_price_lists[priceListName][targetUom] != null) {
+        return cached.uom_price_lists[priceListName][targetUom]
+      }
+      const rates = Object.values(cached.uom_price_lists[priceListName])
+      if (rates.length) return rates[0]
+    }
+    
+    if (cached.price_lists) {
+      const pl = cached.price_lists.find(p => p.name === priceListName)
+      if (pl) return pl.rate
+    }
+  }
+  
   return 0.0
 }
 
