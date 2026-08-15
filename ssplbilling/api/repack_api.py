@@ -51,8 +51,11 @@ def save_repack(data):
     se.from_warehouse = data.get("from_warehouse")  # Default Source
     se.to_warehouse = data.get("to_warehouse")      # Default Destination
 
+    items_list = data.get("items") or []
+    fg_count = sum(1 for row in items_list if row.get("type") == "Produce")
+
     se.items = []
-    for row in data.get("items") or []:
+    for row in items_list:
         is_consume = row.get("type") == "Consume"
         s_wh = row.get("s_warehouse") or (se.from_warehouse if is_consume else None)
         t_wh = row.get("t_warehouse") or (se.to_warehouse if not is_consume else None)
@@ -65,14 +68,18 @@ def save_repack(data):
         else:
             s_wh = None
 
-        se.append("items", {
+        item_doc = {
             "item_code": row.get("item_code"),
             "qty": float(row.get("qty") or 0),
             "uom": row.get("uom"),
             "s_warehouse": s_wh,
             "t_warehouse": t_wh,
             "basic_rate": float(row.get("rate") or 0)
-        })
+        }
+        if not is_consume and fg_count > 1:
+            item_doc["set_basic_rate_manually"] = 1
+        
+        se.append("items", item_doc)
 
     if name:
         se.save()

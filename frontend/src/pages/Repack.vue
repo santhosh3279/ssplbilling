@@ -101,6 +101,7 @@
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)]">Item Name</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">Qty</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">UOM</th>
+          <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Rate</th>
           <th v-for="pl in priceLists" :key="pl" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-36">{{ pl }}</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-center text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-36">Type</th>
           <th class="border-b border-[var(--color-border)] w-12"></th>
@@ -122,11 +123,25 @@
               v-model.number="item.qty"
               type="number"
               class="w-full bg-transparent px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @keydown.up.prevent
+              @keydown.down.prevent
               @keydown.enter.prevent="focusType(index)"
             />
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums">{{ item.qty }}</span>
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom }}</td>
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <input 
+              v-if="!isReadOnly"
+              v-model.number="item.rate"
+              type="number"
+              step="0.01"
+              class="w-full bg-transparent px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @keydown.up.prevent
+              @keydown.down.prevent
+            />
+            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums">{{ formatRate(item.rate) }}</span>
+          </td>
           <td v-for="pl in priceLists" :key="pl" class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl text-[var(--color-text)]/80 tabular-nums bg-transparent">
             {{ formatRate(getPriceListRate(item, pl)) }}
           </td>
@@ -169,10 +184,22 @@
                 v-model.number="pendingItem.qty"
                 type="number"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+                @keydown.up.prevent
+                @keydown.down.prevent
                 @keydown="handlePendingQtyKeydown"
               />
             </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ pendingItem.uom || 'Nos' }}</td>
+            <td class="p-0 border-r border-[var(--color-border)]">
+              <input
+                v-model.number="pendingItem.rate"
+                type="number"
+                step="0.01"
+                class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+                @keydown.up.prevent
+                @keydown.down.prevent
+              />
+            </td>
             <td v-for="pl in priceLists" :key="pl" class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl text-[var(--color-text)]/70 tabular-nums bg-transparent">
               {{ formatRate(getPriceListRate(pendingItem, pl)) }}
             </td>
