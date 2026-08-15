@@ -76,34 +76,6 @@
       <!-- Custom slots for additional logic if needed -->
       <template #header-right>
         <div class="flex items-center gap-4">
-          <!-- Discount Rules Banner -->
-          <div v-if="activeItemCode && activeItemDiscountRules.length" class="flex items-center gap-2.5 bg-[var(--color-warning)]/15 text-[var(--color-warning)] border border-[var(--color-warning)]/40 rounded-xl px-4 py-2 font-mono shrink-0 font-bold max-w-[400px] shadow-sm">
-            <span class="text-3xl">🏷️</span>
-            <div class="flex flex-col text-left leading-tight">
-              <span class="text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-sans">Active Offer</span>
-              <span class="truncate font-sans font-black text-2xl text-[var(--color-text)]">
-                {{ activeItemDiscountRules[0].rule_name }}
-              </span>
-              <span class="text-sm text-[var(--color-text-muted)] font-sans mt-0.5 font-normal">
-                <span v-if="activeItemDiscountRules[0].discount_type === 'Percentage Discount'">
-                  {{ activeItemDiscountRules[0].percentage_discount }}% Off (Min Qty: {{ activeItemDiscountRules[0].min_quantity }})
-                </span>
-                <span v-else-if="activeItemDiscountRules[0].discount_type === 'Product Discount'">
-                  Buy {{ activeItemDiscountRules[0].min_quantity }} Get {{ activeItemDiscountRules[0].free_quantity }} Free
-                </span>
-                <span v-else-if="activeItemDiscountRules[0].discount_type === 'X to Y product discount'">
-                  X to Y Offer Active
-                </span>
-                <span v-else-if="activeItemDiscountRules[0].discount_type === 'Custom Logic'">
-                  Tiered Offer Active
-                </span>
-              </span>
-            </div>
-            <span v-if="activeItemDiscountRules.length > 1" class="text-sm bg-[var(--color-midlight)]/45 text-[var(--color-text)] rounded px-1.5 py-0.5 ml-1 font-sans shrink-0 font-extrabold">
-              +{{ activeItemDiscountRules.length - 1 }}
-            </span>
-          </div>
-
           <div v-if="ewaybill" class="flex items-center gap-2 bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 rounded-xl px-4 py-1.5 font-mono text-2xl shrink-0 font-bold">
             E-Way Bill: {{ ewaybill }} ({{ ewaybillStatus }})
           </div>
@@ -511,6 +483,34 @@
         </template>
       </template>
     </Item_Invoice_Template>
+
+    <!-- Discount Rules Overlay Badge -->
+    <div v-if="activeItemCode && activeItemDiscountRules.length" class="fixed top-20 right-6 z-[120] flex items-center gap-3.5 bg-[var(--color-bg)]/90 backdrop-blur-md text-[var(--color-warning)] border border-[var(--color-warning)]/40 rounded-2xl px-5 py-3 font-mono shrink-0 font-bold max-w-[450px] shadow-2xl">
+      <span class="text-4xl leading-none">🏷️</span>
+      <div class="flex flex-col text-left leading-tight">
+        <span class="text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-sans font-black">Active Offer</span>
+        <span class="truncate font-sans font-black text-2xl text-[var(--color-text)]">
+          {{ activeItemDiscountRules[0].rule_name }}
+        </span>
+        <span class="text-sm text-[var(--color-text-muted)] font-sans mt-0.5 font-normal">
+          <span v-if="activeItemDiscountRules[0].discount_type === 'Percentage Discount'">
+            {{ activeItemDiscountRules[0].percentage_discount }}% Off (Min Qty: {{ activeItemDiscountRules[0].min_quantity }})
+          </span>
+          <span v-else-if="activeItemDiscountRules[0].discount_type === 'Product Discount'">
+            Buy {{ activeItemDiscountRules[0].min_quantity }} Get {{ activeItemDiscountRules[0].free_quantity }} Free
+          </span>
+          <span v-else-if="activeItemDiscountRules[0].discount_type === 'X to Y product discount'">
+            X to Y Offer Active
+          </span>
+          <span v-else-if="activeItemDiscountRules[0].discount_type === 'Custom Logic'">
+            Tiered Offer Active
+          </span>
+        </span>
+      </div>
+      <span v-if="activeItemDiscountRules.length > 1" class="text-sm bg-[var(--color-midlight)]/45 text-[var(--color-text)] rounded px-1.5 py-0.5 ml-1 font-sans shrink-0 font-extrabold">
+        +{{ activeItemDiscountRules.length - 1 }}
+      </span>
+    </div>
 
     <QuickItemSearch
       ref="quickSearchRef"
