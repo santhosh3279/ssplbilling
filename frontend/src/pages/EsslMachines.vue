@@ -162,6 +162,7 @@
                   <th class="px-6 py-4">Serial Number</th>
                   <th class="px-6 py-4">Comm Key</th>
                   <th class="px-6 py-4">Store</th>
+                  <th class="px-6 py-4">Active</th>
                   <th class="px-6 py-4">Last Updated</th>
                   <th class="px-6 py-4 text-right">Actions</th>
                 </tr>
@@ -185,6 +186,17 @@
                   <td class="px-6 py-4 font-bold">
                     {{ machine.store || '—' }}
                   </td>
+                  <!-- Inactive machines stay listed so they can be switched back on -->
+                  <td class="px-6 py-4">
+                    <span
+                      class="rounded-xl border px-3 py-1.5 text-xs font-bold uppercase tracking-wider"
+                      :class="machine.is_active
+                        ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-500'
+                        : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'"
+                    >
+                      {{ machine.is_active ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
                   <td class="px-6 py-4 font-mono text-xs text-[var(--color-text-muted)]">
                     {{ formatDate(machine.modified) }}
                   </td>
@@ -204,7 +216,7 @@
                   </td>
                 </tr>
                 <tr v-if="filteredMachines.length === 0 && !loading">
-                  <td colspan="6" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
+                  <td colspan="7" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
                     No eSSL machines matching the filters were found.
                   </td>
                 </tr>
@@ -253,6 +265,20 @@
               class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
               @keyup.enter="saveMachine"
             />
+          </div>
+
+          <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                v-model="newMachine.is_active"
+                type="checkbox"
+                class="h-4 w-4 accent-[var(--color-employee)]"
+              />
+              <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text)]">Active</span>
+            </label>
+            <p class="mt-1 text-[11px] text-[var(--color-text-muted)]">
+              Only active machines are pulled by Sync Attendance and by the scheduled auto sync.
+            </p>
           </div>
 
           <div>
@@ -381,7 +407,7 @@ const fromDate = ref(defaultFromDate())
 const showCreator = ref(false)
 const saving = ref(false)
 const creatorError = ref('')
-const newMachine = ref({ name: '', ip_address: '', store: '', comm_key: '', serial_number: '' })
+const newMachine = ref({ name: '', ip_address: '', store: '', comm_key: '', serial_number: '', is_active: true })
 
 const probing = ref(false)
 const settingTime = ref(false)
@@ -567,7 +593,7 @@ function resetDeviceProbe() {
 }
 
 function openCreator() {
-  newMachine.value = { name: '', ip_address: '', store: '', comm_key: '', serial_number: '' }
+  newMachine.value = { name: '', ip_address: '', store: '', comm_key: '', serial_number: '', is_active: true }
   creatorError.value = ''
   resetDeviceProbe()
   showCreator.value = true
@@ -580,6 +606,7 @@ function openEditor(machine) {
     store: machine.store || '',
     comm_key: machine.comm_key || '',
     serial_number: machine.serial_number || '',
+    is_active: !!machine.is_active,
   }
   creatorError.value = ''
   resetDeviceProbe()
@@ -660,10 +687,12 @@ async function saveMachine() {
   saving.value = true
   creatorError.value = ''
   try {
-    if (newMachine.value.name) {
-      await updateEsslMachine(newMachine.value)
+    // The checkbox is a boolean; the doctype field is a Check (0/1)
+    const payload = { ...newMachine.value, is_active: newMachine.value.is_active ? 1 : 0 }
+    if (payload.name) {
+      await updateEsslMachine(payload)
     } else {
-      await saveEsslMachine(newMachine.value)
+      await saveEsslMachine(payload)
     }
     showCreator.value = false
     await loadMachines()

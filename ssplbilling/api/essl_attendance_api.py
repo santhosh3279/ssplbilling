@@ -537,7 +537,7 @@ def sync_attendance(machine=None, from_date=None):
 	settings = _settings()
 	results = []
 
-	for row in get_machine_rows(machine):
+	for row in get_machine_rows(machine, active_only=True):
 		try:
 			results.append(_sync_machine(row, settings, from_date))
 		except Exception as e:

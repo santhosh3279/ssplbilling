@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import cint
 
 # The doctype name keeps the lowercase "e" and the trailing "Attendance" —
 # it must match the DocType record exactly or get_all throws.
@@ -16,6 +17,7 @@ def get_essl_machines():
 			"ip_address",
 			"comm_key",
 			"store",
+			"is_active",
 			"modified",
 		],
 		order_by="store asc, ip_address asc",
@@ -43,6 +45,8 @@ def save_essl_machine(data):
 	doc.serial_number = (data.get("serial_number") or "").strip()
 	doc.comm_key = (data.get("comm_key") or "").strip()
 	doc.store = (data.get("store") or "").strip()
+	# Missing key means "new machine, no opinion" — default to active
+	doc.is_active = cint(data.get("is_active")) if "is_active" in data else 1
 	doc.insert(ignore_permissions=True)
 
 	return {"name": doc.name, "ip_address": doc.ip_address, "store": doc.store}
@@ -75,6 +79,9 @@ def update_essl_machine(data):
 	doc.serial_number = (data.get("serial_number") or "").strip()
 	doc.comm_key = (data.get("comm_key") or "").strip()
 	doc.store = (data.get("store") or "").strip()
+	# Absent key must not silently deactivate a running machine
+	if "is_active" in data:
+		doc.is_active = cint(data.get("is_active"))
 	doc.save(ignore_permissions=True)
 
 	return {"name": doc.name, "ip_address": doc.ip_address, "store": doc.store}
@@ -225,13 +232,22 @@ def set_machine_time(ip_address, comm_key=None, timestamp=None):
 	}
 
 
-def get_machine_rows(machine=None):
+def get_machine_rows(machine=None, active_only=False):
 	"""Machine records, one or all. get_all so the System-Manager-only read perm on
-	the doctype does not blank the list for billers reaching this via the hrms tile."""
+	the doctype does not blank the list for billers reaching this via the hrms tile.
+
+	active_only drops machines with is_active unticked. It applies even when a single
+	`machine` is named — the flag means "never talk to this device on a sync", and only
+	the sync entry points pass it, so enrollment and device-user reads still see every
+	machine.
+	"""
+	filters = {"name": machine} if machine else {}
+	if active_only:
+		filters["is_active"] = 1
 	return frappe.get_all(
 		ESSL_MACHINE_DOCTYPE,
-		filters={"name": machine} if machine else {},
-		fields=["name", "serial_number", "ip_address", "comm_key", "store", "last_sync"],
+		filters=filters,
+		fields=["name", "serial_number", "ip_address", "comm_key", "store", "is_active", "last_sync"],
 		order_by="store asc, ip_address asc",
 	)
 
@@ -247,7 +263,7 @@ def sync_essl_attendance(machine=None, from_date=None):
 	if from_date:
 		from_date = frappe.utils.getdate(from_date)
 
-	machines = get_machine_rows(machine)
+	machines = get_machine_rows(machine, active_only=True)
 
 	logs = []
 	results = []

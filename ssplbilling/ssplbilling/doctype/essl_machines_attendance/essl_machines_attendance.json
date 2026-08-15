@@ -11,6 +11,7 @@
   "column_break_main",
   "comm_key",
   "store",
+  "is_active",
   "last_sync"
  ],
  "fields": [
@@ -42,6 +43,14 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Store"
+  },
+  {
+   "default": "1",
+   "description": "Only checked machines are pulled by the attendance sync",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
   },
   {
    "description": "Watermark of the last successful attendance pull from this device",
