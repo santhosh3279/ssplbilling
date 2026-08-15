@@ -84,6 +84,17 @@ export async function loadPrintLists(doctype) {
   return refreshPrintCache(doctype)
 }
 
+// Manual invalidation, wired to the Dashboard's Sync Settings action — an admin who
+// adds a Printer or Print Template must not have to wait out the TTL.
+export function clearPrintCache() {
+  try {
+    localStorage.removeItem(TEMPLATES_KEY)
+    localStorage.removeItem(PRINTERS_KEY)
+  } catch (e) {
+    // ignore
+  }
+}
+
 // Fire-and-forget warm-up, used by the Dashboard so the first print of a session
 // also opens at zero round trips.
 export function prefetchPrintLists(doctype = 'Sales Invoice') {

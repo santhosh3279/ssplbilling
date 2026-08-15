@@ -617,7 +617,7 @@ import AnalogueClock from '../components/AnalogueClock.vue'
 import { fetchAllowedTiles, frappeGet, frappePost } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 import { syncNamingSeries } from '../services/seriesCache.js'
-import { prefetchPrintLists } from '../services/printCache.js'
+import { prefetchPrintLists, clearPrintCache } from '../services/printCache.js'
 import { useLedgerCache } from '../services/ledgerCache.js'
 import { useShortcuts, isSubwindowActive } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
@@ -1340,6 +1340,7 @@ const defaultWarehouse = ref(localStorage.getItem('wb-warehouse') || '')
 
 async function syncSettings() {
   localStorage.removeItem(SETTINGS_CACHE_KEY)
+  clearPrintCache()
   // force=true bypasses the series / opening-cash / naming-series caches too.
   await fetchSettings(selectedUser.value, true)
   await loadAllowedTiles(selectedUser.value !== session.user.value ? selectedUser.value : null, true)
