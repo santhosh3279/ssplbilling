@@ -315,6 +315,12 @@ import { ref, computed, watch, onMounted, nextTick, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useItemCache, searchItemsInCache } from '../services/itemCache.js'
 import { frappeGet, frappePost, fetchItemPrice } from '../api.js'
+import {
+  BARCODE_TEMPLATE_SPEC,
+  getCachedPrintLists,
+  loadPrintLists,
+  refreshPrintCache,
+} from '../services/printCache.js'
 import { useShortcuts, useSubwindow } from '../services/shortcutManager'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { canAccessTile } from '../composables/usePermission'
@@ -452,55 +458,80 @@ function syncPrinter() {
 
 watch(selectedTemplate, () => syncPrinter())
 
-async function loadResources() {
-  loadingResources.value = true
-  try {
-    const userRows = getUserPrinterSettings()
-    
-    // 1. Fetch all valid barcode templates
-    const validTemplates = await frappeGet('frappe.client.get_list', {
-      doctype: 'Print Template',
-      filters: { document_type: 'Barcode_Printing', format_type: 'Barcode' },
-      fields: ['name', 'template_name'],
-      limit: 100
-    })
-    const validTemplateNames = validTemplates.map(f => f.name)
+// Cache-first: the Barcode templates and the printer list are admin-managed masters
+// that used to cost two sequential HTTP round trips on every visit to this page. A
+// fresh cache renders with no network wait, a stale one renders instantly and
+// revalidates behind the operator, and only a cold cache fetches — in parallel.
+function loadResources() {
+  const cached = getCachedPrintLists(BARCODE_TEMPLATE_SPEC)
 
-    if (userRows.length) {
-      // 2. Filter cached user templates to only those that exist for this doctype
-      const filteredTemplates = userRows
-        .filter(r => r.template && validTemplateNames.includes(r.template))
-        .map(r => ({ name: r.template, template_name: r.template }))
-      
-      // Deduplicate
-      const uniqueTemplates = [...new Map(filteredTemplates.map(t => [t.name, t])).values()]
-      const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
-
-      const allPrinters = await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')
-      // Only barcode printers are usable here — label stock would ruin any other printer
-      const barcodePrinters = onlyBarcodePrinters(allPrinters)
-      const filteredPrinters = barcodePrinters.filter(p => uniquePrinterNames.includes(p.name))
-
-      printers.value  = filteredPrinters.length ? filteredPrinters : barcodePrinters
-      templates.value = uniqueTemplates.length ? uniqueTemplates : validTemplates
-    } else {
-      const [p] = await Promise.all([
-        frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers'),
-      ])
-      printers.value  = onlyBarcodePrinters(p)
-      templates.value = validTemplates
-    }
-
-    if (templates.value.length) {
-      selectedTemplate.value = templates.value[0].name
-    }
-
-    syncPrinter()
-  } catch (e) {
-    console.error('[BarcodePrintPage] loadResources failed', e)
-  } finally {
+  if (cached) {
+    applyResources(cached)
     loadingResources.value = false
+    if (!cached.fresh) revalidateResources()
+    return
   }
+
+  loadingResources.value = true
+  loadPrintLists(BARCODE_TEMPLATE_SPEC)
+    .then(lists => applyResources(lists))
+    .catch(e => console.error('[BarcodePrintPage] loadResources failed', e))
+    .finally(() => { loadingResources.value = false })
+}
+
+function revalidateResources() {
+  refreshPrintCache(BARCODE_TEMPLATE_SPEC)
+    .then(lists => applyResources(lists, true))
+    .catch(() => {
+      // stale lists are still usable; a failed revalidate must not disrupt printing
+    })
+}
+
+function applyResources({ templates: validTemplates, printers: fetchedPrinters }, isRevalidate = false) {
+  const previousTemplate = selectedTemplate.value
+  const previousPrinter = selectedPrinter.value
+  const userRows = getUserPrinterSettings()
+  const validTemplateNames = (validTemplates || []).map(f => f.name)
+
+  // Only barcode printers are usable here — label stock would ruin any other printer
+  const barcodePrinters = onlyBarcodePrinters(fetchedPrinters)
+
+  if (userRows.length) {
+    // Filter cached user templates to only those that exist for this doctype
+    const filteredTemplates = userRows
+      .filter(r => r.template && validTemplateNames.includes(r.template))
+      .map(r => ({ name: r.template, template_name: r.template }))
+
+    // Deduplicate
+    const uniqueTemplates = [...new Map(filteredTemplates.map(t => [t.name, t])).values()]
+    const uniquePrinterNames = [...new Set(userRows.map(r => r.printer).filter(Boolean))]
+
+    const filteredPrinters = barcodePrinters.filter(p => uniquePrinterNames.includes(p.name))
+
+    printers.value  = filteredPrinters.length ? filteredPrinters : barcodePrinters
+    templates.value = uniqueTemplates.length ? uniqueTemplates : validTemplates
+  } else {
+    printers.value  = barcodePrinters
+    templates.value = validTemplates
+  }
+
+  // A background revalidate keeps whatever is already selected as long as it survived
+  // the refreshed lists, so the dropdowns never jump under the operator's hands.
+  if (isRevalidate && previousTemplate && templates.value.some(t => t.name === previousTemplate)) {
+    selectedTemplate.value = previousTemplate
+    if (previousPrinter && printers.value.some(pr => pr.name === previousPrinter)) {
+      selectedPrinter.value = previousPrinter
+      return
+    }
+    syncPrinter()
+    return
+  }
+
+  if (templates.value.length) {
+    selectedTemplate.value = templates.value[0].name
+  }
+
+  syncPrinter()
 }
 
 // ── Item table state ─────────────────────────────────────────────────────────
@@ -1025,7 +1056,9 @@ onMounted(async () => {
       console.warn('[BarcodePrintPage] Item cache refresh failed:', e)
     }
   }
-  await loadResources()
+  // no longer awaited: a cached hit is synchronous, and a cold fetch resolves in the
+  // background rather than holding up the rest of the page setup
+  loadResources()
 
   // Handle props or route query
   localBillNo.value = props.billNo || route.query.bill || ''

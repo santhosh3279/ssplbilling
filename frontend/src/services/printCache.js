@@ -8,9 +8,31 @@
 // refreshPrintCache() to revalidate in the background.
 import { frappeGet } from '../api.js'
 
-const TEMPLATES_KEY = 'wb-print-templates-v1' // { [doctype]: { ts, data } }
+const TEMPLATES_KEY = 'wb-print-templates-v1' // { [bucket]: { ts, data } }
 const PRINTERS_KEY = 'wb-printers-v1' // { ts, data }
 const TTL = 30 * 60 * 1000 // 30 mins — matches Dashboard's GENERIC_CACHE_TTL
+
+// The barcode label page needs a different Print Template query than the document
+// dialogs: a fixed doctype, a Barcode-only format filter, and template_name for its
+// dropdown labels. Callers pass either a plain doctype string or a spec like this.
+export const BARCODE_TEMPLATE_SPEC = {
+  bucket: 'Barcode_Printing',
+  filters: { document_type: 'Barcode_Printing', format_type: 'Barcode' },
+  fields: ['name', 'template_name'],
+}
+
+// Normalises a doctype string into the same shape as a spec, so every entry point
+// below accepts either form.
+function toSpec(doctypeOrSpec) {
+  if (typeof doctypeOrSpec === 'string') {
+    return {
+      bucket: doctypeOrSpec,
+      filters: { document_type: doctypeOrSpec },
+      fields: ['name', 'format_type'],
+    }
+  }
+  return doctypeOrSpec
+}
 
 function readCache(key, bucket) {
   try {
@@ -38,15 +60,15 @@ function writeCache(key, bucket, data) {
   }
 }
 
-async function fetchTemplates(doctype) {
+async function fetchTemplates(spec) {
   const rows =
     (await frappeGet('frappe.client.get_list', {
       doctype: 'Print Template',
-      filters: { document_type: doctype },
-      fields: ['name', 'format_type'],
+      filters: spec.filters,
+      fields: spec.fields,
       limit: 100,
     })) || []
-  writeCache(TEMPLATES_KEY, doctype, rows)
+  writeCache(TEMPLATES_KEY, spec.bucket, rows)
   return rows
 }
 
@@ -59,8 +81,8 @@ async function fetchPrinters() {
 
 // Synchronous cache read. Returns null unless BOTH lists are cached, so callers can
 // skip the loading spinner entirely. `fresh` is false for a stale-but-usable hit.
-export function getCachedPrintLists(doctype) {
-  const templates = readCache(TEMPLATES_KEY, doctype)
+export function getCachedPrintLists(doctypeOrSpec) {
+  const templates = readCache(TEMPLATES_KEY, toSpec(doctypeOrSpec).bucket)
   const printers = readCache(PRINTERS_KEY, null)
   if (!templates || !printers) return null
   return {
@@ -72,16 +94,19 @@ export function getCachedPrintLists(doctype) {
 
 // Fetches both lists in parallel (one round trip's worth of latency, not two) and
 // refreshes the cache.
-export async function refreshPrintCache(doctype) {
-  const [templates, printers] = await Promise.all([fetchTemplates(doctype), fetchPrinters()])
+export async function refreshPrintCache(doctypeOrSpec) {
+  const [templates, printers] = await Promise.all([
+    fetchTemplates(toSpec(doctypeOrSpec)),
+    fetchPrinters(),
+  ])
   return { templates, printers, fresh: true }
 }
 
 // Cache-first: returns immediately on a fresh hit, otherwise fetches in parallel.
-export async function loadPrintLists(doctype) {
-  const cached = getCachedPrintLists(doctype)
+export async function loadPrintLists(doctypeOrSpec) {
+  const cached = getCachedPrintLists(doctypeOrSpec)
   if (cached?.fresh) return cached
-  return refreshPrintCache(doctype)
+  return refreshPrintCache(doctypeOrSpec)
 }
 
 // Manual invalidation, wired to the Dashboard's Sync Settings action — an admin who
@@ -97,8 +122,8 @@ export function clearPrintCache() {
 
 // Fire-and-forget warm-up, used by the Dashboard so the first print of a session
 // also opens at zero round trips.
-export function prefetchPrintLists(doctype = 'Sales Invoice') {
-  const cached = getCachedPrintLists(doctype)
+export function prefetchPrintLists(doctypeOrSpec = 'Sales Invoice') {
+  const cached = getCachedPrintLists(doctypeOrSpec)
   if (cached?.fresh) return
-  refreshPrintCache(doctype).catch(() => {})
+  refreshPrintCache(doctypeOrSpec).catch(() => {})
 }
