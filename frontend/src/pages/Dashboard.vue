@@ -617,7 +617,7 @@ import AnalogueClock from '../components/AnalogueClock.vue'
 import { fetchAllowedTiles, frappeGet, frappePost } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 import { syncNamingSeries } from '../services/seriesCache.js'
-import { prefetchPrintLists, clearPrintCache } from '../services/printCache.js'
+import { warmPrintCache, clearPrintCache } from '../services/printCache.js'
 import { useLedgerCache } from '../services/ledgerCache.js'
 import { useShortcuts, isSubwindowActive } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
@@ -1467,8 +1467,11 @@ async function syncBillingSettings(targetUser, force) {
        localStorage.setItem('wb-printer-templates', JSON.stringify(settings.printer_settings))
     }
 
-    // Warm the Print Template / Printer lists so PrintOptionsModal opens with no round trip
-    prefetchPrintLists('Sales Invoice')
+    // Warm the Print Template / Printer lists so PrintOptionsModal opens with no round
+    // trip. The '' bucket holds the ledger templates (Customer Ledger / Customer Ledger
+    // Thermal are stored with an empty document_type), which is what GstLedger and
+    // GeneralLedger's ledger print ask for.
+    warmPrintCache(['Sales Invoice', '', 'Purchase Invoice'])
 
     // Sync Automatic Entries (single doctype) values to localStorage under ae-* keys
     if (settings && settings.automatic_entries) {
