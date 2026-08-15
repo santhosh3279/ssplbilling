@@ -37,7 +37,11 @@ function toSpec(doctypeOrSpec) {
 function readCache(key, bucket) {
   try {
     const raw = JSON.parse(localStorage.getItem(key) || 'null')
-    const entry = bucket ? raw?.[bucket] : raw
+    // bucket === null means the whole key is one entry (printers). An empty-string
+    // bucket is a legitimate bucket — GstLedger passes doctype="" — so this must be a
+    // null check, not a truthiness check, or that call would read and then overwrite
+    // the entire bucketed object.
+    const entry = bucket === null ? raw : raw?.[bucket]
     if (!entry || !Array.isArray(entry.data)) return null
     return { data: entry.data, fresh: Date.now() - (entry.ts || 0) < TTL }
   } catch (e) {
@@ -48,12 +52,12 @@ function readCache(key, bucket) {
 function writeCache(key, bucket, data) {
   try {
     const entry = { ts: Date.now(), data }
-    if (bucket) {
+    if (bucket === null) {
+      localStorage.setItem(key, JSON.stringify(entry))
+    } else {
       const raw = JSON.parse(localStorage.getItem(key) || '{}') || {}
       raw[bucket] = entry
       localStorage.setItem(key, JSON.stringify(raw))
-    } else {
-      localStorage.setItem(key, JSON.stringify(entry))
     }
   } catch (e) {
     // quota / private mode — cache is an optimisation, never fatal
