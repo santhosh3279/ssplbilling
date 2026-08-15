@@ -485,7 +485,7 @@
     </Item_Invoice_Template>
 
     <!-- Discount Rules Overlay Badge -->
-    <div v-if="activeItemCode && activeItemDiscountRules.length" class="fixed top-20 right-6 z-[120] flex items-center gap-3.5 bg-[var(--color-bg)]/90 backdrop-blur-md text-[var(--color-warning)] border border-[var(--color-warning)]/40 rounded-2xl px-5 py-3 font-mono shrink-0 font-bold max-w-[450px] shadow-2xl">
+    <div v-if="activeItemCode && activeItemDiscountRules.length" class="fixed top-3 right-6 z-[120] flex items-center gap-3.5 bg-[var(--color-focus)]/30 backdrop-blur-md text-[var(--color-text)] border border-[var(--color-focus)]/40 rounded-2xl px-5 py-3 font-mono shrink-0 font-bold max-w-[450px] shadow-2xl">
       <span class="text-4xl leading-none">🏷️</span>
       <div class="flex flex-col text-left leading-tight">
         <span class="text-xs uppercase tracking-wider text-[var(--color-text-muted)] font-sans font-black">Active Offer</span>
