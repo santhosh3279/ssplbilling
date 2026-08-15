@@ -443,24 +443,30 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None,
 
 
 @frappe.whitelist()
-def get_customer_sales_history(customer):
+def get_customer_sales_history(customer, company=None):
 	"""Fetch all previous sales history for a customer in bulk with item details."""
 	if not customer:
 		return []
 
 	# Fetch last 15000 items sold to this customer
 	# Join with tabItem to get item_name and then add barcodes separately for performance
-	history = frappe.db.sql(
-		"""
-		SELECT sii.item_code, i.item_name, si.name, si.posting_date as date, sii.rate, sii.qty, sii.discount_percentage as discount
+	query = """
+		SELECT sii.item_code, i.item_name, si.name, si.posting_date as date, sii.rate, sii.qty,
+			sii.discount_percentage as discount, si.company
 		FROM `tabSales Invoice Item` sii
 		JOIN `tabSales Invoice` si ON si.name = sii.parent
 		JOIN `tabItem` i ON i.name = sii.item_code
 		WHERE si.customer = %s AND si.docstatus = 1
-		ORDER BY si.posting_date DESC, si.creation DESC
-		LIMIT 15000
-		""",
-		(customer,),
+	"""
+	params = [customer]
+	if company:
+		query += " AND si.company = %s"
+		params.append(company)
+	query += " ORDER BY si.posting_date DESC, si.creation DESC LIMIT 15000"
+
+	history = frappe.db.sql(
+		query,
+		tuple(params),
 		as_dict=True,
 	)
 

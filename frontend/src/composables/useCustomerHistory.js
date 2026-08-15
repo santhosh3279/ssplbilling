@@ -55,9 +55,11 @@ export function useCustomerHistory() {
     if (currentCustomerForHistory.value === customer) return
 
     historyLoading.value = true
+    const company = localStorage.getItem('wb-company') || ''
     try {
       const data = await frappeGet('ssplbilling.api.itemsearch_api.get_customer_sales_history', {
-        customer: customer
+        customer: customer,
+        company: company
       })
       customerSalesHistory.value = data || []
       currentCustomerForHistory.value = customer
@@ -210,7 +212,8 @@ export function useCustomerHistory() {
    */
   function getItemHistoryFromCache(itemCode) {
     if (!itemCode) return []
-    return customerSalesHistory.value.filter(h => h.item_code === itemCode)
+    const company = localStorage.getItem('wb-company') || ''
+    return customerSalesHistory.value.filter(h => h.item_code === itemCode && (!company || h.company === company))
   }
 
   function hasSupplierHistory(itemCode) {
