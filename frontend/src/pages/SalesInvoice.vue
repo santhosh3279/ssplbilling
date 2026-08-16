@@ -135,6 +135,11 @@
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index && !item.deleted && !item._is_free ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
             {{ item.item_name }}
             <span v-if="item._is_free" class="ml-1 rounded bg-[var(--color-success)] text-[var(--color-text-on-highlight)] px-1 text-[10px] font-bold uppercase leading-tight">Free</span>
+            <span
+              v-if="item._is_free && freeRowRule(item)"
+              class="ml-1 rounded border border-[var(--color-success)]/60 px-1 text-[10px] font-bold uppercase leading-tight text-[var(--color-success)]"
+              :title="freeRowRule(item)"
+            >{{ freeRowRule(item) }}</span>
           </td>
 
           <!-- qty -->
@@ -1188,9 +1193,10 @@ const activeItemCode = computed(() => {
   return null
 })
 
-const activeItemDiscountRules = computed(() => {
-  if (!activeItemCode.value || !discountRules.value || !discountRules.value.length) return []
-  const itemCode = activeItemCode.value
+// Extracted from activeItemDiscountRules so a free row can ask the same question about
+// its own item code, not just whichever row is focused.
+function discountRulesForItem(itemCode) {
+  if (!itemCode || !discountRules.value || !discountRules.value.length) return []
   const code = itemCode.toLowerCase()
 
   return discountRules.value.filter(rule => {
@@ -1221,7 +1227,24 @@ const activeItemDiscountRules = computed(() => {
     }
     return false
   })
-})
+}
+
+const activeItemDiscountRules = computed(() => discountRulesForItem(activeItemCode.value))
+
+// A free row carries no rule reference (ERPNext only stores rate 0), so the rule is
+// re-derived from the item code. Product-type rules are what produce free rows, so those
+// win when an item is covered by several.
+function freeRowRule(item) {
+  const rules = discountRulesForItem(item?.item_code)
+  if (!rules.length) return ''
+  const productRule = rules.find(r =>
+    r.discount_type === 'Product Discount' || r.discount_type === 'X to Y product discount'
+  )
+  const rule = productRule || rules[0]
+  // Rule names are already written as "10+1"/"120+24", so appending the quantities would
+  // just repeat them.
+  return rule.rule_name || rule.name || ''
+}
 
 const filteredItemPrices = computed(() => {
   return (itemPrices.value || []).filter(p => {
