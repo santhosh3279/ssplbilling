@@ -16,12 +16,23 @@
             <div class="text-[10px] uppercase tracking-widest font-bold text-[var(--color-text-muted)]">{{ headerLabel }}</div>
             <div class="font-mono text-xl font-bold text-[var(--color-success)]">{{ invoiceName }}</div>
           </div>
-          <button
-            @click="$emit('close')"
-            class="rounded-lg px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
-          >
-            ✕ Close
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              @click="refreshLists"
+              :disabled="refreshing || loading"
+              title="Reload templates and printers from the server (R)"
+              class="rounded-lg px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span :class="refreshing ? 'inline-block animate-spin' : ''">⟳</span>
+              {{ refreshing ? 'Refreshing…' : 'Refresh' }}
+            </button>
+            <button
+              @click="$emit('close')"
+              class="rounded-lg px-3 py-1.5 text-xs transition-colors border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]"
+            >
+              ✕ Close
+            </button>
+          </div>
         </div>
 
         <!-- ── Combined Print Options ── -->
@@ -133,6 +144,7 @@ const selectedPrinter  = ref('')
 const selectedTemplate = ref('')
 const printing       = ref(false)
 const previewing     = ref(false)
+const refreshing     = ref(false)
 const previewUrls    = ref([])
 const error          = ref('')
 const success        = ref('')
@@ -247,6 +259,9 @@ function handleKeydown(e) {
   } else if (e.key.toLowerCase() === 'p') {
     e.preventDefault()
     openPreview()
+  } else if (e.key.toLowerCase() === 'r') {
+    e.preventDefault()
+    refreshLists()
   }
 }
 
@@ -295,6 +310,25 @@ function revalidate() {
     .catch(() => {
       // stale lists are still usable; a failed revalidate is not worth an error banner
     })
+}
+
+// Operator-triggered refresh, for when a template or printer was added server-side and
+// the cached lists still predate it. Reuses the revalidate path so current selections
+// survive whenever they still exist in the refreshed lists.
+async function refreshLists() {
+  if (refreshing.value) return
+  refreshing.value = true
+  error.value = ''
+  success.value = ''
+  try {
+    const lists = await refreshPrintCache(props.doctype)
+    applyLists(lists, true)
+    success.value = `Refreshed — ${templates.value.length} template(s), ${printers.value.length} printer(s)`
+  } catch (e) {
+    error.value = 'Refresh failed: ' + (e.message || e)
+  } finally {
+    refreshing.value = false
+  }
 }
 
 function applyLists({ templates: fetchedTemplates, printers: fetchedPrinters }, isRevalidate = false) {
