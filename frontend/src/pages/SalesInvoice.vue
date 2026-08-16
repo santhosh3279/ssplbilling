@@ -134,10 +134,10 @@
 
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index && !item.deleted && !item._is_free ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
             {{ item.item_name }}
-            <span v-if="item._is_free" class="ml-1 rounded bg-[var(--color-success)] text-[var(--color-text-on-highlight)] px-1 text-[10px] font-bold uppercase leading-tight">Free</span>
+            <span v-if="item._is_free" class="ml-1 rounded bg-[var(--color-success)] text-[var(--color-text-on-highlight)] px-1.5 text-[20px] font-bold uppercase leading-tight">Free</span>
             <span
               v-if="item._is_free && freeRowRule(item)"
-              class="ml-1 rounded border border-[var(--color-success)]/60 px-1 text-[10px] font-bold uppercase leading-tight text-[var(--color-success)]"
+              class="ml-1 rounded border border-[var(--color-success)]/60 px-1.5 text-[20px] font-bold uppercase leading-tight text-[var(--color-success)]"
               :title="freeRowRule(item)"
             >{{ freeRowRule(item) }}</span>
           </td>
