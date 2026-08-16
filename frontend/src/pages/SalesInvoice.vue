@@ -236,6 +236,15 @@
                   </tbody>
                 </table>
               </div>
+
+              <!-- custom_remarks, loaded with the invoice. Hidden entirely when blank so
+                   the pane keeps its height for the payments table. -->
+              <template v-if="customAddress.remarks">
+                <div class="mb-1 text-[var(--color-text-muted)] text-xs font-bold uppercase tracking-wider">Remarks:</div>
+                <div class="mb-4 whitespace-pre-wrap break-words rounded border border-[var(--color-border)]/50 bg-[var(--color-surface)] px-2 py-1.5 text-xl leading-snug text-[var(--color-text)]">
+                  {{ customAddress.remarks }}
+                </div>
+              </template>
             </template>
             <template v-else>
               <div v-if="selectedRowIdx === -1 && !pendingItem" class="text-sm text-[var(--color-text-muted)] italic">
