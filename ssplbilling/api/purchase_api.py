@@ -3,6 +3,37 @@ import frappe
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
 
 
+def _apply_due_date(pi):
+    """Recompute due_date from the supplier's payment terms.
+
+    ERPNext validates a Purchase Invoice's due date against `bill_date or posting_date`
+    (accounts_controller.validate_due_date), so a bill dated later than the draft's
+    existing due date is rejected outright. Neither create nor update touched due_date,
+    which made "Due Date cannot be before Supplier Invoice Date" unavoidable on any edit
+    that moved the bill date forward.
+
+    get_due_date is ERPNext's own resolver: it honours the supplier's Payment Terms
+    Template (falling back to the Supplier Group's), counts from bill_date when present,
+    and clamps the result to posting_date.
+    """
+    from erpnext.accounts.party import get_due_date
+
+    if not pi.supplier:
+        return
+
+    pi.due_date = get_due_date(
+        pi.posting_date,
+        "Supplier",
+        pi.supplier,
+        pi.company,
+        pi.bill_date,
+    )
+    # A schedule built against the old due date fails its own validation, so let
+    # ERPNext rebuild it (same approach as cashier_api's Sales Invoice submit).
+    if pi.get("payment_schedule"):
+        pi.payment_schedule = []
+
+
 def _get_item_tax_rate(item_code):
     """Return the effective tax rate (%) for an item from its Item Tax Template."""
     today = frappe.utils.today()
@@ -216,6 +247,7 @@ def create_purchase_invoice(data=None, **kwargs):
     pi.posting_date = data.get("date") or frappe.utils.today()
     pi.set_posting_time = 1
     pi.posting_time = frappe.utils.nowtime()
+    _apply_due_date(pi)
     pi.naming_series = data.get("naming_series", "PINV-.YY.-")
     pi.is_return = data.get("is_return", 0)
     pi.update_stock = 1
@@ -512,6 +544,7 @@ def update_purchase_invoice(data=None, **kwargs):
     pi.bill_date = data.get("bill_date")
     pi.posting_date = data.get("date") or frappe.utils.today()
     pi.set_posting_time = 1
+    _apply_due_date(pi)
 
     pi.custom_remarks = data.get("custom_remarks") or ""
 
