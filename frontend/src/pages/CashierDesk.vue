@@ -1788,6 +1788,23 @@ function handleKeydown(e) {
       e.preventDefault()
       postButton.value?.focus()
     }
+  } else if (e.key.toLowerCase() === 'r' && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    // shortcutManager drops every single-character key while an input is focused, and
+    // this page parks the caret in a payment box the moment a bill is selected — so its
+    // registered 'R' never fired. Handled here for exactly the focused-input case; with
+    // no input focused the manager still owns it, and acting again would double-toggle.
+    const t = e.target
+    const inInput = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)
+    if (!inInput) return
+    // Remarks is the one field where 'r' is real text the operator meant to type
+    if (t === remarksInput.value || t.tagName === 'TEXTAREA' || t.isContentEditable) return
+    e.preventDefault()
+    if (hasPaymentValues.value) {
+      // Silently doing nothing here is what makes the key look broken
+      errorMsg.value = 'Clear the entered amounts before switching Cash/Credit.'
+      return
+    }
+    toggleCredit()
   }
 }
 
