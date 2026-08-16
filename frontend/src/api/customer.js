@@ -91,7 +91,9 @@ export async function fetchCustomerGroups() {
   const list = await frappeGet('frappe.client.get_list', {
     doctype: 'Customer Group',
     fields: ['name'],
-    // filters: [['is_group', '=', 0]],
+    // Group nodes ('All Customer Groups') are tree parents; ERPNext rejects them on
+    // Customer.validate, so they must never reach the dropdown
+    filters: [['is_group', '=', 0]],
     order_by: 'name asc',
     limit_page_length: 100,
   })
@@ -122,7 +124,7 @@ export async function createCustomer(data) {
     customer_name: data.customer_name,
     customer_print_name: data.customer_print_name || '',
     customer_type: 'Individual',
-    customer_group: data.customer_group || 'All Customer Groups',
+    customer_group: data.customer_group,
     territory: 'All Territories',
     mobile_no: data.mobile || '',
     email_id: data.email || '',

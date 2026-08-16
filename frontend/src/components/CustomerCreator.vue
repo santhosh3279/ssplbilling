@@ -280,10 +280,11 @@ onMounted(async () => {
   // Fetch customer groups
   try {
     const groups = await fetchCustomerGroups()
-    customerGroups.value = groups.length ? groups : ['All Customer Groups']
+    customerGroups.value = groups
   } catch (e) {
     console.error('[CustomerCreator] fetchCustomerGroups failed:', e)
-    customerGroups.value = ['All Customer Groups']
+    // No invented fallback: a group node here is exactly what Customer.validate rejects
+    customerGroups.value = []
   }
 
   if (props.isEdit && props.customerRow) {
@@ -292,7 +293,7 @@ onMounted(async () => {
       name:           row.name,
       customer_name:  row.label          || '',
       customer_print_name: row.customer_print_name || '',
-      customer_group: row.customer_group || 'All Customer Groups',
+      customer_group: row.customer_group || '',
       mobile:         row.mobile_no      || '',
       whatsapp:       row.whatsapp       || '',
       email:          row.email          || '',
@@ -334,6 +335,12 @@ onMounted(async () => {
       }
       
       form.value = merged
+      // Legacy customers carry a group node (or a group since deleted). It is not in the
+      // dropdown, so the select renders blank while the model still holds the bad value
+      // and the save would fail server-side — clear it and make the user pick.
+      if (form.value.customer_group && !customerGroups.value.includes(form.value.customer_group)) {
+        form.value.customer_group = ''
+      }
     } catch (e) {
       console.warn('[CustomerCreator] fetch customer details failed:', e)
     } finally {
