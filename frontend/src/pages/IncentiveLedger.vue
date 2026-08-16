@@ -131,13 +131,64 @@
           </div>
         </div>
 
-        <div v-else-if="!ledgerData" class="flex h-full items-center justify-center">
+        <!-- Landing view: cumulative points per employee. Replaced by the ledger below
+             as soon as an employee is picked. -->
+        <div v-else-if="!ledgerData && overviewLoading" class="flex h-full items-center justify-center">
+          <div class="flex flex-col items-center gap-3 text-[var(--color-text-muted)]">
+            <span class="h-16 w-16 animate-spin rounded-full border-4 border-[var(--color-border)] border-t-blue-500"></span>
+            <span class="text-xl">Loading employees...</span>
+          </div>
+        </div>
+
+        <div v-else-if="!ledgerData && !overview.length" class="flex h-full items-center justify-center">
           <div class="text-center text-[var(--color-text-muted)]">
             <div class="text-9xl mb-4">🏆</div>
-            <div class="text-3xl font-semibold text-[var(--color-text-muted)]">Select an employee to view their incentive ledger</div>
+            <div class="text-3xl font-semibold text-[var(--color-text-muted)]">No active employees with incentive points</div>
             <div class="text-xl text-[var(--color-text-muted)] mt-1">Search by name in the filter bar above</div>
           </div>
         </div>
+
+        <table v-else-if="!ledgerData" class="w-full text-xl">
+          <thead class="sticky top-0 bg-[var(--color-surface)] z-10">
+            <tr class="border-b border-[var(--color-border)] text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+              <th class="px-4 py-3 text-left">Employee</th>
+              <th class="px-4 py-3 text-left">ID</th>
+              <th class="px-4 py-3 text-left">Designation</th>
+              <th class="px-4 py-3 text-right text-[var(--color-success)]">Earned</th>
+              <th class="px-4 py-3 text-right text-[var(--color-danger)]">Redeemed</th>
+              <th class="px-4 py-3 text-right text-[var(--color-info)]">Balance</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800">
+            <tr
+              v-for="emp in overview"
+              :key="emp.name"
+              class="cursor-pointer hover:bg-[var(--color-surface)]/50 transition-colors"
+              @click="openEmployee(emp)"
+            >
+              <td class="px-4 py-2 font-bold text-[var(--color-text)]">{{ emp.employee_name || emp.name }}</td>
+              <td class="px-4 py-2 font-mono text-[22px] text-[var(--color-text-muted)]">{{ emp.name }}</td>
+              <td class="px-4 py-2 text-[22px] text-[var(--color-text-muted)]">{{ emp.designation || '—' }}</td>
+              <td class="px-4 py-2 text-right font-mono font-bold text-4xl" :class="emp.total_incentive ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'">
+                {{ fmtPts(emp.total_incentive) }}
+              </td>
+              <td class="px-4 py-2 text-right font-mono font-bold text-4xl" :class="emp.redeemed_incentive ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
+                {{ fmtPts(emp.redeemed_incentive) }}
+              </td>
+              <td class="px-4 py-2 text-right font-mono font-bold text-4xl text-[var(--color-text)]">{{ fmtPts(emp.balance_incentive) }}</td>
+            </tr>
+          </tbody>
+          <tfoot class="sticky bottom-0 bg-[var(--color-surface)] border-t-2 border-[var(--color-border)]">
+            <tr class="text-xl font-bold">
+              <td colspan="3" class="px-4 py-2 text-right text-[var(--color-text-muted)] uppercase text-[20px] tracking-wider">
+                Totals ({{ overview.length }} employees)
+              </td>
+              <td class="px-4 py-2 text-right font-mono text-4xl text-[var(--color-success)]">{{ fmtPts(overviewTotals.earned) }}</td>
+              <td class="px-4 py-2 text-right font-mono text-4xl text-[var(--color-danger)]">{{ fmtPts(overviewTotals.redeemed) }}</td>
+              <td class="px-4 py-2 text-right font-mono text-4xl text-[var(--color-info)]">{{ fmtPts(overviewTotals.balance) }}</td>
+            </tr>
+          </tfoot>
+        </table>
 
         <div v-else-if="ledgerData.entries.length === 0" class="flex h-full items-center justify-center">
           <div class="text-center text-[var(--color-text-muted)]">
@@ -221,6 +272,8 @@ const fromDate = ref('')
 const toDate = ref('')
 const isLoading = ref(false)
 const ledgerData = ref(null)
+const overview = ref([])
+const overviewLoading = ref(false)
 
 const empInput = ref(null)
 const quickLedgerSearchRef = ref(null)
@@ -228,10 +281,28 @@ const quickLedgerSearchRef = ref(null)
 let empSearchTimer = null
 
 onMounted(() => {
+  loadOverview()
   nextTick(() => {
     empInput.value?.focus()
   })
 })
+
+// ── Employee overview (landing view) ────────────────────────────────────────
+async function loadOverview() {
+  overviewLoading.value = true
+  try {
+    overview.value = await frappeGet('ssplbilling.api.incentive_ledger_api.get_employee_incentive_summary')
+  } catch (e) {
+    console.warn('[IncentiveLedger] overview load failed:', e)
+    overview.value = []
+  } finally {
+    overviewLoading.value = false
+  }
+}
+
+function openEmployee(emp) {
+  pickEmployee({ name: emp.name, label: emp.employee_name || emp.name })
+}
 
 // ── Employee search ─────────────────────────────────────────────────────────
 function onEmpInput(e) {
@@ -304,6 +375,12 @@ const totalEarned = computed(() =>
 const totalRedeemed = computed(() =>
   (ledgerData.value?.entries || []).reduce((s, r) => s + (r.redeemed || 0), 0)
 )
+
+const overviewTotals = computed(() => overview.value.reduce((acc, e) => ({
+  earned: acc.earned + (e.total_incentive || 0),
+  redeemed: acc.redeemed + (e.redeemed_incentive || 0),
+  balance: acc.balance + (e.balance_incentive || 0),
+}), { earned: 0, redeemed: 0, balance: 0 }))
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function fmtPts(val) {

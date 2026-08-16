@@ -16,6 +16,34 @@ def search_employees(query="", limit=20):
 
 
 @frappe.whitelist()
+def get_employee_incentive_summary():
+	"""Cumulative points for every active employee — the Incentive Ledger's landing view.
+
+	Reads the cached Employee totals, the same three numbers get_employee_incentive_ledger
+	returns in its summary, so the overview and a drilled-in ledger always agree.
+	"""
+	rows = frappe.get_all(
+		"Employee",
+		filters=[["status", "=", "Active"]],
+		fields=[
+			"name",
+			"employee_name",
+			"designation",
+			"total_incentive",
+			"redeemed_incentive",
+			"balance_incentive",
+		],
+		order_by="balance_incentive desc, employee_name asc",
+		limit_page_length=0,
+	)
+	for r in rows:
+		r["total_incentive"] = flt(r.get("total_incentive"), 2)
+		r["redeemed_incentive"] = flt(r.get("redeemed_incentive"), 2)
+		r["balance_incentive"] = flt(r.get("balance_incentive"), 2)
+	return rows
+
+
+@frappe.whitelist()
 def get_employee_incentive_ledger(employee, from_date=None, to_date=None):
 	"""
 	Return all incentive ledger entries for an employee — earned (from submitted
