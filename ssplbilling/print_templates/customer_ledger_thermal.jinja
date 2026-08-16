@@ -1,0 +1,65 @@
+{%- set parts = document_name.split('||') -%}
+{%- set party = parts[0] if parts|length > 0 else '' -%}
+{%- set from_date = parts[1] if parts|length > 1 else '' -%}
+{%- set to_date = parts[2] if parts|length > 2 else '' -%}
+{%- set party_type = parts[3] if parts|length > 3 else 'Customer' -%}
+
+{%- if party_type == 'Account' -%}
+{%- set entries = frappe.db.sql("""
+      SELECT posting_date, voucher_type, voucher_no, debit, credit
+      FROM `tabGL Entry`
+      WHERE account = %(party)s
+        AND posting_date BETWEEN %(from_date)s AND %(to_date)s
+        AND is_cancelled = 0
+      ORDER BY posting_date, creation
+  """, {"party": party, "from_date": from_date, "to_date": to_date}, as_dict=True) -%}
+{%- set ob = frappe.db.sql("""
+      SELECT COALESCE(SUM(debit),0) as d, COALESCE(SUM(credit),0) as c
+      FROM `tabGL Entry`
+      WHERE account = %(party)s AND posting_date < %(from_date)s AND is_cancelled = 0
+  """, {"party": party, "from_date": from_date}, as_dict=True) -%}
+{%- set party_label = frappe.db.get_value('Account', party, 'account_name') or party -%}
+{%- else -%}
+{%- set entries = frappe.db.sql("""
+      SELECT posting_date, voucher_type, voucher_no, debit, credit
+      FROM `tabGL Entry`
+      WHERE party_type = %(party_type)s AND party = %(party)s
+        AND posting_date BETWEEN %(from_date)s AND %(to_date)s
+        AND is_cancelled = 0
+      ORDER BY posting_date, creation
+  """, {"party_type": party_type, "party": party, "from_date": from_date, "to_date": to_date}, as_dict=True) -%}
+{%- set ob = frappe.db.sql("""
+      SELECT COALESCE(SUM(debit),0) as d, COALESCE(SUM(credit),0) as c
+      FROM `tabGL Entry`
+      WHERE party_type = %(party_type)s AND party = %(party)s
+        AND posting_date < %(from_date)s AND is_cancelled = 0
+  """, {"party_type": party_type, "party": party, "from_date": from_date}, as_dict=True) -%}
+{%- set name_field = party_type | lower + '_name' -%}
+{%- set party_label = frappe.db.get_value(party_type, party, name_field) or party -%}
+{%- endif -%}
+
+{%- set opening_balance = (ob[0].d or 0) - (ob[0].c or 0) -%}
+
+[C][B]{{ party_type | upper }} LEDGER[/B]
+[C]{{ party_label[:40] }}
+[C]{{ from_date }} to {{ to_date }}
+[LINE]
+[L]Opening Balance[R]{{ '{:,.2f}'.format(opening_balance | abs) }} {{ 'Dr' if opening_balance >= 0 else 'Cr' }}
+[LINE]
+{% set ns = namespace(bal=opening_balance, tdr=0, tcr=0) -%}
+{%- for e in entries -%}
+{%- set ns.bal = ns.bal + (e.debit or 0) - (e.credit or 0) -%}
+{%- set ns.tdr = ns.tdr + (e.debit or 0) -%}
+{%- set ns.tcr = ns.tcr + (e.credit or 0) -%}
+{%- set d = e.posting_date | string -%}
+{%- set dd = d[8:10] + '/' + d[5:7] + '/' + d[2:4] -%}
+[B]{{ dd }}[/B] {{ e.voucher_type[:4] | upper }} {{ e.voucher_no[:24] }}
+{% if e.debit %}[L]Dr: {{ '{:,.2f}'.format(e.debit) }}[R]Bal: {{ '{:,.2f}'.format(ns.bal | abs) }} {{ 'Dr' if ns.bal >= 0 else 'Cr' }}
+{% endif %}{% if e.credit %}[L]Cr: {{ '{:,.2f}'.format(e.credit) }}[R]Bal: {{ '{:,.2f}'.format(ns.bal | abs) }} {{ 'Dr' if ns.bal >= 0 else 'Cr' }}
+{% endif %}{% endfor %}
+[LINE]
+[L]Total Dr[R]{{ '{:,.2f}'.format(ns.tdr) }}
+[L]Total Cr[R]{{ '{:,.2f}'.format(ns.tcr) }}
+[LINE]
+[L][B]Closing Balance[/B][R][B]{{ '{:,.2f}'.format(ns.bal | abs) }} {{ 'Dr' if ns.bal >= 0 else 'Cr' }}[/B]
+[CUT]
