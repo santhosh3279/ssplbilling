@@ -1122,7 +1122,14 @@ function openInvoiceDetail(voucherType, voucherNo) {
 // ── Print Logic ──
 function openLedgerPrint() {
   if (!ledgerData.value) return
-  printModalInvoiceName.value = ledgerData.value.party
+  // The ledger templates get no doc — document_name is their only input, so the party,
+  // the on-screen date range and the party type ride along as `||`-separated parts.
+  printModalInvoiceName.value = [
+    ledgerData.value.party,
+    fromDate.value || '',
+    toDate.value || '',
+    ledgerData.value.party_type || partyType.value || 'Customer',
+  ].join('||')
   // The ledger print formats (Customer Ledger / Customer Ledger Thermal) are stored with
   // an empty document_type, so 'General Ledger' matched no templates at all and the dialog
   // opened with an empty dropdown. GstLedger already passes '' for the same reason.
