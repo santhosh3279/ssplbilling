@@ -448,15 +448,27 @@ def get_customer_sales_history(customer, company=None):
 	if not customer:
 		return []
 
+	# Bill-level (additional) discount never touches sii.rate — ERPNext spreads it across
+	# sii.distributed_discount_amount / sii.net_amount instead. Both columns are needed to
+	# derive what the customer actually paid per unit. Older schemas may lack the first one.
+	has_distributed_discount = frappe.get_meta("Sales Invoice Item").has_field(
+		"distributed_discount_amount"
+	)
+	distributed_col = (
+		"sii.distributed_discount_amount" if has_distributed_discount else "0 as distributed_discount_amount"
+	)
+
 	# Fetch last 15000 items sold to this customer
 	# Join with tabItem to get item_name and then add barcodes separately for performance
-	query = """
+	query = f"""
 		SELECT sii.item_code, i.item_name, si.name, si.posting_date as date, sii.rate, sii.qty,
-			sii.discount_percentage as discount, si.company
+			sii.discount_percentage as discount, si.company,
+			sii.uom, sii.stock_uom, sii.conversion_factor,
+			sii.net_amount, {distributed_col}
 		FROM `tabSales Invoice Item` sii
 		JOIN `tabSales Invoice` si ON si.name = sii.parent
 		JOIN `tabItem` i ON i.name = sii.item_code
-		WHERE si.customer = %s AND si.docstatus = 1
+		WHERE si.customer = %s AND si.docstatus = 1 AND si.is_return = 0
 	"""
 	params = [customer]
 	if company:
@@ -489,7 +501,18 @@ def get_customer_sales_history(customer, company=None):
 		row["rate"] = float(row.rate or 0)
 		row["qty"] = float(row.qty or 0)
 		row["discount"] = float(row.discount or 0)
+		row["conversion_factor"] = float(row.conversion_factor or 1) or 1
 		row["barcodes"] = ",".join(item_barcodes_map.get(row.item_code, []))
+
+		# Share of the bill-level discount that landed on this row, as a factor on the rate.
+		# Both sides of the ratio are net (tax-exclusive) amounts, so it holds for
+		# inclusive- and exclusive-tax bills alike.
+		net_amount = float(row.net_amount or 0)
+		distributed = float(row.get("distributed_discount_amount") or 0)
+		gross = net_amount + distributed
+		row["net_amount"] = net_amount
+		row["distributed_discount_amount"] = distributed
+		row["bill_discount_factor"] = (net_amount / gross) if gross > 0 else 1.0
 
 	return history
 

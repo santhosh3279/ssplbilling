@@ -436,6 +436,7 @@
           </div>
           <div class="flex gap-2">
             <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>          </div>
+          <button @click="handleBarcodePrint" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-3xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors">Print Barcode</button>
           <div v-if="isSubmitted && (ewaybill || meetsEwayThreshold)" class="flex gap-2">
             <button v-if="!ewaybill" @click="showEWayBillModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Bill</button>
             <button v-else @click="showEWayOptionsModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Options</button>
@@ -678,6 +679,15 @@
     <!-- Hidden file input for CSV import -->
     <input ref="csvImportRef" type="file" accept=".csv" class="hidden" @change="onCsvFileSelected" />
 
+    <!-- Barcode Print Subwindow -->
+    <BarcodePrintPage
+      v-if="showBarcodeModal"
+      isSubWindow
+      :billNo="invoiceNo"
+      :items="activeItems"
+      @close="showBarcodeModal = false"
+    />
+
     <!-- Purchase-history modal (customer) -->
     <PartyHistoryModal
       v-model:show="showHistoryModal"
@@ -697,6 +707,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import PartyHistoryModal from '../components/PartyHistoryModal.vue'
+import BarcodePrintPage from './BarcodePrintPage.vue'
 import Userseries from '../components/Userseries.vue'
 import Gstbillcreator from '../components/Gstbillcreator.vue'
 import BillMirrorCreator from '../components/BillMirrorCreator.vue'
@@ -846,6 +857,7 @@ const inclusiveTaxRef = ref(null)
 const ignoreRuleRef = ref(null)
 const costCenterRef = ref(null)
 const showPrintModal = ref(false)
+const showBarcodeModal = ref(false)
 const pendingClearAfterPrint = ref(false)
 
 const lastEnterTime = ref(0)
@@ -1686,6 +1698,14 @@ function handlePrint() {
   showPrintModal.value = true
 }
 
+function handleBarcodePrint() {
+  if (!isSaved.value) {
+    alert('Please save the invoice before printing barcodes.')
+    return
+  }
+  showBarcodeModal.value = true
+}
+
 async function handleEWayBillSubmit(fields) {
   if (ewaybillLoading.value) return
   ewaybillLoading.value = true
@@ -2102,6 +2122,16 @@ function getItemUoms(itemCode) {
 function onUomChange(idx) {
   const item = items.value[idx]
   if (!item) return
+  if (isReturn.value) {
+    const history = getHistoryRateAndDiscount(item.item_code, item.uom)
+    if (history) {
+      item.rate = history.rate
+      item._base_rate = history.rate
+      item.discount = history.discount
+      recalcAmount(idx)
+      return
+    }
+  }
   const cached = lookupItemInCache(item.item_code)
   if (cached) {
     const newRate = getItemRateForPriceList(cached, item.uom)
@@ -2203,7 +2233,7 @@ watch(isReturn, (val) => {
     item.qty = val ? -Math.abs(item.qty || 0) : Math.abs(item.qty || 0)
     
     if (val) {
-      const history = getHistoryRateAndDiscount(item.item_code)
+      const history = getHistoryRateAndDiscount(item.item_code, item.uom)
       if (history) {
         item.rate = history.rate
         item._base_rate = history.rate
@@ -2226,7 +2256,7 @@ watch(isReturn, (val) => {
   if (pendingItem.value) {
     pendingItem.value.qty = val ? -Math.abs(pendingItem.value.qty || 0) : Math.abs(pendingItem.value.qty || 0)
     if (val) {
-      const history = getHistoryRateAndDiscount(pendingItem.value.item_code)
+      const history = getHistoryRateAndDiscount(pendingItem.value.item_code, pendingItem.value.uom)
       if (history) {
         pendingItem.value.rate = history.rate
         pendingItem.value.discount = history.discount
@@ -2394,13 +2424,55 @@ function onQuickSearchSelect(item) {
   })
 }
 
-function getHistoryRateAndDiscount(itemCode) {
+// Conversion factor of `uom` for an item (how many stock UOMs one `uom` holds).
+// Stock UOM is not always present in the UOM Conversion Detail table, so it is
+// resolved from the cached item's own uom (which is the stock uom) first.
+function getUomConversionFactor(itemCode, uom) {
+  if (!uom) return null
+  const cached = lookupItemInCache(itemCode)
+  if (!cached) return null
+  if (cached.uom && uom === cached.uom) return 1
+  const match = (cached.uoms || []).find(u => u.uom === uom)
+  const cf = parseFloat(match?.conversion_factor)
+  return cf > 0 ? cf : null
+}
+
+// Share of the original bill's additional (bill-level) discount carried by a history
+// row. It never reaches sii.rate, so without this a return refunds the pre-discount
+// rate. Computed server-side from net_amount / (net_amount + distributed discount).
+function getBillDiscountFactor(row) {
+  const factor = parseFloat(row?.bill_discount_factor)
+  return factor > 0 && factor <= 1 ? factor : 1
+}
+
+// Last sale rate/discount for a return row. Prefers a history row billed in the
+// same UOM; otherwise converts the newest row's rate to the requested UOM.
+// The returned rate is net of the original bill's additional discount.
+// Returns null when the rate cannot be trusted for that UOM, so the caller falls
+// back to normal price-list pricing instead of using a wrong-UOM rate.
+function getHistoryRateAndDiscount(itemCode, uom) {
   const history = getItemHistoryFromCache(itemCode)
-  if (history && history.length > 0) {
-    const last = history[0] // history is usually sorted newest first
-    return { rate: last.rate, discount: last.discount }
-  }
-  return null
+  if (!history || history.length === 0) return null
+
+  const priced = (row, rate) => ({
+    rate: parseFloat((rate * getBillDiscountFactor(row)).toFixed(precision)),
+    discount: row.discount
+  })
+
+  // history is sorted newest first, so the first match is the latest one
+  const exact = uom ? history.find(h => h.uom === uom) : null
+  if (exact) return priced(exact, exact.rate)
+
+  const last = history[0]
+  if (!uom || !last.uom || last.uom === uom) return priced(last, last.rate)
+
+  const cfTarget = getUomConversionFactor(itemCode, uom)
+  const cfHist = parseFloat(last.conversion_factor) > 0
+    ? parseFloat(last.conversion_factor)
+    : getUomConversionFactor(itemCode, last.uom)
+  if (!cfTarget || !cfHist) return null
+
+  return priced(last, (last.rate / cfHist) * cfTarget)
 }
 
 function applyItemToRow(rowIdx, item) {
@@ -2418,7 +2490,7 @@ function applyItemToRow(rowIdx, item) {
   if (!row._rowKey) row._rowKey = makeRowKey()
 
   if (!isSameItem) {
-    const history = isReturn.value ? getHistoryRateAndDiscount(item.item_code) : null
+    const history = isReturn.value ? getHistoryRateAndDiscount(item.item_code, row.uom) : null
     if (history) {
       row.rate = history.rate
       row._base_rate = history.rate
@@ -2482,7 +2554,7 @@ function onItemSearchSelectMultiple(entries) {
   itemSearchTargetRowIdx.value = null
 
   for (const entry of entries) {
-    const history = isReturn.value ? getHistoryRateAndDiscount(entry.item_code) : null
+    const history = isReturn.value ? getHistoryRateAndDiscount(entry.item_code, entry.uom || 'Nos') : null
     let baseRate, rate, discount, cpApplied = false
     if (history) {
       baseRate = history.rate
@@ -2780,6 +2852,15 @@ function handleCellNavigation(e, idx, field) {
 function onPendingUomChange() {
   const p = pendingItem.value
   if (!p) return
+  if (isReturn.value) {
+    const history = getHistoryRateAndDiscount(p.item_code, p.uom)
+    if (history) {
+      p.rate = history.rate
+      p._base_rate = history.rate
+      p.discount = history.discount
+      return
+    }
+  }
   const cached = lookupItemInCache(p.item_code)
   if (cached) {
     const newRate = getItemRateForPriceList(cached, p.uom)
@@ -2789,7 +2870,7 @@ function onPendingUomChange() {
 }
 
 function setPendingItem(item) {
-  const history = isReturn.value ? getHistoryRateAndDiscount(item.item_code) : null
+  const history = isReturn.value ? getHistoryRateAndDiscount(item.item_code, item.uom || 'Nos') : null
   if (history) {
     item.rate = history.rate
     item._base_rate = history.rate
@@ -2962,7 +3043,7 @@ function handleGlobalEscape(e) {
                       showCustomAddressModal.value || 
                       showClearWarning.value || showExitWarning.value || 
                       showShortcutPage.value || showHistoryModal.value ||
-                      showGstBillCreator.value ||
+                      showGstBillCreator.value || showBarcodeModal.value ||
                       quickSearchResults.value.length > 0 ||
                       pendingItem.value || editingRowIdx.value !== -1;
 
