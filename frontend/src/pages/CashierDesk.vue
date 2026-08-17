@@ -274,9 +274,9 @@
                     <td class="px-3 py-1.5">
                       <div class="text-[21px] text-[var(--color-text)]">
                         {{ item.item_name }}
-                        <!-- Same rate-0 convention SalesEntry uses to mark a free row -->
+                        <!-- Backend is_free_item flag; rate-0 fallback for rows saved before it was stored -->
                         <span
-                          v-if="!Number(item.rate)"
+                          v-if="item.is_free_item === 1 || !Number(item.rate)"
                           class="ml-1 rounded bg-[var(--color-success)] px-1.5 text-[20px] font-bold uppercase leading-tight text-[var(--color-text-on-highlight)]"
                         >Free</span>
                       </div>
