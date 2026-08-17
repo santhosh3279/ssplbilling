@@ -270,6 +270,24 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                Date of Birth <span class="text-rose-500">*</span>
+              </label>
+              <input v-model="enroll.date_of_birth" type="date" class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]" />
+              <p class="mt-1 text-[11px] text-[var(--color-text-muted)]">Mandatory on the Employee record.</p>
+            </div>
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Gender</label>
+              <select v-model="enroll.gender" class="mt-1 w-full px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]">
+                <option>Male</option>
+                <option>Female</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                 Employee Code <span class="text-rose-500">*</span>
               </label>
               <div class="mt-1 flex gap-2">
@@ -371,6 +389,8 @@ function blankEnroll() {
     last_name: '',
     mobile: '',
     date_of_joining: '',
+    date_of_birth: '',
+    gender: 'Male',
     employee_code: '',
     privilege: 'User',
     machines: [],
@@ -524,6 +544,12 @@ async function suggestCode() {
 }
 
 async function saveEnroll() {
+  // Employee.date_of_birth is mandatory in HRMS — catch it here instead of
+  // letting the insert blow up with a raw MandatoryError traceback
+  if (!enroll.value.date_of_birth) {
+    enrollError.value = 'Date of Birth is required to create the Employee record.'
+    return
+  }
   saving.value = true
   enrollError.value = ''
   try {

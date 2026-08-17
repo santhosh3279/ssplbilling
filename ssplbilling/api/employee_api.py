@@ -12,6 +12,15 @@ def create_employee(data):
 	if not first_name:
 		frappe.throw("First Name is required")
 
+	# Employee.date_of_birth is reqd in HRMS; without this the insert fails with a
+	# bare MandatoryError that says nothing useful to the operator.
+	if not data.get("date_of_birth"):
+		frappe.throw("Date of Birth is required to create an Employee")
+
+	company = frappe.defaults.get_global_default("company") or frappe.db.get_value("Company", {}, "name")
+	if not company:
+		frappe.throw("No Company found — set a default company before creating employees")
+
 	emp = frappe.new_doc("Employee")
 	emp.first_name = first_name
 	emp.last_name = (data.get("last_name") or "").strip()
@@ -23,7 +32,7 @@ def create_employee(data):
 	emp.personal_email = data.get("email") or ""
 	emp.current_address = data.get("current_address") or ""
 	emp.status = "Active"
-	emp.company = frappe.defaults.get_global_default("company")
+	emp.company = company
 	emp.insert(ignore_permissions=True)
 
 	return {"name": emp.name, "employee_name": emp.employee_name}
