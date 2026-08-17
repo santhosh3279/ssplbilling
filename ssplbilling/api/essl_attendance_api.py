@@ -22,6 +22,10 @@ from ssplbilling.api.essl_machine_api import (
 MAPPING_DOCTYPE = "eSSL Employee Mapping"
 SETTINGS_DOCTYPE = "eSSL Sync Settings"
 
+# Punches the operator deleted on purpose. The sync re-reads an overlapping window
+# every run, so without this a deleted checkin returns on the next tick.
+IGNORED_DOCTYPE = "eSSL Ignored Checkin"
+
 # Window used the very first time a machine is synced (it has no watermark yet).
 # Without this a fresh device dumps years of logs and back-dates thousands of
 # Attendance records — the manual sync takes an explicit from_date for backfills.
@@ -221,7 +225,33 @@ def auto_map_by_name(machine=None):
 # ─────────────────────────── the sync itself ───────────────────────────
 
 
+def _is_ignored(employee, timestamp):
+	"""True when this exact punch was deleted by hand and must stay gone."""
+	return bool(frappe.db.exists(IGNORED_DOCTYPE, {"employee": employee, "time": timestamp}))
+
+
+def _ignored_stamps_for_window(employees, window_start):
+	"""{(employee, datetime)} of every deleted punch from window_start onwards.
+
+	Read once per sync — a backfill walks thousands of punches and a db.exists per
+	punch would be one query each.
+	"""
+	if not employees:
+		return set()
+	rows = frappe.get_all(
+		IGNORED_DOCTYPE,
+		filters={
+			"employee": ("in", list(employees)),
+			"time": (">=", f"{window_start} 00:00:00"),
+		},
+		fields=["employee", "time"],
+	)
+	return {(row.employee, get_datetime(row.time)) for row in rows}
+
+
 def _create_checkin(employee, timestamp, machine):
+	if _is_ignored(employee, timestamp):
+		return False
 	if frappe.db.exists("Employee Checkin", {"employee": employee, "time": timestamp}):
 		return False
 	doc = frappe.new_doc("Employee Checkin")
@@ -433,6 +463,7 @@ def _sync_machine(row, settings, from_date=None):
 		"attendance_created": 0,
 		"attendance_updated": 0,
 		"skipped_future": 0,
+		"skipped_ignored": 0,
 		"error": None,
 	}
 
@@ -446,6 +477,7 @@ def _sync_machine(row, settings, from_date=None):
 	index = _mapping_index()
 	now = now_datetime()
 	unmapped = set()
+	touched_employees = set()
 	# {(employee, date): [timestamps]}
 	per_day = {}
 
@@ -470,6 +502,7 @@ def _sync_machine(row, settings, from_date=None):
 
 			summary["mapped"] += 1
 			per_day.setdefault((emp.name, stamp.date()), []).append(stamp)
+			touched_employees.add(emp.name)
 	except Exception as e:
 		summary["error"] = str(e) or e.__class__.__name__
 		return summary
@@ -481,6 +514,21 @@ def _sync_machine(row, settings, from_date=None):
 				pass
 
 	summary["unmapped_ids"] = sorted(unmapped)
+
+	# Drop the deliberately deleted punches before anything reads them. _create_checkin
+	# blocks the write, but _real_stamps_for_day falls back to these raw stamps when the
+	# day has no checkin rows left — without this, deleting every punch of a day would
+	# keep the checkins gone and still rebuild Attendance from them.
+	ignored = _ignored_stamps_for_window(touched_employees, window_start)
+	if ignored:
+		for key in list(per_day):
+			employee = key[0]
+			kept = [s for s in per_day[key] if (employee, get_datetime(s)) not in ignored]
+			summary["skipped_ignored"] += len(per_day[key]) - len(kept)
+			if kept:
+				per_day[key] = kept
+			else:
+				del per_day[key]
 
 	employees = {e.name: e for e in frappe.get_all("Employee", fields=["name", "company"])}
 
@@ -560,6 +608,7 @@ def sync_attendance(machine=None, from_date=None):
 		"attendance_created",
 		"attendance_updated",
 		"skipped_future",
+		"skipped_ignored",
 	)
 	totals = {key: sum(r.get(key) or 0 for r in results) for key in counters}
 	unmapped = sorted({uid for r in results for uid in (r.get("unmapped_ids") or [])})
@@ -907,6 +956,11 @@ def create_employee_checkin(employee, date, time):
 	if not frappe.db.exists("Employee", employee):
 		frappe.throw(f"Employee {employee} not found")
 
+	# Typing the time back in is the undo for a deletion — drop the tombstone so
+	# _create_checkin is not blocked by the operator's own earlier delete.
+	for ignored in frappe.get_all(IGNORED_DOCTYPE, filters={"employee": employee, "time": stamp}):
+		frappe.delete_doc(IGNORED_DOCTYPE, ignored.name, ignore_permissions=True, force=True)
+
 	if not _create_checkin(employee, stamp, MANUAL_DEVICE_ID):
 		frappe.throw(f"A checkin already exists for this employee at {stamp}")
 
@@ -925,7 +979,18 @@ def delete_employee_checkin(name):
 
 	checkin = frappe.get_doc("Employee Checkin", name)
 	employee = checkin.employee
+	stamp = get_datetime(checkin.time)
 	day = getdate(checkin.time)
+
+	# Tombstone first: the sync re-reads this day on every tick, so without a marker
+	# the punch is back within minutes.
+	if not _is_ignored(employee, stamp):
+		ignored = frappe.new_doc(IGNORED_DOCTYPE)
+		ignored.employee = employee
+		ignored.time = stamp
+		ignored.device_id = checkin.device_id or ""
+		ignored.deleted_by = frappe.session.user
+		ignored.insert(ignore_permissions=True)
 
 	frappe.delete_doc("Employee Checkin", name, ignore_permissions=True, force=True)
 

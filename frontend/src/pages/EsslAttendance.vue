@@ -161,6 +161,10 @@
               {{ skippedInactive.length }} inactive
               {{ skippedInactive.length === 1 ? 'machine was' : 'machines were' }} skipped
             </span>
+            <span v-if="lastSync.totals.skipped_ignored" class="text-xs font-bold text-[var(--color-text-muted)]">
+              {{ lastSync.totals.skipped_ignored }} deleted
+              {{ lastSync.totals.skipped_ignored === 1 ? 'punch was' : 'punches were' }} left out
+            </span>
             <span v-if="lastSync.totals.skipped_future" class="text-xs font-bold text-amber-500">
               {{ lastSync.totals.skipped_future }} punches dated in the future were skipped (device clock)
             </span>
@@ -891,7 +895,12 @@ async function saveCheckin() {
 }
 
 async function deleteCheckin(punch) {
-  if (!confirm(`Are you sure you want to delete the checkin at ${formatTime(punch.time)}?`)) {
+  if (
+    !confirm(
+      `Delete the checkin at ${formatTime(punch.time)}? The sync will leave this punch out ` +
+        `from now on — adding the same time back by hand undoes it.`
+    )
+  ) {
     return
   }
   checkinError.value = ''
