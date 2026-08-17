@@ -2253,7 +2253,6 @@ function updateTableRates() {
 
 // Negate / restore all row qtys when Sale Return is toggled
 watch(isReturn, (val) => {
-  ignoreDiscountRule.value = val
   items.value.forEach((item, idx) => {
     if (item.deleted || item._is_free) return
     item.qty = val ? -Math.abs(item.qty || 0) : Math.abs(item.qty || 0)
@@ -2274,7 +2273,7 @@ watch(isReturn, (val) => {
         const base = getItemRateForPriceList(cached, item.uom)
         item._base_rate = base
         item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
-        // discount will be reapplied by useDiscountRules because ignoreDiscountRule is now false
+        // discount is reapplied by useDiscountRules unless the operator ticked Ignore Rule
       }
     }
     recalcAmount(idx)

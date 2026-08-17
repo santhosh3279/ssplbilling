@@ -226,6 +226,8 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
     try {
       const row = items.value[rowIdx]
       if (!row || row._is_free || row.deleted) return
+      // Return rows (negative qty) keep the rate/discount pulled from sales history
+      if (row.qty < 0) return
       const key = row._rowKey
 
       // Remove stale free rows for this parent
@@ -259,6 +261,8 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
       for (let i = 0; i < snap.length; i++) {
         const row = snap[i]
         if (row.deleted || ignoreDiscountRule.value) continue
+        // Return rows (negative qty) keep the rate/discount pulled from sales history
+        if (row.qty < 0) continue
 
         const rule = _findMatchingRule(row.item_code)
         if (!rule) {
