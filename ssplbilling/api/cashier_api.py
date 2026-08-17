@@ -306,6 +306,7 @@ def get_sales_invoice(invoice_name):
                 "income_account": item.income_account or "",
                 "cost_center": item.cost_center or "",
                 "tax_rate": _get_item_tax_rate(item.item_code),
+                "is_free_item": frappe.utils.cint(item.get("is_free_item")),
                 "deleted": False,
             }
             for item in si.items

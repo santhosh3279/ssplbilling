@@ -122,6 +122,18 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
     if (rule.discount_type === 'Product Discount') {
       const minQty = rule.min_quantity || 1
       const freeBase_ = rule.free_quantity || 0
+
+      // Row loaded from a saved invoice: its qty is already the *paid* qty, the
+      // free units live in a separate saved row. Add them back once so the rule
+      // recomputes from the original total instead of shrinking it again.
+      if (row._paid_qty === undefined && row._loaded_free_qty) {
+        if (row.qty === row._loaded_paid_qty) {
+          row._total_qty = row.qty + row._loaded_free_qty
+        }
+        delete row._loaded_free_qty
+        delete row._loaded_paid_qty
+      }
+
       const totalQty = row._total_qty || 0
 
       let totalFree = 0

@@ -1128,10 +1128,30 @@ async function handleSelectSidebarItem(item) {
         uom: i.uom || 'Nos',
         tax_rate: i.tax_rate || 0,
         deleted: false,
-        _is_free: effectiveRate === 0,
+        _is_free: i.is_free_item === 1 || effectiveRate === 0,
         amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(precision)),
+        _rowKey: makeRowKey(),
       }
     })
+
+    // Re-link saved free rows to the paid row that generated them, and remember
+    // how much qty was moved out of the parent. Product Discount rules subtract
+    // the free qty from the parent row before saving, so without this the rule
+    // engine would treat the reduced qty as the total and grant free units again
+    // (50 → 46+4 on entry, then 42+4 on re-open).
+    let _freeParent = null
+    for (const row of items.value) {
+      if (row._is_free) {
+        if (!_freeParent) continue
+        row._free_parent_key = _freeParent._rowKey
+        if ((row.item_code || '').toLowerCase() === (_freeParent.item_code || '').toLowerCase()) {
+          _freeParent._loaded_free_qty = (_freeParent._loaded_free_qty || 0) + (row.qty || 0)
+          _freeParent._loaded_paid_qty = _freeParent.qty
+        }
+      } else {
+        _freeParent = row
+      }
+    }
 
     selectedRowIdx.value = -1
     editingRowIdx.value = -1
