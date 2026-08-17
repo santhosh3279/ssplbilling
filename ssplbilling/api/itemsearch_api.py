@@ -514,6 +514,14 @@ def get_customer_sales_history(customer, company=None):
 		row["distributed_discount_amount"] = distributed
 		row["bill_discount_factor"] = (net_amount / gross) if gross > 0 else 1.0
 
+		# sii.rate is already net of sii.discount_percentage. Consumers that re-apply the
+		# discount themselves (return pricing) need the pre-discount rate, derived from
+		# rate itself rather than price_list_rate, which can carry a different basis.
+		if 0 < row["discount"] < 100:
+			row["gross_rate"] = row["rate"] / (1 - row["discount"] / 100)
+		else:
+			row["gross_rate"] = row["rate"]
+
 	return history
 
 

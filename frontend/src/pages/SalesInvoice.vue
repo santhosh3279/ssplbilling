@@ -2454,17 +2454,25 @@ function getHistoryRateAndDiscount(itemCode, uom) {
   const history = getItemHistoryFromCache(itemCode)
   if (!history || history.length === 0) return null
 
+  // A row's rate is stored net of its own discount, while item.rate here is gross and
+  // recalcAmount re-applies the discount — so the pre-discount rate is what to hand back.
+  const grossRateOf = (row) => {
+    const gross = parseFloat(row.gross_rate)
+    return gross > 0 ? gross : row.rate
+  }
+  const discountOf = (row) => (parseFloat(row.gross_rate) > 0 ? row.discount : 0)
+
   const priced = (row, rate) => ({
     rate: parseFloat((rate * getBillDiscountFactor(row)).toFixed(precision)),
-    discount: row.discount
+    discount: discountOf(row)
   })
 
   // history is sorted newest first, so the first match is the latest one
   const exact = uom ? history.find(h => h.uom === uom) : null
-  if (exact) return priced(exact, exact.rate)
+  if (exact) return priced(exact, grossRateOf(exact))
 
   const last = history[0]
-  if (!uom || !last.uom || last.uom === uom) return priced(last, last.rate)
+  if (!uom || !last.uom || last.uom === uom) return priced(last, grossRateOf(last))
 
   const cfTarget = getUomConversionFactor(itemCode, uom)
   const cfHist = parseFloat(last.conversion_factor) > 0
@@ -2472,7 +2480,7 @@ function getHistoryRateAndDiscount(itemCode, uom) {
     : getUomConversionFactor(itemCode, last.uom)
   if (!cfTarget || !cfHist) return null
 
-  return priced(last, (last.rate / cfHist) * cfTarget)
+  return priced(last, (grossRateOf(last) / cfHist) * cfTarget)
 }
 
 function applyItemToRow(rowIdx, item) {
