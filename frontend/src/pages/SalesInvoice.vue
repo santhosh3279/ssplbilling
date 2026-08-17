@@ -203,9 +203,13 @@
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format2p(item.amount) }}</td>
           <td class="px-2 py-1 text-center">
             <button
-              class="rounded px-1 py-0.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]"
-              :class="item.deleted ? 'text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold' : (selectedRowIdx === index ? 'text-[var(--color-text)]/60 hover:text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')"
-              @click.stop="selectedRowIdx = index; deleteItem(index)"
+              :disabled="isReadOnly"
+              :tabindex="isReadOnly ? -1 : 0"
+              class="rounded px-1 py-0.5"
+              :class="isReadOnly
+                ? 'text-[var(--color-text-muted)]/40 cursor-not-allowed'
+                : ['hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]', item.deleted ? 'text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold' : (selectedRowIdx === index ? 'text-[var(--color-text)]/60 hover:text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')]"
+              @click.stop="!isReadOnly && (selectedRowIdx = index, deleteItem(index))"
             >
               {{ item.deleted ? 'Undo' : '×' }}
             </button>
@@ -1980,6 +1984,7 @@ function applyRegionalTaxLogic() {
 }
 
 function handleItemEntry() {
+  if (isReadOnly.value) return
   if (!newItemCode.value) return
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) return
 
@@ -2108,6 +2113,7 @@ function handleRowKeydown(e, idx) {
 }
 
 function focusEditField(field, idx) {
+  if (isReadOnly.value) return
   if (items.value[idx]?.deleted || items.value[idx]?._is_free) return
   if (editingRowIdx.value !== idx) {
     originalRowCode.value = items.value[idx].item_code
@@ -2368,6 +2374,7 @@ function focusRow(idx, direction = null) {
 function focusBarcodeInput() { selectedRowIdx.value = -1; nextTick(() => { newCodeInput.value?.focus() }) }
 
 function deleteItem(idx) {
+  if (isReadOnly.value) return
   const item = items.value[idx]; if (!item) return
   item.deleted = !item.deleted
   if (item.deleted && editingRowIdx.value === idx) { editingRowIdx.value = -1; editingField.value = null }
@@ -2397,6 +2404,7 @@ function deleteItem(idx) {
 }
 
 function clearItem(idx) {
+  if (isReadOnly.value) return
   if (idx !== -1 && items.value[idx]) {
     items.value.splice(idx, 1)
     if (editingRowIdx.value === idx) {
@@ -2537,6 +2545,7 @@ function applyItemToRow(rowIdx, item) {
 }
 
 function openItemSearch(query, targetRowIdx = null) {
+  if (isReadOnly.value) return
   quickSearchResults.value = []
   editQuickSearchRowIdx.value = null
   itemSearchTargetRowIdx.value = targetRowIdx
@@ -2919,6 +2928,7 @@ function setPendingItem(item) {
 }
 
 function confirmPendingItem() {
+  if (isReadOnly.value) return
   if (!pendingItem.value || !pendingItem.value.qty) return
   const p = pendingItem.value
   const qty = isReturn.value ? -Math.abs(p.qty) : p.qty
