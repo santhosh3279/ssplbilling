@@ -1,4 +1,5 @@
 import frappe
+from frappe.utils import getdate, nowdate, nowtime
 
 
 def get_automatic_entries():
@@ -656,7 +657,7 @@ def mirror_standalone_payment_entry(pe):
 		return None
 
 
-def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_list=None, tax_template=None, tax_type_incl=None, use_series_naming=False, submit=True):
+def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_list=None, tax_template=None, tax_type_incl=None, use_series_naming=False, submit=True, posting_date=None):
 	"""Create a mirror Sales Invoice in target company (ae_company) for a Sales Invoice
 	that is being converted to a GST bill (Quotation).
 	It creates a Sales Invoice in target company, with name si.name + '/', and copies all accounts,
@@ -683,10 +684,17 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 	if si.customer_address:
 		msi.customer_address = si.customer_address
 	msi.naming_series = naming_series or si.naming_series
-	msi.posting_date = si.posting_date
-	msi.posting_time = si.posting_time
+	# `posting_date` overrides the source date for mirrors raised by hand long after
+	# the original was billed; the automatic same-day mirror passes nothing and keeps
+	# the source date.
+	msi.posting_date = posting_date or si.posting_date
+	msi.posting_time = nowtime() if posting_date else si.posting_time
 	msi.set_posting_time = 1
 	msi.due_date = si.due_date
+	if msi.due_date and getdate(msi.due_date) < getdate(msi.posting_date):
+		# A due date copied from an older invoice would be before the mirror's own
+		# posting date, which ERPNext rejects.
+		msi.due_date = msi.posting_date
 	msi.selling_price_list = price_list or si.selling_price_list
 	msi.additional_discount_percentage = si.additional_discount_percentage
 	msi.discount_amount = si.discount_amount
@@ -897,7 +905,7 @@ def create_conversion_mirror_invoice(sales_invoice_name, naming_series, price_li
 
 	si = frappe.get_doc("Sales Invoice", sales_invoice_name)
 	msi = create_mirror_invoice_for_gst_conversion(
-		si, ae, naming_series=naming_series, price_list=price_list, tax_template=tax_template, tax_type_incl=tax_type_incl, use_series_naming=True, submit=False
+		si, ae, naming_series=naming_series, price_list=price_list, tax_template=tax_template, tax_type_incl=tax_type_incl, use_series_naming=True, submit=False, posting_date=nowdate()
 	)
 	return {"status": "success", "invoice_name": msi.name, "company": msi.company}
 
