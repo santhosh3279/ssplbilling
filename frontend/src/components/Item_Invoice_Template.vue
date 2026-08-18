@@ -201,6 +201,27 @@
                     </svg>
                     <span>Refresh {{ partyType }} Info</span>
                   </button>
+                  <button
+                    v-if="showRepriceButton"
+                    @click.stop="$emit('reprice-prices')"
+                    class="ml-4 flex items-center gap-1 text-[11px] font-bold uppercase text-[var(--color-warning)] hover:text-[var(--color-warning)]/80 transition-all cursor-pointer bg-transparent border-none p-0"
+                    title="Re-apply price list, pricing rules and party modifier to every row"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    >
+                      <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                    <span>Refresh Prices</span>
+                  </button>
                 </div>
 
                 <!-- Inner row for party details -->
@@ -651,6 +672,8 @@ const props = defineProps({
   postingTime: { type: String, default: '' },
   partyLastInvDate: { type: String, default: '' },
   partyModifier: { type: [Number, String], default: null },
+  // Opt-in: only pages that own a reprice handler should show the button.
+  showRepriceButton: { type: Boolean, default: false },
   ignoreModifier: { type: Boolean, default: false },
   docDate: { type: String, default: '' },
   items: { type: Array, default: () => [] },
@@ -714,7 +737,7 @@ const emit = defineEmits([
   'toggle-draft-only', 'select-sidebar-item', 'delete-item', 'discount-pct-keydown', 'discount-amt-keydown',
   'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry',
   'update:discountPct', 'update:discountDirectAmt',
-  'update:ignoreModifier', 'other-entry-enter', 'party-refreshed'
+  'update:ignoreModifier', 'other-entry-enter', 'party-refreshed', 'reprice-prices'
 ])
 
 const { isTablet } = useDevice()

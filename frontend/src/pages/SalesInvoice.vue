@@ -18,6 +18,8 @@
       :party-modifier="customerModifier"
       v-model:ignore-modifier="ignoreModifier"
       @party-refreshed="handlePartyRefreshed"
+      show-reprice-button
+      @reprice-prices="applyCustomerPricingToRows"
       :doc-date="invoiceDate"
       :items="items"
       :subtotal="subtotal"
@@ -647,6 +649,16 @@
     />
 
     <Warning
+      :show="showRepriceChoice"
+      title="Party Changed"
+      message="This bill already has items. Keep the rates as they are, or re-apply the price list, pricing rules and party modifier for the new party?"
+      cancel-label="Retain Prices (Esc)"
+      confirm-label="Reprice"
+      @close="retainCurrentRates"
+      @confirm="applyCustomerPricingToRows"
+    />
+
+    <Warning
       :show="showClearWarning"
       title="Clear Bill"
       message="All items will be removed and a new bill number will be assigned."
@@ -851,6 +863,7 @@ const showCustomAddressModal = ref(false)
 const showHistoryModal = ref(false)
 const customAddress = ref({ customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' })
 const showClearWarning = ref(false)
+const showRepriceChoice = ref(false)
 const showExitWarning = ref(false)
 const customerInitialQuery = ref('')
 const invoiceTemplateRef = ref(null)
@@ -2327,10 +2340,32 @@ watch(priceList, (newList) => {
     .catch(e => console.warn('[SalesInvoice] Background price refresh failed:', e))
 })
 
+// Chosen from the party-change warning, or from the Refresh Prices button.
+// Clears both freeze flags: the operator is explicitly asking for the price
+// list, the pricing rules and the party modifier to win.
+async function applyCustomerPricingToRows() {
+  showRepriceChoice.value = false
+  if (!customerId.value) return
+  items.value.forEach(i => { i._retain_rate = false; i._rate_overridden = false })
+  ignoreModifier.value = false
+  try {
+    const data = await frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: customerId.value })
+    customerPricing.value = data || {}
+  } catch (e) {
+    customerPricing.value = {}
+  }
+  reapplyCustomerPricing()
+}
+
+function retainCurrentRates() {
+  showRepriceChoice.value = false
+  items.value.forEach(i => { if (!i.deleted) i._retain_rate = true })
+}
+
 function reapplyCustomerPricing() {
   if (isReturn.value) return
   items.value.forEach((item, idx) => {
-    if (item.deleted || item._is_free || item._rate_overridden) return
+    if (item.deleted || item._is_free || item._rate_overridden || item._retain_rate) return
     const base = item.price_list_rate || item._base_rate || item.rate
     item._base_rate = base
     item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
@@ -2977,11 +3012,24 @@ function cancelPendingItem(skipFocus = false) {
 
 function handlePartyRefreshed(party) {
   if (party && party.name === customerId.value) {
-    handleCustomerSelected(party)
+    // Refreshing party details must not silently move rates. A server-side
+    // modifier change is picked up by the Refresh Prices button instead.
+    handleCustomerSelected(party, { silentPricing: true })
   }
 }
 
-function handleCustomerSelected(cust) {
+function handleCustomerSelected(cust, opts = {}) {
+  const { silentPricing = false } = opts
+  // Only a *switch* between parties is ambiguous. Picking the first party on a
+  // bill that was started without one is the normal flow and must not prompt.
+  const partyChanged = !!customerId.value && cust.name !== customerId.value
+  const hasRows = items.value.some(i => !i.deleted)
+  // Switching party on a bill that already has rows must not reprice behind the
+  // operator's back — ask first. ignoreModifier is left untouched here too: its
+  // watcher reprices, and resetting a flag whose effect we are suppressing
+  // would leave the header showing something the rows do not follow.
+  const askBeforeReprice = !silentPricing && partyChanged && hasRows
+
   customerName.value = cust.label || cust.name
   customerId.value = cust.name
   customerDetails.value = cust.mobile_no || cust.email || ''
@@ -2990,12 +3038,23 @@ function handleCustomerSelected(cust) {
   customerBalance.value = cust.balance ?? 0
   customerState.value = cust.state || ''
   customerModifier.value = cust.pricelist_multiplication_factor ?? null
-  ignoreModifier.value = false
+
+  const repriceNow = !silentPricing && !askBeforeReprice
+  if (askBeforeReprice) {
+    items.value.forEach(i => { if (!i.deleted) i._retain_rate = true })
+  } else if (repriceNow) {
+    items.value.forEach(i => { i._retain_rate = false })
+    ignoreModifier.value = false
+  }
   customerPricing.value = {}
-  reapplyCustomerPricing()
+  if (repriceNow) reapplyCustomerPricing()
   frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: cust.name || cust.label })
-    .then(data => { customerPricing.value = data || {}; reapplyCustomerPricing() })
+    .then(data => {
+      customerPricing.value = data || {}
+      if (repriceNow) reapplyCustomerPricing()
+    })
     .catch(() => { customerPricing.value = {} })
+  if (askBeforeReprice) showRepriceChoice.value = true
   const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
   customerAddress.value = addrParts.join(', ')
   showCustomerModal.value = false
@@ -3102,7 +3161,8 @@ function handleGlobalEscape(e) {
                       showItemSearch.value || showPriceDetectModal.value || 
                       showPrintModal.value || showJumpModal.value || 
                       showCustomAddressModal.value || 
-                      showClearWarning.value || showExitWarning.value || 
+                      showClearWarning.value || showExitWarning.value ||
+                      showRepriceChoice.value || 
                       showShortcutPage.value || showHistoryModal.value ||
                       showGstBillCreator.value || showBarcodeModal.value ||
                       quickSearchResults.value.length > 0 ||
