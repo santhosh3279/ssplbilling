@@ -2355,11 +2355,21 @@ async function applyCustomerPricingToRows() {
     customerPricing.value = {}
   }
   reapplyCustomerPricing()
+  focusMopAfterPartyChange()
 }
 
 function retainCurrentRates() {
   showRepriceChoice.value = false
   items.value.forEach(i => { if (!i.deleted) i._retain_rate = true })
+  focusMopAfterPartyChange()
+}
+
+// Hand focus back to where a party change normally leaves it, now that the
+// warning has been answered.
+function focusMopAfterPartyChange() {
+  setTimeout(() => {
+    invoiceTemplateRef.value?.focusMop()
+  }, 150)
 }
 
 function reapplyCustomerPricing() {
@@ -3061,9 +3071,14 @@ function handleCustomerSelected(cust, opts = {}) {
   
   // Ensure MOP is focused after selection, especially for new bills.
   // We use a small timeout to ensure the modal's return-focus logic doesn't override this.
-  setTimeout(() => {
-    invoiceTemplateRef.value?.focusMop()
-  }, 150)
+  // Skipped while the reprice warning is up: it focuses Retain Prices, and this
+  // would pull focus off it 150ms later, leaving the default choice unreachable
+  // by keyboard.
+  if (!askBeforeReprice) {
+    setTimeout(() => {
+      invoiceTemplateRef.value?.focusMop()
+    }, 150)
+  }
 
   if (cust.last_invoice_date) {
     const d = new Date(cust.last_invoice_date)
