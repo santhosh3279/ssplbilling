@@ -1129,7 +1129,10 @@ async function handleSelectSidebarItem(item) {
       // a false positive only keeps the backend value, which is the safe way to
       // be wrong.
       const basePl = i.price_list_rate || 0
-      const expectedRate = parseFloat(((basePl) * combinedFactor(i.item_code)).toFixed(precision))
+      // effectiveModifier(), not combinedFactor(): customerPricing is never loaded
+      // by loadBill, so it still holds the previously opened customer's per-item
+      // factors and would mis-flag rows that merely share an item code.
+      const expectedRate = parseFloat(((basePl) * effectiveModifier()).toFixed(precision))
       const overridden = basePl > 0 && Math.abs(preDiscountRate - expectedRate) > 0.01
       return {
         item_code: i.item_code,
