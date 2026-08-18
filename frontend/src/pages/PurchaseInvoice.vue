@@ -1459,14 +1459,22 @@ watch(priceList, (newList) => {
   if (!newList || isLoadingBill.value) return
   updateTableRates()
   refreshItemCache('Purchase', newList, warehouse.value)
-    .then(() => updateTableRates())
+    .then(() => {
+      // Re-check the guard: a saved bill may have been opened while this was in
+      // flight, and repricing it here would overwrite the stored rates.
+      if (isLoadingBill.value || priceList.value !== newList) return
+      updateTableRates()
+    })
     .catch(e => console.warn('[PurchaseInvoice] Background price refresh failed:', e))
 })
 
 watch(warehouse, (newVal) => {
   if (!newVal || isLoadingBill.value) return
   refreshItemCache('Purchase', priceList.value, newVal)
-    .then(() => updateTableRates())
+    .then(() => {
+      if (isLoadingBill.value || warehouse.value !== newVal) return
+      updateTableRates()
+    })
     .catch(e => console.warn('[PurchaseInvoice] Background price refresh failed:', e))
 })
 

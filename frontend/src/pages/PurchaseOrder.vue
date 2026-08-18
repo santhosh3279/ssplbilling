@@ -1009,7 +1009,12 @@ watch(taxTemplate, (val) => {
 watch(priceList, (newList) => {
   if (!newList || isLoadingBill.value) return
   updateTableRates()
-  refreshItemCache('Purchase', newList, warehouse.value).then(() => updateTableRates())
+  refreshItemCache('Purchase', newList, warehouse.value).then(() => {
+    // Re-check the guard: a saved order may have been opened while this was in
+    // flight, and repricing it here would overwrite the stored rates.
+    if (isLoadingBill.value || priceList.value !== newList) return
+    updateTableRates()
+  })
 })
 
 function goBack() { router.push('/') }
