@@ -298,6 +298,7 @@ import ItemCreation from './ItemCreation.vue'
 import PriceListUpdate from '../pages/PriceListUpdate.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { canAccessTile } from '../composables/usePermission'
+import { getCipherMap } from '../encryption.js'
 import CustomerSearchModal from './CustomerSearchModal.vue'
 import {
   loadQuickQtyMap,
@@ -613,17 +614,10 @@ function handleSupplierSelect(supplier) {
 // ─── Encryption Logic ────────────────────────────────────────────────────────
 
 function loadCipherMap() {
-  try {
-    const raw = localStorage.getItem('wb-cipher')
-    if (raw) {
-      const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
-      if (Array.isArray(parsed) && parsed.length === 10) {
-        cipherMap.value = parsed
-      }
-    }
-  } catch (e) {
-    console.warn('[ItemSearch] Failed to load cipher map:', e)
-  }
+  // Single source of truth with every other page (SalesInvoice, PurchaseInvoice,
+  // SalesOrder, Quotation, PurchaseOrder, OfferPage). Falls back to the default
+  // cipher rather than an empty map, so a bad wb-cipher never shows plain rates.
+  cipherMap.value = getCipherMap()
 }
 
 function encPrice(val) {

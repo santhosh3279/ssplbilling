@@ -3,8 +3,22 @@ const DEFAULT_CIPHER = ['K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T']
 export function getCipherMap() {
   try {
     const stored = localStorage.getItem('wb-cipher')
-    if (stored) return JSON.parse(stored)
-  } catch (e) {}
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      // A malformed map must not fall through: a short array yields '?' chars and
+      // a non-array throws downstream, both of which leak or corrupt the price.
+      if (
+        Array.isArray(parsed) &&
+        parsed.length === 10 &&
+        parsed.every(v => typeof v === 'string' && v)
+      ) {
+        return parsed
+      }
+      console.warn('[encryption] Invalid wb-cipher, using default cipher map')
+    }
+  } catch (e) {
+    console.warn('[encryption] Failed to parse wb-cipher:', e)
+  }
   return [...DEFAULT_CIPHER]
 }
 
