@@ -16,6 +16,8 @@
       :party-modifier="customerModifier"
       v-model:ignore-modifier="ignoreModifier"
       @party-refreshed="handlePartyRefreshed"
+      show-reprice-button
+      @reprice-prices="applyCustomerPricingToRows"
       :doc-date="invoiceDate"
       :items="items"
       :subtotal="subtotal"
@@ -516,6 +518,16 @@
     />
 
     <Warning
+      :show="showRepriceChoice"
+      title="Party Changed"
+      message="This document already has items. Keep the rates as they are, or re-apply the price list, pricing rules and party modifier for the new party?"
+      cancel-label="Retain Prices (Esc)"
+      confirm-label="Reprice"
+      @close="retainCurrentRates"
+      @confirm="applyCustomerPricingToRows"
+    />
+
+    <Warning
       :show="showClearWarning"
       title="Clear Bill"
       message="All items will be removed and a new bill number will be assigned."
@@ -653,6 +665,7 @@ const incentiveRows = ref([])
 const showCustomAddressModal = ref(false)
 const customAddress = ref({ customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' })
 const showClearWarning = ref(false)
+const showRepriceChoice = ref(false)
 const showExitWarning = ref(false)
 const customerInitialQuery = ref('')
 const invoiceTemplateRef = ref(null)
@@ -1799,9 +1812,35 @@ watch(priceList, (newList) => {
     .catch(e => console.warn('[SalesInvoice] Background price refresh failed:', e))
 })
 
+// Chosen from the party-change warning, or from the Refresh Prices button.
+// The operator is explicitly asking for the price list, the pricing rules and
+// the party modifier to win.
+async function applyCustomerPricingToRows() {
+  showRepriceChoice.value = false
+  if (!customerId.value) return
+  items.value.forEach(i => {
+    i._retain_rate = false
+  })
+  ignoreModifier.value = false
+  try {
+    const data = await frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: customerId.value })
+    customerPricing.value = data || {}
+  } catch (e) {
+    customerPricing.value = {}
+  }
+  reapplyCustomerPricing()
+  nextTick(() => { newCodeInput.value?.focus() })
+}
+
+function retainCurrentRates() {
+  showRepriceChoice.value = false
+  items.value.forEach(i => { if (!i.deleted) i._retain_rate = true })
+  nextTick(() => { newCodeInput.value?.focus() })
+}
+
 function reapplyCustomerPricing() {
   items.value.forEach((item, idx) => {
-    if (item.deleted || item._is_free) return
+    if (item.deleted || item._is_free || item._retain_rate) return
     const base = item.price_list_rate || item._base_rate || item.rate
     item._base_rate = base
     item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
@@ -2258,11 +2297,25 @@ function cancelPendingItem(skipFocus = false) {
 
 function handlePartyRefreshed(party) {
   if (party && party.name === customerId.value) {
-    handleCustomerSelected(party)
+    // Refreshing party details must not silently move rates. A server-side
+    // modifier change is picked up by the Refresh Prices button instead.
+    handleCustomerSelected(party, { silentPricing: true })
   }
 }
 
-function handleCustomerSelected(cust) {
+function handleCustomerSelected(cust, opts = {}) {
+  const { silentPricing = false } = opts
+  // Only a *switch* between parties is ambiguous. Picking the first party on a
+  // doc that was started without one is the normal flow and must not prompt.
+  const partyChanged = !!customerId.value && cust.name !== customerId.value
+  const hasRows = items.value.some(i => !i.deleted)
+  // Switching party on a doc that already has rows must not reprice behind the
+  // operator's back — ask first. ignoreModifier is left untouched here too: its
+  // watcher reprices, and resetting a flag whose effect we are suppressing
+  // would leave the header showing something the rows do not follow.
+  const askBeforeReprice = !silentPricing && partyChanged && hasRows
+  const repriceNow = !silentPricing && !askBeforeReprice
+
   customerName.value = cust.label || cust.name
   customerId.value = cust.name
   customerDetails.value = cust.mobile_no || cust.email || ''
@@ -2271,12 +2324,24 @@ function handleCustomerSelected(cust) {
   customerBalance.value = cust.balance ?? 0
   customerState.value = cust.state || ''
   customerModifier.value = cust.pricelist_multiplication_factor ?? null
-  ignoreModifier.value = false
+
+  if (askBeforeReprice) {
+    items.value.forEach(i => { if (!i.deleted) i._retain_rate = true })
+  } else if (repriceNow) {
+    items.value.forEach(i => {
+      i._retain_rate = false
+    })
+    ignoreModifier.value = false
+  }
   customerPricing.value = {}
-  reapplyCustomerPricing()
+  if (repriceNow) reapplyCustomerPricing()
   frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: cust.name || cust.label })
-    .then(data => { customerPricing.value = data || {}; reapplyCustomerPricing() })
+    .then(data => {
+      customerPricing.value = data || {}
+      if (repriceNow) reapplyCustomerPricing()
+    })
     .catch(() => { customerPricing.value = {} })
+  if (askBeforeReprice) showRepriceChoice.value = true
   const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
   customerAddress.value = addrParts.join(', ')
   if (cust.last_invoice_date) {
@@ -2288,7 +2353,9 @@ function handleCustomerSelected(cust) {
   applyRegionalTaxLogic()
   fetchCustomerSalesHistory(cust.name)
   showCustomerModal.value = false
-  nextTick(() => { newCodeInput.value?.focus() })
+  // Skipped while the reprice warning is up: it focuses Retain Prices, and this
+  // would pull focus off it, leaving the default choice unreachable by keyboard.
+  if (!askBeforeReprice) nextTick(() => { newCodeInput.value?.focus() })
 }
 
 async function handleSeriesSelected(series) {
