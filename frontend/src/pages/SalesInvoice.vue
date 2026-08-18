@@ -1121,6 +1121,16 @@ async function handleSelectSidebarItem(item) {
       const preDiscountRate = discount > 0
         ? parseFloat((effectiveRate / (1 - getDiscPrecision(discount) / 100)).toFixed(precision))
         : effectiveRate
+      // A row whose stored rate does not match its price list rate (times the
+      // modifier that was in force) was typed in by hand. Without this flag every
+      // reprice path rebuilds rate from _base_rate — i.e. the price list rate —
+      // and silently discards what was actually billed. Tolerance is loose on
+      // purpose: the reverse-calc above amplifies the stored rounding error, and
+      // a false positive only keeps the backend value, which is the safe way to
+      // be wrong.
+      const basePl = i.price_list_rate || 0
+      const expectedRate = parseFloat(((basePl) * combinedFactor(i.item_code)).toFixed(precision))
+      const overridden = basePl > 0 && Math.abs(preDiscountRate - expectedRate) > 0.01
       return {
         item_code: i.item_code,
         item_name: i.item_name,
@@ -1128,6 +1138,7 @@ async function handleSelectSidebarItem(item) {
         rate: preDiscountRate,
         _base_rate: i.price_list_rate || preDiscountRate,
         price_list_rate: i.price_list_rate || preDiscountRate,
+        _rate_overridden: overridden,
         discount,
         uom: i.uom || 'Nos',
         tax_rate: i.tax_rate || 0,
@@ -2163,6 +2174,9 @@ function onUomChange(idx) {
     const newRate = getItemRateForPriceList(cached, item.uom)
     item._base_rate = newRate
     item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(precision))
+    // The row now carries the price list rate again, so it is no longer an
+    // override and must follow later reprices.
+    item._rate_overridden = false
     recalcAmount(idx)
   }
 }
@@ -2240,7 +2254,7 @@ function getItemRateForPriceList(cachedItem, uom = null) {
 function updateTableRates() {
   if (isReturn.value) return
   items.value.forEach((item, idx) => {
-    if (item.deleted) return
+    if (item.deleted || item._rate_overridden) return
     const cached = lookupItemInCache(item.item_code)
     if (cached) {
       const newRate = getItemRateForPriceList(cached, item.uom)
@@ -2301,7 +2315,10 @@ watch(priceList, (newList) => {
   // 2. Refresh cache in background to ensure latest rates from server
   refreshItemCache('Sales', newList, warehouse.value)
     .then(() => {
-      // 3. Re-run update once background sync completes to catch any changed values
+      // 3. Re-run update once background sync completes to catch any changed values.
+      // Re-check the guard: a saved bill may have been opened while this was in
+      // flight, and repricing it here would overwrite the stored rates.
+      if (isLoadingBill.value || priceList.value !== newList) return
       updateTableRates()
     })
     .catch(e => console.warn('[SalesInvoice] Background price refresh failed:', e))
@@ -2310,7 +2327,7 @@ watch(priceList, (newList) => {
 function reapplyCustomerPricing() {
   if (isReturn.value) return
   items.value.forEach((item, idx) => {
-    if (item.deleted || item._is_free) return
+    if (item.deleted || item._is_free || item._rate_overridden) return
     const base = item.price_list_rate || item._base_rate || item.rate
     item._base_rate = base
     item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
@@ -2320,8 +2337,12 @@ function reapplyCustomerPricing() {
 }
 
 watch(ignoreModifier, () => {
-  if (isReturn.value) return
+  // loadBill sets ignoreModifier from customer_rate_multiplier in the same
+  // synchronous block that assigns items.value, so an unguarded callback
+  // reprices the rows it just loaded.
+  if (isReturn.value || isLoadingBill.value) return
   items.value.forEach(item => {
+    if (item._rate_overridden) return
     const base = item._base_rate ?? item.rate
     item._base_rate = base
     item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
