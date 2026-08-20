@@ -97,6 +97,7 @@
             class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             style="font-size: 1.5rem; padding: 0.2em;"
             @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="focusNext"
           >
             <option value="Company">Company</option>
             <option value="Individual">Individual</option>
@@ -112,6 +113,7 @@
             class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             style="font-size: 1.5rem; padding: 0.2em;"
             @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="focusNext"
           >
             <option value="">— Select Group —</option>
             <option v-for="g in supplierGroups" :key="g.name" :value="g.name">{{ g.name }}</option>
@@ -296,6 +298,7 @@
             class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             style="font-size: 1.5rem; padding: 0.2em;"
             @keydown.esc.stop="$emit('close')"
+            @keydown.enter.prevent="focusNext"
           >
             <option value="">Select State</option>
             <option v-for="s in indianStates" :key="s" :value="s">{{ s }}</option>
