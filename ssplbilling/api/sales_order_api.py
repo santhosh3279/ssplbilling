@@ -354,6 +354,7 @@ def update_sales_order(data):
 		so.tax_category = None
 		so.gst_category = None
 		so.billing_address_gstin = None
+		so.tax_id = None
 		so.customer_name = None
 		so.place_of_supply = None
 
