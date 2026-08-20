@@ -1402,8 +1402,15 @@ async function syncBillingSettings(targetUser, force) {
       localStorage.setItem('wb-theme', t)
       // Do not call applyTheme() here to avoid overwriting Session_Theme once logged in
     }
-    if (settings && settings.cipher_map) {
-      localStorage.setItem('wb-cipher', settings.cipher_map)
+    if (settings) {
+      // Write unconditionally: a blank cipher_map means encryption is off, so
+      // the stale key has to be cleared rather than left behind.
+      const cipher = (settings.cipher_map || '').trim()
+      if (cipher) {
+        localStorage.setItem('wb-cipher', cipher)
+      } else {
+        localStorage.removeItem('wb-cipher')
+      }
     }
     if (settings && settings.tax_paid_on_purchase) {
       localStorage.setItem('wb-tax-paid-on-purchase', settings.tax_paid_on_purchase)

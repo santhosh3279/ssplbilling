@@ -615,9 +615,9 @@ function handleSupplierSelect(supplier) {
 
 function loadCipherMap() {
   // Single source of truth with every other page (SalesInvoice, PurchaseInvoice,
-  // SalesOrder, Quotation, PurchaseOrder, OfferPage). Falls back to the default
-  // cipher rather than an empty map, so a bad wb-cipher never shows plain rates.
-  cipherMap.value = getCipherMap()
+  // SalesOrder, Quotation, PurchaseOrder, OfferPage). null means encryption is
+  // off; a bad wb-cipher still falls back to the default, never to plain rates.
+  cipherMap.value = getCipherMap() || []
 }
 
 function encPrice(val) {

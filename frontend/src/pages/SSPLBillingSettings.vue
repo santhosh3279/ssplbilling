@@ -202,6 +202,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import { isValidCipherMap } from '../encryption.js'
 import DropdownField from '../components/DropdownField.vue'
 
 const router = useRouter()
@@ -282,9 +283,25 @@ async function fetchSettings() {
 }
 
 async function saveSettings() {
+  const rawCipher = (settings.value?.cipher_map || '').trim()
+  if (!isValidCipherMap(rawCipher)) {
+    alert(
+      'Cipher Map is invalid. Enter a JSON array of exactly 10 characters, ' +
+      'e.g. ["K","L","M","N","O","P","Q","R","S","T"], or leave it blank to ' +
+      'turn price encryption off.'
+    )
+    return
+  }
+
   isSaving.value = true
   try {
     await frappePost('frappe.client.save', { doc: settings.value })
+    // Apply the cipher now instead of waiting for the next Dashboard visit.
+    if (rawCipher) {
+      localStorage.setItem('wb-cipher', rawCipher)
+    } else {
+      localStorage.removeItem('wb-cipher')
+    }
     alert('Settings saved successfully!')
     await fetchSettings()
   } catch (error) {

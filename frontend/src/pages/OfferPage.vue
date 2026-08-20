@@ -852,8 +852,12 @@ async function loadOffer(silent = false) {
     })
     
     if (res) {
-      if (res.cipher_map) {
-        localStorage.setItem('wb-cipher', res.cipher_map)
+      // Blank cipher_map means encryption is off; clear any stale key.
+      const cipher = (res.cipher_map || '').trim()
+      if (cipher) {
+        localStorage.setItem('wb-cipher', cipher)
+      } else {
+        localStorage.removeItem('wb-cipher')
       }
       offer.value = res
       document.title = `${res.heading} | Deals`
