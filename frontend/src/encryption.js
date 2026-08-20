@@ -58,10 +58,14 @@ export function getCipherMap() {
 
 export function encryptPrice(price) {
   if (price == null || isNaN(price)) return '—'
-  const rounded = Math.round(Number(price)).toString()
+  const n = Number(price)
   const cipher = getCipherMap()
-  // No cipher configured: encryption is off, show the plain rate.
-  if (!cipher) return rounded
+  // No cipher configured: encryption is off, so show the real rate. Rounding to
+  // an integer was harmless while the output was letters, but would silently
+  // turn 26.788 into 27 once the digits are visible. Matches ItemSearch's own
+  // plain-rate formatting.
+  if (!cipher) return n % 1 === 0 ? String(n) : n.toFixed(getFloatPrecision())
+  const rounded = Math.round(n).toString()
   return rounded
     .split('')
     .map(ch => {
