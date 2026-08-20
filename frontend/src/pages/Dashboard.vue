@@ -138,12 +138,6 @@
         </button>
         <button
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
-          @click="showSystemPerformance = true"
-        >
-          📊 System Performance
-        </button>
-        <button
-          class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="showGeneralSettings = true"
         >
           ⚙️ General
@@ -522,12 +516,6 @@
       @close="showGeneralSettings = false"
     />
 
-    <!-- SYSTEM PERFORMANCE -->
-    <SystemPerformance
-      :show="showSystemPerformance"
-      @close="showSystemPerformance = false"
-    />
-
     <!-- LICENSE DETAILS -->
     <LicenseDetails
       :show="showLicenseDetails"
@@ -610,7 +598,6 @@ import { useRouter } from 'vue-router'
 import { session } from '../session'
 import { dashboardApi } from '../services/dashboard'
 import GeneralSettings from '../components/GeneralSettings.vue'
-import SystemPerformance from '../components/SystemPerformance.vue'
 import LicenseDetails from '../components/LicenseDetails.vue'
 import AnalogueClock from '../components/AnalogueClock.vue'
 
@@ -1025,7 +1012,7 @@ const tileColumns = computed(() => {
 })
 
 function handleTileKeyNav(e) {
-  if (currentTab.value !== 'dashboard' || showGeneralSettings.value || showSystemPerformance.value) return
+  if (currentTab.value !== 'dashboard' || showGeneralSettings.value) return
   // This is a raw window listener the shortcut manager can't suppress — bail out
   // whenever a subwindow overlay (global item search, price update, etc.) is open,
   // otherwise its Enter/F4 handling operates the tile grid / inherit dropdown blind
@@ -1249,9 +1236,6 @@ const GENERIC_CACHE_TTL = 30 * 60 * 1000 // 30 mins — series / naming series
 const ITEM_CACHE_TTL = 5 * 60 * 1000 // 5 mins — items / ledgers freshness window
 
 
-
-// ==================== SYSTEM PERFORMANCE ====================
-const showSystemPerformance = ref(false)
 
 // ==================== LICENSE DETAILS ====================
 const showLicenseDetails = ref(false)
