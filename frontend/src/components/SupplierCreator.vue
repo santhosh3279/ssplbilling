@@ -180,6 +180,7 @@
         <div class="flex items-center gap-2 mt-2">
           <input
             id="supplier_disabled"
+            ref="disabledInput"
             v-model="form.disabled"
             type="checkbox"
             class="h-5 w-5 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-info)] focus:ring-[var(--color-info)]"
@@ -400,6 +401,7 @@ const groupInput           = ref(null)
 const nameInput            = ref(null)
 const printNameInput       = ref(null)
 const primaryPartyInputRef = ref(null)
+const disabledInput        = ref(null)
 const quickSearchRef       = ref(null)
 const mobileInput          = ref(null)
 const whatsappInput        = ref(null)
@@ -421,6 +423,7 @@ const fieldOrder = [
   nameInput,
   printNameInput,
   primaryPartyInputRef,
+  disabledInput,
   mobileInput,
   whatsappInput,
   emailInput,
