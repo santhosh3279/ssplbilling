@@ -36,10 +36,11 @@
    "label": "Custom Version"
   },
   {
-   "default": "[\"K\",\"L\",\"M\",\"N\",\"O\",\"P\",\"Q\",\"R\",\"S\",\"T\"]",
+   "default": "KLMNOPQRST",
    "fieldname": "cipher_map",
    "fieldtype": "Data",
-   "label": "Cipher Map (JSON array, digits 0-9)"
+   "label": "Cipher Map (10 characters, digits 0-9)",
+   "description": "One replacement character per digit 0-9, in order. Leave blank to switch price encryption off."
   },
   {
    "fieldname": "section_break_series",

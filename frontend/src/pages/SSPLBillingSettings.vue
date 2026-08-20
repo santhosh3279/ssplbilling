@@ -36,12 +36,15 @@
           <h2 class="text-xl font-bold text-[var(--color-text)] border-b border-[var(--color-border)] pb-3 mb-4">Price Encryption</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Cipher Map (JSON array, digits 0-9)</label>
+              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Cipher Map (10 characters, digits 0-9)</label>
               <input 
                 v-model="settings.cipher_map" 
                 type="text" 
                 class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
               />
+              <p class="mt-1 text-xs text-[var(--color-text-muted)]">
+                One character per digit 0-9, in order (e.g. KLMNOPQRST). Leave blank for no encryption.
+              </p>
             </div>
             <DropdownField v-model="settings.discount_account" :options="lists.accounts" label="Discount Account" />
             <DropdownField v-model="settings.short_or_excess_account" :options="lists.accounts" label="Short or Excess Account" />
@@ -286,9 +289,8 @@ async function saveSettings() {
   const rawCipher = (settings.value?.cipher_map || '').trim()
   if (!isValidCipherMap(rawCipher)) {
     alert(
-      'Cipher Map is invalid. Enter a JSON array of exactly 10 characters, ' +
-      'e.g. ["K","L","M","N","O","P","Q","R","S","T"], or leave it blank to ' +
-      'turn price encryption off.'
+      'Cipher Map is invalid. Enter exactly 10 characters, one per digit 0-9, ' +
+      'e.g. KLMNOPQRST, or leave it blank to turn price encryption off.'
     )
     return
   }
