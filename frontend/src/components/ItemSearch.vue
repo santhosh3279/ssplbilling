@@ -303,6 +303,8 @@ import CustomerSearchModal from './CustomerSearchModal.vue'
 import {
   loadQuickQtyMap,
   saveQuickQtyMap as persistQuickQtyMap,
+  loadQuickQtyOrder,
+  saveQuickQtyOrder as persistQuickQtyOrder,
   clearQuickQtyMap as clearStoredQuickQty
 } from '../services/quickQty.js'
 
@@ -523,14 +525,28 @@ function qtyCellClass(idx) {
 
 function saveQuickQtyMap() {
   persistQuickQtyMap(quickQtyMap.value)
+  persistQuickQtyOrder(quickQtyOrder.value)
 }
 
 function clearQuickQtyMap() {
   quickQtyMap.value = {}
+  quickQtyOrder.value = []
   clearStoredQuickQty()
 }
 
 const quickQtyMap = ref(loadQuickQtyMap())
+// Item codes in the order the operator typed a quantity for them. Object key
+// order can't be trusted (numeric item codes sort ahead of the rest), so the
+// batch is built from this list.
+const quickQtyOrder = ref(loadQuickQtyOrder())
+
+// Keeps the order list in sync after quickQtyMap[code] changed.
+function trackQuickQtyOrder(code) {
+  const hasQty = !!quickQtyMap.value[code]
+  const idx = quickQtyOrder.value.indexOf(code)
+  if (hasQty && idx === -1) quickQtyOrder.value.push(code)
+  else if (!hasQty && idx !== -1) quickQtyOrder.value.splice(idx, 1)
+}
 
 // Items carrying a usable qty — same filter submitQuickQtyBatch() applies,
 // so the button count matches what a batch add would actually push.
@@ -551,24 +567,33 @@ function onSearchInputKeydown(e) {
   if (/^[0-9]$/.test(e.key)) {
     e.preventDefault()
     quickQtyMap.value[code] = (quickQtyMap.value[code] || '') + e.key
+    trackQuickQtyOrder(code)
     saveQuickQtyMap()
   } else if (e.key === '.') {
     e.preventDefault()
     const current = quickQtyMap.value[code] || ''
     if (!current.includes('.')) {
       quickQtyMap.value[code] = current + '.'
+      trackQuickQtyOrder(code)
       saveQuickQtyMap()
     }
   } else if (e.key === 'Backspace') {
     e.preventDefault()
     quickQtyMap.value[code] = (quickQtyMap.value[code] || '').slice(0, -1)
+    trackQuickQtyOrder(code)
     saveQuickQtyMap()
   }
 }
 
 function submitQuickQtyBatch() {
   const entries = []
-  for (const [itemCode, raw] of Object.entries(quickQtyMap.value)) {
+  // Typed order first, then anything the order list missed (older persisted map).
+  const codes = [
+    ...quickQtyOrder.value.filter(code => code in quickQtyMap.value),
+    ...Object.keys(quickQtyMap.value).filter(code => !quickQtyOrder.value.includes(code))
+  ]
+  for (const itemCode of codes) {
+    const raw = quickQtyMap.value[itemCode]
     const qty = parseFloat(raw)
     if (raw && qty > 0) {
       const cachedItem = lookupItemInCache(itemCode)
@@ -980,6 +1005,7 @@ watch(() => props.show, async (newVal) => {
     isDecrypted.value = false
     loadCipherMap()
     quickQtyMap.value = loadQuickQtyMap()
+    quickQtyOrder.value = loadQuickQtyOrder()
     focus()
     if (!enabledPriceLists.value.length) {
       fetchEnabledPriceLists()
@@ -1024,6 +1050,7 @@ watch(() => props.show, async (newVal) => {
 
 function handleQuickQtyCleared() {
   quickQtyMap.value = {}
+  quickQtyOrder.value = []
 }
 
 onMounted(() => {
