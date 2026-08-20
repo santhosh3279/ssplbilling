@@ -540,12 +540,13 @@ const quickQtyMap = ref(loadQuickQtyMap())
 // batch is built from this list.
 const quickQtyOrder = ref(loadQuickQtyOrder())
 
-// Keeps the order list in sync after quickQtyMap[code] changed.
+// Records the first time a quantity is typed for an item. The entry is kept
+// even after the qty is backspaced away, so retyping it restores the item's
+// original place in the batch instead of appending it at the end. Codes left
+// blank are skipped when the batch is built, and the list is dropped whenever
+// the map is cleared.
 function trackQuickQtyOrder(code) {
-  const hasQty = !!quickQtyMap.value[code]
-  const idx = quickQtyOrder.value.indexOf(code)
-  if (hasQty && idx === -1) quickQtyOrder.value.push(code)
-  else if (!hasQty && idx !== -1) quickQtyOrder.value.splice(idx, 1)
+  if (!quickQtyOrder.value.includes(code)) quickQtyOrder.value.push(code)
 }
 
 // Items carrying a usable qty — same filter submitQuickQtyBatch() applies,
