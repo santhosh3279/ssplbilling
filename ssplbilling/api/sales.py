@@ -76,6 +76,13 @@ def _apply_payload_to_doc(doc, payload):
     doc.update_stock = frappe.utils.cint(payload.get("update_stock", 1))
     doc.set_posting_time = 1
     doc.posting_date = payload.get("posting_date") or frappe.utils.nowdate()
+    # On an edit the posting date can move forward while due_date / payment_schedule
+    # still hold the values derived at creation time, which trips
+    # "Due Date cannot be before Posting Date". Clear both so set_payment_schedule()
+    # re-derives them against the new posting date.
+    doc.due_date = None
+    if doc.get("payment_schedule"):
+        doc.payment_schedule = []
     doc.selling_price_list = payload.get("price_list")
     doc.cost_center = payload.get("cost_center")
     doc.ignore_pricing_rule = 1
