@@ -112,6 +112,17 @@ def _apply_payload_to_doc(doc, payload):
     doc.shipping_address_name = None
     doc.contact_person = None
 
+    # The GST fields are fetch_from customer_address, and _validate_links() skips
+    # the refresh entirely when that link is empty. A customer without a linked
+    # Address therefore kept the previous party's GSTIN next to an Unregistered
+    # category, which india_compliance rejects with "GST Category cannot be
+    # Unregistered for party with GSTIN". Clear them too: when an address is
+    # re-derived the fetch refills both (it runs before the validate hooks), and
+    # when there is none they stay empty, which validates cleanly.
+    for fieldname in ("billing_address_gstin", "gst_category", "tax_id"):
+        if doc.meta.has_field(fieldname):
+            doc.set(fieldname, None)
+
     doc.set("items", [])
     for item in payload.get("items", []):
         rate = frappe.utils.flt(item.get("rate"))
