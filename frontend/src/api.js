@@ -37,26 +37,23 @@ function parseExc(exc) {
     const lines = JSON.parse(exc);
     const text = Array.isArray(lines) ? lines.join("\n") : String(lines);
     // Return only the last meaningful line (the exception message)
-    return text.split("\n").filter(Boolean).pop() ?? "Unknown error";
+    return lastLine(text);
   } catch {
-    return String(exc).split("\n").filter(Boolean).pop() ?? "Unknown error";
+    return lastLine(String(exc));
   }
 }
 
-/** Parse Frappe's exc field into the full traceback string */
-function parseExcFull(exc) {
-  if (!exc) return "Unknown server error";
-  try {
-    const lines = JSON.parse(exc);
-    return Array.isArray(lines) ? lines.join("\n") : String(lines);
-  } catch {
-    return String(exc);
-  }
+/** Last non-empty line of a traceback, with the exception's module path stripped */
+function lastLine(text) {
+  const line = text.split("\n").map((l) => l.trim()).filter(Boolean).pop();
+  if (!line) return "Unknown error";
+  // "frappe.exceptions.ValidationError: msg" → "ValidationError: msg"
+  return line.replace(/^[\w.]+\.(\w*(?:Error|Exception)\b)/, "$1");
 }
 
-/** Show full error traceback in a browser alert */
-function alertPostError(context, fullTrace) {
-  window.alert(`POST ERROR — ${context}\n\n${fullTrace}`);
+/** Show only the exception message in a browser alert (never the traceback) */
+function alertPostError(context, message) {
+  window.alert(`ERROR — ${context}\n\n${message}`);
 }
 
 /**
@@ -80,7 +77,7 @@ export async function frappeGet(method, params = {}) {
 
 /**
  * POST to a Frappe whitelisted method.
- * On any error the full traceback is shown in a browser alert before throwing.
+ * On any error only the exception message is shown in a browser alert before throwing.
  */
 export async function frappePost(method, body = {}) {
   let res;
@@ -101,7 +98,7 @@ export async function frappePost(method, body = {}) {
     try {
       const errJson = await res.clone().json();
       if (errJson.exc) {
-        detail += "\n\n" + parseExcFull(errJson.exc);
+        detail += "\n\n" + parseExc(errJson.exc);
       } else if (errJson.message) {
         detail += "\n\n" + JSON.stringify(errJson.message, null, 2);
       } else {
@@ -116,9 +113,8 @@ export async function frappePost(method, body = {}) {
 
   const json = await res.json();
   if (json.exc) {
-    const fullTrace = parseExcFull(json.exc);
     const shortMsg = parseExc(json.exc);
-    alertPostError(method, fullTrace);
+    alertPostError(method, shortMsg);
     throw new Error(shortMsg);
   }
   return json.message ?? json;
