@@ -144,7 +144,8 @@
           </div>
           <div
             class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
-            :title="`Days worked at least the shift length (${shiftLength.toFixed(2)}h)`"
+            :title="`Days worked at least ${Math.max(0, shiftLength - FULL_DAY_BUFFER).toFixed(2)}h — the shift ` +
+              `length (${shiftLength.toFixed(2)}h) less a 30 minute buffer`"
           >
             <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Full days</div>
             <div class="text-2xl font-black text-emerald-500">{{ dayStats.fullDays }}</div>
@@ -488,10 +489,12 @@ function longestBreak(punches) {
   return longest
 }
 
+// Half an hour of grace on a full day: a punch a few minutes late or an early
+// leave still worked the day, and device clocks drift on top of that.
+const FULL_DAY_BUFFER = 0.5
+
 const dayStats = computed(() => {
-  // Device clocks put a full day a minute or two under the shift, so the comparison
-  // needs a little slack or nothing ever counts as full.
-  const full = Math.max(0, shiftLength.value - 0.02)
+  const full = Math.max(0, shiftLength.value - FULL_DAY_BUFFER)
   let fullDays = 0
   let breakDays = 0
   let halfDays = 0
