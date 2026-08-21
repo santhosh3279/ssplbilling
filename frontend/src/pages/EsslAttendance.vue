@@ -196,21 +196,21 @@
           </div>
         </div>
 
-        <!-- Reads the same helper as the column, so a shade change stays in one place -->
+        <!-- Live tally of the rows below, shaded by the same helper as the column -->
         <div class="mb-4 flex flex-wrap items-center gap-3">
           <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
             Checkins
           </span>
           <span
             v-for="item in checkinLegend"
-            :key="item.label"
+            :key="item.key"
             class="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5"
-            :class="checkinClass(item.count)"
+            :class="[checkinClass(item.count), item.total ? '' : 'opacity-40']"
           >
-            <span class="font-mono text-sm font-bold">{{ item.label }}</span>
             <span class="text-[11px] font-bold uppercase tracking-wider opacity-70">
-              {{ item.note }}
+              {{ item.label }}
             </span>
+            <span class="font-mono text-sm font-bold">{{ item.total }}</span>
           </span>
         </div>
 
@@ -954,14 +954,26 @@ const CHECKIN_GREENS = [
   'bg-emerald-500/45 text-emerald-700 border-emerald-500/60',
 ]
 
-const checkinLegend = [
-  { label: '0', count: 0, note: 'none' },
-  { label: '1,3,5', count: 1, note: 'odd — punch missing' },
-  { label: '2', count: 2, note: '1 pair' },
-  { label: '4', count: 4, note: '2 pairs' },
-  { label: '6', count: 6, note: '3 pairs' },
-  { label: '8+', count: 8, note: '4+ pairs' },
+// Buckets the visible rows by punch count. `sample` is only there to pull the
+// matching shade out of checkinClass; `total` is the live tally shown to the user.
+const CHECKIN_BUCKETS = [
+  { key: 'none', label: 'None', sample: 0, match: (n) => n === 0 },
+  { key: 'odd', label: 'Odd', sample: 1, match: (n) => n % 2 === 1 },
+  { key: '2', label: '2', sample: 2, match: (n) => n === 2 },
+  { key: '4', label: '4', sample: 4, match: (n) => n === 4 },
+  { key: '6', label: '6', sample: 6, match: (n) => n === 6 },
+  { key: '8', label: '8+', sample: 8, match: (n) => n >= 8 && n % 2 === 0 },
 ]
+
+const checkinLegend = computed(() => {
+  const rows = filteredRecords.value || []
+  return CHECKIN_BUCKETS.map((bucket) => ({
+    key: bucket.key,
+    label: bucket.label,
+    count: bucket.sample,
+    total: rows.filter((row) => bucket.match(Number(row.checkin_count) || 0)).length,
+  }))
+})
 
 function checkinClass(count) {
   const n = Number(count) || 0
