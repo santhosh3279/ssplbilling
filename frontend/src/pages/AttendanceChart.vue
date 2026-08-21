@@ -96,9 +96,27 @@
             <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Days marked</div>
             <div class="text-2xl font-black">{{ markedDays }}</div>
           </div>
-          <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md">
-            <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Average hours / marked day</div>
-            <div class="text-2xl font-black">{{ averageHours.toFixed(2) }}</div>
+          <div
+            class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
+            :title="`Shift length (${shiftLength.toFixed(2)}h) owed across the ${hourBalance.presentDays} present ` +
+              `day(s); a Half Day counts half`"
+          >
+            <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Shift hours on present days</div>
+            <div class="text-2xl font-black">{{ hourBalance.expected.toFixed(2) }}</div>
+          </div>
+          <div
+            class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
+            title="Hours worked past the shift length, summed over the present days"
+          >
+            <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Extra hours</div>
+            <div class="text-2xl font-black text-emerald-500">{{ hourBalance.extra.toFixed(2) }}</div>
+          </div>
+          <div
+            class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
+            title="Shift hours not worked on days the employee was present — short hours, not whole absent days"
+          >
+            <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Absent hours on present days</div>
+            <div class="text-2xl font-black text-rose-500">{{ hourBalance.missing.toFixed(2) }}</div>
           </div>
           <div
             class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
@@ -330,10 +348,41 @@ function applyPreset(preset) {
 
 const totalHours = computed(() => days.value.reduce((sum, d) => sum + d.hours, 0))
 const markedDays = computed(() => days.value.filter((d) => d.total > 0).length)
-const averageHours = computed(() => (markedDays.value ? totalHours.value / markedDays.value : 0))
 
 // The shift's own length, which is what a full day is measured against
 const shiftLength = computed(() => Math.max(0, shiftEnd.value - shiftStart.value))
+
+// A day only owes shift hours if the employee actually turned up. Statuses come from
+// the Attendance record; a day carrying hours but no status still counts as worked.
+const PRESENT_STATUSES = ['Present', 'Half Day', 'Work From Home']
+
+// Device clocks drift a minute or two either way, so anything under this reads as
+// having hit the shift exactly rather than as a surplus or a shortfall.
+const HOUR_SLACK = 0.02
+
+const hourBalance = computed(() => {
+  const shift = shiftLength.value
+  let presentDays = 0
+  let expected = 0
+  let extra = 0
+  let missing = 0
+
+  for (const day of days.value) {
+    const counts = day.counts || {}
+    if (!PRESENT_STATUSES.some((status) => counts[status]) && !(day.hours > 0)) continue
+
+    presentDays += 1
+    // Half Day owes half the shift, so a half day worked in full is not a shortfall
+    const owed = counts['Half Day'] ? shift / 2 : shift
+    expected += owed
+
+    const diff = day.hours - owed
+    if (diff > HOUR_SLACK) extra += diff
+    else if (diff < -HOUR_SLACK) missing += -diff
+  }
+
+  return { presentDays, expected, extra, missing }
+})
 
 // The longest continuous break of a day, in hours. Only the odd-indexed gaps are
 // breaks: the day opens with an entry, so those are the gaps that follow a
