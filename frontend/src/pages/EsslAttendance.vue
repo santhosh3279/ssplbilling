@@ -196,22 +196,41 @@
           </div>
         </div>
 
-        <!-- Live tally of the rows below, shaded by the same helper as the column -->
+        <!-- Live tally of the rows below, shaded by the same helper as the column.
+             Each swatch also filters the table down to its own bucket. -->
         <div class="mb-4 flex flex-wrap items-center gap-3">
           <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
             Checkins
           </span>
-          <span
+          <button
+            v-if="checkinFilter"
+            @click="checkinFilter = ''"
+            type="button"
+            class="order-last rounded-xl border border-[var(--color-border)] px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider hover:bg-[var(--color-midlight)] transition-colors"
+          >
+            Clear
+          </button>
+          <button
             v-for="item in checkinLegend"
             :key="item.key"
-            class="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5"
-            :class="[checkinClass(item.count), item.total ? '' : 'opacity-40']"
+            type="button"
+            @click="toggleCheckinFilter(item)"
+            :disabled="!item.total && !item.active"
+            :title="item.active
+              ? 'Showing only these rows — click to clear'
+              : `Show only the rows with ${item.label.toLowerCase()} checkins`"
+            class="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 transition-all hover:brightness-95 active:scale-95 disabled:cursor-default disabled:hover:brightness-100 disabled:active:scale-100"
+            :class="[
+              checkinClass(item.count),
+              item.total ? '' : 'opacity-40',
+              item.active ? 'ring-2 ring-[var(--color-employee)] ring-offset-1 ring-offset-[var(--color-bg)]' : '',
+            ]"
           >
             <span class="text-[11px] font-bold uppercase tracking-wider opacity-70">
               {{ item.label }}
             </span>
             <span class="font-mono text-sm font-bold">{{ item.total }}</span>
-          </span>
+          </button>
         </div>
 
         <div class="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] shadow-md overflow-hidden">
@@ -288,7 +307,15 @@
                 </tr>
                 <tr v-if="filteredRecords.length === 0 && !busy">
                   <td colspan="8" class="px-6 py-12 text-center text-sm text-[var(--color-text-muted)] italic">
-                    No attendance records in this range. Map the device users, then run a sync.
+                    <template v-if="checkinFilter">
+                      No rows in this checkin bucket —
+                      <button class="underline not-italic font-bold" @click="checkinFilter = ''">
+                        clear the filter
+                      </button>
+                    </template>
+                    <template v-else>
+                      No attendance records in this range. Map the device users, then run a sync.
+                    </template>
                   </td>
                 </tr>
               </tbody>
@@ -636,7 +663,9 @@ function changeDate(offset) {
   loadRecords()
 }
 
-const filteredRecords = computed(() => {
+// Everything except the checkin bucket. The legend tallies this, so picking one
+// bucket does not zero out the counts on the other five.
+const baseRecords = computed(() => {
   let result = records.value || []
 
   // Status Filter
@@ -653,6 +682,12 @@ const filteredRecords = computed(() => {
   }
 
   return result
+})
+
+const filteredRecords = computed(() => {
+  const bucket = CHECKIN_BUCKETS.find((b) => b.key === checkinFilter.value)
+  if (!bucket) return baseRecords.value
+  return baseRecords.value.filter((row) => bucket.match(Number(row.checkin_count) || 0))
 })
 
 async function loadRecords() {
@@ -965,15 +1000,24 @@ const CHECKIN_BUCKETS = [
   { key: '8', label: '8+', sample: 8, match: (n) => n >= 8 && n % 2 === 0 },
 ]
 
+const checkinFilter = ref('')
+
 const checkinLegend = computed(() => {
-  const rows = filteredRecords.value || []
+  const rows = baseRecords.value || []
   return CHECKIN_BUCKETS.map((bucket) => ({
     key: bucket.key,
     label: bucket.label,
     count: bucket.sample,
     total: rows.filter((row) => bucket.match(Number(row.checkin_count) || 0)).length,
+    active: checkinFilter.value === bucket.key,
   }))
 })
+
+// Clicking the active swatch clears the filter, so the legend doubles as its own reset
+function toggleCheckinFilter(item) {
+  if (!item.total && !item.active) return
+  checkinFilter.value = item.active ? '' : item.key
+}
 
 function checkinClass(count) {
   const n = Number(count) || 0
