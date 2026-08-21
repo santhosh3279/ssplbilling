@@ -99,21 +99,21 @@
           <div
             class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
             :title="`Shift length (${shiftLength.toFixed(2)}h) owed across the ${hourBalance.presentDays} present ` +
-              `day(s); a Half Day counts half`"
+              `day(s); a Half Day counts half. Today is left out — it is still running.`"
           >
             <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Shift hours on present days</div>
             <div class="text-2xl font-black">{{ hourBalance.expected.toFixed(2) }}</div>
           </div>
           <div
             class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
-            title="Hours worked past the shift length, summed over the present days"
+            title="Hours worked past the shift length, summed over the present days before today"
           >
             <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Extra hours</div>
             <div class="text-2xl font-black text-emerald-500">{{ hourBalance.extra.toFixed(2) }}</div>
           </div>
           <div
             class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
-            title="Shift hours not worked on days the employee was present — short hours, not whole absent days"
+            title="Shift hours not worked on days the employee was present, today excluded — short hours, not whole absent days"
           >
             <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Absent hours on present days</div>
             <div class="text-2xl font-black text-rose-500">{{ hourBalance.missing.toFixed(2) }}</div>
@@ -368,6 +368,10 @@ const hourBalance = computed(() => {
   let missing = 0
 
   for (const day of days.value) {
+    // Today is still running — its punches are half in, so it would read as a
+    // shortfall every morning. Anything dated later is not owed yet either.
+    if (day.date >= todayIso) continue
+
     const counts = day.counts || {}
     if (!PRESENT_STATUSES.some((status) => counts[status]) && !(day.hours > 0)) continue
 
