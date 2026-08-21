@@ -1,4 +1,7 @@
 import json
+import random
+import time
+
 import frappe
 from collections import OrderedDict
 
@@ -150,12 +153,56 @@ def get_outstanding_invoices(party, party_type="Customer"):
 		for row in rows
 	]
 
+# Naming-series inserts lock a single `tabSeries` row FOR UPDATE until commit, so two
+# concurrent payments can collide. On a Galera cluster the loser is aborted at commit
+# certification and surfaces as QueryDeadlockError (MySQL 1020).
+PAYMENT_ENTRY_ATTEMPTS = 3
+
+
 @frappe.whitelist()
 def create_payment_entry(data=None, **kwargs):
-    """Create and submit a Payment Entry."""
+    """Create and submit a Payment Entry, then mirror it into the alternative company.
+
+    Retries the insert/submit on naming-series lock conflicts, and commits before
+    mirroring so the `tabSeries` row lock is not held for the mirror's duration.
+    """
     if not data: data = frappe.form_dict.get("data") or dict(frappe.form_dict)
     if isinstance(data, str): data = json.loads(data)
 
+    pe_name = _insert_payment_entry_with_retry(data)
+
+    # Payment is durable from here; the naming-series lock is released.
+    frappe.db.commit()
+
+    mirror_name = None
+    try:
+        from ssplbilling.api.automatic_entries_api import mirror_standalone_payment_entry
+        mirror_name = mirror_standalone_payment_entry(frappe.get_doc("Payment Entry", pe_name))
+        frappe.db.commit()
+    except Exception:
+        frappe.db.rollback()
+        frappe.log_error(frappe.get_traceback(), "Automatic Entries: payment mirror failed")
+
+    return {"payment_entry": pe_name, "mirror_payment_entry": mirror_name}
+
+
+def _insert_payment_entry_with_retry(data):
+    """Build + submit the Payment Entry, retrying when the naming-series row is contended.
+
+    Each failed attempt is rolled back whole, so a retry never leaves a partial entry.
+    Returns the new Payment Entry name."""
+    for attempt in range(PAYMENT_ENTRY_ATTEMPTS):
+        try:
+            return _build_and_submit_payment_entry(data)
+        except (frappe.QueryDeadlockError, frappe.QueryTimeoutError):
+            frappe.db.rollback()
+            if attempt == PAYMENT_ENTRY_ATTEMPTS - 1:
+                raise
+            # Back off with jitter so the racing requests do not re-collide in lockstep.
+            time.sleep(0.15 * (attempt + 1) + random.uniform(0, 0.1))
+
+
+def _build_and_submit_payment_entry(data):
     pe = frappe.new_doc("Payment Entry")
     pe.payment_type = data.get("payment_type") or "Receive"
     if pe.payment_type != "Internal Transfer":
@@ -239,14 +286,7 @@ def create_payment_entry(data=None, **kwargs):
     pe.insert()
     pe.submit()
 
-    mirror_name = None
-    try:
-        from ssplbilling.api.automatic_entries_api import mirror_standalone_payment_entry
-        mirror_name = mirror_standalone_payment_entry(pe)
-    except Exception:
-        frappe.log_error(frappe.get_traceback(), "Automatic Entries: payment mirror failed")
-
-    return {"payment_entry": pe.name, "mirror_payment_entry": mirror_name}
+    return pe.name
 
 def _get_party_account(party_type, party, company=None):
     """Get the default receivable/payable account for a party."""
