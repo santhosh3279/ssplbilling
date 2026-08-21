@@ -226,7 +226,7 @@
                     class="absolute inset-x-0 border-t-2 border-red-500/40 z-10"
                     :style="{ bottom: ((shiftEnd - shiftStart) / (yMax - shiftStart)) * PLOT_HEIGHT + 'px' }"
                   >
-                    <span class="bg-red-500 text-white px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider absolute left-2 -translate-y-1/2 shadow-sm">
+                    <span class="bg-red-500 text-white px-2 py-0.5 rounded text-[12px] font-bold uppercase tracking-wider absolute left-2 -translate-y-1/2 shadow-sm">
                       Shift End ({{ formatHour(shiftEnd) }})
                     </span>
                   </div>
