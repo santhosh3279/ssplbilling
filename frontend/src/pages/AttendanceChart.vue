@@ -110,15 +110,17 @@
           </div>
           <div
             class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
-            title="Hours worked past the shift length, summed over the present days before today"
+            :title="`Time punched after the shift end (${formatHour(shiftEnd)}), summed over the present days ` +
+              `before today`"
           >
             <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Extra hours</div>
             <div class="text-2xl font-black text-emerald-500">{{ hourBalance.extra.toFixed(2) }}</div>
           </div>
           <div
             class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
-            :title="`Shift hours not worked on the ${hourBalance.missingDays} present day(s) that carry more than ` +
-              `two punches — the mid-day exits. Days with a single in/out pair and today are left out.`"
+            :title="`Shift hours left unworked on the ${hourBalance.missingDays} present day(s) that carry more than ` +
+              `two punches — the mid-day exits. Overtime is not netted off here. Days with a single in/out ` +
+              `pair and today are left out.`"
           >
             <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Absent hours on present days</div>
             <div class="text-2xl font-black text-rose-500">{{ hourBalance.missing.toFixed(2) }}</div>
@@ -408,6 +410,25 @@ function inShiftHours(day, sEnd, shift) {
   return Math.min(day.hours || 0, shift)
 }
 
+// The mirror of inShiftHours: only the part of each worked stretch that runs past
+// the shift end, so a late checkout counts and the breaks before it do not.
+function overtimeHours(day, sEnd) {
+  const punches = punchesByDate.value[day.date] || []
+
+  if (punches.length >= 2) {
+    let total = 0
+    for (let i = 0; i + 1 < punches.length; i += 2) {
+      const start = Math.max(punches[i].hours, sEnd)
+      const end = punches[i + 1].hours
+      if (end > start) total += end - start
+    }
+    return total
+  }
+
+  const { outHours } = getDayTimes(day)
+  return outHours !== null ? Math.max(0, outHours - sEnd) : 0
+}
+
 const hourBalance = computed(() => {
   const shift = shiftLength.value
   const sEnd = shiftEnd.value
@@ -430,15 +451,21 @@ const hourBalance = computed(() => {
     // Half Day owes half the shift, so a half day worked in full is not a shortfall
     const owed = counts['Half Day'] ? shift / 2 : shift
     expected += owed
-    shiftHours += inShiftHours(day, sEnd, owed)
 
-    const diff = day.hours - owed
-    if (diff > HOUR_SLACK) extra += diff
-    // A shortfall only counts once the day has more than the opening in/out pair.
-    // Two punches mean the employee stayed in the whole time and the gap is just a
-    // short shift; the extra punches are the mid-day exits the hours are missing for.
-    else if (diff < -HOUR_SLACK && (punchesByDate.value[day.date] || []).length > 2) {
-      missing += -diff
+    // Both figures come off the punches now, split at the shift end: what was worked
+    // inside the shift, and what was worked past it. A day can hold both — a late
+    // checkout does not cancel a long lunch.
+    const worked = inShiftHours(day, sEnd, owed)
+    shiftHours += worked
+    extra += overtimeHours(day, sEnd)
+
+    // The shortfall is what the shift went unworked, measured against the in-shift
+    // figure so overtime cannot paper over it. It only counts once the day has more
+    // than the opening in/out pair: two punches mean the employee never stepped out
+    // and the gap is just a short shift, not time taken off.
+    const short = owed - worked
+    if (short > HOUR_SLACK && (punchesByDate.value[day.date] || []).length > 2) {
+      missing += short
       missingDays += 1
     }
   }
