@@ -328,6 +328,17 @@
             <p v-if="probing" class="mt-1 text-[11px] text-[var(--color-text-muted)]">
               Reading serial number and clock from the device...
             </p>
+            <!-- Offline is a state of the device, not a failure of the page — same
+                 rose badge language as the sync legend in the header -->
+            <div
+              v-else-if="deviceOffline"
+              class="mt-2 flex items-start gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2"
+            >
+              <span class="rounded-lg bg-rose-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-500">
+                Offline
+              </span>
+              <span class="text-[11px] font-semibold text-rose-500">{{ deviceOffline }}</span>
+            </div>
             <p v-else-if="!newMachine.serial_number" class="mt-1 text-[11px] text-[var(--color-text-muted)]">
               Left blank it is pulled from the device automatically when this dialog opens.
             </p>
@@ -424,6 +435,9 @@ const newMachine = ref({ name: '', ip_address: '', store: '', comm_key: '', seri
 
 const probing = ref(false)
 const settingTime = ref(false)
+// Set when the last probe could not reach the device. An offline device is a normal
+// state, so it is shown as a badge next to the serial number, not as an error.
+const deviceOffline = ref('')
 const deviceTime = ref('')
 // Computer clock at the instant the device clock was read — drift is measured
 // against that snapshot, not against the ticking clock.
@@ -604,6 +618,7 @@ async function syncAttendance() {
 }
 
 function resetDeviceProbe() {
+  deviceOffline.value = ''
   deviceTime.value = ''
   deviceReadAt.value = ''
   settingTime.value = false
@@ -652,6 +667,13 @@ async function fetchFromDevice() {
     })
     // The user may have moved on to another machine while the connect was pending
     if (!showCreator.value || newMachine.value.ip_address !== askedFor) return
+    if (info?.offline) {
+      deviceOffline.value = info.error || 'Device offline.'
+      deviceTime.value = ''
+      deviceReadAt.value = ''
+      return
+    }
+    deviceOffline.value = ''
     if (info?.serial_number) newMachine.value.serial_number = info.serial_number
     deviceTime.value = info?.device_time || ''
     deviceReadAt.value = localTimestamp()
@@ -675,6 +697,11 @@ async function correctMachineTime() {
       commKey: newMachine.value.comm_key || null,
       timestamp: now,
     })
+    if (res?.offline) {
+      deviceOffline.value = res.error || 'Device offline.'
+      return
+    }
+    deviceOffline.value = ''
     deviceTime.value = res?.device_time || now
     deviceReadAt.value = localTimestamp()
   } catch (err) {

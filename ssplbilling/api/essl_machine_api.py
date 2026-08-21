@@ -6,6 +6,18 @@ from frappe.utils import cint
 ESSL_MACHINE_DOCTYPE = "eSSL Machines Attendance"
 
 
+class MachineOffline(ConnectionError):
+	"""The device could not be reached.
+
+	An offline device is an everyday state, not a fault, so every caller reports it as
+	an offline flag the UI shows in its legend — never as a throw or an uncaught 500,
+	both of which surface a full error dialog and (for a 500) an Error Log row.
+
+	It subclasses ConnectionError so the existing `except ConnectionError` / `except
+	Exception` handlers keep catching it unchanged.
+	"""
+
+
 @frappe.whitelist()
 def get_essl_machines():
 	"""Return every eSSL machine. No filters — searching is done client-side."""
@@ -140,7 +152,7 @@ def connect_machine(row, attempts=3):
 	# A plain exception, not frappe.throw: the sync loops catch this per machine and
 	# report it in that machine's summary row, and a throw would also push the text
 	# into the response message log as if the whole request had failed.
-	raise ConnectionError(
+	raise MachineOffline(
 		f"Device offline — could not reach {row.ip_address} on port 4370. It may be "
 		f"powered off, on another network, or busy with another sync. ({last_error})"
 	)
@@ -162,12 +174,18 @@ def get_machine_info(ip_address, comm_key=None):
 
 	conn = None
 	try:
-		# Interactive call, so the failure is turned into a clean message for the
-		# dialog instead of a 500 traceback.
 		try:
 			conn = connect_machine(row)
-		except ConnectionError as e:
-			frappe.throw(str(e))
+		except MachineOffline as e:
+			# Same key set as the success shape, so the caller reads `offline` instead
+			# of branching on a missing field.
+			return {
+				"ip_address": ip_address,
+				"serial_number": None,
+				"device_time": None,
+				"offline": True,
+				"error": str(e),
+			}
 		serial = conn.get_serialnumber()
 		device_time = conn.get_time()
 	finally:
@@ -182,6 +200,8 @@ def get_machine_info(ip_address, comm_key=None):
 		"serial_number": str(serial or "").strip(),
 		# "YYYY-MM-DD HH:MM:SS" — same wire format the attendance logs use
 		"device_time": str(device_time) if device_time else None,
+		"offline": False,
+		"error": None,
 	}
 
 
@@ -205,8 +225,14 @@ def set_machine_time(ip_address, comm_key=None, timestamp=None):
 	try:
 		try:
 			conn = connect_machine(row)
-		except ConnectionError as e:
-			frappe.throw(str(e))
+		except MachineOffline as e:
+			return {
+				"ip_address": ip_address,
+				"set_to": None,
+				"device_time": None,
+				"offline": True,
+				"error": str(e),
+			}
 		# Same idiom as the enrollment writes: the device is taken offline for the
 		# write, and enable_device lives in finally so it never stays disabled.
 		conn.disable_device()
@@ -229,6 +255,8 @@ def set_machine_time(ip_address, comm_key=None, timestamp=None):
 		"ip_address": ip_address,
 		"set_to": str(target),
 		"device_time": str(device_time) if device_time else None,
+		"offline": False,
+		"error": None,
 	}
 
 

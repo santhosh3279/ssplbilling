@@ -10,7 +10,7 @@ import json
 import frappe
 from frappe.utils import now_datetime
 
-from ssplbilling.api.essl_machine_api import connect_machine, get_machine_rows
+from ssplbilling.api.essl_machine_api import MachineOffline, connect_machine, get_machine_rows
 
 DEVICE_USER_DOCTYPE = "eSSL Device User"
 MAPPING_DOCTYPE = "eSSL Employee Mapping"
@@ -61,7 +61,12 @@ def get_machine_users(machine):
 
 	conn = None
 	try:
-		conn = connect_machine(row)
+		try:
+			conn = connect_machine(row)
+		except MachineOffline as e:
+			# An unreachable device is reported, not raised: raising would 500 and put
+			# an Error Log row plus a traceback dialog in front of the user.
+			return {"machine": row.name, "store": row.store, "users": [], "offline": True, "error": str(e)}
 		users, fingers = _read_machine(conn)
 		payload = []
 		for user in users:
@@ -77,7 +82,7 @@ def get_machine_users(machine):
 				pass
 
 	payload.sort(key=lambda u: (not u["user_id"].isdigit(), int(u["user_id"]) if u["user_id"].isdigit() else 0))
-	return {"machine": row.name, "store": row.store, "users": payload}
+	return {"machine": row.name, "store": row.store, "users": payload, "offline": False, "error": None}
 
 
 def _next_uid(existing_uids):
@@ -137,7 +142,10 @@ def copy_users(source, target, user_ids=None):
 
 	src_conn = None
 	try:
-		src_conn = connect_machine(source_row)
+		try:
+			src_conn = connect_machine(source_row)
+		except MachineOffline as e:
+			return _offline_copy(source_row, target_row, e)
 		users, fingers = _read_machine(src_conn)
 	finally:
 		if src_conn:
@@ -153,7 +161,10 @@ def copy_users(source, target, user_ids=None):
 	results = []
 	tgt_conn = None
 	try:
-		tgt_conn = connect_machine(target_row)
+		try:
+			tgt_conn = connect_machine(target_row)
+		except MachineOffline as e:
+			return _offline_copy(source_row, target_row, e)
 		existing = tgt_conn.get_users() or []
 		uid_by_user_id = {str(u.user_id): u.uid for u in existing}
 		used_uids = {u.uid for u in existing}
@@ -214,6 +225,22 @@ def copy_users(source, target, user_ids=None):
 		"copied": sum(1 for r in results if not r["error"]),
 		"failed": sum(1 for r in results if r["error"]),
 		"users": results,
+		"offline": False,
+		"error": None,
+	}
+
+
+def _offline_copy(source_row, target_row, error):
+	"""copy_users' own shape with nothing copied — either end being unreachable stops
+	the copy, and the caller shows which device is offline."""
+	return {
+		"source": source_row.name,
+		"target": target_row.name,
+		"copied": 0,
+		"failed": 0,
+		"users": [],
+		"offline": True,
+		"error": str(error),
 	}
 
 
@@ -234,7 +261,19 @@ def _push_users_to_machine(machine, employee_codes=None):
 
 	conn = None
 	try:
-		conn = connect_machine(row)
+		try:
+			conn = connect_machine(row)
+		except MachineOffline as e:
+			# The employee and its device-user record are already saved; only the push
+			# to this device is skipped, so the caller reports it per machine.
+			return {
+				"machine": row.name,
+				"pushed": 0,
+				"failed": 0,
+				"users": [],
+				"offline": True,
+				"error": str(e),
+			}
 		existing = conn.get_users() or []
 		uid_by_user_id = {str(u.user_id): u.uid for u in existing}
 		used_uids = {u.uid for u in existing}
@@ -292,6 +331,8 @@ def _push_users_to_machine(machine, employee_codes=None):
 		"pushed": sum(1 for r in results if not r["error"]),
 		"failed": sum(1 for r in results if r["error"]),
 		"users": results,
+		"offline": False,
+		"error": None,
 	}
 
 
@@ -408,7 +449,12 @@ def delete_machine_user(machine, user_id):
 	row = _machine_row(machine)
 	conn = None
 	try:
-		conn = connect_machine(row)
+		try:
+			conn = connect_machine(row)
+		except MachineOffline as e:
+			# Nothing was deleted — `deleted` stays None so the caller cannot report a
+			# removal that never happened.
+			return {"machine": row.name, "deleted": None, "offline": True, "error": str(e)}
 		users = conn.get_users() or []
 		match = [u for u in users if str(u.user_id) == str(user_id)]
 		if not match:
@@ -427,7 +473,7 @@ def delete_machine_user(machine, user_id):
 			except Exception:
 				pass
 
-	return {"machine": row.name, "deleted": str(user_id)}
+	return {"machine": row.name, "deleted": str(user_id), "offline": False, "error": None}
 
 
 @frappe.whitelist()
@@ -440,7 +486,18 @@ def update_machine_user(machine, user_id, name=None, privilege=None, password=No
 	row = _machine_row(machine)
 	conn = None
 	try:
-		conn = connect_machine(row)
+		try:
+			conn = connect_machine(row)
+		except MachineOffline as e:
+			return {
+				"machine": row.name,
+				"user_id": str(user_id),
+				"name": None,
+				"privilege": None,
+				"name_truncated": False,
+				"offline": True,
+				"error": str(e),
+			}
 		users = conn.get_users() or []
 		match = [u for u in users if str(u.user_id) == str(user_id)]
 		if not match:
@@ -487,4 +544,6 @@ def update_machine_user(machine, user_id, name=None, privilege=None, password=No
 		"name": str(new_name or "")[:DEVICE_NAME_MAX],
 		"privilege": "Admin" if new_privilege else "User",
 		"name_truncated": truncated,
+		"offline": False,
+		"error": None,
 	}

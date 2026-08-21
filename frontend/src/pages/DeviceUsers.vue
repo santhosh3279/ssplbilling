@@ -36,6 +36,12 @@
         <div v-if="notice" class="mb-4 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-sm font-semibold text-emerald-500">
           {{ notice }}
         </div>
+        <div v-if="offline" class="mb-4 flex items-start gap-3 rounded-xl border border-rose-500/30 bg-rose-500/10 px-5 py-3">
+          <span class="rounded-lg bg-rose-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-500">
+            Offline
+          </span>
+          <span class="text-sm font-semibold text-rose-500">{{ offline }}</span>
+        </div>
 
         <div>
           <div class="mb-6 flex flex-wrap items-end gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-md">
@@ -364,6 +370,9 @@ const busy = ref(false)
 const busyLabel = ref('Loading...')
 const error = ref('')
 const notice = ref('')
+// Devices that did not answer. Unreachable is an everyday state, so it gets its own
+// badge line instead of the red failure banner.
+const offline = ref('')
 
 const machines = ref([])
 const machineUsers = ref([])
@@ -417,6 +426,7 @@ async function run(label, fn) {
   busyLabel.value = label
   error.value = ''
   notice.value = ''
+  offline.value = ''
   try {
     return await fn()
   } catch (err) {
@@ -444,6 +454,10 @@ async function loadMachineUsers() {
   if (!sourceMachine.value) return
   await run('Reading users from the device...', async () => {
     const res = await fetchMachineUsers(sourceMachine.value)
+    if (res?.offline) {
+      offline.value = res.error || `${sourceMachine.value} did not answer.`
+      return
+    }
     machineUsers.value = res?.users || []
   })
 }
@@ -453,6 +467,10 @@ async function loadTargetUsers() {
   if (!targetMachine.value) return
   await run('Reading users already on the target device...', async () => {
     const res = await fetchMachineUsers(targetMachine.value)
+    if (res?.offline) {
+      offline.value = res.error || `${targetMachine.value} did not answer.`
+      return
+    }
     targetUserIds.value = (res?.users || []).map((u) => u.user_id)
   })
   // Anything now hidden must not stay selected.
@@ -464,6 +482,10 @@ async function copyToTarget() {
   const res = await run('Copying users to the target device...', () =>
     copyMachineUsers({ source: sourceMachine.value, target: targetMachine.value, userIds: selected.value }),
   )
+  if (res?.offline) {
+    offline.value = res.error || 'One of the devices did not answer — nothing was copied.'
+    return
+  }
   if (res) {
     notice.value = `${res.copied} user(s) copied to ${res.target}${res.failed ? `, ${res.failed} failed` : ''}.`
     const failed = (res.users || []).filter((u) => u.error)
@@ -481,6 +503,10 @@ async function removeFromMachine(user) {
   const res = await run('Removing user from the device...', () =>
     deleteMachineUser({ machine: sourceMachine.value, userId: user.user_id }),
   )
+  if (res?.offline) {
+    offline.value = res.error || `${res.machine} did not answer — the user was not removed.`
+    return
+  }
   if (res) {
     notice.value = `${res.deleted} removed from ${res.machine}.`
     await loadMachineUsers()
@@ -507,6 +533,11 @@ async function saveEdit() {
       name: edit.value.name,
       privilege: edit.value.privilege,
     })
+    if (res?.offline) {
+      // Dialog stays open — nothing was written to the device.
+      editError.value = res.error || `${res.machine} did not answer — nothing was changed.`
+      return
+    }
     showEdit.value = false
     // loadMachineUsers clears the banners, so the notice is set after it runs.
     await loadMachineUsers()
@@ -559,7 +590,14 @@ async function saveEnroll() {
     if (res.name_truncated) {
       notice.value += ' The name was shortened to 24 characters on the device.'
     }
+    // The employee is saved either way; only the push to an unreachable device is lost.
+    const unreachable = (res.pushes || []).filter((p) => p.offline).map((p) => p.machine)
+    const enrollNotice = notice.value
     await loadMachineUsers()
+    notice.value = enrollNotice
+    if (unreachable.length) {
+      offline.value = `Not pushed to ${unreachable.join(', ')} — device offline. Push again once it is back.`
+    }
   } catch (err) {
     console.error('Enrollment failed:', err)
     enrollError.value = err.message || 'Enrollment failed.'
