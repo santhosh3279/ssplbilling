@@ -196,6 +196,24 @@
           </div>
         </div>
 
+        <!-- Reads the same helper as the column, so a shade change stays in one place -->
+        <div class="mb-4 flex flex-wrap items-center gap-3">
+          <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+            Checkins
+          </span>
+          <span
+            v-for="item in checkinLegend"
+            :key="item.label"
+            class="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5"
+            :class="checkinClass(item.count)"
+          >
+            <span class="font-mono text-sm font-bold">{{ item.label }}</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider opacity-70">
+              {{ item.note }}
+            </span>
+          </span>
+        </div>
+
         <div class="bg-[var(--color-surface)] rounded-2xl border border-[var(--color-border)] shadow-md overflow-hidden">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-xl border-collapse text-[var(--color-text)]">
@@ -934,6 +952,15 @@ const CHECKIN_GREENS = [
   'bg-emerald-500/20 text-emerald-500 border-emerald-500/35',
   'bg-emerald-500/30 text-emerald-600 border-emerald-500/50',
   'bg-emerald-500/45 text-emerald-700 border-emerald-500/60',
+]
+
+const checkinLegend = [
+  { label: '0', count: 0, note: 'none' },
+  { label: '1,3,5', count: 1, note: 'odd — punch missing' },
+  { label: '2', count: 2, note: '1 pair' },
+  { label: '4', count: 4, note: '2 pairs' },
+  { label: '6', count: 6, note: '3 pairs' },
+  { label: '8+', count: 8, note: '4+ pairs' },
 ]
 
 function checkinClass(count) {
