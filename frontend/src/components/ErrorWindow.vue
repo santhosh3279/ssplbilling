@@ -2,7 +2,7 @@
   <!-- z-[2000]: errors must overlay every other layer (ItemSearch/Calculator 999, CommandLine 1000) -->
   <div v-if="show" class="fixed inset-0 z-[2000] flex items-center justify-center bg-black/80 backdrop-blur-sm">
     <div 
-      class="w-[500px] overflow-hidden rounded-2xl bg-[var(--color-bg)] border shadow-2xl"
+      class="w-[700px] max-w-[92vw] overflow-hidden rounded-2xl bg-[var(--color-bg)] border shadow-2xl"
       :class="type === 'success' ? 'border-[var(--color-success)]/50' : 'border-[var(--color-danger)]/50'"
     >
       <div 
@@ -22,8 +22,8 @@
       </div>
       
       <div class="p-6">
-        <div class="bg-[var(--color-bg)] rounded-lg p-4 border border-[var(--color-border)] max-h-[300px] overflow-y-auto scrollbar-none mb-4">
-          <p class="text-[var(--color-text)] font-mono text-sm whitespace-pre-wrap leading-relaxed">{{ message }}</p>
+        <div class="bg-[var(--color-bg)] rounded-lg p-4 border border-[var(--color-border)] max-h-[400px] overflow-y-auto scrollbar-none mb-4">
+          <p class="text-[var(--color-text)] font-mono text-[1.75rem] whitespace-pre-wrap leading-relaxed">{{ message }}</p>
         </div>
         
         <div class="flex justify-end gap-3">
