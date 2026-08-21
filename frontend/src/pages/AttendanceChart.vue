@@ -113,7 +113,8 @@
           </div>
           <div
             class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
-            title="Shift hours not worked on days the employee was present, today excluded — short hours, not whole absent days"
+            :title="`Shift hours not worked on the ${hourBalance.missingDays} present day(s) that carry more than ` +
+              `two punches — the mid-day exits. Days with a single in/out pair and today are left out.`"
           >
             <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Absent hours on present days</div>
             <div class="text-2xl font-black text-rose-500">{{ hourBalance.missing.toFixed(2) }}</div>
@@ -366,6 +367,7 @@ const hourBalance = computed(() => {
   let expected = 0
   let extra = 0
   let missing = 0
+  let missingDays = 0
 
   for (const day of days.value) {
     // Today is still running — its punches are half in, so it would read as a
@@ -382,10 +384,16 @@ const hourBalance = computed(() => {
 
     const diff = day.hours - owed
     if (diff > HOUR_SLACK) extra += diff
-    else if (diff < -HOUR_SLACK) missing += -diff
+    // A shortfall only counts once the day has more than the opening in/out pair.
+    // Two punches mean the employee stayed in the whole time and the gap is just a
+    // short shift; the extra punches are the mid-day exits the hours are missing for.
+    else if (diff < -HOUR_SLACK && (punchesByDate.value[day.date] || []).length > 2) {
+      missing += -diff
+      missingDays += 1
+    }
   }
 
-  return { presentDays, expected, extra, missing }
+  return { presentDays, expected, extra, missing, missingDays }
 })
 
 // The longest continuous break of a day, in hours. Only the odd-indexed gaps are
