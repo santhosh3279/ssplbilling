@@ -49,7 +49,7 @@
               <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Source machine</label>
               <select
                 v-model="sourceMachine"
-                @change="loadMachineUsers"
+                @change="clearDeviceRead"
                 class="mt-1 block px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
               >
                 <option value="">— Select —</option>
@@ -63,7 +63,7 @@
               <label class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Target machine</label>
               <select
                 v-model="targetMachine"
-                @change="loadTargetUsers"
+                @change="clearTargetRead"
                 class="mt-1 block px-4 py-2.5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] text-sm font-semibold focus:outline-none focus:border-[var(--color-employee)]"
               >
                 <option value="">— Select —</option>
@@ -82,15 +82,15 @@
             </button>
 
             <button
-              @click="loadMachineUsers"
+              @click="readDevices"
               :disabled="!sourceMachine || busy"
-              class="ml-auto rounded-xl border border-[var(--color-border)] px-5 py-2.5 text-sm font-bold hover:bg-[var(--color-midlight)] disabled:opacity-50"
+              class="ml-auto rounded-xl bg-[var(--color-employee)] text-white px-5 py-2.5 text-sm font-bold hover:brightness-110 disabled:opacity-50"
             >
-              🔄 Reload
+              {{ hasRead ? '🔄 Reload users' : '📡 Read users' }}
             </button>
 
             <p
-              v-if="targetMachine"
+              v-if="targetMachine && hasRead"
               class="w-full text-[11px] font-semibold text-[var(--color-text-muted)]"
             >
               Showing only the {{ visibleUsers.length }} user(s) missing on the target —
@@ -157,8 +157,14 @@
                       <template v-if="targetMachine && machineUsers.length">
                         Every user on the source machine is already enrolled on the target.
                       </template>
+                      <template v-else-if="hasRead">
+                        No users are enrolled on this device.
+                      </template>
+                      <template v-else-if="sourceMachine">
+                        Press “Read users” to pull the user list off this device.
+                      </template>
                       <template v-else>
-                        Pick a source machine to read the users enrolled on it.
+                        Pick a source machine, then press “Read users”.
                       </template>
                     </td>
                   </tr>
@@ -375,6 +381,9 @@ const notice = ref('')
 const offline = ref('')
 
 const machines = ref([])
+// The device is only read when the user asks for it — connecting takes seconds and
+// the machines serve one session at a time, so opening the page must not grab one.
+const hasRead = ref(false)
 const machineUsers = ref([])
 const targetUserIds = ref([])
 
@@ -441,11 +450,38 @@ async function run(label, fn) {
 async function loadMachines() {
   await run('Loading machines...', async () => {
     machines.value = (await fetchEsslMachines()) || []
+    // Pre-select so the read button is one click away; the device itself is untouched.
     if (!sourceMachine.value && machines.value.length) {
       sourceMachine.value = machines.value[0].name
-      await loadMachineUsers()
     }
   })
+}
+
+// The one entry point that reaches out to the devices on the user's say-so.
+async function readDevices() {
+  await loadMachineUsers()
+  if (targetMachine.value && machineUsers.value.length) {
+    const readNotice = notice.value
+    const readOffline = offline.value
+    await loadTargetUsers()
+    if (readNotice) notice.value = readNotice
+    if (readOffline && !offline.value) offline.value = readOffline
+  }
+}
+
+function clearDeviceRead() {
+  // A different source machine means the list on screen is not its list.
+  hasRead.value = false
+  machineUsers.value = []
+  targetUserIds.value = []
+  selected.value = []
+  error.value = ''
+  notice.value = ''
+  offline.value = ''
+}
+
+function clearTargetRead() {
+  targetUserIds.value = []
 }
 
 async function loadMachineUsers() {
@@ -459,6 +495,7 @@ async function loadMachineUsers() {
       return
     }
     machineUsers.value = res?.users || []
+    hasRead.value = true
   })
 }
 
