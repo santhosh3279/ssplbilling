@@ -121,6 +121,23 @@
           </div>
           <div
             class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
+            title="Absent hours less extra hours — what is still owed once the overtime is set against the shortfall"
+          >
+            <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+              Net (absent − extra)
+            </div>
+            <div
+              class="text-2xl font-black"
+              :class="hourBalance.net > 0 ? 'text-rose-500' : 'text-emerald-500'"
+            >
+              {{ hourBalance.net < 0 ? '−' : '' }}{{ Math.abs(hourBalance.net).toFixed(2) }}
+            </div>
+            <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+              {{ hourBalance.net > 0 ? 'owed' : hourBalance.net < 0 ? 'ahead' : 'level' }}
+            </div>
+          </div>
+          <div
+            class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
             :title="`Days worked at least the shift length (${shiftLength.toFixed(2)}h)`"
           >
             <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Full days</div>
@@ -393,7 +410,11 @@ const hourBalance = computed(() => {
     }
   }
 
-  return { presentDays, expected, extra, missing, missingDays }
+  // Positive = hours still owed after the overtime is set against them; negative =
+  // the employee is ahead. Kept signed so the tile can colour and word itself.
+  const net = missing - extra
+
+  return { presentDays, expected, extra, missing, missingDays, net }
 })
 
 // The longest continuous break of a day, in hours. Only the odd-indexed gaps are
