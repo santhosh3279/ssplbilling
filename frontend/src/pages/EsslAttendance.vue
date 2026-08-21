@@ -235,11 +235,12 @@
                   <td class="px-6 py-4 whitespace-nowrap">
                     <button
                       @click="openCheckins(row)"
-                      class="inline-flex items-center gap-2 rounded-xl border border-[var(--color-border)] px-3 py-1.5 hover:bg-[var(--color-midlight)] transition-colors"
-                      :title="`Show the punches behind ${row.employee_name || row.employee}`"
+                      class="inline-flex items-center gap-2 rounded-xl border px-3 py-1.5 hover:brightness-95 transition-colors"
+                      :class="checkinClass(row.checkin_count)"
+                      :title="checkinTitle(row)"
                     >
                       <span class="font-mono text-xl font-bold">{{ row.checkin_count || 0 }}</span>
-                      <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">View</span>
+                      <span class="text-xs font-bold uppercase tracking-wider opacity-70">View</span>
                     </button>
                   </td>
                   <td class="px-6 py-4 text-right whitespace-nowrap">
@@ -923,6 +924,34 @@ function formatTime(stamp) {
   if (!stamp) return '—'
   const timePart = String(stamp).split(' ')[1] || ''
   return timePart.slice(0, 5) || '—'
+}
+
+// Punches come in pairs (in/out), so an even count is a complete day and an odd one
+// means a missing punch. Even rows go green, deepening with each extra pair so a
+// four-punch day is distinguishable from a two-punch one at a glance; odd rows go red.
+const CHECKIN_GREENS = [
+  'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+  'bg-emerald-500/20 text-emerald-500 border-emerald-500/35',
+  'bg-emerald-500/30 text-emerald-600 border-emerald-500/50',
+  'bg-emerald-500/45 text-emerald-700 border-emerald-500/60',
+]
+
+function checkinClass(count) {
+  const n = Number(count) || 0
+  if (n === 0) {
+    return 'bg-[var(--color-text-muted)]/10 text-[var(--color-text-muted)] border-[var(--color-border)]'
+  }
+  if (n % 2) return 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+  const pair = Math.min(Math.floor(n / 2), CHECKIN_GREENS.length) - 1
+  return CHECKIN_GREENS[pair]
+}
+
+function checkinTitle(row) {
+  const who = row.employee_name || row.employee
+  const n = Number(row.checkin_count) || 0
+  if (n === 0) return `No punches for ${who}`
+  if (n % 2) return `${n} punches for ${who} — odd count, a punch is missing`
+  return `${n} punches for ${who}`
 }
 
 function statusClass(status) {
