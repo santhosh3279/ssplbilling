@@ -98,11 +98,15 @@
           </div>
           <div
             class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
-            :title="`Shift length (${shiftLength.toFixed(2)}h) owed across the ${hourBalance.presentDays} present ` +
-              `day(s); a Half Day counts half. Today is left out — it is still running.`"
+            :title="`First punch to last punch across the ${hourBalance.presentDays} present day(s), with the ` +
+              `tail cut at the shift end (${formatHour(shiftEnd)}) and the mid-day exits deducted. ` +
+              `${hourBalance.expected.toFixed(2)}h were owed. Today is left out — it is still running.`"
           >
             <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Shift hours on present days</div>
-            <div class="text-2xl font-black">{{ hourBalance.expected.toFixed(2) }}</div>
+            <div class="text-2xl font-black">{{ hourBalance.shiftHours.toFixed(2) }}</div>
+            <div class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+              of {{ hourBalance.expected.toFixed(2) }} owed
+            </div>
           </div>
           <div
             class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-3 shadow-md"
@@ -378,9 +382,37 @@ const PRESENT_STATUSES = ['Present', 'Half Day', 'Work From Home']
 // having hit the shift exactly rather than as a surplus or a shortfall.
 const HOUR_SLACK = 0.02
 
+// Time actually spent on the clock inside the shift: first punch to last punch,
+// with the tail cut at the shift end so overtime stays out, and the mid-day exits
+// dropped because only the entry-to-exit pairs are summed.
+function inShiftHours(day, sEnd, shift) {
+  const punches = punchesByDate.value[day.date] || []
+
+  if (punches.length >= 2) {
+    // Even index is an entry, odd its exit — the pairing the sync and the bars use
+    let total = 0
+    for (let i = 0; i + 1 < punches.length; i += 2) {
+      const start = punches[i].hours
+      const end = Math.min(punches[i + 1].hours, sEnd)
+      if (end > start) total += end - start
+    }
+    return total
+  }
+
+  // A hand-written Attendance has no punches, so its own window is all there is;
+  // the break inside it is unknowable and simply not deducted.
+  const { inHours, outHours } = getDayTimes(day)
+  if (inHours !== null && outHours !== null) {
+    return Math.max(0, Math.min(outHours, sEnd) - inHours)
+  }
+  return Math.min(day.hours || 0, shift)
+}
+
 const hourBalance = computed(() => {
   const shift = shiftLength.value
+  const sEnd = shiftEnd.value
   let presentDays = 0
+  let shiftHours = 0
   let expected = 0
   let extra = 0
   let missing = 0
@@ -398,6 +430,7 @@ const hourBalance = computed(() => {
     // Half Day owes half the shift, so a half day worked in full is not a shortfall
     const owed = counts['Half Day'] ? shift / 2 : shift
     expected += owed
+    shiftHours += inShiftHours(day, sEnd, owed)
 
     const diff = day.hours - owed
     if (diff > HOUR_SLACK) extra += diff
@@ -414,7 +447,7 @@ const hourBalance = computed(() => {
   // the employee is ahead. Kept signed so the tile can colour and word itself.
   const net = missing - extra
 
-  return { presentDays, expected, extra, missing, missingDays, net }
+  return { presentDays, shiftHours, expected, extra, missing, missingDays, net }
 })
 
 // The longest continuous break of a day, in hours. Only the odd-indexed gaps are
