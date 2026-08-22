@@ -206,10 +206,19 @@ function filterPrintersForTemplate(templateName) {
     : allPrinters.value
   const typeFiltered = typeMatched.length ? typeMatched : allPrinters.value
 
-  const uniquePrinterNames = new Set(getUserPrinterSettings().map(r => r.printer).filter(Boolean))
+  const rows = getUserPrinterSettings()
+  const uniquePrinterNames = new Set(rows.map(r => r.printer).filter(Boolean))
   const userFiltered = typeFiltered.filter(p => uniquePrinterNames.has(p.name))
+  const pool = userFiltered.length ? userFiltered : typeFiltered
 
-  printers.value = userFiltered.length ? userFiltered : typeFiltered
+  // Printers that list this template (or list none at all, i.e. accept anything)
+  // come first, so the format drives which printer the dropdown offers
+  const templateNames = new Set(
+    rows.filter(r => r.template === templateName || !r.template).map(r => r.printer).filter(Boolean)
+  )
+  const templateMatched = pool.filter(p => templateNames.has(p.name))
+
+  printers.value = templateMatched.length ? templateMatched : pool
 }
 
 function syncPrinter() {

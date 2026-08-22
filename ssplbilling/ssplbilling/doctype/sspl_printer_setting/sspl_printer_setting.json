@@ -8,10 +8,11 @@
  "engine": "InnoDB",
  "field_order": [
   "printer",
-  "default_format",
   "column_break_main",
   "is_default",
   "disabled",
+  "section_formats",
+  "formats",
   "section_users",
   "allowed_users"
  ],
@@ -24,13 +25,6 @@
    "options": "Printer",
    "reqd": 1,
    "unique": 1
-  },
-  {
-   "fieldname": "default_format",
-   "fieldtype": "Link",
-   "in_list_view": 1,
-   "label": "Default Format",
-   "options": "Print Template"
   },
   {
    "fieldname": "column_break_main",
@@ -49,6 +43,18 @@
    "fieldname": "disabled",
    "fieldtype": "Check",
    "label": "Disabled"
+  },
+  {
+   "fieldname": "section_formats",
+   "fieldtype": "Section Break",
+   "label": "Print Formats"
+  },
+  {
+   "description": "Print templates this printer handles. Leave empty to allow every template.",
+   "fieldname": "formats",
+   "fieldtype": "Table",
+   "label": "Print Formats",
+   "options": "SSPL Printer Format"
   },
   {
    "fieldname": "section_users",
