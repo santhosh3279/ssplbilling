@@ -194,13 +194,15 @@
                     <th v-if="isAdmin" class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">User</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Printer</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Print Template</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Source</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="ps in visiblePrinterSettings" :key="ps.user + ps.printer + ps.template" class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
-                    <td v-if="isAdmin" class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ ps.user || '--' }}</td>
+                  <tr v-for="(ps, psIdx) in visiblePrinterSettings" :key="ps.source + psIdx" class="border-t border-[var(--color-border)] hover:bg-[var(--color-surface)]/40">
+                    <td v-if="isAdmin" class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ ps.user || 'All Users' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 font-medium text-[var(--color-text)]">{{ ps.printer || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ ps.template || '--' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ ps.source }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -571,12 +573,19 @@ function getAlpha(s) {
   return (s || '').replace(/[^A-Za-z]/g, '')
 }
 
+// SSPL Printer Setting records first (same precedence the print dialog applies),
+// then the legacy SSPL Billing Settings child table rows.
 const visiblePrinterSettings = computed(() => {
   permissionTrigger.value
-  if (!rawSettings.value?.printer_settings) return []
-  if (isAdmin.value) return rawSettings.value.printer_settings
+  const records = (rawSettings.value?.printer_records || []).map(ps => ({ ...ps, source: 'Printer Setting' }))
+  const legacy = (rawSettings.value?.printer_settings || []).map(ps => ({ ...ps, source: 'Billing Settings' }))
+  if (isAdmin.value) return [...records, ...legacy]
   const targetUser = localStorage.getItem('wb-inherited-user') || currentUser.value
-  return rawSettings.value.printer_settings.filter(ps => ps.user === targetUser)
+  // A record with no user is open to every user
+  return [
+    ...records.filter(ps => ps.user === targetUser || !ps.user),
+    ...legacy.filter(ps => ps.user === targetUser),
+  ]
 })
 
 const visibleBillingSeries = computed(() => {
