@@ -626,8 +626,13 @@ async function loadPrices(code) {
     }
 
     nextTick(() => {
-      // Always focus the first UOM rate of the first price list
-      focusInput('rate-0-0')
+      // Buying rates arrive already filled from the purchase item table, so start
+      // on the price list right after the buying one; otherwise start at the top
+      let focusPlIdx = 0
+      if (prices.value[startPlIdx]?.buying && startPlIdx + 1 < prices.value.length) {
+        focusPlIdx = startPlIdx + 1
+      }
+      focusInput(`rate-${focusPlIdx}-0`)
     })
   } catch (e) {
     showToast('Failed to load prices: ' + e.message, 'error')
