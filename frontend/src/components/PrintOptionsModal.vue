@@ -180,8 +180,14 @@ function getUserPrinterSettings() {
     }
 
     const printerRecords = JSON.parse(localStorage.getItem('wb-printer-records') || '[]')
+
+    // Legacy rows keep their original either/or semantics: a user with own rows
+    // never saw the blank-user rows, and widening that would change the dropdown
     const legacyRows = JSON.parse(localStorage.getItem('wb-printer-templates') || '[]')
-    return [...forUser(printerRecords), ...forUser(legacyRows)]
+    const legacyMine = legacyRows.filter(ps => ps.user === currentUser)
+    const legacy = legacyMine.length ? legacyMine : legacyRows.filter(ps => !ps.user)
+
+    return [...forUser(printerRecords), ...legacy]
   } catch (e) {
     return []
   }

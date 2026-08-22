@@ -1378,7 +1378,10 @@ async function syncBillingSettings(targetUser, force) {
     const cached = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
     const cacheValid = !force && cached &&
       (Date.now() - cached.ts) < BILLING_SETTINGS_TTL &&
-      cached.data?._current_user === targetUser
+      cached.data?._current_user === targetUser &&
+      // Payload written before SSPL Printer Setting existed: refetch instead of
+      // leaving wb-printer-records unwritten until the TTL expires
+      cached.data?.printer_records !== undefined
     if (cacheValid) {
       settings = cached.data
     } else {
