@@ -1458,6 +1458,12 @@ async function syncBillingSettings(targetUser, force) {
        localStorage.setItem('wb-printer-templates', JSON.stringify(settings.printer_settings))
     }
 
+    // SSPL Printer Setting records (printer -> allowed users + default format).
+    // Takes precedence over the legacy wb-printer-templates rows in PrintOptionsModal.
+    if (settings && settings.printer_records) {
+       localStorage.setItem('wb-printer-records', JSON.stringify(settings.printer_records))
+    }
+
     // Warm the Print Template / Printer lists so PrintOptionsModal opens with no round
     // trip. One bucket per doctype the print dialogs actually ask for:
     //   ''                 → GstLedger and GeneralLedger's ledger print (the Customer

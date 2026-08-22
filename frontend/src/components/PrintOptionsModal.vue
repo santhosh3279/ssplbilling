@@ -164,16 +164,24 @@ const FORMAT_TYPE_KEYWORD = {
 const allPrinters = ref([])       // unfiltered printer list for this doctype
 const templateFormatMap = ref({}) // template name -> format_type
 
-// Returns printer_settings rows for the current user from the billing settings cache
+// Returns printer rows ({user, printer, template}) for the current user. SSPL Printer
+// Setting records (wb-printer-records) come first so they win the .find() in syncPrinter;
+// the legacy SSPL Billing Settings child table (wb-printer-templates) is the fallback.
 function getUserPrinterSettings() {
   try {
-    const cachedTemplates = JSON.parse(localStorage.getItem('wb-printer-templates') || '[]')
     const cachedSettings = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
     const currentUser = cachedSettings?.data?._current_user || ''
-    
-    // Filter by current user; fall back to all rows if no user field is set
-    const userRows = cachedTemplates.filter(ps => ps.user === currentUser)
-    return userRows.length ? userRows : cachedTemplates.filter(ps => !ps.user)
+
+    // Rows with no user are wildcards — a printer whose allowed-users table is empty
+    const forUser = rows => {
+      const mine = rows.filter(ps => ps.user === currentUser)
+      const anyUser = rows.filter(ps => !ps.user)
+      return [...mine, ...anyUser]
+    }
+
+    const printerRecords = JSON.parse(localStorage.getItem('wb-printer-records') || '[]')
+    const legacyRows = JSON.parse(localStorage.getItem('wb-printer-templates') || '[]')
+    return [...forUser(printerRecords), ...forUser(legacyRows)]
   } catch (e) {
     return []
   }

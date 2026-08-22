@@ -558,6 +558,33 @@ def run_terminal_command(command, cwd=None):
 			}
 
 
+
+def get_printer_records():
+	"""Flatten SSPL Printer Setting records into rows the print dialog can consume.
+
+	Every enabled printer yields one row per allowed user; an empty allowed-users
+	table means the printer is open to everyone and yields a single row with an
+	empty user, matching the wildcard convention of the legacy printer_settings
+	child table.
+	"""
+	from frappe.utils import cint
+
+	rows = []
+	for name in frappe.get_all("SSPL Printer Setting", filters={"disabled": 0}, pluck="name"):
+		doc = frappe.get_cached_doc("SSPL Printer Setting", name)
+		users = [u.user for u in (doc.allowed_users or []) if u.user] or [""]
+		for user in users:
+			rows.append({
+				"user": user,
+				"printer": doc.printer or "",
+				"template": doc.default_format or "",
+				"is_default": cint(doc.is_default),
+			})
+	# Default printers first so a .find() on the client picks them deterministically
+	rows.sort(key=lambda r: -r["is_default"])
+	return rows
+
+
 @frappe.whitelist()
 def get_billing_settings(user=None):
 	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current or specified user."""
@@ -670,6 +697,7 @@ def get_billing_settings(user=None):
 			}
 			for r in (settings.table_vycb or [])
 		],
+		"printer_records": get_printer_records(),
 		"visible_accounts": [
 			{
 				"account": r.account or "",
