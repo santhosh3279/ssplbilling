@@ -214,7 +214,6 @@
                 <th class="pl-6 pr-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-10">Date</th>
                 <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[15ch] max-w-[15ch]">Voucher No</th>
                 <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-[20ch] max-w-[20ch]">Party</th>
-                <th class="px-2 py-2 text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Warehouse</th>
                 <th class="px-2 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-[5ch] max-w-[5ch]">UOM</th>
                 <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[10ch] max-w-[10ch]">Inwards</th>
                 <th class="px-4 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[10ch] max-w-[10ch]">Outwards</th>
@@ -224,7 +223,7 @@
             <tbody ref="tableBodyRef">
               <!-- No entries message -->
               <tr v-if="!filteredEntries.length">
-                <td colspan="8" class="px-4 py-12 text-center text-[var(--color-text-muted)]">
+                <td colspan="7" class="px-4 py-12 text-center text-[var(--color-text-muted)]">
                   No stock transactions found for the selected period.
                 </td>
               </tr>
@@ -259,9 +258,6 @@
                   :title="entry.detail?.party_name || entry.detail?.party || ''"
                 >
                   {{ entry.detail?.party_name || entry.detail?.party || '—' }}
-                </td>
-                <td class="px-2 py-1.5 truncate" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
-                  {{ entry.warehouse }}
                 </td>
                 <td class="px-2 py-1.5 text-[var(--color-text-muted)] w-[5ch] max-w-[5ch] truncate" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : ''">
                   {{ entry.stock_uom }}
