@@ -84,7 +84,7 @@
       v-if="showInitialSelection"
       ref="selectionOverlayRef"
       tabindex="0"
-      class="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-md outline-none"
+      class="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-md outline-none"
       @keydown="onSelectionKeydown"
     >
       <div class="w-full max-w-2xl rounded-3xl bg-[var(--color-surface)] p-12 text-center shadow-2xl border border-[var(--color-border)] relative text-[var(--color-text)]">
