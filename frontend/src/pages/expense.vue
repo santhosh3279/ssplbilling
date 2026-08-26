@@ -59,8 +59,8 @@
             :class="multiEntry ? 'bg-[var(--color-success)]' : 'bg-[var(--color-surface-raised)]'"
           >
             <span
-              class="absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow transition-transform"
-              :class="multiEntry ? 'translate-x-[22px]' : 'translate-x-[2px]'"
+              class="absolute left-[2px] top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow transition-transform"
+              :class="multiEntry ? 'translate-x-[20px]' : 'translate-x-0'"
             ></span>
           </span>
         </button>
