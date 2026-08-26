@@ -42,8 +42,7 @@
       </div>
 
       <!-- Right: Multi-row toggle + Posting Date -->
-      <div class="flex items-center gap-2">
-        <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Multi Row</span>
+      <div class="flex items-center gap-4">
         <button
           type="button"
           role="switch"
@@ -52,17 +51,22 @@
           :title="multiEntry
             ? 'Multi-row entry ON — Enter on Remarks opens a new row'
             : 'Multi-row entry OFF — Enter on Remarks jumps to Reference No'"
-          class="relative h-6 w-11 shrink-0 rounded-full border border-[var(--color-border)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)]/50"
-          :class="multiEntry ? 'bg-[var(--color-success)]' : 'bg-[var(--color-surface-raised)]'"
+          class="flex items-center gap-2 rounded-lg px-2 py-1 hover:bg-[var(--color-midlight)] focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)]/50 transition-colors"
         >
+          <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Multi Row</span>
           <span
-            class="absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow transition-transform"
-            :class="multiEntry ? 'translate-x-[22px]' : 'translate-x-[2px]'"
-          ></span>
+            class="relative block h-6 w-11 shrink-0 rounded-full border border-[var(--color-border)] transition-colors"
+            :class="multiEntry ? 'bg-[var(--color-success)]' : 'bg-[var(--color-surface-raised)]'"
+          >
+            <span
+              class="absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow transition-transform"
+              :class="multiEntry ? 'translate-x-[22px]' : 'translate-x-[2px]'"
+            ></span>
+          </span>
         </button>
-      </div>
 
-      <div class="flex items-center gap-2">
+        <div class="h-8 w-px bg-[var(--color-border)]"></div>
+
         <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</span>
         <div class="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] transition-colors">
           <button @click="adjustDate(-1)" class="p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button>
