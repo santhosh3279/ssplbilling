@@ -678,6 +678,7 @@ def get_billing_settings(user=None):
 				"tax_template": r.tax_template or "",
 				"print_format": r.print_format or "",
 				"tax_type_incl": r.tax_type_incl or 0,
+				"is_return": r.is_return or 0,
 			}
 			for r in settings.billing_series
 		],

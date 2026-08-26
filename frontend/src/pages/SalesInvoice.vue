@@ -1510,6 +1510,8 @@ async function clearBill() {
       
       invoiceNo.value = getNextInvoiceNoFromPanel(selectedSeries.value, 'NEW')
       defaultTemplate.value = seriesEntry?.print_format || ''
+      // Series flagged as Return in SSPL Billing Settings start with Sale Return ticked
+      isReturn.value = !!seriesEntry?.is_return
       if (userDefaults.warehouse) warehouse.value = userDefaults.warehouse
       if (userDefaults.cost_center) costCenter.value = userDefaults.cost_center
       if (userDefaults.income_account) incomeAccount.value = userDefaults.income_account
@@ -3101,7 +3103,9 @@ async function handleSeriesSelected(series) {
     priceList.value = seriesEntry?.price_list || 'Standard Selling'
     taxTemplate.value = seriesEntry?.tax_template || ''
     defaultTemplate.value = seriesEntry?.print_format || ''
-    
+    // Series flagged as Return in SSPL Billing Settings start with Sale Return ticked
+    isReturn.value = !!seriesEntry?.is_return
+
     if (userDefaults.warehouse) warehouse.value = userDefaults.warehouse
     if (userDefaults.cost_center) costCenter.value = userDefaults.cost_center
     if (userDefaults.income_account) incomeAccount.value = userDefaults.income_account
