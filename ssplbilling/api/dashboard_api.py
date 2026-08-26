@@ -571,20 +571,32 @@ def get_printer_records():
 	from frappe.utils import cint
 
 	rows = []
-	for name in frappe.get_all("SSPL Printer Setting", filters={"disabled": 0}, pluck="name"):
+	# Row order is meaningful downstream: the print dialog builds its template dropdown
+	# from these rows in order (deduped, first wins) and preselects the first one. So the
+	# record order is pinned here — default printers first, then oldest first — rather
+	# than left to get_all's "modified desc", which would let the most recently edited
+	# record jump to the front and change which template opens selected.
+	setting_names = frappe.get_all(
+		"SSPL Printer Setting",
+		filters={"disabled": 0},
+		order_by="is_default desc, creation asc",
+		pluck="name",
+	)
+	for name in setting_names:
 		doc = frappe.get_cached_doc("SSPL Printer Setting", name)
 		users = [u.user for u in (doc.allowed_users or []) if u.user] or [""]
 		formats = [f.print_template for f in (doc.formats or []) if f.print_template] or [""]
-		for user in users:
-			for template in formats:
+		# Formats are the outer loop so the Print Formats grid order survives as the
+		# primary axis. Nesting them under users instead would interleave every other
+		# user's rows between the first and second format of this printer.
+		for template in formats:
+			for user in users:
 				rows.append({
 					"user": user,
 					"printer": doc.printer or "",
 					"template": template,
 					"is_default": cint(doc.is_default),
 				})
-	# Default printers first so a .find() on the client picks them deterministically
-	rows.sort(key=lambda r: -r["is_default"])
 	return rows
 
 
