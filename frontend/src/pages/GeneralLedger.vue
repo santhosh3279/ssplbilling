@@ -214,7 +214,7 @@
     <div class="flex flex-1 overflow-hidden">
       
       <!-- Table Container -->
-      <div class="flex-1 overflow-auto">
+      <div ref="tableScrollRef" class="flex-1 overflow-auto">
 
       <!-- Empty state -->
       <div v-if="!ledgerData && !loading && !error" class="flex flex-col items-center justify-center gap-3 py-24 text-[var(--color-text-muted)]">
@@ -237,7 +237,7 @@
       <!-- Table -->
       <template v-else-if="ledgerData">
         <table class="w-full border-collapse text-[19.5px]">
-          <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
+          <thead ref="tableHeadRef" class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
             <tr>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
               <th class="px-1 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[4ch] max-w-[4ch]">Type</th>
@@ -1082,6 +1082,8 @@ const printModalVisible = ref(false)
 const printModalInvoiceName = ref('')
 const printModalDoctype = ref('')
 const tableBodyRef = ref(null)
+const tableScrollRef = ref(null)
+const tableHeadRef = ref(null)
 
 // ── Bill Detail Subwindow ──
 const showBillDetail = ref(false)
@@ -1293,8 +1295,29 @@ function onGlobalKeydown(e) {
 
 function scrollRowIntoView(idx) {
   nextTick(() => {
-    const rows = tableBodyRef.value?.querySelectorAll('tr[data-idx]')
-    rows?.[idx]?.scrollIntoView({ block: 'nearest' })
+    const row = tableBodyRef.value?.querySelectorAll('tr[data-idx]')?.[idx]
+    if (!row) return
+
+    const scroller = tableScrollRef.value
+    if (!scroller) {
+      row.scrollIntoView({ block: 'nearest' })
+      return
+    }
+
+    // The thead is `sticky top-0`, so it overlays the top of the scroll area.
+    // scrollIntoView({ block: 'nearest' }) knows nothing about that and parks the
+    // row underneath it when moving up — clamp against the header's bottom edge
+    // (both header rows: labels + filters) instead.
+    const headH = tableHeadRef.value?.offsetHeight || 0
+    const sRect = scroller.getBoundingClientRect()
+    const rRect = row.getBoundingClientRect()
+    const topLimit = sRect.top + headH
+
+    if (rRect.top < topLimit) {
+      scroller.scrollTop -= topLimit - rRect.top
+    } else if (rRect.bottom > sRect.bottom) {
+      scroller.scrollTop += rRect.bottom - sRect.bottom
+    }
   })
 }
 
