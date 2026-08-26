@@ -240,7 +240,7 @@
           <thead class="sticky top-0 z-10 bg-[var(--color-surface)] border-b-2 border-[var(--color-border)]">
             <tr>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
-              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Type</th>
+              <th class="px-1 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[4ch] max-w-[4ch]">Type</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Against</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Created</th>
@@ -258,12 +258,12 @@
                   class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
                 />
               </th>
-              <th class="px-2 py-1">
+              <th class="px-1 py-1 w-[4ch] max-w-[4ch]">
                 <input
                   v-model="filters.voucher_type"
                   type="text"
-                  placeholder="Filter..."
-                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                  placeholder="…"
+                  class="w-full min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-xs font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
                 />
               </th>
               <th class="px-2 py-1">
@@ -359,9 +359,9 @@
               }"
             >
               <td class="px-3 py-2 whitespace-nowrap font-mono" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtDate(entry.date) }}</td>
-              <td class="px-3 py-2 whitespace-nowrap">
+              <td class="px-1 py-2 whitespace-nowrap w-[4ch] max-w-[4ch]">
                 <span
-                  class="rounded px-1.5 py-0.5 text-[15px] font-semibold uppercase tracking-wide"
+                  class="rounded px-1 py-0.5 text-[15px] font-semibold uppercase tracking-wide"
                   :class="voucherBadge(entry.voucher_type)"
                 >{{ voucherLabel(entry.voucher_type) }}</span>
               </td>
