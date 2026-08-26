@@ -121,7 +121,7 @@
                   <div
                     :ref="el => { if (el) ledgerRefs[idx] = el }"
                     @click="openLedgerSearch(idx)"
-                    @keydown.enter.prevent.stop="openLedgerSearch(idx)"
+                    @keydown="handleLedgerKeydown($event, idx)"
                     tabindex="0"
                     class="w-full h-full min-h-[56px] px-3 py-2 text-2xl font-bold cursor-pointer hover:bg-black/5 transition-all flex items-center justify-between outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-focus)]"
                     :class="row.account ? 'text-inherit' : 'text-[var(--color-text-muted)] italic group-focus-within:text-inherit/60'"
@@ -263,7 +263,8 @@
       :show="showSearchModal"
       :skip-date-filter="true"
       :hideSecondary="true"
-      @close="showSearchModal = false"
+      :initial-query="ledgerSearchQuery"
+      @close="showSearchModal = false; ledgerSearchQuery = ''"
       @select="selectLedger"
     />
 
@@ -383,6 +384,8 @@ const isSubmitting = ref(false)
 const submitting = ref(false)
 const showSearchModal = ref(false)
 const ledgerSearchModal = ref(null)
+// Seeds the search modal when the operator starts typing straight into a ledger cell.
+const ledgerSearchQuery = ref('')
 const remarksInput = ref(null)
 const saveButton = ref(null)
 const errorBlink = ref(false)
@@ -452,10 +455,28 @@ function removeRow(idx) {
   rows.value.splice(idx, 1)
 }
 
-function openLedgerSearch(idx) {
+function openLedgerSearch(idx, initialVal = '') {
   activeRowIdx.value = idx
+  ledgerSearchQuery.value = typeof initialVal === 'string' ? initialVal : ''
   showSearchModal.value = true
   nextTick(() => ledgerSearchModal.value?.focus())
+}
+
+// The ledger cell is a focusable div, not an input — so typing into it would
+// otherwise be swallowed. Any printable character opens the search modal and
+// carries that first keystroke into the modal's query.
+function handleLedgerKeydown(e, idx) {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    e.stopPropagation()
+    openLedgerSearch(idx)
+    return
+  }
+  if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    e.preventDefault()
+    e.stopPropagation()
+    openLedgerSearch(idx, e.key)
+  }
 }
 
 function selectLedger(ledger) {
