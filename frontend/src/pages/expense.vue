@@ -41,7 +41,27 @@
         </div>
       </div>
 
-      <!-- Right: Posting Date -->
+      <!-- Right: Multi-row toggle + Posting Date -->
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Multi Row</span>
+        <button
+          type="button"
+          role="switch"
+          :aria-checked="multiEntry"
+          @click="multiEntry = !multiEntry"
+          :title="multiEntry
+            ? 'Multi-row entry ON — Enter on Remarks opens a new row'
+            : 'Multi-row entry OFF — Enter on Remarks jumps to Reference No'"
+          class="relative h-6 w-11 shrink-0 rounded-full border border-[var(--color-border)] transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--color-focus)]/50"
+          :class="multiEntry ? 'bg-[var(--color-success)]' : 'bg-[var(--color-surface-raised)]'"
+        >
+          <span
+            class="absolute top-[2px] h-[18px] w-[18px] rounded-full bg-white shadow transition-transform"
+            :class="multiEntry ? 'translate-x-[22px]' : 'translate-x-[2px]'"
+          ></span>
+        </button>
+      </div>
+
       <div class="flex items-center gap-2">
         <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</span>
         <div class="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] transition-colors">
@@ -370,6 +390,13 @@ const selectionOverlayRef = ref(null)
 useSubwindowWatcher(showExitWarning, {
   'ESCAPE': () => { showExitWarning.value = false }
 })
+// Multi-row entry. When off, finishing the first row jumps straight to Reference No
+// instead of opening a second row. Persisted so the operator's choice survives reloads.
+const multiEntry = ref(localStorage.getItem('wb-expense-multi-row') === '1')
+watch(multiEntry, (val) => {
+  localStorage.setItem('wb-expense-multi-row', val ? '1' : '0')
+})
+
 const postingDate = ref(serverToday())
 const cashAccount = ref({
   account: localStorage.getItem('wb-cash') || '',
@@ -595,6 +622,10 @@ async function handleAmountEnter(idx) {
 }
 
 function handleRowRemarksEnter(idx) {
+  if (!multiEntry.value) {
+    focusReferenceNo()
+    return
+  }
   if (idx === form.rows.length - 1) {
     form.rows.push({ account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {} })
     nextTick(() => {
