@@ -395,11 +395,9 @@ useSubwindowWatcher(showExitWarning, {
   'ESCAPE': () => { showExitWarning.value = false }
 })
 // Multi-row entry. When off, finishing the first row jumps straight to Reference No
-// instead of opening a second row. Persisted so the operator's choice survives reloads.
-const multiEntry = ref(localStorage.getItem('wb-expense-multi-row') === '1')
-watch(multiEntry, (val) => {
-  localStorage.setItem('wb-expense-multi-row', val ? '1' : '0')
-})
+// instead of opening a second row. Deliberately not persisted — every visit starts
+// off, so a one-off multi-row entry never silently carries into the next session.
+const multiEntry = ref(false)
 
 const postingDate = ref(serverToday())
 const cashAccount = ref({
