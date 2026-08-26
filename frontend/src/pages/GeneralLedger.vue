@@ -242,7 +242,6 @@
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Type</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Voucher No</th>
-              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Payment Type</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Against</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Created</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Debit (Dr)</th>
@@ -273,14 +272,6 @@
                   type="text"
                   placeholder="Filter..."
                   class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
-                />
-              </th>
-              <th class="px-2 py-1">
-                <input
-                  v-model="filters.payment_type"
-                  type="text"
-                  placeholder="Filter..."
-                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
                 />
               </th>
               <th class="px-2 py-1">
@@ -329,7 +320,7 @@
 
             <!-- Opening Balance -->
             <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
-              <td colspan="6" class="px-3 py-2 text-[var(--color-text-muted)] text-[18px]">
+              <td colspan="5" class="px-3 py-2 text-[var(--color-text-muted)] text-[18px]">
                 Opening Balance
                 <span class="ml-1 opacity-60">(before {{ fmtDate(ledgerData.from_date) }})</span>
               </td>
@@ -348,7 +339,7 @@
 
             <!-- No entries -->
             <tr v-if="!filteredEntries.length">
-              <td colspan="10" class="px-3 py-12 text-center text-[var(--color-text-muted)]">
+              <td colspan="8" class="px-3 py-12 text-center text-[var(--color-text-muted)]">
                 {{ isAnyFilterActive ? 'No transactions matching the filters.' : 'No transactions in the selected date range.' }}
               </td>
             </tr>
@@ -381,9 +372,6 @@
                   :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-info)]'"
                 >{{ entry.voucher_no }}</button>
               </td>
-              <td class="px-3 py-2 whitespace-nowrap font-semibold"
-                :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : (entry.detail?.payment_type === 'Receive' ? 'text-[var(--color-success)]' : entry.detail?.payment_type === 'Pay' ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')"
-              >{{ entry.detail?.payment_type || '—' }}</td>
               <td class="px-3 py-2 max-w-[200px] truncate" :title="entry.against" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.against || '—' }}</td>
               <td class="px-3 py-2 whitespace-nowrap font-mono" :title="entry.creation" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtTime(entry.creation) }}</td>
               <td class="px-3 py-2 text-right font-mono">
@@ -409,7 +397,7 @@
             <!-- Closing row -->
             <tr v-if="filteredEntries.length" class="border-t-2 border-[var(--color-border)] bg-[var(--color-surface-raised)]/50">
               <td colspan="3" class="px-3 py-2 font-semibold text-[var(--color-text)]">Closing Balance</td>
-              <td colspan="3" class="px-3 py-2 text-[18px] text-[var(--color-text-muted)]">
+              <td colspan="2" class="px-3 py-2 text-[18px] text-[var(--color-text-muted)]">
                 {{ fmtDate(ledgerData.from_date) }} → {{ fmtDate(ledgerData.to_date) }}
               </td>
               <td class="px-3 py-2 text-right font-mono font-semibold text-[var(--color-success)]">{{ fmt(totalDebit) }}</td>
@@ -759,7 +747,6 @@ const filters = ref({
   date: '',
   voucher_type: '',
   voucher_no: '',
-  payment_type: '',
   against: '',
   creation: '',
   debit: '',
@@ -803,13 +790,6 @@ const filteredEntries = computed(() => {
       const query = filters.value.voucher_no.toLowerCase()
       const no = entry.voucher_no.toLowerCase()
       if (!no.includes(query)) return false
-    }
-
-    // Payment Type filter
-    if (filters.value.payment_type) {
-      const query = filters.value.payment_type.toLowerCase()
-      const payType = (entry.detail?.payment_type || '').toLowerCase()
-      if (!payType.includes(query)) return false
     }
 
     // Against filter
@@ -1357,11 +1337,11 @@ function exportExcel() {
   rows.push([])
 
   // Header
-  rows.push(['Date', 'Voucher Type', 'Voucher No', 'Payment Type', 'Against', 'Created', 'Debit (Dr)', 'Credit (Cr)', 'Balance'])
+  rows.push(['Date', 'Voucher Type', 'Voucher No', 'Against', 'Created', 'Debit (Dr)', 'Credit (Cr)', 'Balance'])
 
   // Opening row
   rows.push([
-    `Opening (before ${fmtDate(d.from_date)})`, '', '', '', '', '',
+    `Opening (before ${fmtDate(d.from_date)})`, '', '', '', '',
     '',
     '',
     Math.abs(d.opening_balance),
@@ -1373,7 +1353,6 @@ function exportExcel() {
       fmtDate(e.date),
       e.voucher_type,
       e.voucher_no,
-      e.detail?.payment_type || '',
       e.against,
       e.creation || '',
       e.debit || '',
@@ -1385,7 +1364,7 @@ function exportExcel() {
   // Closing row
   rows.push([])
   rows.push([
-    'Closing Balance', '', '', '', '', '',
+    'Closing Balance', '', '', '', '',
     totalDebit.value,
     totalCredit.value,
     Math.abs(d.closing_balance),
@@ -1395,7 +1374,7 @@ function exportExcel() {
 
   // Column widths
   ws['!cols'] = [
-    { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 14 }, { wch: 28 }, { wch: 30 },
+    { wch: 12 }, { wch: 18 }, { wch: 22 }, { wch: 28 }, { wch: 30 },
     { wch: 14 }, { wch: 14 }, { wch: 16 },
   ]
 
