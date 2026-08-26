@@ -78,6 +78,24 @@
       <!-- Custom slots for additional logic if needed -->
       <template #header-right>
         <div class="flex items-center gap-4">
+          <!-- Mirrors the Sale Return checkbox in the details panel — same isReturn ref -->
+          <label
+            class="flex items-center gap-2 shrink-0 select-none rounded border px-3 py-1 transition-all"
+            :class="[
+              isReturn
+                ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)] border-[var(--color-danger)] shadow'
+                : 'bg-black/5 text-black/60 border-black/20 hover:bg-black/10',
+              isReadOnly ? 'cursor-default opacity-60' : 'cursor-pointer'
+            ]"
+          >
+            <input
+              type="checkbox"
+              v-model="isReturn"
+              :disabled="isReadOnly"
+              class="h-5 w-5 rounded accent-[var(--color-danger)] disabled:opacity-50"
+            />
+            <span class="text-xs font-bold uppercase tracking-widest">Sale Return</span>
+          </label>
           <div v-if="ewaybill" class="flex items-center gap-2 bg-[var(--color-info)]/10 text-[var(--color-info)] border border-[var(--color-info)]/30 rounded-xl px-4 py-1.5 font-mono text-2xl shrink-0 font-bold">
             E-Way Bill: {{ ewaybill }} ({{ ewaybillStatus }})
           </div>
