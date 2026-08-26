@@ -303,6 +303,42 @@ def get_voucher_detail(voucher_type, voucher_no):
         base["user_remark"] = doc.user_remark or ""
     return base
 
+def _resolve_employee_ids_in_against(entries):
+	"""`GL Entry.against` is a stored text column written at submit time. When the
+	counter-side of a voucher is an Employee party, what gets stored is the raw
+	employee ID (e.g. "HR-EMP-00026"), so it surfaces as an ID in the ledger's
+	Against column on every non-Employee ledger. Swap those tokens for the
+	employee's name; every other token (account names, supplier/customer IDs) is
+	left exactly as stored.
+	"""
+	tokens = set()
+	for e in entries:
+		for tok in str(e.get("against") or "").split(","):
+			tok = tok.strip()
+			if tok:
+				tokens.add(tok)
+	if not tokens:
+		return
+
+	names = {
+		r.name: (r.employee_name or r.name)
+		for r in frappe.get_all(
+			"Employee",
+			filters={"name": ["in", list(tokens)]},
+			fields=["name", "employee_name"],
+		)
+	}
+	if not names:
+		return
+
+	for e in entries:
+		raw = str(e.get("against") or "")
+		if not raw:
+			continue
+		parts = [names.get(t.strip(), t.strip()) for t in raw.split(",")]
+		e["against"] = ", ".join(p for p in parts if p)
+
+
 @frappe.whitelist()
 def get_general_ledger(party_type, party, from_date=None, to_date=None, company=None):
     """Return GL entries using ERPNext's built-in General Ledger report engine."""
@@ -412,6 +448,8 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None, company=
                 "cancelled_is_debit": c["is_debit"],
             })
         entries.sort(key=lambda e: e["date"])
+
+    _resolve_employee_ids_in_against(entries)
 
     # Attach voucher creation timestamps (batched per voucher type)
     vouchers_by_type = {}
