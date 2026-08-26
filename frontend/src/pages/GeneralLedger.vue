@@ -242,7 +242,7 @@
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
               <th class="px-1 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[4ch] max-w-[4ch]">Type</th>
               <th class="px-1 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[12ch] max-w-[12ch]">Voucher No</th>
-              <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Against</th>
+              <th class="px-1 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] w-[20ch] max-w-[20ch]">Against</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Created</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Debit (Dr)</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Credit (Cr)</th>
@@ -274,12 +274,12 @@
                   class="w-full min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-xs font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
                 />
               </th>
-              <th class="px-2 py-1">
+              <th class="px-1 py-1 w-[20ch] max-w-[20ch]">
                 <input
                   v-model="filters.against"
                   type="text"
-                  placeholder="Filter..."
-                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                  placeholder="…"
+                  class="w-full min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-xs font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
                 />
               </th>
               <th class="px-2 py-1">
@@ -373,7 +373,7 @@
                   :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-info)]'"
                 >{{ entry.voucher_no }}</button>
               </td>
-              <td class="px-3 py-2 max-w-[200px] truncate" :title="entry.against" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.against || '—' }}</td>
+              <td class="px-1 py-2 w-[20ch] max-w-[20ch] truncate" :title="entry.against" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.against || '—' }}</td>
               <td class="px-3 py-2 whitespace-nowrap font-mono" :title="entry.creation" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtTime(entry.creation) }}</td>
               <td class="px-3 py-2 text-right font-mono">
                 <span v-if="entry.is_cancelled && entry.cancelled_is_debit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">{{ fmt(entry.cancelled_amount) }}</span>
