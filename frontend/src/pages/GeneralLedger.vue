@@ -241,7 +241,7 @@
             <tr>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Date</th>
               <th class="px-1 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[4ch] max-w-[4ch]">Type</th>
-              <th class="px-1 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[8ch] max-w-[8ch]">Voucher No</th>
+              <th class="px-1 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap w-[12ch] max-w-[12ch]">Voucher No</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Against</th>
               <th class="px-3 py-2 text-left text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Created</th>
               <th class="px-3 py-2 text-right text-[15px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] whitespace-nowrap">Debit (Dr)</th>
@@ -266,7 +266,7 @@
                   class="w-full min-w-0 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-xs font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
                 />
               </th>
-              <th class="px-1 py-1 w-[8ch] max-w-[8ch]">
+              <th class="px-1 py-1 w-[12ch] max-w-[12ch]">
                 <input
                   v-model="filters.voucher_no"
                   type="text"
@@ -365,7 +365,7 @@
                   :class="voucherBadge(entry.voucher_type)"
                 >{{ voucherLabel(entry.voucher_type) }}</span>
               </td>
-              <td class="px-1 py-2 w-[8ch] max-w-[8ch]">
+              <td class="px-1 py-2 w-[12ch] max-w-[12ch]">
                 <button
                   @click.stop="onVoucherNoClick(entry)"
                   :title="entry.voucher_no"
