@@ -373,7 +373,7 @@
                   :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-info)]'"
                 >{{ entry.voucher_no }}</button>
               </td>
-              <td class="px-1 py-2 w-[20ch] max-w-[20ch] truncate" :title="entry.against" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ entry.against || '—' }}</td>
+              <td class="px-1 py-2 w-[20ch] max-w-[20ch] truncate" :title="againstText(entry)" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ againstText(entry) || '—' }}</td>
               <td class="px-3 py-2 whitespace-nowrap font-mono" :title="entry.creation" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtTime(entry.creation) }}</td>
               <td class="px-3 py-2 text-right font-mono">
                 <span v-if="entry.is_cancelled && entry.cancelled_is_debit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">{{ fmt(entry.cancelled_amount) }}</span>
@@ -695,6 +695,17 @@ const canAccessPurchaseInvoice = computed(() => canAccessTile('purchase-invoice'
 
 // ── Filter state ──
 const partyType = ref('Customer')
+
+// On an Employee ledger the GL `against` field holds the counter-account names,
+// which is noise there — show the employee's name instead. All other ledger
+// types keep the counter-account string unchanged.
+function againstText(entry) {
+  const type = ledgerData.value?.party_type || partyType.value
+  if (type === 'Employee') {
+    return entry.party_name || ledgerData.value?.label || entry.party || entry.against || ''
+  }
+  return entry.against || ''
+}
 const selectedParty = ref(null)   // { name, label, type }
 const fromDate = ref((() => { const d = new Date(); d.setDate(d.getDate() - 90); return d.toISOString().split('T')[0] })())
 const toDate = ref(new Date().toISOString().split('T')[0])
@@ -796,7 +807,7 @@ const filteredEntries = computed(() => {
     // Against filter
     if (filters.value.against) {
       const query = filters.value.against.toLowerCase()
-      const against = (entry.against || '').toLowerCase()
+      const against = againstText(entry).toLowerCase()
       if (!against.includes(query)) return false
     }
 
@@ -1354,7 +1365,7 @@ function exportExcel() {
       fmtDate(e.date),
       e.voucher_type,
       e.voucher_no,
-      e.against,
+      againstText(e),
       e.creation || '',
       e.debit || '',
       e.credit || '',
