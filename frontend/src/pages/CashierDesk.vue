@@ -1122,8 +1122,12 @@ async function loadInvoices() {
       return b.name.localeCompare(a.name)
     })
     invoices.value = res
-    if (invoices.value.length > 0 && !highlightedInvoiceName.value) {
-      highlightedInvoiceName.value = invoices.value[0].name
+    // Keep the current highlight when it survived the refresh; otherwise fall back
+    // to the top of the list (or clear it when nothing is left).
+    const stillListed = highlightedInvoiceName.value
+      && invoices.value.some(i => i.name === highlightedInvoiceName.value)
+    if (!stillListed) {
+      highlightedInvoiceName.value = invoices.value.length > 0 ? invoices.value[0].name : ''
     }
   } catch (e) {
     errorMsg.value = "Failed to load invoices: " + e.message
@@ -1491,11 +1495,19 @@ async function processPayment() {
     showSuccessModal.value = true
     
     const nameToRemove = invoiceName
+    const removedIdx = invoices.value.findIndex(i => i.name === nameToRemove)
     
     // Clear state immediately for next transaction
     invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
     selectedInvoice.value = null
-    highlightedInvoiceName.value = invoices.value.length > 0 ? invoices.value[0].name : ''
+    // Stay where the settled bill was: the row that slid into its slot, or the new
+    // last row when the bottom bill was the one settled.
+    if (invoices.value.length > 0) {
+      const nextIdx = Math.min(Math.max(removedIdx, 0), invoices.value.length - 1)
+      highlightedInvoiceName.value = invoices.value[nextIdx].name
+    } else {
+      highlightedInvoiceName.value = ''
+    }
     previewItems.value = []
     unallocatedPayments.value = []
     postingDate.value = getTodayIST()
