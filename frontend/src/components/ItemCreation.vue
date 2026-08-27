@@ -429,9 +429,9 @@ const CACHE_KEY = 'ic-field-cache'
 const RETAIN_KEY = 'ic-retain-tax-fields'
 
 // When off, HSN/SAC and Tax Template are wiped after every save instead of
-// being carried over to the next item. Defaults to on (legacy behaviour).
+// being carried over to the next item. Defaults to off.
 function loadRetainTaxFields() {
-  try { return localStorage.getItem(RETAIN_KEY) !== '0' } catch { return true }
+  try { return localStorage.getItem(RETAIN_KEY) === '1' } catch { return false }
 }
 
 const retainTaxFields = ref(loadRetainTaxFields())
