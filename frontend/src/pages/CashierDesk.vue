@@ -983,7 +983,10 @@ function glLabel(key, fallback) {
 const cashLabel     = computed(() => glLabel('wb-cash',             'Cash'))
 const upiLabel      = computed(() => glLabel('wb-upi',              'UPI'))
 const cardLabel     = computed(() => glLabel('wb-card',             'Card'))
-const discountLabel = computed(() => glLabel('wb-discount-account', 'Disc'))
+const discountLabel = computed(() => {
+  const acc = seriesAccounts.value.discount || localStorage.getItem('wb-discount-account') || ''
+  return acc ? acc.split(' - ')[0].trim() : 'Disc'
+})
 
 const todayStr = computed(() => {
   return new Date().toLocaleDateString('en-IN', { 
@@ -1284,7 +1287,9 @@ async function loadSeriesSettings(series) {
     const lsUpi  = localStorage.getItem('wb-upi')
     const lsCard = localStorage.getItem('wb-card')
     const settings = await fetchDashboardSettings(targetUser)
-    const discountAccount = settings.discount_account || 'Write Off - SSPL'
+    // Server resolves discount_account against wb-company; never hardcode a
+    // company-tagged account here or discounts post to the wrong company's GL.
+    const discountAccount = settings.discount_account || ''
 
     if (lsCash || lsUpi || lsCard) {
       const seriesConfig = (settings.billing_series || []).find(s => s.series === series)

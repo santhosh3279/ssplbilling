@@ -394,8 +394,11 @@ export async function fetchBillingSettings(user = null) {
  * 
  * PYTHON CALL: ssplbilling.api.dashboard_api.get_billing_settings
  */
-export async function fetchDashboardSettings(user = null) {
-  return frappeGet("ssplbilling.api.dashboard_api.get_billing_settings", { user });
+export async function fetchDashboardSettings(user = null, company = undefined) {
+  return frappeGet("ssplbilling.api.dashboard_api.get_billing_settings", {
+    user,
+    company: company || localStorage.getItem("wb-company") || undefined,
+  });
 }
 
 /**

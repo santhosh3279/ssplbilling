@@ -600,9 +600,34 @@ def get_printer_records():
 	return rows
 
 
+def _discount_account_for_company(account, company):
+	"""Map the global discount account onto `company`'s chart of accounts.
+
+	Falls back to the company's write_off_account, then to the original value, so a
+	caller always gets something postable.
+	"""
+	if not account or not company:
+		return account or ""
+	if frappe.db.get_value("Account", account, "company") == company:
+		return account
+
+	from ssplbilling.api.automatic_entries_api import resolve_target_account
+
+	return (
+		resolve_target_account(account, [], company)
+		or frappe.get_cached_value("Company", company, "write_off_account")
+		or account
+	)
+
+
 @frappe.whitelist()
-def get_billing_settings(user=None):
-	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current or specified user."""
+def get_billing_settings(user=None, company=None):
+	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current or specified user.
+
+	`discount_account` is a single global field, so when `company` is given it is
+	remapped to the same-named account in that company's chart. Without this the
+	caller would post discounts to another company's GL account.
+	"""
 	import ssplbilling
 	from datetime import datetime
 	from frappe.utils import cint
@@ -650,7 +675,7 @@ def get_billing_settings(user=None):
 		"last_updated": last_updated,
 		"company_state": company_state,
 		"currency_precision": frappe.db.get_single_value('System Settings', 'currency_precision') or 2,
-		"discount_account": settings.discount_account or "",
+		"discount_account": _discount_account_for_company(settings.discount_account, company),
 		"short_or_excess_account": settings.short_or_excess_account or "",
 		"freight_account": settings.freight or "",
 		"tax_paid_on_purchase": settings.tax_paid_on_purchase or "",
