@@ -214,7 +214,7 @@
     <div class="flex flex-1 overflow-hidden">
       
       <!-- Table Container -->
-      <div ref="tableScrollRef" class="flex-1 overflow-auto">
+      <div ref="tableScrollRef" class="flex-1 overflow-auto" @scroll="onTableScroll">
 
       <!-- Empty state -->
       <div v-if="!ledgerData && !loading && !error" class="flex flex-col items-center justify-center gap-3 py-24 text-[var(--color-text-muted)]">
@@ -344,14 +344,20 @@
               </td>
             </tr>
 
+            <!-- Virtual window: only the visible slice of filteredEntries is in the DOM.
+                 The two spacer rows reserve the scroll height of the rows above/below. -->
+            <tr ref="spacerTopRef" :style="{ height: virtualRange.padTop + 'px' }" aria-hidden="true">
+              <td colspan="8" class="border-0 p-0"></td>
+            </tr>
+
             <!-- Entry rows -->
             <tr
-              v-for="(entry, idx) in filteredEntries"
+              v-for="{ entry, idx } in visibleRows"
               :key="idx"
               :data-idx="idx"
               tabindex="0"
               @click="onRowClick(entry, idx, { immediate: true })"
-              class="cursor-pointer border-b border-[var(--color-border)] transition-all outline-none"
+              class="cursor-pointer border-b border-[var(--color-border)] transition-colors outline-none"
               :class="{
                 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-inner z-10 relative': focusedIdx === idx,
                 'hover:bg-[var(--color-surface-raised)]/60': focusedIdx !== idx,
@@ -401,6 +407,10 @@
                 {{ fmt(Math.abs(entry.balance)) }}
                 <span class="ml-0.5 text-[15px] font-normal" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]/70' : 'text-[var(--color-text-muted)]'">{{ entry.balance < 0 ? 'Cr' : 'Dr' }}</span>
               </td>
+            </tr>
+
+            <tr v-if="virtualRange.padBottom" :style="{ height: virtualRange.padBottom + 'px' }" aria-hidden="true">
+              <td colspan="8" class="border-0 p-0"></td>
             </tr>
 
             <!-- Closing row -->
@@ -757,6 +767,7 @@ const toDate = ref(new Date().toISOString().split('T')[0])
 
 onMounted(async () => {
   window.addEventListener('keydown', onGlobalKeydown)
+  window.addEventListener('resize', measureVirtual)
   if (props.initialFromDate) fromDate.value = props.initialFromDate
   if (props.initialToDate) toDate.value = props.initialToDate
 
@@ -792,6 +803,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onGlobalKeydown)
+  window.removeEventListener('resize', measureVirtual)
+  if (scrollFrame) cancelAnimationFrame(scrollFrame)
 })
 
 // ── Data state ──
@@ -916,6 +929,12 @@ const filteredEntries = computed(() => {
 
     return true
   })
+})
+
+// The table subtree mounts after ledgerData is set, so the viewport/row height
+// can only be measured once it has rendered.
+watch(ledgerData, () => {
+  nextTick(measureVirtual)
 })
 
 watch(filteredEntries, (newVal) => {
@@ -1136,6 +1155,80 @@ const printModalInvoiceName = ref('')
 const printModalDoctype = ref('')
 const tableBodyRef = ref(null)
 const tableScrollRef = ref(null)
+const spacerTopRef = ref(null)
+
+// ── Row virtualization ──
+// A 7k-entry ledger rendered ~63k cells, each with a `focusedIdx === idx` class
+// binding re-evaluated on every keystroke. Only the visible slice is rendered now;
+// two spacer rows hold the scroll height of everything above and below it.
+// Rows are single-line and uniform height, so a measured row height is exact.
+const ROW_H_FALLBACK = 41
+const OVERSCAN = 12
+const rowHeight = ref(ROW_H_FALLBACK)
+const scrollTop = ref(0)
+const viewportH = ref(0)
+const entriesTop = ref(0)   // scroll offset of the first entry row within the scroller
+let scrollFrame = null
+
+const virtualRange = computed(() => {
+  const total = filteredEntries.value.length
+  const h = rowHeight.value || ROW_H_FALLBACK
+  if (!total) return { start: 0, end: 0, padTop: 0, padBottom: 0 }
+  const above = Math.max(0, scrollTop.value - entriesTop.value)
+  const start = Math.max(0, Math.min(total - 1, Math.floor(above / h) - OVERSCAN))
+  const count = Math.ceil((viewportH.value || 0) / h) + OVERSCAN * 2
+  const end = Math.min(total, start + Math.max(count, OVERSCAN * 2))
+  return { start, end, padTop: start * h, padBottom: (total - end) * h }
+})
+
+const visibleRows = computed(() => {
+  const { start, end } = virtualRange.value
+  const out = []
+  for (let i = start; i < end; i++) out.push({ entry: filteredEntries.value[i], idx: i })
+  return out
+})
+
+function onTableScroll() {
+  if (scrollFrame) return
+  scrollFrame = requestAnimationFrame(() => {
+    scrollFrame = null
+    const sc = tableScrollRef.value
+    if (sc) scrollTop.value = sc.scrollTop
+  })
+}
+
+// Row height and the entry block's offset are both measured from live DOM — the
+// offset must not be derived from the header height, which is sticky and whose
+// two rows wrap differently at narrow widths.
+function measureVirtual() {
+  const sc = tableScrollRef.value
+  if (!sc) return
+  viewportH.value = sc.clientHeight
+  scrollTop.value = sc.scrollTop
+  const spacer = spacerTopRef.value
+  if (spacer) {
+    entriesTop.value = spacer.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop
+  }
+  const row = tableBodyRef.value?.querySelector('tr[data-idx]')
+  if (row) {
+    const h = row.getBoundingClientRect().height
+    if (h > 0) rowHeight.value = h
+  }
+}
+
+// Scroll the window so `idx` is rendered, for jumps that land outside it
+// (End/Home, and the filter watcher re-selecting the last row).
+function ensureRowRendered(idx) {
+  const { start, end } = virtualRange.value
+  if (idx >= start + 2 && idx < end - 2) return false
+  const sc = tableScrollRef.value
+  if (!sc) return false
+  const h = rowHeight.value || ROW_H_FALLBACK
+  const target = Math.max(0, entriesTop.value + idx * h - (viewportH.value || 0) / 2)
+  sc.scrollTop = target
+  scrollTop.value = sc.scrollTop
+  return true
+}
 const tableHeadRef = ref(null)
 
 // ── Bill Detail Subwindow ──
@@ -1388,8 +1481,9 @@ function onGlobalKeydown(e) {
 }
 
 function scrollRowIntoView(idx) {
+  ensureRowRendered(idx)
   nextTick(() => {
-    const row = tableBodyRef.value?.querySelectorAll('tr[data-idx]')?.[idx]
+    const row = tableBodyRef.value?.querySelector(`tr[data-idx="${idx}"]`)
     if (!row) return
 
     const scroller = tableScrollRef.value
