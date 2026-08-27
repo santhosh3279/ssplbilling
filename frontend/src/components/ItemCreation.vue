@@ -11,12 +11,28 @@
           <span class="text-[var(--color-text-muted)] text-2xl">|</span>
           <p class="text-2xl text-[var(--color-text-muted)]">{{ isEditMode ? 'Update item details' : 'Add a new item to the system' }}</p>
         </div>
-        <button
-          @click="$emit('close')"
-          class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors px-[20px] py-[12px] hover:bg-[var(--color-surface-raised)] rounded-full"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-        </button>
+        <div class="flex items-center gap-[16px]">
+          <button
+            type="button"
+            @click="toggleRetainTaxFields"
+            class="flex items-center gap-[10px] rounded-xl border px-[16px] py-[10px] text-2xl font-bold uppercase tracking-wider transition-all active:scale-95"
+            :class="retainTaxFields
+              ? 'border-[var(--color-success)] text-[var(--color-success)] bg-[var(--color-success)]/10'
+              : 'border-[var(--color-border)] text-[var(--color-text-muted)] bg-[var(--color-surface-raised)]'"
+            :title="retainTaxFields
+              ? 'HSN & Tax Template are remembered for the next item'
+              : 'HSN & Tax Template are cleared after saving'"
+          >
+            <span class="inline-block h-6 w-6 rounded-full" :class="retainTaxFields ? 'bg-[var(--color-success)]' : 'bg-[var(--color-text-muted)]'"></span>
+            <span>Retain HSN &amp; Tax: {{ retainTaxFields ? 'On' : 'Off' }}</span>
+          </button>
+          <button
+            @click="$emit('close')"
+            class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors px-[20px] py-[12px] hover:bg-[var(--color-surface-raised)] rounded-full"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
       </div>
 
       <!-- Form Content -->
@@ -410,6 +426,27 @@ function gotoERPNext() {
 
 // ── Field cache (item_group, hsn_sac, stock_uom, item_tax_template, supplier) ─
 const CACHE_KEY = 'ic-field-cache'
+const RETAIN_KEY = 'ic-retain-tax-fields'
+
+// When off, HSN/SAC and Tax Template are wiped after every save instead of
+// being carried over to the next item. Defaults to on (legacy behaviour).
+function loadRetainTaxFields() {
+  try { return localStorage.getItem(RETAIN_KEY) !== '0' } catch { return true }
+}
+
+const retainTaxFields = ref(loadRetainTaxFields())
+
+function toggleRetainTaxFields() {
+  retainTaxFields.value = !retainTaxFields.value
+  try { localStorage.setItem(RETAIN_KEY, retainTaxFields.value ? '1' : '0') } catch { /* ignore */ }
+  if (!retainTaxFields.value) {
+    // Drop anything already cached so the next reset cannot resurrect it.
+    const c = loadCache()
+    c.hsn_sac = ''
+    c.item_tax_template = ''
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(c)) } catch { /* ignore */ }
+  }
+}
 
 function loadCache() {
   try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}') } catch { return {} }
@@ -418,9 +455,9 @@ function loadCache() {
 function saveCache() {
   const c = {
     item_group:        form.value.item_group,
-    hsn_sac:           form.value.hsn_sac,
+    hsn_sac:           retainTaxFields.value ? form.value.hsn_sac : '',
     stock_uom:         form.value.stock_uom,
-    item_tax_template: form.value.item_tax_template,
+    item_tax_template: retainTaxFields.value ? form.value.item_tax_template : '',
     suppliers:         form.value.suppliers,
   }
   localStorage.setItem(CACHE_KEY, JSON.stringify(c))
@@ -800,9 +837,9 @@ function resetForm() {
     barcode: '',
     image: '',
     item_group:        cache.item_group        || metadata.value.item_groups[0]?.name || '',
-    hsn_sac:           cache.hsn_sac           || '',
+    hsn_sac:           (retainTaxFields.value && cache.hsn_sac)           || '',
     stock_uom:         cache.stock_uom         || 'Nos',
-    item_tax_template: cache.item_tax_template || '',
+    item_tax_template: (retainTaxFields.value && cache.item_tax_template) || '',
     standard_rate: 0,
     safety_stock: 0,
     suppliers:         cache.suppliers         || [],
