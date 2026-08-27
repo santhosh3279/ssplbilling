@@ -26,6 +26,64 @@ def _get_item_tax_rate(item_code):
     )
     return float(sum(d.tax_rate or 0 for d in details)) / 2
 
+def _build_tax_summary(si):
+    """Group item-wise tax into Item Tax Template buckets.
+
+    ERPNext v16 stores the item/tax cross-reference in the `item_wise_tax_details`
+    child table (item_row, tax_row, rate, amount, taxable_amount). Rows with
+    charge_type "Actual" (freight / packing / loading / other charges) are skipped
+    so the breakdown only covers real item tax.
+    """
+    item_map = {
+        it.name: (it.item_tax_template or "No Tax Template", float(it.net_amount or 0))
+        for it in (si.items or [])
+    }
+    tax_desc = {
+        t.name: (t.description or t.account_head or "Tax")
+        for t in (si.taxes or [])
+        if t.charge_type != "Actual"
+    }
+
+    groups = {}
+    for row in (si.get("item_wise_tax_details") or []):
+        if row.tax_row not in tax_desc:
+            continue
+        template, net_amount = item_map.get(row.item_row, ("No Tax Template", 0.0))
+        group = groups.setdefault(
+            template,
+            {"template": template, "tax_amount": 0.0, "taxable_amount": 0.0, "components": {}, "_items": set()},
+        )
+        group["tax_amount"] += float(row.amount or 0)
+        if row.item_row not in group["_items"]:
+            group["_items"].add(row.item_row)
+            group["taxable_amount"] += net_amount
+
+        description = tax_desc[row.tax_row]
+        component = group["components"].setdefault(
+            description, {"description": description, "rate": float(row.rate or 0), "amount": 0.0}
+        )
+        component["amount"] += float(row.amount or 0)
+
+    summary = []
+    for group in groups.values():
+        components = sorted(group["components"].values(), key=lambda c: c["description"])
+        for component in components:
+            component["amount"] = round(component["amount"], 2)
+        summary.append({
+            "template": group["template"],
+            "rate": round(sum(c["rate"] for c in components), 3),
+            "taxable_amount": round(group["taxable_amount"], 2),
+            "tax_amount": round(group["tax_amount"], 2),
+            "components": components,
+        })
+    summary.sort(key=lambda r: -r["tax_amount"])
+
+    total_tax = sum(
+        float(t.tax_amount or 0) for t in (si.taxes or []) if t.charge_type != "Actual"
+    )
+    return round(total_tax, 2), summary
+
+
 @frappe.whitelist()
 def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None, draft_only=False, company=None):
     """List Sales Invoices for the sidebar bill panel."""
@@ -259,6 +317,8 @@ def get_sales_invoice(invoice_name):
         if any(t.included_in_print_rate for t in si.taxes):
             is_inclusive = 1
 
+    total_tax, tax_summary = _build_tax_summary(si)
+
     # Fetch state from billing address
     party_state = ""
     if si.customer_address:
@@ -283,6 +343,9 @@ def get_sales_invoice(invoice_name):
         "rounded_total": float(si.rounded_total or si.grand_total or 0),
         "outstanding_amount": float(si.outstanding_amount or 0),
         "tax_template": si.taxes_and_charges or "",
+        "total_tax": total_tax,
+        "tax_summary": tax_summary,
+        "total_taxes_and_charges": float(si.total_taxes_and_charges or 0),
         "is_inclusive": is_inclusive,
         "is_return": frappe.utils.cint(si.is_return),
         "customer_rate_multiplier": frappe.utils.cint(si.get("customer_rate_multiplier") or 0),

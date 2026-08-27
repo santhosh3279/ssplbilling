@@ -349,6 +349,35 @@
                   </div>
                 </div>
 
+                <!-- Template-wise Tax Breakdown -->
+                <div v-if="taxSummary.length > 0" class="flex flex-col mr-2">
+                  <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)]/40 overflow-hidden shadow-sm">
+                    <table class="min-w-[300px] border-collapse">
+                      <tbody class="divide-y divide-[var(--color-border)]/50">
+                        <tr v-for="grp in taxSummary" :key="grp.template" class="hover:bg-[var(--color-surface-raised)]/60 transition-colors">
+                          <td class="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-[var(--color-text-muted)] border-r border-[var(--color-border)]/40">
+                            {{ taxTemplateLabel(grp.template) }}
+                          </td>
+                          <td class="px-3 py-1 text-right font-mono text-[13px] text-[var(--color-text-muted)] border-r border-[var(--color-border)]/40" :title="'Taxable value'">
+                            {{ fmt(grp.taxable_amount) }}
+                          </td>
+                          <td class="px-3 py-1 text-right font-mono text-[15px] font-black text-[var(--color-text)]">
+                            ₹{{ fmt(grp.tax_amount) }}
+                          </td>
+                        </tr>
+                        <tr class="bg-[var(--color-surface-raised)]/70">
+                          <td class="px-3 py-1 text-[11px] font-black uppercase tracking-wider text-[var(--color-text)] border-r border-[var(--color-border)]/40" colspan="2">
+                            Total Tax<span v-if="selectedInvoice?.is_inclusive" class="ml-1 normal-case font-bold text-[var(--color-text-muted)]">(incl.)</span>
+                          </td>
+                          <td class="px-3 py-1 text-right font-mono text-[16px] font-black text-[var(--color-text)]">
+                            ₹{{ fmt(totalTax) }}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
                 <div class="flex items-center gap-4 bg-[var(--color-info)]/10 px-4 py-2 rounded-xl border border-[var(--color-info)]/20 shadow-sm">
                   <div class="text-[15px] font-black uppercase tracking-[0.2em] text-[var(--color-info)]">Grand Total</div>
                   <div class="text-[36px] font-black tracking-tighter text-[var(--color-text)] font-mono">₹{{ fmt(selectedInvoice.rounded_total || selectedInvoice.grand_total) }}</div>
@@ -1008,6 +1037,21 @@ const canSubmit = computed(() => {
   // Force cashier to account for the full bill (using Cash/UPI/Card/Disc OR the Credit box)
   return balance.value <= 0.01
 })
+
+const taxSummary = computed(() => selectedInvoice.value?.tax_summary || [])
+
+const totalTax = computed(() => {
+  const rows = taxSummary.value
+  if (rows.length) return rows.reduce((acc, r) => acc + Number(r.tax_amount || 0), 0)
+  return Number(selectedInvoice.value?.total_tax || 0)
+})
+
+// Item Tax Templates are named "GST 18% - SSPL"; drop the company abbr for the footer.
+function taxTemplateLabel(template) {
+  if (!template) return 'No Tax Template'
+  const idx = template.lastIndexOf(' - ')
+  return idx > 0 ? template.slice(0, idx) : template
+}
 
 const previewSubtotal = computed(() => {
   return previewItems.value.reduce((acc, item) => acc + (item.qty * item.rate), 0)
