@@ -34,6 +34,13 @@
           <span v-if="ledgerData" class="rounded-lg bg-[var(--color-info)]/20 px-3 py-1 text-lg font-bold text-[var(--color-info)] shadow-sm">
             {{ isAnyFilterActive ? `${filteredEntries.length} of ${ledgerData.entries.length} entries` : `${ledgerData.entries.length} entries` }}
           </span>
+          <span
+            v-if="ledgerData && lastFetchMs !== null"
+            :title="`Round-trip for the cached ${ledgerCache?.from} → ${ledgerCache?.to} fetch`"
+            class="rounded-lg bg-[var(--color-surface-raised)] px-3 py-1 text-lg font-semibold text-[var(--color-text-muted)] shadow-sm"
+          >
+            {{ fmtDuration(lastFetchMs) }}
+          </span>
           <button
             v-if="isAnyFilterActive"
             @click="clearFilters"
@@ -972,6 +979,7 @@ const focusedIdx = ref(-1)
 // applied locally against it. Only refetched when the requested range falls outside
 // what's cached, or on an explicit Refresh. ──
 const ledgerCache = ref(null) // { partyKey, from, to, opening_balance, entries, label, party, party_type }
+const lastFetchMs = ref(null)
 
 function partyKey() {
   return `${partyType.value}:${selectedParty.value?.name}`
@@ -983,6 +991,7 @@ function cacheCovers(from, to) {
 }
 
 async function fetchAndCache(from, to) {
+  const startedAt = performance.now()
   const data = await frappeGet('ssplbilling.api.ledger_api.get_general_ledger', {
     party_type: partyType.value,
     party: selectedParty.value.name,
@@ -993,6 +1002,10 @@ async function fetchAndCache(from, to) {
     // usePermission reads (an admin working as a biller is treated as a biller).
     user: localStorage.getItem('wb-inherited-user') || '',
   })
+  // Round-trip of the fetch that built this cache (network + server), shown in the
+  // header next to the entry count. Window/filter changes are served from the cache
+  // and do not refetch, so this keeps reporting the cost of the fetch behind it.
+  lastFetchMs.value = performance.now() - startedAt
   ledgerCache.value = {
     partyKey: partyKey(),
     from,
@@ -1304,6 +1317,7 @@ function pickCustomer(item) {
 function clearSelection() {
   selectedParty.value = null
   ledgerData.value = null
+  lastFetchMs.value = null
   error.value = ''
   clearFilters()
   closeDetail()
@@ -1510,6 +1524,11 @@ function scrollRowIntoView(idx) {
 }
 
 // ── Formatting ──
+function fmtDuration(ms) {
+  if (ms == null) return ''
+  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(2)} s`
+}
+
 function fmt(n) {
   return (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
