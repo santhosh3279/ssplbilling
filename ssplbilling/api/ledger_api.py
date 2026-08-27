@@ -303,16 +303,31 @@ def get_voucher_detail(voucher_type, voucher_no):
         base["user_remark"] = doc.user_remark or ""
     return base
 
-def _is_ledger_admin():
-	"""True when the session user may see employee identities in the ledger."""
-	if frappe.session.user in ("Administrator", "admin"):
+def _user_is_admin(user):
+	"""True when `user` carries the admin flag in SSPL Billing Settings."""
+	if user in ("Administrator", "admin"):
 		return True
 	try:
 		settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
 	except Exception:
 		return False
-	row = next((r for r in settings.user_series if r.user == frappe.session.user), None)
+	row = next((r for r in settings.user_series if r.user == user), None)
 	return bool(row and row.admin)
+
+
+def _is_ledger_admin(user=None):
+	"""True when the caller may see employee identities in the ledger.
+
+	`user` is the inherited user (frontend `wb-inherited-user`): an admin working
+	as someone else is governed by THAT user's admin flag, so an admin inheriting a
+	biller is treated as a biller. Only a genuine admin may resolve the flag for
+	another user — for everyone else the parameter is ignored and their own session
+	flag applies, so the override can never be used to escalate.
+	"""
+	session_admin = _user_is_admin(frappe.session.user)
+	if user and user != frappe.session.user and session_admin:
+		return _user_is_admin(user)
+	return session_admin
 
 
 def _resolve_employee_ids_in_against(entries, is_admin):
@@ -381,9 +396,11 @@ def _resolve_employee_ids_in_against(entries, is_admin):
 
 
 @frappe.whitelist()
-def get_general_ledger(party_type, party, from_date=None, to_date=None, company=None):
+def get_general_ledger(party_type, party, from_date=None, to_date=None, company=None, user=None):
     """Return GL entries using ERPNext's built-in General Ledger report engine."""
-    if party_type == "Employee" and not _is_ledger_admin():
+    is_admin = _is_ledger_admin(user)
+
+    if party_type == "Employee" and not is_admin:
         frappe.throw("General ledger of employees is accessible only to administrators.")
 
     from erpnext.accounts.report.general_ledger.general_ledger import execute as _gl_execute
@@ -479,7 +496,7 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None, company=
             })
         entries.sort(key=lambda e: e["date"])
 
-    _resolve_employee_ids_in_against(entries, _is_ledger_admin())
+    _resolve_employee_ids_in_against(entries, is_admin)
 
     # Attach voucher creation timestamps (batched per voucher type)
     vouchers_by_type = {}

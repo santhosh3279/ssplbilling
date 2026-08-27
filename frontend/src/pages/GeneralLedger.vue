@@ -963,6 +963,9 @@ async function fetchAndCache(from, to) {
     from_date: from,
     to_date: to,
     company: localStorage.getItem('wb-company') || '',
+    // Employee redaction follows the inherited user, matching the role flags
+    // usePermission reads (an admin working as a biller is treated as a biller).
+    user: localStorage.getItem('wb-inherited-user') || '',
   })
   ledgerCache.value = {
     partyKey: partyKey(),
