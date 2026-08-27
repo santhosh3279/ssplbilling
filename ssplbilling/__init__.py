@@ -1,4 +1,4 @@
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 # Monkeypatch frappe.app.handle_exception to automatically log unexpected errors to the Error Log DocType.
 try:
