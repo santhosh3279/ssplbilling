@@ -396,7 +396,7 @@ def _resolve_employee_ids_in_against(entries, is_admin):
 
 
 @frappe.whitelist()
-def get_general_ledger(party_type, party, from_date=None, to_date=None, company=None, user=None):
+def get_general_ledger(party_type, party, from_date=None, to_date=None, company=None, user=None, include_details=0):
     """Return GL entries using ERPNext's built-in General Ledger report engine."""
     is_admin = _is_ledger_admin(user)
 
@@ -510,11 +510,15 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None, company=
     for e in entries:
         e["creation"] = creation_map.get((e["voucher_type"], e["voucher_no"]), "")
 
-    # Pre-load voucher line-item detail for every entry so the frontend never needs a
-    # follow-up call per row click / keyboard navigation (same pattern as the stock ledger).
-    voucher_details = _batch_voucher_details(entries)
-    for e in entries:
-        e["detail"] = voucher_details.get(e["voucher_no"])
+    # Voucher line-item detail is fetched per voucher on demand (see
+    # get_ledger_voucher_detail) — pre-loading it here cost ~1.2s and ~3.5MB of
+    # payload on a 7k-entry ledger to serve the one voucher the user clicks.
+    # `include_details=1` restores the old eager behaviour for any caller that
+    # still needs the whole set in one response.
+    if frappe.utils.cint(include_details):
+        voucher_details = _batch_voucher_details(entries)
+        for e in entries:
+            e["detail"] = voucher_details.get(e["voucher_no"])
 
     return {
         "party_type": party_type,
@@ -528,6 +532,20 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None, company=
         "total_credit": round(total_credit, 2),
         "entries": entries,
     }
+
+
+@frappe.whitelist()
+def get_ledger_voucher_detail(voucher_type, voucher_no):
+    """Return the ledger detail-panel payload for a single voucher.
+
+    Routed through _batch_voucher_details so the shape is byte-identical to what
+    get_general_ledger used to embed per entry — no field can drift between the
+    eager and the on-demand path.
+    """
+    if not voucher_type or not voucher_no:
+        return None
+    details = _batch_voucher_details([{"voucher_type": voucher_type, "voucher_no": voucher_no}])
+    return details.get(voucher_no)
 
 
 @frappe.whitelist()

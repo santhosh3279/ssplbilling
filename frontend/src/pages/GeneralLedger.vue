@@ -350,7 +350,7 @@
               :key="idx"
               :data-idx="idx"
               tabindex="0"
-              @click="onRowClick(entry, idx)"
+              @click="onRowClick(entry, idx, { immediate: true })"
               class="cursor-pointer border-b border-[var(--color-border)] transition-all outline-none"
               :class="{
                 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-inner z-10 relative': focusedIdx === idx,
@@ -570,6 +570,12 @@
             <p v-if="selectedEntry.remarks" class="text-[11px] leading-relaxed text-[var(--color-text-muted)] whitespace-pre-wrap italic">{{ selectedEntry.remarks }}</p>
           </div>
 
+        </div>
+
+        <!-- Detail still in flight (fetched per voucher on demand) -->
+        <div v-else-if="detailLoading" class="flex flex-1 items-center justify-center gap-2 p-4 text-xs text-[var(--color-text-muted)]">
+          <span class="h-3 w-3 animate-spin rounded-full border-2 border-[var(--color-border)] border-t-[var(--color-info)]"></span>
+          Loading voucher…
         </div>
 
         <!-- Panel Footer -->
@@ -940,6 +946,7 @@ const totalCredit = computed(() => {
 // ── Detail panel state ──
 const selectedEntry = ref(null)
 const voucherDetail = ref(null)
+const detailLoading = ref(false)
 const focusedIdx = ref(-1)
 
 // ── GL cache: one server call covers a wide date range; date-filter changes are
@@ -1282,15 +1289,55 @@ function applyCachedWindow() {
   })
 }
 
-// ── Row selection & Preview (detail is pre-loaded per entry — no per-row server call) ──
-function onRowClick(entry, idx) {
+// ── Row selection & Preview ──
+// Voucher detail is fetched per voucher on demand and memoised on the entry object
+// (entry refs are stable across computeWindow, so the cache survives date/filter
+// changes). Keyboard navigation debounces the fetch so holding ↓ does not fire one
+// request per keypress; a click fetches immediately.
+const detailSeq = ref(0)
+let detailTimer = null
+
+function onRowClick(entry, idx, { immediate = false } = {}) {
   focusedIdx.value = idx
   if (selectedEntry.value === entry) return
   selectedEntry.value = entry
-  voucherDetail.value = entry.detail || null
+  voucherDetail.value = entry._detail || entry.detail || null
+  loadVoucherDetail(entry, immediate)
+}
+
+function loadVoucherDetail(entry, immediate) {
+  if (detailTimer) { clearTimeout(detailTimer); detailTimer = null }
+  if (!entry || entry._detail || entry.detail) return
+  if (!entry.voucher_type || !entry.voucher_no) return
+
+  const seq = ++detailSeq.value
+  const run = async () => {
+    detailLoading.value = true
+    try {
+      const detail = await frappeGet('ssplbilling.api.ledger_api.get_ledger_voucher_detail', {
+        voucher_type: entry.voucher_type,
+        voucher_no: entry.voucher_no,
+      })
+      entry._detail = detail || null
+      // Focus may have moved on while this was in flight — drop the stale response.
+      if (seq === detailSeq.value && selectedEntry.value === entry) {
+        voucherDetail.value = entry._detail
+      }
+    } catch (e) {
+      console.error('Failed to load voucher detail:', e)
+    } finally {
+      if (seq === detailSeq.value) detailLoading.value = false
+    }
+  }
+
+  if (immediate) run()
+  else detailTimer = setTimeout(run, 150)
 }
 
 function closeDetail() {
+  if (detailTimer) { clearTimeout(detailTimer); detailTimer = null }
+  detailSeq.value++
+  detailLoading.value = false
   selectedEntry.value = null
   voucherDetail.value = null
   focusedIdx.value = -1
