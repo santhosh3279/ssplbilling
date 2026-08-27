@@ -528,14 +528,9 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	# The discount account is configured globally (and cached client-side), so it may
 	# belong to a different company than this invoice. Remap it before it reaches the JE.
-	if discount_account and frappe.db.get_value("Account", discount_account, "company") not in (None, company):
-		from ssplbilling.api.automatic_entries_api import resolve_target_account
+	from ssplbilling.api.automatic_entries_api import resolve_account_to_company
 
-		discount_account = (
-			resolve_target_account(discount_account, [], company)
-			or frappe.get_cached_value("Company", company, "write_off_account")
-			or ""
-		)
+	discount_account = resolve_account_to_company(discount_account, company)
 
 	def _resolve_gl_account(name):
 		"""If name is a plain account name without company tag, resolve to full Account name."""

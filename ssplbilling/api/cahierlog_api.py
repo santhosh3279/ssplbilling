@@ -152,6 +152,13 @@ def get_today_bills(date, series_list, cash_account=None, upi_account=None, card
 	card_account = _resolve(card_account)
 	discount_account = _resolve(discount_account)
 
+	# _resolve leaves a fully qualified account alone, but the discount account comes
+	# from a single global setting so it may carry another company's tag — in which
+	# case the Journal Entry filter below would match nothing for this company.
+	from ssplbilling.api.automatic_entries_api import resolve_account_to_company
+
+	discount_account = resolve_account_to_company(discount_account, company)
+
 	placeholders = ", ".join(["%s"] * len(invoice_names))
 
 	payments = frappe.db.sql(

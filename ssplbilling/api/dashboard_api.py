@@ -601,23 +601,10 @@ def get_printer_records():
 
 
 def _discount_account_for_company(account, company):
-	"""Map the global discount account onto `company`'s chart of accounts.
+	"""Map the global discount account onto `company`'s chart of accounts."""
+	from ssplbilling.api.automatic_entries_api import resolve_account_to_company
 
-	Falls back to the company's write_off_account, then to the original value, so a
-	caller always gets something postable.
-	"""
-	if not account or not company:
-		return account or ""
-	if frappe.db.get_value("Account", account, "company") == company:
-		return account
-
-	from ssplbilling.api.automatic_entries_api import resolve_target_account
-
-	return (
-		resolve_target_account(account, [], company)
-		or frappe.get_cached_value("Company", company, "write_off_account")
-		or account
-	)
+	return resolve_account_to_company(account, company)
 
 
 @frappe.whitelist()

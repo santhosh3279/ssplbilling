@@ -165,6 +165,30 @@ def resolve_target_account(original_account, allowed_accounts, target_company):
 
 	mop = _mop_for_account(original_account, source_company)
 	return _mop_default_account(mop, target_company)
+def resolve_account_to_company(account, company):
+	"""Return `account` mapped onto `company`'s chart of accounts.
+
+	Globally configured accounts — the SSPL Billing Settings discount account above
+	all — carry a single company's tag, so using one against another company either
+	fails validation when posting or silently matches nothing when filtering.
+	Accounts that already belong to `company` (or that are not Account records at
+	all) are returned untouched; otherwise this falls back to the company's
+	write_off_account, then to the original value.
+	"""
+	if not account or not company:
+		return account or ""
+
+	account_company = frappe.db.get_value("Account", account, "company")
+	if account_company in (None, company):
+		return account
+
+	return (
+		resolve_target_account(account, [], company)
+		or frappe.get_cached_value("Company", company, "write_off_account")
+		or account
+	)
+
+
 def resolve_target_item_tax_template(source_template, target_company):
 	"""Resolve a source item tax template to its equivalent in the target company
 	by matching the title of the template.
