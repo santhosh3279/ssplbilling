@@ -1129,6 +1129,7 @@ async function loadInvoices() {
     if (!stillListed) {
       highlightedInvoiceName.value = invoices.value.length > 0 ? invoices.value[0].name : ''
     }
+    scrollHighlightedIntoView()
   } catch (e) {
     errorMsg.value = "Failed to load invoices: " + e.message
   } finally {
@@ -1505,6 +1506,7 @@ async function processPayment() {
     if (invoices.value.length > 0) {
       const nextIdx = Math.min(Math.max(removedIdx, 0), invoices.value.length - 1)
       highlightedInvoiceName.value = invoices.value[nextIdx].name
+      scrollHighlightedIntoView()
     } else {
       highlightedInvoiceName.value = ''
     }
@@ -1658,6 +1660,17 @@ async function removeAdvance(adv) {
     isSubmitting.value = false
   }
 }
+// Bring the highlighted bill back into view. Re-rendering the list (settling a
+// bill, a realtime refresh) resets the scroll container to the top, which leaves
+// a highlight further down the list off-screen.
+function scrollHighlightedIntoView() {
+  const name = highlightedInvoiceName.value
+  if (!name) return
+  nextTick(() => {
+    document.querySelector(`[data-inv-name="${name}"]`)?.scrollIntoView({ block: 'nearest' })
+  })
+}
+
 // Shortcut Handlers
 function navigateBills(dir) {
   if (!invoices.value.length) return
@@ -1672,10 +1685,7 @@ function navigateBills(dir) {
   const nextIdx = currentIdx + dir
   if (nextIdx >= 0 && nextIdx < invoices.value.length) {
     highlightedInvoiceName.value = invoices.value[nextIdx].name
-    nextTick(() => {
-      const el = document.querySelector(`[data-inv-name="${invoices.value[nextIdx].name}"]`)
-      el?.scrollIntoView({ block: 'nearest' })
-    })
+    scrollHighlightedIntoView()
   }
 }
 
