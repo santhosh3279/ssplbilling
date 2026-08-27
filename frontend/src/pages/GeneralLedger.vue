@@ -377,7 +377,7 @@
                 <button
                   v-if="hasEmployeeAgainst(entry)"
                   @click.stop="toggleAgainstReveal(entry)"
-                  :title="revealedAgainst.has(entry) ? 'Click to show employee ID' : 'Click to show employee name'"
+                  :title="againstDisplay(entry) + (revealedAgainst.has(entry) ? ' — click to show employee ID' : ' — click to show employee name')"
                   class="block w-full truncate text-left hover:underline"
                 >{{ againstDisplay(entry) || '—' }}</button>
                 <template v-else>{{ againstDisplay(entry) || '—' }}</template>

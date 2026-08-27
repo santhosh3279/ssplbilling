@@ -327,6 +327,15 @@ def _resolve_employee_ids_in_against(entries, is_admin):
 	neither the ID nor the name ever leaves the server. Non-employee tokens
 	(account names, supplier/customer IDs) are left exactly as stored.
 	"""
+	if not is_admin:
+		# The name also rides along on party/party_name for employee-party rows; drop
+		# them first so the payload carries no employee identity regardless of what
+		# the `against` tokens below resolve to.
+		for e in entries:
+			if e.get("party_type") == "Employee":
+				e["party_name"] = ""
+				e["party"] = ""
+
 	tokens = set()
 	for e in entries:
 		for tok in str(e.get("against") or "").split(","):
@@ -369,14 +378,6 @@ def _resolve_employee_ids_in_against(entries, is_admin):
 		e["against"] = ", ".join(parts)
 		if found:
 			e["against_employees"] = found
-
-	if not is_admin:
-		# The name also rides along on party_name for employee-party rows; drop it
-		# so the payload itself carries no employee identity.
-		for e in entries:
-			if e.get("party_type") == "Employee":
-				e["party_name"] = ""
-				e["party"] = ""
 
 
 @frappe.whitelist()
