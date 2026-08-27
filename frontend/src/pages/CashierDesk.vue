@@ -1240,7 +1240,8 @@ async function selectInvoice(inv) {
     // Check for Unallocated Cash
     const unallocated = await frappeGet('ssplbilling.api.cashier_api.get_customer_unallocated_cash', {
       customer: details.customer,
-      invoice_name: details.name
+      invoice_name: details.name,
+      company: localStorage.getItem('wb-company') || undefined
     })
     
     let remaining = details.outstanding_amount || details.rounded_total || details.grand_total
@@ -1618,7 +1619,8 @@ async function removeAdvance(adv) {
       // Also reload unallocated cash list to make this credit note available again in the modal
       const unallocated = await frappeGet('ssplbilling.api.cashier_api.get_customer_unallocated_cash', {
         customer: selectedInvoice.value.customer,
-        invoice_name: selectedInvoice.value.name
+        invoice_name: selectedInvoice.value.name,
+        company: localStorage.getItem('wb-company') || undefined
       })
       const filteredUnallocated = (unallocated || []).filter(pe => pe.mode_of_payment === 'Credit Note')
       

@@ -657,20 +657,28 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted", "mirrored": mirrored}
 
 @frappe.whitelist()
-def get_customer_unallocated_cash(customer, invoice_name=None):
-	"""Returns a list of unallocated Payment Entries and Journal Entries for a customer."""
+def get_customer_unallocated_cash(customer, invoice_name=None, company=None):
+	"""Returns a list of unallocated Payment Entries and Journal Entries for a customer.
+
+	When `company` is given, every source is restricted to that company so credits
+	raised in one company are never offered against another company's invoice.
+	"""
 	if not customer:
 		return []
 
 	# 1. Payment Entries
+	pe_filters = {
+		"party_type": "Customer",
+		"party": customer,
+		"docstatus": 1,
+		"unallocated_amount": [">", 0],
+	}
+	if company:
+		pe_filters["company"] = company
+
 	pe_list = frappe.get_all(
 		"Payment Entry",
-		filters={
-			"party_type": "Customer",
-			"party": customer,
-			"docstatus": 1,
-			"unallocated_amount": [">", 0],
-		},
+		filters=pe_filters,
 		fields=["name", "unallocated_amount", "posting_date", "mode_of_payment", "reference_no", "paid_amount", "remarks", "payment_type"],
 	)
 
@@ -709,7 +717,8 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 		  AND jea.credit_in_account_currency > 0
 		  AND (jea.reference_name IS NULL OR jea.reference_name = '')
 		  AND acc.account_type = 'Receivable'
-	""", (customer,), as_dict=True)
+		  AND (%s IS NULL OR je.company = %s)
+	""", (customer, company, company), as_dict=True)
 
 	for je in je_list:
 		# Check if it's already used in another SI's advances.
@@ -750,7 +759,8 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 		FROM `tabSales Invoice`
 		WHERE docstatus = 1 AND customer = %s
 		  AND outstanding_amount < -0.005
-	""", (customer,), as_dict=True)
+		  AND (%s IS NULL OR company = %s)
+	""", (customer, company, company), as_dict=True)
 
 	for si in si_list:
 		results.append({
@@ -773,7 +783,8 @@ def get_customer_unallocated_cash(customer, invoice_name=None):
 		WHERE docstatus = 1 
 		  AND supplier = %s
 		  AND outstanding_amount < -0.005
-	""", (customer,), as_dict=True)
+		  AND (%s IS NULL OR company = %s)
+	""", (customer, company, company), as_dict=True)
 
 	for pi in pi_list:
 		results.append({
@@ -932,7 +943,7 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 			si.set("advances", [])
 		else:
 			# Fetch fresh list of unallocated payments (now includes JEs)
-			unallocated_payments = get_customer_unallocated_cash(si.customer, invoice_name=si.name)
+			unallocated_payments = get_customer_unallocated_cash(si.customer, invoice_name=si.name, company=si.company)
 			
 			si.set("advances", [])
 			for pe_data in unallocated_payments:
