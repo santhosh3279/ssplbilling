@@ -2,12 +2,19 @@ import frappe
 import json
 
 @frappe.whitelist()
-def get_item_creation_metadata():
-	"""Fetch all metadata needed for the item creation form."""
+def get_item_creation_metadata(company=None):
+	"""Fetch all metadata needed for the item creation form.
+
+	Item Tax Templates are company-scoped, so they are filtered to `company`
+	(the frontend's wb-company) falling back to the user's default company.
+	With neither resolvable, every template is returned rather than none.
+	"""
+	company = company or frappe.defaults.get_user_default("company")
+	tax_filters = {"company": company} if company else {}
 	return {
 		"item_groups": frappe.get_all("Item Group", filters={"is_group": 0}, fields=["name"]),
 		"uoms": frappe.get_all("UOM", fields=["name"]),
-		"tax_templates": frappe.get_all("Item Tax Template", fields=["name"]),
+		"tax_templates": frappe.get_all("Item Tax Template", filters=tax_filters, fields=["name"]),
 		"hsn_codes": frappe.get_all("GST HSN Code", fields=["name", "description"]),
 		"naming_series": get_item_naming_series()
 	}

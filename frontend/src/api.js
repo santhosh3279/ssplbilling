@@ -686,9 +686,14 @@ export async function linkSupplierToItems(supplier, items) {
  * Fetch metadata for item creation.
  */
 let _itemCreationMetadataCache = null
+let _itemCreationMetadataCompany = null
 export async function fetchItemCreationMetadata() {
-  if (!_itemCreationMetadataCache) {
-    _itemCreationMetadataCache = await frappeGet("ssplbilling.api.item_api.get_item_creation_metadata")
+  // Tax templates are scoped to wb-company server-side, so the cache is keyed on
+  // it — switching company must not serve the previous company's templates.
+  const company = localStorage.getItem("wb-company") || "";
+  if (!_itemCreationMetadataCache || _itemCreationMetadataCompany !== company) {
+    _itemCreationMetadataCache = await frappeGet("ssplbilling.api.item_api.get_item_creation_metadata", { company });
+    _itemCreationMetadataCompany = company;
   }
   return _itemCreationMetadataCache
 }

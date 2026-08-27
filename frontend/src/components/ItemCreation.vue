@@ -216,7 +216,7 @@
                 @keydown.enter.prevent="rateInput?.focus()"
               >
                 <option value="">No Tax / Exempt</option>
-                <option v-for="t in metadata.tax_templates" :key="t.name" :value="t.name">{{ t.name }}</option>
+                <option v-for="t in taxTemplateOptions" :key="t.name" :value="t.name">{{ t.name }}</option>
               </select>
             </div>
           </div>
@@ -652,6 +652,18 @@ const filteredHSNCodes = computed(() => {
   return metadata.value.hsn_codes
     .filter(h => h.name.toLowerCase().includes(q) || (h.description || '').toLowerCase().includes(q))
     .slice(0, 50)
+})
+
+// metadata.tax_templates is already filtered to wb-company server-side. An item
+// being edited may carry a template from another company — keep it in the list so
+// opening the form does not silently blank it on save.
+const taxTemplateOptions = computed(() => {
+  const list = metadata.value.tax_templates || []
+  const current = form.value.item_tax_template
+  if (current && !list.some(t => t.name === current)) {
+    return [...list, { name: current }]
+  }
+  return list
 })
 
 const availableUoms = computed(() => {
