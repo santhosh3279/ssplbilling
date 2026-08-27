@@ -373,7 +373,15 @@
                   :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-info)]'"
                 >{{ entry.voucher_no }}</button>
               </td>
-              <td class="px-1 py-2 w-[20ch] max-w-[20ch] truncate" :title="againstText(entry)" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ againstText(entry) || '—' }}</td>
+              <td class="px-1 py-2 w-[20ch] max-w-[20ch] truncate" :title="againstDisplay(entry)" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+                <button
+                  v-if="hasEmployeeAgainst(entry)"
+                  @click.stop="toggleAgainstReveal(entry)"
+                  :title="revealedAgainst.has(entry) ? 'Click to show employee ID' : 'Click to show employee name'"
+                  class="block w-full truncate text-left hover:underline"
+                >{{ againstDisplay(entry) || '—' }}</button>
+                <template v-else>{{ againstDisplay(entry) || '—' }}</template>
+              </td>
               <td class="px-3 py-2 whitespace-nowrap font-mono" :title="entry.creation" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ fmtTime(entry.creation) }}</td>
               <td class="px-3 py-2 text-right font-mono">
                 <span v-if="entry.is_cancelled && entry.cancelled_is_debit" :class="focusedIdx === idx ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-success)]'">{{ fmt(entry.cancelled_amount) }}</span>
@@ -441,9 +449,13 @@
               <span class="text-[var(--color-text-muted)]">Posting Date</span>
               <span class="font-semibold text-[var(--color-text)]">{{ fmtDate(voucherDetail.posting_date) }}</span>
             </div>
-            <div v-if="selectedEntry && againstText(selectedEntry)" class="flex justify-between gap-3">
+            <div v-if="selectedEntry && againstDisplay(selectedEntry)" class="flex justify-between gap-3">
               <span class="text-[var(--color-text-muted)] shrink-0">Against</span>
-              <span class="font-semibold text-[var(--color-text)] text-right break-words">{{ againstText(selectedEntry) }}</span>
+              <span
+                class="font-semibold text-[var(--color-text)] text-right break-words"
+                :class="hasEmployeeAgainst(selectedEntry) ? 'cursor-pointer hover:underline' : ''"
+                @click="toggleAgainstReveal(selectedEntry)"
+              >{{ againstDisplay(selectedEntry) }}</span>
             </div>
             <!-- Purchase Invoice: Supplier Invoice No + Date -->
             <div v-if="voucherDetail.voucher_type === 'Purchase Invoice' && voucherDetail.bill_no" class="flex justify-between">
@@ -710,6 +722,29 @@ function againstText(entry) {
   }
   return entry.against || ''
 }
+
+// Employee identities in `against` are redacted server-side: non-admins receive the
+// literal "Employee", admins receive the raw employee ID plus an `against_employees`
+// [{id, name}] list. Clicking such a cell swaps the IDs for names (admins only —
+// a non-admin payload carries neither the ID nor the name).
+const revealedAgainst = ref(new Set())
+
+function hasEmployeeAgainst(entry) {
+  return !!entry?.against_employees?.length
+}
+
+function againstDisplay(entry) {
+  const base = againstText(entry)
+  if (!hasEmployeeAgainst(entry) || !revealedAgainst.value.has(entry)) return base
+  return entry.against_employees.reduce((txt, e) => txt.split(e.id).join(e.name), base)
+}
+
+function toggleAgainstReveal(entry) {
+  if (!hasEmployeeAgainst(entry)) return
+  const set = revealedAgainst.value
+  if (set.has(entry)) set.delete(entry)
+  else set.add(entry)
+}
 const selectedParty = ref(null)   // { name, label, type }
 const fromDate = ref((() => { const d = new Date(); d.setDate(d.getDate() - 90); return d.toISOString().split('T')[0] })())
 const toDate = ref(new Date().toISOString().split('T')[0])
@@ -811,8 +846,12 @@ const filteredEntries = computed(() => {
     // Against filter
     if (filters.value.against) {
       const query = filters.value.against.toLowerCase()
-      const against = againstText(entry).toLowerCase()
-      if (!against.includes(query)) return false
+      // Match what the cell shows, plus the employee names an admin can reveal,
+      // so searching by name keeps working while the cell displays employee IDs.
+      const haystack = [againstText(entry), ...(entry.against_employees || []).map((e) => e.name)]
+        .join(' ')
+        .toLowerCase()
+      if (!haystack.includes(query)) return false
     }
 
     // Creation filter
@@ -1178,6 +1217,7 @@ async function loadLedger({ forceRefresh = false } = {}) {
   }
   loading.value = true
   error.value = ''
+  revealedAgainst.value.clear()
   closeDetail()
   try {
     // Cache the whole financial year (or wider, if the current filter already extends

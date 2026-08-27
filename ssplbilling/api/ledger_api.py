@@ -303,13 +303,29 @@ def get_voucher_detail(voucher_type, voucher_no):
         base["user_remark"] = doc.user_remark or ""
     return base
 
-def _resolve_employee_ids_in_against(entries):
+def _is_ledger_admin():
+	"""True when the session user may see employee identities in the ledger."""
+	if frappe.session.user in ("Administrator", "admin"):
+		return True
+	try:
+		settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
+	except Exception:
+		return False
+	row = next((r for r in settings.user_series if r.user == frappe.session.user), None)
+	return bool(row and row.admin)
+
+
+def _resolve_employee_ids_in_against(entries, is_admin):
 	"""`GL Entry.against` is a stored text column written at submit time. When the
 	counter-side of a voucher is an Employee party, what gets stored is the raw
 	employee ID (e.g. "HR-EMP-00026"), so it surfaces as an ID in the ledger's
-	Against column on every non-Employee ledger. Swap those tokens for the
-	employee's name; every other token (account names, supplier/customer IDs) is
-	left exactly as stored.
+	Against column on every non-Employee ledger.
+
+	Admins keep the employee ID in `against` and get an `against_employees` list
+	([{id, name}]) alongside it, so the frontend can reveal the name on demand.
+	Everyone else gets every employee token collapsed to the literal "Employee" —
+	neither the ID nor the name ever leaves the server. Non-employee tokens
+	(account names, supplier/customer IDs) are left exactly as stored.
 	"""
 	tokens = set()
 	for e in entries:
@@ -335,26 +351,39 @@ def _resolve_employee_ids_in_against(entries):
 		raw = str(e.get("against") or "")
 		if not raw:
 			continue
-		parts = [names.get(t.strip(), t.strip()) for t in raw.split(",")]
-		e["against"] = ", ".join(p for p in parts if p)
+		parts = []
+		found = []
+		for tok in raw.split(","):
+			tok = tok.strip()
+			if not tok:
+				continue
+			if tok not in names:
+				parts.append(tok)
+				continue
+			if is_admin:
+				parts.append(tok)
+				found.append({"id": tok, "name": names[tok]})
+			elif "Employee" not in parts:
+				# Collapse every employee token in the cell to one opaque label.
+				parts.append("Employee")
+		e["against"] = ", ".join(parts)
+		if found:
+			e["against_employees"] = found
+
+	if not is_admin:
+		# The name also rides along on party_name for employee-party rows; drop it
+		# so the payload itself carries no employee identity.
+		for e in entries:
+			if e.get("party_type") == "Employee":
+				e["party_name"] = ""
+				e["party"] = ""
 
 
 @frappe.whitelist()
 def get_general_ledger(party_type, party, from_date=None, to_date=None, company=None):
     """Return GL entries using ERPNext's built-in General Ledger report engine."""
-    if party_type == "Employee":
-        current_user = frappe.session.user
-        is_admin = False
-        if current_user in ["Administrator", "admin"]:
-            is_admin = True
-        else:
-            settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
-            user_row = next((r for r in settings.user_series if r.user == current_user), None)
-            if user_row and user_row.admin:
-                is_admin = True
-        
-        if not is_admin:
-            frappe.throw("General ledger of employees is accessible only to administrators.")
+    if party_type == "Employee" and not _is_ledger_admin():
+        frappe.throw("General ledger of employees is accessible only to administrators.")
 
     from erpnext.accounts.report.general_ledger.general_ledger import execute as _gl_execute
     from erpnext import get_default_company
@@ -449,7 +478,7 @@ def get_general_ledger(party_type, party, from_date=None, to_date=None, company=
             })
         entries.sort(key=lambda e: e["date"])
 
-    _resolve_employee_ids_in_against(entries)
+    _resolve_employee_ids_in_against(entries, _is_ledger_admin())
 
     # Attach voucher creation timestamps (batched per voucher type)
     vouchers_by_type = {}
