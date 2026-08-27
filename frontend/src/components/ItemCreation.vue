@@ -224,14 +224,14 @@
             </div>
 
             <div class="space-y-[4px]">
-              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Tax Template</label>
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Tax Template *</label>
               <select
                 ref="taxTemplateInput"
                 v-model="form.item_tax_template"
                 class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
                 @keydown.enter.prevent="rateInput?.focus()"
               >
-                <option value="">No Tax / Exempt</option>
+                <option value=""></option>
                 <option v-for="t in taxTemplateOptions" :key="t.name" :value="t.name">{{ t.name }}</option>
               </select>
             </div>
@@ -712,7 +712,7 @@ const availableUoms = computed(() => {
 })
 
 const canSubmit = computed(() => {
-  return form.value.item_name.trim() && form.value.item_group && form.value.stock_uom
+  return form.value.item_name.trim() && form.value.item_group && form.value.stock_uom && form.value.item_tax_template
 })
 
 async function loadMetadata() {
