@@ -476,11 +476,12 @@ async function openPreview() {
   previewing.value = true
   error.value = ''
   try {
-    const b64 = await frappePost('run_doc_method', {
-      dt: 'Print Template',
-      dn: selectedTemplate.value,
-      method: 'preview_pdf',
-      args: JSON.stringify({ document_name: props.invoiceName }),
+    // Wrapper, not run_doc_method directly: an A5 Portrait template renders
+    // sideways for A4-sheet printing, and the wrapper rotates the preview copy
+    // 90° clockwise so it opens upright. Every other format passes through.
+    const b64 = await frappePost('ssplbilling.api.print_preview_api.preview_print_template_pdf', {
+      print_template: selectedTemplate.value,
+      document_name: props.invoiceName,
     })
     const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
     const blob = new Blob([bytes], { type: 'application/pdf' })
