@@ -370,104 +370,6 @@
     </footer>
   </div>
 
-  <!-- Print-Only Catalog Wrapper -->
-  <div v-if="offer" class="hidden print-container text-black bg-white">
-    <div 
-      v-for="(pageItems, pIdx) in chunkedItems" 
-      :key="pIdx"
-      class="print-page w-full flex flex-col p-4 box-border relative"
-    >
-      <!-- Company Name Header at top of each page -->
-      <div class="flex justify-between items-end border-b-2 border-slate-900 pb-1 mb-2 shrink-0" style="height: 10mm; box-sizing: border-box;">
-        <h1 class="text-[15px] font-black uppercase tracking-widest text-slate-900">Sundaram and Sons Private Ltd.</h1>
-        <h2 class="text-[15px] font-bold uppercase tracking-wider text-slate-700">{{ offer.heading }}</h2>
-      </div>
-
-      <!-- 3x3 Grid of Cards -->
-      <div class="flex-1 grid grid-cols-3 grid-rows-3 gap-3">
-        <div 
-          v-for="item in pageItems" 
-          :key="item.itemcode"
-          class="print-card flex flex-col justify-between border border-slate-300 rounded-xl p-4 bg-white box-border overflow-hidden relative"
-        >
-          <!-- Watermark Overlay on Card -->
-          <div class="watermark-card-overlay">Sundaram and Sons Private Ltd.</div>
-          <!-- Name at top -->
-          <div class="text-[13px] font-black text-slate-900 line-clamp-2 leading-snug text-center tracking-tight shrink-0">
-            {{ item.itemname }}
-          </div>
-
-          <!-- Image in the middle -->
-          <div class="flex-1 flex items-center justify-center min-h-0 my-2">
-            <img 
-              v-if="item.image" 
-              :src="item.image" 
-              class="max-w-full max-h-[125px] object-contain"
-            />
-            <div v-else class="w-14 h-14 bg-slate-100 rounded-lg flex items-center justify-center text-2xl select-none">
-              📦
-            </div>
-          </div>
-
-          <!-- Locked bottom section -->
-          <div class="shrink-0 flex flex-col justify-end min-h-[72px]">
-            <!-- Offer container (Above) -->
-            <div class="mb-1">
-              <div v-if="item.discount_type && item.discount_desc" class="bg-amber-50 border border-amber-200 text-amber-900 rounded p-1 text-[9px] font-black text-left px-1.5 leading-tight">
-                <div 
-                  v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
-                  :key="lIdx"
-                >
-                  {{ line }}
-                </div>
-              </div>
-              <!-- Blank height spacer so the offer position is locked/fixed -->
-              <div v-else class="h-[26px]"></div>
-            </div>
-
-            <!-- Barcode & Prices Table for Print View -->
-            <div v-if="item.barcode_prices && item.barcode_prices.length" class="text-[9px] font-medium bg-slate-50 p-1.5 rounded border border-slate-200 flex flex-col box-border shrink-0 select-all">
-              <table class="w-full text-left border-collapse">
-                <tbody class="divide-y divide-slate-200 font-bold">
-                  <tr 
-                    v-for="bp in item.barcode_prices" 
-                    :key="bp.barcode"
-                  >
-                    <!-- Barcode column -->
-                    <td class="py-1 pr-1 font-mono text-slate-900 text-[9px] truncate max-w-[80px]">
-                      {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-[7px] font-sans">({{ bp.uom }})</span>
-                    </td>
-                    
-                    <!-- Conditional Price List columns -->
-                    <template v-if="includePricesInPrint">
-                      <td 
-                        v-for="pl in offer.price_lists" 
-                        :key="pl.price_list"
-                        class="py-1 px-1 font-mono text-right text-slate-900 text-[9px]"
-                        :class="{ 'tracking-widest': encryptPricesInPrint }"
-                      >
-                        <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                          {{ encryptPricesInPrint ? encryptPrice(bp.prices[pl.price_list]) : `₹${Number(bp.prices[pl.price_list]).toLocaleString()}` }}
-                        </span>
-                        <span v-else class="text-slate-400">—</span>
-                      </td>
-                    </template>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Page Footer -->
-      <div class="mt-3 pt-1.5 border-t border-slate-300 flex justify-between items-center text-[9px] text-slate-500 font-bold tracking-wide shrink-0">
-        <span class="uppercase">Sundaram and Sons Private Ltd.</span>
-        <span>Page {{ pIdx + 1 }} of {{ chunkedItems.length }}</span>
-      </div>
-    </div>
-  </div>
-
   <!-- Export Options Modal -->
   <div v-if="showExportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
     <div class="relative w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-2xl space-y-6 text-[var(--color-text)] animate-in fade-in zoom-in duration-200">
@@ -483,6 +385,20 @@
 
       <!-- Form controls -->
       <div class="space-y-4">
+        <!-- Print Format Selector -->
+        <div class="bg-[var(--color-bg)]/50 p-3.5 rounded-xl border border-[var(--color-border)]">
+          <label class="block text-sm font-bold text-[var(--color-text)] mb-1">Print Format</label>
+          <span class="block text-[10px] text-[var(--color-text-muted)] mb-2">
+            Layout template. Edit it in the desk under Print Format.
+          </span>
+          <select
+            v-model="selectedPrintFormat"
+            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs font-medium text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-info)]"
+          >
+            <option v-for="pf in printFormats" :key="pf" :value="pf">{{ pf }}</option>
+          </select>
+        </div>
+
         <!-- Include Prices Checkbox -->
         <label class="flex items-center gap-3 cursor-pointer group bg-[var(--color-bg)]/50 p-3.5 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-info)]/60 transition">
           <input 
@@ -522,9 +438,10 @@
         </button>
         <button 
           @click="triggerPrint"
-          class="rounded-xl bg-[var(--color-info)] hover:bg-[var(--color-info)]/90 px-6 py-2.5 text-xs font-bold text-white transition active:scale-95 shadow-lg shadow-[var(--color-info)]/20"
+          :disabled="printing"
+          class="rounded-xl bg-[var(--color-info)] hover:bg-[var(--color-info)]/90 disabled:opacity-50 disabled:pointer-events-none px-6 py-2.5 text-xs font-bold text-white transition active:scale-95 shadow-lg shadow-[var(--color-info)]/20"
         >
-          Print Catalog
+          {{ printing ? 'Preparing…' : 'Print Catalog' }}
         </button>
       </div>
     </div>
@@ -620,15 +537,6 @@ const cardCodeClass = computed(() => {
 
 const badgeTextClass = computed(() => {
   return 'text-[10px] p-1.5 gap-1'
-})
-
-const chunkedItems = computed(() => {
-  if (!offer.value?.items?.length) return []
-  const chunks = []
-  for (let i = 0; i < offer.value.items.length; i += 9) {
-    chunks.push(offer.value.items.slice(i, i + 9))
-  }
-  return chunks
 })
 
 // Presentation Column Count Computes the active visible column count (safely limited by available items count)
@@ -899,6 +807,9 @@ function goBackToCatalogue() {
 const showExportModal = ref(false)
 const includePricesInPrint = ref(false)
 const encryptPricesInPrint = ref(false)
+const printFormats = ref([])
+const selectedPrintFormat = ref('')
+const printing = ref(false)
 
 watch(includePricesInPrint, (newVal) => {
   if (!newVal) {
@@ -906,19 +817,86 @@ watch(includePricesInPrint, (newVal) => {
   }
 })
 
+async function loadPrintFormats() {
+  try {
+    const res = await frappeGet('ssplbilling.api.offer_api.get_offer_print_formats')
+    printFormats.value = Array.isArray(res) ? res : []
+    if (!selectedPrintFormat.value && printFormats.value.length) {
+      selectedPrintFormat.value = printFormats.value[0]
+    }
+  } catch (err) {
+    console.error(err)
+  }
+}
+
 function exportToPDF() {
   showExportModal.value = true
+  if (!printFormats.value.length) {
+    loadPrintFormats()
+  }
 }
 
 function closeExportModal() {
   showExportModal.value = false
 }
 
-function triggerPrint() {
-  showExportModal.value = false
-  nextTick(() => {
-    window.print()
-  })
+function waitForImages(win) {
+  const images = Array.from(win.document.images || [])
+  const pending = images
+    .filter(img => !img.complete)
+    .map(img => new Promise(resolve => {
+      img.addEventListener('load', resolve, { once: true })
+      img.addEventListener('error', resolve, { once: true })
+    }))
+  // Cap the wait so a dead image URL cannot block printing forever.
+  return Promise.race([
+    Promise.all(pending),
+    new Promise(resolve => setTimeout(resolve, 5000))
+  ])
+}
+
+// The catalogue layout lives in the "SSPL Offer Catalogue" Print Format, so the
+// server renders the HTML and we print it from a detached window. Printing the
+// SPA itself is no longer possible — the layout is no longer in this component.
+async function triggerPrint() {
+  if (printing.value) return
+  printing.value = true
+  try {
+    const html = await frappeGet('ssplbilling.api.offer_api.render_offer_catalog', {
+      pageaddress: pageaddress,
+      print_format: selectedPrintFormat.value || '',
+      include_prices: includePricesInPrint.value ? 1 : 0,
+      encrypt_prices: encryptPricesInPrint.value ? 1 : 0
+    })
+    if (!html) {
+      alert('Could not render the catalog. Check the print format.')
+      return
+    }
+
+    const win = window.open('', '_blank')
+    if (!win) {
+      alert('Popup blocked. Allow popups for this site to print the catalog.')
+      return
+    }
+    win.document.open()
+    win.document.write(
+      `<!doctype html><html><head><meta charset="utf-8"><title>${offer.value?.heading || 'Catalog'}</title>` +
+      `<style>@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }</style>` +
+      `</head><body>${html}</body></html>`
+    )
+    win.document.close()
+    showExportModal.value = false
+    // Wait for the images to settle, otherwise the first page prints blank.
+    waitForImages(win).then(() => {
+      win.focus()
+      win.print()
+    })
+  } catch (err) {
+    console.error(err)
+    alert(err.message || 'Failed to render catalog')
+  } finally {
+    printing.value = false
+  }
 }
 
 watch(isFullscreen, (newVal) => {
@@ -1053,87 +1031,3 @@ onBeforeUnmount(() => {
 /* Core stylesheet variables integrated */
 </style>
 
-<style>
-@media print {
-  @page {
-    size: A4 portrait;
-    margin: 0;
-  }
-
-  /* Reset height/overflow on all parent elements to allow multi-page printing */
-  html, body, #app, #app > div, #app > div > div {
-    height: auto !important;
-    min-height: 0 !important;
-    overflow: visible !important;
-    position: static !important;
-    display: block !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* Hide scrollable main wrapper */
-  .main-content-wrapper {
-    display: none !important;
-  }
-  
-  /* Show print container and ensure it starts clean */
-  .print-container {
-    display: block !important;
-    background: white !important;
-    color: #0f172a !important; /* text-slate-900 */
-    width: 100% !important;
-    height: auto !important;
-    overflow: visible !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  
-  .print-page {
-    display: flex !important;
-    flex-direction: column !important;
-    width: 194mm !important; /* 210mm A4 width - 8mm left - 8mm right margin */
-    height: 265mm !important; /* fits A4 height with margins and leaves safety gap for footer */
-    margin-top: 15mm !important;
-    margin-bottom: 17mm !important;
-    margin-left: 8mm !important;
-    margin-right: 8mm !important;
-    box-sizing: border-box !important;
-    page-break-after: always !important;
-    break-after: page !important;
-    position: relative !important;
-  }
-
-  .watermark-card-overlay {
-    display: block !important;
-    position: absolute !important;
-    top: 50% !important;
-    left: 50% !important;
-    transform: translate(-50%, -50%) rotate(-25deg) !important;
-    font-size: 11px !important;
-    font-weight: 900 !important;
-    color: rgba(15, 23, 42, 0.05) !important; /* subtle overlay */
-    text-transform: uppercase !important;
-    letter-spacing: 0.05em !important;
-    pointer-events: none !important;
-    z-index: 10 !important;
-    white-space: nowrap !important;
-  }
-
-  .print-page:last-child {
-    page-break-after: avoid !important;
-    break-after: avoid !important;
-  }
-
-  .print-card {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08) !important;
-  }
-
-  /* Force background colors and colors to render in print */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-}
-</style>

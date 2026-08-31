@@ -213,11 +213,43 @@ def sync_dashboard_tiles():
 			).insert(ignore_permissions=True)
 
 
+def sync_offer_print_format():
+	"""Seed the editable catalogue Print Format for the offer page export.
+
+	Only inserted when missing, so desk edits to the layout survive migrations.
+	"""
+	from ssplbilling.api.offer_api import OFFER_PRINT_FORMAT, get_default_catalog_html
+
+	if not frappe.db.exists("DocType", "Offer-Items"):
+		return
+	if frappe.db.exists("Print Format", OFFER_PRINT_FORMAT):
+		return
+
+	html = get_default_catalog_html()
+	if not html:
+		return
+
+	frappe.get_doc(
+		{
+			"doctype": "Print Format",
+			"name": OFFER_PRINT_FORMAT,
+			"doc_type": "Offer-Items",
+			"module": "Ssplbilling",
+			"standard": "No",
+			"custom_format": 1,
+			"print_format_type": "Jinja",
+			"html": html,
+		}
+	).insert(ignore_permissions=True)
+
+
 def after_install():
 	create_custom_fields(CUSTOM_FIELDS, ignore_validate=True)
 	sync_dashboard_tiles()
+	sync_offer_print_format()
 
 
 def after_migrate():
 	create_custom_fields(CUSTOM_FIELDS, ignore_validate=True)
 	sync_dashboard_tiles()
+	sync_offer_print_format()

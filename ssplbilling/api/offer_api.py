@@ -328,3 +328,153 @@ def get_offer_list():
 		order_by="creation desc"
 	)
 
+
+
+# ── Catalogue printing ────────────────────────────────────────────────────────
+# The A4 catalogue layout used to live as a hidden block inside OfferPage.vue.
+# It is now a Jinja template so it can be customised from the desk: the
+# "SSPL Offer Catalogue" Print Format (doc_type = Offer-Items) wins when it
+# exists, otherwise the bundled seed file below is rendered.
+
+OFFER_PRINT_FORMAT = "SSPL Offer Catalogue"
+ITEMS_PER_PAGE = 9
+
+
+def get_default_catalog_html():
+	"""The seed template shipped with the app."""
+	import os
+
+	path = frappe.get_app_path("ssplbilling", "print_format", "offer_catalog.html")
+	if not os.path.exists(path):
+		return ""
+	with open(path, encoding="utf-8") as f:
+		return f.read()
+
+
+def parse_cipher(raw):
+	"""Mirror of parseCipher() in frontend/src/encryption.js.
+
+	Returns a 10-entry list, or None when encryption is switched off (blank
+	cipher_map). A malformed map falls back to the default cipher rather than
+	exposing real prices.
+	"""
+	default_cipher = ["K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"]
+	text = (raw or "").strip()
+	if not text:
+		return None
+
+	if text.startswith("["):
+		try:
+			parsed = frappe.parse_json(text)
+		except Exception:
+			return default_cipher
+		if isinstance(parsed, list) and not parsed:
+			return None
+		if isinstance(parsed, list) and len(parsed) == 10 and all(isinstance(v, str) and v for v in parsed):
+			return parsed
+		return default_cipher
+
+	chars = list(text)
+	if len(chars) != 10 or any(not ch.strip() for ch in chars):
+		return default_cipher
+	return chars
+
+
+def encrypt_price(value, cipher):
+	"""Mirror of encryptPrice() in frontend/src/encryption.js."""
+	if value is None:
+		return ""
+	try:
+		n = float(value)
+	except (TypeError, ValueError):
+		return ""
+
+	if not cipher:
+		return str(int(n)) if n.is_integer() else f"{n:.2f}"
+
+	return "".join(cipher[int(ch)] if ch.isdigit() else ch for ch in str(int(round(n))))
+
+
+def format_rate(value, cipher_map, encrypt):
+	"""Rendered price cell: cipher letters when asked, plain rupees otherwise."""
+	if value is None:
+		return ""
+	if encrypt:
+		return encrypt_price(value, parse_cipher(cipher_map))
+	try:
+		return "₹{:,}".format(round(float(value), 2))
+	except (TypeError, ValueError):
+		return ""
+
+
+@frappe.whitelist(allow_guest=True)
+def get_offer_print_formats():
+	"""Print Formats a user can pick for the catalogue export."""
+	formats = frappe.get_all(
+		"Print Format",
+		filters={"doc_type": "Offer-Items", "disabled": 0},
+		fields=["name"],
+		order_by="name asc",
+		ignore_permissions=True,
+	)
+	names = [f.name for f in formats]
+	if OFFER_PRINT_FORMAT not in names:
+		names.insert(0, OFFER_PRINT_FORMAT)
+	return names
+
+
+@frappe.whitelist(allow_guest=True)
+def render_offer_catalog(pageaddress, print_format=None, include_prices=0, encrypt_prices=0):
+	"""Render the offer catalogue to standalone HTML for printing.
+
+	The offer page is public, so this stays guest-accessible and reuses
+	get_offer_details() rather than going through /printview (which enforces
+	read permission on Offer-Items and has a doc-centric Jinja context that
+	cannot see the computed barcode/price/discount data).
+	"""
+	include_prices = frappe.utils.cint(include_prices)
+	encrypt_prices = frappe.utils.cint(encrypt_prices)
+
+	offer = get_offer_details(pageaddress)
+	if not offer:
+		frappe.throw(frappe._("Offer list not found"))
+
+	cipher_map = offer.get("cipher_map") or ""
+	price_lists = [pl["price_list"] for pl in offer.get("price_lists") or []]
+	base_url = frappe.utils.get_url()
+
+	for item in offer["items"]:
+		# wkhtmltopdf and a detached print window both need absolute image URLs.
+		if item.get("image") and item["image"].startswith("/"):
+			item["image"] = base_url + item["image"]
+		for bp in item.get("barcode_prices") or []:
+			bp["display_prices"] = [
+				format_rate((bp.get("prices") or {}).get(pl), cipher_map, encrypt_prices)
+				for pl in price_lists
+			]
+
+	items = offer["items"]
+	pages = [items[i : i + ITEMS_PER_PAGE] for i in range(0, len(items), ITEMS_PER_PAGE)]
+
+	html = None
+	if print_format and frappe.db.exists("Print Format", print_format):
+		html = frappe.db.get_value("Print Format", print_format, "html")
+	elif frappe.db.exists("Print Format", OFFER_PRINT_FORMAT):
+		html = frappe.db.get_value("Print Format", OFFER_PRINT_FORMAT, "html")
+	if not html:
+		html = get_default_catalog_html()
+
+	company = frappe.db.get_single_value("Global Defaults", "default_company") or ""
+
+	return frappe.render_template(
+		html,
+		{
+			"offer": offer,
+			"items": items,
+			"pages": pages,
+			"company": company,
+			"include_prices": include_prices,
+			"encrypt_prices": encrypt_prices,
+			"items_per_page": ITEMS_PER_PAGE,
+		},
+	)

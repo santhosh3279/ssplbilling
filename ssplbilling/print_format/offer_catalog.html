@@ -1,0 +1,146 @@
+{#
+  Default Offer Catalogue print layout.
+
+  Rendered by ssplbilling.api.offer_api.render_offer_catalog. Editing the
+  "SSPL Offer Catalogue" Print Format in the desk overrides this file; this copy
+  is only the seed used on install/migrate and the fallback when no Print Format
+  record exists.
+
+  Context:
+    offer            → heading, pageaddress, price_lists[].price_list, items[]
+    pages            → items chunked per page (list of lists)
+    company          → default company name
+    include_prices   → 1 when price columns should be printed
+    encrypt_prices   → 1 when prices are shown as cipher letters
+  Each item: itemname, itemcode, image, discount_type, discount_desc,
+             barcode_prices[] → barcode, uom, display_prices[] (aligned to
+             offer.price_lists, already ciphered/formatted; "" when absent)
+#}
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  body { margin: 0; }
+  .sspl-catalog { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; color: #0f172a; background: #fff; }
+  .sspl-page {
+    width: 194mm; height: 265mm;
+    margin: 15mm 8mm 17mm 8mm;
+    box-sizing: border-box;
+    display: flex; flex-direction: column;
+    page-break-after: always; break-after: page;
+    position: relative;
+  }
+  .sspl-page:last-child { page-break-after: avoid; break-after: avoid; }
+  .sspl-head {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    border-bottom: 2px solid #0f172a; padding-bottom: 4px; margin-bottom: 8px;
+    height: 10mm; box-sizing: border-box;
+  }
+  .sspl-head h1 { font-size: 15px; font-weight: 900; text-transform: uppercase; letter-spacing: .1em; margin: 0; }
+  .sspl-head h2 { font-size: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; margin: 0; color: #334155; }
+  .sspl-grid { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); gap: 12px; }
+  .sspl-card {
+    display: flex; flex-direction: column; justify-content: space-between;
+    border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px;
+    background: #fff; box-sizing: border-box; overflow: hidden; position: relative;
+    page-break-inside: avoid; break-inside: avoid;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, .08);
+  }
+  .sspl-watermark {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) rotate(-25deg);
+    font-size: 11px; font-weight: 900; color: rgba(15, 23, 42, .05);
+    text-transform: uppercase; letter-spacing: .05em;
+    pointer-events: none; z-index: 10; white-space: nowrap;
+  }
+  .sspl-name { font-size: 13px; font-weight: 900; line-height: 1.25; text-align: center; letter-spacing: -.01em; flex-shrink: 0; }
+  .sspl-img { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; margin: 8px 0; }
+  .sspl-img img { max-width: 100%; max-height: 125px; object-fit: contain; }
+  .sspl-img .sspl-noimg { width: 56px; height: 56px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  .sspl-bottom { flex-shrink: 0; display: flex; flex-direction: column; justify-content: flex-end; min-height: 72px; }
+  .sspl-offer {
+    background: #fffbeb; border: 1px solid #fde68a; color: #78350f;
+    border-radius: 4px; padding: 4px 6px; font-size: 9px; font-weight: 900;
+    line-height: 1.25; margin-bottom: 4px;
+  }
+  .sspl-offer-spacer { height: 26px; margin-bottom: 4px; }
+  .sspl-prices { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 6px; font-size: 9px; }
+  .sspl-prices table { width: 100%; border-collapse: collapse; text-align: left; }
+  .sspl-prices td { padding: 3px 4px 3px 0; border-top: 1px solid #e2e8f0; font-weight: 700; }
+  .sspl-prices tr:first-child td { border-top: none; }
+  .sspl-barcode { font-family: monospace; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sspl-barcode .sspl-uom { color: #64748b; font-weight: 400; font-size: 7px; font-family: inherit; }
+  .sspl-rate { font-family: monospace; text-align: right; }
+  .sspl-rate.sspl-cipher { letter-spacing: .1em; }
+  .sspl-foot {
+    margin-top: 12px; padding-top: 6px; border-top: 1px solid #cbd5e1;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 9px; color: #64748b; font-weight: 700; letter-spacing: .03em;
+    flex-shrink: 0;
+  }
+</style>
+
+<div class="sspl-catalog">
+  {% for page_items in pages %}
+  <div class="sspl-page">
+    <div class="sspl-head">
+      <h1>{{ company }}</h1>
+      <h2>{{ offer.heading }}</h2>
+    </div>
+
+    <div class="sspl-grid">
+      {% for item in page_items %}
+      <div class="sspl-card">
+        <div class="sspl-watermark">{{ company }}</div>
+        <div class="sspl-name">{{ item.itemname }}</div>
+
+        <div class="sspl-img">
+          {% if item.image %}
+          <img src="{{ item.image }}" alt="">
+          {% else %}
+          <div class="sspl-noimg">&#128230;</div>
+          {% endif %}
+        </div>
+
+        <div class="sspl-bottom">
+          {% if item.discount_type and item.discount_desc %}
+          <div class="sspl-offer">
+            {% for line in item.discount_desc.split(' | ') %}
+            <div>{{ line }}</div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="sspl-offer-spacer"></div>
+          {% endif %}
+
+          {% if item.barcode_prices %}
+          <div class="sspl-prices">
+            <table>
+              <tbody>
+                {% for bp in item.barcode_prices %}
+                <tr>
+                  <td class="sspl-barcode">
+                    {{ bp.barcode or '&mdash;' }}
+                    {% if bp.uom %}<span class="sspl-uom">({{ bp.uom }})</span>{% endif %}
+                  </td>
+                  {% if include_prices %}
+                  {% for rate in bp.display_prices %}
+                  <td class="sspl-rate {% if encrypt_prices %}sspl-cipher{% endif %}">{{ rate or '&mdash;' }}</td>
+                  {% endfor %}
+                  {% endif %}
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="sspl-foot">
+      <span style="text-transform: uppercase;">{{ company }}</span>
+      <span>Page {{ loop.index }} of {{ pages | length }}</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
