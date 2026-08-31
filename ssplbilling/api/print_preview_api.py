@@ -61,11 +61,11 @@ def preview_print_template_pdf(print_template, document_name=None):
 
 @frappe.whitelist()
 def preview_print_template_file(print_template, document_name=None, doctype=None):
-	"""Serve the preview PDF as a file so it is named after the document.
+	"""Serve the preview PDF as a file named "<party> - <bill number>.pdf".
 
 	The modal used to open a blob URL, which downloads under a random UUID. This
 	returns the same bytes as a real response instead, so Content-Disposition
-	carries "<invoice>.pdf" into the viewer's download button.
+	carries a name the operator can find on disk.
 	"""
 	try:
 		pdf = base64.b64decode(preview_print_template_pdf(print_template, document_name))
@@ -80,9 +80,48 @@ def preview_print_template_file(print_template, document_name=None, doctype=None
 		)
 		return
 
-	frappe.local.response.filename = "{}.pdf".format(scrub_filename(document_name or print_template))
+	frappe.local.response.filename = build_preview_filename(
+		doctype or frappe.db.get_value("Print Template", print_template, "document_type"),
+		document_name,
+		print_template,
+	)
 	frappe.local.response.filecontent = pdf
 	frappe.local.response.type = "pdf"
+
+
+# Party field per doctype, most specific first: the printed name beats the link.
+PARTY_FIELDS = (
+	"customer_name",
+	"supplier_name",
+	"party_name",
+	"customer",
+	"supplier",
+	"party",
+	"title",
+)
+
+
+def get_party_name(doctype, document_name):
+	"""The party a document is billed to, or "" when the doctype has no party."""
+	if not doctype or not document_name or not frappe.db.exists("DocType", doctype):
+		return ""
+
+	meta = frappe.get_meta(doctype)
+	for fieldname in PARTY_FIELDS:
+		if not meta.has_field(fieldname):
+			continue
+		value = frappe.db.get_value(doctype, document_name, fieldname)
+		if value and value != document_name:
+			return str(value)
+	return ""
+
+
+def build_preview_filename(doctype, document_name, print_template):
+	"""<party> - <bill number>.pdf, dropping either half when it is unknown."""
+	bill_number = document_name or print_template
+	parts = [p for p in (get_party_name(doctype, document_name), bill_number) if p]
+	# Long customer names are trimmed so the header stays a sane length.
+	return "{}.pdf".format(scrub_filename(" - ".join(parts))[:120])
 
 
 def scrub_filename(name):
