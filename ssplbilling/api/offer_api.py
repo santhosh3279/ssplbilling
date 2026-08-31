@@ -334,10 +334,12 @@ def get_offer_list():
 # ── Catalogue printing ────────────────────────────────────────────────────────
 # The A4 catalogue layout used to live as a hidden block inside OfferPage.vue.
 # It is now a Jinja template so it can be customised from the desk: the
-# "SSPL Offer Catalogue" Print Format (doc_type = Offer-Items) wins when it
-# exists, otherwise the bundled seed file below is rendered.
+# "SSPL Offer Catalogue" Print Template (format_type = Custom PDF, document_type
+# = Offer-Items) wins when it exists, otherwise the bundled seed file below is
+# rendered. Print Template lives in the printer_server_configuration app, so
+# every lookup tolerates the doctype being absent.
 
-OFFER_PRINT_FORMAT = "SSPL Offer Catalogue"
+OFFER_PRINT_TEMPLATE = "SSPL Offer Catalogue"
 ITEMS_PER_PAGE = 9
 
 
@@ -345,7 +347,7 @@ def get_default_catalog_html():
 	"""The seed template shipped with the app."""
 	import os
 
-	path = frappe.get_app_path("ssplbilling", "print_format", "offer_catalog.html")
+	path = frappe.get_app_path("ssplbilling", "print_templates", "offer_catalog.html")
 	if not os.path.exists(path):
 		return ""
 	with open(path, encoding="utf-8") as f:
@@ -410,21 +412,38 @@ def format_rate(value, cipher_map, encrypt):
 	return f"₹{int(n):,}" if n.is_integer() else f"₹{n:,.2f}"
 
 
+def print_template_doctype_exists():
+	return bool(frappe.db.exists("DocType", "Print Template"))
+
+
 @frappe.whitelist(allow_guest=True)
-def get_offer_print_formats():
-	"""Print Formats a user can pick for the catalogue export."""
-	formats = frappe.get_all(
-		"Print Format",
-		filters={"doc_type": "Offer-Items", "disabled": 0},
+def get_offer_print_templates():
+	"""Print Templates a user can pick for the catalogue export."""
+	if not print_template_doctype_exists():
+		return []
+	templates = frappe.get_all(
+		"Print Template",
+		filters={"document_type": "Offer-Items", "format_type": "Custom PDF"},
 		fields=["name"],
 		order_by="name asc",
 		ignore_permissions=True,
 	)
-	return [f.name for f in formats]
+	return [t.name for t in templates]
+
+
+def get_catalog_template_html(print_template=None):
+	"""Layout HTML: the named template, the seeded one, then the bundled file."""
+	if print_template_doctype_exists():
+		for name in (print_template, OFFER_PRINT_TEMPLATE):
+			if name and frappe.db.exists("Print Template", name):
+				html = frappe.db.get_value("Print Template", name, "custom_pdf_template")
+				if html:
+					return html
+	return get_default_catalog_html()
 
 
 @frappe.whitelist(allow_guest=True)
-def render_offer_catalog(pageaddress, print_format=None, include_prices=0, encrypt_prices=0):
+def render_offer_catalog(pageaddress, print_template=None, include_prices=0, encrypt_prices=0):
 	"""Render the offer catalogue to standalone HTML for printing.
 
 	The offer page is public, so this stays guest-accessible and reuses
@@ -457,13 +476,7 @@ def render_offer_catalog(pageaddress, print_format=None, include_prices=0, encry
 	items = offer["items"]
 	pages = [items[i : i + ITEMS_PER_PAGE] for i in range(0, len(items), ITEMS_PER_PAGE)]
 
-	html = None
-	if print_format and frappe.db.exists("Print Format", print_format):
-		html = frappe.db.get_value("Print Format", print_format, "html")
-	elif frappe.db.exists("Print Format", OFFER_PRINT_FORMAT):
-		html = frappe.db.get_value("Print Format", OFFER_PRINT_FORMAT, "html")
-	if not html:
-		html = get_default_catalog_html()
+	html = get_catalog_template_html(print_template)
 
 	# Exposed for templates that want the dynamic name; the seed layout keeps the
 	# printed company literal so existing catalogues keep their masthead.

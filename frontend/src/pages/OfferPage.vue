@@ -387,15 +387,15 @@
       <div class="space-y-4">
         <!-- Print Format Selector -->
         <div class="bg-[var(--color-bg)]/50 p-3.5 rounded-xl border border-[var(--color-border)]">
-          <label class="block text-sm font-bold text-[var(--color-text)] mb-1">Print Format</label>
+          <label class="block text-sm font-bold text-[var(--color-text)] mb-1">Print Template</label>
           <span class="block text-[10px] text-[var(--color-text-muted)] mb-2">
-            Layout template. Edit it in the desk under Print Format.
+            Layout template. Edit it in the desk under Print Template.
           </span>
           <select
-            v-model="selectedPrintFormat"
+            v-model="selectedPrintTemplate"
             class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs font-medium text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-[var(--color-info)]"
           >
-            <option v-for="pf in printFormats" :key="pf" :value="pf">{{ pf }}</option>
+            <option v-for="pt in printTemplates" :key="pt" :value="pt">{{ pt }}</option>
           </select>
         </div>
 
@@ -807,8 +807,8 @@ function goBackToCatalogue() {
 const showExportModal = ref(false)
 const includePricesInPrint = ref(false)
 const encryptPricesInPrint = ref(false)
-const printFormats = ref([])
-const selectedPrintFormat = ref('')
+const printTemplates = ref([])
+const selectedPrintTemplate = ref('')
 const printing = ref(false)
 
 watch(includePricesInPrint, (newVal) => {
@@ -817,12 +817,12 @@ watch(includePricesInPrint, (newVal) => {
   }
 })
 
-async function loadPrintFormats() {
+async function loadPrintTemplates() {
   try {
-    const res = await frappeGet('ssplbilling.api.offer_api.get_offer_print_formats')
-    printFormats.value = Array.isArray(res) ? res : []
-    if (!selectedPrintFormat.value && printFormats.value.length) {
-      selectedPrintFormat.value = printFormats.value[0]
+    const res = await frappeGet('ssplbilling.api.offer_api.get_offer_print_templates')
+    printTemplates.value = Array.isArray(res) ? res : []
+    if (!selectedPrintTemplate.value && printTemplates.value.length) {
+      selectedPrintTemplate.value = printTemplates.value[0]
     }
   } catch (err) {
     console.error(err)
@@ -831,8 +831,8 @@ async function loadPrintFormats() {
 
 function exportToPDF() {
   showExportModal.value = true
-  if (!printFormats.value.length) {
-    loadPrintFormats()
+  if (!printTemplates.value.length) {
+    loadPrintTemplates()
   }
 }
 
@@ -855,7 +855,7 @@ function waitForImages(win) {
   ])
 }
 
-// The catalogue layout lives in the "SSPL Offer Catalogue" Print Format, so the
+// The catalogue layout lives in the "SSPL Offer Catalogue" Print Template, so the
 // server renders the HTML and we print it from a detached window. Printing the
 // SPA itself is no longer possible — the layout is no longer in this component.
 async function triggerPrint() {
@@ -864,12 +864,12 @@ async function triggerPrint() {
   try {
     const html = await frappeGet('ssplbilling.api.offer_api.render_offer_catalog', {
       pageaddress: pageaddress,
-      print_format: selectedPrintFormat.value || '',
+      print_template: selectedPrintTemplate.value || '',
       include_prices: includePricesInPrint.value ? 1 : 0,
       encrypt_prices: encryptPricesInPrint.value ? 1 : 0
     })
     if (!html) {
-      alert('Could not render the catalog. Check the print format.')
+      alert('Could not render the catalog. Check the print template.')
       return
     }
 
