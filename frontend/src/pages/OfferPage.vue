@@ -856,11 +856,12 @@ function waitForImages(win) {
 }
 
 // The catalogue layout lives in the "SSPL Offer Catalogue" Print Template, so the
-// server renders the HTML and we print it from a detached window. Printing the
-// SPA itself is no longer possible — the layout is no longer in this component.
+// server renders the HTML. It is printed from an offscreen iframe rather than a
+// second tab: the SPA stays put, and no popup blocker is involved.
 async function triggerPrint() {
   if (printing.value) return
   printing.value = true
+  let frame = null
   try {
     const html = await frappeGet('ssplbilling.api.offer_api.render_offer_catalog', {
       pageaddress: pageaddress,
@@ -873,26 +874,46 @@ async function triggerPrint() {
       return
     }
 
-    const win = window.open('', '_blank')
-    if (!win) {
-      alert('Popup blocked. Allow popups for this site to print the catalog.')
-      return
-    }
-    win.document.open()
-    win.document.write(
+    frame = document.createElement('iframe')
+    // Parked offscreen at page size rather than hidden: a display:none or
+    // visibility:hidden frame lays out nothing and prints blank pages.
+    frame.setAttribute('aria-hidden', 'true')
+    frame.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0;'
+    document.body.appendChild(frame)
+
+    const doc = frame.contentDocument
+    doc.open()
+    doc.write(
       `<!doctype html><html><head><meta charset="utf-8"><title>${offer.value?.heading || 'Catalog'}</title>` +
       `<style>@media print { * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }</style>` +
       `</head><body>${html}</body></html>`
     )
-    win.document.close()
+    doc.close()
     showExportModal.value = false
+
     // Wait for the images to settle, otherwise the first page prints blank.
-    waitForImages(win).then(() => {
-      win.focus()
-      win.print()
-    })
+    await waitForImages(frame.contentWindow)
+
+    // Keep the frame alive until the print dialog is done with it, and register
+    // the listener before print() — the call blocks and afterprint can fire
+    // before it returns. afterprint is not fired everywhere, so a timer backstops.
+    const el = frame
+    const cleanup = () => {
+      if (el.parentNode) {
+        el.parentNode.removeChild(el)
+      }
+    }
+    el.contentWindow.addEventListener('afterprint', cleanup, { once: true })
+    setTimeout(cleanup, 60000)
+    frame = null // ownership handed to cleanup; do not remove it in the catch
+
+    el.contentWindow.focus()
+    el.contentWindow.print()
   } catch (err) {
     console.error(err)
+    if (frame && frame.parentNode) {
+      frame.parentNode.removeChild(frame)
+    }
     alert(err.message || 'Failed to render catalog')
   } finally {
     printing.value = false
