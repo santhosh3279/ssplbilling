@@ -13,7 +13,9 @@ back upright. Only the preview is touched; the bytes sent to CUPS are untouched.
 
 import base64
 import io
+import os
 import re
+import zipfile
 from urllib.parse import quote
 
 import frappe
@@ -226,3 +228,37 @@ def get_whatsapp_recipient(doctype, document_name):
 		"phone": phone,
 		"amount": float(amount or 0),
 	}
+
+
+# Companion Chrome extension, shipped as source in the app repo. Zipped on request so the
+# download always matches the installed app instead of a checked-in binary going stale.
+EXTENSION_FOLDER = ("chrome-extension", "whatsapp-tab")
+
+
+def get_extension_path():
+	app_root = os.path.dirname(frappe.get_app_path("ssplbilling"))
+	return os.path.join(app_root, *EXTENSION_FOLDER)
+
+
+@frappe.whitelist()
+def download_whatsapp_extension():
+	"""Serve the SSPL WhatsApp Tab extension as a zip for Chrome's "Load unpacked"."""
+	folder = get_extension_path()
+	if not os.path.isdir(folder):
+		frappe.throw("Extension folder is missing from this installation")
+
+	buffer = io.BytesIO()
+	with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+		for root, _dirs, files in os.walk(folder):
+			for filename in files:
+				full_path = os.path.join(root, filename)
+				# Everything sits under one top-level folder, so unzipping cannot scatter
+				# files and the folder is ready to hand to "Load unpacked" as it is.
+				arcname = os.path.join(
+					EXTENSION_FOLDER[-1], os.path.relpath(full_path, folder)
+				)
+				archive.write(full_path, arcname)
+
+	frappe.local.response.filename = "sspl-whatsapp-tab.zip"
+	frappe.local.response.filecontent = buffer.getvalue()
+	frappe.local.response.type = "binary"

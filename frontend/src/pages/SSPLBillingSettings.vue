@@ -196,6 +196,47 @@
           </table>
         </section>
 
+        <!-- Section: WhatsApp Tab Extension -->
+        <section class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+          <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
+            <h2 class="text-xl font-bold text-[var(--color-text)]">WhatsApp Tab Extension</h2>
+            <span
+              class="rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider"
+              :class="extensionInstalled
+                ? 'bg-[var(--color-success)]/20 text-[var(--color-success)]'
+                : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]'"
+            >
+              {{ extensionInstalled ? 'Installed on this machine' : 'Not installed here' }}
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-3">
+              <p class="text-sm text-[var(--color-text-muted)]">
+                Sends a shared bill to the WhatsApp Web tab that is already open instead of opening a
+                new one each time. WhatsApp blocks a web page from re-using its tab
+                (<span class="font-mono text-xs">Cross-Origin-Opener-Policy</span>), so only a browser
+                extension can do this. Billing works without it — bills then open a fresh tab.
+              </p>
+              <a
+                :href="extensionZipUrl"
+                download
+                class="inline-flex items-center gap-3 rounded-lg bg-[#25D366] px-5 py-2.5 text-sm font-bold text-black shadow-md transition-all hover:brightness-110 active:scale-95"
+              >
+                <span class="text-lg">⬇</span>
+                Download Extension (.zip)
+              </a>
+            </div>
+
+            <ol class="list-decimal space-y-2 pl-5 text-sm text-[var(--color-text-muted)]">
+              <li>Download and unzip to a permanent folder — Chrome loads it from that path on every start, so it must not be moved or deleted.</li>
+              <li>Open <span class="font-mono text-xs text-[var(--color-text)]">chrome://extensions</span> and turn on <b>Developer mode</b>.</li>
+              <li>Click <b>Load unpacked</b> and pick the unzipped <span class="font-mono text-xs text-[var(--color-text)]">whatsapp-tab</span> folder.</li>
+              <li>Reload this page — the badge above turns green.</li>
+            </ol>
+          </div>
+        </section>
+
       </div>
     </main>
   </div>
@@ -207,12 +248,20 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { isValidCipherMap } from '../encryption.js'
 import DropdownField from '../components/DropdownField.vue'
+import { hasWhatsAppBridge } from '../services/whatsappBridge'
 
 const router = useRouter()
 const isLoading = ref(true)
 const isSaving = ref(false)
 
 const settings = ref(null)
+
+// Zipped from the app's own source on request, so the download always matches the
+// installed version of ssplbilling.
+const extensionZipUrl = '/api/method/ssplbilling.api.print_preview_api.download_whatsapp_extension'
+// The extension's content script stamps the page it runs on, so this reports on the
+// machine the operator is sitting at — not on the server.
+const extensionInstalled = ref(false)
 
 const lists = ref({
   accounts: [],
@@ -231,6 +280,7 @@ const lists = ref({
 
 
 onMounted(async () => {
+  extensionInstalled.value = hasWhatsAppBridge()
   await Promise.all([fetchSettings(), fetchLists()])
 })
 
