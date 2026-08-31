@@ -106,6 +106,16 @@
                 {{ previewing ? 'Generating…' : 'Print Preview' }}
                 <kbd v-if="!previewing" class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">P</kbd>
               </button>
+
+              <button
+                @click="sendWhatsApp"
+                :disabled="whatsapping || !templates.length"
+                class="w-full rounded-xl py-3 text-sm font-bold border transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border-[#25D366] text-[#25D366] bg-[var(--color-surface)] hover:bg-[#25D366]/10"
+              >
+                <span class="text-lg">💬</span>
+                {{ whatsapping ? 'Preparing bill…' : 'Send on WhatsApp' }}
+                <kbd v-if="!whatsapping" class="rounded border border-[#25D366] px-1.5 py-0.5 font-mono text-[10px] text-[#25D366]">W</kbd>
+              </button>
             </div>
           </template>
         </div>
@@ -117,7 +127,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { frappePost } from '../api.js'
+import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 import { getCachedPrintLists, refreshPrintCache, loadPrintLists } from '../services/printCache'
 
@@ -144,6 +154,7 @@ const selectedPrinter  = ref('')
 const selectedTemplate = ref('')
 const printing       = ref(false)
 const previewing     = ref(false)
+const whatsapping    = ref(false)
 const refreshing     = ref(false)
 const error          = ref('')
 const success        = ref('')
@@ -284,6 +295,9 @@ function handleKeydown(e) {
   } else if (e.key.toLowerCase() === 'r') {
     e.preventDefault()
     refreshLists()
+  } else if (e.key.toLowerCase() === 'w') {
+    e.preventDefault()
+    sendWhatsApp()
   }
 }
 
@@ -463,6 +477,16 @@ async function sendPrint() {
   }
 }
 
+// Served-file preview endpoint for the current template + document.
+function previewFileUrl() {
+  const params = new URLSearchParams({
+    print_template: selectedTemplate.value,
+    document_name: props.invoiceName,
+    doctype: props.doctype,
+  })
+  return `/api/method/ssplbilling.api.print_preview_api.preview_print_template_file?${params}`
+}
+
 async function openPreview() {
   if (!selectedTemplate.value) return
   previewing.value = true
@@ -473,17 +497,92 @@ async function openPreview() {
     // saves the invoice number instead of a random UUID. The endpoint also
     // rotates A5 Portrait previews upright and redirects to Frappe's printview
     // when preview_pdf itself fails (e.g. thermal templates).
-    const params = new URLSearchParams({
-      print_template: selectedTemplate.value,
-      document_name: props.invoiceName,
-      doctype: props.doctype,
-    })
-    window.open(
-      `/api/method/ssplbilling.api.print_preview_api.preview_print_template_file?${params}`,
-      '_blank',
-    )
+    window.open(previewFileUrl(), '_blank')
   } finally {
     previewing.value = false
+  }
+}
+
+// The preview endpoint answers with Content-Disposition: inline, so the PDF has to be
+// pulled as a blob and saved through an anchor to land in Downloads under the bill name.
+function filenameFromDisposition(header) {
+  const encoded = /filename\*=UTF-8''([^;]+)/i.exec(header || '')
+  if (encoded) {
+    try { return decodeURIComponent(encoded[1]) } catch { /* fall through */ }
+  }
+  const plain = /filename="?([^";]+)"?/i.exec(header || '')
+  return plain ? plain[1] : `${props.invoiceName}.pdf`
+}
+
+async function downloadBillPdf() {
+  const res = await fetch(previewFileUrl(), {
+    headers: { 'X-Frappe-CSRF-Token': window.csrf_token ?? 'fetch' },
+  })
+  if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`)
+
+  const blob = await res.blob()
+  const name = filenameFromDisposition(res.headers.get('Content-Disposition'))
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = name
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  // Revoked late so the browser has finished reading the blob for the save.
+  setTimeout(() => URL.revokeObjectURL(url), 60000)
+  return name
+}
+
+// WhatsApp cannot be handed a file through a URL — only text — so the bill is saved to
+// Downloads and WhatsApp is opened on the party's chat for the operator to drag it in.
+// The number comes from the party's Contact WhatsApp row (mobile_no as fallback); with
+// no number on file WhatsApp opens unfiltered so the operator can search the contact.
+async function sendWhatsApp() {
+  if (!selectedTemplate.value || whatsapping.value) return
+  whatsapping.value = true
+  error.value = ''
+  success.value = ''
+
+  // Opened synchronously inside the click so the browser credits the user gesture; a
+  // window.open after the awaits below is treated as an unsolicited popup and blocked.
+  const waTab = window.open('', '_blank')
+
+  try {
+    let recipient = { party: '', phone: '', amount: 0 }
+    try {
+      recipient = await frappeGet('ssplbilling.api.print_preview_api.get_whatsapp_recipient', {
+        doctype: props.doctype,
+        document_name: props.invoiceName,
+      })
+    } catch (e) {
+      // A missing number must not block the share — WhatsApp still opens for a manual search.
+      console.warn('[PrintOptionsModal] WhatsApp recipient lookup failed:', e)
+    }
+
+    const savedAs = await downloadBillPdf()
+
+    const lines = [
+      recipient.party ? `${recipient.party},` : '',
+      `Bill ${props.invoiceName}`,
+      recipient.amount ? `Amount: ${recipient.amount.toLocaleString('en-IN')}` : '',
+    ].filter(Boolean)
+    const text = encodeURIComponent(lines.join('\n'))
+
+    if (waTab) {
+      waTab.location = recipient.phone
+        ? `https://web.whatsapp.com/send?phone=${recipient.phone}&text=${text}`
+        : `https://web.whatsapp.com/`
+    }
+
+    success.value = recipient.phone
+      ? `Saved "${savedAs}" — drag it into the WhatsApp chat`
+      : `Saved "${savedAs}" — no WhatsApp number on file, search the contact and drag it in`
+  } catch (e) {
+    waTab?.close()
+    error.value = 'WhatsApp share failed: ' + (e.message || e)
+  } finally {
+    whatsapping.value = false
   }
 }
 </script>

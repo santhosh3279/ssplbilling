@@ -128,3 +128,101 @@ def scrub_filename(name):
 	"""Keep the document name recognisable but safe in a Content-Disposition header."""
 	cleaned = re.sub(r'[\\/:*?"<>|\r\n]+', "-", str(name)).strip(" .")
 	return cleaned or "preview"
+
+
+# Party link field per doctype, so the WhatsApp lookup knows whose number to fetch.
+PARTY_LINK_FIELDS = (
+	("customer", "Customer"),
+	("supplier", "Supplier"),
+)
+
+# Bare numbers in this database are Indian 10-digit mobiles with no country code.
+DEFAULT_COUNTRY_CODE = "91"
+
+
+def get_party_link(doctype, document_name):
+	"""(party doctype, party) a document is billed to, or (None, None)."""
+	meta = frappe.get_meta(doctype)
+	for fieldname, party_doctype in PARTY_LINK_FIELDS:
+		if not meta.has_field(fieldname):
+			continue
+		value = frappe.db.get_value(doctype, document_name, fieldname)
+		if value:
+			return party_doctype, value
+
+	# Payment Entry / Journal Entry style generic party
+	if meta.has_field("party") and meta.has_field("party_type"):
+		party_type, party = frappe.db.get_value(doctype, document_name, ["party_type", "party"])
+		if party and party_type:
+			return party_type, party
+
+	return None, None
+
+
+def get_party_whatsapp(party_doctype, party):
+	"""WhatsApp number for a party: the Contact's secondary phone, else mobile_no.
+
+	Customer/Supplier creation in this app stores the WhatsApp number on the linked
+	Contact as a Contact Phone row with is_primary_mobile_no = 0 (see CustomerCreator
+	and customersearch_api), which is why the primary mobile is only the fallback.
+	"""
+	contact_name = frappe.db.get_value(
+		"Dynamic Link",
+		{"link_doctype": party_doctype, "link_name": party, "parenttype": "Contact"},
+		"parent",
+	)
+	if contact_name:
+		phone = frappe.db.get_value(
+			"Contact Phone", {"parent": contact_name, "is_primary_mobile_no": 0}, "phone"
+		)
+		if phone:
+			return phone
+
+	if frappe.get_meta(party_doctype).has_field("mobile_no"):
+		return frappe.db.get_value(party_doctype, party, "mobile_no") or ""
+
+	return ""
+
+
+def normalize_whatsapp_number(phone):
+	"""Digits only, with a country code — the form wa.me / web.whatsapp.com expect."""
+	digits = re.sub(r"\D", "", str(phone or ""))
+	if not digits:
+		return ""
+	if digits.startswith("00"):
+		digits = digits[2:]
+	if len(digits) == 11 and digits.startswith("0"):
+		digits = digits[1:]
+	if len(digits) == 10:
+		digits = DEFAULT_COUNTRY_CODE + digits
+	return digits
+
+
+@frappe.whitelist()
+def get_whatsapp_recipient(doctype, document_name):
+	"""Party name and WhatsApp number for a bill, for the share button in the print modal.
+
+	An empty phone is a valid answer: the modal then opens WhatsApp with no chat
+	preselected so the operator searches the contact themselves.
+	"""
+	if not doctype or not document_name or not frappe.db.exists(doctype, document_name):
+		frappe.throw("Document not found")
+
+	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
+
+	party_doctype, party = get_party_link(doctype, document_name)
+	phone = normalize_whatsapp_number(get_party_whatsapp(party_doctype, party)) if party else ""
+
+	meta = frappe.get_meta(doctype)
+	amount = None
+	for fieldname in ("rounded_total", "grand_total"):
+		if meta.has_field(fieldname):
+			amount = frappe.db.get_value(doctype, document_name, fieldname)
+			if amount:
+				break
+
+	return {
+		"party": get_party_name(doctype, document_name) or party or "",
+		"phone": phone,
+		"amount": float(amount or 0),
+	}
