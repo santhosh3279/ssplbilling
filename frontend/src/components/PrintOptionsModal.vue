@@ -130,6 +130,7 @@ import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 import { getCachedPrintLists, refreshPrintCache, loadPrintLists } from '../services/printCache'
+import { hasWhatsAppBridge, openWhatsAppTab } from '../services/whatsappBridge'
 
 useSubwindow()
 
@@ -578,11 +579,16 @@ async function sendWhatsApp() {
   error.value = ''
   success.value = ''
 
-  // Named target, so every share lands in the same WhatsApp tab instead of piling up a
-  // new one per bill — the browser reuses the window already carrying this name, and only
-  // opens one when none exists. Opened synchronously inside the click so the browser
-  // credits the user gesture; a window.open after the awaits below is blocked as a popup.
-  const waTab = window.open('', WHATSAPP_WINDOW_NAME)
+  // With the SSPL WhatsApp Tab extension installed, the tab is found and focused by the
+  // extension — opening one here as well would leave the operator with two.
+  const viaBridge = hasWhatsAppBridge()
+
+  // No extension: fall back to a named target so at least this app's own tab is reused.
+  // WhatsApp's Cross-Origin-Opener-Policy clears that name once the tab reaches
+  // web.whatsapp.com, so the reuse only holds until the first chat loads. Opened
+  // synchronously inside the click because a window.open after the awaits below is
+  // blocked as an unsolicited popup.
+  const waTab = viaBridge ? null : window.open('', WHATSAPP_WINDOW_NAME)
   waTab?.focus()
   // Only a tab this click created is disposable. A reused one already holds the operator's
   // WhatsApp session and must survive a failure below. A fresh window is still same-origin
@@ -611,14 +617,22 @@ async function sendWhatsApp() {
     ].filter(Boolean)
     const text = encodeURIComponent(lines.join('\n'))
 
+    const waUrl = recipient.phone
+      ? `https://web.whatsapp.com/send?phone=${recipient.phone}&text=${text}`
+      : `https://web.whatsapp.com/`
+
+    if (viaBridge) {
+      const relayed = await openWhatsAppTab(waUrl)
+      success.value = relayed.ok
+        ? `Saved "${savedAs}" — drag it into the WhatsApp tab`
+        : `Saved "${savedAs}" — could not reach the WhatsApp tab (${relayed.error}); open WhatsApp and drag it in`
+      return
+    }
+
     if (!waTab) {
       success.value = `Saved "${savedAs}" — allow popups for this site to open WhatsApp automatically`
       return
     }
-
-    const waUrl = recipient.phone
-      ? `https://web.whatsapp.com/send?phone=${recipient.phone}&text=${text}`
-      : `https://web.whatsapp.com/`
 
     // Re-navigating the reused tab reloads WhatsApp Web from scratch (slow, and it drops
     // whatever the operator had typed), so a tab already sitting on this exact chat is

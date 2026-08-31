@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "SSPL WhatsApp Tab",
+  "version": "1.0.0",
+  "description": "Sends bills from SSPL Billing to the WhatsApp Web tab that is already open instead of opening a new one.",
+  "permissions": ["tabs"],
+  "host_permissions": ["*://web.whatsapp.com/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["*://*/frontend/*", "http://localhost:8080/*", "http://127.0.0.1:8080/*"],
+      "js": ["content.js"],
+      "run_at": "document_start"
+    }
+  ]
+}
