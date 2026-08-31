@@ -40,3 +40,29 @@ document.documentElement.dataset.ssplWhatsappBridge  // "1" when the bridge is l
   `SSPL_WHATSAPP_OPEN` message and relays the chat URL.
 - No host permission on the billing site, no page content access on WhatsApp, no network
   calls of its own.
+
+## Which pages the bridge runs on
+
+`manifest.json` → `content_scripts[0].matches` decides where the extension announces itself.
+Two rules of Chrome match patterns matter here:
+
+- **Port numbers are not allowed.** `http://localhost:8080/*` is rejected, and a single invalid
+  pattern makes Chrome refuse to load the whole extension (`chrome://extensions` shows an
+  **Errors** button: `Invalid value for 'content_scripts[0].matches[…]'`). Drop the port —
+  `http://localhost/*` already matches every port on that host.
+- **Wildcards do not work inside IP addresses.** `http://192.168.*/*` is invalid. Each dev
+  machine reached by LAN IP has to be listed in full.
+
+`*://*/frontend/*` covers every production deployment on any host and port, because Frappe serves
+the SPA under `/frontend`. The Vite dev server uses base `/`, so dev hosts need their own entry —
+add one per machine:
+
+```json
+"http://192.168.1.50/*"
+```
+
+## After loading or changing the extension
+
+Chrome does not inject a content script into tabs that are already open. Reload the billing tab
+(Ctrl+Shift+R) after **Load unpacked** or after **Reload** on the extension card, or the badge in
+SSPL Billing Settings stays grey and the WhatsApp button falls back to opening a new tab.

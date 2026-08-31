@@ -232,7 +232,7 @@
               <li>Download and unzip to a permanent folder — Chrome loads it from that path on every start, so it must not be moved or deleted.</li>
               <li>Open <span class="font-mono text-xs text-[var(--color-text)]">chrome://extensions</span> and turn on <b>Developer mode</b>.</li>
               <li>Click <b>Load unpacked</b> and pick the unzipped <span class="font-mono text-xs text-[var(--color-text)]">whatsapp-tab</span> folder.</li>
-              <li>Reload this page — the badge above turns green.</li>
+              <li>Hard-reload this page (<span class="font-mono text-xs text-[var(--color-text)]">Ctrl+Shift+R</span>) — Chrome does not inject into tabs that were already open. The badge above turns green.</li>
             </ol>
           </div>
         </section>
