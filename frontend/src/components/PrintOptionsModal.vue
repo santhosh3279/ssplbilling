@@ -274,6 +274,10 @@ function handleKeydown(e) {
     return
   }
 
+  // Browser shortcuts (Cmd/Ctrl+W to close the tab, Alt+P, …) must reach the browser
+  // instead of triggering a print, a refresh or a WhatsApp share.
+  if (e.ctrlKey || e.metaKey || e.altKey) return
+
   if (e.key === 'Enter') {
     const active = document.activeElement
     if (active === templateSelect.value) {
@@ -519,6 +523,11 @@ async function downloadBillPdf() {
     headers: { 'X-Frappe-CSRF-Token': window.csrf_token ?? 'fetch' },
   })
   if (!res.ok) throw new Error(`HTTP ${res.status} — ${res.statusText}`)
+  // Templates whose preview_pdf fails (thermal ones do) redirect to Frappe's printview,
+  // which fetch follows into an HTML page. Saving that as .pdf would be a corrupt bill.
+  if (!/pdf/i.test(res.headers.get('Content-Type') || '')) {
+    throw new Error(`"${selectedTemplate.value}" has no PDF output — pick a PDF template`)
+  }
 
   const blob = await res.blob()
   const name = filenameFromDisposition(res.headers.get('Content-Disposition'))
@@ -565,15 +574,19 @@ async function sendWhatsApp() {
     const lines = [
       recipient.party ? `${recipient.party},` : '',
       `Bill ${props.invoiceName}`,
-      recipient.amount ? `Amount: ${recipient.amount.toLocaleString('en-IN')}` : '',
+      // Returns carry a negative total; sending "Amount: -16" to a customer invites a call.
+      recipient.amount > 0 ? `Amount: ${recipient.amount.toLocaleString('en-IN')}` : '',
     ].filter(Boolean)
     const text = encodeURIComponent(lines.join('\n'))
 
-    if (waTab) {
-      waTab.location = recipient.phone
-        ? `https://web.whatsapp.com/send?phone=${recipient.phone}&text=${text}`
-        : `https://web.whatsapp.com/`
+    if (!waTab) {
+      success.value = `Saved "${savedAs}" — allow popups for this site to open WhatsApp automatically`
+      return
     }
+
+    waTab.location = recipient.phone
+      ? `https://web.whatsapp.com/send?phone=${recipient.phone}&text=${text}`
+      : `https://web.whatsapp.com/`
 
     success.value = recipient.phone
       ? `Saved "${savedAs}" — drag it into the WhatsApp chat`
