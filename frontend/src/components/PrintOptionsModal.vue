@@ -543,6 +543,31 @@ async function downloadBillPdf() {
   return name
 }
 
+// A browser can only re-target a tab it opened itself, and only by the name it opened it
+// under — a WhatsApp tab the operator opened by hand is unreachable from here. Naming the
+// window keeps every share in one tab for the life of the browser session, whichever modal
+// or page opened it, so the constant and the last-target memo live at module scope.
+const WHATSAPP_WINDOW_NAME = 'sspl-whatsapp'
+let lastWhatsappTab = null
+let lastWhatsappUrl = ''
+let lastWhatsappAt = 0
+
+// How long a chat opened in the reused tab is assumed to still be the chat on screen.
+// Past this the operator has probably moved around inside WhatsApp, so the tab is
+// re-navigated to be sure the bill goes to the right party.
+const WHATSAPP_REUSE_MS = 60000
+
+// True only for a window still on about:blank; reading .location of a window already on
+// web.whatsapp.com throws on the cross-origin access, which is itself the answer.
+function isBlankWindow(win) {
+  if (!win) return false
+  try {
+    return !win.location.href || win.location.href === 'about:blank'
+  } catch {
+    return false
+  }
+}
+
 // WhatsApp cannot be handed a file through a URL — only text — so the bill is saved to
 // Downloads and WhatsApp is opened on the party's chat for the operator to drag it in.
 // The number comes from the party's Contact WhatsApp row (mobile_no as fallback); with
@@ -553,9 +578,16 @@ async function sendWhatsApp() {
   error.value = ''
   success.value = ''
 
-  // Opened synchronously inside the click so the browser credits the user gesture; a
-  // window.open after the awaits below is treated as an unsolicited popup and blocked.
-  const waTab = window.open('', '_blank')
+  // Named target, so every share lands in the same WhatsApp tab instead of piling up a
+  // new one per bill — the browser reuses the window already carrying this name, and only
+  // opens one when none exists. Opened synchronously inside the click so the browser
+  // credits the user gesture; a window.open after the awaits below is blocked as a popup.
+  const waTab = window.open('', WHATSAPP_WINDOW_NAME)
+  waTab?.focus()
+  // Only a tab this click created is disposable. A reused one already holds the operator's
+  // WhatsApp session and must survive a failure below. A fresh window is still same-origin
+  // about:blank, which is the one thing readable across the boundary.
+  const openedFresh = isBlankWindow(waTab)
 
   try {
     let recipient = { party: '', phone: '', amount: 0 }
@@ -584,15 +616,30 @@ async function sendWhatsApp() {
       return
     }
 
-    waTab.location = recipient.phone
+    const waUrl = recipient.phone
       ? `https://web.whatsapp.com/send?phone=${recipient.phone}&text=${text}`
       : `https://web.whatsapp.com/`
+
+    // Re-navigating the reused tab reloads WhatsApp Web from scratch (slow, and it drops
+    // whatever the operator had typed), so a tab already sitting on this exact chat is
+    // left alone and merely focused. The tab is cross-origin, so its own location cannot
+    // be read back — what was last sent there has to be remembered on this side.
+    const sameChatStillOpen =
+      waTab === lastWhatsappTab &&
+      waUrl === lastWhatsappUrl &&
+      Date.now() - lastWhatsappAt < WHATSAPP_REUSE_MS
+    if (!sameChatStillOpen) {
+      waTab.location = waUrl
+      lastWhatsappTab = waTab
+      lastWhatsappUrl = waUrl
+    }
+    lastWhatsappAt = Date.now()
 
     success.value = recipient.phone
       ? `Saved "${savedAs}" — drag it into the WhatsApp chat`
       : `Saved "${savedAs}" — no WhatsApp number on file, search the contact and drag it in`
   } catch (e) {
-    waTab?.close()
+    if (openedFresh) waTab?.close()
     error.value = 'WhatsApp share failed: ' + (e.message || e)
   } finally {
     whatsapping.value = false
