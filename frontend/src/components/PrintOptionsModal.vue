@@ -145,7 +145,6 @@ const selectedTemplate = ref('')
 const printing       = ref(false)
 const previewing     = ref(false)
 const refreshing     = ref(false)
-const previewUrls    = ref([])
 const error          = ref('')
 const success        = ref('')
 
@@ -294,13 +293,6 @@ onMounted(() => {
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
-  previewUrls.value.forEach(url => {
-    try {
-      URL.revokeObjectURL(url)
-    } catch (e) {
-      // ignore
-    }
-  })
 })
 
 // Cache-first load: when both lists are already in localStorage the modal renders
@@ -476,23 +468,20 @@ async function openPreview() {
   previewing.value = true
   error.value = ''
   try {
-    // Wrapper, not run_doc_method directly: an A5 Portrait template renders
-    // sideways for A4-sheet printing, and the wrapper rotates the preview copy
-    // 90° clockwise so it opens upright. Every other format passes through.
-    const b64 = await frappePost('ssplbilling.api.print_preview_api.preview_print_template_pdf', {
+    // Opened as a served file, not a blob URL: the response carries
+    // Content-Disposition with "<invoice>.pdf", so the viewer's download button
+    // saves the invoice number instead of a random UUID. The endpoint also
+    // rotates A5 Portrait previews upright and redirects to Frappe's printview
+    // when preview_pdf itself fails (e.g. thermal templates).
+    const params = new URLSearchParams({
       print_template: selectedTemplate.value,
       document_name: props.invoiceName,
+      doctype: props.doctype,
     })
-    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0))
-    const blob = new Blob([bytes], { type: 'application/pdf' })
-    const url = URL.createObjectURL(blob)
-    previewUrls.value.push(url)
-    window.open(url, '_blank')
-  } catch (e) {
-    // preview_pdf failed (e.g. CUPS PDF renderer not configured for thermal templates)
-    // fall back to Frappe's built-in printview in a new tab
-    const fallbackUrl = `/printview?doctype=${encodeURIComponent(props.doctype)}&name=${encodeURIComponent(props.invoiceName)}&format=${encodeURIComponent(selectedTemplate.value)}&trigger_print=0`
-    window.open(fallbackUrl, '_blank')
+    window.open(
+      `/api/method/ssplbilling.api.print_preview_api.preview_print_template_file?${params}`,
+      '_blank',
+    )
   } finally {
     previewing.value = false
   }

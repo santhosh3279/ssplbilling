@@ -13,6 +13,8 @@ back upright. Only the preview is touched; the bytes sent to CUPS are untouched.
 
 import base64
 import io
+import re
+from urllib.parse import quote
 
 import frappe
 
@@ -55,3 +57,35 @@ def preview_print_template_pdf(print_template, document_name=None):
 		# A preview that cannot be rotated is still a usable preview.
 		frappe.log_error(frappe.get_traceback(), "Offer/A5 preview rotation failed")
 		return b64
+
+
+@frappe.whitelist()
+def preview_print_template_file(print_template, document_name=None, doctype=None):
+	"""Serve the preview PDF as a file so it is named after the document.
+
+	The modal used to open a blob URL, which downloads under a random UUID. This
+	returns the same bytes as a real response instead, so Content-Disposition
+	carries "<invoice>.pdf" into the viewer's download button.
+	"""
+	try:
+		pdf = base64.b64decode(preview_print_template_pdf(print_template, document_name))
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Print preview failed")
+		# Same fallback the modal used to do client-side: Frappe's own printview.
+		frappe.local.response["type"] = "redirect"
+		frappe.local.response["location"] = (
+			"/printview?doctype={}&name={}&format={}&trigger_print=0".format(
+				quote(doctype or ""), quote(document_name or ""), quote(print_template or "")
+			)
+		)
+		return
+
+	frappe.local.response.filename = "{}.pdf".format(scrub_filename(document_name or print_template))
+	frappe.local.response.filecontent = pdf
+	frappe.local.response.type = "pdf"
+
+
+def scrub_filename(name):
+	"""Keep the document name recognisable but safe in a Content-Disposition header."""
+	cleaned = re.sub(r'[\\/:*?"<>|\r\n]+', "-", str(name)).strip(" .")
+	return cleaned or "preview"
