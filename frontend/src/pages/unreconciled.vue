@@ -36,6 +36,19 @@
 
       <!-- Right Header Actions -->
       <div class="flex items-center gap-4">
+        <!-- Auto Reconcile Button (landing view: every ledger at once) -->
+        <button
+          v-if="!party"
+          @click="openAutoPreview"
+          :disabled="autoLoading"
+          class="h-11 cursor-pointer rounded-xl bg-[var(--color-highlight)] px-6 text-xs font-black uppercase tracking-widest text-[var(--color-text-on-highlight)] hover:brightness-105 active:scale-95 disabled:opacity-40 transition-all shadow-md flex items-center justify-center gap-2"
+        >
+          <span v-if="autoLoading">Scanning ledgers…</span>
+          <template v-else>
+            <span>⚡ Auto Reconcile</span>
+          </template>
+        </button>
+
         <!-- Apply Reconcile Button -->
         <button
           v-if="party"
@@ -360,6 +373,116 @@
       </div>
     </main>
 
+    <!-- Auto Reconcile Preview -->
+    <div
+      v-if="showAutoModal"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-6"
+    >
+      <div class="w-full max-w-5xl max-h-[85vh] flex flex-col rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl overflow-hidden">
+        <!-- Modal header -->
+        <div class="px-6 py-4 border-b border-[var(--color-border)] flex items-center justify-between shrink-0">
+          <div>
+            <h3 class="text-lg font-black uppercase tracking-widest text-[var(--color-text)]">Auto Reconcile Preview</h3>
+            <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mt-0.5">
+              Equal amounts only — nothing is split or partially allocated
+            </p>
+          </div>
+          <button
+            @click="closeAutoModal"
+            class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+          >
+            ✕ Close
+          </button>
+        </div>
+
+        <!-- Summary -->
+        <div class="grid grid-cols-3 gap-4 px-6 py-4 shrink-0 border-b border-[var(--color-border)]">
+          <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)]/40 p-3">
+            <span class="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Matches</span>
+            <div class="text-[32px] font-mono font-black text-[var(--color-info)]">{{ autoPreview.length }}</div>
+          </div>
+          <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)]/40 p-3">
+            <span class="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Ledgers</span>
+            <div class="text-[32px] font-mono font-black text-[var(--color-warning)]">{{ autoPartyCount }}</div>
+          </div>
+          <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)]/40 p-3">
+            <span class="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Total Amount</span>
+            <div class="text-[32px] font-mono font-black text-[var(--color-success)]">₹{{ fmt(autoTotal) }}</div>
+          </div>
+        </div>
+
+        <!-- Proposal list -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar px-6 py-4">
+          <div v-if="autoLoading" class="py-16 flex flex-col items-center gap-4">
+            <div class="h-10 w-10 animate-spin rounded-full border-4 border-[var(--color-highlight)] border-t-transparent"></div>
+            <p class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Matching entries…</p>
+          </div>
+
+          <div v-else-if="!autoPreview.length" class="py-16 text-center space-y-2">
+            <div class="text-5xl">🤷</div>
+            <p class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">No equal-amount matches</p>
+            <p class="text-xs text-[var(--color-text-muted)]">Every remaining entry needs a manual allocation.</p>
+          </div>
+
+          <div v-else class="space-y-5">
+            <div v-for="group in autoGroups" :key="group.key" class="space-y-2">
+              <div class="flex items-center justify-between px-1">
+                <div class="flex items-center gap-2">
+                  <span
+                    class="px-2 py-0.5 rounded text-[11px] font-black uppercase tracking-widest"
+                    :class="group.party_type === 'Customer' ? 'bg-[var(--color-info)]/10 text-[var(--color-info)]' : 'bg-[var(--color-supplier)]/10 text-[var(--color-supplier)]'"
+                  >{{ group.party_type }}</span>
+                  <span class="text-[16px] font-black text-[var(--color-text)]">{{ group.label }}</span>
+                </div>
+                <span class="font-mono font-black text-[var(--color-success)]">₹{{ fmt(group.total) }}</span>
+              </div>
+              <div
+                v-for="row in group.rows"
+                :key="row.payment_name + '::' + row.invoice_name + '::' + (row.reference_row || '')"
+                class="flex items-center justify-between gap-4 rounded-xl border border-[var(--color-border)]/60 bg-[var(--color-bg)]/40 px-4 py-2"
+              >
+                <div class="flex items-center gap-3 min-w-0">
+                  <span class="font-black text-[var(--color-warning)] truncate">{{ row.payment_name }}</span>
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ shortType(row.payment_type) }}</span>
+                  <span class="text-[var(--color-text-muted)]">&rarr;</span>
+                  <span class="font-black text-[var(--color-danger)] truncate">{{ row.invoice_name }}</span>
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ shortType(row.invoice_type) }}</span>
+                </div>
+                <span class="font-mono font-black text-[var(--color-success)] shrink-0">₹{{ fmt(row.amount) }}</span>
+              </div>
+            </div>
+
+            <div v-if="autoSkipped.length" class="rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/5 px-4 py-3">
+              <p class="text-[11px] font-black uppercase tracking-widest text-[var(--color-warning)] mb-1">Skipped ledgers</p>
+              <p v-for="s in autoSkipped" :key="s.party" class="text-xs text-[var(--color-text-muted)]">{{ s.party }} — {{ s.reason }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal actions -->
+        <div class="px-6 py-4 border-t border-[var(--color-border)] flex items-center justify-between shrink-0">
+          <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+            Reconciles ledger by ledger; a failing ledger is reported and the rest still post
+          </span>
+          <div class="flex items-center gap-3">
+            <button
+              @click="closeAutoModal"
+              class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-5 py-2.5 text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              @click="proceedAutoReconcile"
+              :disabled="!autoPreview.length || autoRunning || autoLoading"
+              class="rounded-xl bg-[var(--color-success)] px-8 py-2.5 text-[11px] font-black uppercase tracking-widest text-white hover:brightness-105 active:scale-95 disabled:opacity-30 transition-all shadow-md"
+            >
+              {{ autoRunning ? 'Reconciling…' : 'Proceed' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Customer Search Modal -->
     <CustomerSearchModal
       ref="searchModalRef"
@@ -677,6 +800,87 @@ async function submitReconciliation() {
     alert('Reconciliation failed: ' + e.message)
   } finally {
     isSubmitting.value = false
+  }
+}
+
+// ── Auto reconcile: equal amounts across every ledger ──
+const showAutoModal = ref(false)
+const autoLoading = ref(false)
+const autoRunning = ref(false)
+const autoPreview = ref([])
+const autoSkipped = ref([])
+const autoTotal = ref(0)
+const autoPartyCount = ref(0)
+
+// Proposals grouped per ledger, so the dialog reads the way the landing list does
+const autoGroups = computed(() => {
+  const groups = new Map()
+  for (const row of autoPreview.value) {
+    const key = row.party_type + '::' + row.party
+    if (!groups.has(key)) {
+      groups.set(key, { key, party_type: row.party_type, label: row.label, rows: [], total: 0 })
+    }
+    const group = groups.get(key)
+    group.rows.push(row)
+    group.total += Number(row.amount) || 0
+  }
+  return [...groups.values()]
+})
+
+function shortType(type) {
+  if (type === 'Payment Entry') return 'PE'
+  if (type === 'Journal Entry') return 'JE'
+  if (type === 'Sales Invoice' || type === 'Purchase Invoice') return 'INV'
+  return type
+}
+
+async function openAutoPreview() {
+  showAutoModal.value = true
+  autoLoading.value = true
+  autoPreview.value = []
+  autoSkipped.value = []
+  autoTotal.value = 0
+  autoPartyCount.value = 0
+  try {
+    const res = await frappeGet('ssplbilling.api.reconcile_api.preview_auto_reconcile')
+    autoPreview.value = res.proposals || []
+    autoSkipped.value = res.skipped || []
+    autoTotal.value = res.total_amount || 0
+    autoPartyCount.value = res.party_count || 0
+  } catch (e) {
+    showAutoModal.value = false
+    alert('Failed to build the auto reconcile preview: ' + e.message)
+  } finally {
+    autoLoading.value = false
+  }
+}
+
+function closeAutoModal() {
+  if (autoRunning.value) return
+  showAutoModal.value = false
+}
+
+// Posts exactly what the preview listed — no re-matching between preview and run
+async function proceedAutoReconcile() {
+  if (!autoPreview.value.length || autoRunning.value) return
+  autoRunning.value = true
+  try {
+    const res = await frappePost('ssplbilling.api.reconcile_api.run_auto_reconcile', {
+      allocations: JSON.stringify(autoPreview.value)
+    })
+    const failures = res.failures || []
+    let message = `Reconciled ${res.reconciled} allocation(s) across ${res.parties} ledger(s).`
+    if (failures.length) {
+      message += `\n\nFailed for ${failures.length} ledger(s):\n` +
+        failures.map(f => `• ${f.party}: ${f.error}`).join('\n')
+    }
+    alert(message)
+    showAutoModal.value = false
+    await loadParties()
+  } catch (e) {
+    alert('Auto reconcile failed: ' + e.message)
+  } finally {
+    autoRunning.value = false
   }
 }
 

@@ -696,3 +696,183 @@ def post_reconciliation(party_type, party, allocations):
 
 	rec.reconcile()
 	return {"status": "ok", "reconciled": len(allocations)}
+
+
+# ── Auto reconciliation ───────────────────────────────────────────────────────
+# Matches a payment-side entry against an outstanding-side entry only when the
+# two amounts are equal, so nothing is ever split or partially allocated without
+# an operator looking at it. The preview is what the Proceed button posts back,
+# so what is shown is exactly what is reconciled.
+
+AUTO_MATCH_TOLERANCE = 0.01
+
+
+def _build_reconcile_sides(party_type, party):
+	"""Payment-side and outstanding-side rows for a party.
+
+	Mirrors the split unreconciled.vue does after fetching: rows moving in the
+	party's payment direction (Cr for Customer, Dr for Supplier) are payments,
+	opposite-direction PE/JE rows are outstanding, and return invoices carry a
+	negative outstanding so they sit on the payment side.
+	"""
+	unlinked = get_unlinked_entries(party_type, party)
+	outstanding = get_outstanding_docs(party_type, party)
+
+	pay_dir = "Cr" if party_type == "Customer" else "Dr"
+	payments, invoices = [], []
+
+	rows = [dict(r, doctype="Payment Entry") for r in unlinked.get("payment_entries") or []]
+	rows += [dict(r, doctype="Journal Entry") for r in unlinked.get("journal_entries") or []]
+
+	for row in rows:
+		amount = float(row.get("unallocated_amount") or 0)
+		if amount <= AUTO_MATCH_TOLERANCE:
+			continue
+		entry = {
+			"doctype": row["doctype"],
+			"name": row["name"],
+			"reference_row": row.get("reference_row") or None,
+			"posting_date": str(row.get("posting_date") or ""),
+			"amount": amount,
+		}
+		if (row.get("direction") or pay_dir) == pay_dir:
+			payments.append(entry)
+		else:
+			invoices.append(entry)
+
+	for doc in outstanding.get("docs") or []:
+		amount = float(doc.get("outstanding_amount") or 0)
+		if abs(amount) <= AUTO_MATCH_TOLERANCE:
+			continue
+		entry = {
+			"doctype": doc["doctype"],
+			"name": doc["name"],
+			"reference_row": None,
+			"posting_date": str(doc.get("posting_date") or ""),
+			"amount": abs(amount),
+		}
+		# Return invoices (credit / debit notes) are credits waiting to be linked.
+		# They are left out of auto matching: Payment Reconciliation wants a PE or
+		# JE on the payment side, so those stay a manual decision.
+		if amount > 0:
+			invoices.append(entry)
+
+	return payments, invoices
+
+
+def _match_equal_amounts(payments, invoices):
+	"""Pair each payment with one outstanding entry of the same amount.
+
+	Oldest entries first on both sides, one row used at most once, and only exact
+	amounts (within a paisa) pair up — no partial allocation.
+	"""
+	pairs = []
+	available = sorted(invoices, key=lambda r: (r["posting_date"], r["name"]))
+	used = set()
+
+	for pay in sorted(payments, key=lambda r: (r["posting_date"], r["name"])):
+		for idx, inv in enumerate(available):
+			if idx in used:
+				continue
+			if abs(pay["amount"] - inv["amount"]) > AUTO_MATCH_TOLERANCE:
+				continue
+			used.add(idx)
+			pairs.append((pay, inv))
+			break
+
+	return pairs
+
+
+@frappe.whitelist()
+def preview_auto_reconcile(party_type=None, party=None):
+	"""Equal-amount matches across every ledger, for the confirmation dialog."""
+	if party_type and party:
+		parties = [{"party_type": party_type, "party": party, "label": party}]
+	else:
+		parties = get_parties_with_unlinked_entries()
+
+	proposals = []
+	skipped = []
+	for row in parties:
+		try:
+			payments, invoices = _build_reconcile_sides(row["party_type"], row["party"])
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), "Auto reconcile preview failed")
+			skipped.append({"party": row.get("label") or row["party"], "reason": "Could not read entries"})
+			continue
+
+		for pay, inv in _match_equal_amounts(payments, invoices):
+			proposals.append(
+				{
+					"party_type": row["party_type"],
+					"party": row["party"],
+					"label": row.get("label") or row["party"],
+					"payment_type": pay["doctype"],
+					"payment_name": pay["name"],
+					"reference_row": pay["reference_row"],
+					"payment_date": pay["posting_date"],
+					"invoice_type": inv["doctype"],
+					"invoice_name": inv["name"],
+					"invoice_date": inv["posting_date"],
+					"amount": round(pay["amount"], 2),
+					"unreconciled_amount": pay["amount"],
+				}
+			)
+
+	proposals.sort(key=lambda p: (p["label"], p["payment_name"]))
+	return {
+		"proposals": proposals,
+		"total_amount": round(sum(p["amount"] for p in proposals), 2),
+		"party_count": len({(p["party_type"], p["party"]) for p in proposals}),
+		"skipped": skipped,
+	}
+
+
+@frappe.whitelist()
+def run_auto_reconcile(allocations):
+	"""Post the previewed matches, one Payment Reconciliation run per ledger.
+
+	A ledger that fails is reported and the rest still go through, so one bad
+	entry cannot block every other match in the batch.
+	"""
+	if isinstance(allocations, str):
+		allocations = json.loads(allocations)
+	if not allocations:
+		frappe.throw("No allocations provided")
+
+	grouped = {}
+	for alloc in allocations:
+		grouped.setdefault((alloc["party_type"], alloc["party"]), []).append(alloc)
+
+	reconciled = 0
+	failures = []
+	for (p_type, p_name), rows in grouped.items():
+		payload = [
+			{
+				"payment_type": r["payment_type"],
+				"payment_name": r["payment_name"],
+				"reference_row": r.get("reference_row"),
+				"invoice_type": r["invoice_type"],
+				"invoice_name": r["invoice_name"],
+				"amount": float(r["amount"]),
+				"unreconciled_amount": float(r.get("unreconciled_amount") or r["amount"]),
+			}
+			for r in rows
+		]
+		savepoint = "auto_reconcile"
+		frappe.db.savepoint(savepoint)
+		try:
+			post_reconciliation(p_type, p_name, payload)
+			reconciled += len(payload)
+		except Exception as e:
+			frappe.db.rollback(save_point=savepoint)
+			frappe.log_error(frappe.get_traceback(), "Auto reconcile failed")
+			label = rows[0].get("label") or p_name
+			failures.append({"party": label, "error": str(e)})
+
+	return {
+		"status": "ok",
+		"reconciled": reconciled,
+		"parties": len(grouped) - len(failures),
+		"failures": failures,
+	}
