@@ -3,7 +3,8 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.utils import getdate
+from frappe.utils import cint, get_url, getdate
+from urllib.parse import quote
 import datetime
 
 def resolve_rate(uom_rates, uom, stock_uom):
@@ -402,9 +403,11 @@ def format_rate(value, cipher_map, encrypt):
 	if encrypt:
 		return encrypt_price(value, parse_cipher(cipher_map))
 	try:
-		return "₹{:,}".format(round(float(value), 2))
+		n = float(value)
 	except (TypeError, ValueError):
 		return ""
+	# Match the old client-side formatting: no decimals on whole rupees.
+	return f"₹{int(n):,}" if n.is_integer() else f"₹{n:,.2f}"
 
 
 @frappe.whitelist(allow_guest=True)
@@ -417,10 +420,7 @@ def get_offer_print_formats():
 		order_by="name asc",
 		ignore_permissions=True,
 	)
-	names = [f.name for f in formats]
-	if OFFER_PRINT_FORMAT not in names:
-		names.insert(0, OFFER_PRINT_FORMAT)
-	return names
+	return [f.name for f in formats]
 
 
 @frappe.whitelist(allow_guest=True)
@@ -432,8 +432,8 @@ def render_offer_catalog(pageaddress, print_format=None, include_prices=0, encry
 	read permission on Offer-Items and has a doc-centric Jinja context that
 	cannot see the computed barcode/price/discount data).
 	"""
-	include_prices = frappe.utils.cint(include_prices)
-	encrypt_prices = frappe.utils.cint(encrypt_prices)
+	include_prices = cint(include_prices)
+	encrypt_prices = cint(encrypt_prices)
 
 	offer = get_offer_details(pageaddress)
 	if not offer:
@@ -441,12 +441,13 @@ def render_offer_catalog(pageaddress, print_format=None, include_prices=0, encry
 
 	cipher_map = offer.get("cipher_map") or ""
 	price_lists = [pl["price_list"] for pl in offer.get("price_lists") or []]
-	base_url = frappe.utils.get_url()
+	base_url = get_url()
 
 	for item in offer["items"]:
-		# wkhtmltopdf and a detached print window both need absolute image URLs.
+		# wkhtmltopdf and a detached print window both need absolute image URLs,
+		# and file names routinely contain spaces, so the path is escaped too.
 		if item.get("image") and item["image"].startswith("/"):
-			item["image"] = base_url + item["image"]
+			item["image"] = base_url + quote(item["image"])
 		for bp in item.get("barcode_prices") or []:
 			bp["display_prices"] = [
 				format_rate((bp.get("prices") or {}).get(pl), cipher_map, encrypt_prices)
@@ -464,6 +465,8 @@ def render_offer_catalog(pageaddress, print_format=None, include_prices=0, encry
 	if not html:
 		html = get_default_catalog_html()
 
+	# Exposed for templates that want the dynamic name; the seed layout keeps the
+	# printed company literal so existing catalogues keep their masthead.
 	company = frappe.db.get_single_value("Global Defaults", "default_company") or ""
 
 	return frappe.render_template(
@@ -477,4 +480,5 @@ def render_offer_catalog(pageaddress, print_format=None, include_prices=0, encry
 			"encrypt_prices": encrypt_prices,
 			"items_per_page": ITEMS_PER_PAGE,
 		},
+		restrict_globals=True,
 	)

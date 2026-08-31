@@ -9,7 +9,8 @@
   Context:
     offer            → heading, pageaddress, price_lists[].price_list, items[]
     pages            → items chunked per page (list of lists)
-    company          → default company name
+    company          → default company from Global Defaults (unused below: the
+                       masthead is a literal so it stays stable across sites)
     include_prices   → 1 when price columns should be printed
     encrypt_prices   → 1 when prices are shown as cipher letters
   Each item: itemname, itemcode, image, discount_type, discount_desc,
@@ -82,14 +83,14 @@
   {% for page_items in pages %}
   <div class="sspl-page">
     <div class="sspl-head">
-      <h1>{{ company }}</h1>
+      <h1>Sundaram and Sons Private Ltd.</h1>
       <h2>{{ offer.heading }}</h2>
     </div>
 
     <div class="sspl-grid">
       {% for item in page_items %}
       <div class="sspl-card">
-        <div class="sspl-watermark">{{ company }}</div>
+        <div class="sspl-watermark">Sundaram and Sons Private Ltd.</div>
         <div class="sspl-name">{{ item.itemname }}</div>
 
         <div class="sspl-img">
@@ -138,7 +139,7 @@
     </div>
 
     <div class="sspl-foot">
-      <span style="text-transform: uppercase;">{{ company }}</span>
+      <span style="text-transform: uppercase;">Sundaram and Sons Private Ltd.</span>
       <span>Page {{ loop.index }} of {{ pages | length }}</span>
     </div>
   </div>
