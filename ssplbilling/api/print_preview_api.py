@@ -13,6 +13,7 @@ back upright. Only the preview is touched; the bytes sent to CUPS are untouched.
 
 import base64
 import io
+import json
 import os
 import re
 import zipfile
@@ -246,6 +247,17 @@ def download_whatsapp_extension():
 	folder = get_extension_path()
 	if not os.path.isdir(folder):
 		frappe.throw("Extension folder is missing from this installation")
+
+	# Chrome rejects the whole extension over a malformed manifest, and the operator only finds
+	# out at "Load unpacked". Checking here keeps a broken build from ever leaving the server.
+	manifest_path = os.path.join(folder, "manifest.json")
+	try:
+		with open(manifest_path, encoding="utf-8") as manifest_file:
+			json.load(manifest_file)
+	except FileNotFoundError:
+		frappe.throw("Extension manifest.json is missing from this installation")
+	except json.JSONDecodeError as e:
+		frappe.throw(f"Extension manifest.json is not valid JSON ({e}); the app needs repairing")
 
 	buffer = io.BytesIO()
 	with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
