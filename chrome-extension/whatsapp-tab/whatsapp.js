@@ -142,13 +142,24 @@ if (!window.__ssplWhatsAppChatOpener) {
     return holdsFocus(box)
   }
 
+  // Must leave the box empty, not merely try to. A contenteditable that has lost the selection
+  // ignores execCommand and keeps its text, and the next typing strategy then appends to it —
+  // which is how one caption ended up in the box four times over.
   function clearBox(box) {
     if (box.value !== undefined) {
       setNativeValue(box, '')
-      return
+      return boxText(box) === ''
     }
+
+    focusBox(box)
     document.execCommand('selectAll', false, null)
     document.execCommand('delete', false, null)
+    if (!boxText(box).trim()) return true
+
+    // Nothing took: wipe the node itself and tell the editor its content changed.
+    box.textContent = ''
+    box.dispatchEvent(new InputEvent('input', { inputType: 'deleteContentBackward', bubbles: true }))
+    return !boxText(box).trim()
   }
 
   // React tracks an input's value on the DOM node and ignores a plain `.value = x` as a no-op,
@@ -192,7 +203,26 @@ if (!window.__ssplWhatsAppChatOpener) {
     ],
   ]
 
-  const took = (box, text) => digitsOf(boxText(box)).includes(digitsOf(text))
+  const occurrences = (haystack, needle) => (needle ? haystack.split(needle).length - 1 : 0)
+
+  // The text has to be in the box exactly once. `includes` alone called a doubled insert a
+  // success, and reading straight after the keystroke called a working insert a failure — React
+  // and WhatsApp's editor both commit on a later tick — so this waits for the box to settle.
+  async function took(box, text) {
+    const wanted = digitsOf(text)
+    const seen = await waitFor(() => {
+      const count = wanted
+        ? occurrences(digitsOf(boxText(box)), wanted)
+        : Number(boxText(box).includes(text))
+      return count > 0 ? count : null
+    }, 700, 80)
+    if (!seen) return false
+    if (seen > 1) {
+      log(`text landed ${seen} times over; clearing and retrying`)
+      return false
+    }
+    return true
+  }
 
   async function typeInto(box, text) {
     if (!focusBox(box)) {
@@ -210,11 +240,11 @@ if (!window.__ssplWhatsAppChatOpener) {
         log(`typing via ${name} threw:`, e)
         continue
       }
-      if (took(box, text)) {
+      if (await took(box, text)) {
         log('typed via', name)
         return true
       }
-      clearBox(box)
+      if (!clearBox(box)) log(`could not empty the box after ${name}; text may stack`)
     }
 
     // Everything above is a synthetic event, which a build can ignore. This one is not: the
@@ -223,7 +253,7 @@ if (!window.__ssplWhatsAppChatOpener) {
     focusBox(box)
     try {
       const typed = await chrome.runtime.sendMessage({ type: TYPE_FOR_ME, text })
-      if (typed?.ok && took(box, text)) {
+      if (typed?.ok && (await took(box, text))) {
         log('typed via Chrome input (debugger)')
         return true
       }
@@ -557,8 +587,15 @@ if (!window.__ssplWhatsAppChatOpener) {
         )
         return labelled[0] || null
       }, 8000)
-      if (box) await typeInto(box, attachment.caption)
-      else log('preview caption box not found:', dumpEntries())
+      if (!box) {
+        log('preview caption box not found:', dumpEntries())
+      } else if (boxText(box).trim() === attachment.caption.trim()) {
+        // Current builds carry the composer's text into the preview, so writing it again is what
+        // repeats the bill line. Nothing to do when it is already there.
+        log('preview already carries the message from the composer; leaving it alone')
+      } else {
+        await typeInto(box, attachment.caption)
+      }
     }
 
     log('OK: bill attached — operator still presses send')

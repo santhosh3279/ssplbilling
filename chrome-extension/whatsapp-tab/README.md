@@ -125,8 +125,10 @@ The share also hands the PDF to the WhatsApp tab, so the operator does not drag 
    is set through a `DataTransfer` with a `change` event. WhatsApp keeps hidden file inputs mounted
    at all times, so the menu is always walked rather than reading an input straight off the page;
    the global `FILE_INPUT` list and then a synthetic drop on the chat pane are the fallbacks.
-6. WhatsApp's preview screen discards whatever was in the composer, so the same text is typed again
-   into the preview's own caption box — that second write is the one that survives to send.
+6. Older builds discard whatever was in the composer, so the same text is typed again into the
+   preview's own caption box. Current builds carry the composer's text across by themselves, so the
+   preview box is read first and left alone when it already holds the message — writing it a second
+   time is what repeated the bill line in the caption.
 
 **Nothing is ever sent automatically.** The operator sees the preview with the file and caption and
 presses send.
