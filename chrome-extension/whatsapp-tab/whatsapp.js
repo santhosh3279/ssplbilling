@@ -129,10 +129,39 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
   }
 
-  function clickEl(el) {
+  function clickEl(el, point) {
+    const at = point || { clientX: 0, clientY: 0 }
     for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
-      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }))
+      el.dispatchEvent(
+        new MouseEvent(type, {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          button: 0,
+          buttons: type === 'pointerdown' || type === 'mousedown' ? 1 : 0,
+          ...at,
+        }),
+      )
     }
+  }
+
+  // Clicks a result row the way the mouse would: at the row's own centre, on whatever element is
+  // actually painted there. Dispatching on the row itself is not equivalent — React resolves a
+  // handler from the event's target, so an event fired on the row never reaches the handler that
+  // WhatsApp bound to the element inside it, which is why a click on a saved contact's row looked
+  // like it did nothing at all.
+  function clickRow(row) {
+    row.scrollIntoView({ block: 'nearest' })
+    const rect = row.getBoundingClientRect()
+    const point = {
+      clientX: Math.round(rect.left + rect.width / 2),
+      clientY: Math.round(rect.top + rect.height / 2),
+    }
+    const painted = document.elementFromPoint(point.clientX, point.clientY)
+    const target = row.contains(painted) ? painted : row
+    log('clicking row at its centre —', describe(target))
+    clickEl(target, point)
+    return target
   }
 
   // Rows and buttons need the click on the interactive ancestor, which is rarely the element the
@@ -436,13 +465,19 @@ if (!window.__ssplWhatsAppChatOpener) {
     const tail = phone.slice(-10)
     const lap = stopwatch()
 
-    // A row displaying the number is unambiguous no matter which list it sits in, so it is worth
-    // waiting for one before falling back to reading a panel and trusting its top row.
-    const carrying = await waitFor(
-      () => clickableRows(document).find((row) => digitsOf(row.textContent).includes(tail)),
-      4000,
-    )
-    lap('waiting for a row carrying the number')
+    // A row displaying the number is unambiguous, so it is looked for first — but a saved contact
+    // shows a name and never the number, and waiting the full timeout for a row that cannot exist
+    // is four seconds off every share to a contact. Any row will do once one is on screen.
+    const withNumber = () => clickableRows(document).find((row) => digitsOf(row.textContent).includes(tail))
+    let carrying = await waitFor(withNumber, 1200)
+    if (!carrying) {
+      // No numbered row yet. Either the search has not answered, or the match is a saved contact
+      // showing a name — so wait for rows rather than for a number, and give the number one last
+      // look once they are there.
+      await waitFor(() => clickableRows(document).length, 3000)
+      carrying = withNumber()
+    }
+    lap('waiting for the result row')
 
     let row = carrying
     let confident = !!carrying
@@ -472,16 +507,43 @@ if (!window.__ssplWhatsAppChatOpener) {
       return null
     }
 
-    press(row)
     lap('reading the result list')
 
     // Clicking the row that is already open changes nothing, and attaching then would put the
     // bill in whatever chat happened to be on screen. Require the chat to actually move — or the
     // search panel to close around us, which is WhatsApp acting on the click either way.
-    const moved = await waitFor(
-      () => chatIsOpen() && (openChatId() !== before || !document.contains(box)),
-      5000,
-    )
+    const opened = () => chatIsOpen() && (openChatId() !== before || !document.contains(box))
+
+    // Three ways of saying "open this row", tried in turn. The first is what a mouse does and
+    // normally settles it; the rest cover a row whose handler sits somewhere the centre click
+    // does not reach.
+    const attempts = [
+      ['centre click', () => clickRow(row)],
+      ['click on the row itself', () => clickEl(row)],
+      [
+        'Enter in the search box',
+        () => {
+          focusBox(box)
+          for (const type of ['keydown', 'keypress', 'keyup']) {
+            box.dispatchEvent(
+              new KeyboardEvent(type, { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }),
+            )
+          }
+        },
+      ],
+    ]
+
+    let moved = null
+    for (const [name, attempt] of attempts) {
+      attempt()
+      moved = await waitFor(opened, 2500)
+      if (moved) {
+        if (name !== 'centre click') log('opened by falling back to', name)
+        break
+      }
+      log(`${name} did not move the chat; trying the next way in`)
+      if (!document.contains(row)) break
+    }
     lap('WhatsApp opening the clicked chat')
     if (!moved) {
       log(`FAIL: clicked the result but the open chat did not change (still "${before.slice(0, 40)}")`)
