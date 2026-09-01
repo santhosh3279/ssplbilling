@@ -579,17 +579,38 @@ if (!window.__ssplWhatsAppChatOpener) {
   const labelOf = (el) =>
     `${el.getAttribute('aria-label') || ''} ${el.getAttribute('placeholder') || ''} ${el.getAttribute('title') || ''}`
 
-  // The preview's caption box and nothing else: a box inside the preview modal, or one that names
-  // itself a caption. There is deliberately no wider fallback — every other text box on screen is
-  // the chat composer, and writing the bill line there posts it as a message of its own instead of
-  // captioning the file.
+  // The chat's own composer and the sidebar search live inside #main and #side. The attachment
+  // preview is an overlay outside both, which is what tells its caption box apart from them on a
+  // build whose modal carries none of the attributes in PREVIEW_SCOPE.
+  const inTheChat = (el) => !!el.closest('#main, #side, header')
+
+  // The preview's caption box and nothing else, in three narrowing steps. Writing the bill line
+  // into the chat composer posts it as a message of its own instead of captioning the file, so the
+  // composer is excluded outright rather than used as a fallback.
   function captionBox() {
     for (const scope of document.querySelectorAll(PREVIEW_SCOPE)) {
       const inside = textEntries(scope).filter((el) => CAPTION_HINTS.test(labelOf(el)))
       if (inside.length) return inside[0]
     }
-    return textEntries().find((el) => CAPTION_ONLY.test(labelOf(el))) || null
+
+    const named = textEntries().find((el) => CAPTION_ONLY.test(labelOf(el)) && !inTheChat(el))
+    if (named) return named
+
+    // Anything that can hold text, outside the chat and the sidebar, and not a search box. On a
+    // preview overlay that is the caption box and nothing else.
+    return (
+      textEntries().find(
+        (el) => !inTheChat(el) && !SEARCH_HINTS.test(labelOf(el)) && !el.closest('[role="dialog"] input[type="file"]'),
+      ) || null
+    )
   }
+
+  // Every box on screen with enough context to tell which panel it belongs to. Printed when the
+  // caption box cannot be found, since that is a WhatsApp redesign and this is what identifies it.
+  const dumpBoxes = () =>
+    textEntries()
+      .map((el) => `${describe(el)}${inTheChat(el) ? ' [in #main/#side]' : ' [outside the chat]'}`)
+      .join(' ') || '(none on screen)'
 
   async function attach(attachment) {
     // Chat pane first: after the navigation fallback this runs while WhatsApp is still booting.
@@ -630,7 +651,7 @@ if (!window.__ssplWhatsAppChatOpener) {
       const box = await waitFor(captionBox, CAPTION_WAIT_MS)
       if (!box) {
         log('FAIL: no caption box in the preview; not typing into the chat composer instead')
-        log('  boxes on screen:', dumpEntries())
+        log('  boxes on screen:', dumpBoxes())
       } else if (boxText(box).trim() === attachment.caption.trim()) {
         // Nothing to do when WhatsApp has already carried the text across by itself; writing it
         // again is what repeated the bill line.
