@@ -17,10 +17,10 @@
 const REQUEST = 'SSPL_WHATSAPP_OPEN'
 const RESULT = 'SSPL_WHATSAPP_RESULT'
 
-// The extension replies once the chat is resolved — the in-page search, or the reload fallback,
-// both of which wait on WhatsApp's own UI. 15s covers a cold worker plus a slow search without
+// The extension replies once the chat is resolved. That can mean waiting on a cold WhatsApp Web
+// boot, then the New chat panel, then its search results — 30s covers the slow end without
 // leaving the operator staring at a dead button.
-const BRIDGE_TIMEOUT_MS = 15000
+const BRIDGE_TIMEOUT_MS = 30000
 
 let requestCounter = 0
 

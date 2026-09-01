@@ -84,12 +84,10 @@ async function openChat(url, attachment) {
   const alreadyThere = openChats.get(target.id) === wanted
   const searched = alreadyThere ? 'confident' : await trySearch(target.id, wanted)
 
-  // A search that only found the chat by elimination is not proof of who is on screen. With a
-  // bill to attach that is not good enough, so fall through to the reload, where WhatsApp itself
-  // resolves the number. With nothing to attach the weak hit is harmless and saves the reload.
-  const trusted = searched === 'confident' || (searched === 'weak' && !attachment)
-
-  if (trusted) {
+  // Any chat opened in place is used, including one picked as the first result without the number
+  // visible on the row. Reloading to be certain costs the operator a full WhatsApp Web boot on
+  // every single bill, and they still see the contact in the attachment preview before sending.
+  if (searched) {
     openChats.set(target.id, wanted)
     if (attachment) {
       await stash(target.id, attachment)

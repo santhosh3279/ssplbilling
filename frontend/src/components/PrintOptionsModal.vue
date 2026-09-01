@@ -641,11 +641,13 @@ async function sendWhatsApp() {
         ? { name: savedAs, type: blob.type || 'application/pdf', data: await blobToBase64(blob), caption }
         : null
       const relayed = await openWhatsAppTab(waUrl, attachment)
+      // The method is shown on purpose: "navigate" means WhatsApp had to be reloaded because the
+      // chat could not be opened in place, which is the one outcome worth reporting.
       success.value = !relayed.ok
         ? `Saved "${savedAs}" — could not reach the WhatsApp tab (${relayed.error}); open WhatsApp and drag it in`
         : relayed.attached
-        ? `Attached "${savedAs}" in WhatsApp — check the contact, then press send`
-        : `Saved "${savedAs}" — WhatsApp is open, drag it into the chat`
+        ? `Attached "${savedAs}" in WhatsApp (${relayed.method}) — check the contact, then press send`
+        : `Saved "${savedAs}" — WhatsApp is open (${relayed.method}), drag it into the chat`
       return
     }
 

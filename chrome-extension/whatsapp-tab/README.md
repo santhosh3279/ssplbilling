@@ -67,35 +67,36 @@ Chrome does not inject a content script into tabs that are already open. Reload 
 (Ctrl+Shift+R) after **Load unpacked** or after **Reload** on the extension card, or the badge in
 SSPL Billing Settings stays grey and the WhatsApp button falls back to opening a new tab.
 
-## How the chat is switched without a reload
+## How the chat is opened without a reload
 
 Pointing the tab at `https://web.whatsapp.com/send?phone=…` opens the right chat but reboots the
-whole WhatsApp Web app every time. Instead `whatsapp.js` runs inside the WhatsApp tab and drives
-WhatsApp's own UI:
+whole WhatsApp Web app every time. Instead `whatsapp.js` runs inside the WhatsApp tab and clicks
+through WhatsApp's own UI, exactly as an operator would:
 
-1. Focus the search box (`div[contenteditable="true"][data-tab="3"]`).
-2. Type the number with `document.execCommand('insertText', …)` — the only way React sees a real
-   `input` event in a contenteditable.
-3. Wait for the list to stop re-rendering, then pick a row we can vouch for: one whose visible
-   digits contain the last 10 of the number, or — failing that — the only row left after filtering.
-   Any other outcome counts as no match, because opening the wrong chat is worse than a reload.
-4. If the full number finds nothing, retry with the last 10 digits — WhatsApp may have stored the
-   contact without the country code.
+1. **New chat**, then type the number, then click the first result. This is the primary route
+   because it also works for numbers that are not saved as contacts.
+2. **Sidebar search**, for builds where the New chat panel cannot be found: type the number, click
+   the matching row, retry with the last 10 digits since WhatsApp may have stored the contact
+   without the country code.
+3. **Navigate** — the last resort, and the only path that reloads.
 
-The service worker remembers `tabId → phone` for chats it opened by search, so sending a second bill
-to the same party does not even search: it just focuses the tab. That memory is dropped whenever the
-tab is merely focused or navigated, since neither proves which chat ended up on screen.
+Text goes in through `document.execCommand('insertText', …)`, the only way React sees a real `input`
+event in a contenteditable, with a synthetic paste as backup. Results are read once the list stops
+re-rendering: comparing against the pre-typing list is not enough, because when the party is already
+the most recent chat the filtered result looks identical to what was on screen.
 
-**Fallbacks.** If the search box never appears (tab logged out or still loading), or no chat matches
-the number, the worker falls back to navigating the tab — that reloads WhatsApp, but the chat does
-open. So a future WhatsApp UI change degrades to the old behavior instead of breaking the button.
+The service worker remembers `tabId → phone`, so a second bill to the same party skips the search
+entirely and just focuses the tab. That memory is dropped whenever the tab is merely focused or
+navigated, since neither proves which chat ended up on screen.
+
+**Check the contact before you send.** A row showing the number is proof of who it is; otherwise the
+first search result is taken, the same one the operator would click by hand. The bill is attached but
+never sent, so the contact name is on screen in the preview before anything leaves.
 
 The selectors are structural and ARIA-based because WhatsApp's class names are obfuscated and change
-constantly. If a WhatsApp update makes every share reload again, `SEARCH_BOX` and `RESULT_ROW` at the
-top of `whatsapp.js` are the two lists to re-check.
-
-**Check the chat before you send.** The extension clicks the top search result; the operator still
-drags the PDF in and presses send by hand, so glance at the contact name in the header first.
+constantly. If shares start reloading again, the `[sspl-wa]` console lines name the step that failed,
+and `NEW_CHAT_BUTTON`, `NEW_CHAT_SEARCH` and `RESULT_ROW` at the top of `whatsapp.js` are the lists
+to re-check.
 
 ## Attaching the bill
 

@@ -1,13 +1,19 @@
-// Runs inside web.whatsapp.com. Opens the chat for a phone number by driving WhatsApp's own
-// search box, so the tab never reloads. Navigating the tab to /send?phone=... would work too,
-// but that reboots the whole WhatsApp Web app and loses whatever the operator was doing.
+// Runs inside web.whatsapp.com. Opens the chat for a phone number through WhatsApp's own UI and
+// drops the bill PDF into its attachment preview, so the tab never reloads and the operator never
+// drags a file. Navigating to /send?phone=... would also open the chat, but it reboots the whole
+// WhatsApp Web app and loses whatever was on screen.
 //
-// Injected both declaratively and, for tabs that were already open when the extension loaded,
-// on demand by the service worker. The guard below keeps a second injection harmless.
+// Route taken, in order:
+//   1. New chat -> type the number -> click the first result. Works for numbers that are not
+//      saved as contacts, which is why it comes first.
+//   2. The sidebar search, for builds where the New chat panel cannot be found.
+//   3. Nothing — the service worker then falls back to navigating, which reloads.
 //
-// Every step logs to this tab's console under [sspl-wa]. WhatsApp ships obfuscated markup that
-// changes without notice, so when the share starts reloading again those lines say which step
-// stopped working.
+// Injected both declaratively and, for tabs already open when the extension loaded, on demand by
+// the service worker. The guard below keeps a second injection harmless.
+//
+// Every step logs under [sspl-wa] in this tab's console. WhatsApp ships obfuscated markup that
+// changes without notice, so those lines are what identify a step that stopped working.
 
 if (!window.__ssplWhatsAppChatOpener) {
   window.__ssplWhatsAppChatOpener = true
@@ -17,31 +23,39 @@ if (!window.__ssplWhatsAppChatOpener) {
   const PENDING = 'SSPL_WA_PENDING'
   const log = (...args) => console.log('[sspl-wa]', ...args)
 
-  // Only structural/ARIA hooks: WhatsApp's class names are obfuscated and rotate on every build.
-  // Ordered most specific first; the rest are there to survive markup churn.
-  const SEARCH_BOX = [
+  // Only structural/ARIA hooks: WhatsApp's class names are obfuscated and rotate every build.
+  const NEW_CHAT_BUTTON = [
+    'button[aria-label*="New chat" i]',
+    '[role="button"][aria-label*="New chat" i]',
+    'div[title*="New chat" i]',
+    'span[data-icon="new-chat-outline"]',
+    'span[data-icon="chat"]',
+  ]
+  const TEXT_ENTRY = 'div[contenteditable="true"], input[type="text"]'
+  const NEW_CHAT_SEARCH = [
+    'div[contenteditable="true"][aria-label*="name or number" i]',
+    'div[role="textbox"][aria-label*="name or number" i]',
+    'input[type="text"][aria-label*="name or number" i]',
+    'div[contenteditable="true"][data-tab="3"]',
+    'div[contenteditable="true"]',
+  ]
+  const SIDEBAR_SEARCH = [
     'div[contenteditable="true"][data-tab="3"]',
     '#side div[contenteditable="true"][role="textbox"]',
     'div[role="textbox"][aria-label*="Search" i]',
-    'div[contenteditable="true"][aria-label*="Search" i]',
-    '#side input[type="text"]',
     '#side div[contenteditable="true"]',
   ]
-  // Clicked when no search box is on screen — newer builds hide it behind a search button.
-  const SEARCH_OPENER = [
-    'button[aria-label*="Search" i]',
-    '[role="button"][aria-label*="Search" i]',
-    'span[data-icon="search"]',
-  ]
-  // WhatsApp keeps hidden file inputs for its attachment menu. Setting one of them is far more
-  // reliable than a synthetic drop, which is kept as the fallback.
+  const RESULT_ROW = ['[role="listitem"]', '[role="row"]', '[role="gridcell"]']
+  const RESULT_SCOPE = ['#pane-side', '[role="grid"]', '[data-animate-modal-body]', '[role="dialog"]']
+
+  // Hidden file inputs behind WhatsApp's attachment menu. Setting one is far more reliable than a
+  // synthetic drop, which is kept as the fallback.
   const FILE_INPUT = [
     'input[type="file"][accept*="pdf" i]',
     'input[type="file"][accept*="*/*"]',
     'input[type="file"]:not([accept*="image" i]):not([accept*="video" i])',
     'input[type="file"]',
   ]
-  // Clicked when no usable input exists yet: the menu renders its inputs on demand.
   const ATTACH_BUTTON = [
     'button[aria-label*="Attach" i]',
     '[role="button"][aria-label*="Attach" i]',
@@ -49,48 +63,38 @@ if (!window.__ssplWhatsAppChatOpener) {
     'span[data-icon="clip"]',
     'span[data-icon="attach-menu-plus"]',
   ]
-  // The chat pane, used as the drop target by the fallback.
-  const DROP_TARGET = ['#main', '[data-tab="10"]', 'footer']
-  // Caption box on WhatsApp's file preview screen.
+  const CHAT_PANE = ['#main', '[data-tab="10"]', 'footer']
   const CAPTION_BOX = [
     'div[contenteditable="true"][data-tab="10"]',
     'div[contenteditable="true"][aria-label*="caption" i]',
     'div[role="textbox"][aria-label*="caption" i]',
   ]
-  const RESULT_ROW = [
-    '#pane-side [role="listitem"]',
-    '#pane-side [role="row"]',
-    '[role="grid"] [role="listitem"]',
-    '[role="grid"] [role="row"]',
-    '[aria-label*="Search results" i] [role="listitem"]',
-  ]
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
   const digitsOf = (text) => (text || '').replace(/\D/g, '')
 
-  function firstMatch(selectors) {
+  function firstMatch(selectors, root = document) {
     for (const selector of selectors) {
-      const el = document.querySelector(selector)
+      const el = root.querySelector(selector)
       if (el) return { el, selector }
     }
     return null
   }
 
-  function rows() {
+  function rows(root = document) {
     for (const selector of RESULT_ROW) {
-      const found = document.querySelectorAll(selector)
+      const found = root.querySelectorAll(selector)
       if (found.length) return [...found]
     }
     return []
   }
 
-  // Identifies what the list is currently showing, used to tell when it stopped re-rendering.
-  function listSignature() {
-    return rows()
+  // What the list is showing right now, used to tell when it has stopped re-rendering.
+  const listSignature = (root) =>
+    rows(root)
       .slice(0, 3)
       .map((row) => row.textContent)
       .join('|')
-  }
 
   const boxText = (box) => (box.value !== undefined ? box.value : box.textContent) || ''
 
@@ -104,19 +108,11 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
   }
 
-  async function findSearchBox() {
-    let hit = firstMatch(SEARCH_BOX)
-    if (hit) return hit
-
-    // Nothing on screen: try the search button, then look again.
-    const opener = firstMatch(SEARCH_OPENER)
-    if (opener) {
-      log('no search box yet, clicking', opener.selector)
-      opener.el.click()
-      hit = await waitFor(() => firstMatch(SEARCH_BOX), 2000)
-      if (hit) return hit
+  function press(el) {
+    const target = el.closest('button, [role="button"], div[title], [role="listitem"], [role="row"]') || el
+    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
+      target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }))
     }
-    return await waitFor(() => firstMatch(SEARCH_BOX), 5000)
   }
 
   // React only registers text that arrives with real input events. execCommand produces them;
@@ -145,83 +141,138 @@ if (!window.__ssplWhatsAppChatOpener) {
     return true
   }
 
-  function clickRow(row) {
-    const target = row.querySelector('[role="gridcell"]') || row
-    for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
-      target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }))
-    }
-  }
-
-  // Waits until the list stops re-rendering. Comparing against the pre-typing list is not enough:
-  // when the party is already the operator's most recent chat, the filtered result looks exactly
-  // like what was on screen, and treating that as "no results" sends us back to reloading.
-  async function settledRows(maxMs = 4000, minMs = 700) {
+  // Waits until the result list stops re-rendering. Comparing against the pre-typing list is not
+  // enough: when the party is already the most recent chat, the filtered result looks identical to
+  // what was on screen, and calling that "no results" is what sent every share back to reloading.
+  async function settledRows(root, maxMs = 4000, minMs = 700) {
     const start = Date.now()
     let previous = null
     let stable = 0
     for (;;) {
-      const signature = listSignature()
+      const signature = listSignature(root)
       stable = signature === previous ? stable + 1 : 0
       previous = signature
       const elapsed = Date.now() - start
-      if (elapsed >= maxMs) break
-      if (stable >= 2 && elapsed >= minMs) break
+      if (elapsed >= maxMs || (stable >= 2 && elapsed >= minMs)) break
       await sleep(120)
     }
-    return rows()
+    return rows(root).filter((row) => row.textContent.trim())
   }
 
-  // Only click a row we can vouch for. A row carrying the number is proof; a search that filtered
-  // down to a single chat is good enough. Anything else means we cannot tell the chats apart, and
-  // reloading into the right chat beats opening the wrong one.
+  // A row showing the number is proof of who it is. Otherwise the first row of a search for that
+  // number is what the operator would click by hand — taken, but reported as unconfirmed.
   function pickRow(found, phone) {
     const tail = phone.slice(-10)
-    const corroborated = found.find((row) => digitsOf(row.textContent).includes(tail))
-    if (corroborated) return { row: corroborated, why: 'row carries the number' }
-    if (found.length === 1) return { row: found[0], why: 'only one result' }
-    return { row: null, why: `${found.length} rows, none carrying ${tail}` }
+    const carrying = found.find((row) => digitsOf(row.textContent).includes(tail))
+    if (carrying) return { row: carrying, confident: true, why: 'row carries the number' }
+    if (found.length) return { row: found[0], confident: false, why: 'first result, number not shown' }
+    return { row: null, confident: false, why: 'no rows' }
   }
 
-  async function openChat(phone) {
-    const hit = await findSearchBox()
-    if (!hit) {
-      log('FAIL: no search box (logged out, or still loading)')
-      return { ok: false, error: 'search box not found (logged out, or still loading)' }
-    }
-    log('search box:', hit.selector)
+  const chatIsOpen = () => !!firstMatch(CHAT_PANE)
 
-    // WhatsApp matches against the digits it has stored, which may or may not carry the country
-    // code, so try the full number first and then the local 10-digit form.
+  // ── route 1: New chat ────────────────────────────────────────────────────────────────────────
+  // The number does not have to be a saved contact here, which is why this is tried first.
+  async function openViaNewChat(phone) {
+    const button = firstMatch(NEW_CHAT_BUTTON)
+    if (!button) {
+      log('no New chat button found')
+      return null
+    }
+
+    // The panel's search box is a brand new element, which is how it is told apart from the
+    // sidebar search that is already on screen.
+    const existing = new Set(document.querySelectorAll(TEXT_ENTRY))
+    log('clicking New chat via', button.selector)
+    press(button.el)
+
+    const box = await waitFor(() => {
+      for (const selector of NEW_CHAT_SEARCH) {
+        for (const el of document.querySelectorAll(selector)) {
+          if (!existing.has(el)) return { el, selector }
+        }
+      }
+      return null
+    }, 4000)
+
+    if (!box) {
+      log('New chat panel did not show a search box')
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      return null
+    }
+    log('New chat search box:', box.selector)
+
+    const scope = box.el.closest(RESULT_SCOPE.join(',')) || document
+    if (!typeInto(box.el, phone)) return null
+
+    const found = await settledRows(scope)
+    const { row, confident, why } = pickRow(found, phone)
+    log(`New chat "${phone}": ${found.length} rows, ${why}`)
+    if (found[0]) log('  top row:', found[0].textContent.slice(0, 80))
+    if (!row) {
+      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      return null
+    }
+
+    press(row)
+    const opened = await waitFor(chatIsOpen, 5000)
+    if (!opened) {
+      log('clicked the result but no chat opened')
+      return null
+    }
+    log(`OK: chat opened via New chat (${why})`)
+    return { ok: true, confident }
+  }
+
+  // ── route 2: sidebar search ──────────────────────────────────────────────────────────────────
+  async function openViaSidebarSearch(phone) {
+    const box = firstMatch(SIDEBAR_SEARCH)
+    if (!box) {
+      log('no sidebar search box either')
+      return null
+    }
+
+    // WhatsApp matches against the digits it stored, which may or may not carry the country code.
     const terms = phone.length > 10 ? [phone, phone.slice(-10)] : [phone]
+    const scope = document.querySelector('#pane-side') || document
 
     for (const term of terms) {
-      if (!typeInto(hit.el, term)) {
-        return { ok: false, error: 'could not type into the search box' }
-      }
-      const found = await settledRows()
-      const { row, why } = pickRow(found, phone)
-      log(`term "${term}": box now "${boxText(hit.el)}", ${found.length} rows, ${why}`)
+      if (!typeInto(box.el, term)) return null
+      const found = await settledRows(scope)
+      const { row, confident, why } = pickRow(found, phone)
+      log(`sidebar "${term}": box now "${boxText(box.el)}", ${found.length} rows, ${why}`)
       if (found[0]) log('  top row:', found[0].textContent.slice(0, 80))
 
       if (row) {
-        clickRow(row)
+        press(row)
         await sleep(200)
-        typeInto(hit.el, '')
-        const confident = why === 'row carries the number'
-        log(`OK: chat opened without reloading (${why})`)
-        return { ok: true, confident }
+        typeInto(box.el, '')
+        if (await waitFor(chatIsOpen, 5000)) {
+          log(`OK: chat opened via sidebar search (${why})`)
+          return { ok: true, confident }
+        }
       }
     }
 
-    typeInto(hit.el, '')
-    log('FAIL: no confident match, falling back to a reload')
-    return { ok: false, error: 'no chat could be matched to that number with confidence' }
+    typeInto(box.el, '')
+    return null
   }
 
-  // ── attaching the bill ─────────────────────────────────────────────────────────────────────
-  // The worker parks the PDF in chrome.storage before the chat is ready, and this side collects
-  // it. That indirection is what lets the bill survive the navigation fallback, which reloads
-  // this page and can have the service worker evicted mid-flight.
+  async function openChat(phone) {
+    // On a cold load nothing is rendered yet; the service worker may ask before WhatsApp is up.
+    await waitFor(() => firstMatch(NEW_CHAT_BUTTON) || firstMatch(SIDEBAR_SEARCH), 15000)
+
+    const opened = (await openViaNewChat(phone)) || (await openViaSidebarSearch(phone))
+    if (opened) return opened
+
+    log('FAIL: could not open the chat in place, falling back to a reload')
+    return { ok: false, error: 'New chat and sidebar search both failed to open the chat' }
+  }
+
+  // ── attaching the bill ───────────────────────────────────────────────────────────────────────
+  // The worker parks the PDF in chrome.storage before the chat is ready and this side collects it.
+  // That indirection is what lets the bill survive the navigation fallback, which reloads this page
+  // and can have the service worker evicted mid-flight.
 
   function fileFrom(attachment) {
     const binary = atob(attachment.data)
@@ -243,15 +294,15 @@ if (!window.__ssplWhatsAppChatOpener) {
     const opener = firstMatch(ATTACH_BUTTON)
     if (opener) {
       log('no file input yet, clicking', opener.selector)
-      ;(opener.el.closest('button,[role="button"]') || opener.el).click()
+      press(opener.el)
       hit = await waitFor(() => firstMatch(FILE_INPUT), 3000)
     }
     return hit
   }
 
   async function attach(attachment) {
-    // Composer first: on the navigation fallback this runs while WhatsApp is still booting.
-    const pane = await waitFor(() => firstMatch(DROP_TARGET), 20000)
+    // Chat pane first: after the navigation fallback this runs while WhatsApp is still booting.
+    const pane = await waitFor(() => firstMatch(CHAT_PANE), 20000)
     if (!pane) {
       log('FAIL: chat pane never appeared, nothing to attach to')
       return false
@@ -273,8 +324,8 @@ if (!window.__ssplWhatsAppChatOpener) {
       }
     }
 
-    // The preview screen owns its own caption box, and whatever was typed in the composer is
-    // dropped when it opens — so the bill's text has to be written here instead.
+    // The preview screen owns its caption box and discards whatever the composer held, so the
+    // bill's text has to be written there rather than passed as &text= in the URL.
     if (attachment.caption) {
       const box = await waitFor(() => firstMatch(CAPTION_BOX), 8000)
       if (box) typeInto(box.el, attachment.caption)
@@ -291,16 +342,16 @@ if (!window.__ssplWhatsAppChatOpener) {
       attachment = await chrome.runtime.sendMessage({ type: PENDING })
     } catch (e) {
       log('could not ask for a pending bill:', e)
-      return
+      return false
     }
-    if (!attachment) return
+    if (!attachment) return false
     log('bill waiting:', attachment.name)
-    await attach(attachment)
+    return await attach(attachment)
   }
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message?.type === ATTACH_NOW) {
-      attachPending().then(() => sendResponse({ ok: true }))
+      attachPending().then((ok) => sendResponse({ ok }))
       return true
     }
 
@@ -319,6 +370,6 @@ if (!window.__ssplWhatsAppChatOpener) {
 
   log('chat opener ready on', location.href)
 
-  // Covers the navigation fallback: this script is fresh, and the bill is already parked.
+  // Covers the navigation fallback: this script is fresh and the bill is already parked.
   attachPending()
 }
