@@ -132,3 +132,21 @@ clicked row carried the number; a row accepted merely because it was the only re
 but is not trusted with a bill, and the share falls through to the reload path, where WhatsApp itself
 resolves `?phone=`. A stashed bill also expires after two minutes, so an abandoned share cannot
 surface in a later chat.
+
+## When the number does not go into the box
+
+The console names the strategy that worked (`typed via …`). If every one fails, the log ends with
+`FAIL: nothing could put text in that box` followed by the elements that were tried.
+
+To inspect by hand: open the New chat panel in WhatsApp, then run `__ssplWaDump()` in that tab's
+console. It prints every text entry and result row on screen with their ARIA attributes — that is
+what a WhatsApp redesign changes, and it is enough to fix the selector lists at the top of
+`whatsapp.js` without guessing.
+
+### Why the `debugger` permission
+
+Chrome warns about it at install, and the tab shows a "Chrome is being debugged" banner for a
+moment during a share. It is the only way to produce input that a page cannot ignore: every event a
+content script fires is synthetic and a build is free to drop it, while `Input.insertText` over the
+debugger protocol is handled by Chrome itself and is indistinguishable from a keystroke. It is only
+reached after all four in-page strategies have failed, and the debugger is detached immediately.

@@ -17,6 +17,7 @@ const WHATSAPP_TAB_PATTERNS = ['*://web.whatsapp.com/*']
 const CHAT_OPEN = 'SSPL_WA_OPEN_CHAT'
 const ATTACH_NOW = 'SSPL_WA_ATTACH_NOW'
 const PENDING = 'SSPL_WA_PENDING'
+const TYPE_FOR_ME = 'SSPL_WA_TYPE'
 
 // How long a stashed bill stays attachable. Long enough for a cold WhatsApp Web boot, short
 // enough that a bill abandoned mid-share never turns up in a later chat.
@@ -140,7 +141,41 @@ async function trySearch(tabId, phone) {
   return searched.confident ? 'confident' : 'weak'
 }
 
+// Last-resort typing. Every synthetic event a page can fire is ignorable; a debugger-driven
+// Input.insertText is the real thing, handled by Chrome before any page code sees it, so React
+// cannot tell it from a keystroke. Only reached when the page's own attempts all failed, because
+// attaching flashes the "Chrome is being debugged" banner on the tab.
+async function typeViaDebugger(tabId, text) {
+  const target = { tabId }
+  try {
+    await chrome.debugger.attach(target, '1.3')
+  } catch (e) {
+    // Already attached is fine — a previous share may still be detaching.
+    if (!String(e).includes('already attached')) return { ok: false, error: String(e) }
+  }
+
+  try {
+    await chrome.debugger.sendCommand(target, 'Input.insertText', { text })
+    return { ok: true }
+  } catch (e) {
+    return { ok: false, error: String(e) }
+  } finally {
+    try {
+      await chrome.debugger.detach(target)
+    } catch {
+      // Detached already, or the tab is gone.
+    }
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === TYPE_FOR_ME) {
+    const tabId = sender.tab?.id
+    if (!tabId) return
+    typeViaDebugger(tabId, String(message.text || '')).then(sendResponse)
+    return true
+  }
+
   // The WhatsApp tab asking, on load, whether a bill is waiting for it.
   if (message?.type === PENDING) {
     const tabId = sender.tab?.id

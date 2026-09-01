@@ -20,6 +20,7 @@ if (!window.__ssplWhatsAppChatOpener) {
 
   const CHAT_OPEN = 'SSPL_WA_OPEN_CHAT'
   const ATTACH_NOW = 'SSPL_WA_ATTACH_NOW'
+  const TYPE_FOR_ME = 'SSPL_WA_TYPE'
   const PENDING = 'SSPL_WA_PENDING'
   const log = (...args) => console.log('[sspl-wa]', ...args)
 
@@ -71,6 +72,16 @@ if (!window.__ssplWhatsAppChatOpener) {
   ]
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+  // Enough of an element to identify it in a bug report without dumping WhatsApp's markup.
+  function describe(el) {
+    if (!el) return 'none'
+    const attrs = ['aria-label', 'data-tab', 'role', 'contenteditable', 'type', 'placeholder']
+      .map((name) => (el.hasAttribute(name) ? `${name}="${el.getAttribute(name)}"` : ''))
+      .filter(Boolean)
+      .join(' ')
+    return `<${el.tagName.toLowerCase()} ${attrs}>`
+  }
   const digitsOf = (text) => (text || '').replace(/\D/g, '')
 
   function firstMatch(selectors, root = document) {
@@ -108,11 +119,17 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
   }
 
-  function press(el) {
-    const target = el.closest('button, [role="button"], div[title], [role="listitem"], [role="row"]') || el
+  function clickEl(el) {
     for (const type of ['pointerdown', 'mousedown', 'pointerup', 'mouseup', 'click']) {
-      target.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }))
+      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }))
     }
+  }
+
+  // Rows and buttons need the click on the interactive ancestor, which is rarely the element the
+  // selector matched. Never use this on a text box: the New chat search sits inside the panel's
+  // list container, so the climb lands on a row and the box never gets focus.
+  function press(el) {
+    clickEl(el.closest('button, [role="button"], div[title], [role="listitem"], [role="row"]') || el)
   }
 
   const holdsFocus = (box) => document.activeElement === box || box.contains(document.activeElement)
@@ -120,8 +137,9 @@ if (!window.__ssplWhatsAppChatOpener) {
   function focusBox(box) {
     box.focus()
     if (holdsFocus(box)) return true
-    // Some builds only wire the box up once it has been clicked.
-    press(box)
+    // Some builds only wire the box up once it has been clicked. Clicked exactly, not via press:
+    // the box's ancestors include list rows, and clicking one of those dismisses the panel.
+    clickEl(box)
     box.focus()
     return holdsFocus(box)
   }
@@ -176,9 +194,11 @@ if (!window.__ssplWhatsAppChatOpener) {
     ],
   ]
 
-  function typeInto(box, text) {
+  const took = (box, text) => digitsOf(boxText(box)).includes(digitsOf(text))
+
+  async function typeInto(box, text) {
     if (!focusBox(box)) {
-      log('box will not take focus:', box.tagName, box.getAttribute('aria-label') || '')
+      log('box will not take focus:', describe(box))
       return false
     }
 
@@ -192,14 +212,29 @@ if (!window.__ssplWhatsAppChatOpener) {
         log(`typing via ${name} threw:`, e)
         continue
       }
-      if (digitsOf(boxText(box)).includes(digitsOf(text))) {
+      if (took(box, text)) {
         log('typed via', name)
         return true
       }
       clearBox(box)
     }
 
-    log('FAIL: nothing could put text in that box')
+    // Everything above is a synthetic event, which a build can ignore. This one is not: the
+    // service worker attaches the debugger and has Chrome itself type into whatever has focus,
+    // exactly as a keyboard would. Costs a "Chrome is being debugged" banner for a moment.
+    focusBox(box)
+    try {
+      const typed = await chrome.runtime.sendMessage({ type: TYPE_FOR_ME, text })
+      if (typed?.ok && took(box, text)) {
+        log('typed via Chrome input (debugger)')
+        return true
+      }
+      log('Chrome input did not land:', typed?.error || 'box still empty')
+    } catch (e) {
+      log('could not ask for Chrome input:', e)
+    }
+
+    log('FAIL: nothing could put text in that box —', describe(box))
     return false
   }
 
@@ -276,8 +311,15 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
     log('New chat text entries:', candidates.map((c) => c.selector).join(' | '))
 
-    const box = candidates.find((candidate) => typeInto(candidate.el, phone))
+    let box = null
+    for (const candidate of candidates) {
+      if (await typeInto(candidate.el, phone)) {
+        box = candidate
+        break
+      }
+    }
     if (!box) {
+      log('entries tried:', candidates.map((c) => describe(c.el)).join(' '))
       log('FAIL: none of the New chat entries accepted the number')
       escape()
       return null
@@ -317,7 +359,7 @@ if (!window.__ssplWhatsAppChatOpener) {
     const scope = document.querySelector('#pane-side') || document
 
     for (const term of terms) {
-      if (!typeInto(box.el, term)) return null
+      if (!(await typeInto(box.el, term))) return null
       const found = await settledRows(scope)
       const { row, confident, why } = pickRow(found, phone)
       log(`sidebar "${term}": box now "${boxText(box.el)}", ${found.length} rows, ${why}`)
@@ -326,7 +368,7 @@ if (!window.__ssplWhatsAppChatOpener) {
       if (row) {
         press(row)
         await sleep(200)
-        typeInto(box.el, '')
+        await typeInto(box.el, '')
         if (await waitFor(chatIsOpen, 5000)) {
           log(`OK: chat opened via sidebar search (${why})`)
           return { ok: true, confident }
@@ -334,7 +376,7 @@ if (!window.__ssplWhatsAppChatOpener) {
       }
     }
 
-    typeInto(box.el, '')
+    await typeInto(box.el, '')
     return null
   }
 
@@ -408,7 +450,7 @@ if (!window.__ssplWhatsAppChatOpener) {
     // bill's text has to be written there rather than passed as &text= in the URL.
     if (attachment.caption) {
       const box = await waitFor(() => firstMatch(CAPTION_BOX), 8000)
-      if (box) typeInto(box.el, attachment.caption)
+      if (box) await typeInto(box.el, attachment.caption)
       else log('preview caption box not found; sending without a caption')
     }
 
@@ -448,7 +490,22 @@ if (!window.__ssplWhatsAppChatOpener) {
     return true
   })
 
-  log('chat opener ready on', location.href)
+  // Hand inspection without a debugger: run __ssplWaDump() in this tab's console after opening the
+  // New chat panel and paste what it prints. It names every text entry and result row on screen,
+  // which is what a WhatsApp redesign changes.
+  window.__ssplWaDump = () => {
+    const entries = [...document.querySelectorAll(TEXT_ENTRY)]
+    console.log('[sspl-wa] text entries:', entries.length)
+    entries.forEach((el, i) => console.log(`  [${i}]`, describe(el), '| focusable:', el.isContentEditable || el.tagName === 'INPUT'))
+    const found = rows()
+    console.log('[sspl-wa] result rows:', found.length)
+    found.slice(0, 5).forEach((row, i) => console.log(`  [${i}]`, row.textContent.slice(0, 60)))
+    console.log('[sspl-wa] new chat button:', describe(firstMatch(NEW_CHAT_BUTTON)?.el))
+    console.log('[sspl-wa] chat pane open:', chatIsOpen())
+    return entries
+  }
+
+  log('chat opener ready on', location.href, '— run __ssplWaDump() to inspect the panel')
 
   // Covers the navigation fallback: this script is fresh and the bill is already parked.
   attachPending()
