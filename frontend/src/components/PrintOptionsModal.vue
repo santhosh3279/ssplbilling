@@ -108,6 +108,7 @@
               </button>
 
               <button
+                v-if="hasExtension"
                 @click="sendWhatsApp"
                 :disabled="whatsapping || !templates.length"
                 class="w-full rounded-xl py-3 text-sm font-bold border transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border-[#25D366] text-[#25D366] bg-[var(--color-surface)] hover:bg-[#25D366]/10"
@@ -156,6 +157,10 @@ const selectedTemplate = ref('')
 const printing       = ref(false)
 const previewing     = ref(false)
 const whatsapping    = ref(false)
+// The share only works through the extension, so the button is hidden without it rather than
+// offering an action that ends in "install the extension". Read on mount: the content script
+// stamps the page at document_start, long before this modal opens.
+const hasExtension   = ref(false)
 const refreshing     = ref(false)
 const error          = ref('')
 const success        = ref('')
@@ -300,7 +305,7 @@ function handleKeydown(e) {
   } else if (e.key.toLowerCase() === 'r') {
     e.preventDefault()
     refreshLists()
-  } else if (e.key.toLowerCase() === 'w') {
+  } else if (e.key.toLowerCase() === 'w' && hasExtension.value) {
     e.preventDefault()
     sendWhatsApp()
   }
@@ -308,6 +313,7 @@ function handleKeydown(e) {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+  hasExtension.value = hasWhatsAppBridge()
   loadSettings()
 })
 onUnmounted(() => {
