@@ -3,11 +3,9 @@
 // drags a file. Navigating to /send?phone=... would also open the chat, but it reboots the whole
 // WhatsApp Web app and loses whatever was on screen.
 //
-// Route taken, in order:
-//   1. New chat -> type the number -> click the first result. Works for numbers that are not
-//      saved as contacts, which is why it comes first.
-//   2. The sidebar search, for builds where the New chat panel cannot be found.
-//   3. Nothing — the service worker then falls back to navigating, which reloads.
+// The one route, in order: New chat -> type the number -> click the first result row -> type the
+// bill's message -> Attach -> Document -> hand WhatsApp the PDF. Any step that finds nothing stops
+// the run there; there is no second route and, with ALLOW_RELOAD_FALLBACK off, no reload either.
 //
 // Injected both declaratively and, for tabs already open when the extension loaded, on demand by
 // the service worker. The guard below keeps a second injection harmless.
@@ -62,8 +60,14 @@ if (!window.__ssplWhatsAppChatOpener) {
     'span[data-icon="clip"]',
     'span[data-icon="attach-menu-plus"]',
   ]
+  // Items inside the attachment menu. It renders as a list of buttons whose only stable marker is
+  // the visible word, so the Document entry is found by text and clicked on its interactive parent.
+  const MENU_ITEM = '[role="menuitem"], [role="button"], li, button'
+  const DOCUMENT_LABEL = /^document(s)?$/i
   const CHAT_PANE = ['#main', '[data-tab="10"]', 'footer']
   const CAPTION_HINTS = /caption|message/i
+  // The composer at the bottom of the open chat, told apart from the search boxes by its own label.
+  const COMPOSER_HINTS = /type a message|message|caption/i
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -299,10 +303,6 @@ if (!window.__ssplWhatsAppChatOpener) {
     return null
   }
 
-  // A search that filtered nothing is not a result list. Whatever is on screen then is the chat
-  // list, and its first row is simply the chat already open.
-  const MAX_UNFILTERED_ROWS = 15
-
   // Search results are grouped under headings, and those are rows in their own right. Clicking one
   // does nothing, which is exactly how a share ends up looking like it worked.
   const SECTION_HEADING =
@@ -373,12 +373,12 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
     log('number went into', describe(box))
 
-    return await clickResultFor(box, phone, 'New chat', true)
+    return await clickResultFor(box, phone, 'New chat')
   }
 
   // Shared by both routes: read the panel's own results, refuse anything that is plainly not a
   // filtered list, click, and then prove the chat actually changed.
-  async function clickResultFor(box, phone, route, requireNumber = false) {
+  async function clickResultFor(box, phone, route) {
     const before = openChatId()
     const tail = phone.slice(-10)
 
@@ -392,14 +392,6 @@ if (!window.__ssplWhatsAppChatOpener) {
     let row = carrying
     let confident = !!carrying
     let why = 'row carries the number'
-
-    if (!row && requireNumber) {
-      // The New chat panel always shows the number on a match, so a result without one means the
-      // search has not resolved. Its top row then is "Message yourself", not the party.
-      log(`${route}: no row showed the number; not guessing from the panel's top row`)
-      escape()
-      return null
-    }
 
     if (!row) {
       const scope = scopeAround(box)
@@ -416,13 +408,6 @@ if (!window.__ssplWhatsAppChatOpener) {
       why = picked.why
       log(`${route} "${phone}": ${found.length} rows in ${describe(scope)}, ${why}`)
       if (found[0]) log('  top row:', found[0].textContent.slice(0, 80))
-
-      // Only a row carrying the number is trusted at this size; anything else is the chat list.
-      if (found.length > MAX_UNFILTERED_ROWS) {
-        log(`FAIL: ${found.length} rows is the unfiltered list, not a search result — not clicking`)
-        escape()
-        return null
-      }
     } else {
       log(`${route} "${phone}": ${why} — ${row.textContent.trim().slice(0, 60)}`)
     }
@@ -450,40 +435,15 @@ if (!window.__ssplWhatsAppChatOpener) {
     return { ok: true, confident }
   }
 
-  // ── route 2: sidebar search ──────────────────────────────────────────────────────────────────
-  async function openViaSidebarSearch(phone) {
-    const box = rank(textEntries(document.querySelector('#side') || document))[0]
-    if (!box) {
-      log('no sidebar search box either:', dumpEntries())
-      return null
-    }
-    log('sidebar box:', describe(box))
-
-    // WhatsApp matches against the digits it stored, which may or may not carry the country code.
-    const terms = phone.length > 10 ? [phone, phone.slice(-10)] : [phone]
-
-    for (const term of terms) {
-      if (!(await typeInto(box, term))) return null
-      const opened = await clickResultFor(box, phone, `sidebar "${term}"`)
-      if (opened) {
-        await typeInto(box, '')
-        return opened
-      }
-    }
-
-    await typeInto(box, '')
-    return null
-  }
-
   async function openChat(phone) {
     // On a cold load nothing is rendered yet; the service worker may ask before WhatsApp is up.
     await waitFor(() => firstMatch(NEW_CHAT_BUTTON) || textEntries().length, 15000)
 
-    const opened = (await openViaNewChat(phone)) || (await openViaSidebarSearch(phone))
+    const opened = await openViaNewChat(phone)
     if (opened) return opened
 
-    log('FAIL: could not open the chat in place; the worker decides what happens next')
-    return { ok: false, error: 'New chat and sidebar search both failed to open the chat' }
+    log('FAIL: New chat did not open a chat for that number; stopping here')
+    return { ok: false, error: 'New chat found no result row for that number' }
   }
 
   // ── attaching the bill ───────────────────────────────────────────────────────────────────────
@@ -504,17 +464,42 @@ if (!window.__ssplWhatsAppChatOpener) {
     return data
   }
 
-  async function findFileInput() {
-    let hit = firstMatch(FILE_INPUT)
-    if (hit) return hit
+  // Visible menu entry whose own text is the word asked for.
+  function menuItemNamed(label) {
+    return [...document.querySelectorAll(MENU_ITEM)].find((el) => {
+      const box = el.getBoundingClientRect()
+      if (!box.width || !box.height) return false
+      const text = (el.getAttribute('aria-label') || el.textContent || '').trim()
+      return label.test(text)
+    })
+  }
 
+  // Attach, then Document, then the input that entry owns. WhatsApp keeps hidden file inputs
+  // mounted all the time, so reading one straight off the document would skip the menu the
+  // operator was asked to see opened — the menu is walked first, and the global list is the
+  // fallback for a build whose Document entry holds no input of its own.
+  async function findFileInput() {
     const opener = firstMatch(ATTACH_BUTTON)
-    if (opener) {
-      log('no file input yet, clicking', opener.selector)
-      press(opener.el)
-      hit = await waitFor(() => firstMatch(FILE_INPUT), 3000)
+    if (!opener) {
+      log('no Attach button found; taking any file input on the page')
+      return firstMatch(FILE_INPUT)
     }
-    return hit
+
+    log('clicking Attach via', opener.selector)
+    press(opener.el)
+
+    const item = await waitFor(() => menuItemNamed(DOCUMENT_LABEL), 4000)
+    if (!item) {
+      log('attachment menu never showed a Document entry')
+    } else {
+      log('clicking Document —', describe(item))
+      press(item)
+      const owned = item.querySelector('input[type="file"]') ||
+        item.closest('li, [role="menuitem"]')?.querySelector('input[type="file"]')
+      if (owned) return { el: owned, selector: "Document entry's own input[type=file]" }
+    }
+
+    return await waitFor(() => firstMatch(FILE_INPUT), 3000)
   }
 
   async function attach(attachment) {
@@ -528,6 +513,19 @@ if (!window.__ssplWhatsAppChatOpener) {
     // The chat pane exists before the newly opened chat has finished rendering; attaching into
     // the half-swapped view is how a bill can end up looking like it went somewhere else.
     await sleep(400)
+
+    // The message goes into the open chat's composer first, as asked. WhatsApp's preview screen
+    // owns its own caption box and discards whatever the composer held, so the same text is
+    // written again into the preview below — that second write is the one that survives to send.
+    if (attachment.caption) {
+      const composer = rank(textEntries(document.querySelector('footer') || document)).filter((el) =>
+        COMPOSER_HINTS.test(
+          `${el.getAttribute('aria-label') || ''} ${el.getAttribute('placeholder') || ''}`,
+        ),
+      )[0]
+      if (composer) await typeInto(composer, attachment.caption)
+      else log('composer box not found:', dumpEntries())
+    }
 
     const file = fileFrom(attachment)
     const input = await findFileInput()

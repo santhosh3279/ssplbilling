@@ -73,12 +73,12 @@ Pointing the tab at `https://web.whatsapp.com/send?phone=…` opens the right ch
 whole WhatsApp Web app every time. Instead `whatsapp.js` runs inside the WhatsApp tab and clicks
 through WhatsApp's own UI, exactly as an operator would:
 
-1. **New chat**, then type the number, then click the first result. This is the primary route
-   because it also works for numbers that are not saved as contacts.
-2. **Sidebar search**, for builds where the New chat panel cannot be found: type the number, click
-   the matching row, retry with the last 10 digits since WhatsApp may have stored the contact
-   without the country code.
-3. **Navigate** — the last resort, and the only path that reloads. Currently **off**
+1. **New chat**, then type the number, then click the first result row — the only route, because it
+   also works for numbers that are not saved as contacts. A step that finds nothing (no New chat
+   button, no box that takes the number, no result row) stops the run there; there is no second
+   search. The sidebar-search route, and with it the retry on the last 10 digits for contacts stored
+   without a country code, was removed.
+2. **Navigate** — the last resort, and the only path that reloads. Currently **off**
    (`ALLOW_RELOAD_FALLBACK = false` in `background.js`): a share that cannot open the chat reports
    `not-opened` and leaves the bill in Downloads rather than rebooting WhatsApp Web. Flip the flag
    to bring it back.
@@ -119,11 +119,14 @@ The share also hands the PDF to the WhatsApp tab, so the operator does not drag 
    tab. That is deliberate: the navigation fallback reloads the page and the worker can be evicted
    while the load runs, so the bill has to outlive both.
 3. `whatsapp.js` collects it — on an `SSPL_WA_ATTACH_NOW` message, and again on every load, which is
-   what covers the reload path — waits up to 20s for the chat pane, then sets WhatsApp's own hidden
-   `input[type="file"]` through a `DataTransfer` and fires `change`. A synthetic drop on the chat
-   pane is the fallback.
-4. WhatsApp's preview screen discards whatever was in the composer, so the bill's caption is typed
-   into the preview's own caption box rather than passed as `&text=` in the URL.
+   what covers the reload path — and waits up to 20s for the chat pane.
+4. The bill's message is typed into the open chat's composer.
+5. **Attach** is clicked, then **Document** in the menu it opens, and the file input that entry owns
+   is set through a `DataTransfer` with a `change` event. WhatsApp keeps hidden file inputs mounted
+   at all times, so the menu is always walked rather than reading an input straight off the page;
+   the global `FILE_INPUT` list and then a synthetic drop on the chat pane are the fallbacks.
+6. WhatsApp's preview screen discards whatever was in the composer, so the same text is typed again
+   into the preview's own caption box — that second write is the one that survives to send.
 
 **Nothing is ever sent automatically.** The operator sees the preview with the file and caption and
 presses send.
@@ -159,10 +162,8 @@ An earlier build matched the result container with a selector list, which happil
 first one, and the bill was attached to whatever chat was already open.
 
 The scope is now found by climbing from the search box to the **smallest** ancestor that contains
-rows, so it can only ever be the panel that owns the box. Three checks sit on top of that:
+rows, so it can only ever be the panel that owns the box. Two checks sit on top of that:
 
-- More than 15 rows with no row carrying the number means the list never filtered — that is the
-  chat list, and nothing is clicked.
 - The chat header is read before and after the click, and the chat only counts as opened if it
   actually changed. Clicking the row for the chat already on screen changes nothing, and attaching
   then would put the bill wherever the operator happened to be.
@@ -175,10 +176,10 @@ Three things make a search result list hard to read:
 
 - **Section headings are rows.** "Chats", "Contacts", "Messages" all match `[role="listitem"]`, and
   clicking one does nothing while looking like a successful click. They are filtered out by name.
-- **The panel's top row is not the party.** Before a search resolves, New chat leads with
-  "Message yourself". So the New chat route refuses to guess: it only clicks a row that actually
-  shows the number, and reports failure otherwise. The sidebar route may fall back to the top row,
-  since a filtered chat list has no such decoy.
+- **The panel's top row is not always the party.** Before a search resolves, New chat leads with
+  "Message yourself". A row carrying the number is waited for first and wins outright; only when
+  none appears is the panel's top row clicked, which is what was asked for — so check the contact in
+  the preview before sending.
 - **A row showing the number is unambiguous wherever it sits**, so it is looked for across the page
   first, before any attempt to work out which container the results are in.
 
