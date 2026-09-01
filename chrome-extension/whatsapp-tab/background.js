@@ -61,6 +61,7 @@ async function openChat(url) {
   if (openChats.get(target.id) === wanted) return { ok: true, reused: true, method: 'already-open' }
 
   const searched = await askPage(target.id, wanted)
+  console.log('[sspl-wa] in-page search for', wanted, '->', JSON.stringify(searched))
   if (searched?.ok) {
     openChats.set(target.id, wanted)
     return { ok: true, reused: true, method: 'search' }
