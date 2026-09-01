@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "SSPL WhatsApp Tab",
+  "version": "1.10.2",
+  "description": "Sends bills from SSPL Billing to the WhatsApp Web tab that is already open: switches the chat in place and attaches the bill PDF, ready for the operator to send.",
+  "permissions": [
+    "tabs",
+    "scripting",
+    "storage",
+    "debugger"
+  ],
+  "host_permissions": [
+    "*://web.whatsapp.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*/frontend/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "http://192.168.225.128/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "*://web.whatsapp.com/*"
+      ],
+      "js": [
+        "whatsapp.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
