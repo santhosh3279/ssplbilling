@@ -60,10 +60,6 @@ if (!window.__ssplWhatsAppChatOpener) {
     'span[data-icon="clip"]',
     'span[data-icon="attach-menu-plus"]',
   ]
-  // Items inside the attachment menu. It renders as a list of buttons whose only stable marker is
-  // the visible word, so the Document entry is found by text and clicked on its interactive parent.
-  const MENU_ITEM = '[role="menuitem"], [role="button"], li, button'
-  const DOCUMENT_LABEL = /^document(s)?$/i
   const CHAT_PANE = ['#main', '[data-tab="10"]', 'footer']
   const CAPTION_HINTS = /caption|message/i
   // The composer at the bottom of the open chat, told apart from the search boxes by its own label.
@@ -552,42 +548,23 @@ if (!window.__ssplWhatsAppChatOpener) {
     return data
   }
 
-  // Visible menu entry whose own text is the word asked for.
-  function menuItemNamed(label) {
-    return [...document.querySelectorAll(MENU_ITEM)].find((el) => {
-      const box = el.getBoundingClientRect()
-      if (!box.width || !box.height) return false
-      // Both read: an entry labelled anything else would otherwise never have its text tested.
-      return label.test((el.getAttribute('aria-label') || '').trim()) ||
-        label.test((el.textContent || '').trim())
-    })
-  }
-
-  // Attach, then Document, then the input that entry owns. WhatsApp keeps hidden file inputs
-  // mounted all the time, so reading one straight off the document would skip the menu the
-  // operator was asked to see opened — the menu is walked first, and the global list is the
-  // fallback for a build whose Document entry holds no input of its own.
+  // WhatsApp keeps its document file input mounted whether or not the attachment menu is open, so
+  // the file goes straight into it. Walking the menu instead cost a second and made WhatsApp log
+  // "File chooser dialog can only be shown with a user activation", since a synthetic click on
+  // Document carries no user activation and Chrome blocks the picker it tries to raise.
+  // The menu is opened only when no input is mounted, which is the build that needs it.
   async function findFileInput() {
+    const mounted = firstMatch(FILE_INPUT)
+    if (mounted) return mounted
+
     const opener = firstMatch(ATTACH_BUTTON)
     if (!opener) {
-      log('no Attach button found; taking any file input on the page')
-      return firstMatch(FILE_INPUT)
+      log('no file input on the page and no Attach button to open one')
+      return null
     }
 
-    log('clicking Attach via', opener.selector)
+    log('no file input mounted; opening the attachment menu via', opener.selector)
     press(opener.el)
-
-    const item = await waitFor(() => menuItemNamed(DOCUMENT_LABEL), 4000)
-    if (!item) {
-      log('attachment menu never showed a Document entry')
-    } else {
-      log('clicking Document —', describe(item))
-      press(item)
-      const owned = item.querySelector('input[type="file"]') ||
-        item.closest('li, [role="menuitem"]')?.querySelector('input[type="file"]')
-      if (owned) return { el: owned, selector: "Document entry's own input[type=file]" }
-    }
-
     return await waitFor(() => firstMatch(FILE_INPUT), 3000)
   }
 

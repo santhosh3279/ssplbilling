@@ -519,7 +519,7 @@ function filenameFromDisposition(header) {
   return plain ? plain[1] : `${props.invoiceName}.pdf`
 }
 
-async function downloadBillPdf() {
+async function fetchBillPdf() {
   const res = await fetch(previewFileUrl(), {
     headers: { 'X-Frappe-CSRF-Token': window.csrf_token ?? 'fetch' },
   })
@@ -530,8 +530,12 @@ async function downloadBillPdf() {
     throw new Error(`"${selectedTemplate.value}" has no PDF output — pick a PDF template`)
   }
 
-  const blob = await res.blob()
-  const name = filenameFromDisposition(res.headers.get('Content-Disposition'))
+  return { name: filenameFromDisposition(res.headers.get('Content-Disposition')), blob: await res.blob() }
+}
+
+// Only when the operator has to attach the bill by hand. With the extension attaching it, a copy
+// in Downloads is a file nobody opens, and the folder fills up one bill per share.
+function saveBillPdf(name, blob) {
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
@@ -541,7 +545,6 @@ async function downloadBillPdf() {
   link.remove()
   // Revoked late so the browser has finished reading the blob for the save.
   setTimeout(() => URL.revokeObjectURL(url), 60000)
-  return { name, blob }
 }
 
 // Chrome's extension messaging is JSON, so the PDF cannot travel as an ArrayBuffer — it would
@@ -618,7 +621,7 @@ async function sendWhatsApp() {
       console.warn('[PrintOptionsModal] WhatsApp recipient lookup failed:', e)
     }
 
-    const { name: savedAs, blob } = await downloadBillPdf()
+    const { name: billName, blob } = await fetchBillPdf()
 
     const lines = [
       recipient.party ? `${recipient.party},` : '',
@@ -638,21 +641,29 @@ async function sendWhatsApp() {
       // do so unless it is sure which chat is on screen, so a share can still come back opened
       // but not attached — hence the two messages.
       const attachment = recipient.phone
-        ? { name: savedAs, type: blob.type || 'application/pdf', data: await blobToBase64(blob), caption }
+        ? { name: billName, type: blob.type || 'application/pdf', data: await blobToBase64(blob), caption }
         : null
       const relayed = await openWhatsAppTab(waUrl, attachment)
+      if (relayed.ok && relayed.attached) {
+        success.value = `Attached "${billName}" in WhatsApp (${relayed.method}) — check the contact, then press send`
+        return
+      }
+
+      // The bill did not reach the chat, so the operator has to drag it in and now needs the file.
+      saveBillPdf(billName, blob)
       // The method is shown on purpose: "not-opened" means the extension reached WhatsApp but
       // could not open the chat in place, which is the one outcome worth reporting.
-      success.value = !relayed.ok
-        ? `Saved "${savedAs}" — could not reach the WhatsApp tab (${relayed.error}); open WhatsApp and drag it in`
-        : relayed.attached
-        ? `Attached "${savedAs}" in WhatsApp (${relayed.method}) — check the contact, then press send`
-        : `Saved "${savedAs}" — WhatsApp is open (${relayed.method}${relayed.error ? ': ' + relayed.error : ''}), open the chat and drag it in`
+      success.value = relayed.ok
+        ? `Saved "${billName}" — WhatsApp is open (${relayed.method}${relayed.error ? ': ' + relayed.error : ''}), open the chat and drag it in`
+        : `Saved "${billName}" — could not reach the WhatsApp tab (${relayed.error}); open WhatsApp and drag it in`
       return
     }
 
+    // No extension: nothing can attach the bill, so it goes to Downloads for the operator to drag.
+    saveBillPdf(billName, blob)
+
     if (!waTab) {
-      success.value = `Saved "${savedAs}" — allow popups for this site to open WhatsApp automatically`
+      success.value = `Saved "${billName}" — allow popups for this site to open WhatsApp automatically`
       return
     }
 
@@ -672,8 +683,8 @@ async function sendWhatsApp() {
     lastWhatsappAt = Date.now()
 
     success.value = recipient.phone
-      ? `Saved "${savedAs}" — drag it into the WhatsApp chat`
-      : `Saved "${savedAs}" — no WhatsApp number on file, search the contact and drag it in`
+      ? `Saved "${billName}" — drag it into the WhatsApp chat`
+      : `Saved "${billName}" — no WhatsApp number on file, search the contact and drag it in`
   } catch (e) {
     if (openedFresh) waTab?.close()
     error.value = 'WhatsApp share failed: ' + (e.message || e)

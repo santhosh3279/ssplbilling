@@ -114,18 +114,21 @@ to re-check.
 
 The share also hands the PDF to the WhatsApp tab, so the operator does not drag anything:
 
-1. The billing page fetches the bill, saves it to Downloads as before, and passes the bytes to the
-   extension as base64 (chrome messaging is JSON — an ArrayBuffer arrives as `{}`).
+1. The billing page fetches the bill and passes the bytes to the extension as base64 (chrome
+   messaging is JSON — an ArrayBuffer arrives as `{}`). It is **not** saved to Downloads while the
+   extension is attaching it — only when the operator has to drag it in themselves: no extension,
+   or a share that came back `not-opened`.
 2. The service worker parks it in `chrome.storage.local` under `attach:<tabId>` before touching the
    tab. That is deliberate: the navigation fallback reloads the page and the worker can be evicted
    while the load runs, so the bill has to outlive both.
 3. `whatsapp.js` collects it — on an `SSPL_WA_ATTACH_NOW` message, and again on every load, which is
    what covers the reload path — and waits up to 20s for the chat pane.
 4. The bill's message is typed into the open chat's composer.
-5. **Attach** is clicked, then **Document** in the menu it opens, and the file input that entry owns
-   is set through a `DataTransfer` with a `change` event. WhatsApp keeps hidden file inputs mounted
-   at all times, so the menu is always walked rather than reading an input straight off the page;
-   the global `FILE_INPUT` list and then a synthetic drop on the chat pane are the fallbacks.
+5. WhatsApp's own file input is set through a `DataTransfer` with a `change` event. That input
+   stays mounted whether or not the attachment menu is open, so the menu is not walked: clicking
+   **Document** cost a second and made WhatsApp log `File chooser dialog can only be shown with a
+   user activation`, since a synthetic click raises no picker. The menu is opened only when no
+   input is mounted; a synthetic drop on the chat pane is the last fallback.
 6. Older builds discard whatever was in the composer, so the same text is typed again into the
    preview's own caption box. Current builds carry the composer's text across by themselves, so the
    preview box is read first and left alone when it already holds the message — writing it a second
