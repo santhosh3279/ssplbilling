@@ -106,7 +106,7 @@ never sent, so the contact name is on screen in the preview before anything leav
 
 The selectors are structural and ARIA-based because WhatsApp's class names are obfuscated and change
 constantly. If shares start reloading again, the `[sspl-wa]` console lines name the step that failed,
-and `NEW_CHAT_BUTTON`, `NEW_CHAT_SEARCH` and `RESULT_ROW` at the top of `whatsapp.js` are the lists
+and `NEW_CHAT_BUTTON`, `TEXT_ENTRY`, `RESULT_ROW`, `ATTACH_BUTTON` and `DOCUMENT_LABEL` at the top of `whatsapp.js` are the lists
 to re-check.
 
 ## Attaching the bill
@@ -131,11 +131,11 @@ The share also hands the PDF to the WhatsApp tab, so the operator does not drag 
 **Nothing is ever sent automatically.** The operator sees the preview with the file and caption and
 presses send.
 
-**The bill is only attached when the chat is certain.** A chat found by search counts only if the
-clicked row carried the number; a row accepted merely because it was the only result opens the chat
-but is not trusted with a bill, and the share falls through to the reload path, where WhatsApp itself
-resolves `?phone=`. A stashed bill also expires after two minutes, so an abandoned share cannot
-surface in a later chat.
+**The first result row is clicked and the bill is attached to it.** A row carrying the number is
+preferred, but a row taken merely because it was first is used just the same — the operator confirms
+the contact in the preview before sending, since nothing is sent automatically. The click still has
+to actually change the open chat, or nothing is attached. A stashed bill expires after two minutes,
+so an abandoned share cannot surface in a later chat.
 
 ## When the number does not go into the box
 

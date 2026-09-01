@@ -469,8 +469,9 @@ if (!window.__ssplWhatsAppChatOpener) {
     return [...document.querySelectorAll(MENU_ITEM)].find((el) => {
       const box = el.getBoundingClientRect()
       if (!box.width || !box.height) return false
-      const text = (el.getAttribute('aria-label') || el.textContent || '').trim()
-      return label.test(text)
+      // Both read: an entry labelled anything else would otherwise never have its text tested.
+      return label.test((el.getAttribute('aria-label') || '').trim()) ||
+        label.test((el.textContent || '').trim())
     })
   }
 
