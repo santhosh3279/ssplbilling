@@ -123,16 +123,16 @@ The share also hands the PDF to the WhatsApp tab, so the operator does not drag 
    while the load runs, so the bill has to outlive both.
 3. `whatsapp.js` collects it — on an `SSPL_WA_ATTACH_NOW` message, and again on every load, which is
    what covers the reload path — and waits up to 20s for the chat pane.
-4. The bill's message is typed into the open chat's composer.
-5. WhatsApp's own file input is set through a `DataTransfer` with a `change` event. That input
+4. WhatsApp's own file input is set through a `DataTransfer` with a `change` event. That input
    stays mounted whether or not the attachment menu is open, so the menu is not walked: clicking
    **Document** cost a second and made WhatsApp log `File chooser dialog can only be shown with a
    user activation`, since a synthetic click raises no picker. The menu is opened only when no
    input is mounted; a synthetic drop on the chat pane is the last fallback.
-6. Older builds discard whatever was in the composer, so the same text is typed again into the
-   preview's own caption box. Current builds carry the composer's text across by themselves, so the
-   preview box is read first and left alone when it already holds the message — writing it a second
-   time is what repeated the bill line in the caption.
+5. Three seconds later the message is typed into the preview's own caption box. The wait is
+   deliberate: the preview builds itself around a PDF thumbnail, and a box written to mid-render
+   loses the text. Nothing is typed into the composer beforehand — the preview discarded it on
+   older builds and carried it across on current ones, and that second copy is what repeated the
+   bill line. The box is read first and left alone when it already holds the message.
 
 **Nothing is ever sent automatically.** The operator sees the preview with the file and caption and
 presses send.

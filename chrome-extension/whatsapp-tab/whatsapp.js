@@ -62,8 +62,8 @@ if (!window.__ssplWhatsAppChatOpener) {
   ]
   const CHAT_PANE = ['#main', '[data-tab="10"]', 'footer']
   const CAPTION_HINTS = /caption|message/i
-  // The composer at the bottom of the open chat, told apart from the search boxes by its own label.
-  const COMPOSER_HINTS = /type a message|message|caption/i
+  // How long the attachment preview is given to build itself before its caption box is written to.
+  const CAPTION_DELAY_MS = 3000
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -580,19 +580,6 @@ if (!window.__ssplWhatsAppChatOpener) {
     // the half-swapped view is how a bill can end up looking like it went somewhere else.
     await sleep(250)
 
-    // The message goes into the open chat's composer first, as asked. WhatsApp's preview screen
-    // owns its own caption box and discards whatever the composer held, so the same text is
-    // written again into the preview below — that second write is the one that survives to send.
-    if (attachment.caption) {
-      const composer = rank(textEntries(document.querySelector('footer') || document)).filter((el) =>
-        COMPOSER_HINTS.test(
-          `${el.getAttribute('aria-label') || ''} ${el.getAttribute('placeholder') || ''}`,
-        ),
-      )[0]
-      if (composer) await typeInto(composer, attachment.caption)
-      else log('composer box not found:', dumpEntries())
-    }
-
     const file = fileFrom(attachment)
     const input = await findFileInput()
 
@@ -609,9 +596,14 @@ if (!window.__ssplWhatsAppChatOpener) {
       }
     }
 
-    // The preview screen owns its caption box and discards whatever the composer held, so the
-    // bill's text has to be written there rather than passed as &text= in the URL.
+    // The message is typed only after the bill is in, and only into the preview's own caption box.
+    // The preview takes a moment to build itself — it renders the PDF thumbnail first — and a box
+    // written to while that is happening loses the text, so the three seconds are waited out
+    // before looking for it.
     if (attachment.caption) {
+      log('bill handed over; waiting 3s for the preview before typing the message')
+      await sleep(CAPTION_DELAY_MS)
+
       // Same shape problem as the search box: this is a contenteditable on older builds and an
       // input on current ones, so it is found by label rather than by tag.
       const box = await waitFor(() => {
@@ -625,9 +617,9 @@ if (!window.__ssplWhatsAppChatOpener) {
       if (!box) {
         log('preview caption box not found:', dumpEntries())
       } else if (boxText(box).trim() === attachment.caption.trim()) {
-        // Current builds carry the composer's text into the preview, so writing it again is what
-        // repeats the bill line. Nothing to do when it is already there.
-        log('preview already carries the message from the composer; leaving it alone')
+        // Nothing to do when WhatsApp has already carried the text across by itself; writing it
+        // again is what repeated the bill line.
+        log('preview already carries the message; leaving it alone')
       } else {
         await typeInto(box, attachment.caption)
       }
