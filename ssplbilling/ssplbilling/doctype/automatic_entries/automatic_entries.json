@@ -8,6 +8,7 @@
   "warehouse",
   "payment_entry_naming_settings",
   "journal_entry_naming_settings",
+  "mirror_allow_zero_valuation_rate",
   "section_break_tables",
   "series",
   "accounts"
@@ -37,6 +38,13 @@
    "fieldtype": "Select",
    "label": "Journal Entry Naming Settings",
    "options": ""
+  },
+  {
+   "default": "0",
+   "description": "Tick to submit mirror Sales Invoices with 'Allow Zero Valuation Rate' on every item row. Use when the alternate company carries no stock valuation for the items being mirrored. Mirror invoices then book no COGS.",
+   "fieldname": "mirror_allow_zero_valuation_rate",
+   "fieldtype": "Check",
+   "label": "Allow Zero Valuation Rate on Mirror Invoices"
   },
   {
    "fieldname": "section_break_tables",

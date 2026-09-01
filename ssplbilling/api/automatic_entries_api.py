@@ -409,6 +409,7 @@ def create_mirror_sales_invoice(si, automatic_entries):
 	target_cost_center = ensure_cost_center_in_company(source_cost_center, target_company)
 	
 	allowed_accounts = _allowed_accounts(automatic_entries)
+	allow_zero_valuation = int(automatic_entries.get("mirror_allow_zero_valuation_rate") or 0)
 
 	msi = frappe.new_doc("Sales Invoice")
 	msi.company = target_company
@@ -448,6 +449,11 @@ def create_mirror_sales_invoice(si, automatic_entries):
 			"uom": item.uom or item.stock_uom,
 			"warehouse": item_wh,
 		}
+		if allow_zero_valuation:
+			# The alternate company may never have received these items, so its FIFO
+			# queue has no rate to consume and ERPNext would throw "Valuation Rate
+			# Missing" on submit. Mirror rows then post stock movement without COGS.
+			row["allow_zero_valuation_rate"] = 1
 		if item_cc:
 			row["cost_center"] = item_cc
 		if item.item_tax_template:
@@ -702,6 +708,8 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 	source_cost_center = si.cost_center or (si.items[0].cost_center if si.items else None)
 	target_cost_center = ensure_cost_center_in_company(source_cost_center, target_company)
 
+	allow_zero_valuation = int(ae.get("mirror_allow_zero_valuation_rate") or 0)
+
 	msi = frappe.new_doc("Sales Invoice")
 	msi.company = target_company
 	msi.customer = si.customer
@@ -750,6 +758,11 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 			"uom": item.uom or item.stock_uom,
 			"warehouse": item_wh,
 		}
+		if allow_zero_valuation:
+			# The alternate company may never have received these items, so its FIFO
+			# queue has no rate to consume and ERPNext would throw "Valuation Rate
+			# Missing" on submit. Mirror rows then post stock movement without COGS.
+			row["allow_zero_valuation_rate"] = 1
 		if item_cc:
 			row["cost_center"] = item_cc
 		if item.item_tax_template:
