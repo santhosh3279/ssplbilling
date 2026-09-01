@@ -247,7 +247,7 @@ if (!window.__ssplWhatsAppChatOpener) {
       if (elapsed >= maxMs || (stable >= 2 && elapsed >= minMs)) break
       await sleep(120)
     }
-    return rows(root).filter((row) => row.textContent.trim())
+    return clickableRows(root)
   }
 
   // A row showing the number is proof of who it is. Otherwise the first row of a search for that
@@ -280,10 +280,13 @@ if (!window.__ssplWhatsAppChatOpener) {
 
   const chatIsOpen = () => !!firstMatch(CHAT_PANE)
 
-  // Which chat is on screen, as far as the DOM will say. Used to prove a click actually moved.
+  // Which chat is on screen. Only #main's own header counts: falling back to any <header> matched
+  // the left nav bar, whose text never changes, so every click looked like it had moved nothing.
   function openChatId() {
-    const header = document.querySelector('#main header, [data-tab="10"] header, header')
-    return header ? header.textContent.slice(0, 120) : ''
+    const main = document.querySelector('#main, [data-tab="10"]')
+    if (!main) return ''
+    const title = main.querySelector('header span[title], header span[dir="auto"]')
+    return (title?.getAttribute('title') || title?.textContent || main.textContent || '').slice(0, 120)
   }
 
   // The results belong to the panel that owns the search box, so the scope is found by climbing
@@ -299,6 +302,17 @@ if (!window.__ssplWhatsAppChatOpener) {
   // A search that filtered nothing is not a result list. Whatever is on screen then is the chat
   // list, and its first row is simply the chat already open.
   const MAX_UNFILTERED_ROWS = 15
+
+  // Search results are grouped under headings, and those are rows in their own right. Clicking one
+  // does nothing, which is exactly how a share ends up looking like it worked.
+  const SECTION_HEADING =
+    /^(chats|contacts|messages|groups|status|recent|frequently contacted|other contacts|not a contact)$/i
+
+  const clickableRows = (root) =>
+    rows(root).filter((row) => {
+      const text = row.textContent.trim()
+      return text && !SECTION_HEADING.test(text)
+    })
 
   // Closes the New chat panel so a failed attempt does not leave it covering the chat list.
   function escape() {
@@ -359,41 +373,74 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
     log('number went into', describe(box))
 
-    return await clickResultFor(box, phone, 'New chat')
+    return await clickResultFor(box, phone, 'New chat', true)
   }
 
   // Shared by both routes: read the panel's own results, refuse anything that is plainly not a
   // filtered list, click, and then prove the chat actually changed.
-  async function clickResultFor(box, phone, route) {
-    const scope = scopeAround(box)
-    if (!scope) {
-      log(`${route}: the box's panel has no result rows at all`)
+  async function clickResultFor(box, phone, route, requireNumber = false) {
+    const before = openChatId()
+    const tail = phone.slice(-10)
+
+    // A row displaying the number is unambiguous no matter which list it sits in, so it is worth
+    // waiting for one before falling back to reading a panel and trusting its top row.
+    const carrying = await waitFor(
+      () => clickableRows(document).find((row) => digitsOf(row.textContent).includes(tail)),
+      4000,
+    )
+
+    let row = carrying
+    let confident = !!carrying
+    let why = 'row carries the number'
+
+    if (!row && requireNumber) {
+      // The New chat panel always shows the number on a match, so a result without one means the
+      // search has not resolved. Its top row then is "Message yourself", not the party.
+      log(`${route}: no row showed the number; not guessing from the panel's top row`)
       escape()
       return null
     }
 
-    const found = await settledRows(scope)
-    const { row, confident, why } = pickRow(found, phone)
-    log(`${route} "${phone}": ${found.length} rows in ${describe(scope)}, ${why}`)
-    if (found[0]) log('  top row:', found[0].textContent.slice(0, 80))
+    if (!row) {
+      const scope = scopeAround(box)
+      if (!scope) {
+        log(`${route}: the box's panel has no result rows at all`)
+        escape()
+        return null
+      }
 
-    // Only a row carrying the number is trusted at this size; anything else is the chat list.
-    if (found.length > MAX_UNFILTERED_ROWS && !confident) {
-      log(`FAIL: ${found.length} rows is the unfiltered list, not a search result — not clicking`)
-      escape()
-      return null
+      const found = await settledRows(scope)
+      const picked = pickRow(found, phone)
+      row = picked.row
+      confident = picked.confident
+      why = picked.why
+      log(`${route} "${phone}": ${found.length} rows in ${describe(scope)}, ${why}`)
+      if (found[0]) log('  top row:', found[0].textContent.slice(0, 80))
+
+      // Only a row carrying the number is trusted at this size; anything else is the chat list.
+      if (found.length > MAX_UNFILTERED_ROWS) {
+        log(`FAIL: ${found.length} rows is the unfiltered list, not a search result — not clicking`)
+        escape()
+        return null
+      }
+    } else {
+      log(`${route} "${phone}": ${why} — ${row.textContent.trim().slice(0, 60)}`)
     }
+
     if (!row) {
       escape()
       return null
     }
 
-    const before = openChatId()
     press(row)
 
     // Clicking the row that is already open changes nothing, and attaching then would put the
-    // bill in whatever chat happened to be on screen. Require the header to actually move.
-    const moved = await waitFor(() => chatIsOpen() && openChatId() !== before, 5000)
+    // bill in whatever chat happened to be on screen. Require the chat to actually move — or the
+    // search panel to close around us, which is WhatsApp acting on the click either way.
+    const moved = await waitFor(
+      () => chatIsOpen() && (openChatId() !== before || !document.contains(box)),
+      5000,
+    )
     if (!moved) {
       log(`FAIL: clicked the result but the open chat did not change (still "${before.slice(0, 40)}")`)
       return null

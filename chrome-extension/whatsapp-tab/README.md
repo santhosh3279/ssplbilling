@@ -168,3 +168,20 @@ rows, so it can only ever be the panel that owns the box. Three checks sit on to
   then would put the bill wherever the operator happened to be.
 - The bill is only handed over after that check passes, with a short settle so the newly opened
   chat has finished rendering.
+
+## Picking the right row
+
+Three things make a search result list hard to read:
+
+- **Section headings are rows.** "Chats", "Contacts", "Messages" all match `[role="listitem"]`, and
+  clicking one does nothing while looking like a successful click. They are filtered out by name.
+- **The panel's top row is not the party.** Before a search resolves, New chat leads with
+  "Message yourself". So the New chat route refuses to guess: it only clicks a row that actually
+  shows the number, and reports failure otherwise. The sidebar route may fall back to the top row,
+  since a filtered chat list has no such decoy.
+- **A row showing the number is unambiguous wherever it sits**, so it is looked for across the page
+  first, before any attempt to work out which container the results are in.
+
+The click is then confirmed against `#main`'s own header. An earlier build fell back to any
+`<header>`, which matched the left nav bar — text that never changes, so every click was reported as
+having moved nothing and the whole share failed even when it had worked.
