@@ -829,7 +829,9 @@ watch(() => props.selectedSidebarItemName, (newVal) => {
 const mopSelectRef = ref(null)
 
 defineExpose({
-  focusSidebar: () => sidebarSearchRef.value?.focus(),
+  // Selected as well as focused, so a second F3 with an old query still in the box is typed over
+  // rather than appended to.
+  focusSidebar: () => { sidebarSearchRef.value?.focus(); sidebarSearchRef.value?.select() },
   focusSidebarList: () => sidebarListRef.value?.querySelector('[tabindex="0"]')?.focus(),
   focusDiscountPct: () => { discountPctRef.value?.focus(); discountPctRef.value?.select() },
   focusDiscountAmt: () => { discountAmtRef.value?.focus(); discountAmtRef.value?.select() },

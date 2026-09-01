@@ -697,7 +697,7 @@
       extra-title="Sales Invoice"
       :extra="[
         { key: 'F2', desc: 'Clear bill / refresh bill number' },
-        { key: 'F3', desc: 'Focus sidebar bill list' },
+        { key: 'F3', desc: 'Search bills in the Modify Bill panel' },
         { key: 'F5 / P', desc: 'Print invoice' },
 
         { key: 'F6', desc: 'Open Custom Address' },
@@ -1553,7 +1553,9 @@ function handleF2() {
 }
 
 function handleF3() {
-  nextTick(() => { invoiceTemplateRef.value?.focusSidebarList() })
+  // The search box, not the list: F3 is reached with a bill number in mind, and landing on the
+  // list means arrowing through it instead of typing the number.
+  nextTick(() => { invoiceTemplateRef.value?.focusSidebar() })
 }
 
 function handleModifyPanelKeydown(e) {
