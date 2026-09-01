@@ -128,11 +128,15 @@ The share also hands the PDF to the WhatsApp tab, so the operator does not drag 
    **Document** cost a second and made WhatsApp log `File chooser dialog can only be shown with a
    user activation`, since a synthetic click raises no picker. The menu is opened only when no
    input is mounted; a synthetic drop on the chat pane is the last fallback.
-5. The message is typed into the preview's **own caption box**, and only there: a box inside the
-   preview modal (`[data-animate-modal-body]`, `[role="dialog"]`, `[data-animate-drawer-body]`), or
-   one naming itself a caption. There is no wider fallback — the chat composer answers to "Type a
-   message" too, and writing there posts the bill line as a separate chat message instead of
-   captioning the file. That box is **waited for** (up to 30s) rather than slept on: the preview
+5. The message is typed into the preview's **own caption box**, and only there. Every text box on
+   screen is snapshotted the moment the file is handed over, and the caption box is identified by
+   being one that did not exist before — the preview builds itself and its box together. Label and
+   panel were not enough on their own: the composer answers to "Type a message" too and sits
+   outside `#main` on current builds, so it was picked before the preview existed, and WhatsApp
+   then carried that text into the caption itself — the bill line in both places. Among the new
+   boxes, one inside the preview modal (`[data-animate-modal-body]`, `[role="dialog"]`,
+   `[data-animate-drawer-body]`) wins, then one naming itself a caption, then any that is not a
+   search box. That box is **waited for** (up to 30s) rather than slept on: the preview
    appears once WhatsApp has encrypted and uploaded the file, which is under a second on a good
    link and much longer on a slow one, so a fixed delay is either dead time or too early. The box
    is read first and left alone when it already holds the message; if it never appears the caption

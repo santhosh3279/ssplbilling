@@ -584,25 +584,25 @@ if (!window.__ssplWhatsAppChatOpener) {
   // build whose modal carries none of the attributes in PREVIEW_SCOPE.
   const inTheChat = (el) => !!el.closest('#main, #side, header')
 
-  // The preview's caption box and nothing else, in three narrowing steps. Writing the bill line
-  // into the chat composer posts it as a message of its own instead of captioning the file, so the
-  // composer is excluded outright rather than used as a fallback.
-  function captionBox() {
+  // The preview's caption box and nothing else. `before` is every text box that existed at the
+  // moment the file was handed over, so the caption box is identified by being new — the preview
+  // builds itself and its box along with it. Label and panel alone were not enough: the composer
+  // answers to "Type a message" too, and on this build it sits outside #main, so it was picked
+  // before the preview existed. WhatsApp then carried that text into the caption itself, which is
+  // how the bill line ended up in both places.
+  function captionBox(before) {
+    const fresh = textEntries().filter((el) => !before.has(el))
+    if (!fresh.length) return null
+
     for (const scope of document.querySelectorAll(PREVIEW_SCOPE)) {
-      const inside = textEntries(scope).filter((el) => CAPTION_HINTS.test(labelOf(el)))
+      const inside = fresh.filter((el) => scope.contains(el) && CAPTION_HINTS.test(labelOf(el)))
       if (inside.length) return inside[0]
     }
 
-    const named = textEntries().find((el) => CAPTION_ONLY.test(labelOf(el)) && !inTheChat(el))
+    const named = fresh.find((el) => CAPTION_ONLY.test(labelOf(el)))
     if (named) return named
 
-    // Anything that can hold text, outside the chat and the sidebar, and not a search box. On a
-    // preview overlay that is the caption box and nothing else.
-    return (
-      textEntries().find(
-        (el) => !inTheChat(el) && !SEARCH_HINTS.test(labelOf(el)) && !el.closest('[role="dialog"] input[type="file"]'),
-      ) || null
-    )
+    return fresh.find((el) => !inTheChat(el) && !SEARCH_HINTS.test(labelOf(el))) || null
   }
 
   // Every box on screen with enough context to tell which panel it belongs to. Printed when the
@@ -627,6 +627,10 @@ if (!window.__ssplWhatsAppChatOpener) {
     const file = fileFrom(attachment)
     const input = await findFileInput()
 
+    // Snapshotted before the file goes in: the caption box is told from the composer by being an
+    // element that did not exist until the preview opened.
+    const boxesBefore = new Set(textEntries())
+
     if (input) {
       input.el.files = transferOf(file).files
       input.el.dispatchEvent(new Event('change', { bubbles: true }))
@@ -648,7 +652,7 @@ if (!window.__ssplWhatsAppChatOpener) {
       log('bill handed over; waiting for the preview caption box')
       // Same shape problem as the search box: this is a contenteditable on older builds and an
       // input on current ones, so it is found by label rather than by tag.
-      const box = await waitFor(captionBox, CAPTION_WAIT_MS)
+      const box = await waitFor(() => captionBox(boxesBefore), CAPTION_WAIT_MS)
       if (!box) {
         log('FAIL: no caption box in the preview; not typing into the chat composer instead')
         log('  boxes on screen:', dumpBoxes())
