@@ -151,3 +151,20 @@ moment during a share. It is the only way to produce input that a page cannot ig
 content script fires is synthetic and a build is free to drop it, while `Input.insertText` over the
 debugger protocol is handled by Chrome itself and is indistinguishable from a keystroke. It is only
 reached after all four in-page strategies have failed, and the debugger is detached immediately.
+
+## Why the results are read from the panel, never by selector
+
+An earlier build matched the result container with a selector list, which happily returned
+`#pane-side` — the background chat list. Searching a number then reported 74 rows, "clicked" the
+first one, and the bill was attached to whatever chat was already open.
+
+The scope is now found by climbing from the search box to the **smallest** ancestor that contains
+rows, so it can only ever be the panel that owns the box. Three checks sit on top of that:
+
+- More than 15 rows with no row carrying the number means the list never filtered — that is the
+  chat list, and nothing is clicked.
+- The chat header is read before and after the click, and the chat only counts as opened if it
+  actually changed. Clicking the row for the chat already on screen changes nothing, and attaching
+  then would put the bill wherever the operator happened to be.
+- The bill is only handed over after that check passes, with a short settle so the newly opened
+  chat has finished rendering.
