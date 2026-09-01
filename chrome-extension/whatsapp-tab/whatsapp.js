@@ -71,6 +71,18 @@ if (!window.__ssplWhatsAppChatOpener) {
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
+  // Stage timings, so a share that feels slow says which step ate the seconds rather than leaving
+  // it a guess between our polling and WhatsApp's own search round trip.
+  function stopwatch() {
+    let mark = performance.now()
+    return (label) => {
+      const ms = Math.round(performance.now() - mark)
+      mark = performance.now()
+      log(`${label} took ${ms}ms`)
+      return ms
+    }
+  }
+
   // Enough of an element to identify it in a bug report without dumping WhatsApp's markup.
   function describe(el) {
     if (!el) return 'none'
@@ -107,7 +119,7 @@ if (!window.__ssplWhatsAppChatOpener) {
 
   const boxText = (box) => (box.value !== undefined ? box.value : box.textContent) || ''
 
-  async function waitFor(check, timeoutMs, stepMs = 120) {
+  async function waitFor(check, timeoutMs, stepMs = 60) {
     const deadline = Date.now() + timeoutMs
     for (;;) {
       const value = check()
@@ -215,7 +227,7 @@ if (!window.__ssplWhatsAppChatOpener) {
         ? occurrences(digitsOf(boxText(box)), wanted)
         : Number(boxText(box).includes(text))
       return count > 0 ? count : null
-    }, 700, 80)
+    }, 700, 50)
     if (!seen) return false
     if (seen > 1) {
       log(`text landed ${seen} times over; clearing and retrying`)
@@ -422,6 +434,7 @@ if (!window.__ssplWhatsAppChatOpener) {
   async function clickResultFor(box, phone, route) {
     const before = openChatId()
     const tail = phone.slice(-10)
+    const lap = stopwatch()
 
     // A row displaying the number is unambiguous no matter which list it sits in, so it is worth
     // waiting for one before falling back to reading a panel and trusting its top row.
@@ -429,6 +442,7 @@ if (!window.__ssplWhatsAppChatOpener) {
       () => clickableRows(document).find((row) => digitsOf(row.textContent).includes(tail)),
       4000,
     )
+    lap('waiting for a row carrying the number')
 
     let row = carrying
     let confident = !!carrying
@@ -459,6 +473,7 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
 
     press(row)
+    lap('reading the result list')
 
     // Clicking the row that is already open changes nothing, and attaching then would put the
     // bill in whatever chat happened to be on screen. Require the chat to actually move — or the
@@ -467,6 +482,7 @@ if (!window.__ssplWhatsAppChatOpener) {
       () => chatIsOpen() && (openChatId() !== before || !document.contains(box)),
       5000,
     )
+    lap('WhatsApp opening the clicked chat')
     if (!moved) {
       log(`FAIL: clicked the result but the open chat did not change (still "${before.slice(0, 40)}")`)
       return null
@@ -554,7 +570,7 @@ if (!window.__ssplWhatsAppChatOpener) {
 
     // The chat pane exists before the newly opened chat has finished rendering; attaching into
     // the half-swapped view is how a bill can end up looking like it went somewhere else.
-    await sleep(400)
+    await sleep(250)
 
     // The message goes into the open chat's composer first, as asked. WhatsApp's preview screen
     // owns its own caption box and discards whatever the composer held, so the same text is
