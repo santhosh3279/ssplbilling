@@ -402,7 +402,7 @@ if (!window.__ssplWhatsAppChatOpener) {
     const opened = (await openViaNewChat(phone)) || (await openViaSidebarSearch(phone))
     if (opened) return opened
 
-    log('FAIL: could not open the chat in place, falling back to a reload')
+    log('FAIL: could not open the chat in place; the worker decides what happens next')
     return { ok: false, error: 'New chat and sidebar search both failed to open the chat' }
   }
 
