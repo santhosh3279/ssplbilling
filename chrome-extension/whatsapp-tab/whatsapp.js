@@ -61,7 +61,14 @@ if (!window.__ssplWhatsAppChatOpener) {
     'span[data-icon="attach-menu-plus"]',
   ]
   const CHAT_PANE = ['#main', '[data-tab="10"]', 'footer']
+  // The preview's own box says "caption" on current builds; older ones label it like the composer,
+  // hence the second word — but a box matching only that is taken solely from inside the preview.
   const CAPTION_HINTS = /caption|message/i
+  const CAPTION_ONLY = /caption/i
+  // The attachment preview is a modal over the chat. Its box has to be told apart from the chat's
+  // own composer, which also answers to "Type a message" — writing there sends a plain text message
+  // beside the bill instead of captioning it.
+  const PREVIEW_SCOPE = '[data-animate-modal-body], [role="dialog"], [data-animate-drawer-body]'
   // How long the attachment preview is given to build itself before its caption box is written to.
   const CAPTION_DELAY_MS = 3000
 
@@ -568,6 +575,28 @@ if (!window.__ssplWhatsAppChatOpener) {
     return await waitFor(() => firstMatch(FILE_INPUT), 3000)
   }
 
+  const labelOf = (el) =>
+    `${el.getAttribute('aria-label') || ''} ${el.getAttribute('placeholder') || ''} ${el.getAttribute('title') || ''}`
+
+  // The preview's caption box, never the chat composer. Looked for in three narrowing steps: a box
+  // inside the preview modal, then any box that names itself a caption, then a message-labelled box
+  // that is at least not the composer in the chat's footer. Falling back to the composer is what
+  // put the bill line in the chat as a message of its own instead of as the file's caption.
+  function captionBox() {
+    for (const scope of document.querySelectorAll(PREVIEW_SCOPE)) {
+      const inside = textEntries(scope).filter((el) => CAPTION_HINTS.test(labelOf(el)))
+      if (inside.length) return inside[0]
+    }
+
+    const named = textEntries().find((el) => CAPTION_ONLY.test(labelOf(el)))
+    if (named) return named
+
+    const notTheComposer = textEntries().find(
+      (el) => CAPTION_HINTS.test(labelOf(el)) && !el.closest('footer'),
+    )
+    return notTheComposer || null
+  }
+
   async function attach(attachment) {
     // Chat pane first: after the navigation fallback this runs while WhatsApp is still booting.
     const pane = await waitFor(() => firstMatch(CHAT_PANE), 20000)
@@ -606,21 +635,16 @@ if (!window.__ssplWhatsAppChatOpener) {
 
       // Same shape problem as the search box: this is a contenteditable on older builds and an
       // input on current ones, so it is found by label rather than by tag.
-      const box = await waitFor(() => {
-        const labelled = textEntries().filter((el) =>
-          CAPTION_HINTS.test(
-            `${el.getAttribute('aria-label') || ''} ${el.getAttribute('placeholder') || ''}`,
-          ),
-        )
-        return labelled[0] || null
-      }, 8000)
+      const box = await waitFor(captionBox, 8000)
       if (!box) {
-        log('preview caption box not found:', dumpEntries())
+        log('FAIL: no caption box in the preview; not typing into the chat composer instead')
+        log('  boxes on screen:', dumpEntries())
       } else if (boxText(box).trim() === attachment.caption.trim()) {
         // Nothing to do when WhatsApp has already carried the text across by itself; writing it
         // again is what repeated the bill line.
         log('preview already carries the message; leaving it alone')
       } else {
+        log('caption box:', describe(box))
         await typeInto(box, attachment.caption)
       }
     }
