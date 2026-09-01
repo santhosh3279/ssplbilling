@@ -96,3 +96,28 @@ top of `whatsapp.js` are the two lists to re-check.
 
 **Check the chat before you send.** The extension clicks the top search result; the operator still
 drags the PDF in and presses send by hand, so glance at the contact name in the header first.
+
+## Attaching the bill
+
+The share also hands the PDF to the WhatsApp tab, so the operator does not drag anything:
+
+1. The billing page fetches the bill, saves it to Downloads as before, and passes the bytes to the
+   extension as base64 (chrome messaging is JSON — an ArrayBuffer arrives as `{}`).
+2. The service worker parks it in `chrome.storage.local` under `attach:<tabId>` before touching the
+   tab. That is deliberate: the navigation fallback reloads the page and the worker can be evicted
+   while the load runs, so the bill has to outlive both.
+3. `whatsapp.js` collects it — on an `SSPL_WA_ATTACH_NOW` message, and again on every load, which is
+   what covers the reload path — waits up to 20s for the chat pane, then sets WhatsApp's own hidden
+   `input[type="file"]` through a `DataTransfer` and fires `change`. A synthetic drop on the chat
+   pane is the fallback.
+4. WhatsApp's preview screen discards whatever was in the composer, so the bill's caption is typed
+   into the preview's own caption box rather than passed as `&text=` in the URL.
+
+**Nothing is ever sent automatically.** The operator sees the preview with the file and caption and
+presses send.
+
+**The bill is only attached when the chat is certain.** A chat found by search counts only if the
+clicked row carried the number; a row accepted merely because it was the only result opens the chat
+but is not trusted with a bill, and the share falls through to the reload path, where WhatsApp itself
+resolves `?phone=`. A stashed bill also expires after two minutes, so an abandoned share cannot
+surface in a later chat.

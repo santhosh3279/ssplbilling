@@ -17,9 +17,10 @@
 const REQUEST = 'SSPL_WHATSAPP_OPEN'
 const RESULT = 'SSPL_WHATSAPP_RESULT'
 
-// The extension's content script gives up after the service worker replies; 3s covers a
-// cold worker start without leaving the operator staring at a dead button.
-const BRIDGE_TIMEOUT_MS = 3000
+// The extension replies once the chat is resolved — the in-page search, or the reload fallback,
+// both of which wait on WhatsApp's own UI. 15s covers a cold worker plus a slow search without
+// leaving the operator staring at a dead button.
+const BRIDGE_TIMEOUT_MS = 15000
 
 let requestCounter = 0
 
@@ -33,12 +34,24 @@ export function hasWhatsAppBridge() {
 }
 
 /**
- * Ask the extension to focus the WhatsApp tab and point it at `url`.
- * @returns {Promise<{ok: boolean, reused: boolean, error: string}>}
+ * Ask the extension to focus the WhatsApp tab, open the party's chat and — when `attachment` is
+ * given — drop the bill into WhatsApp's attachment preview, leaving the operator only to press
+ * send. The bill travels as base64 because chrome's messaging is JSON: an ArrayBuffer would
+ * arrive as `{}`.
+ *
+ * @param {string} url
+ * @param {{name: string, type: string, data: string, caption: string}} [attachment]
+ * @returns {Promise<{ok: boolean, reused: boolean, attached: boolean, method: string, error: string}>}
  */
-export function openWhatsAppTab(url) {
+export function openWhatsAppTab(url, attachment = null) {
   if (!hasWhatsAppBridge()) {
-    return Promise.resolve({ ok: false, reused: false, error: 'extension not installed' })
+    return Promise.resolve({
+      ok: false,
+      reused: false,
+      attached: false,
+      method: '',
+      error: 'extension not installed',
+    })
   }
 
   const requestId = `wa-${Date.now()}-${++requestCounter}`
@@ -58,15 +71,28 @@ export function openWhatsAppTab(url) {
       if (event.source !== window) return
       const data = event.data
       if (!data || data.type !== RESULT || data.requestId !== requestId) return
-      finish({ ok: !!data.ok, reused: !!data.reused, error: data.error || '' })
+      finish({
+        ok: !!data.ok,
+        reused: !!data.reused,
+        attached: !!data.attached,
+        method: data.method || '',
+        error: data.error || '',
+      })
     }
 
     const timer = setTimeout(
-      () => finish({ ok: false, reused: false, error: 'extension did not answer' }),
+      () =>
+        finish({
+          ok: false,
+          reused: false,
+          attached: false,
+          method: '',
+          error: 'extension did not answer',
+        }),
       BRIDGE_TIMEOUT_MS,
     )
 
     window.addEventListener('message', onMessage)
-    window.postMessage({ type: REQUEST, requestId, url }, window.location.origin)
+    window.postMessage({ type: REQUEST, requestId, url, attachment }, window.location.origin)
   })
 }

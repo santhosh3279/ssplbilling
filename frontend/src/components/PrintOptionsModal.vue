@@ -541,7 +541,18 @@ async function downloadBillPdf() {
   link.remove()
   // Revoked late so the browser has finished reading the blob for the save.
   setTimeout(() => URL.revokeObjectURL(url), 60000)
-  return name
+  return { name, blob }
+}
+
+// Chrome's extension messaging is JSON, so the PDF cannot travel as an ArrayBuffer — it would
+// arrive as {}. Chunked to keep String.fromCharCode off a spread big enough to blow the stack.
+async function blobToBase64(blob) {
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
+  }
+  return btoa(binary)
 }
 
 // A browser can only re-target a tab it opened itself, and only by the name it opened it
@@ -607,7 +618,7 @@ async function sendWhatsApp() {
       console.warn('[PrintOptionsModal] WhatsApp recipient lookup failed:', e)
     }
 
-    const savedAs = await downloadBillPdf()
+    const { name: savedAs, blob } = await downloadBillPdf()
 
     const lines = [
       recipient.party ? `${recipient.party},` : '',
@@ -615,17 +626,26 @@ async function sendWhatsApp() {
       // Returns carry a negative total; sending "Amount: -16" to a customer invites a call.
       recipient.amount > 0 ? `Amount: ${recipient.amount.toLocaleString('en-IN')}` : '',
     ].filter(Boolean)
-    const text = encodeURIComponent(lines.join('\n'))
+    const caption = lines.join('\n')
+    const text = encodeURIComponent(caption)
 
     const waUrl = recipient.phone
       ? `https://web.whatsapp.com/send?phone=${recipient.phone}&text=${text}`
       : `https://web.whatsapp.com/`
 
     if (viaBridge) {
-      const relayed = await openWhatsAppTab(waUrl)
-      success.value = relayed.ok
-        ? `Saved "${savedAs}" — drag it into the WhatsApp tab`
-        : `Saved "${savedAs}" — could not reach the WhatsApp tab (${relayed.error}); open WhatsApp and drag it in`
+      // The extension puts the bill straight into WhatsApp's attachment preview. It refuses to
+      // do so unless it is sure which chat is on screen, so a share can still come back opened
+      // but not attached — hence the two messages.
+      const attachment = recipient.phone
+        ? { name: savedAs, type: blob.type || 'application/pdf', data: await blobToBase64(blob), caption }
+        : null
+      const relayed = await openWhatsAppTab(waUrl, attachment)
+      success.value = !relayed.ok
+        ? `Saved "${savedAs}" — could not reach the WhatsApp tab (${relayed.error}); open WhatsApp and drag it in`
+        : relayed.attached
+        ? `Attached "${savedAs}" in WhatsApp — check the contact, then press send`
+        : `Saved "${savedAs}" — WhatsApp is open, drag it into the chat`
       return
     }
 

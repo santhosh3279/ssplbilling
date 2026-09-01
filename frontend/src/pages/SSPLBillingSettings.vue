@@ -213,10 +213,11 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="space-y-3">
               <p class="text-sm text-[var(--color-text-muted)]">
-                Sends a shared bill to the WhatsApp Web tab that is already open instead of opening a
-                new one each time. WhatsApp blocks a web page from re-using its tab
+                Sends a shared bill to the WhatsApp Web tab that is already open: switches to the
+                party's chat and attaches the bill PDF, leaving only send to press. WhatsApp blocks a
+                web page from doing any of this itself
                 (<span class="font-mono text-xs">Cross-Origin-Opener-Policy</span>), so only a browser
-                extension can do this. Billing works without it — bills then open a fresh tab.
+                extension can. Billing works without it — bills then open a fresh tab to drag into.
               </p>
               <a
                 :href="extensionZipUrl"

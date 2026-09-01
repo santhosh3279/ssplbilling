@@ -14,16 +14,22 @@ window.addEventListener('message', (event) => {
   const data = event.data
   if (!data || data.type !== REQUEST || !data.url) return
 
-  chrome.runtime.sendMessage({ type: REQUEST, url: data.url }, (response) => {
-    window.postMessage(
-      {
-        type: RESULT,
-        requestId: data.requestId,
-        ok: !chrome.runtime.lastError && !!response?.ok,
-        reused: !!response?.reused,
-        error: chrome.runtime.lastError?.message || response?.error || '',
-      },
-      window.location.origin,
-    )
-  })
+  // attachment carries the bill as base64 — chrome messaging is JSON, so no ArrayBuffer.
+  chrome.runtime.sendMessage(
+    { type: REQUEST, url: data.url, attachment: data.attachment || null },
+    (response) => {
+      window.postMessage(
+        {
+          type: RESULT,
+          requestId: data.requestId,
+          ok: !chrome.runtime.lastError && !!response?.ok,
+          reused: !!response?.reused,
+          attached: !!response?.attached,
+          method: response?.method || '',
+          error: chrome.runtime.lastError?.message || response?.error || '',
+        },
+        window.location.origin,
+      )
+    },
+  )
 })

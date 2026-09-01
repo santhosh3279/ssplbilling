@@ -13,6 +13,8 @@ if (!window.__ssplWhatsAppChatOpener) {
   window.__ssplWhatsAppChatOpener = true
 
   const CHAT_OPEN = 'SSPL_WA_OPEN_CHAT'
+  const ATTACH_NOW = 'SSPL_WA_ATTACH_NOW'
+  const PENDING = 'SSPL_WA_PENDING'
   const log = (...args) => console.log('[sspl-wa]', ...args)
 
   // Only structural/ARIA hooks: WhatsApp's class names are obfuscated and rotate on every build.
@@ -30,6 +32,30 @@ if (!window.__ssplWhatsAppChatOpener) {
     'button[aria-label*="Search" i]',
     '[role="button"][aria-label*="Search" i]',
     'span[data-icon="search"]',
+  ]
+  // WhatsApp keeps hidden file inputs for its attachment menu. Setting one of them is far more
+  // reliable than a synthetic drop, which is kept as the fallback.
+  const FILE_INPUT = [
+    'input[type="file"][accept*="pdf" i]',
+    'input[type="file"][accept*="*/*"]',
+    'input[type="file"]:not([accept*="image" i]):not([accept*="video" i])',
+    'input[type="file"]',
+  ]
+  // Clicked when no usable input exists yet: the menu renders its inputs on demand.
+  const ATTACH_BUTTON = [
+    'button[aria-label*="Attach" i]',
+    '[role="button"][aria-label*="Attach" i]',
+    'span[data-icon="plus-rounded"]',
+    'span[data-icon="clip"]',
+    'span[data-icon="attach-menu-plus"]',
+  ]
+  // The chat pane, used as the drop target by the fallback.
+  const DROP_TARGET = ['#main', '[data-tab="10"]', 'footer']
+  // Caption box on WhatsApp's file preview screen.
+  const CAPTION_BOX = [
+    'div[contenteditable="true"][data-tab="10"]',
+    'div[contenteditable="true"][aria-label*="caption" i]',
+    'div[role="textbox"][aria-label*="caption" i]',
   ]
   const RESULT_ROW = [
     '#pane-side [role="listitem"]',
@@ -181,8 +207,9 @@ if (!window.__ssplWhatsAppChatOpener) {
         clickRow(row)
         await sleep(200)
         typeInto(hit.el, '')
-        log('OK: chat opened without reloading')
-        return { ok: true }
+        const confident = why === 'row carries the number'
+        log(`OK: chat opened without reloading (${why})`)
+        return { ok: true, confident }
       }
     }
 
@@ -191,7 +218,92 @@ if (!window.__ssplWhatsAppChatOpener) {
     return { ok: false, error: 'no chat could be matched to that number with confidence' }
   }
 
+  // ── attaching the bill ─────────────────────────────────────────────────────────────────────
+  // The worker parks the PDF in chrome.storage before the chat is ready, and this side collects
+  // it. That indirection is what lets the bill survive the navigation fallback, which reloads
+  // this page and can have the service worker evicted mid-flight.
+
+  function fileFrom(attachment) {
+    const binary = atob(attachment.data)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    return new File([bytes], attachment.name, { type: attachment.type || 'application/pdf' })
+  }
+
+  function transferOf(file) {
+    const data = new DataTransfer()
+    data.items.add(file)
+    return data
+  }
+
+  async function findFileInput() {
+    let hit = firstMatch(FILE_INPUT)
+    if (hit) return hit
+
+    const opener = firstMatch(ATTACH_BUTTON)
+    if (opener) {
+      log('no file input yet, clicking', opener.selector)
+      ;(opener.el.closest('button,[role="button"]') || opener.el).click()
+      hit = await waitFor(() => firstMatch(FILE_INPUT), 3000)
+    }
+    return hit
+  }
+
+  async function attach(attachment) {
+    // Composer first: on the navigation fallback this runs while WhatsApp is still booting.
+    const pane = await waitFor(() => firstMatch(DROP_TARGET), 20000)
+    if (!pane) {
+      log('FAIL: chat pane never appeared, nothing to attach to')
+      return false
+    }
+
+    const file = fileFrom(attachment)
+    const input = await findFileInput()
+
+    if (input) {
+      input.el.files = transferOf(file).files
+      input.el.dispatchEvent(new Event('change', { bubbles: true }))
+      log('attached via', input.selector)
+    } else {
+      log('no file input found, dropping onto', pane.selector)
+      for (const type of ['dragenter', 'dragover', 'drop']) {
+        pane.el.dispatchEvent(
+          new DragEvent(type, { bubbles: true, cancelable: true, dataTransfer: transferOf(file) }),
+        )
+      }
+    }
+
+    // The preview screen owns its own caption box, and whatever was typed in the composer is
+    // dropped when it opens — so the bill's text has to be written here instead.
+    if (attachment.caption) {
+      const box = await waitFor(() => firstMatch(CAPTION_BOX), 8000)
+      if (box) typeInto(box.el, attachment.caption)
+      else log('preview caption box not found; sending without a caption')
+    }
+
+    log('OK: bill attached — operator still presses send')
+    return true
+  }
+
+  async function attachPending() {
+    let attachment = null
+    try {
+      attachment = await chrome.runtime.sendMessage({ type: PENDING })
+    } catch (e) {
+      log('could not ask for a pending bill:', e)
+      return
+    }
+    if (!attachment) return
+    log('bill waiting:', attachment.name)
+    await attach(attachment)
+  }
+
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message?.type === ATTACH_NOW) {
+      attachPending().then(() => sendResponse({ ok: true }))
+      return true
+    }
+
     if (message?.type !== CHAT_OPEN || !message.phone) return
 
     log('asked to open', message.phone)
@@ -206,4 +318,7 @@ if (!window.__ssplWhatsAppChatOpener) {
   })
 
   log('chat opener ready on', location.href)
+
+  // Covers the navigation fallback: this script is fresh, and the bill is already parked.
+  attachPending()
 }
