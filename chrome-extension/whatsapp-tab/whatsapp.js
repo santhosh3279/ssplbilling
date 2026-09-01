@@ -32,20 +32,19 @@ if (!window.__ssplWhatsAppChatOpener) {
     'span[data-icon="new-chat-outline"]',
     'span[data-icon="chat"]',
   ]
-  const TEXT_ENTRY = 'div[contenteditable="true"], input[type="text"]'
-  const NEW_CHAT_SEARCH = [
-    'div[contenteditable="true"][aria-label*="name or number" i]',
-    'div[role="textbox"][aria-label*="name or number" i]',
-    'input[type="text"][aria-label*="name or number" i]',
-    'div[contenteditable="true"][data-tab="3"]',
-    'div[contenteditable="true"]',
-  ]
-  const SIDEBAR_SEARCH = [
-    'div[contenteditable="true"][data-tab="3"]',
-    '#side div[contenteditable="true"][role="textbox"]',
-    'div[role="textbox"][aria-label*="Search" i]',
-    '#side div[contenteditable="true"]',
-  ]
+  // Anything that can hold typed text. Deliberately wide: WhatsApp's search was a contenteditable
+  // for years and is a real <input> on current builds, and matching only the old shape is what
+  // left "New chat panel did not show a search box" in the log with the panel plainly open.
+  const TEXT_ENTRY = [
+    'input:not([type="hidden"]):not([type="file"]):not([type="checkbox"]):not([type="radio"]):not([type="submit"])',
+    'textarea',
+    '[contenteditable="true"]',
+    '[role="textbox"]',
+  ].join(', ')
+
+  // Ranked, not required — the first entry that actually takes the number wins. A box naming the
+  // search is tried before an unlabelled one, and that is the whole of the preference.
+  const SEARCH_HINTS = /name or number|search|to:/i
   const RESULT_ROW = ['[role="listitem"]', '[role="row"]', '[role="gridcell"]']
   const RESULT_SCOPE = ['#pane-side', '[role="grid"]', '[data-animate-modal-body]', '[role="dialog"]']
 
@@ -65,11 +64,7 @@ if (!window.__ssplWhatsAppChatOpener) {
     'span[data-icon="attach-menu-plus"]',
   ]
   const CHAT_PANE = ['#main', '[data-tab="10"]', 'footer']
-  const CAPTION_BOX = [
-    'div[contenteditable="true"][data-tab="10"]',
-    'div[contenteditable="true"][aria-label*="caption" i]',
-    'div[role="textbox"][aria-label*="caption" i]',
-  ]
+  const CAPTION_HINTS = /caption|message/i
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -266,6 +261,24 @@ if (!window.__ssplWhatsAppChatOpener) {
     return { row: null, confident: false, why: 'no rows' }
   }
 
+  // Visible only: WhatsApp keeps offscreen inputs around, and typing into one looks like success
+  // while nothing filters.
+  function textEntries(root = document) {
+    return [...root.querySelectorAll(TEXT_ENTRY)].filter((el) => {
+      const box = el.getBoundingClientRect()
+      return box.width > 0 && box.height > 0
+    })
+  }
+
+  // Boxes that name themselves a search go first; everything else keeps document order.
+  function rank(entries) {
+    const label = (el) =>
+      `${el.getAttribute('aria-label') || ''} ${el.getAttribute('placeholder') || ''} ${el.getAttribute('title') || ''}`
+    return [...entries].sort((a, b) => Number(SEARCH_HINTS.test(label(b))) - Number(SEARCH_HINTS.test(label(a))))
+  }
+
+  const dumpEntries = () => textEntries().map(describe).join(' ') || '(none on screen)'
+
   const chatIsOpen = () => !!firstMatch(CHAT_PANE)
 
   // Closes the New chat panel so a failed attempt does not leave it covering the chat list.
@@ -294,39 +307,40 @@ if (!window.__ssplWhatsAppChatOpener) {
 
     // Every text entry the panel added is a candidate: which one takes the number differs by
     // build, and picking the first one that merely exists is what left the field empty.
-    const candidates = await waitFor(() => {
-      const fresh = []
-      for (const selector of NEW_CHAT_SEARCH) {
-        for (const el of document.querySelectorAll(selector)) {
-          if (!existing.has(el) && !fresh.some((c) => c.el === el)) fresh.push({ el, selector })
-        }
-      }
-      return fresh.length ? fresh : null
+    let candidates = await waitFor(() => {
+      const fresh = textEntries().filter((el) => !existing.has(el))
+      return fresh.length ? rank(fresh) : null
     }, 5000)
 
+    // Some builds reuse the sidebar's own box for the panel, so nothing is new. Fall back to
+    // whatever is on screen rather than declaring the panel empty.
     if (!candidates) {
-      log('New chat panel did not show a search box')
+      candidates = rank(textEntries())
+      log('no new text entry appeared; falling back to all', candidates.length, 'on screen')
+    }
+
+    if (!candidates.length) {
+      log('New chat panel shows no text entry at all:', dumpEntries())
       escape()
       return null
     }
-    log('New chat text entries:', candidates.map((c) => c.selector).join(' | '))
+    log('New chat candidates:', candidates.map((el) => describe(el)).join(' '))
 
     let box = null
     for (const candidate of candidates) {
-      if (await typeInto(candidate.el, phone)) {
+      if (await typeInto(candidate, phone)) {
         box = candidate
         break
       }
     }
     if (!box) {
-      log('entries tried:', candidates.map((c) => describe(c.el)).join(' '))
       log('FAIL: none of the New chat entries accepted the number')
       escape()
       return null
     }
-    log('number went into', box.selector)
+    log('number went into', describe(box))
 
-    const scope = box.el.closest(RESULT_SCOPE.join(',')) || document
+    const scope = box.closest(RESULT_SCOPE.join(',')) || document
     const found = await settledRows(scope)
     const { row, confident, why } = pickRow(found, phone)
     log(`New chat "${phone}": ${found.length} rows, ${why}`)
@@ -348,27 +362,28 @@ if (!window.__ssplWhatsAppChatOpener) {
 
   // ── route 2: sidebar search ──────────────────────────────────────────────────────────────────
   async function openViaSidebarSearch(phone) {
-    const box = firstMatch(SIDEBAR_SEARCH)
+    const box = rank(textEntries(document.querySelector('#side') || document))[0]
     if (!box) {
-      log('no sidebar search box either')
+      log('no sidebar search box either:', dumpEntries())
       return null
     }
+    log('sidebar box:', describe(box))
 
     // WhatsApp matches against the digits it stored, which may or may not carry the country code.
     const terms = phone.length > 10 ? [phone, phone.slice(-10)] : [phone]
     const scope = document.querySelector('#pane-side') || document
 
     for (const term of terms) {
-      if (!(await typeInto(box.el, term))) return null
+      if (!(await typeInto(box, term))) return null
       const found = await settledRows(scope)
       const { row, confident, why } = pickRow(found, phone)
-      log(`sidebar "${term}": box now "${boxText(box.el)}", ${found.length} rows, ${why}`)
+      log(`sidebar "${term}": box now "${boxText(box)}", ${found.length} rows, ${why}`)
       if (found[0]) log('  top row:', found[0].textContent.slice(0, 80))
 
       if (row) {
         press(row)
         await sleep(200)
-        await typeInto(box.el, '')
+        await typeInto(box, '')
         if (await waitFor(chatIsOpen, 5000)) {
           log(`OK: chat opened via sidebar search (${why})`)
           return { ok: true, confident }
@@ -376,13 +391,13 @@ if (!window.__ssplWhatsAppChatOpener) {
       }
     }
 
-    await typeInto(box.el, '')
+    await typeInto(box, '')
     return null
   }
 
   async function openChat(phone) {
     // On a cold load nothing is rendered yet; the service worker may ask before WhatsApp is up.
-    await waitFor(() => firstMatch(NEW_CHAT_BUTTON) || firstMatch(SIDEBAR_SEARCH), 15000)
+    await waitFor(() => firstMatch(NEW_CHAT_BUTTON) || textEntries().length, 15000)
 
     const opened = (await openViaNewChat(phone)) || (await openViaSidebarSearch(phone))
     if (opened) return opened
@@ -449,9 +464,18 @@ if (!window.__ssplWhatsAppChatOpener) {
     // The preview screen owns its caption box and discards whatever the composer held, so the
     // bill's text has to be written there rather than passed as &text= in the URL.
     if (attachment.caption) {
-      const box = await waitFor(() => firstMatch(CAPTION_BOX), 8000)
-      if (box) await typeInto(box.el, attachment.caption)
-      else log('preview caption box not found; sending without a caption')
+      // Same shape problem as the search box: this is a contenteditable on older builds and an
+      // input on current ones, so it is found by label rather than by tag.
+      const box = await waitFor(() => {
+        const labelled = textEntries().filter((el) =>
+          CAPTION_HINTS.test(
+            `${el.getAttribute('aria-label') || ''} ${el.getAttribute('placeholder') || ''}`,
+          ),
+        )
+        return labelled[0] || null
+      }, 8000)
+      if (box) await typeInto(box, attachment.caption)
+      else log('preview caption box not found:', dumpEntries())
     }
 
     log('OK: bill attached — operator still presses send')

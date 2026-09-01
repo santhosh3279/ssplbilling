@@ -85,8 +85,9 @@ through WhatsApp's own UI, exactly as an operator would:
 
 Getting text into the search box is the step that breaks most often, because WhatsApp's box is a
 contenteditable on some builds and a real `<input>` on others, and React ignores a plain
-`.value = x`. So every text entry the New chat panel added is tried in turn, each with four
-strategies — the prototype's native value setter, `execCommand('insertText')`, a synthetic paste,
+`.value = x`. Nothing is matched on tag or class, then: any visible element that can hold text
+counts as a candidate (`input`, `textarea`, `[contenteditable]`, `[role="textbox"]`), ranked so a
+box labelled like a search is tried first. Each candidate is tried in turn, with four strategies — the prototype's native value setter, `execCommand('insertText')`, a synthetic paste,
 and `beforeinput` plus a text node — and the field is read back after each to see which one stuck.
 The console line `typed via …` names the winner.
 
