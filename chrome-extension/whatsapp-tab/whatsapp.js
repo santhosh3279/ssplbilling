@@ -37,14 +37,15 @@ if (!window.__ssplWhatsAppChatOpener) {
     return []
   }
 
-  // Identifies what the list is currently showing, so we can tell the search results apart from
-  // the chat list that was on screen before we typed.
+  // Identifies what the list is currently showing, used to tell when it has stopped re-rendering.
   function listSignature() {
     return rows()
       .slice(0, 3)
       .map((row) => row.textContent)
       .join('|')
   }
+
+  const digitsOf = (text) => (text || '').replace(/\D/g, '')
 
   async function waitFor(check, timeoutMs, stepMs = 120) {
     const deadline = Date.now() + timeoutMs
@@ -60,9 +61,13 @@ if (!window.__ssplWhatsAppChatOpener) {
   // it fires real beforeinput/input events, which setting textContent does not.
   function typeInto(box, text) {
     box.focus()
+    // selectAll acts on whatever has focus. If the click already moved focus into the chat,
+    // clearing here would delete text somewhere else in the page.
+    if (document.activeElement !== box) return false
     document.execCommand('selectAll', false, null)
     if (text) document.execCommand('insertText', false, text)
     else document.execCommand('delete', false, null)
+    return true
   }
 
   function clickRow(row) {
@@ -72,20 +77,43 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
   }
 
-  async function resultsFor(box, term, before) {
-    typeInto(box, term)
-    // Wait for the list to actually become the search result, not the chat list we started from.
-    const changed = await waitFor(() => listSignature() !== before, 3000)
-    if (!changed) return null
-    await sleep(350) // let the list settle before reading the top row
-    return rows()[0] || null
+  // Waits until the list stops re-rendering. Comparing against the pre-typing list is not enough:
+  // when the party is already the operator's most recent chat, the filtered result looks exactly
+  // like what was on screen, and treating that as "no results" would send us back to reloading.
+  async function settledRows(maxMs = 3000, minMs = 600) {
+    const start = Date.now()
+    let previous = null
+    let stable = 0
+    for (;;) {
+      const signature = listSignature()
+      stable = signature === previous ? stable + 1 : 0
+      previous = signature
+      const elapsed = Date.now() - start
+      if (elapsed >= maxMs) break
+      if (stable >= 2 && elapsed >= minMs) break
+      await sleep(120)
+    }
+    return rows()
+  }
+
+  // Only click a row we can vouch for. A row carrying the number is proof; a search that filtered
+  // down to a single chat is good enough. Anything else means we do not know which chat is which,
+  // and reloading into the right chat beats opening the wrong one.
+  function pickRow(found, phone) {
+    const tail = phone.slice(-10)
+    const corroborated = found.find((row) => digitsOf(row.textContent).includes(tail))
+    if (corroborated) return corroborated
+    return found.length === 1 ? found[0] : null
+  }
+
+  async function resultsFor(box, term, phone) {
+    if (!typeInto(box, term)) return null
+    return pickRow(await settledRows(), phone)
   }
 
   async function openChat(phone) {
     const box = await waitFor(() => firstMatch(SEARCH_BOX), 6000)
     if (!box) return { ok: false, error: 'search box not found (logged out, or still loading)' }
-
-    const before = listSignature()
 
     // WhatsApp matches against the digits it has stored, which may or may not carry the country
     // code, so try the full number first and then the local 10-digit form.
@@ -93,7 +121,7 @@ if (!window.__ssplWhatsAppChatOpener) {
     if (phone.length > 10) terms.push(phone.slice(-10))
 
     for (const term of terms) {
-      const row = await resultsFor(box, term, before)
+      const row = await resultsFor(box, term, phone)
       if (row) {
         clickRow(row)
         await sleep(200)
@@ -107,7 +135,7 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
 
     typeInto(box, '')
-    return { ok: false, error: 'no chat matched that number' }
+    return { ok: false, error: 'no chat could be matched to that number with confidence' }
   }
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {

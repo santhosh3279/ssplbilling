@@ -51,7 +51,13 @@ async function openChat(url) {
   await chrome.tabs.update(target.id, { active: true })
   await chrome.windows.update(target.windowId, { focused: true })
 
-  if (!wanted) return { ok: true, reused: true, method: 'focus' }
+  if (!wanted) {
+    // No number to open, so the tab keeps whatever chat it had. Forget what we thought it was
+    // showing: a stale entry here would later skip a search and leave a bill pointed at the
+    // wrong party.
+    openChats.delete(target.id)
+    return { ok: true, reused: true, method: 'focus' }
+  }
   if (openChats.get(target.id) === wanted) return { ok: true, reused: true, method: 'already-open' }
 
   const searched = await askPage(target.id, wanted)
@@ -61,8 +67,10 @@ async function openChat(url) {
   }
 
   // Last resort. Opens the right chat, at the cost of the reload we are trying to avoid.
+  // Nothing is recorded: the load may land on the QR screen or on "number not on WhatsApp",
+  // and claiming the chat is open would make the next share skip straight to focusing it.
   await chrome.tabs.update(target.id, { url })
-  openChats.set(target.id, wanted)
+  openChats.delete(target.id)
   return { ok: true, reused: true, method: 'navigate', error: searched?.error || '' }
 }
 

@@ -76,12 +76,15 @@ WhatsApp's own UI:
 1. Focus the search box (`div[contenteditable="true"][data-tab="3"]`).
 2. Type the number with `document.execCommand('insertText', …)` — the only way React sees a real
    `input` event in a contenteditable.
-3. Wait for the chat list to actually change (not just for rows to exist), then click the top result.
+3. Wait for the list to stop re-rendering, then pick a row we can vouch for: one whose visible
+   digits contain the last 10 of the number, or — failing that — the only row left after filtering.
+   Any other outcome counts as no match, because opening the wrong chat is worse than a reload.
 4. If the full number finds nothing, retry with the last 10 digits — WhatsApp may have stored the
    contact without the country code.
 
-The service worker remembers `tabId → phone`, so sending a second bill to the same party does not
-even search: it just focuses the tab.
+The service worker remembers `tabId → phone` for chats it opened by search, so sending a second bill
+to the same party does not even search: it just focuses the tab. That memory is dropped whenever the
+tab is merely focused or navigated, since neither proves which chat ended up on screen.
 
 **Fallbacks.** If the search box never appears (tab logged out or still loading), or no chat matches
 the number, the worker falls back to navigating the tab — that reloads WhatsApp, but the chat does
