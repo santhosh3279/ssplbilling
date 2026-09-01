@@ -179,10 +179,10 @@ Three things make a search result list hard to read:
 
 - **Section headings are rows.** "Chats", "Contacts", "Messages" all match `[role="listitem"]`, and
   clicking one does nothing while looking like a successful click. They are filtered out by name.
-- **The panel's top row is not always the party.** Before a search resolves, New chat leads with
-  "Message yourself". A row carrying the number is waited for first and wins outright; only when
-  none appears is the panel's top row clicked, which is what was asked for — so check the contact in
-  the preview before sending.
+- **The first row is clicked, saved contact or not.** A contact match shows a name and never the
+  number, so waiting for a numbered row cost seconds on every share to a saved contact. The row is
+  simply the panel's first, once the list has stopped re-rendering — so check the contact in the
+  preview before sending. Whether the row carried the number is still reported as `confident`.
 - **A row showing the number is unambiguous wherever it sits**, so it is looked for across the page
   first, before any attempt to work out which container the results are in.
 

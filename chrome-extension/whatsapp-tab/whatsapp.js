@@ -310,7 +310,7 @@ if (!window.__ssplWhatsAppChatOpener) {
   // Waits until the result list stops re-rendering. Comparing against the pre-typing list is not
   // enough: when the party is already the most recent chat, the filtered result looks identical to
   // what was on screen, and calling that "no results" is what sent every share back to reloading.
-  async function settledRows(root, maxMs = 4000, minMs = 700) {
+  async function settledRows(root, maxMs = 2500, minMs = 350) {
     const start = Date.now()
     let previous = null
     let stable = 0
@@ -320,19 +320,9 @@ if (!window.__ssplWhatsAppChatOpener) {
       previous = signature
       const elapsed = Date.now() - start
       if (elapsed >= maxMs || (stable >= 2 && elapsed >= minMs)) break
-      await sleep(120)
+      await sleep(80)
     }
     return clickableRows(root)
-  }
-
-  // A row showing the number is proof of who it is. Otherwise the first row of a search for that
-  // number is what the operator would click by hand — taken, but reported as unconfirmed.
-  function pickRow(found, phone) {
-    const tail = phone.slice(-10)
-    const carrying = found.find((row) => digitsOf(row.textContent).includes(tail))
-    if (carrying) return { row: carrying, confident: true, why: 'row carries the number' }
-    if (found.length) return { row: found[0], confident: false, why: 'first result, number not shown' }
-    return { row: null, confident: false, why: 'no rows' }
   }
 
   // Visible only: WhatsApp keeps offscreen inputs around, and typing into one looks like success
@@ -458,54 +448,33 @@ if (!window.__ssplWhatsAppChatOpener) {
     return await clickResultFor(box, phone, 'New chat')
   }
 
-  // Shared by both routes: read the panel's own results, refuse anything that is plainly not a
-  // filtered list, click, and then prove the chat actually changed.
+  // Reads the panel's own results, clicks the first row whatever it is, and then proves the chat
+  // actually changed.
   async function clickResultFor(box, phone, route) {
     const before = openChatId()
     const tail = phone.slice(-10)
     const lap = stopwatch()
 
-    // A row displaying the number is unambiguous, so it is looked for first — but a saved contact
-    // shows a name and never the number, and waiting the full timeout for a row that cannot exist
-    // is four seconds off every share to a contact. Any row will do once one is on screen.
-    const withNumber = () => clickableRows(document).find((row) => digitsOf(row.textContent).includes(tail))
-    let carrying = await waitFor(withNumber, 1200)
-    if (!carrying) {
-      // No numbered row yet. Either the search has not answered, or the match is a saved contact
-      // showing a name — so wait for rows rather than for a number, and give the number one last
-      // look once they are there.
-      await waitFor(() => clickableRows(document).length, 3000)
-      carrying = withNumber()
-    }
-    lap('waiting for the result row')
+    // The first row is taken, saved contact or not — a contact shows a name and never the number,
+    // so waiting for the number to appear only costs seconds on every share to a contact. The
+    // panel that owns the search box is preferred as the source, since a document-wide read can
+    // pick up the background chat list.
+    await waitFor(() => clickableRows(scopeAround(box) || document).length, 4000)
+    const scope = scopeAround(box) || document
+    const found = await settledRows(scope)
+    lap('waiting for the result rows')
 
-    let row = carrying
-    let confident = !!carrying
-    let why = 'row carries the number'
-
+    const row = found[0]
     if (!row) {
-      const scope = scopeAround(box)
-      if (!scope) {
-        log(`${route}: the box's panel has no result rows at all`)
-        escape()
-        return null
-      }
-
-      const found = await settledRows(scope)
-      const picked = pickRow(found, phone)
-      row = picked.row
-      confident = picked.confident
-      why = picked.why
-      log(`${route} "${phone}": ${found.length} rows in ${describe(scope)}, ${why}`)
-      if (found[0]) log('  top row:', found[0].textContent.slice(0, 80))
-    } else {
-      log(`${route} "${phone}": ${why} — ${row.textContent.trim().slice(0, 60)}`)
-    }
-
-    if (!row) {
+      log(`${route} "${phone}": no result row for that number — stopping here`)
       escape()
       return null
     }
+
+    const confident = digitsOf(row.textContent).includes(tail)
+    const why = confident ? 'first row, carries the number' : 'first row, number not shown'
+    log(`${route} "${phone}": ${found.length} rows in ${describe(scope)}, ${why}`)
+    log('  clicking:', row.textContent.trim().slice(0, 60))
 
     lap('reading the result list')
 
