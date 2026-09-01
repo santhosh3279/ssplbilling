@@ -115,30 +115,92 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
   }
 
-  // React only registers text that arrives with real input events. execCommand produces them;
-  // when a build refuses it, a synthetic paste is the other route React honours.
-  function typeInto(box, text) {
+  const holdsFocus = (box) => document.activeElement === box || box.contains(document.activeElement)
+
+  function focusBox(box) {
     box.focus()
-    if (document.activeElement !== box) {
-      // selectAll acts on whatever has focus, so bail rather than edit some other element.
-      log('search box will not take focus; skipping')
+    if (holdsFocus(box)) return true
+    // Some builds only wire the box up once it has been clicked.
+    press(box)
+    box.focus()
+    return holdsFocus(box)
+  }
+
+  function clearBox(box) {
+    if (box.value !== undefined) {
+      setNativeValue(box, '')
+      return
+    }
+    document.execCommand('selectAll', false, null)
+    document.execCommand('delete', false, null)
+  }
+
+  // React tracks an input's value on the DOM node and ignores a plain `.value = x` as a no-op,
+  // so the write has to go through the prototype's own setter before the event is fired.
+  function setNativeValue(input, text) {
+    const proto = input instanceof HTMLTextAreaElement ? HTMLTextAreaElement : HTMLInputElement
+    Object.getOwnPropertyDescriptor(proto.prototype, 'value').set.call(input, text)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
+  }
+
+  // Every way a React field is known to accept text, tried in turn. WhatsApp's search box is a
+  // contenteditable on some builds and a real input on others, and the build that refuses
+  // execCommand still honours a paste.
+  const TYPING_STRATEGIES = [
+    ['native value setter', (box, text) => box.value !== undefined && setNativeValue(box, text)],
+    ['execCommand', (box, text) => document.execCommand('insertText', false, text)],
+    [
+      'paste event',
+      (box, text) => {
+        const data = new DataTransfer()
+        data.setData('text/plain', text)
+        box.dispatchEvent(
+          new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: data }),
+        )
+      },
+    ],
+    [
+      'beforeinput + text node',
+      (box, text) => {
+        box.dispatchEvent(
+          new InputEvent('beforeinput', {
+            inputType: 'insertText',
+            data: text,
+            bubbles: true,
+            cancelable: true,
+          }),
+        )
+        box.textContent = text
+        box.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: text, bubbles: true }))
+      },
+    ],
+  ]
+
+  function typeInto(box, text) {
+    if (!focusBox(box)) {
+      log('box will not take focus:', box.tagName, box.getAttribute('aria-label') || '')
       return false
     }
 
-    document.execCommand('selectAll', false, null)
-    document.execCommand('delete', false, null)
+    clearBox(box)
     if (!text) return true
 
-    document.execCommand('insertText', false, text)
-    if (digitsOf(boxText(box)).includes(digitsOf(text))) return true
+    for (const [name, apply] of TYPING_STRATEGIES) {
+      try {
+        apply(box, text)
+      } catch (e) {
+        log(`typing via ${name} threw:`, e)
+        continue
+      }
+      if (digitsOf(boxText(box)).includes(digitsOf(text))) {
+        log('typed via', name)
+        return true
+      }
+      clearBox(box)
+    }
 
-    log('execCommand did not stick, trying paste')
-    const data = new DataTransfer()
-    data.setData('text/plain', text)
-    box.dispatchEvent(
-      new ClipboardEvent('paste', { bubbles: true, cancelable: true, clipboardData: data }),
-    )
-    return true
+    log('FAIL: nothing could put text in that box')
+    return false
   }
 
   // Waits until the result list stops re-rendering. Comparing against the pre-typing list is not
@@ -171,6 +233,15 @@ if (!window.__ssplWhatsAppChatOpener) {
 
   const chatIsOpen = () => !!firstMatch(CHAT_PANE)
 
+  // Closes the New chat panel so a failed attempt does not leave it covering the chat list.
+  function escape() {
+    for (const type of ['keydown', 'keyup']) {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent(type, { key: 'Escape', code: 'Escape', keyCode: 27, bubbles: true }),
+      )
+    }
+  }
+
   // ── route 1: New chat ────────────────────────────────────────────────────────────────────────
   // The number does not have to be a saved contact here, which is why this is tried first.
   async function openViaNewChat(phone) {
@@ -186,31 +257,40 @@ if (!window.__ssplWhatsAppChatOpener) {
     log('clicking New chat via', button.selector)
     press(button.el)
 
-    const box = await waitFor(() => {
+    // Every text entry the panel added is a candidate: which one takes the number differs by
+    // build, and picking the first one that merely exists is what left the field empty.
+    const candidates = await waitFor(() => {
+      const fresh = []
       for (const selector of NEW_CHAT_SEARCH) {
         for (const el of document.querySelectorAll(selector)) {
-          if (!existing.has(el)) return { el, selector }
+          if (!existing.has(el) && !fresh.some((c) => c.el === el)) fresh.push({ el, selector })
         }
       }
-      return null
-    }, 4000)
+      return fresh.length ? fresh : null
+    }, 5000)
 
-    if (!box) {
+    if (!candidates) {
       log('New chat panel did not show a search box')
-      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      escape()
       return null
     }
-    log('New chat search box:', box.selector)
+    log('New chat text entries:', candidates.map((c) => c.selector).join(' | '))
+
+    const box = candidates.find((candidate) => typeInto(candidate.el, phone))
+    if (!box) {
+      log('FAIL: none of the New chat entries accepted the number')
+      escape()
+      return null
+    }
+    log('number went into', box.selector)
 
     const scope = box.el.closest(RESULT_SCOPE.join(',')) || document
-    if (!typeInto(box.el, phone)) return null
-
     const found = await settledRows(scope)
     const { row, confident, why } = pickRow(found, phone)
     log(`New chat "${phone}": ${found.length} rows, ${why}`)
     if (found[0]) log('  top row:', found[0].textContent.slice(0, 80))
     if (!row) {
-      document.body.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+      escape()
       return null
     }
 

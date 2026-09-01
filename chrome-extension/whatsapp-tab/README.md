@@ -78,7 +78,17 @@ through WhatsApp's own UI, exactly as an operator would:
 2. **Sidebar search**, for builds where the New chat panel cannot be found: type the number, click
    the matching row, retry with the last 10 digits since WhatsApp may have stored the contact
    without the country code.
-3. **Navigate** — the last resort, and the only path that reloads.
+3. **Navigate** — the last resort, and the only path that reloads. Currently **off**
+   (`ALLOW_RELOAD_FALLBACK = false` in `background.js`): a share that cannot open the chat reports
+   `not-opened` and leaves the bill in Downloads rather than rebooting WhatsApp Web. Flip the flag
+   to bring it back.
+
+Getting text into the search box is the step that breaks most often, because WhatsApp's box is a
+contenteditable on some builds and a real `<input>` on others, and React ignores a plain
+`.value = x`. So every text entry the New chat panel added is tried in turn, each with four
+strategies — the prototype's native value setter, `execCommand('insertText')`, a synthetic paste,
+and `beforeinput` plus a text node — and the field is read back after each to see which one stuck.
+The console line `typed via …` names the winner.
 
 Text goes in through `document.execCommand('insertText', …)`, the only way React sees a real `input`
 event in a contenteditable, with a synthetic paste as backup. Results are read once the list stops

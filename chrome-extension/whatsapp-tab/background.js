@@ -8,6 +8,11 @@
 // the tab is never navigated and never reloads. Navigation is kept only as a fallback for when
 // that fails — a WhatsApp UI change, a logged-out tab, a number with no matching chat.
 
+// Navigating an existing WhatsApp tab to /send?phone= always opens the right chat, but it reboots
+// WhatsApp Web. Turned off while the in-place route is being made reliable: a share that cannot
+// open the chat now says so instead of reloading. Flip to true to bring the fallback back.
+const ALLOW_RELOAD_FALLBACK = false
+
 const WHATSAPP_TAB_PATTERNS = ['*://web.whatsapp.com/*']
 const CHAT_OPEN = 'SSPL_WA_OPEN_CHAT'
 const ATTACH_NOW = 'SSPL_WA_ATTACH_NOW'
@@ -101,11 +106,24 @@ async function openChat(url, attachment) {
     }
   }
 
-  // Last resort. Opens the right chat, at the cost of the reload we are trying to avoid.
-  // Nothing is remembered about the chat: the load may land on the QR screen or on "number not
-  // on WhatsApp", and claiming the chat is open would make the next share skip straight to
-  // focusing it. The bill is stashed first so the reloaded page can pick it up on its own.
+  // Nothing is remembered about the chat: we could not open it, and claiming otherwise would make
+  // the next share skip straight to focusing whatever is on screen.
   openChats.delete(target.id)
+
+  if (!ALLOW_RELOAD_FALLBACK) {
+    // The tab is focused and the bill is in Downloads; the operator opens the chat by hand.
+    await chrome.storage.local.remove(stashKey(target.id))
+    return {
+      ok: true,
+      reused: true,
+      attached: false,
+      method: 'not-opened',
+      error: lastSearchError,
+    }
+  }
+
+  // Opens the right chat, at the cost of the reload. The bill is stashed first so the reloaded
+  // page can pick it up on its own — the worker may be evicted while that load runs.
   await stash(target.id, attachment)
   await chrome.tabs.update(target.id, { url })
   return { ok: true, reused: true, attached: !!attachment, method: 'navigate', error: lastSearchError }
