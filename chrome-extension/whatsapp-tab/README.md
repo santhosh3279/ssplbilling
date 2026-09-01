@@ -128,15 +128,15 @@ The share also hands the PDF to the WhatsApp tab, so the operator does not drag 
    **Document** cost a second and made WhatsApp log `File chooser dialog can only be shown with a
    user activation`, since a synthetic click raises no picker. The menu is opened only when no
    input is mounted; a synthetic drop on the chat pane is the last fallback.
-5. Three seconds later the message is typed into the preview's **own caption box** — found inside
-   the preview modal (`[data-animate-modal-body]`, `[role="dialog"]`), then by a box naming itself a
-   caption, then by a message-labelled box outside `footer`. The chat composer answers to "Type a
+5. The message is typed into the preview's **own caption box**, and only there: a box inside the
+   preview modal (`[data-animate-modal-body]`, `[role="dialog"]`, `[data-animate-drawer-body]`), or
+   one naming itself a caption. There is no wider fallback — the chat composer answers to "Type a
    message" too, and writing there posts the bill line as a separate chat message instead of
-   captioning the file, so the composer is never used as a fallback. The wait is
-   deliberate: the preview builds itself around a PDF thumbnail, and a box written to mid-render
-   loses the text. Nothing is typed into the composer beforehand — the preview discarded it on
-   older builds and carried it across on current ones, and that second copy is what repeated the
-   bill line. The box is read first and left alone when it already holds the message.
+   captioning the file. That box is **waited for** (up to 30s) rather than slept on: the preview
+   appears once WhatsApp has encrypted and uploaded the file, which is under a second on a good
+   link and much longer on a slow one, so a fixed delay is either dead time or too early. The box
+   is read first and left alone when it already holds the message; if it never appears the caption
+   is skipped and the failure logged.
 
 **Nothing is ever sent automatically.** The operator sees the preview with the file and caption and
 presses send.

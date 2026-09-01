@@ -69,8 +69,9 @@ if (!window.__ssplWhatsAppChatOpener) {
   // own composer, which also answers to "Type a message" — writing there sends a plain text message
   // beside the bill instead of captioning it.
   const PREVIEW_SCOPE = '[data-animate-modal-body], [role="dialog"], [data-animate-drawer-body]'
-  // How long the attachment preview is given to build itself before its caption box is written to.
-  const CAPTION_DELAY_MS = 3000
+  // How long the attachment preview is given to appear. Generous: WhatsApp encrypts and uploads
+  // the file before showing it, so a big bill on a slow uplink is the case this has to cover.
+  const CAPTION_WAIT_MS = 30000
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -578,23 +579,16 @@ if (!window.__ssplWhatsAppChatOpener) {
   const labelOf = (el) =>
     `${el.getAttribute('aria-label') || ''} ${el.getAttribute('placeholder') || ''} ${el.getAttribute('title') || ''}`
 
-  // The preview's caption box, never the chat composer. Looked for in three narrowing steps: a box
-  // inside the preview modal, then any box that names itself a caption, then a message-labelled box
-  // that is at least not the composer in the chat's footer. Falling back to the composer is what
-  // put the bill line in the chat as a message of its own instead of as the file's caption.
+  // The preview's caption box and nothing else: a box inside the preview modal, or one that names
+  // itself a caption. There is deliberately no wider fallback — every other text box on screen is
+  // the chat composer, and writing the bill line there posts it as a message of its own instead of
+  // captioning the file.
   function captionBox() {
     for (const scope of document.querySelectorAll(PREVIEW_SCOPE)) {
       const inside = textEntries(scope).filter((el) => CAPTION_HINTS.test(labelOf(el)))
       if (inside.length) return inside[0]
     }
-
-    const named = textEntries().find((el) => CAPTION_ONLY.test(labelOf(el)))
-    if (named) return named
-
-    const notTheComposer = textEntries().find(
-      (el) => CAPTION_HINTS.test(labelOf(el)) && !el.closest('footer'),
-    )
-    return notTheComposer || null
+    return textEntries().find((el) => CAPTION_ONLY.test(labelOf(el))) || null
   }
 
   async function attach(attachment) {
@@ -626,16 +620,14 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
 
     // The message is typed only after the bill is in, and only into the preview's own caption box.
-    // The preview takes a moment to build itself — it renders the PDF thumbnail first — and a box
-    // written to while that is happening loses the text, so the three seconds are waited out
-    // before looking for it.
+    // Waited for rather than slept on: the preview appears when WhatsApp has finished reading and
+    // uploading the file, which is anywhere from under a second to a slow uplink's worth, and a
+    // fixed delay is either dead time or too early.
     if (attachment.caption) {
-      log('bill handed over; waiting 3s for the preview before typing the message')
-      await sleep(CAPTION_DELAY_MS)
-
+      log('bill handed over; waiting for the preview caption box')
       // Same shape problem as the search box: this is a contenteditable on older builds and an
       // input on current ones, so it is found by label rather than by tag.
-      const box = await waitFor(captionBox, 8000)
+      const box = await waitFor(captionBox, CAPTION_WAIT_MS)
       if (!box) {
         log('FAIL: no caption box in the preview; not typing into the chat composer instead')
         log('  boxes on screen:', dumpEntries())
