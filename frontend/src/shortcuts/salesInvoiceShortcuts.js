@@ -19,4 +19,5 @@ export const salesInvoiceShortcuts = (handlers) => ({
   'DELETE':  handlers.deleteRow        || (() => {}),
   'CTRL+O':  handlers.openGstBillCreator|| (() => {}),
   'CTRL+K':  handlers.openBillMirror    || (() => {}),
+  'CTRL+SHIFT+K': handlers.retryMirrorBill || (() => {}),
 })

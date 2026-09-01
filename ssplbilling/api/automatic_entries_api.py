@@ -392,11 +392,18 @@ def ensure_cost_center_in_company(original_cost_center, target_company):
 	return new_cc.name
 
 
+def mirror_name_for(name):
+	"""Name of the mirror document for `name`. The rule is bidirectional: a source
+	name gains a trailing slash, and a name that already ends in one (a return series
+	such as RTN06879/) loses it, so the pair never collides."""
+	return name[:-1] if name.endswith("/") else f"{name}/"
+
+
 def create_mirror_sales_invoice(si, automatic_entries):
 	"""Create + submit a mirror Sales Invoice for `si` in the alternate company, named
 	si.name + '/', posted against the Automatic Entries warehouse with accounts
 	substituted via resolve_target_account."""
-	mirror_name = si.name[:-1] if si.name.endswith("/") else f"{si.name}/"
+	mirror_name = mirror_name_for(si.name)
 	if frappe.db.exists("Sales Invoice", mirror_name):
 		return frappe.get_doc("Sales Invoice", mirror_name)
 
@@ -558,6 +565,60 @@ def mirror_bill(si):
 		return None
 
 
+@frappe.whitelist()
+def retry_mirror_bill(sales_invoice_name):
+	"""Manually create the mirror bill (and its payments) for an already-submitted
+	Sales Invoice whose automatic mirroring failed.
+
+	Unlike `mirror_bill`, this does NOT swallow the failure into the Error Log — the
+	exception propagates so the operator sees why it failed and can fix it.
+
+	Returns one of:
+	  {"status": "exists",         "invoice_name": ...}  mirror already there, nothing done
+	  {"status": "created",        "invoice_name": ...}  mirror created now
+	  {"status": "not_configured"}                       series is not set up for mirroring
+	"""
+	si = frappe.get_doc("Sales Invoice", sales_invoice_name)
+	if si.docstatus != 1:
+		frappe.throw("Only a submitted Sales Invoice can be mirrored.")
+
+	ae = get_automatic_entries()
+	# Checked before the exists lookup on purpose: should_mirror_sales_invoice is False
+	# when si is itself in the alternate company, so opening a mirror and pressing the
+	# key reports "not configured" rather than a misleading "already created".
+	if not should_mirror_sales_invoice(si.naming_series, ae, si.company):
+		return {"status": "not_configured"}
+
+	mirror_name = mirror_name_for(si.name)
+	if frappe.db.exists("Sales Invoice", mirror_name):
+		return {"status": "exists", "invoice_name": mirror_name, "company": ae.alternative_company}
+
+	msi = create_mirror_sales_invoice(si, ae)
+
+	# A mirror that was just created has no payments yet, so this cannot double-post.
+	# The helpers are the same ones the GST-conversion mirror uses and derive the
+	# amounts from si's own submitted Payment Entries / Journal Entries.
+	payments_error = None
+	sp = "sp_" + frappe.generate_hash(length=10)
+	frappe.db.savepoint(sp)
+	try:
+		from ssplbilling.api.cashier_mirroring_api import mirror_payments_for_gst_conversion
+
+		mirror_payments_for_gst_conversion(si, msi, ae)
+		frappe.db.release_savepoint(sp)
+	except Exception as e:
+		frappe.db.rollback(save_point=sp)
+		frappe.log_error(frappe.get_traceback(), "Automatic Entries: manual mirror payments failed")
+		payments_error = str(e)
+
+	return {
+		"status": "created",
+		"invoice_name": msi.name,
+		"company": msi.company,
+		"payments_error": payments_error,
+	}
+
+
 
 
 
@@ -696,7 +757,7 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 	With use_series_naming=True the mirror is named from `naming_series` instead of
 	si.name + '/', so repeated calls create new invoices (manual conversion mirroring).
 	"""
-	mirror_name = None if use_series_naming else (si.name[:-1] if si.name.endswith("/") else f"{si.name}/")
+	mirror_name = None if use_series_naming else mirror_name_for(si.name)
 	if mirror_name and frappe.db.exists("Sales Invoice", mirror_name):
 		return frappe.get_doc("Sales Invoice", mirror_name)
 

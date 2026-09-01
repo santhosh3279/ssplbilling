@@ -79,7 +79,10 @@ export async function frappeGet(method, params = {}) {
  * POST to a Frappe whitelisted method.
  * On any error only the exception message is shown in a browser alert before throwing.
  */
-export async function frappePost(method, body = {}) {
+export async function frappePost(method, body = {}, { silent = false } = {}) {
+  // `silent` suppresses the built-in alert so the caller can present the failure
+  // itself (still throws — the caller must catch).
+  const reportError = (msg) => { if (!silent) alertPostError(method, msg); };
   let res;
   try {
     res = await fetch(`/api/method/${method}`, {
@@ -89,7 +92,7 @@ export async function frappePost(method, body = {}) {
     });
   } catch (networkErr) {
     const msg = `Network error: ${networkErr.message}`;
-    alertPostError(method, msg);
+    reportError(msg);
     throw new Error(msg);
   }
 
@@ -107,14 +110,14 @@ export async function frappePost(method, body = {}) {
     } catch {
       try { detail += "\n\n" + (await res.text()); } catch { /* ignore */ }
     }
-    alertPostError(method, detail);
+    reportError(detail);
     throw new Error(detail);
   }
 
   const json = await res.json();
   if (json.exc) {
     const shortMsg = parseExc(json.exc);
-    alertPostError(method, shortMsg);
+    reportError(shortMsg);
     throw new Error(shortMsg);
   }
   return json.message ?? json;

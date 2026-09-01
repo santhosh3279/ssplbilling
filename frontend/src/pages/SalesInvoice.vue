@@ -706,6 +706,7 @@
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
         { key: 'Ctrl+K', desc: 'Mirror bill to alternate company (conversion series)' },
+        { key: 'Ctrl+Shift+K', desc: 'Retry the automatic mirror bill for this invoice' },
       ]"
       @close="showShortcutPage = false"
     />
@@ -3162,6 +3163,7 @@ useShortcuts(salesInvoiceShortcuts({
   },
   openGstBillCreator: () => handleOpenGstBillCreator(),
   openBillMirror:     () => handleOpenBillMirror(),
+  retryMirrorBill:    () => handleRetryMirrorBill(),
 }), props.isSubwindow ? 'subwindow' : 'local')
 
 function handleOpenGstBillCreator() {
@@ -3190,6 +3192,53 @@ function handleOpenBillMirror() {
     return
   }
   showBillMirrorCreator.value = true
+}
+
+const retryingMirror = ref(false)
+
+// Ctrl+Shift+K — re-run the mirror bill that submit_invoice_with_payment creates
+// automatically. That path swallows its failure into the Error Log, so an invoice can
+// end up submitted with no mirror; this reports the real reason instead.
+async function handleRetryMirrorBill() {
+  if (!invoiceNo.value || invoiceNo.value === 'NEW' || !isSaved.value) {
+    alert('Please save the sales invoice first.')
+    return
+  }
+  if (!isReadOnly.value) return
+  if (retryingMirror.value) return
+
+  retryingMirror.value = true
+  try {
+    // silent: the failure message is ERPNext HTML, shown below with tags stripped
+    const res = await frappePost('ssplbilling.api.automatic_entries_api.retry_mirror_bill', {
+      sales_invoice_name: invoiceNo.value,
+    }, { silent: true })
+    const r = res?.message || res
+    if (r?.status === 'exists') {
+      alert(`Mirror bill already created by the system: ${r.invoice_name}`)
+    } else if (r?.status === 'not_configured') {
+      alert('This invoice series is not configured for mirroring in Automatic Entries.')
+    } else if (r?.status === 'created') {
+      alert(
+        `Mirror bill created: ${r.invoice_name}` +
+        (r.payments_error ? `\n\nPayments could not be mirrored: ${stripHtml(r.payments_error)}` : '')
+      )
+    } else {
+      alert('Mirror bill: unexpected response from the server.')
+    }
+  } catch (e) {
+    // The server message carries ERPNext's HTML (links, <li>), which alert() would
+    // otherwise print as raw tags.
+    alert(`Mirror bill failed:\n\n${stripHtml(e?.message || String(e))}`)
+  } finally {
+    retryingMirror.value = false
+  }
+}
+
+function stripHtml(msg) {
+  const el = document.createElement('div')
+  el.innerHTML = String(msg || '').replace(/<br\s*\/?>|<\/li>/gi, '\n')
+  return (el.textContent || '').replace(/\n{3,}/g, '\n\n').trim()
 }
 
 function handleGlobalEscape(e) {
