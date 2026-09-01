@@ -353,6 +353,14 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
   }
 
+  // What is typed into the search: the country code is dropped, since WhatsApp stores Indian
+  // contacts as the bare 10 digits and searching the 91-prefixed form can miss them. Matching a
+  // result row still uses the last 10 digits, so it is the same number either way.
+  const searchTerm = (phone) => {
+    const digits = digitsOf(phone)
+    return digits.length > 10 ? digits.slice(-10) : digits
+  }
+
   // ── route 1: New chat ────────────────────────────────────────────────────────────────────────
   // The number does not have to be a saved contact here, which is why this is tried first.
   async function openViaNewChat(phone) {
@@ -389,9 +397,12 @@ if (!window.__ssplWhatsAppChatOpener) {
     }
     log('New chat candidates:', candidates.map((el) => describe(el)).join(' '))
 
+    const term = searchTerm(phone)
+    if (term !== phone) log('searching without the country code:', term)
+
     let box = null
     for (const candidate of candidates) {
-      if (await typeInto(candidate, phone)) {
+      if (await typeInto(candidate, term)) {
         box = candidate
         break
       }

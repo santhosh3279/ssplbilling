@@ -74,10 +74,11 @@ whole WhatsApp Web app every time. Instead `whatsapp.js` runs inside the WhatsAp
 through WhatsApp's own UI, exactly as an operator would:
 
 1. **New chat**, then type the number, then click the first result row — the only route, because it
-   also works for numbers that are not saved as contacts. A step that finds nothing (no New chat
-   button, no box that takes the number, no result row) stops the run there; there is no second
-   search. The sidebar-search route, and with it the retry on the last 10 digits for contacts stored
-   without a country code, was removed.
+   also works for numbers that are not saved as contacts. The country code is stripped before
+   typing: WhatsApp stores contacts as the bare 10 digits, and the 91-prefixed form can miss them.
+   Rows are still matched on the last 10 digits, so it is the same number either way. A step that
+   finds nothing (no New chat button, no box that takes the number, no result row) stops the run
+   there; there is no second search. The sidebar-search route was removed.
 2. **Navigate** — the last resort, and the only path that reloads. Currently **off**
    (`ALLOW_RELOAD_FALLBACK = false` in `background.js`): a share that cannot open the chat reports
    `not-opened` and leaves the bill in Downloads rather than rebooting WhatsApp Web. Flip the flag
