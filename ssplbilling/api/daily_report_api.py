@@ -34,7 +34,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None, compa
                 return frappe.get_all(
                         "Sales Invoice",
                         filters=filters,
-                        fields=["name", "customer_name", "grand_total", "docstatus", "posting_date", "posting_time", "naming_series"],
+                        fields=["name", "customer_name", "grand_total", "total_taxes_and_charges", "docstatus", "posting_date", "posting_time", "naming_series"],
                         order_by="posting_date desc, posting_time desc"
                 )
 
@@ -62,7 +62,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None, compa
                 return frappe.get_all(
                         "Purchase Invoice",
                         filters=filters,
-                        fields=["name", "supplier_name", "grand_total", "docstatus", "posting_date", "posting_time", "naming_series"],
+                        fields=["name", "supplier_name", "grand_total", "total_taxes_and_charges", "docstatus", "posting_date", "posting_time", "naming_series"],
                         order_by="posting_date desc, posting_time desc"
                 )
 

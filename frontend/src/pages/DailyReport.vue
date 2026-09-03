@@ -166,7 +166,7 @@
                 <td v-for="col in columns" :key="col.key" class="px-2 py-1.5 font-normal text-[var(--color-text)] text-[21px]">
                   <template v-if="col.type === 'currency'">
                     ₹ {{ (row[col.key] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-                    <span v-if="row.direction" class="ml-1 text-sm font-bold" :class="row.direction === 'CR' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ row.direction }}</span>
+                    <span v-if="row.direction && col.key === 'display_amount'" class="ml-1 text-sm font-bold" :class="row.direction === 'CR' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ row.direction }}</span>
                   </template>
                   <template v-else-if="col.type === 'date'">
                     {{ formatDate(row[col.key]) }}
@@ -348,6 +348,7 @@ const columns = computed(() => {
       { label: 'Invoice No', key: 'name' },
       { label: 'Customer', key: 'customer_name' },
       { label: 'Time', key: 'posting_time', type: 'time' },
+      { label: 'Tax', key: 'total_taxes_and_charges', type: 'currency' },
       { label: 'Amount', key: 'display_amount', type: 'currency' },
       { label: 'Status', key: 'docstatus' },
     ]
@@ -357,6 +358,7 @@ const columns = computed(() => {
       { label: 'Invoice No', key: 'name' },
       { label: 'Supplier', key: 'supplier_name' },
       { label: 'Time', key: 'posting_time', type: 'time' },
+      { label: 'Tax', key: 'total_taxes_and_charges', type: 'currency' },
       { label: 'Amount', key: 'display_amount', type: 'currency' },
       { label: 'Status', key: 'docstatus' },
     ]
