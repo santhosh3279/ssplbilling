@@ -119,6 +119,18 @@
         <span class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1.5">No. of Entries</span>
         <span class="text-[28px] font-normal text-[var(--color-text)] leading-none font-mono">{{ summary.count }}</span>
       </div>
+      <template v-if="summary.hasTax">
+        <div class="h-10 w-px bg-[var(--color-border)]"></div>
+        <div class="flex flex-col">
+          <span class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1.5">Sum of Net</span>
+          <span class="text-[28px] font-normal text-[var(--color-text)] leading-none font-mono">₹ {{ summary.net.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+        </div>
+        <div class="h-10 w-px bg-[var(--color-border)]"></div>
+        <div class="flex flex-col">
+          <span class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1.5">Sum of Tax</span>
+          <span class="text-[28px] font-normal text-[var(--color-warning)] leading-none font-mono">₹ {{ summary.tax.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
+        </div>
+      </template>
       <div class="h-10 w-px bg-[var(--color-border)]"></div>
       <div class="flex flex-col">
         <span class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1.5">Sum of Total</span>
@@ -270,8 +282,13 @@ const sortedReportData = computed(() => {
 const summary = computed(() => {
   const count = reportData.value.length
   let amount = 0
+  let net = 0
+  let tax = 0
   let qty = 0
   let hasQty = false
+  // Only the invoice tabs carry a net and a tax; a payment or a journal has neither, and showing
+  // them as zero there would read as "no tax on these" rather than "not a thing here".
+  let hasTax = false
 
   reportData.value.forEach(row => {
     amount += (row.display_amount || 0)
@@ -279,9 +296,14 @@ const summary = computed(() => {
       qty += (row.qty || 0)
       hasQty = true
     }
+    if (row.total_taxes_and_charges !== undefined) {
+      net += (row.net_total || 0)
+      tax += (row.total_taxes_and_charges || 0)
+      hasTax = true
+    }
   })
 
-  return { count, amount, qty, hasQty }
+  return { count, amount, net, tax, qty, hasQty, hasTax }
 })
 
 const presets = [
