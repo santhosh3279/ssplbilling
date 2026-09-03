@@ -73,6 +73,9 @@ if (!window.__ssplWhatsAppChatOpener) {
   // own composer, which also answers to "Type a message" — writing there sends a plain text message
   // beside the bill instead of captioning it.
   const PREVIEW_SCOPE = '[data-animate-modal-body], [role="dialog"], [data-animate-drawer-body]'
+  // A drawer is not the preview: New chat is one, and it is on screen moments earlier in this very
+  // run. An unlabelled box inside a drawer is its search field, so only a named box counts there.
+  const DRAWER_SCOPE = '[data-animate-drawer-body]'
   // How long the attachment preview is given to appear. Generous: WhatsApp encrypts and uploads
   // the file before showing it, so a big bill on a slow uplink is the case this has to cover.
   const CAPTION_WAIT_MS = 30000
@@ -613,17 +616,19 @@ if (!window.__ssplWhatsAppChatOpener) {
   }
 
   // The preview's caption box and nothing else: a box inside the preview modal, or one that names
-  // itself a caption. There is deliberately no wider fallback — every other text box on screen is
-  // the chat composer, and writing the bill line there posts it as a message of its own instead of
-  // captioning the file.
+  // itself a caption. The widening stops there on purpose — every other text box on screen is the
+  // chat composer or the New chat search, and writing the bill line into either sends it as a
+  // message of its own instead of captioning the file.
   function captionBox() {
     for (const scope of document.querySelectorAll(PREVIEW_SCOPE)) {
       const inside = textEntries(scope)
       if (!inside.length) continue
-      // Scoped to the preview already, so an unlabelled box in here cannot be the chat composer —
-      // the composer lives in the chat footer, never inside the modal. A box that names itself
-      // still wins, in case the preview ever holds a second field.
-      return inside.find((el) => CAPTION_HINTS.test(labelOf(el))) || inside[0]
+      const named = inside.find((el) => CAPTION_HINTS.test(labelOf(el)))
+      if (named) return named
+      // Only a modal earns the unlabelled fallback: nothing else in there can hold text, whereas a
+      // drawer's one box is its search field. A build that stops labelling the caption box is the
+      // case this covers.
+      if (!scope.matches(DRAWER_SCOPE)) return inside[0]
     }
     // Outside the preview the label is the only thing telling the caption box from the composer,
     // so this stays strict: no label, no typing.
