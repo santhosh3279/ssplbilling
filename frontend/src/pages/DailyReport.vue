@@ -130,6 +130,11 @@
           <span class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1.5">Sum of Tax</span>
           <span class="text-[28px] font-normal text-[var(--color-warning)] leading-none font-mono">₹ {{ summary.tax.toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}</span>
         </div>
+        <div class="h-10 w-px bg-[var(--color-border)]"></div>
+        <div class="flex flex-col">
+          <span class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1.5">Avg Tax</span>
+          <span class="text-[28px] font-normal text-[var(--color-warning)] leading-none font-mono">{{ summary.avgTax.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}%</span>
+        </div>
       </template>
       <div class="h-10 w-px bg-[var(--color-border)]"></div>
       <div class="flex flex-col">
@@ -303,7 +308,9 @@ const summary = computed(() => {
     }
   })
 
-  return { count, amount, net, tax, qty, hasQty, hasTax }
+  const avgTax = net ? (tax / net) * 100 : 0
+
+  return { count, amount, net, tax, avgTax, qty, hasQty, hasTax }
 })
 
 const presets = [
