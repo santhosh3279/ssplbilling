@@ -208,7 +208,7 @@
                 <textarea
                   ref="remarksInput"
                   v-model="userRemarks"
-                  @keydown.enter.prevent="handleRemarksEnter"
+                  @keydown.enter.prevent.stop="handleRemarksEnter"
                   rows="2"
                   class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-2xl font-bold text-[var(--color-text)] outline-none focus:bg-black/5 transition-all shadow-sm focus:text-inherit placeholder:text-inherit"
                   placeholder="Internal notes..."
@@ -239,13 +239,16 @@
                   <button
                     ref="saveButton"
                     @click="saveEntry"
-                    @keydown.enter="saveEntry"
+                    @keydown.enter.prevent.stop="saveEntry"
+                    @focus="isSaveFocused = true"
+                    @blur="isSaveFocused = false"
                     :disabled="isSubmitting || !canSave || submitting"
-                    class="flex items-center gap-2 rounded-xl bg-[var(--color-info)] px-8 py-3 text-base font-bold text-[var(--color-text-on-highlight)] shadow-lg shadow-blue-900/50 hover:bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+                    class="flex items-center gap-2 rounded-xl px-8 py-3 text-base font-bold text-[var(--color-text-on-highlight)] shadow-lg transition-all active:scale-95 disabled:opacity-50 disabled:pointer-events-none focus:outline-none focus:ring-4 focus:ring-[var(--color-focus)] focus:bg-[var(--color-success)] focus:scale-105"
+                    :class="isSaveFocused ? 'bg-[var(--color-success)] ring-4 ring-[var(--color-focus)] scale-105 shadow-2xl shadow-green-900/50' : 'bg-[var(--color-info)] shadow-blue-900/50 hover:bg-[var(--color-info)]'"
                   >
                     <span v-if="isSubmitting" class="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent mr-1"></span>
                     <span>Save Entry</span>
-                    <kbd class="ml-2 rounded border border-[var(--color-info)] bg-[var(--color-info)] px-2 py-0.5 font-mono text-xs text-[var(--color-text-on-focus)]">F9</kbd>
+                    <kbd class="ml-2 rounded border border-white/30 bg-black/20 px-2 py-0.5 font-mono text-xs text-white">F9</kbd>
                   </button>
                 </div>
               </div>
@@ -388,6 +391,7 @@ const ledgerSearchModal = ref(null)
 const ledgerSearchQuery = ref('')
 const remarksInput = ref(null)
 const saveButton = ref(null)
+const isSaveFocused = ref(false)
 const errorBlink = ref(false)
 const blinkCell = ref(null)
 
@@ -605,8 +609,14 @@ function moveNext(idx, field) {
   }
 }
 
-function handleRemarksEnter() {
-  saveButton.value?.focus()
+function handleRemarksEnter(e) {
+  e?.preventDefault?.()
+  e?.stopPropagation?.()
+  if (canSave.value) {
+    nextTick(() => {
+      saveButton.value?.focus()
+    })
+  }
 }
 
 const ENTRY_TYPES = ['Journal Entry', 'Contra', 'Opening Entry']
@@ -707,6 +717,10 @@ async function saveEntry() {
     rows.value = [
       { account: '', account_name: '', account_type: '', current_balance: 0, debit: 0, credit: 0 }
     ]
+    isSaveFocused.value = false
+    nextTick(() => {
+      ledgerRefs[0]?.focus()
+    })
   } catch (e) {
     alert('Failed to save: ' + e.message)
   } finally {
