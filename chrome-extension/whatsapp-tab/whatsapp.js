@@ -65,17 +65,19 @@ if (!window.__ssplWhatsAppChatOpener) {
   const MENU_ITEM = '[role="menuitem"], [role="button"], li, button'
   const DOCUMENT_LABEL = /^document(s)?$/i
   const CHAT_PANE = ['#main', '[data-tab="10"]', 'footer']
-  // The preview's own box says "caption" on current builds; older ones label it like the composer,
-  // hence the second word — but a box matching only that is taken solely from inside the preview.
-  const CAPTION_HINTS = /caption|message/i
+  // The preview's box names itself "Add a caption" on current builds. Only that word: the chat
+  // composer's own aria-placeholder is "Type a message", so a pattern including "message" matches
+  // the very box the caption must never be typed into.
   const CAPTION_ONLY = /caption/i
-  // The attachment preview is a modal over the chat. Its box has to be told apart from the chat's
-  // own composer, which also answers to "Type a message" — writing there sends a plain text message
-  // beside the bill instead of captioning it.
+  // Where the preview modal has been seen to live. A preference, not a gate — WhatsApp has already
+  // renamed this wrapper once, and a run where none of these matched is what left the caption
+  // unwritten with the preview plainly open.
   const PREVIEW_SCOPE = '[data-animate-modal-body], [role="dialog"], [data-animate-drawer-body]'
-  // A drawer is not the preview: New chat is one, and it is on screen moments earlier in this very
-  // run. An unlabelled box inside a drawer is its search field, so only a named box counts there.
-  const DRAWER_SCOPE = '[data-animate-drawer-body]'
+  // The two boxes that are never the caption box, whatever a build calls them: WhatsApp tags its
+  // composer data-tab="10" and its chat search data-tab="3". Typing the bill line into the first
+  // sends it as a message of its own; into the second, it searches for it.
+  const NOT_CAPTION_TAB = '[data-tab="10"], [data-tab="3"]'
+  const COMPOSER_LABEL = /type a message/i
   // How long the attachment preview is given to appear. Generous: WhatsApp encrypts and uploads
   // the file before showing it, so a big bill on a slow uplink is the case this has to cover.
   const CAPTION_WAIT_MS = 30000
@@ -615,24 +617,29 @@ if (!window.__ssplWhatsAppChatOpener) {
     return await waitFor(() => firstMatch(FILE_INPUT), 3000)
   }
 
-  // The preview's caption box and nothing else: a box inside the preview modal, or one that names
-  // itself a caption. The widening stops there on purpose — every other text box on screen is the
-  // chat composer or the New chat search, and writing the bill line into either sends it as a
-  // message of its own instead of captioning the file.
+  // The preview's caption box, found by name first and by elimination second. Never the composer
+  // and never the chat search: the bill line typed into either is sent or searched for, not
+  // attached to the file.
   function captionBox() {
-    for (const scope of document.querySelectorAll(PREVIEW_SCOPE)) {
-      const inside = textEntries(scope)
-      if (!inside.length) continue
-      const named = inside.find((el) => CAPTION_HINTS.test(labelOf(el)))
-      if (named) return named
-      // Only a modal earns the unlabelled fallback: nothing else in there can hold text, whereas a
-      // drawer's one box is its search field. A build that stops labelling the caption box is the
-      // case this covers.
-      if (!scope.matches(DRAWER_SCOPE)) return inside[0]
-    }
-    // Outside the preview the label is the only thing telling the caption box from the composer,
-    // so this stays strict: no label, no typing.
-    return textEntries().find((el) => CAPTION_ONLY.test(labelOf(el))) || null
+    const entries = textEntries()
+
+    // A box that names itself a caption, wherever it sits. Chasing the modal's wrapper class is
+    // what failed before; the label is the part WhatsApp keeps.
+    const named = entries.find((el) => CAPTION_ONLY.test(labelOf(el)))
+    if (named) return named
+
+    // Nothing named itself, so the box is found by elimination. Safe only here: the bill is already
+    // handed over, so the preview is up, and the composer and the search are the only other text
+    // boxes WhatsApp keeps on screen — both ruled out by tag and by label, either alone enough.
+    const rest = entries.filter(
+      (el) =>
+        !el.closest(NOT_CAPTION_TAB) &&
+        !COMPOSER_LABEL.test(labelOf(el)) &&
+        !SEARCH_HINTS.test(labelOf(el)),
+    )
+    // One inside a known preview wrapper still wins, so a build that mounts some other unlabelled
+    // box cannot take the caption on document order alone.
+    return rest.find((el) => el.closest(PREVIEW_SCOPE)) || rest[0] || null
   }
 
   async function attach(attachment) {
@@ -675,7 +682,7 @@ if (!window.__ssplWhatsAppChatOpener) {
       if (!box) {
         log('FAIL: no caption box in the preview; not typing into the chat composer instead')
         // Which half failed: no preview modal at all, or a modal holding no text box we can see.
-        log('  preview scopes on screen:', document.querySelectorAll(PREVIEW_SCOPE).length)
+        log('  preview wrappers on screen:', document.querySelectorAll(PREVIEW_SCOPE).length)
         log('  boxes on screen:', dumpEntries())
       } else if (boxText(box).trim() === attachment.caption.trim()) {
         // Nothing to do when WhatsApp has already carried the text across by itself; writing it
@@ -683,7 +690,10 @@ if (!window.__ssplWhatsAppChatOpener) {
         log('preview already carries the message; leaving it alone')
       } else {
         log('caption box:', describe(box))
-        await typeInto(box, attachment.caption)
+        const typed = await typeInto(box, attachment.caption)
+        // What the box holds afterwards, not merely whether a strategy claimed success: a caption
+        // that goes in and is then wiped by the next strategy's clear looks identical from here.
+        log(typed ? 'caption in place:' : 'caption did NOT stick; box now holds:', JSON.stringify(boxText(box)))
       }
     }
 
