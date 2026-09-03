@@ -94,7 +94,7 @@ if (!window.__ssplWhatsAppChatOpener) {
   // Enough of an element to identify it in a bug report without dumping WhatsApp's markup.
   function describe(el) {
     if (!el) return 'none'
-    const attrs = ['aria-label', 'data-tab', 'role', 'contenteditable', 'type', 'placeholder']
+    const attrs = ['aria-label', 'aria-placeholder', 'data-placeholder', 'data-tab', 'role', 'contenteditable', 'type', 'placeholder']
       .map((name) => (el.hasAttribute(name) ? `${name}="${el.getAttribute(name)}"` : ''))
       .filter(Boolean)
       .join(' ')
@@ -343,10 +343,19 @@ if (!window.__ssplWhatsAppChatOpener) {
   }
 
   // Boxes that name themselves a search go first; everything else keeps document order.
+  // Every attribute a box can name itself with. aria-placeholder and data-placeholder are the ones
+  // that matter on current builds: WhatsApp's editors are Lexical contenteditables carrying only
+  // an aria-placeholder, so reading aria-label/placeholder/title alone leaves them nameless — which
+  // is what stopped the bill's caption box from ever being recognised.
+  const labelOf = (el) =>
+    ['aria-label', 'aria-placeholder', 'data-placeholder', 'placeholder', 'title']
+      .map((name) => el.getAttribute(name) || '')
+      .join(' ')
+
   function rank(entries) {
-    const label = (el) =>
-      `${el.getAttribute('aria-label') || ''} ${el.getAttribute('placeholder') || ''} ${el.getAttribute('title') || ''}`
-    return [...entries].sort((a, b) => Number(SEARCH_HINTS.test(label(b))) - Number(SEARCH_HINTS.test(label(a))))
+    return [...entries].sort(
+      (a, b) => Number(SEARCH_HINTS.test(labelOf(b))) - Number(SEARCH_HINTS.test(labelOf(a))),
+    )
   }
 
   const dumpEntries = () => textEntries().map(describe).join(' ') || '(none on screen)'
@@ -603,18 +612,21 @@ if (!window.__ssplWhatsAppChatOpener) {
     return await waitFor(() => firstMatch(FILE_INPUT), 3000)
   }
 
-  const labelOf = (el) =>
-    `${el.getAttribute('aria-label') || ''} ${el.getAttribute('placeholder') || ''} ${el.getAttribute('title') || ''}`
-
   // The preview's caption box and nothing else: a box inside the preview modal, or one that names
   // itself a caption. There is deliberately no wider fallback — every other text box on screen is
   // the chat composer, and writing the bill line there posts it as a message of its own instead of
   // captioning the file.
   function captionBox() {
     for (const scope of document.querySelectorAll(PREVIEW_SCOPE)) {
-      const inside = textEntries(scope).filter((el) => CAPTION_HINTS.test(labelOf(el)))
-      if (inside.length) return inside[0]
+      const inside = textEntries(scope)
+      if (!inside.length) continue
+      // Scoped to the preview already, so an unlabelled box in here cannot be the chat composer —
+      // the composer lives in the chat footer, never inside the modal. A box that names itself
+      // still wins, in case the preview ever holds a second field.
+      return inside.find((el) => CAPTION_HINTS.test(labelOf(el))) || inside[0]
     }
+    // Outside the preview the label is the only thing telling the caption box from the composer,
+    // so this stays strict: no label, no typing.
     return textEntries().find((el) => CAPTION_ONLY.test(labelOf(el))) || null
   }
 
@@ -657,6 +669,8 @@ if (!window.__ssplWhatsAppChatOpener) {
       const box = await waitFor(captionBox, CAPTION_WAIT_MS)
       if (!box) {
         log('FAIL: no caption box in the preview; not typing into the chat composer instead')
+        // Which half failed: no preview modal at all, or a modal holding no text box we can see.
+        log('  preview scopes on screen:', document.querySelectorAll(PREVIEW_SCOPE).length)
         log('  boxes on screen:', dumpEntries())
       } else if (boxText(box).trim() === attachment.caption.trim()) {
         // Nothing to do when WhatsApp has already carried the text across by itself; writing it
