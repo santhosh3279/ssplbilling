@@ -177,7 +177,7 @@
               <span v-if="licenseStatusText" class="text-[15px] font-mono font-normal ml-1" :class="daysRemaining !== null && daysRemaining < 30 ? 'text-[var(--color-warning)] font-bold' : 'text-[var(--color-text-muted)]'">
                 License: {{ licenseStatusText }}
               </span>
-              <span v-if="amcStatusText" class="text-[15px] font-mono font-normal ml-2" :class="amcDaysRemaining !== null && amcDaysRemaining < 30 ? 'text-[var(--color-warning)] font-bold' : 'text-[var(--color-text-muted)]'">
+              <span v-if="amcStatusText" class="text-[15px] font-mono font-normal ml-2" :class="amcExpired ? 'text-[var(--color-danger)] font-bold' : (amcDaysRemaining !== null && amcDaysRemaining < 30 ? 'text-[var(--color-warning)] font-bold' : 'text-[var(--color-text-muted)]')">
                 AMC: {{ amcStatusText }}
               </span>
             </h1>
@@ -1611,15 +1611,25 @@ const amcDaysRemaining = computed(() => {
   return null
 })
 
+// A license carrying no AMC date counts as expired, same as one whose date has
+// passed — an unset AMC means no maintenance contract is on record, not an
+// unlimited one. Still informational: neither state blocks access.
+const amcExpired = computed(() => {
+  const info = licenseInfo.value
+  if (!info || !info.valid) return false
+  if (!info.amc_date) return true
+  return amcDaysRemaining.value !== null && amcDaysRemaining.value < 0
+})
+
 // Mirrors licenseStatusText: outside a 50-day window show the AMC date itself,
-// inside it show the countdown. Lapsed AMC is informational, never blocks access.
+// inside it show the countdown.
 const amcStatusText = computed(() => {
   const info = licenseInfo.value
-  if (!info || !info.amc_date) return null
+  if (!info || !info.valid) return null
+  if (amcExpired.value) return 'Expired'
+  if (!info.amc_date) return null
   const days = amcDaysRemaining.value
-  if (days === null) return `due ${info.amc_date}`
-  if (days < 0) return `expired ${info.amc_date}`
-  if (days > 50) return `due ${info.amc_date}`
+  if (days === null || days > 50) return `due ${info.amc_date}`
   return `${days} days left`
 })
 
