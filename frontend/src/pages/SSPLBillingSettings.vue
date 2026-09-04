@@ -13,7 +13,15 @@
           <p class="text-[10px] text-[var(--color-text-muted)] uppercase tracking-widest font-medium">System Configuration</p>
         </div>
       </div>
-      <div>
+      <div class="flex items-center gap-3">
+        <button
+          @click="downloadFeaturesJson"
+          :disabled="isExportingFeatures"
+          class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition-all hover:bg-[var(--color-midlight)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Download the dashboard tiles as a features JSON for the license generator"
+        >
+          {{ isExportingFeatures ? 'Preparing...' : '⬇ Features JSON' }}
+        </button>
         <button 
           @click="saveSettings" 
           :disabled="isSaving"
@@ -254,6 +262,7 @@ import { hasWhatsAppBridge } from '../services/whatsappBridge'
 const router = useRouter()
 const isLoading = ref(true)
 const isSaving = ref(false)
+const isExportingFeatures = ref(false)
 
 const settings = ref(null)
 
@@ -361,6 +370,49 @@ async function saveSettings() {
     console.error('Save failed:', error)
   } finally {
     isSaving.value = false
+  }
+}
+
+// Exports the live SSPL Dashboard Tile records — the same records the tile access
+// doctype offers — grouped by bucket, in the shape the license generator's
+// "Upload Features JSON" reads: { "<bucket>": [{ id, label }, ...] }.
+async function downloadFeaturesJson() {
+  isExportingFeatures.value = true
+  try {
+    const tiles = await frappeGet('frappe.client.get_list', {
+      doctype: 'SSPL Dashboard Tile',
+      fields: ['tile_id', 'tile_label', 'bucket'],
+      limit_page_length: 0,
+      order_by: 'bucket asc, tile_label asc',
+    })
+
+    if (!tiles || !tiles.length) {
+      alert('No dashboard tiles found. Run "bench --site <site> migrate" to sync them first.')
+      return
+    }
+
+    const grouped = {}
+    for (const t of tiles) {
+      if (!t.tile_id) continue
+      // Buckets pass through verbatim so the export matches the records rather than
+      // the lowercase keys the Dashboard uses. "General" matches the generator default.
+      const bucket = t.bucket || 'General'
+      if (!grouped[bucket]) grouped[bucket] = []
+      grouped[bucket].push({ id: t.tile_id, label: t.tile_label || t.tile_id })
+    }
+
+    const blob = new Blob([JSON.stringify(grouped, null, 2)], { type: 'application/json' })
+    const link = document.createElement('a')
+    link.href = URL.createObjectURL(blob)
+    const site = (window.location.hostname || 'site').replace(/[^A-Za-z0-9.-]/g, '')
+    link.download = `sspl-features_${site}.json`
+    link.click()
+    URL.revokeObjectURL(link.href)
+  } catch (error) {
+    console.error('Feature export failed:', error)
+    alert('Failed to export features JSON: ' + error.message)
+  } finally {
+    isExportingFeatures.value = false
   }
 }
 
