@@ -69,6 +69,16 @@
                 {{ license?.days_remaining ?? '—' }}
               </span>
             </div>
+            <div v-if="license?.amc_date" class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">AMC Date</span>
+              <span class="font-semibold text-[var(--color-text)]">{{ license.amc_date }}</span>
+            </div>
+            <div v-if="license?.amc_date" class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">AMC Days Remaining</span>
+              <span class="font-bold" :class="(license?.amc_days_remaining ?? 0) < 30 ? 'text-[var(--color-warning)]' : 'text-[var(--color-text)]'">
+                {{ license?.amc_days_remaining ?? '—' }}
+              </span>
+            </div>
             <div class="flex justify-between">
               <span class="text-[var(--color-text-muted)]">Concurrent Tab Limit</span>
               <span class="font-semibold text-[var(--color-text)]">

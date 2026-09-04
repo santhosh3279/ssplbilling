@@ -11,7 +11,7 @@ from cryptography.exceptions import InvalidSignature
 LICENSE_PUBLIC_KEY_B64 = "NCcdnL9384366XVtCpkpqq39XtZU7t/Fy+BYWt/+RBM="
 
 
-def _build_message(site_name, expiry_date, features, max_tabs=None, customer_name=None, watch_text=None):
+def _build_message(site_name, expiry_date, features, max_tabs=None, customer_name=None, watch_text=None, amc_date=None):
 	# expiry_date is a core positional field, but an empty/missing value means
 	# "unlimited" (no expiry) rather than being omitted from the message like the
 	# optional fields below — normalize to "" so both build and verify agree.
@@ -27,16 +27,18 @@ def _build_message(site_name, expiry_date, features, max_tabs=None, customer_nam
 		message += f"|{customer_name}"
 	if watch_text:
 		message += f"|{watch_text}"
+	if amc_date:
+		message += f"|{amc_date}"
 	return message.encode("utf-8")
 
 
-def _verify_signature(site_name, expiry_date, features, signature_b64, max_tabs=None, customer_name=None, watch_text=None):
+def _verify_signature(site_name, expiry_date, features, signature_b64, max_tabs=None, customer_name=None, watch_text=None, amc_date=None):
 	try:
 		public_key = ed25519.Ed25519PublicKey.from_public_bytes(
 			base64.b64decode(LICENSE_PUBLIC_KEY_B64)
 		)
 		signature = base64.b64decode(signature_b64)
-		message = _build_message(site_name, expiry_date, features, max_tabs, customer_name, watch_text)
+		message = _build_message(site_name, expiry_date, features, max_tabs, customer_name, watch_text, amc_date)
 		public_key.verify(signature, message)
 		return True
 	except (InvalidSignature, ValueError, TypeError):
@@ -60,6 +62,8 @@ def _load_license_status():
 			"customer_name": "Dev Server (Bypassed)",
 			"watch_text": "Dev Mode Active",
 			"days_remaining": None,
+			"amc_date": "",
+			"amc_days_remaining": None,
 			"site_name": frappe.local.site
 		}
 
@@ -80,6 +84,8 @@ def _load_license_status():
 		"customer_name": "",
 		"watch_text": "",
 		"days_remaining": 0,
+		"amc_date": "",
+		"amc_days_remaining": None,
 		"site_name": frappe.local.site
 	}
 
@@ -106,6 +112,9 @@ def _load_license_status():
 		max_tabs = None
 	customer_name = data.get("customer_name") or None
 	watch_text = data.get("watch_text") or None
+	# amc_date is optional and purely informational — it tracks the annual maintenance
+	# contract renewal date and never affects whether the license itself is valid.
+	amc_date = data.get("amc_date") or None
 
 	status["site"] = site_name or ""
 	status["expiry_date"] = expiry_date or ""
@@ -113,6 +122,7 @@ def _load_license_status():
 	status["max_tabs"] = max_tabs
 	status["customer_name"] = customer_name or ""
 	status["watch_text"] = watch_text or ""
+	status["amc_date"] = amc_date or ""
 
 	# expiry_date is optional — an empty/missing value means the license never expires.
 	if not site_name or not signature:
@@ -127,9 +137,18 @@ def _load_license_status():
 	# Verify signature
 	if signature == "bypass" or signature == "bypass_verification":
 		pass
-	elif not _verify_signature(site_name, expiry_date, features, signature, max_tabs, customer_name, watch_text):
+	elif not _verify_signature(site_name, expiry_date, features, signature, max_tabs, customer_name, watch_text, amc_date):
 		status["message"] = "License signature verification failed (tampered)"
 		return status
+
+	# Computed before the expiry branches below, which return early — an unlimited
+	# license still needs its AMC countdown. A bad date is ignored, not fatal.
+	if amc_date:
+		try:
+			amc_dt = datetime.strptime(amc_date, "%Y-%m-%d").date()
+			status["amc_days_remaining"] = (amc_dt - datetime.now().date()).days
+		except ValueError:
+			status["amc_days_remaining"] = None
 
 	if not expiry_date:
 		status["days_remaining"] = None

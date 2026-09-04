@@ -177,6 +177,9 @@
               <span v-if="licenseStatusText" class="text-[15px] font-mono font-normal ml-1" :class="daysRemaining !== null && daysRemaining < 30 ? 'text-[var(--color-warning)] font-bold' : 'text-[var(--color-text-muted)]'">
                 License: {{ licenseStatusText }}
               </span>
+              <span v-if="amcStatusText" class="text-[15px] font-mono font-normal ml-2" :class="amcDaysRemaining !== null && amcDaysRemaining < 30 ? 'text-[var(--color-warning)] font-bold' : 'text-[var(--color-text-muted)]'">
+                AMC: {{ amcStatusText }}
+              </span>
             </h1>
             <p class="text-[10px] text-[var(--color-text-muted)] font-medium uppercase tracking-wider">{{ todayDate }} | {{ todayDay }}</p>
           </div>
@@ -1599,6 +1602,25 @@ const daysRemaining = computed(() => {
     return licenseInfo.value.days_remaining
   }
   return null
+})
+
+const amcDaysRemaining = computed(() => {
+  if (licenseInfo.value && typeof licenseInfo.value.amc_days_remaining === 'number') {
+    return licenseInfo.value.amc_days_remaining
+  }
+  return null
+})
+
+// Mirrors licenseStatusText: outside a 50-day window show the AMC date itself,
+// inside it show the countdown. Lapsed AMC is informational, never blocks access.
+const amcStatusText = computed(() => {
+  const info = licenseInfo.value
+  if (!info || !info.amc_date) return null
+  const days = amcDaysRemaining.value
+  if (days === null) return `due ${info.amc_date}`
+  if (days < 0) return `expired ${info.amc_date}`
+  if (days > 50) return `due ${info.amc_date}`
+  return `${days} days left`
 })
 
 // No expiry_date on the license => unlimited. Otherwise: past 50 days remaining,
