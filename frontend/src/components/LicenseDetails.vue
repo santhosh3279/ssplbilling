@@ -69,15 +69,15 @@
                 {{ license?.days_remaining ?? '—' }}
               </span>
             </div>
-            <div v-if="license?.amc_date" class="flex justify-between">
+            <div class="flex justify-between">
               <span class="text-[var(--color-text-muted)]">AMC Date</span>
-              <span class="font-semibold text-[var(--color-text)]">{{ license.amc_date }}</span>
-            </div>
-            <div v-if="license?.amc_date" class="flex justify-between">
-              <span class="text-[var(--color-text-muted)]">AMC Days Remaining</span>
-              <span class="font-bold" :class="(license?.amc_days_remaining ?? 0) < 30 ? 'text-[var(--color-warning)]' : 'text-[var(--color-text)]'">
-                {{ license?.amc_days_remaining ?? '—' }}
+              <span class="font-semibold" :class="amcExpired ? 'text-[var(--color-danger)]' : 'text-[var(--color-text)]'">
+                {{ license?.amc_date || 'Not set' }}
               </span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-[var(--color-text-muted)]">AMC Days Remaining</span>
+              <span class="font-bold" :class="amcStatusClass">{{ amcStatusText }}</span>
             </div>
             <div class="flex justify-between">
               <span class="text-[var(--color-text-muted)]">Concurrent Tab Limit</span>
@@ -116,7 +116,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { frappeGet } from '../api'
 import { tabLimitInfo } from '../services/tabSession'
 
@@ -127,6 +127,29 @@ defineEmits(['close'])
 
 const license = ref(null)
 const loading = ref(false)
+
+// Matches the dashboard header: a license carrying no amc_date counts as expired,
+// same as one whose date has passed — an unset AMC means no maintenance contract is
+// on record, not an unlimited one. Informational only; it never blocks access.
+const amcExpired = computed(() => {
+  const info = license.value
+  if (!info || !info.valid) return false
+  if (!info.amc_date) return true
+  return typeof info.amc_days_remaining === 'number' && info.amc_days_remaining < 0
+})
+
+const amcStatusText = computed(() => {
+  if (amcExpired.value) return 'Expired'
+  const days = license.value?.amc_days_remaining
+  return typeof days === 'number' ? days : '—'
+})
+
+const amcStatusClass = computed(() => {
+  if (amcExpired.value) return 'text-[var(--color-danger)]'
+  const days = license.value?.amc_days_remaining
+  if (typeof days === 'number' && days < 30) return 'text-[var(--color-warning)]'
+  return 'text-[var(--color-text)]'
+})
 
 async function refresh() {
   loading.value = true
