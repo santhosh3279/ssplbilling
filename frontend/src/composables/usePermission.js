@@ -195,6 +195,18 @@ export function getLicenseInfo() {
   }
 }
 
+// A developer_mode site gets a synthetic license with no dates on it, so the
+// AMC and expiry countdowns have nothing real to report. dev_bypass is the
+// authoritative flag; the string checks keep older cached blobs working.
+export function isDevLicense(info) {
+  if (!info) return false
+  return (
+    info.dev_bypass === true ||
+    info.message === 'Bypassed on Dev Server' ||
+    info.customer_name === 'Dev Server (Bypassed)'
+  )
+}
+
 // HRMS sub-pages are now restricted under the 'hrms' license feature.
 export const PUBLIC_HRMS_ROUTES = []
 

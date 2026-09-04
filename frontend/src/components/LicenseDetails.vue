@@ -119,6 +119,7 @@
 import { computed, ref, watch } from 'vue'
 import { frappeGet } from '../api'
 import { tabLimitInfo } from '../services/tabSession'
+import { isDevLicense } from '../composables/usePermission'
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -134,6 +135,8 @@ const loading = ref(false)
 const amcExpired = computed(() => {
   const info = license.value
   if (!info || !info.valid) return false
+  // A dev-mode bypass carries no real dates, so it is never "expired".
+  if (isDevLicense(info)) return false
   if (!info.amc_date) return true
   return typeof info.amc_days_remaining === 'number' && info.amc_days_remaining < 0
 })
@@ -167,8 +170,7 @@ async function refresh() {
 async function manualReverify() {
   await refresh()
   if (license.value && license.value.valid) {
-    const isDevServer = license.value.message === "Bypassed on Dev Server" || license.value.customer_name === "Dev Server (Bypassed)"
-    if (isDevServer) {
+    if (isDevLicense(license.value)) {
       alert(`License is valid: ${license.value.message}`)
     }
   }

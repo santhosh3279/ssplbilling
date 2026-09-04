@@ -610,7 +610,7 @@ import { syncNamingSeries } from '../services/seriesCache.js'
 import { warmPrintCache, clearPrintCache } from '../services/printCache.js'
 import { useLedgerCache } from '../services/ledgerCache.js'
 import { useShortcuts, isSubwindowActive } from '../services/shortcutManager'
-import { canAccessTile, canAccessRoute, getUserRole } from '../composables/usePermission'
+import { canAccessTile, canAccessRoute, getUserRole, isDevLicense } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 import { useTheme } from '../composables/useTheme'
 import { useMqtt } from '../composables/useMqtt'
@@ -1341,8 +1341,7 @@ async function syncSettings() {
 async function reverifyLicense() {
   await syncSettings()
   if (licenseInfo.value && licenseInfo.value.valid) {
-    const isDevServer = licenseInfo.value.message === "Bypassed on Dev Server" || licenseInfo.value.customer_name === "Dev Server (Bypassed)"
-    if (isDevServer) {
+    if (isDevLicense(licenseInfo.value)) {
       alert(`License is valid: ${licenseInfo.value.message}`)
     }
   }
@@ -1617,6 +1616,8 @@ const amcDaysRemaining = computed(() => {
 const amcExpired = computed(() => {
   const info = licenseInfo.value
   if (!info || !info.valid) return false
+  // A dev-mode bypass carries no real dates, so it is never "expired".
+  if (isDevLicense(info)) return false
   if (!info.amc_date) return true
   return amcDaysRemaining.value !== null && amcDaysRemaining.value < 0
 })
