@@ -549,6 +549,13 @@
           >
             {{ linkingSupplier ? 'Mapping Supplier...' : 'Map Supplier to Item Master' }}
           </button>
+          <button 
+            @click="mapAllItemsAsGstItem" 
+            :disabled="!items.some(i => !i.deleted && i.item_code) || mappingGstItem" 
+            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-3xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ mappingGstItem ? 'Mapping GST Item...' : 'Map Item as GST Item' }}
+          </button>
         </div>
       </template>
 
@@ -822,7 +829,7 @@
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
-import { frappeGet, frappePost, linkSupplierToItems } from '../api'
+import { frappeGet, frappePost, linkSupplierToItems, mapItemsAsGstItem } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import PartyHistoryModal from '../components/PartyHistoryModal.vue'
 import Userseries from '../components/Userseries.vue'
@@ -2887,6 +2894,38 @@ async function linkSupplierToAllItems() {
     alert('Error linking supplier to items: ' + e.message)
   } finally {
     linkingSupplier.value = false
+  }
+}
+
+const mappingGstItem = ref(false)
+
+async function mapAllItemsAsGstItem() {
+  const itemCodes = items.value.filter(i => !i.deleted && i.item_code).map(i => i.item_code)
+  if (!itemCodes.length) {
+    alert('No items found in the invoice.')
+    return
+  }
+  const uniqueItemCodes = [...new Set(itemCodes)]
+  if (!confirm(`Are you sure you want to mark all ${uniqueItemCodes.length} item(s) as GST Item in the Item Master?`)) {
+    return
+  }
+  mappingGstItem.value = true
+  try {
+    const res = await mapItemsAsGstItem(uniqueItemCodes)
+    if (res.status === 'success') {
+      if (res.updated_count > 0) {
+        alert(`Successfully marked ${res.updated_count} item(s) as GST Item in the Item Master!`)
+      } else {
+        alert(`All ${res.total || uniqueItemCodes.length} item(s) are already marked as GST Item.`)
+      }
+    } else {
+      alert('Failed: ' + (res.message || 'Unknown error'))
+    }
+  } catch (e) {
+    console.error(e)
+    alert('Error marking items as GST Item: ' + (e.message || e))
+  } finally {
+    mappingGstItem.value = false
   }
 }
 

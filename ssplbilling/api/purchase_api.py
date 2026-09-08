@@ -685,6 +685,42 @@ def link_supplier_to_items(supplier, items):
 
 
 @frappe.whitelist()
+def map_items_as_gst_item(items):
+	"""Enable custom_is_gst_item (GST Item checkbox) in the Item Master for multiple items."""
+	if isinstance(items, str):
+		items = json.loads(items)
+
+	if not items:
+		return {"status": "error", "message": "Items are required"}
+
+	updated_count = 0
+	already_marked = 0
+	for item_code in items:
+		if not frappe.db.exists("Item", item_code):
+			continue
+
+		item = frappe.get_doc("Item", item_code)
+		if not item.get("custom_is_gst_item"):
+			item.custom_is_gst_item = 1
+			item.flags.ignore_permissions = True
+			try:
+				item.save()
+			except Exception:
+				frappe.db.set_value("Item", item_code, "custom_is_gst_item", 1)
+				frappe.clear_document_cache("Item", item_code)
+			updated_count += 1
+		else:
+			already_marked += 1
+
+	return {
+		"status": "success",
+		"updated_count": updated_count,
+		"already_marked": already_marked,
+		"total": len(items),
+	}
+
+
+@frappe.whitelist()
 def update_item_order_quantities(item_code, min_order_qty, max_order_qty, safety_stock=None, custom_max_stock=None):
 	"""Update min_order_qty, custom_max_order_qty, custom_max_stock, and safety_stock in Item Master."""
 	if not item_code:

@@ -685,6 +685,15 @@ export async function linkSupplierToItems(supplier, items) {
   });
 }
 
+/**
+ * Enable GST Item checkbox in the Item Master for multiple items.
+ */
+export async function mapItemsAsGstItem(items) {
+  return frappePost("ssplbilling.api.purchase_api.map_items_as_gst_item", {
+    items: JSON.stringify(items),
+  });
+}
+
 
 // ─── Item Creation Helpers ─────────────────────────────────────────
 
