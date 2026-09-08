@@ -127,6 +127,16 @@ CUSTOM_FIELDS = {
 			"label": "Remarks",
 			"insert_after": "supplier_name",
 		},
+		{
+			"fieldname": "custom_mirrored",
+			"fieldtype": "Check",
+			"label": "Mirrored",
+			"insert_after": "is_return",
+			"default": "0",
+			"allow_on_submit": 1,
+			"in_list_view": 1,
+			"in_standard_filter": 1,
+		},
 	],
 }
 
@@ -247,13 +257,29 @@ def sync_offer_print_template():
 	).insert(ignore_permissions=True)
 
 
+def backfill_mirrored_purchase_invoices():
+	"""Set custom_mirrored = 1 on existing mirrored purchase invoices."""
+	if not frappe.db.has_column("Purchase Invoice", "custom_mirrored"):
+		return
+	frappe.db.sql("""
+		UPDATE `tabPurchase Invoice` pi1
+		JOIN `tabPurchase Invoice` pi2
+		ON (CONCAT(pi2.name, '/') = pi1.name OR CONCAT(pi1.name, '/') = pi2.name)
+		AND pi1.name != pi2.name
+		SET pi1.custom_mirrored = 1, pi2.custom_mirrored = 1
+		WHERE pi1.docstatus = 1 AND pi2.docstatus = 1
+	""")
+
+
 def after_install():
 	create_custom_fields(CUSTOM_FIELDS, ignore_validate=True)
 	sync_dashboard_tiles()
 	sync_offer_print_template()
+	backfill_mirrored_purchase_invoices()
 
 
 def after_migrate():
 	create_custom_fields(CUSTOM_FIELDS, ignore_validate=True)
 	sync_dashboard_tiles()
 	sync_offer_print_template()
+	backfill_mirrored_purchase_invoices()

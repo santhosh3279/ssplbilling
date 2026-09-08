@@ -62,6 +62,8 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 	mpi.set_posting_time = 1
 	mpi.is_return = pi.is_return
 	mpi.update_stock = pi.update_stock
+	if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
+		mpi.custom_mirrored = 1
 	
 	if pi.set_warehouse:
 		mpi.set_warehouse = ensure_warehouse_in_company(pi.set_warehouse, target_company) or target_warehouse
@@ -127,7 +129,7 @@ def mirror_purchase_bill(pi):
 	Isolated with a savepoint so a failure here never rolls back pi's own submission.
 	"""
 	ae = get_automatic_entries()
-	if not should_mirror_purchase_invoice(pi.naming_series, ae):
+	if not (should_mirror_purchase_invoice(pi.naming_series, ae) or (pi.name and should_mirror_purchase_invoice(pi.name, ae))):
 		return None
 
 	sp = "sp_" + frappe.generate_hash(length=10)
@@ -135,6 +137,14 @@ def mirror_purchase_bill(pi):
 	try:
 		mpi = create_mirror_purchase_invoice(pi, ae)
 		frappe.db.release_savepoint(sp)
+		if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
+			frappe.db.set_value("Purchase Invoice", pi.name, "custom_mirrored", 1)
+			pi.custom_mirrored = 1
+			frappe.clear_document_cache("Purchase Invoice", pi.name)
+			if mpi and frappe.db.exists("Purchase Invoice", mpi.name):
+				frappe.db.set_value("Purchase Invoice", mpi.name, "custom_mirrored", 1)
+				mpi.custom_mirrored = 1
+				frappe.clear_document_cache("Purchase Invoice", mpi.name)
 		return mpi
 	except Exception:
 		frappe.db.rollback(save_point=sp)

@@ -474,6 +474,7 @@ def get_purchase_invoice(invoice_name):
         "posting_time": str(pi.posting_time) if pi.posting_time else "",
         "naming_series": pi.naming_series or "",
         "is_return": pi.is_return,
+        "custom_mirrored": int(pi.get("custom_mirrored") or 0),
         "discount_percentage": float(pi.additional_discount_percentage or 0),
         "additional_discount_amount": float(pi.discount_amount or 0),
         "price_list": pi.buying_price_list or "",

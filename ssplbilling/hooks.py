@@ -40,6 +40,7 @@ fixtures = [
 					"customer_rate_multiplier",
 					"custom_half_tax_discount",
 					"mop",
+					"custom_mirrored",
 				],
 			],
 		],
