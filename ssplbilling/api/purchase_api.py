@@ -617,24 +617,52 @@ def update_purchase_invoice(data=None, **kwargs):
 
 
 @frappe.whitelist()
+def is_purchase_mirror_series(naming_series):
+	"""Check whether a naming series or invoice name has purchase mirroring configured in Automatic Entries."""
+	if not naming_series:
+		return {"is_mirror_series": False}
+	try:
+		from ssplbilling.api.automatic_entries_api import get_automatic_entries
+		from ssplbilling.api.purchase_mirror_api import should_mirror_purchase_invoice
+
+		ae = get_automatic_entries()
+		is_mirror = bool(should_mirror_purchase_invoice(naming_series, ae))
+		return {"is_mirror_series": is_mirror}
+	except Exception:
+		return {"is_mirror_series": False}
+
+
+@frappe.whitelist()
 def submit_purchase_invoice(invoice_name):
-    """Submit a Draft Purchase Invoice."""
-    if not invoice_name:
-        frappe.throw("Invoice Name is required")
-    
-    pi = frappe.get_doc("Purchase Invoice", invoice_name)
-    if pi.docstatus == 0:
-        pi.submit()
-        try:
-            from ssplbilling.api.purchase_mirror_api import mirror_purchase_bill
-            mirror_purchase_bill(pi)
-        except Exception:
-            frappe.log_error(title="Automatic Entries: mirror purchase bill failed", message=frappe.get_traceback())
-        return {"name": pi.name, "status": "Submitted"}
-    elif pi.docstatus == 1:
-        return {"name": pi.name, "status": "Already Submitted"}
-    else:
-        frappe.throw(f"Invoice {invoice_name} is already cancelled")
+	"""Submit a Draft Purchase Invoice."""
+	if not invoice_name:
+		frappe.throw("Invoice Name is required")
+
+	pi = frappe.get_doc("Purchase Invoice", invoice_name)
+	if pi.docstatus == 0:
+		pi.submit()
+		is_mirror_series = False
+		try:
+			from ssplbilling.api.automatic_entries_api import get_automatic_entries
+			from ssplbilling.api.purchase_mirror_api import mirror_purchase_bill, should_mirror_purchase_invoice
+
+			ae = get_automatic_entries()
+			is_mirror_series = bool(
+				should_mirror_purchase_invoice(pi.naming_series, ae)
+				or (pi.name and should_mirror_purchase_invoice(pi.name, ae))
+			)
+			if is_mirror_series:
+				item_codes = list({item.item_code for item in pi.items if item.item_code})
+				if item_codes:
+					map_items_as_gst_item(item_codes)
+			mirror_purchase_bill(pi)
+		except Exception:
+			frappe.log_error(title="Automatic Entries: mirror purchase bill failed", message=frappe.get_traceback())
+		return {"name": pi.name, "status": "Submitted", "is_mirror_series": is_mirror_series}
+	elif pi.docstatus == 1:
+		return {"name": pi.name, "status": "Already Submitted"}
+	else:
+		frappe.throw(f"Invoice {invoice_name} is already cancelled")
 
 @frappe.whitelist()
 def delete_purchase_invoice(invoice_name):
