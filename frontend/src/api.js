@@ -694,6 +694,15 @@ export async function mapItemsAsGstItem(items) {
   });
 }
 
+/**
+ * Check whether a purchase invoice naming series has mirroring logic configured.
+ */
+export async function checkPurchaseMirrorSeries(namingSeries) {
+  return frappeGet("ssplbilling.api.purchase_api.is_purchase_mirror_series", {
+    naming_series: namingSeries,
+  });
+}
+
 
 // ─── Item Creation Helpers ─────────────────────────────────────────
 

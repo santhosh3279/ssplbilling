@@ -379,7 +379,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
-import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice, frappeGet, frappePost, linkSupplierToItems } from '../api.js'
+import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice, frappeGet, frappePost, linkSupplierToItems, mapItemsAsGstItem, checkPurchaseMirrorSeries } from '../api.js'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import BarcodePrintPage from './BarcodePrintPage.vue'
@@ -650,16 +650,36 @@ async function confirmSubmission() {
         unreconciled_amount: e.available
       }))
 
-    await submitPurchaseInvoice(invName)
+    const submitRes = await submitPurchaseInvoice(invName)
 
     const itemCodes = (previewItems.value || [])
       .filter(i => i.item_code)
       .map(i => i.item_code)
-    if (itemCodes.length > 0) {
+    const uniqueItemCodes = [...new Set(itemCodes)]
+
+    if (uniqueItemCodes.length > 0) {
       try {
-        await linkSupplierToItems(supplier, itemCodes)
+        await linkSupplierToItems(supplier, uniqueItemCodes)
       } catch (err) {
         console.error('Failed to link supplier to items:', err)
+      }
+
+      let isMirrorSeries = submitRes?.is_mirror_series || false
+      if (!isMirrorSeries && (selectedInvoice.value?.naming_series || selectedInvoice.value?.name)) {
+        try {
+          const check = await checkPurchaseMirrorSeries(selectedInvoice.value.naming_series || selectedInvoice.value.name)
+          isMirrorSeries = check?.is_mirror_series || false
+        } catch (err) {
+          console.warn('Could not check mirror series:', err)
+        }
+      }
+
+      if (isMirrorSeries) {
+        try {
+          await mapItemsAsGstItem(uniqueItemCodes)
+        } catch (err) {
+          console.error('Failed to enable GST item for mirrored purchase series:', err)
+        }
       }
     }
 
