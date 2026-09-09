@@ -226,6 +226,7 @@ import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
 
 import { formatDMY } from '../utils/date'
+import { toLocalISO } from '../services/serverTime'
 const router = useRouter()
 const showDetail = ref(false)
 const selectedDoc = ref('')
@@ -356,8 +357,8 @@ async function setPreset(type) {
     to = new Date(startYear + 1, 2, 31)
   }
 
-  fromDate.value = from.toISOString().slice(0, 10)
-  toDate.value = to.toISOString().slice(0, 10)
+  fromDate.value = toLocalISO(from)
+  toDate.value = toLocalISO(to)
   fetchReport()
 }
 
@@ -434,9 +435,11 @@ const columns = computed(() => {
 
 function adjustDate(type, days) {
   const target = type === 'from' ? fromDate : toDate
-  const d = new Date(target.value)
-  d.setDate(d.getDate() + days)
-  target.value = d.toISOString().slice(0, 10)
+  if (!target.value) return
+  const [y, m, d] = target.value.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  dt.setDate(dt.getDate() + days)
+  target.value = toLocalISO(dt)
   fetchReport()
 }
 
