@@ -31,6 +31,7 @@
     { "id": "single-entry", "name": "Single Entry" },
     { "id": "account-tree", "name": "Chart of Accounts" },
     { "id": "cancellation", "name": "Cancellation" },
+    { "id": "modifysubmitted", "name": "Modify Submitted Bill" },
     { "id": "unreconciled", "name": "Unreconciled Entries" }
   ],
   "Inventory & Stock": [

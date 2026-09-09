@@ -10,8 +10,8 @@
     "features_by_category groups the same ids in \"features\" for licence picking; \"features\" itself stays a flat sorted array because the signature is computed over it."
   ],
   "wildcard": "*",
-  "page_count": 63,
-  "feature_count": 51,
+  "page_count": 64,
+  "feature_count": 52,
   "category_count": 8,
   "features": [
     "Cashier-Management",
@@ -42,6 +42,7 @@
     "ledger-sales-purchase-report",
     "loading-receipt",
     "material-transfer-report",
+    "modifysubmitted",
     "naming-settings",
     "offer-display",
     "outstanding-customers-report",
@@ -241,6 +242,13 @@
         "name": "Cancellation",
         "pages": [
           "Cancellation"
+        ]
+      },
+      {
+        "id": "modifysubmitted",
+        "name": "Modify Submitted Bill",
+        "pages": [
+          "ModifySubmitted"
         ]
       },
       {
@@ -585,6 +593,16 @@
       "title": "Cancellation",
       "feature": "cancellation",
       "feature_label": "Cancellation",
+      "bucket": "Sale",
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials"
+    },
+    {
+      "page": "ModifySubmitted",
+      "path": "/modifysubmitted",
+      "title": "Modify Submitted Bill",
+      "feature": "modifysubmitted",
+      "feature_label": "Modify Submitted Bill",
       "bucket": "Sale",
       "has_dashboard_tile": true,
       "category": "Cashier & Financials"
@@ -1167,6 +1185,9 @@
     ],
     "material-transfer-report": [
       "MaterialTransferReport"
+    ],
+    "modifysubmitted": [
+      "ModifySubmitted"
     ],
     "naming-settings": [
       "NamingSettings"
