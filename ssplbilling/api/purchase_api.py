@@ -257,6 +257,8 @@ def create_purchase_invoice(data=None, **kwargs):
         pi.cost_center = data["cost_center"]
 
     pi.custom_remarks = data.get("custom_remarks") or ""
+    if "custom_mirrored" in data:
+        pi.custom_mirrored = data.get("custom_mirrored") or ""
 
     if data.get("discount_percentage"):
         pi.additional_discount_percentage = float(data["discount_percentage"])
@@ -399,7 +401,7 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
             "Purchase Invoice",
             filters=filters,
             or_filters=or_filters,
-            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus", "company"],
+            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus", "company", "custom_mirrored"],
             limit=int(limit),
             order_by="name desc",
         )
@@ -407,7 +409,7 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
         invoices = frappe.get_all(
             "Purchase Invoice",
             filters=filters,
-            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus", "company"],
+            fields=["name", "supplier", "supplier_name", "posting_date", "grand_total", "rounded_total", "status", "modified", "docstatus", "company", "custom_mirrored"],
             limit=int(limit),
             order_by="name desc",
         )
@@ -474,7 +476,7 @@ def get_purchase_invoice(invoice_name):
         "posting_time": str(pi.posting_time) if pi.posting_time else "",
         "naming_series": pi.naming_series or "",
         "is_return": pi.is_return,
-        "custom_mirrored": int(pi.get("custom_mirrored") or 0),
+        "custom_mirrored": str(pi.get("custom_mirrored") or ""),
         "discount_percentage": float(pi.additional_discount_percentage or 0),
         "additional_discount_amount": float(pi.discount_amount or 0),
         "price_list": pi.buying_price_list or "",
@@ -548,6 +550,8 @@ def update_purchase_invoice(data=None, **kwargs):
     _apply_due_date(pi)
 
     pi.custom_remarks = data.get("custom_remarks") or ""
+    if "custom_mirrored" in data:
+        pi.custom_mirrored = data.get("custom_mirrored") or ""
 
     # Do not overwrite posting_time if it's already set on existing document,
     # unless it's explicitly passed in data.
@@ -643,6 +647,7 @@ def submit_purchase_invoice(invoice_name):
 	if pi.docstatus == 0:
 		pi.submit()
 		is_mirror_series = False
+		mpi = None
 		try:
 			from ssplbilling.api.automatic_entries_api import get_automatic_entries
 			from ssplbilling.api.purchase_mirror_api import mirror_purchase_bill, should_mirror_purchase_invoice
@@ -656,12 +661,21 @@ def submit_purchase_invoice(invoice_name):
 				item_codes = list({item.item_code for item in pi.items if item.item_code})
 				if item_codes:
 					map_items_as_gst_item(item_codes)
-			mirror_purchase_bill(pi)
+			mpi = mirror_purchase_bill(pi)
 		except Exception:
 			frappe.log_error(title="Automatic Entries: mirror purchase bill failed", message=frappe.get_traceback())
-		return {"name": pi.name, "status": "Submitted", "is_mirror_series": is_mirror_series}
+		return {
+			"name": pi.name,
+			"status": "Submitted",
+			"is_mirror_series": is_mirror_series,
+			"mirrored_invoice": mpi.name if mpi else (pi.get("custom_mirrored") or None),
+		}
 	elif pi.docstatus == 1:
-		return {"name": pi.name, "status": "Already Submitted"}
+		return {
+			"name": pi.name,
+			"status": "Already Submitted",
+			"mirrored_invoice": pi.get("custom_mirrored") or None,
+		}
 	else:
 		frappe.throw(f"Invoice {invoice_name} is already cancelled")
 

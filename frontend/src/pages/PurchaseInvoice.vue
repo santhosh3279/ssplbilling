@@ -491,6 +491,17 @@
             </label>
           </div>
 
+          <!-- Mirrored Invoice Number -->
+          <div class="flex flex-col gap-0.5">
+            <label class="text-[10px] font-bold uppercase text-[var(--color-text-muted)]">Mirrored Invoice No</label>
+            <input
+              v-model="customMirrored"
+              :disabled="isReadOnly"
+              placeholder="Mirrored Invoice No"
+              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-base font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-primary)] transition-colors disabled:opacity-75"
+            />
+          </div>
+
           <!-- Additional Info -->
           <div class="grid grid-cols-2 gap-2">
             <!-- Warehouse -->
@@ -947,6 +958,7 @@ const supplierInitialQuery = ref('')
 const showHistoryModal = ref(false)
 const invoiceTemplateRef = ref(null)
 const customRemarks = ref('')
+const customMirrored = ref('')
 const showCustomAddressModal = ref(false)
 const remarkFormText = ref('')
 const remarkInputRef = ref(null)
@@ -1214,6 +1226,7 @@ async function handleSelectSidebarItem(item) {
     supplierState.value = data.state || ''
 
     customRemarks.value = data.custom_remarks || ''
+    customMirrored.value = data.custom_mirrored || ''
 
     if (data.price_list) priceList.value = data.price_list
     if (data.tax_template) taxTemplate.value = data.tax_template
@@ -1542,6 +1555,7 @@ async function clearBill() {
   supplierInvoiceDate.value = serverToday()
   clearHistory()
   customRemarks.value = ''
+  customMirrored.value = ''
   invoiceNo.value = 'NEW'
   postingTime.value = ''
   isReturn.value = false
@@ -1667,6 +1681,7 @@ async function handleSave() {
     date: invoiceDate.value,
     price_list: priceList.value,
     custom_remarks: customRemarks.value || '',
+    custom_mirrored: customMirrored.value || '',
     discount_percentage: discountPct.value,
     tax_template: taxTemplate.value,
     cost_center: costCenter.value,

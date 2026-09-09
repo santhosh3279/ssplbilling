@@ -32,23 +32,78 @@ def should_mirror_purchase_invoice(naming_series, automatic_entries):
 	return False
 
 
+def get_available_purchase_mirror_name(naming_series, target_company):
+	"""Find the next available purchase invoice number in `target_company` for `naming_series`."""
+	import re
+	from frappe.model.naming import NamingSeries
+	from frappe.utils import cint
+
+	if not naming_series:
+		field = frappe.get_meta("Purchase Invoice").get_field("naming_series")
+		naming_series = (field.default if field else None) or "PINV-.#####"
+
+	ns = NamingSeries(naming_series)
+	prefix = ns.get_prefix()
+	m = re.search(r"#+", naming_series)
+	digits = len(m.group(0)) if m else 5
+
+	existing_names = frappe.db.get_all(
+		"Purchase Invoice",
+		filters={"company": target_company, "name": ["like", f"{prefix}%"]},
+		pluck="name",
+	)
+	max_company_num = 0
+	for n in existing_names:
+		clean = n[len(prefix):].rstrip("/")
+		if clean.isdigit():
+			val = int(clean)
+			if val > max_company_num:
+				max_company_num = val
+
+	series_val = frappe.db.sql("SELECT current FROM `tabSeries` WHERE name = %s", (prefix,))
+	series_current = cint(series_val[0][0]) if series_val and series_val[0] and series_val[0][0] is not None else 0
+
+	next_num = max(series_current, max_company_num) + 1
+	candidate = f"{prefix}{next_num:0{digits}d}"
+
+	while frappe.db.exists("Purchase Invoice", candidate):
+		next_num += 1
+		candidate = f"{prefix}{next_num:0{digits}d}"
+
+	has_series = frappe.db.sql("SELECT 1 FROM `tabSeries` WHERE name = %s", (prefix,))
+	if has_series:
+		frappe.db.sql("UPDATE `tabSeries` SET current = GREATEST(current, %s) WHERE name = %s", (next_num, prefix))
+	else:
+		frappe.db.sql("INSERT INTO `tabSeries` (name, current) VALUES (%s, %s)", (prefix, next_num))
+
+	return candidate
+
+
 def create_mirror_purchase_invoice(pi, automatic_entries):
-	"""Create + submit a mirror Purchase Invoice for `pi` in the alternate company, named
-	pi.name + '/', posted against the Automatic Entries warehouse with accounts
-	substituted via resolve_target_account.
+	"""Create + submit a mirror Purchase Invoice for `pi` in the alternate company,
+	using the next available number in the AE company for that series, posted against
+	the Automatic Entries warehouse with accounts substituted via resolve_target_account.
 	"""
-	mirror_name = pi.name[:-1] if pi.name.endswith("/") else f"{pi.name}/"
-	if frappe.db.exists("Purchase Invoice", mirror_name):
-		return frappe.get_doc("Purchase Invoice", mirror_name)
+	if pi.get("custom_mirrored") and frappe.db.exists("Purchase Invoice", pi.custom_mirrored):
+		return frappe.get_doc("Purchase Invoice", pi.custom_mirrored)
+
+	old_mirror_name = pi.name[:-1] if pi.name.endswith("/") else f"{pi.name}/"
+	if frappe.db.exists("Purchase Invoice", old_mirror_name):
+		mpi = frappe.get_doc("Purchase Invoice", old_mirror_name)
+		if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
+			frappe.db.set_value("Purchase Invoice", pi.name, "custom_mirrored", mpi.name)
+			pi.custom_mirrored = mpi.name
+		return mpi
 
 	target_company = automatic_entries.alternative_company
-	
+	mirror_name = get_available_purchase_mirror_name(pi.naming_series, target_company)
+
 	source_warehouse = pi.set_warehouse or (pi.items[0].warehouse if pi.items else None)
 	target_warehouse = ensure_warehouse_in_company(source_warehouse, target_company) or automatic_entries.warehouse
-	
+
 	source_cost_center = pi.cost_center or (pi.items[0].cost_center if pi.items else None)
 	target_cost_center = ensure_cost_center_in_company(source_cost_center, target_company)
-	
+
 	allowed_accounts = _allowed_accounts(automatic_entries)
 
 	mpi = frappe.new_doc("Purchase Invoice")
@@ -63,13 +118,13 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 	mpi.is_return = pi.is_return
 	mpi.update_stock = pi.update_stock
 	if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
-		mpi.custom_mirrored = 1
-	
+		mpi.custom_mirrored = pi.name
+
 	if pi.set_warehouse:
 		mpi.set_warehouse = ensure_warehouse_in_company(pi.set_warehouse, target_company) or target_warehouse
 	else:
 		mpi.set_warehouse = target_warehouse
-		
+
 	if pi.cost_center:
 		mpi.cost_center = ensure_cost_center_in_company(pi.cost_center, target_company)
 	elif target_cost_center:
@@ -137,13 +192,13 @@ def mirror_purchase_bill(pi):
 	try:
 		mpi = create_mirror_purchase_invoice(pi, ae)
 		frappe.db.release_savepoint(sp)
-		if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
-			frappe.db.set_value("Purchase Invoice", pi.name, "custom_mirrored", 1)
-			pi.custom_mirrored = 1
+		if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored") and mpi:
+			frappe.db.set_value("Purchase Invoice", pi.name, "custom_mirrored", mpi.name)
+			pi.custom_mirrored = mpi.name
 			frappe.clear_document_cache("Purchase Invoice", pi.name)
-			if mpi and frappe.db.exists("Purchase Invoice", mpi.name):
-				frappe.db.set_value("Purchase Invoice", mpi.name, "custom_mirrored", 1)
-				mpi.custom_mirrored = 1
+			if frappe.db.exists("Purchase Invoice", mpi.name):
+				frappe.db.set_value("Purchase Invoice", mpi.name, "custom_mirrored", pi.name)
+				mpi.custom_mirrored = pi.name
 				frappe.clear_document_cache("Purchase Invoice", mpi.name)
 		return mpi
 	except Exception:

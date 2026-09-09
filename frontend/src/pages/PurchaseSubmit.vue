@@ -125,6 +125,10 @@
                 <span class="h-3 w-px bg-[var(--color-border)]"></span>
                 <span class="font-bold uppercase tracking-wider text-[var(--color-warning)] text-[12px]">DRAFT</span>
               </div>
+              <div v-if="selectedInvoice.custom_mirrored" class="flex items-center gap-1.5 text-[14px] text-[var(--color-success)] bg-green-500/10 px-2.5 py-1 rounded-md border border-green-500/20 font-mono font-bold">
+                <span>Mirrored:</span>
+                <span>{{ selectedInvoice.custom_mirrored }}</span>
+              </div>
             </div>
             <div class="flex gap-3">
               <!-- MODIFY BUTTON -->

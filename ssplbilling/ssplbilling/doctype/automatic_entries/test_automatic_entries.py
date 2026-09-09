@@ -243,3 +243,27 @@ class TestAutomaticEntries(IntegrationTestCase):
 		finally:
 			frappe.db.rollback()
 
+	def test_get_available_purchase_mirror_name(self):
+		from ssplbilling.api.purchase_mirror_api import get_available_purchase_mirror_name
+		frappe.db.begin()
+		try:
+			name1 = get_available_purchase_mirror_name("TEST-PINV-.#####", "SUNDARAM AND SONS PRIVATE LIMITED")
+			self.assertTrue(name1.startswith("TEST-PINV-"))
+			self.assertTrue(name1.endswith("00001"))
+
+			# If a document with name1 exists, next call should return 00002
+			dummy = frappe.new_doc("Purchase Invoice")
+			dummy.company = "SUNDARAM AND SONS PRIVATE LIMITED"
+			dummy.supplier = frappe.db.get_value("Supplier", {}, "name") or "Test Supplier"
+			dummy.bill_no = "TEST-BILL-1"
+			dummy.bill_date = frappe.utils.today()
+			dummy.flags.ignore_mandatory = True
+			dummy.flags.ignore_permissions = True
+			dummy.insert(set_name=name1)
+
+			name2 = get_available_purchase_mirror_name("TEST-PINV-.#####", "SUNDARAM AND SONS PRIVATE LIMITED")
+			self.assertEqual(name2, name1[:-1] + "2")
+		finally:
+			frappe.db.rollback()
+			frappe.db.sql("DELETE FROM `tabSeries` WHERE name LIKE %s", ("TEST-PINV%",))
+

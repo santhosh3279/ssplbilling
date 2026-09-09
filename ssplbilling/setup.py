@@ -129,10 +129,9 @@ CUSTOM_FIELDS = {
 		},
 		{
 			"fieldname": "custom_mirrored",
-			"fieldtype": "Check",
-			"label": "Mirrored",
+			"fieldtype": "Data",
+			"label": "Mirrored Invoice Number",
 			"insert_after": "is_return",
-			"default": "0",
 			"allow_on_submit": 1,
 			"in_list_view": 1,
 			"in_standard_filter": 1,
@@ -258,15 +257,19 @@ def sync_offer_print_template():
 
 
 def backfill_mirrored_purchase_invoices():
-	"""Set custom_mirrored = 1 on existing mirrored purchase invoices."""
+	"""Set custom_mirrored with mirrored invoice name on existing mirrored purchase invoices."""
 	if not frappe.db.has_column("Purchase Invoice", "custom_mirrored"):
 		return
+	try:
+		frappe.db.sql("ALTER TABLE `tabPurchase Invoice` MODIFY `custom_mirrored` varchar(140)")
+	except Exception:
+		pass
 	frappe.db.sql("""
 		UPDATE `tabPurchase Invoice` pi1
 		JOIN `tabPurchase Invoice` pi2
 		ON (CONCAT(pi2.name, '/') = pi1.name OR CONCAT(pi1.name, '/') = pi2.name)
 		AND pi1.name != pi2.name
-		SET pi1.custom_mirrored = 1, pi2.custom_mirrored = 1
+		SET pi1.custom_mirrored = pi2.name, pi2.custom_mirrored = pi1.name
 		WHERE pi1.docstatus = 1 AND pi2.docstatus = 1
 	""")
 
