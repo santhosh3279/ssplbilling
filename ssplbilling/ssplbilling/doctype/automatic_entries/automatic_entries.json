@@ -11,6 +11,7 @@
   "mirror_allow_zero_valuation_rate",
   "section_break_tables",
   "series",
+  "purchase_mirroring_series",
   "accounts"
  ],
  "fields": [
@@ -56,6 +57,12 @@
    "fieldtype": "Table",
    "label": "Series Table",
    "options": "Automatic Entry Series"
+  },
+  {
+   "fieldname": "purchase_mirroring_series",
+   "fieldtype": "Table",
+   "label": "Purchase Mirroring Series Table",
+   "options": "Purchase Mirroring Series"
   },
   {
    "fieldname": "accounts",

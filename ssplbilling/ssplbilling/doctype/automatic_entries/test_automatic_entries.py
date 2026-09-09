@@ -2,12 +2,17 @@
 # See license.txt
 
 import frappe
+import unittest
 from frappe.tests import IntegrationTestCase
 from ssplbilling.api.automatic_entries_api import should_mirror_sales_invoice
 from ssplbilling.api.purchase_mirror_api import should_mirror_purchase_invoice
 
 
 class TestAutomaticEntries(IntegrationTestCase):
+	@classmethod
+	def setUpClass(cls):
+		pass
+
 	def test_should_mirror_sales_invoice_with_conversion_series(self):
 		ae = frappe.new_doc("Automatic Entries")
 		ae.alternative_company = "Alternative Company"
@@ -245,7 +250,8 @@ class TestAutomaticEntries(IntegrationTestCase):
 
 	def test_get_available_purchase_mirror_name(self):
 		from ssplbilling.api.purchase_mirror_api import get_available_purchase_mirror_name
-		frappe.db.begin()
+		sp = "sp_" + frappe.generate_hash(length=8)
+		frappe.db.savepoint(sp)
 		try:
 			name1 = get_available_purchase_mirror_name("TEST-PINV-.#####", "SUNDARAM AND SONS PRIVATE LIMITED")
 			self.assertTrue(name1.startswith("TEST-PINV-"))
@@ -264,6 +270,93 @@ class TestAutomaticEntries(IntegrationTestCase):
 			name2 = get_available_purchase_mirror_name("TEST-PINV-.#####", "SUNDARAM AND SONS PRIVATE LIMITED")
 			self.assertEqual(name2, name1[:-1] + "2")
 		finally:
-			frappe.db.rollback()
+			frappe.db.rollback(save_point=sp)
 			frappe.db.sql("DELETE FROM `tabSeries` WHERE name LIKE %s", ("TEST-PINV%",))
 
+	def test_purchase_mirroring_series_table_and_suffix(self):
+		from ssplbilling.api.purchase_mirror_api import get_purchase_mirror_mapping, should_mirror_purchase_invoice
+		from ssplbilling.api.purchase_api import set_suffix_for_original_purchase_invoice
+
+		ae = frappe.new_doc("Automatic Entries")
+		ae.alternative_company = "SUNDARAM AND SONS PRIVATE LIMITED"
+		ae.append("purchase_mirroring_series", {
+			"purchase_series": "PG.#####",
+			"mirroring_series": "PLV.#####",
+		})
+		ae.append("purchase_mirroring_series", {
+			"purchase_series": "SAME.#####",
+			"mirroring_series": "SAME.#####",
+		})
+
+		# 1. Matching
+		m1 = get_purchase_mirror_mapping("PG.#####", ae)
+		self.assertIsNotNone(m1)
+		self.assertEqual(m1["mirroring_series"], "PLV.#####")
+		self.assertTrue(should_mirror_purchase_invoice("PG.#####", ae))
+		self.assertTrue(should_mirror_purchase_invoice("PG00022", ae))
+
+		# 2. When mirror series is DIFFERENT, no '/' suffix should be generated
+		pi_diff = frappe.new_doc("Purchase Invoice")
+		pi_diff.naming_series = "PG.#####"
+		# Mock autoname hook with ae passed
+		set_suffix_for_original_purchase_invoice(pi_diff, ae=ae)
+		self.assertIsNone(pi_diff.name)
+
+		# 3. When mirror series is the SAME, '/' suffix should be generated
+		pi_same = frappe.new_doc("Purchase Invoice")
+		pi_same.naming_series = "SAME.#####"
+		set_suffix_for_original_purchase_invoice(pi_same, ae=ae)
+		self.assertIsNotNone(pi_same.name)
+		self.assertTrue(pi_same.name.endswith("/"))
+
+	def test_create_mirror_purchase_invoice_with_different_series(self):
+		from ssplbilling.api.purchase_mirror_api import create_mirror_purchase_invoice
+		sp = "sp_" + frappe.generate_hash(length=8)
+		frappe.db.savepoint(sp)
+		try:
+			ae = frappe.new_doc("Automatic Entries")
+			ae.alternative_company = "SUNDARAM AND SONS PRIVATE LIMITED"
+			ae.warehouse = frappe.db.get_value("Warehouse", {"company": ae.alternative_company}, "name")
+			ae.append("purchase_mirroring_series", {
+				"purchase_series": "PG.#####",
+				"mirroring_series": "PLV.#####",
+			})
+
+			item_code = frappe.db.get_value("Item", {"is_purchase_item": 1, "disabled": 0}, "name")
+			uom = frappe.db.get_value("Item", item_code, "stock_uom") or "Nos"
+
+			pi = frappe.new_doc("Purchase Invoice")
+			pi.company = "CHETTIYAR KADA"
+			pi.supplier = frappe.db.get_value("Supplier", {}, "name")
+			pi.naming_series = "PG.#####"
+			pi.bill_no = "TEST-DIFF-SERIES-1"
+			pi.bill_date = frappe.utils.today()
+			pi.posting_date = frappe.utils.today()
+			pi.append("items", {
+				"item_code": item_code,
+				"qty": 1,
+				"rate": 100,
+				"uom": uom,
+			})
+			pi.flags.ignore_mandatory = True
+			pi.flags.ignore_permissions = True
+			pi.insert(set_name="PG00099")
+
+			mpi = create_mirror_purchase_invoice(pi, ae)
+			self.assertTrue(mpi.name.startswith("PLV"))
+			self.assertEqual(mpi.naming_series, "PLV.#####")
+			self.assertFalse(mpi.name.endswith("/"))
+			self.assertEqual(mpi.custom_mirrored, "PG00099")
+		finally:
+			frappe.db.rollback(save_point=sp)
+
+def run_tests():
+	import unittest
+	suite = unittest.TestSuite()
+	suite.addTest(TestAutomaticEntries("test_get_available_purchase_mirror_name"))
+	suite.addTest(TestAutomaticEntries("test_purchase_mirroring_series_table_and_suffix"))
+	suite.addTest(TestAutomaticEntries("test_create_mirror_purchase_invoice_with_different_series"))
+	res = unittest.TextTestRunner(verbosity=2).run(suite)
+	if not res.wasSuccessful():
+		raise RuntimeError(f"Tests failed: {len(res.failures)} failures, {len(res.errors)} errors")
+	return "OK"

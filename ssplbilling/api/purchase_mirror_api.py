@@ -20,12 +20,73 @@ def _purchase_mirror_series(automatic_entries):
 	return series_set
 
 
+def get_purchase_mirror_mapping(series_or_name, automatic_entries):
+	"""Return {'purchase_series': ..., 'mirroring_series': ...} from automatic_entries.purchase_mirroring_series
+	matching series_or_name, or None."""
+	if not series_or_name or not automatic_entries:
+		return None
+	from frappe.model.naming import NamingSeries
+
+	clean_input = series_or_name.strip().rstrip("/")
+	try:
+		input_prefix = NamingSeries(clean_input).get_prefix().strip() if clean_input else ""
+	except Exception:
+		input_prefix = clean_input
+
+	for r in (automatic_entries.get("purchase_mirroring_series") or []):
+		if not r.purchase_series:
+			continue
+		for p_val in r.purchase_series.split(","):
+			p_val = p_val.strip()
+			if not p_val:
+				continue
+			try:
+				p_prefix = NamingSeries(p_val).get_prefix().strip() if p_val else ""
+			except Exception:
+				p_prefix = p_val
+
+			if (
+				clean_input == p_val
+				or (p_prefix and clean_input == p_prefix)
+				or clean_input.startswith(p_val)
+				or (p_prefix and clean_input.startswith(p_prefix))
+				or p_val.startswith(clean_input)
+				or (p_prefix and input_prefix and p_prefix == input_prefix)
+			):
+				return {
+					"purchase_series": p_val,
+					"mirroring_series": (r.mirroring_series or "").strip(),
+				}
+	return None
+
+
+def resolve_purchase_naming_series(series_str):
+	"""Resolve series_str (e.g. 'PLV' or 'PLV.#####') to a valid Purchase Invoice naming series."""
+	if not series_str:
+		return "PINV-.#####"
+	series_clean = series_str.strip()
+	field = frappe.get_meta("Purchase Invoice").get_field("naming_series")
+	options = [opt.strip() for opt in (field.options or "").split("\n") if opt.strip()]
+	if series_clean in options:
+		return series_clean
+	from frappe.model.naming import NamingSeries
+	for opt in options:
+		prefix = NamingSeries(opt).get_prefix().strip()
+		if series_clean == prefix or series_clean.rstrip(".") == prefix.rstrip("."):
+			return opt
+	if "#" not in series_clean:
+		return f"{series_clean}.#####" if not series_clean.endswith(".") else f"{series_clean}#####"
+	return series_clean
+
+
 def should_mirror_purchase_invoice(naming_series, automatic_entries):
 	"""Whether `naming_series` is configured in Automatic Entries for cross-company mirroring of purchases."""
 	if not automatic_entries.alternative_company:
 		return False
 	if not naming_series:
 		return False
+	if get_purchase_mirror_mapping(naming_series, automatic_entries):
+		return True
 	for prefix in _purchase_mirror_series(automatic_entries):
 		if naming_series == prefix or naming_series.startswith(prefix):
 			return True
@@ -56,6 +117,7 @@ def get_available_purchase_mirror_name(naming_series, target_company):
 	for n in existing_names:
 		clean = n[len(prefix):].rstrip("/")
 		if clean.isdigit():
+			digits = max(digits, len(clean))
 			val = int(clean)
 			if val > max_company_num:
 				max_company_num = val
@@ -81,8 +143,8 @@ def get_available_purchase_mirror_name(naming_series, target_company):
 
 def create_mirror_purchase_invoice(pi, automatic_entries):
 	"""Create + submit a mirror Purchase Invoice for `pi` in the alternate company,
-	using the next available number in the AE company for that series, posted against
-	the Automatic Entries warehouse with accounts substituted via resolve_target_account.
+	using the next available number in the AE company for the configured mirroring series,
+	posted against the Automatic Entries warehouse with accounts substituted via resolve_target_account.
 	"""
 	if pi.get("custom_mirrored") and frappe.db.exists("Purchase Invoice", pi.custom_mirrored):
 		return frappe.get_doc("Purchase Invoice", pi.custom_mirrored)
@@ -96,7 +158,16 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 		return mpi
 
 	target_company = automatic_entries.alternative_company
-	mirror_name = get_available_purchase_mirror_name(pi.naming_series, target_company)
+	mapping = get_purchase_mirror_mapping(pi.naming_series, automatic_entries)
+	if not mapping and pi.name:
+		mapping = get_purchase_mirror_mapping(pi.name, automatic_entries)
+
+	if mapping and mapping.get("mirroring_series"):
+		target_naming_series = resolve_purchase_naming_series(mapping["mirroring_series"])
+	else:
+		target_naming_series = pi.naming_series
+
+	mirror_name = get_available_purchase_mirror_name(target_naming_series, target_company)
 
 	source_warehouse = pi.set_warehouse or (pi.items[0].warehouse if pi.items else None)
 	target_warehouse = ensure_warehouse_in_company(source_warehouse, target_company) or automatic_entries.warehouse
@@ -109,7 +180,7 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 	mpi = frappe.new_doc("Purchase Invoice")
 	mpi.company = target_company
 	mpi.supplier = pi.supplier
-	mpi.naming_series = pi.naming_series
+	mpi.naming_series = target_naming_series
 	mpi.bill_no = pi.bill_no
 	mpi.bill_date = pi.bill_date
 	mpi.posting_date = pi.posting_date

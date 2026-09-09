@@ -879,18 +879,20 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 	return data
 
 
-def set_suffix_for_original_purchase_invoice(doc, method=None):
+def set_suffix_for_original_purchase_invoice(doc, method=None, ae=None):
 	if doc.doctype != "Purchase Invoice":
 		return
 	if doc.name:
 		return
 
-	try:
-		from ssplbilling.api.automatic_entries_api import get_automatic_entries
-		from ssplbilling.api.purchase_mirror_api import _purchase_mirror_series
-		ae = get_automatic_entries()
-	except Exception:
-		return
+	if ae is None:
+		try:
+			from ssplbilling.api.automatic_entries_api import get_automatic_entries
+			ae = get_automatic_entries()
+		except Exception:
+			return
+
+	from ssplbilling.api.purchase_mirror_api import get_purchase_mirror_mapping, _purchase_mirror_series
 
 	if not ae or not ae.alternative_company:
 		return
@@ -899,6 +901,27 @@ def set_suffix_for_original_purchase_invoice(doc, method=None):
 	if not naming_series:
 		return
 
+	# 1. Check if configured in purchase_mirroring_series table
+	mapping = get_purchase_mirror_mapping(naming_series, ae)
+	if mapping:
+		purchase_s = mapping.get("purchase_series") or ""
+		mirror_s = mapping.get("mirroring_series") or ""
+		from frappe.model.naming import NamingSeries
+		p_prefix = NamingSeries(purchase_s).get_prefix().strip() if purchase_s else ""
+		m_prefix = NamingSeries(mirror_s).get_prefix().strip() if mirror_s else ""
+
+		# If the mirror invoice series is different from the purchase series, no need to generate "/"
+		if m_prefix and p_prefix and m_prefix != p_prefix:
+			return
+
+		# If the mirror invoice series is the same as the purchase series, generate "/"
+		from frappe.model.naming import make_autoname
+		generated_name = make_autoname(naming_series, doc=doc)
+		if not generated_name.endswith("/"):
+			doc.name = f"{generated_name}/"
+		return
+
+	# 2. Fallback: check old ae.series table
 	allowed = _purchase_mirror_series(ae)
 	should_suffix = False
 	for prefix in allowed:
