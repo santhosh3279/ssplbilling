@@ -69,6 +69,22 @@
     >
       <template #header-right>
         <div class="flex items-center gap-4">
+          <!-- Mirrored Invoice Number in Top Title Bar -->
+          <div
+            v-if="customMirrored"
+            class="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 shadow-sm"
+          >
+            <span class="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] font-sans">Mirrored:</span>
+            <a
+              :href="`/app/purchase-invoice/${customMirrored}`"
+              target="_blank"
+              title="Open mirrored invoice in ERPNext"
+              class="hover:underline text-[var(--color-text)] font-mono text-sm font-bold"
+            >
+              {{ customMirrored }}
+            </a>
+          </div>
+
           <button
             @click="router.push('/purchase-submit')"
             class="flex items-center gap-2 rounded bg-[var(--color-info)] px-3 py-1 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-info)]/80 active:scale-95 shadow-lg"
@@ -90,29 +106,89 @@
         <div class="flex items-center gap-6 overflow-hidden">
           <div v-if="invoiceNo" class="flex items-center gap-2 border-r border-[var(--color-border)] pr-6 shrink-0">
             <div class="text-4xl text-[var(--color-text)] tabular-nums font-mono font-bold">{{ invoiceNo }}</div>
+            <div
+              v-if="customMirrored"
+              class="flex items-center gap-1 text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded px-1.5 py-0.5"
+              title="Mirrored Invoice"
+            >
+              <span>M:</span>
+              <span>{{ customMirrored }}</span>
+            </div>
           </div>
 
           <div 
-            class="flex-1 flex items-baseline gap-6 overflow-hidden transition-colors group"
+            class="flex-1 flex flex-col justify-center overflow-hidden transition-colors group"
             :class="isReadOnly ? 'cursor-default' : 'cursor-pointer hover:bg-[var(--color-surface-raised)]/80'"
             @click="!isReadOnly && (supplierInitialQuery = '', showSupplierModal = true)"
           >
-            <div class="flex items-baseline gap-3 shrink-0">
-              <label 
-                class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap transition-colors"
-                :class="!isReadOnly ? 'group-hover:text-[var(--color-highlight)]' : ''"
-              >Supplier</label>
-              <div class="text-5xl font-bold text-[var(--color-text)] truncate max-w-[600px]">{{ supplierName || 'Not Selected' }}</div>
+            <!-- Refresh Button row above supplier details -->
+            <div v-if="(supplierId || items.length) && !isReadOnly" class="flex items-center mb-1">
+              <button
+                v-if="supplierId"
+                @click.stop="refreshSupplierInfo"
+                :disabled="isRefreshingSupplier"
+                class="flex items-center gap-1 text-[11px] font-bold uppercase text-[var(--color-info)] hover:text-[var(--color-info)]/80 disabled:opacity-50 transition-all cursor-pointer bg-transparent border-none p-0"
+                title="Refresh supplier details from server"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  :class="{ 'animate-spin': isRefreshingSupplier }"
+                >
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+                <span>Refresh Supplier Info</span>
+              </button>
+              <button
+                @click.stop="refreshPrices"
+                :disabled="isRefreshingPrices"
+                class="ml-4 flex items-center gap-1 text-[11px] font-bold uppercase text-[var(--color-warning)] hover:text-[var(--color-warning)]/80 disabled:opacity-50 transition-all cursor-pointer bg-transparent border-none p-0"
+                title="Re-apply price list rates to every row"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  :class="{ 'animate-spin': isRefreshingPrices }"
+                >
+                  <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                </svg>
+                <span>Refresh Prices</span>
+              </button>
             </div>
 
-            <div v-if="supplierMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-3xl whitespace-nowrap shrink-0">
-              <span class="text-xl uppercase text-[var(--color-text-muted)]">Mob:</span>
-              {{ supplierMobile }}
-            </div>
+            <!-- Inner row for supplier details -->
+            <div class="flex items-baseline gap-6 overflow-hidden w-full">
+              <div class="flex items-baseline gap-3 shrink-0">
+                <label 
+                  class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap transition-colors"
+                  :class="!isReadOnly ? 'group-hover:text-[var(--color-highlight)]' : ''"
+                >Supplier</label>
+                <div class="text-5xl font-bold text-[var(--color-text)] truncate max-w-[600px]">{{ supplierName || 'Not Selected' }}</div>
+              </div>
 
-            <div v-if="supplierGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-3xl whitespace-nowrap shrink-0">
-              <span class="text-xl uppercase text-[var(--color-text-muted)]">GST:</span>
-              {{ supplierGstin }}
+              <div v-if="supplierMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-3xl whitespace-nowrap shrink-0">
+                <span class="text-xl uppercase text-[var(--color-text-muted)]">Mob:</span>
+                {{ supplierMobile }}
+              </div>
+
+              <div v-if="supplierGstin" class="flex items-center gap-1 text-[var(--color-text)]/70 font-mono text-3xl whitespace-nowrap shrink-0">
+                <span class="text-xl uppercase text-[var(--color-text-muted)]">GST:</span>
+                {{ supplierGstin }}
+              </div>
             </div>
           </div>
 
@@ -853,6 +929,7 @@ import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
 
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
+import { patchLedgerInCache } from '../services/ledgerCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice, getFloatPrecision } from '../encryption.js'
 
@@ -959,6 +1036,8 @@ const showHistoryModal = ref(false)
 const invoiceTemplateRef = ref(null)
 const customRemarks = ref('')
 const customMirrored = ref('')
+const isRefreshingSupplier = ref(false)
+const isRefreshingPrices = ref(false)
 const showCustomAddressModal = ref(false)
 const remarkFormText = ref('')
 const remarkInputRef = ref(null)
@@ -2544,6 +2623,37 @@ function cancelPendingItem(skipFocus = false) {
 function handlePartyRefreshed(party) {
   if (party && party.name === supplierId.value) {
     handleSupplierSelected(party)
+  }
+}
+
+async function refreshSupplierInfo() {
+  if (!supplierId.value) return
+  isRefreshingSupplier.value = true
+  try {
+    const updatedParty = await frappeGet('ssplbilling.api.customersearch_api.get_single_ledger', {
+      party_name: supplierId.value,
+      party_type: 'Supplier'
+    })
+    if (updatedParty) {
+      patchLedgerInCache(supplierId.value, updatedParty)
+      handleSupplierSelected(updatedParty)
+    }
+  } catch (e) {
+    console.error('[PurchaseInvoice] Failed to refresh supplier info:', e)
+  } finally {
+    isRefreshingSupplier.value = false
+  }
+}
+
+async function refreshPrices() {
+  isRefreshingPrices.value = true
+  try {
+    await refreshItemCache('Purchase', priceList.value, warehouse.value, true)
+    updateTableRates()
+  } catch (e) {
+    console.warn('[PurchaseInvoice] Refresh prices failed:', e)
+  } finally {
+    isRefreshingPrices.value = false
   }
 }
 
