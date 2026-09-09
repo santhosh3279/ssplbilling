@@ -71,6 +71,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'IncentiveEntry',
   'Unreconciled',
   'ChequeRegister',
+  'ModifySubmitted',
 ])
 
 export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES])
@@ -134,6 +135,7 @@ export const ADMIN_ROUTES = new Set([
   'DiscountRule',
   'ChequeRegister',
   'BatchReports',
+  'ModifySubmitted',
 ])
 
 /**
@@ -333,6 +335,8 @@ const TILE_ROUTE_MAP = {
   'outstanding-customers-report': 'OutstandingCustomersReport',
   'Cashier-Management':'CashierManagement',
   'cancellation':      'Cancellation',
+  'modifysubmitted':   'ModifySubmitted',
+  'modify-submitted':  'ModifySubmitted',
   'pricing-rules':     'DiscountRule',
   'discount-rules':    'DiscountRule',
   'loading-receipt':   'LoadingReceipt',

@@ -66,6 +66,7 @@ import DeviceUsers from './pages/DeviceUsers.vue'
 import AttendanceChart from './pages/AttendanceChart.vue'
 import ShiftRoaster from './pages/ShiftRoaster.vue'
 import BatchReports from './pages/BatchReports.vue'
+import ModifySubmitted from './pages/modifysubmitted.vue'
 
 const routes = [
   {
@@ -151,6 +152,16 @@ const routes = [
     name: 'Cancellation',
     component: Cancellation,
     meta: { title: 'Cancellation' },
+  },
+  {
+    path: '/modifysubmitted',
+    name: 'ModifySubmitted',
+    component: ModifySubmitted,
+    meta: { title: 'Modify Submitted Bill' },
+  },
+  {
+    path: '/modify-submitted',
+    redirect: '/modifysubmitted',
   },
   {
     path: '/single-entry',

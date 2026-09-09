@@ -150,6 +150,7 @@ DASHBOARD_TILES = [
 	("sales-order", "Sales Order", "Sale"),
 	("Cashier-Management", "Cashier Management", "Sale"),
 	("cancellation", "Cancellation", "Sale"),
+	("modifysubmitted", "Modify Submitted Bill", "Sale"),
 	# Purchase
 	("purchase-invoice", "Purchase Invoice", "Purchase"),
 	("purchase-order", "Purchase Order", "Purchase"),
