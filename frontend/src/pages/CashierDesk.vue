@@ -1920,10 +1920,6 @@ function handleKeydown(e) {
 // ==================== WATCHERS ====================
 watch(filterDate, (newVal) => {
   postingDate.value = newVal
-  checkDayOpening()
-})
-watch(postingDate, () => {
-  checkDayOpening()
 })
 
 // ==================== LIFECYCLE ====================
