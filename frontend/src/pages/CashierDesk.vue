@@ -502,31 +502,53 @@
                   "
                 >
                   <button 
+                    type="button"
                     @click="adjustPostingDate(-1)" 
-                    class="rounded-lg p-[3px] transition-colors"
+                    class="rounded-lg p-[4px] transition-colors shrink-0"
                     :class="postingDate !== getTodayIST()
                       ? 'text-white/70 hover:bg-white/10 hover:text-white'
                       : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'
                     "
+                    title="Previous Day"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                   </button>
-                  <div class="flex-1 text-center">
+                  <div class="flex-1 flex items-center justify-center gap-1.5 min-w-0">
                     <input
                       ref="postingDateInput"
                       type="date"
                       v-model="postingDate"
-                      class="bg-transparent border-none text-2xl font-black focus:ring-0 p-0 text-center cursor-pointer w-full transition-all duration-300"
+                      @click="openPostingDateCalendar"
+                      class="bg-transparent border-none text-2xl font-black focus:ring-0 p-0 text-center cursor-pointer transition-all duration-300 w-[165px]"
                       :class="postingDate !== getTodayIST() ? 'text-white' : 'text-[var(--color-text)]'"
                     />
+                    <button
+                      type="button"
+                      @click="openPostingDateCalendar"
+                      class="rounded-lg p-[5px] transition-colors shrink-0"
+                      :class="postingDate !== getTodayIST()
+                        ? 'text-white/80 hover:bg-white/20 hover:text-white'
+                        : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'
+                      "
+                      title="Open Calendar"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <rect width="18" height="18" x="3" y="4" rx="2" ry="2"/>
+                        <line x1="16" x2="16" y1="2" y2="6"/>
+                        <line x1="8" x2="8" y1="2" y2="6"/>
+                        <line x1="3" x2="21" y1="10" y2="10"/>
+                      </svg>
+                    </button>
                   </div>
                   <button 
+                    type="button"
                     @click="adjustPostingDate(1)" 
-                    class="rounded-lg p-[3px] transition-colors"
+                    class="rounded-lg p-[4px] transition-colors shrink-0"
                     :class="postingDate !== getTodayIST()
                       ? 'text-white/70 hover:bg-white/10 hover:text-white'
                       : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'
                     "
+                    title="Next Day"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                   </button>
@@ -1212,6 +1234,20 @@ function adjustPostingDate(days) {
   const d = new Date(postingDate.value)
   d.setDate(d.getDate() + days)
   postingDate.value = d.toISOString().slice(0, 10)
+}
+
+function openPostingDateCalendar() {
+  if (!postingDateInput.value) return
+  try {
+    if (typeof postingDateInput.value.showPicker === 'function') {
+      postingDateInput.value.showPicker()
+    } else {
+      postingDateInput.value.focus()
+      postingDateInput.value.click()
+    }
+  } catch {
+    postingDateInput.value.focus()
+  }
 }
 
 
