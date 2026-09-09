@@ -38,8 +38,9 @@
           </div>
           <div ref="seriesDropdownRef" class="relative series-dropdown-container">
             <button
-              @click="showSeriesDropdown = !showSeriesDropdown"
-              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 px-3 text-[15px] font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all text-left flex justify-between items-center h-9"
+              type="button"
+              @click="handleSidebarSeriesButtonClick"
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 px-3 text-[15px] font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all text-left flex justify-between items-center h-9 select-none"
             >
               <span class="truncate">{{ sidebarSeries.length === availableSeries.length ? 'All Series' : (sidebarSeries.length > 0 ? sidebarSeries[0] + (sidebarSeries.length > 1 ? '..' : '') : 'None') }}</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" :class="{'rotate-180': showSeriesDropdown}" class="transition-transform"><path d="m6 9 6 6 6-6"/></svg>
@@ -168,8 +169,17 @@
           <slot name="header-bar">
             <!-- Line 1: Doc Number, Party Name, Mobile, GST, Balance -->
             <div class="flex items-center gap-6 overflow-hidden">
-              <div v-if="docNumber" class="flex items-center gap-2 border-r border-[var(--color-border)] pr-6 shrink-0">
-                <div class="text-4xl text-[var(--color-text)] tabular-nums font-mono font-bold">{{ docNumber }}</div>
+              <div
+                v-if="docNumber"
+                class="flex items-center gap-2 border-r border-[var(--color-border)] pr-6 shrink-0 select-none group/series"
+                :class="[!isReadOnly ? 'cursor-pointer' : 'cursor-default']"
+                :title="!isReadOnly ? 'Triple-click to enter custom invoice number' : ''"
+                @click="onDocNumberClick"
+              >
+                <div class="text-4xl text-[var(--color-text)] tabular-nums font-mono font-bold group-hover/series:text-[var(--color-highlight)] transition-colors">
+                  {{ docNumber }}
+                </div>
+                <slot name="doc-number-extra" />
               </div>
 
               <div 
@@ -737,7 +747,8 @@ const emit = defineEmits([
   'toggle-draft-only', 'select-sidebar-item', 'delete-item', 'discount-pct-keydown', 'discount-amt-keydown',
   'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry',
   'update:discountPct', 'update:discountDirectAmt',
-  'update:ignoreModifier', 'other-entry-enter', 'party-refreshed', 'reprice-prices'
+  'update:ignoreModifier', 'other-entry-enter', 'party-refreshed', 'reprice-prices',
+  'doc-number-click', 'doc-number-triple-click', 'series-triple-click'
 ])
 
 const { isTablet } = useDevice()
@@ -801,6 +812,45 @@ function toggleSeries(s) {
 
 function isSeriesSelected(s) {
   return props.sidebarSeries.includes(s)
+}
+
+let docNumberClickCount = 0
+let docNumberClickTimer = null
+
+function onDocNumberClick(e) {
+  emit('doc-number-click', e)
+  docNumberClickCount++
+  if (e.detail >= 3 || docNumberClickCount >= 3) {
+    docNumberClickCount = 0
+    if (docNumberClickTimer) clearTimeout(docNumberClickTimer)
+    window.getSelection()?.removeAllRanges()
+    emit('series-triple-click', e)
+    emit('doc-number-triple-click', e)
+    return
+  }
+  if (docNumberClickTimer) clearTimeout(docNumberClickTimer)
+  docNumberClickTimer = setTimeout(() => {
+    docNumberClickCount = 0
+  }, 450)
+}
+
+let sidebarSeriesClickCount = 0
+let sidebarSeriesClickTimer = null
+
+function handleSidebarSeriesButtonClick(e) {
+  sidebarSeriesClickCount++
+  if (e.detail >= 3 || sidebarSeriesClickCount >= 3) {
+    sidebarSeriesClickCount = 0
+    if (sidebarSeriesClickTimer) clearTimeout(sidebarSeriesClickTimer)
+    window.getSelection()?.removeAllRanges()
+    emit('series-triple-click', e)
+    return
+  }
+  if (sidebarSeriesClickTimer) clearTimeout(sidebarSeriesClickTimer)
+  sidebarSeriesClickTimer = setTimeout(() => {
+    sidebarSeriesClickCount = 0
+  }, 450)
+  showSeriesDropdown.value = !showSeriesDropdown.value
 }
 
 function navigateSidebar(idx, dir) {

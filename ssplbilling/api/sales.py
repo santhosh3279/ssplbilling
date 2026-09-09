@@ -54,6 +54,13 @@ def get_sales_invoices(query="", limit=100, posting_date=None, naming_series=Non
     return invoices
 
 @frappe.whitelist()
+def check_invoice_exists(invoice_name):
+    if not invoice_name:
+        return {"exists": False}
+    return {"exists": bool(frappe.db.exists("Sales Invoice", invoice_name.strip()))}
+
+
+@frappe.whitelist()
 def post_sales_invoice(payload):
     if isinstance(payload, str):
         payload = json.loads(payload)
@@ -62,7 +69,16 @@ def post_sales_invoice(payload):
     doc.naming_series = payload.get("series")
 
     _apply_payload_to_doc(doc, payload)
-    doc.insert(ignore_permissions=True)
+
+    custom_invoice_no = (payload.get("custom_invoice_no") or payload.get("custom_name") or "").strip()
+    if custom_invoice_no:
+        if len(custom_invoice_no) > 16:
+            frappe.throw(frappe._("Custom invoice number must be 16 characters or fewer to meet GST requirements."))
+        if frappe.db.exists("Sales Invoice", custom_invoice_no):
+            frappe.throw(frappe._("Sales Invoice {0} already exists.").format(custom_invoice_no))
+        doc.insert(set_name=custom_invoice_no, ignore_permissions=True)
+    else:
+        doc.insert(ignore_permissions=True)
 
     return {"status": "success", "name": doc.name}
 

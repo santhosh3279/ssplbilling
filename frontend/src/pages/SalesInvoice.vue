@@ -74,8 +74,30 @@
       @other-entry-enter="saveBtnRef?.focus()"
       @cancel="handleCancel"
       @party-click="customerInitialQuery = ''; showCustomerModal = true"
+      @series-triple-click="handleSeriesTripleClick"
+      @doc-number-triple-click="handleSeriesTripleClick"
     >
       <!-- Custom slots for additional logic if needed -->
+      <template #doc-number-extra>
+        <div v-if="customInvoiceNo" class="flex items-center gap-1.5 ml-2">
+          <span
+            class="rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 px-2 py-0.5 text-xs font-black tracking-widest uppercase cursor-pointer hover:bg-amber-500/30 transition-colors shadow-sm"
+            title="Custom Invoice Number (Click to edit)"
+            @click.stop="showCustomInvoiceModal = true"
+          >
+            CUSTOM
+          </span>
+          <button
+            type="button"
+            @click.stop="customInvoiceNo = ''"
+            class="rounded-full bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 p-0.5 text-xs font-bold leading-none transition-colors"
+            title="Remove custom number and revert to auto-sequence"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+      </template>
+
       <template #header-right>
         <div class="flex items-center gap-4">
           <!-- Mirrors the Sale Return checkbox in the details panel — same isReturn ref -->
@@ -641,6 +663,17 @@
       @jump="handleJump"
     />
 
+    <CustomInvoiceModal
+      v-if="showCustomInvoiceModal"
+      :show="showCustomInvoiceModal"
+      :series="selectedSeries"
+      :current-custom-no="customInvoiceNo"
+      :suggested-no="invoiceNo !== 'NEW' ? invoiceNo : ''"
+      @close="showCustomInvoiceModal = false"
+      @apply="handleCustomInvoiceApplied"
+      @reset="handleCustomInvoiceReset"
+    />
+
 
     <CustomAddress
       v-if="showCustomAddressModal"
@@ -754,6 +787,7 @@ import { clearQuickQtyMap } from '../services/quickQty.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerPrice from '../components/CustomerPrice.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
+import CustomInvoiceModal from '../components/CustomInvoiceModal.vue'
 import CustomAddress from '../components/CustomAddress.vue'
 import Warning from '../components/Warning.vue'
 import EWayBillModal from '../components/EWayBillModal.vue'
@@ -905,7 +939,12 @@ const priceDetectData = ref(null)
 const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: number }
 
 const invoiceNo = ref('NEW')
+const customInvoiceNo = ref('')
+const showCustomInvoiceModal = ref(false)
 const displayedDocNumber = computed(() => {
+  if (customInvoiceNo.value) {
+    return customInvoiceNo.value
+  }
   if (invoiceNo.value === 'NEW') {
     return selectedSeries.value || 'NEW'
   }
@@ -1081,6 +1120,7 @@ async function handleSelectSidebarItem(item) {
     const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: item.name })
 
     // Header
+    customInvoiceNo.value = ''
     invoiceNo.value = data.name
     postingTime.value = data.posting_time || ''
     selectedSeries.value = data.naming_series || selectedSeries.value
@@ -1511,6 +1551,7 @@ async function clearBill() {
   clearHistory()
   linkedPayments.value = []
   invoiceNo.value = 'NEW'
+  customInvoiceNo.value = ''
   postingTime.value = ''
   isReturn.value = false
   halfTaxDiscount.value = false
@@ -1647,6 +1688,7 @@ async function handleSave() {
   const payload = {
     company: localStorage.getItem('wb-company') || '',
     series: selectedSeries.value,
+    custom_invoice_no: customInvoiceNo.value ? customInvoiceNo.value.trim().toUpperCase() : '',
     customer: customerId.value,
     mop: mop.value,
     posting_date: invoiceDate.value,
@@ -1706,6 +1748,7 @@ async function handleSave() {
         showPrintModal.value = true
       } else {
         invoiceNo.value = res.name
+        customInvoiceNo.value = ''
         fetchRecentInvoices()
         pendingClearAfterPrint.value = true
         showPrintModal.value = true
@@ -1713,7 +1756,8 @@ async function handleSave() {
     }
   } catch (error) {
     console.error('Error saving invoice:', error)
-    alert(isUpdate ? 'Failed to update invoice.' : 'Failed to save invoice.')
+    const errMessage = error?.message || error?._server_messages || (isUpdate ? 'Failed to update invoice.' : 'Failed to save invoice.')
+    alert(typeof errMessage === 'string' ? errMessage : (isUpdate ? 'Failed to update invoice.' : 'Failed to save invoice.'))
   } finally {
     submitting.value = false
   }
@@ -1832,6 +1876,7 @@ async function closePrintModal() {
   linkedPayments.value = []
 
   isSaved.value = false
+  customInvoiceNo.value = ''
   invoiceNo.value = getNextInvoiceNoFromPanel(selectedSeries.value, 'NEW')
 
   nextTick(() => { newCodeInput.value?.focus() })
@@ -3116,6 +3161,7 @@ function handleCustomerSelected(cust, opts = {}) {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
+    customInvoiceNo.value = ''
     const cached = JSON.parse(localStorage.getItem('wb-settings-v2') || 'null')
     const seriesEntry = cached?.data?.billing_series?.find(bs => bs.series === series)
     const userDefaults = cached?.data?.user_defaults || {}
@@ -3167,6 +3213,29 @@ useShortcuts(salesInvoiceShortcuts({
   openBillMirror:     () => handleOpenBillMirror(),
   retryMirrorBill:    () => handleRetryMirrorBill(),
 }), props.isSubwindow ? 'subwindow' : 'local')
+
+function handleSeriesTripleClick() {
+  if (isReadOnly.value || isSaved.value) {
+    alert(`Cannot change invoice number of an already saved invoice (${invoiceNo.value}). Start a new invoice to use a custom number.`)
+    return
+  }
+  if (!selectedSeries.value) {
+    alert('Please select a series first.')
+    showSeriesModal.value = true
+    return
+  }
+  showCustomInvoiceModal.value = true
+}
+
+function handleCustomInvoiceApplied(customNum) {
+  customInvoiceNo.value = (customNum || '').trim().toUpperCase()
+  showCustomInvoiceModal.value = false
+}
+
+function handleCustomInvoiceReset() {
+  customInvoiceNo.value = ''
+  showCustomInvoiceModal.value = false
+}
 
 function handleOpenGstBillCreator() {
   if (!invoiceNo.value || invoiceNo.value === 'NEW' || !isSaved.value) {
@@ -3248,6 +3317,7 @@ function handleGlobalEscape(e) {
     const modalOpen = showSeriesModal.value || showCustomerModal.value || 
                       showItemSearch.value || showPriceDetectModal.value || 
                       showPrintModal.value || showJumpModal.value || 
+                      showCustomInvoiceModal.value ||
                       showCustomAddressModal.value || 
                       showClearWarning.value || showExitWarning.value ||
                       showRepriceChoice.value || 
