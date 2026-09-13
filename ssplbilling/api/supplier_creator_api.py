@@ -46,8 +46,6 @@ def create_supplier_full(data):
 		frappe.throw("Supplier Name is required")
 
 	address_line1 = (data.get("address_line1") or "").strip()
-	if not address_line1:
-		frappe.throw("Address Line 1 is required")
 
 	sup = frappe.new_doc("Supplier")
 	sup.supplier_name = supplier_name
@@ -61,18 +59,19 @@ def create_supplier_full(data):
 	sup.disabled = 1 if data.get("disabled") else 0
 	sup.insert(ignore_permissions=True)
 
-	addr = frappe.new_doc("Address")
-	addr.address_title = supplier_name
-	addr.address_type = "Billing"
-	addr.address_line1 = address_line1
-	addr.address_line2 = data.get("address_line2") or ""
-	addr.city = data.get("city") or ""
-	addr.pincode = data.get("pincode") or ""
-	addr.state = data.get("state") or ""
-	addr.country = "India"
-	addr.gstin = data.get("gstin") or ""
-	addr.append("links", {"link_doctype": "Supplier", "link_name": sup.name})
-	addr.insert(ignore_permissions=True)
+	if address_line1:
+		addr = frappe.new_doc("Address")
+		addr.address_title = supplier_name
+		addr.address_type = "Billing"
+		addr.address_line1 = address_line1
+		addr.address_line2 = data.get("address_line2") or ""
+		addr.city = data.get("city") or ""
+		addr.pincode = data.get("pincode") or ""
+		addr.state = data.get("state") or ""
+		addr.country = "India"
+		addr.gstin = data.get("gstin") or ""
+		addr.append("links", {"link_doctype": "Supplier", "link_name": sup.name})
+		addr.insert(ignore_permissions=True)
 
 	primary_party = (data.get("primary_party") or "").strip()
 	primary_role = (data.get("primary_party_role") or "").strip()
@@ -176,8 +175,6 @@ def update_supplier_full(data):
 		frappe.throw("Supplier name is required")
 
 	address_line1 = (data.get("address_line1") or "").strip()
-	if not address_line1:
-		frappe.throw("Address Line 1 is required")
 
 	new_supplier_name = (data.get("supplier_name") or data.get("new_supplier_name") or data.get("new_name") or "").strip()
 	if new_supplier_name and supplier_id != new_supplier_name:
@@ -233,34 +230,36 @@ def update_supplier_full(data):
 			})
 			link_doc.insert(ignore_permissions=True)
 
-	address_name = data.get("address_name") or frappe.db.get_value(
-		"Dynamic Link",
-		{"link_doctype": "Supplier", "link_name": supplier_id, "parenttype": "Address"},
-		"parent",
-	)
+	# A blank address leaves any existing linked address unchanged.
+	if address_line1:
+		address_name = data.get("address_name") or frappe.db.get_value(
+			"Dynamic Link",
+			{"link_doctype": "Supplier", "link_name": supplier_id, "parenttype": "Address"},
+			"parent",
+		)
 
-	if address_name:
-		addr = frappe.get_doc("Address", address_name)
-		addr.address_line1 = address_line1
-		addr.address_line2 = data.get("address_line2") or ""
-		addr.city = data.get("city") or addr.city
-		addr.pincode = data.get("pincode") or ""
-		addr.state = data.get("state") or ""
-		addr.gstin = data.get("gstin") or ""
-		addr.save(ignore_permissions=True)
-	else:
-		addr = frappe.new_doc("Address")
-		addr.address_title = sup.supplier_name
-		addr.address_type = "Billing"
-		addr.address_line1 = address_line1
-		addr.address_line2 = data.get("address_line2") or ""
-		addr.city = data.get("city") or ""
-		addr.pincode = data.get("pincode") or ""
-		addr.state = data.get("state") or ""
-		addr.gstin = data.get("gstin") or ""
-		addr.country = "India"
-		addr.append("links", {"link_doctype": "Supplier", "link_name": supplier_id})
-		addr.insert(ignore_permissions=True)
+		if address_name:
+			addr = frappe.get_doc("Address", address_name)
+			addr.address_line1 = address_line1
+			addr.address_line2 = data.get("address_line2") or ""
+			addr.city = data.get("city") or addr.city
+			addr.pincode = data.get("pincode") or ""
+			addr.state = data.get("state") or ""
+			addr.gstin = data.get("gstin") or ""
+			addr.save(ignore_permissions=True)
+		else:
+			addr = frappe.new_doc("Address")
+			addr.address_title = sup.supplier_name
+			addr.address_type = "Billing"
+			addr.address_line1 = address_line1
+			addr.address_line2 = data.get("address_line2") or ""
+			addr.city = data.get("city") or ""
+			addr.pincode = data.get("pincode") or ""
+			addr.state = data.get("state") or ""
+			addr.gstin = data.get("gstin") or ""
+			addr.country = "India"
+			addr.append("links", {"link_doctype": "Supplier", "link_name": supplier_id})
+			addr.insert(ignore_permissions=True)
 
 	return {"name": sup.name, "supplier_name": sup.supplier_name}
 

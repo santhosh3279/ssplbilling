@@ -239,7 +239,7 @@
       <!-- Column 3: Address & Location -->
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1 *</label>
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1</label>
           <input
             ref="addr1Input"
             v-model="form.address_line1"
@@ -616,7 +616,6 @@ function resetForm() {
 const canSubmit = computed(() => {
   if (!form.supplier_name || !form.supplier_name.trim()) return false
   if (!form.supplier_group) return false
-  if (!form.address_line1 || !form.address_line1.trim()) return false
   return true
 })
 
@@ -631,12 +630,7 @@ function validate() {
     groupInput.value?.focus()
     return false
   }
-  if (!form.address_line1 || !form.address_line1.trim()) {
-    alert('Address Line 1 is required')
-    addr1Input.value?.focus()
-    return false
-  }
-  if (form.pincode && !/^[1-9]\d{5}$/.test(form.pincode)) {
+  if (form.address_line1?.trim() && form.pincode && !/^[1-9]\d{5}$/.test(form.pincode)) {
     alert('Pincode must be a 6-digit number and cannot start with 0')
     pincodeInput.value?.focus()
     return false
