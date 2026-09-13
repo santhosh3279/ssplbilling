@@ -1186,13 +1186,13 @@ async function handleSelectSidebarItem(item) {
     ewaybill.value = data.ewaybill || ''
     ewaybillStatus.value = data.e_waybill_status || ''
 
-    // Items — reverse-calc pre-discount rate from stored effective rate + discount%
+    // Items — prefer the stored gross rate; reverse-calc only for older API responses.
     items.value = (data.items || []).map(i => {
       const discount = i.discount || 0
       const effectiveRate = i.rate || 0
-      const preDiscountRate = discount > 0
+      const preDiscountRate = i.gross_rate ?? (discount > 0 && discount < 100
         ? parseFloat((effectiveRate / (1 - getDiscPrecision(discount) / 100)).toFixed(precision))
-        : effectiveRate
+        : effectiveRate)
       // A row whose stored rate does not match its price list rate (times the
       // modifier that was in force) was typed in by hand. Without this flag every
       // reprice path rebuilds rate from _base_rate — i.e. the price list rate —
@@ -1218,7 +1218,7 @@ async function handleSelectSidebarItem(item) {
         uom: i.uom || 'Nos',
         tax_rate: i.tax_rate || 0,
         deleted: false,
-        _is_free: i.is_free_item === 1 || effectiveRate === 0,
+        _is_free: i.is_free_item === 1 || (effectiveRate === 0 && discount === 0),
         amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(precision)),
         _rowKey: makeRowKey(),
       }
@@ -1715,8 +1715,9 @@ async function handleSave() {
       qty: i.qty,
       uom: i.uom || 'Nos',
       rate: parseFloat(((i.rate || 0) * (1 - getDiscPrecision(i.discount) / 100)).toFixed(precision)),
+      gross_rate: i.rate || 0,
       price_list_rate: i._base_rate || i.price_list_rate || i.rate,
-      discount: i.discount || 0,
+      discount: getDiscPrecision(i.discount),
       is_free_item: i._is_free ? 1 : 0
     }))
   }

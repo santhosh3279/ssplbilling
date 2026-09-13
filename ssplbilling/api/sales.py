@@ -83,6 +83,26 @@ def post_sales_invoice(payload):
     return {"status": "success", "name": doc.name}
 
 
+def _preserve_percentage_rate(row, item):
+    """Represent the frontend gross rate as a margin before ERPNext discounts it."""
+    discount = frappe.utils.flt(item.get("discount"))
+    if item.get("gross_rate") is None or not discount:
+        return  # Keep the contract for older clients that only send a net rate.
+    row.discount_percentage = discount
+    gross_rate = frappe.utils.flt(item["gross_rate"], row.precision("rate_with_margin"))
+    # ERPNext clears discounts when the price-list rate is zero.
+    if not row.price_list_rate:
+        row.price_list_rate = gross_rate
+    row.margin_type = "Amount"
+    row.margin_rate_or_amount = gross_rate - row.price_list_rate
+    row.rate_with_margin = gross_rate
+    # Match ERPNext's discount-amount rounding so validation keeps the percentage.
+    row.discount_amount = frappe.utils.flt(
+        gross_rate * row.discount_percentage / 100, row.precision("discount_amount")
+    )
+    row.rate = frappe.utils.flt(gross_rate - row.discount_amount, row.precision("rate"))
+
+
 def _apply_payload_to_doc(doc, payload):
     """Shared helper: populate a Sales Invoice doc from the given payload dict."""
     if payload.get("company"):
@@ -189,6 +209,9 @@ def _apply_payload_to_doc(doc, payload):
                 tax.cost_center = cost_center
             if is_inclusive == 1 and tax.account_head and "GST" in tax.account_head.upper():
                 tax.included_in_print_rate = 1
+
+    for row, item in zip(doc.items, payload.get("items", [])):
+        _preserve_percentage_rate(row, item)
 
     doc.calculate_taxes_and_totals()
 
