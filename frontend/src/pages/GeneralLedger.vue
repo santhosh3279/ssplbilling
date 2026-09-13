@@ -1494,33 +1494,48 @@ function onGlobalKeydown(e) {
   }
 }
 
-function scrollRowIntoView(idx) {
-  ensureRowRendered(idx)
-  nextTick(() => {
-    const row = tableBodyRef.value?.querySelector(`tr[data-idx="${idx}"]`)
-    if (!row) return
+let scrollRequest = 0
 
-    const scroller = tableScrollRef.value
-    if (!scroller) {
-      row.scrollIntoView({ block: 'nearest' })
-      return
-    }
+async function scrollRowIntoView(idx) {
+  const request = ++scrollRequest
+  let row
+  // Mount the table before measuring, then render the measured spacer heights
+  // before jumping. Otherwise the browser clamps the jump to the old height.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await nextTick()
+    if (request !== scrollRequest) return
+    measureVirtual()
+    await nextTick()
+    if (request !== scrollRequest) return
+    ensureRowRendered(idx)
+    await nextTick()
+    if (request !== scrollRequest) return
+    row = tableBodyRef.value?.querySelector(`tr[data-idx="${idx}"]`)
+    if (row) break
+  }
+  if (!row) return
 
-    // The thead is `sticky top-0`, so it overlays the top of the scroll area.
-    // scrollIntoView({ block: 'nearest' }) knows nothing about that and parks the
-    // row underneath it when moving up — clamp against the header's bottom edge
-    // (both header rows: labels + filters) instead.
-    const headH = tableHeadRef.value?.offsetHeight || 0
-    const sRect = scroller.getBoundingClientRect()
-    const rRect = row.getBoundingClientRect()
-    const topLimit = sRect.top + headH
+  const scroller = tableScrollRef.value
+  if (!scroller) {
+    row.scrollIntoView({ block: 'nearest' })
+    return
+  }
 
-    if (rRect.top < topLimit) {
-      scroller.scrollTop -= topLimit - rRect.top
-    } else if (rRect.bottom > sRect.bottom) {
-      scroller.scrollTop += rRect.bottom - sRect.bottom
-    }
-  })
+  // The thead is `sticky top-0`, so it overlays the top of the scroll area.
+  // scrollIntoView({ block: 'nearest' }) knows nothing about that and parks the
+  // row underneath it when moving up — clamp against the header's bottom edge
+  // (both header rows: labels + filters) instead.
+  const headH = tableHeadRef.value?.offsetHeight || 0
+  const sRect = scroller.getBoundingClientRect()
+  const rRect = row.getBoundingClientRect()
+  const topLimit = sRect.top + headH
+
+  if (rRect.top < topLimit) {
+    scroller.scrollTop -= topLimit - rRect.top
+  } else if (rRect.bottom > sRect.bottom) {
+    scroller.scrollTop += rRect.bottom - sRect.bottom
+  }
+  scrollTop.value = scroller.scrollTop
 }
 
 // ── Formatting ──
