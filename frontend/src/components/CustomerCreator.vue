@@ -168,7 +168,7 @@
       <!-- Column 3: Address & Location -->
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1 *</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Address Line 1</label>
           <input v-model="form.address_line1" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="Street / Building" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
         </div>
 
@@ -447,7 +447,6 @@ const canSubmit = computed(() => {
   if (!form.value.customer_name || !form.value.customer_name.trim()) return false
   if (!form.value.customer_group) return false
   if (!props.isEdit && !/^\d{10}$/.test(form.value.mobile || '')) return false
-  if (!form.value.address_line1 || !form.value.address_line1.trim()) return false
   return true
 })
 
@@ -457,10 +456,7 @@ function validate() {
   if (!props.isEdit && (!form.value.mobile || !/^\d{10}$/.test(form.value.mobile))) {
     alert('Valid 10-digit Mobile required'); return false
   }
-  if (!form.value.address_line1 || !form.value.address_line1.trim()) {
-    alert('Address Line 1 is required'); return false
-  }
-  if (form.value.pincode && !/^[1-9]\d{5}$/.test(form.value.pincode)) {
+  if (form.value.address_line1?.trim() && form.value.pincode && !/^[1-9]\d{5}$/.test(form.value.pincode)) {
     alert('Pincode must be a 6-digit number and cannot start with 0'); return false
   }
   return true

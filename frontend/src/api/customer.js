@@ -2,7 +2,7 @@ import { frappeGet, frappePost } from '../api.js'
 
 /**
  * Creates a Billing Address linked to a Customer.
- * Only called when at least address_line1 or city is provided.
+ * Only called when address_line1 contains non-whitespace text.
  */
 async function createAddress(data, customerName) {
   const doc = {
@@ -144,7 +144,7 @@ export async function createCustomer(data) {
   }
 
   await Promise.all([
-    (data.address_line1 || data.city) ? createAddress(data, customer.name) : Promise.resolve(),
+    data.address_line1?.trim() ? createAddress(data, customer.name) : Promise.resolve(),
     data.whatsapp ? addWhatsAppToContact(customer.name, data.whatsapp) : Promise.resolve(),
   ])
 
