@@ -1049,6 +1049,12 @@ async function handleSubmit() {
   if (!isFormValid.value) return
   submitting.value = true
   
+  const creationDate = serverToday()
+  const creationNote = `Created on: ${creationDate}`
+  const remarks = postingDate.value && postingDate.value < creationDate
+    ? [form.remarks, creationNote].filter(Boolean).join('\n')
+    : form.remarks
+
   const createdEntries = []
   try {
     for (const mopRow of form.mop_rows) {
@@ -1090,7 +1096,7 @@ async function handleSubmit() {
         reference_date: form.reference_date,
         company: localStorage.getItem('wb-company') || null,
         cost_center: localStorage.getItem('wb-cost-center') || null,
-        remarks: form.remarks,
+        remarks,
         "Custom Remarks": 1,
         references: invoiceRefs,
       }
