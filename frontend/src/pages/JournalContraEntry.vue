@@ -287,6 +287,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappePost } from '../api.js'
+import { serverToday } from '../services/serverTime'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { useShortcuts } from '../services/shortcutManager'
 import { journalContraShortcuts } from '../shortcuts/journalContraShortcuts'
@@ -692,11 +693,17 @@ async function saveEntry() {
   isSubmitting.value = true
   submitting.value = true
   try {
+    const creationDate = serverToday()
+    const creationNote = `Created on: ${creationDate}`
+    const remarks = postingDate.value && postingDate.value < creationDate
+      ? [userRemarks.value, creationNote].filter(Boolean).join('\n')
+      : userRemarks.value
+
     const payload = {
       voucher_type: entryType.value === 'Opening Entry' ? 'Journal Entry' : entryType.value,
       posting_date: postingDate.value,
       company: localStorage.getItem('wb-company') || null,
-      user_remark: userRemarks.value,
+      user_remark: remarks,
       balancing_account: balancingAccount.value.name,
       accounts: rows.value
         .filter(r => r.account)
@@ -706,7 +713,7 @@ async function saveEntry() {
           debit_in_account_currency: r.debit,
           credit_in_account_currency: r.credit,
           cost_center: localStorage.getItem('wb-cost-center') || null,
-          user_remark: userRemarks.value
+          user_remark: remarks
         }))
     }
 
