@@ -301,31 +301,8 @@
                 <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                   Catalogue Items ({{ form.items.length }})
                 </h3>
-                <button
-                  @click="addEmptyRow"
-                  type="button"
-                  class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[10px] font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]/80 transition"
-                >
-                  + Add Empty Row
-                </button>
               </div>
               
-              <!-- Autocomplete Item Search Box -->
-              <div class="relative max-w-md">
-                <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)] block mb-1">
-                  Add Item from Inventory
-                </label>
-                <input
-                  v-model="itemSearchQuery"
-                  @input="handleItemSearch"
-                  @focus="searchTargetRow = null"
-                  @blur="closeItemSearch"
-                  @keydown="handleSearchKeydown"
-                  type="text"
-                  placeholder="Type code, name, or barcode to add item..."
-                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs outline-none focus:border-[var(--color-info)] transition"
-                />
-                
                 <div @mousedown.prevent>
                   <QuickItemSearch
                     ref="quickSearchRef"
@@ -339,7 +316,6 @@
                     @refresh="handleItemSearch"
                   />
                 </div>
-              </div>
 
               <!-- Invoice-style catalogue items -->
               <p id="catalogue-grid-help" class="text-[var(--color-text-muted)]">
@@ -358,7 +334,7 @@
                   </thead>
                   <tbody>
                     <tr v-if="!form.items.length">
-                      <td colspan="4" class="sheet-empty">Add an item from inventory or add an empty row to begin.</td>
+                      <td colspan="4" class="sheet-empty">Type an item code, name, or barcode in the Item/Barcode column to begin.</td>
                     </tr>
                     <tr v-for="(item, idx) in form.items" :key="idx">
                       <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
@@ -421,7 +397,7 @@ const emptyForm = () => ({
   tile_grid: '4',
   timer: 0,
   price_lists: [],
-  items: []
+  items: [{ itemcode: '', itemname: '', barcode: '' }]
 })
 
 const form = ref(emptyForm())
@@ -495,6 +471,7 @@ async function selectCatalogue(name) {
         barcode: i.barcode || ''
       }))
     }
+    if (!form.value.items.length) addEmptyRow()
   } catch (e) {
     alert(e.message || 'Failed to load catalogue details')
     closeForm()
@@ -620,6 +597,7 @@ function addEmptyRow() {
 function removeItemRow(idx) {
   closeItemSearch()
   form.value.items.splice(idx, 1)
+  if (!form.value.items.length) addEmptyRow()
 }
 
 // Save the catalogue document
