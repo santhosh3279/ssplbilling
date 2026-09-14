@@ -13,7 +13,7 @@
           </button>
           <span class="text-[var(--color-text-muted)]">|</span>
           <h1 class="text-sm font-semibold text-[var(--color-text)]">
-            Offer Items Management
+            Cataloge Mangement
           </h1>
         </div>
         <div class="flex items-center gap-2">
