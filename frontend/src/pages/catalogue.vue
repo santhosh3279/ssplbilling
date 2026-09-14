@@ -341,7 +341,7 @@
 
               <!-- Invoice-style catalogue items -->
               <p id="catalogue-grid-help" class="text-[var(--color-text-muted)]">
-                Click a cell to edit. Tab moves across cells; Enter and ↑ / ↓ move between rows.
+                Click a cell to edit. Tab moves across cells; Enter and ↑ / ↓ move between rows. Enter on the last row adds a new row.
               </p>
               <div ref="itemsGrid" class="catalogue-grid" tabindex="0" aria-label="Catalogue items spreadsheet">
                 <table class="catalogue-sheet" aria-describedby="catalogue-grid-help">
@@ -591,6 +591,9 @@ async function handleCellKeydown(event, row, column) {
     nextRow = Math.floor(nextIndex / itemColumns.length)
     nextColumn = (nextIndex + itemColumns.length) % itemColumns.length
   } else return
+  if (event.key === 'Enter' && !event.shiftKey && nextRow === form.value.items.length) {
+    addEmptyRow()
+  }
   // Let Tab leave the grid at its boundaries; Enter stays in the current column.
   if (nextRow < 0 || nextRow >= form.value.items.length) {
     if (event.key !== 'Tab') event.preventDefault()
