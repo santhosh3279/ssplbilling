@@ -17,7 +17,7 @@
         @click="goCreateOffer"
         class="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold text-white border border-indigo-500 transition active:scale-95 focus:outline-none"
       >
-        ➕ Create Offer Page
+        ➕ Cataloge Editor
       </button>
 
       <!-- Abstract glowing circles -->
