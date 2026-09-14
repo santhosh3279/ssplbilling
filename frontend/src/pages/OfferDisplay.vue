@@ -190,7 +190,6 @@
                     type="text"
                     placeholder="Enter unique page address"
                     class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs outline-none focus:border-[var(--color-info)] transition font-mono"
-                    :disabled="!!form.name"
                   />
                   <p class="text-[9px] text-[var(--color-text-muted)] mt-0.5" v-if="!form.name">
                     This will be used as the unique ID for this document.
