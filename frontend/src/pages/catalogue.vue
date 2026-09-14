@@ -318,37 +318,24 @@
                 <input
                   v-model="itemSearchQuery"
                   @input="handleItemSearch"
-                  @keydown.down.prevent="moveSearchSelection(1)"
-                  @keydown.up.prevent="moveSearchSelection(-1)"
-                  @keydown.enter.prevent="addSearchSelectedItem"
+                  @focus="searchTargetRow = null"
+                  @blur="closeItemSearch"
+                  @keydown="handleSearchKeydown"
                   type="text"
                   placeholder="Type code, name, or barcode to add item..."
                   class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs outline-none focus:border-[var(--color-info)] transition"
                 />
                 
-                <!-- Search Results dropdown -->
-                <div
-                  v-if="searchSuggestions.length"
-                  class="absolute z-50 left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg divide-y divide-[var(--color-border)]/50"
-                >
-                  <div
-                    v-for="(item, idx) in searchSuggestions"
-                    :key="item.item_code"
-                    @click="addItemToScope(item)"
-                    class="p-2.5 cursor-pointer text-xs hover:bg-[var(--color-info)]/10 flex items-center justify-between"
-                    :class="{'bg-[var(--color-info)]/15 font-bold': searchActiveIndex === idx}"
-                  >
-                    <div class="truncate pr-4 flex flex-col gap-0.5">
-                      <div>
-                        <span class="font-mono font-bold text-[var(--color-info)]">{{ item.item_code }}</span>
-                        <span class="text-[var(--color-text-muted)] ml-2">— {{ item.item_name }}</span>
-                      </div>
-                      <div class="text-[10px] text-[var(--color-text-muted)]" v-if="item.barcodes">
-                        Barcodes: {{ item.barcodes }}
-                      </div>
-                    </div>
-                    <span class="text-[10px] text-gray-500 font-mono shrink-0">{{ item.uom || 'Nos' }}</span>
-                  </div>
+                <div @mousedown.prevent>
+                  <QuickItemSearch
+                    ref="quickSearchRef"
+                    :results="searchSuggestions"
+                    :query="itemSearchQuery"
+                    search-type="Sales"
+                    @select="selectSearchItem"
+                    @close="closeItemSearch"
+                    @refresh="handleItemSearch"
+                  />
                 </div>
               </div>
 
@@ -369,20 +356,22 @@
                   </thead>
                   <tbody>
                     <tr v-if="!form.items.length">
-                      <td colspan="5" class="sheet-empty">Add an item from inventory or add an empty row to begin.</td>
+                      <td colspan="4" class="sheet-empty">Add an item from inventory or add an empty row to begin.</td>
                     </tr>
                     <tr v-for="(item, idx) in form.items" :key="idx">
                       <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
                       <td v-for="(column, columnIndex) in itemColumns" :key="column.key" class="sheet-cell">
                         <input
-                          v-model="item[column.key]"
+                          :value="column.key === 'itemcode' && searchTargetRow === idx ? itemSearchQuery : item[column.key]"
+                          @input="column.key === 'itemcode' ? searchRowItem($event, idx) : item[column.key] = $event.target.value"
+                          @blur="column.key === 'itemcode' && closeItemSearch()"
                           type="text"
                           :data-cell="`${idx}-${columnIndex}`"
                           :aria-label="`${column.label}, row ${idx + 1}`"
                           :class="{ 'sheet-mono': column.key !== 'itemname', 'sheet-code': column.key === 'itemcode' }"
                           @focus="$event.target.select()"
                           autocomplete="off"
-                          @keydown="handleCellKeydown($event, idx, columnIndex)"
+                          @keydown="handleItemCellKeydown($event, idx, columnIndex)"
                         />
                       </td>
                       <td class="sheet-action">
@@ -403,11 +392,12 @@
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { frappeGet, frappePost } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
-const { items: cachedItems, refreshItemCache, searchItemsInCache } = useItemCache()
+const { items: cachedItems, refreshItemCache } = useItemCache()
 
 // State
 const catalogues = ref([])
@@ -438,7 +428,8 @@ const isFormActive = ref(false)
 // Item autocomplete search state
 const itemSearchQuery = ref('')
 const searchSuggestions = ref([])
-const searchActiveIndex = ref(-1)
+const quickSearchRef = ref(null)
+const searchTargetRow = ref(null)
 
 // Fetch all catalogue documents from the database
 async function fetchCatalogues() {
@@ -474,8 +465,7 @@ async function selectCatalogue(name) {
   selectedName.value = name
   detailLoading.value = true
   isFormActive.value = true
-  itemSearchQuery.value = ''
-  searchSuggestions.value = []
+  closeItemSearch()
   
   try {
     const doc = await frappeGet('frappe.client.get', {
@@ -515,71 +505,78 @@ function handleNewCatalogue() {
   selectedName.value = null
   isFormActive.value = true
   form.value = emptyForm()
-  itemSearchQuery.value = ''
-  searchSuggestions.value = []
+  closeItemSearch()
 }
 
 function closeForm() {
+  closeItemSearch()
   isFormActive.value = false
   selectedName.value = null
   form.value = emptyForm()
 }
 
-// Item autocomplete search
+// QuickItemSearch filters the shared cache by item code, name, and barcode.
 function handleItemSearch() {
-  const q = itemSearchQuery.value.trim()
-  if (!q || q.length < 2) {
-    searchSuggestions.value = []
-    searchActiveIndex.value = -1
+  searchSuggestions.value = itemSearchQuery.value.length ? cachedItems.value.slice(0, 1) : []
+}
+
+function closeItemSearch() {
+  searchSuggestions.value = []
+  searchTargetRow.value = null
+  itemSearchQuery.value = ''
+}
+
+function searchRowItem(event, row) {
+  searchTargetRow.value = row
+  itemSearchQuery.value = event.target.value
+  handleItemSearch()
+}
+
+function handleSearchKeydown(event) {
+  if (event.isComposing) return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeItemSearch()
     return
   }
-  
-  // Quick search in local cached items index
-  const found = searchItemsInCache(q, 10)
-  
-  searchSuggestions.value = found
-  searchActiveIndex.value = searchSuggestions.value.length ? 0 : -1
-}
-
-// Handle keyboard selections in item autocomplete list
-function moveSearchSelection(dir) {
-  if (!searchSuggestions.value.length) return
-  const len = searchSuggestions.value.length
-  searchActiveIndex.value = (searchActiveIndex.value + dir + len) % len
-}
-
-function addSearchSelectedItem() {
-  if (searchActiveIndex.value >= 0 && searchActiveIndex.value < searchSuggestions.value.length) {
-    addItemToScope(searchSuggestions.value[searchActiveIndex.value])
+  if (searchSuggestions.value.length && ['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) {
+    event.preventDefault()
+    quickSearchRef.value?.handleQuickSearchKeydown(event)
   }
 }
 
-function addItemToScope(item) {
-  // Extract barcode if any
-  let itemBarcode = ''
-  if (item.barcodes_detailed?.length) {
-    itemBarcode = item.barcodes_detailed[0].barcode || ''
-  } else if (item.barcodes) {
-    itemBarcode = item.barcodes.split(',')[0] || ''
+function handleItemCellKeydown(event, row, column) {
+  if (column === 0 && searchTargetRow.value === row) {
+    handleSearchKeydown(event)
+    if (event.defaultPrevented || event.isComposing) return
+    if (event.key === 'Tab') closeItemSearch()
   }
+  handleCellKeydown(event, row, column)
+}
 
-  form.value.items.push({
+async function selectSearchItem(item) {
+  const row = searchTargetRow.value
+  const values = {
     itemcode: item.item_code,
     itemname: item.item_name || '',
-    barcode: itemBarcode
-  })
-  
-  // Reset search
-  itemSearchQuery.value = ''
-  searchSuggestions.value = []
-  searchActiveIndex.value = -1
+    barcode: item.barcodes_detailed?.[0]?.barcode || item.barcodes?.split(',')[0]?.trim() || '',
+  }
+  if (row !== null && form.value.items[row]) {
+    Object.assign(form.value.items[row], values)
+  } else {
+    form.value.items.push(values)
+  }
+  closeItemSearch()
+  if (row !== null) {
+    await nextTick()
+    itemsGrid.value?.querySelector(`[data-cell="${row}-0"]`)?.focus()
+  }
 }
 
 const itemsGrid = ref(null)
 const itemColumns = [
-  { key: 'itemcode', label: 'Item Code' },
+  { key: 'itemcode', label: 'Item/Barcode' },
   { key: 'itemname', label: 'Item Name' },
-  { key: 'barcode', label: 'Barcode' },
 ]
 
 async function handleCellKeydown(event, row, column) {
@@ -615,6 +612,7 @@ function addEmptyRow() {
 }
 
 function removeItemRow(idx) {
+  closeItemSearch()
   form.value.items.splice(idx, 1)
 }
 
@@ -792,8 +790,7 @@ onMounted(() => {
   font-size: 30px;
   font-weight: 400;
 }
-.catalogue-sheet th:nth-child(2) { width: 24%; }
-.catalogue-sheet th:nth-child(4) { width: 24%; }
+.catalogue-sheet th:nth-child(2) { width: 36%; }
 .catalogue-sheet .sheet-action { width: 72px; text-align: center; }
 .catalogue-sheet thead .sheet-action { font-size: 14px; }
 .catalogue-sheet tbody tr { transition: background-color 120ms; }
