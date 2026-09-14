@@ -632,16 +632,19 @@ async function handleSave() {
     alert('Please enter a Page Address.')
     return
   }
-  if (!form.value.items.length) {
+  const itemRows = form.value.items
+    .map((item, index) => ({ item, rowNumber: index + 1 }))
+    .filter(({ item }) => [item.itemcode, item.itemname, item.barcode].some(value => value.trim()))
+
+  if (!itemRows.length) {
     alert('Please add at least one Item to the catalogue list.')
     return
   }
 
-  // Validate items
-  for (let i = 0; i < form.value.items.length; i++) {
-    const item = form.value.items[i]
+  // Validate nonempty rows using their visible row numbers.
+  for (const { item, rowNumber } of itemRows) {
     if (!item.itemcode.trim()) {
-      alert(`Row ${i + 1}: Item Code is required.`)
+      alert(`Row ${rowNumber}: Item Code is required.`)
       return
     }
   }
@@ -665,7 +668,7 @@ async function handleSave() {
         doctype: 'Offer-Pricelist',
         price_list: p.price_list.trim()
       })),
-      items: form.value.items.map(i => ({
+      items: itemRows.map(({ item: i }) => ({
         ...(i.name && { name: i.name }),
         doctype: 'Offer-Item',
         itemcode: i.itemcode.trim(),
