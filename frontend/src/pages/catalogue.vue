@@ -756,6 +756,8 @@ onMounted(() => {
   border-bottom: 1px solid var(--color-border);
 }
 .catalogue-sheet thead th {
+  font-size: 18.9px;
+  line-height: 21px;
   position: sticky;
   top: 0;
   z-index: 2;
@@ -779,7 +781,7 @@ onMounted(() => {
 }
 .catalogue-sheet th:nth-child(2) { width: 36%; }
 .catalogue-sheet .sheet-action { width: 72px; text-align: center; }
-.catalogue-sheet thead .sheet-action { font-size: 10.5px; }
+.catalogue-sheet thead .sheet-action { font-size: 7.35px; }
 .catalogue-sheet tbody tr { transition: background-color 120ms; }
 .catalogue-sheet tbody tr:hover { background: var(--color-surface-raised); }
 .catalogue-sheet tbody tr:focus-within {
