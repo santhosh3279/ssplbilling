@@ -337,7 +337,7 @@
                     <tr v-if="!form.items.length">
                       <td colspan="5" class="sheet-empty">Type an item code, name, or barcode in the Item/Barcode column to begin.</td>
                     </tr>
-                    <tr v-for="(item, idx) in form.items" :key="idx">
+                    <tr v-for="(item, idx) in form.items" :key="idx" :class="{ 'sheet-inactive': Number(item.disabled) === 1 }">
                       <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
                       <td v-for="(column, columnIndex) in itemColumns" :key="column.key" class="sheet-cell">
                         <input
@@ -817,6 +817,9 @@ onMounted(() => {
   color: var(--color-text);
   font: inherit;
   font-weight: 500;
+}
+.catalogue-sheet .sheet-inactive .sheet-cell input {
+  text-decoration: line-through;
 }
 .sheet-cell input.sheet-mono { font-family: monospace; }
 .sheet-cell input.sheet-code { color: var(--color-highlight); }
