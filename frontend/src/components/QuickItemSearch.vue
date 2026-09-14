@@ -40,7 +40,10 @@
               <div class="min-w-0 flex-1 flex items-center gap-3">
                 <div v-if="itemMeta.item.has_history" class="h-3 w-3 shrink-0 rounded-full animate-pulse bg-[var(--color-highlight)]" title="Previously sold to this customer"></div>
                 <div class="min-w-0 flex-1">
-                  <div class="text-3xl font-normal truncate" :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ itemMeta.item.item_name }}</div>
+                  <div class="flex min-w-0 items-center gap-2">
+                    <div class="min-w-0 truncate text-3xl font-normal" :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ itemMeta.item.item_name }}</div>
+                    <span v-if="isAlreadyAdded(itemMeta.item)" class="shrink-0 whitespace-nowrap rounded-full bg-green-100 px-2 py-0.5 text-base font-bold text-green-800">Already added</span>
+                  </div>
                   <div class="text-2xl font-mono flex flex-wrap items-center gap-x-2 gap-y-0.5" :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
                     <span>{{ itemMeta.item.item_code }}</span>
                     <span v-if="itemMeta.item.hsn_sac" class="text-2xl opacity-70">· HSN: {{ itemMeta.item.hsn_sac }}</span>
@@ -49,7 +52,6 @@
                 </div>
               </div>
               <div class="flex flex-col items-end shrink-0">
-                <span v-if="isAlreadyAdded(itemMeta.item)" class="rounded bg-[var(--color-surface-raised)] px-2 py-0.5 text-base font-bold text-[var(--color-text)]">Already added</span>
                 <div class="text-[1.75rem] font-mono font-bold" :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ formatPrice(getItemPrice(itemMeta.item)) }}</div>
                 <div 
                   class="text-2xl font-bold"
