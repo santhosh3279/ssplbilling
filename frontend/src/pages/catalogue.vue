@@ -352,69 +352,41 @@
                 </div>
               </div>
 
-              <!-- Catalogue Items Table -->
-              <div class="border border-[var(--color-border)] rounded-lg overflow-hidden">
-                <table class="w-full text-left">
+              <!-- Spreadsheet-style catalogue items -->
+              <p id="catalogue-grid-help" class="text-[var(--color-text-muted)]">
+                Click a cell to edit. Tab moves across cells; Enter and ↑ / ↓ move between rows.
+              </p>
+              <div ref="itemsGrid" class="catalogue-grid" tabindex="0" aria-label="Catalogue items spreadsheet">
+                <table class="catalogue-sheet" aria-describedby="catalogue-grid-help">
                   <thead>
-                    <tr class="bg-[var(--color-surface-raised)] text-[10px] uppercase font-bold text-[var(--color-text-muted)] border-b border-[var(--color-border)]">
-                      <th class="p-2 w-[10%] text-center">#</th>
-                      <th class="p-2 w-[30%]">Item Code</th>
-                      <th class="p-2 w-[35%]">Item Name</th>
-                      <th class="p-2 w-[20%]">Barcode</th>
-                      <th class="p-2 w-[5%] text-center">Action</th>
+                    <tr>
+                      <th scope="col" class="sheet-row-number">#</th>
+                      <th v-for="column in itemColumns" :key="column.key" scope="col">
+                        <span class="sheet-column-letter">{{ column.letter }}</span>
+                        {{ column.label }}
+                      </th>
+                      <th scope="col" class="sheet-action">Action</th>
                     </tr>
                   </thead>
-                  <tbody class="divide-y divide-[var(--color-border)]">
+                  <tbody>
                     <tr v-if="!form.items.length">
-                      <td colspan="5" class="p-6 text-center text-xs text-[var(--color-text-muted)] italic">
-                        No items added to this catalogue list. Use the search bar above or add an empty row.
-                      </td>
+                      <td colspan="5" class="sheet-empty">Add an item from inventory or add an empty row to begin.</td>
                     </tr>
-                    <tr v-for="(item, idx) in form.items" :key="idx" class="text-xs hover:bg-[var(--color-surface-raised)]/20">
-                      <!-- Row Number -->
-                      <td class="p-2 text-center text-[var(--color-text-muted)] font-mono">
-                        {{ idx + 1 }}
-                      </td>
-                      
-                      <!-- Item Code -->
-                      <td class="p-1.5">
+                    <tr v-for="(item, idx) in form.items" :key="idx">
+                      <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
+                      <td v-for="(column, columnIndex) in itemColumns" :key="column.key" class="sheet-cell">
                         <input
-                          v-model="item.itemcode"
+                          v-model="item[column.key]"
                           type="text"
-                          placeholder="e.g. ITEM-001"
-                          class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono"
+                          :data-cell="`${idx}-${columnIndex}`"
+                          :aria-label="`${column.label}, row ${idx + 1}`"
+                          :class="{ 'sheet-mono': column.key !== 'itemname' }"
+                          autocomplete="off"
+                          @keydown="handleCellKeydown($event, idx, columnIndex)"
                         />
                       </td>
-
-                      <!-- Item Name -->
-                      <td class="p-1.5">
-                        <input
-                          v-model="item.itemname"
-                          type="text"
-                          placeholder="e.g. Premium Item Name"
-                          class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition"
-                        />
-                      </td>
-
-                      <!-- Barcode -->
-                      <td class="p-1.5">
-                        <input
-                          v-model="item.barcode"
-                          type="text"
-                          placeholder="e.g. 12345678"
-                          class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 outline-none focus:border-[var(--color-info)] transition font-mono"
-                        />
-                      </td>
-
-                      <!-- Actions -->
-                      <td class="p-1.5 text-center">
-                        <button
-                          @click="removeItemRow(idx)"
-                          class="text-red-500 hover:text-red-700 font-bold px-2 py-1 text-sm transition"
-                          title="Remove item"
-                        >
-                          ✕
-                        </button>
+                      <td class="sheet-action">
+                        <button type="button" @click="removeItemRow(idx)" :aria-label="`Remove row ${idx + 1}`" title="Remove row" class="text-red-500 hover:text-red-700">✕</button>
                       </td>
                     </tr>
                   </tbody>
@@ -429,7 +401,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
@@ -603,6 +575,37 @@ function addItemToScope(item) {
   searchActiveIndex.value = -1
 }
 
+const itemsGrid = ref(null)
+const itemColumns = [
+  { key: 'itemcode', label: 'Item Code', letter: 'A' },
+  { key: 'itemname', label: 'Item Name', letter: 'B' },
+  { key: 'barcode', label: 'Barcode', letter: 'C' },
+]
+
+async function handleCellKeydown(event, row, column) {
+  if (event.isComposing || event.ctrlKey || event.metaKey || event.altKey) return
+  let nextRow = row
+  let nextColumn = column
+  if (event.key === 'Enter') nextRow += event.shiftKey ? -1 : 1
+  else if (event.key === 'ArrowDown') nextRow++
+  else if (event.key === 'ArrowUp') nextRow--
+  else if (event.key === 'Tab') {
+    const nextIndex = row * itemColumns.length + column + (event.shiftKey ? -1 : 1)
+    nextRow = Math.floor(nextIndex / itemColumns.length)
+    nextColumn = (nextIndex + itemColumns.length) % itemColumns.length
+  } else return
+  // Let Tab leave the grid at its boundaries; Enter stays in the current column.
+  if (nextRow < 0 || nextRow >= form.value.items.length) {
+    if (event.key !== 'Tab') event.preventDefault()
+    return
+  }
+  event.preventDefault()
+  await nextTick()
+  const input = itemsGrid.value?.querySelector(`[data-cell="${nextRow}-${nextColumn}"]`)
+  input?.focus()
+  input?.select()
+}
+
 function addEmptyRow() {
   form.value.items.push({
     itemcode: '',
@@ -748,6 +751,67 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.catalogue-grid {
+  max-height: 60vh;
+  overflow: auto;
+  border: 1px solid var(--color-border);
+}
+.catalogue-sheet {
+  width: 100%;
+  min-width: 680px;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 14px;
+}
+.catalogue-sheet th,
+.catalogue-sheet td {
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+.catalogue-sheet thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px;
+  text-align: left;
+  background: var(--color-surface-raised);
+}
+.sheet-column-letter {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+.catalogue-sheet .sheet-row-number {
+  width: 52px;
+  text-align: center;
+  background: var(--color-surface-raised);
+  color: var(--color-text-muted);
+}
+.catalogue-sheet .sheet-action { width: 64px; text-align: center; }
+.sheet-cell { padding: 0; background: var(--color-bg); }
+.sheet-cell input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: 36px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-size: inherit;
+}
+.sheet-cell input:focus {
+  outline: 2px solid var(--color-info);
+  outline-offset: -2px;
+  background: var(--color-surface);
+}
+.sheet-mono { font-family: monospace; }
+.catalogue-sheet tr:focus-within .sheet-row-number { color: var(--color-info); }
+.sheet-empty { padding: 24px; text-align: center; color: var(--color-text-muted); }
+
 .catalogue-display-page {
   font-size: 19.5px !important; /* 13px * 1.5 */
 }
