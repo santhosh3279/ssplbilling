@@ -48,7 +48,7 @@ import Cancellation from './pages/Cancellation.vue'
 import NamingSettings from './pages/NamingSettings.vue'
 import Expense from './pages/expense.vue'
 import Repack from './pages/Repack.vue'
-import OfferDisplay from './pages/OfferDisplay.vue'
+import Catalogue from './pages/catalogue.vue'
 import OfferPage from './pages/OfferPage.vue'
 import Catelogue from './pages/catelogue.vue'
 import Unreconciled from './pages/unreconciled.vue'
@@ -126,7 +126,7 @@ const routes = [
   {
     path: '/catalogue-editor',
     name: 'OfferDisplay',
-    component: OfferDisplay,
+    component: Catalogue,
     meta: { title: 'Offer Display' },
   },
   {
