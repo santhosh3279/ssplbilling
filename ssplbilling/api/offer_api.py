@@ -324,11 +324,29 @@ def get_offer_details(pageaddress):
 
 @frappe.whitelist(allow_guest=True)
 def get_offer_list():
-	return frappe.get_all(
+	catalogues = frappe.get_all(
 		"Offer-Items",
 		fields=["name", "heading", "pageaddress", "timer", "creation"],
 		order_by="creation desc"
 	)
+	if not catalogues:
+		return catalogues
+
+	counts = frappe.get_all(
+		"Offer-Item",
+		filters={
+			"parent": ["in", [catalogue.name for catalogue in catalogues]],
+			"parenttype": "Offer-Items",
+			"parentfield": "items",
+			"disabled": 0,
+		},
+		fields=["parent", "count(name) as item_count"],
+		group_by="parent",
+	)
+	counts_by_parent = {row.parent: row.item_count for row in counts}
+	for catalogue in catalogues:
+		catalogue.item_count = counts_by_parent.get(catalogue.name, 0)
+	return catalogues
 
 
 

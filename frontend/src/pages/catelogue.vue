@@ -93,6 +93,9 @@
               <h3 class="card-heading text-lg font-black text-[var(--color-text)] group-hover:text-[var(--color-info)] transition-colors line-clamp-2">
                 {{ cat.heading }}
               </h3>
+              <p class="text-xs font-semibold text-[var(--color-text-muted)]">
+                {{ cat.item_count ?? 0 }} active {{ cat.item_count === 1 ? 'item' : 'items' }}
+              </p>
             </div>
           </div>
 
