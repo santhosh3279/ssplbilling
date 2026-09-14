@@ -331,6 +331,7 @@
                     ref="quickSearchRef"
                     :results="searchSuggestions"
                     :query="itemSearchQuery"
+                    :excluded-item-codes="listedItemCodes"
                     search-type="Sales"
                     @select="selectSearchItem"
                     @close="closeItemSearch"
@@ -423,6 +424,7 @@ const emptyForm = () => ({
 })
 
 const form = ref(emptyForm())
+const listedItemCodes = computed(() => form.value.items.map(item => item.itemcode))
 const isFormActive = ref(false)
 
 // Item autocomplete search state

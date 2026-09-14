@@ -72,6 +72,7 @@ import { useCustomerHistory } from '../composables/useCustomerHistory'
 const props = defineProps({
   results: { type: Array, default: () => [] },
   query: { type: String, default: '' },
+  excludedItemCodes: { type: Array, default: () => [] },
   priceList: { type: String, default: '' },
   searchType: { type: String, default: 'Sales' },
   warehouse: { type: String, default: '' },
@@ -106,8 +107,12 @@ const allItemsWithHistory = computed(() => {
 
 // Precompute lowercased match fields once per item so filtering and best-match
 // lookup don't each re-derive them on every keystroke.
+const excludedCodes = computed(() => new Set(props.excludedItemCodes.map(code => code.trim().toLowerCase())))
+
 const normalizedItems = computed(() => {
-  return allItemsWithHistory.value.map(item => ({
+  return allItemsWithHistory.value
+    .filter(item => !excludedCodes.value.has((item.item_code || '').toLowerCase()))
+    .map(item => ({
     item,
     code: (item.item_code || '').toLowerCase(),
     name: (item.item_name || '').toLowerCase(),
@@ -251,6 +256,11 @@ watch(() => props.results, async (newVal) => {
     }
   }
 }, { deep: true, immediate: true })
+
+watch(() => props.excludedItemCodes, () => {
+  selectedIndex.value = 0
+  scrollToIndex(0)
+})
 
 // Keep selected item in view on keyboard navigation
 watch(selectedIndex, (newIdx) => {
