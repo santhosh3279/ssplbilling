@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] text-[13px] overflow-hidden offer-display-page">
+  <div class="h-screen flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] text-[13px] overflow-hidden catalogue-display-page">
     
     <!-- ── HEADER ────────────────────────────────────────────────── -->
     <header class="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3 shadow-sm shrink-0">
@@ -18,13 +18,13 @@
         </div>
         <div class="flex items-center gap-2">
           <button
-            @click="handleNewOffer"
+            @click="handleNewCatalogue"
             class="rounded bg-[var(--color-success)] px-4 py-1.5 text-xs font-bold text-white hover:bg-[var(--color-success)]/90 transition shadow-sm"
           >
-            + New Offer List
+            + New Catalogue List
           </button>
           <button
-            @click="fetchOffers"
+            @click="fetchCatalogues"
             :disabled="loading"
             class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]/80 transition"
           >
@@ -37,55 +37,55 @@
     <!-- ── MAIN BODY: SPLIT VIEW ─────────────────────────────────── -->
     <div class="flex flex-1 overflow-hidden">
       
-      <!-- ── LEFT COLUMN: OFFERS LIST (17.5%) ── -->
+      <!-- ── LEFT COLUMN: CATALOGUES LIST (17.5%) ── -->
       <aside class="w-[17.5%] flex flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden">
         <!-- Search bar -->
         <div class="p-3 border-b border-[var(--color-border)] shrink-0 bg-[var(--color-surface)]/50">
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Search offers by heading or address..."
+            placeholder="Search catalogues by heading or address..."
             class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition"
           />
         </div>
 
-        <!-- Offers List -->
+        <!-- Catalogues List -->
         <div class="flex-1 overflow-y-auto">
-          <div v-if="loading && !offers.length" class="flex h-32 items-center justify-center">
-            <span class="text-xs text-[var(--color-text-muted)] animate-pulse">Loading offer lists...</span>
+          <div v-if="loading && !catalogues.length" class="flex h-32 items-center justify-center">
+            <span class="text-xs text-[var(--color-text-muted)] animate-pulse">Loading catalogue lists...</span>
           </div>
-          <div v-else-if="!filteredOffers.length" class="flex h-32 items-center justify-center">
-            <span class="text-xs italic text-[var(--color-text-muted)]">No offer lists found</span>
+          <div v-else-if="!filteredCatalogues.length" class="flex h-32 items-center justify-center">
+            <span class="text-xs italic text-[var(--color-text-muted)]">No catalogue lists found</span>
           </div>
           <div v-else class="divide-y divide-[var(--color-border)]/50">
             <div
-              v-for="offer in filteredOffers"
-              :key="offer.name"
-              @click="selectOffer(offer.name)"
+              v-for="catalogue in filteredCatalogues"
+              :key="catalogue.name"
+              @click="selectCatalogue(catalogue.name)"
               class="p-4 cursor-pointer hover:bg-[var(--color-surface-raised)]/40 transition-colors flex flex-col gap-2 relative"
               :class="{
-                'bg-[var(--color-info)]/10 border-l-4 border-[var(--color-info)]': selectedName === offer.name
+                'bg-[var(--color-info)]/10 border-l-4 border-[var(--color-info)]': selectedName === catalogue.name
               }"
             >
               <div class="flex items-start justify-between gap-3">
-                <div class="font-bold text-[14px] text-[var(--color-text)] truncate" :title="offer.heading">
-                  {{ offer.heading }}
+                <div class="font-bold text-[14px] text-[var(--color-text)] truncate" :title="catalogue.heading">
+                  {{ catalogue.heading }}
                 </div>
               </div>
 
               <div class="text-[11px] text-[var(--color-text-muted)] flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span>Address: 
                   <a 
-                    :href="`/catalogue/${offer.pageaddress}`"
+                    :href="`/catalogue/${catalogue.pageaddress}`"
                     target="_blank" 
                     class="text-[var(--color-info)] hover:underline font-mono"
                     @click.stop
                   >
-                    /catalogue/{{ offer.pageaddress }}
+                    /catalogue/{{ catalogue.pageaddress }}
                   </a>
                 </span>
                 <span>•</span>
-                <span>ID: <span class="font-mono text-[var(--color-text-muted)]">{{ offer.name }}</span></span>
+                <span>ID: <span class="font-mono text-[var(--color-text-muted)]">{{ catalogue.name }}</span></span>
               </div>
             </div>
           </div>
@@ -93,7 +93,7 @@
 
         <!-- Footer status -->
         <div class="p-3 border-t border-[var(--color-border)] shrink-0 bg-[var(--color-surface)] text-center text-xs text-[var(--color-text-muted)]">
-          <strong>{{ filteredOffers.length }}</strong> lists shown (Total: {{ offers.length }})
+          <strong>{{ filteredCatalogues.length }}</strong> lists shown (Total: {{ catalogues.length }})
         </div>
       </aside>
 
@@ -103,21 +103,21 @@
         <div v-if="detailLoading" class="flex-1 flex items-center justify-center">
           <div class="text-center">
             <span class="inline-block h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-info)] border-t-transparent mb-2"></span>
-            <div class="text-xs text-[var(--color-text-muted)]">Loading offer details...</div>
+            <div class="text-xs text-[var(--color-text-muted)]">Loading catalogue details...</div>
           </div>
         </div>
 
         <div v-else-if="!isFormActive" class="flex-1 flex flex-col items-center justify-center p-8 text-center text-[var(--color-text-muted)]">
           <span class="text-5xl mb-4">🏷️</span>
-          <h2 class="text-base font-bold text-[var(--color-text)] mb-1">Offer Display Management</h2>
+          <h2 class="text-base font-bold text-[var(--color-text)] mb-1">Catalogue Display Management</h2>
           <p class="max-w-md text-xs leading-relaxed mb-4">
-            Select an offer list from the left panel to edit its details and items, or click the button below to create a new one.
+            Select a catalogue list from the left panel to edit its details and items, or click the button below to create a new one.
           </p>
           <button
-            @click="handleNewOffer"
+            @click="handleNewCatalogue"
             class="rounded bg-[var(--color-success)] px-5 py-2 text-xs font-bold text-white hover:bg-[var(--color-success)]/90 transition shadow-md"
           >
-            + Create New Offer List
+            + Create New Catalogue List
           </button>
         </div>
 
@@ -127,7 +127,7 @@
           <div class="px-6 py-4 border-b border-[var(--color-border)] bg-[var(--color-surface)] flex items-center justify-between shrink-0">
             <div>
               <h2 class="text-[14px] font-bold text-[var(--color-text)]">
-                {{ form.name ? 'Edit Offer List' : 'New Offer List' }}
+                {{ form.name ? 'Edit Catalogue List' : 'New Catalogue List' }}
               </h2>
               <p class="text-[10px] text-[var(--color-text-muted)] font-mono truncate max-w-sm mt-0.5">
                 {{ form.name || 'Draft document' }}
@@ -136,7 +136,7 @@
             <div class="flex items-center gap-2">
               <button
                 v-if="form.name"
-                @click="handleDeleteOffer"
+                @click="handleDeleteCatalogue"
                 :disabled="saving"
                 class="rounded border border-red-300 text-red-600 bg-red-50 px-3 py-1.5 text-xs font-bold hover:bg-red-100 disabled:opacity-50 transition"
               >
@@ -153,7 +153,7 @@
                 :disabled="saving"
                 class="rounded bg-[var(--color-info)] px-5 py-1.5 text-xs font-bold text-white hover:bg-[var(--color-info)]/90 disabled:opacity-50 transition shadow"
               >
-                {{ saving ? 'Saving...' : 'Save Offer List' }}
+                {{ saving ? 'Saving...' : 'Save Catalogue List' }}
               </button>
             </div>
           </div>
@@ -163,7 +163,7 @@
             <!-- Basic Info Card -->
             <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
               <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50 pb-1.5">
-                Offer Information
+                Catalogue Information
               </h3>
               
               <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -175,7 +175,7 @@
                   <input
                     v-model="form.heading"
                     type="text"
-                    placeholder="Enter offer display heading"
+                    placeholder="Enter catalogue display heading"
                     class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs outline-none focus:border-[var(--color-info)] transition"
                   />
                 </div>
@@ -234,7 +234,7 @@
                     class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs outline-none focus:border-[var(--color-info)] transition"
                   />
                   <p class="text-[9px] text-[var(--color-text-muted)] mt-0.5">
-                    Time in seconds to auto-refresh/reload offer details (0 to disable).
+                    Time in seconds to auto-refresh/reload catalogue details (0 to disable).
                   </p>
                 </div>
               </div>
@@ -291,7 +291,7 @@
                 </div>
               </div>
               <div v-else class="text-xs text-[var(--color-text-muted)] italic text-center py-2">
-                No price lists configured. This offer applies to all price lists by default.
+                No price lists configured. This catalogue applies to all price lists by default.
               </div>
             </div>
 
@@ -299,7 +299,7 @@
             <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
               <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-1.5">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                  Offer Items ({{ form.items.length }})
+                  Catalogue Items ({{ form.items.length }})
                 </h3>
                 <button
                   @click="addEmptyRow"
@@ -352,7 +352,7 @@
                 </div>
               </div>
 
-              <!-- Offer Items Table -->
+              <!-- Catalogue Items Table -->
               <div class="border border-[var(--color-border)] rounded-lg overflow-hidden">
                 <table class="w-full text-left">
                   <thead>
@@ -367,7 +367,7 @@
                   <tbody class="divide-y divide-[var(--color-border)]">
                     <tr v-if="!form.items.length">
                       <td colspan="5" class="p-6 text-center text-xs text-[var(--color-text-muted)] italic">
-                        No items added to this offer list. Use the search bar above or add an empty row.
+                        No items added to this catalogue list. Use the search bar above or add an empty row.
                       </td>
                     </tr>
                     <tr v-for="(item, idx) in form.items" :key="idx" class="text-xs hover:bg-[var(--color-surface-raised)]/20">
@@ -438,7 +438,7 @@ const router = useRouter()
 const { items: cachedItems, refreshItemCache, searchItemsInCache } = useItemCache()
 
 // State
-const offers = ref([])
+const catalogues = ref([])
 const loading = ref(false)
 const searchQuery = ref('')
 const selectedName = ref(null)
@@ -468,8 +468,8 @@ const itemSearchQuery = ref('')
 const searchSuggestions = ref([])
 const searchActiveIndex = ref(-1)
 
-// Fetch all Offer-Items documents from the database
-async function fetchOffers() {
+// Fetch all catalogue documents from the database
+async function fetchCatalogues() {
   loading.value = true
   try {
     const data = await frappeGet('frappe.client.get_list', {
@@ -478,27 +478,27 @@ async function fetchOffers() {
       order_by: 'modified desc',
       limit_page_length: 100
     })
-    offers.value = data || []
+    catalogues.value = data || []
   } catch (e) {
-    alert(e.message || 'Failed to fetch offer lists')
+    alert(e.message || 'Failed to fetch catalogue lists')
   } finally {
     loading.value = false
   }
 }
 
-// Filter offer lists in sidebar
-const filteredOffers = computed(() => {
+// Filter catalogue lists in sidebar
+const filteredCatalogues = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return offers.value
-  return offers.value.filter(o =>
+  if (!q) return catalogues.value
+  return catalogues.value.filter(o =>
     (o.heading || '').toLowerCase().includes(q) ||
     (o.pageaddress || '').toLowerCase().includes(q) ||
     (o.name || '').toLowerCase().includes(q)
   )
 })
 
-// Select an offer list and load it details including the items child table
-async function selectOffer(name) {
+// Select a catalogue list and load it details including the items child table
+async function selectCatalogue(name) {
   selectedName.value = name
   detailLoading.value = true
   isFormActive.value = true
@@ -531,15 +531,15 @@ async function selectOffer(name) {
       }))
     }
   } catch (e) {
-    alert(e.message || 'Failed to load offer details')
+    alert(e.message || 'Failed to load catalogue details')
     closeForm()
   } finally {
     detailLoading.value = false
   }
 }
 
-// Open clean form for creating new Offer List
-function handleNewOffer() {
+// Open clean form for creating new Catalogue List
+function handleNewCatalogue() {
   selectedName.value = null
   isFormActive.value = true
   form.value = emptyForm()
@@ -615,7 +615,7 @@ function removeItemRow(idx) {
   form.value.items.splice(idx, 1)
 }
 
-// Save the Offer-Items document
+// Save the catalogue document
 async function handleSave() {
   if (!form.value.heading.trim()) {
     alert('Please enter a Heading.')
@@ -626,7 +626,7 @@ async function handleSave() {
     return
   }
   if (!form.value.items.length) {
-    alert('Please add at least one Item to the offer list.')
+    alert('Please add at least one Item to the catalogue list.')
     return
   }
 
@@ -676,24 +676,24 @@ async function handleSave() {
       res = await frappePost('frappe.client.save', { doc: docPayload })
     }
 
-    alert('Offer list saved successfully!')
-    await fetchOffers()
+    alert('Catalogue list saved successfully!')
+    await fetchCatalogues()
     if (res && res.name) {
-      await selectOffer(res.name)
+      await selectCatalogue(res.name)
     } else {
       closeForm()
     }
   } catch (e) {
-    alert(e.message || 'Failed to save offer list')
+    alert(e.message || 'Failed to save catalogue list')
   } finally {
     saving.value = false
   }
 }
 
-// Delete the selected Offer List
-async function handleDeleteOffer() {
+// Delete the selected Catalogue List
+async function handleDeleteCatalogue() {
   if (!form.value.name) return
-  if (!confirm(`Are you sure you want to delete offer list "${form.value.heading}"?`)) return
+  if (!confirm(`Are you sure you want to delete catalogue list "${form.value.heading}"?`)) return
 
   saving.value = true
   try {
@@ -701,11 +701,11 @@ async function handleDeleteOffer() {
       doctype: 'Offer-Items',
       name: form.value.name
     })
-    alert('Offer list deleted successfully!')
+    alert('Catalogue list deleted successfully!')
     closeForm()
-    await fetchOffers()
+    await fetchCatalogues()
   } catch (e) {
-    alert(e.message || 'Failed to delete offer list')
+    alert(e.message || 'Failed to delete catalogue list')
   } finally {
     saving.value = false
   }
@@ -739,7 +739,7 @@ async function fetchPriceLists() {
 }
 
 onMounted(() => {
-  fetchOffers()
+  fetchCatalogues()
   fetchPriceLists()
   if (!cachedItems.value.length) {
     refreshItemCache('Sales')
@@ -748,35 +748,35 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.offer-display-page {
+.catalogue-display-page {
   font-size: 19.5px !important; /* 13px * 1.5 */
 }
-.offer-display-page :deep(.text-xs),
-.offer-display-page :deep(input.text-xs),
-.offer-display-page :deep(select.text-xs),
-.offer-display-page :deep(button.text-xs),
-.offer-display-page :deep(textarea.text-xs) {
+.catalogue-display-page :deep(.text-xs),
+.catalogue-display-page :deep(input.text-xs),
+.catalogue-display-page :deep(select.text-xs),
+.catalogue-display-page :deep(button.text-xs),
+.catalogue-display-page :deep(textarea.text-xs) {
   font-size: 18px !important; /* 12px * 1.5 */
 }
-.offer-display-page :deep(.text-sm) {
+.catalogue-display-page :deep(.text-sm) {
   font-size: 21px !important; /* 14px * 1.5 */
 }
-.offer-display-page :deep(.text-base) {
+.catalogue-display-page :deep(.text-base) {
   font-size: 24px !important; /* 16px * 1.5 */
 }
-.offer-display-page :deep(.text-5xl) {
+.catalogue-display-page :deep(.text-5xl) {
   font-size: 72px !important; /* 48px * 1.5 */
 }
-.offer-display-page :deep(.text-\[14px\]) {
+.catalogue-display-page :deep(.text-\[14px\]) {
   font-size: 21px !important; /* 14px * 1.5 */
 }
-.offer-display-page :deep(.text-\[11px\]) {
+.catalogue-display-page :deep(.text-\[11px\]) {
   font-size: 16.5px !important; /* 11px * 1.5 */
 }
-.offer-display-page :deep(.text-\[10px\]) {
+.catalogue-display-page :deep(.text-\[10px\]) {
   font-size: 15px !important; /* 10px * 1.5 */
 }
-.offer-display-page :deep(.text-\[9px\]) {
+.catalogue-display-page :deep(.text-\[9px\]) {
   font-size: 13.5px !important; /* 9px * 1.5 */
 }
 </style>
