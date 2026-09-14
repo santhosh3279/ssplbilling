@@ -39,6 +39,7 @@ def get_offer_details(pageaddress):
 		return None
 
 	doc = frappe.get_doc("Offer-Items", offer_names[0].name)
+	active_items = [item for item in doc.items if not item.get("disabled")]
 	
 	# Fetch all enabled discount rules
 	today = datetime.date.today()
@@ -97,7 +98,7 @@ def get_offer_details(pageaddress):
 			custom_logic_rows.setdefault(lr.parent, []).append(lr)
 
 	# Pre-fetch item group map for offer items
-	item_codes = [item.itemcode for item in doc.items]
+	item_codes = [item.itemcode for item in active_items]
 	item_group_map = {}
 	item_image_map = {}
 	item_stock_uom_map = {}
@@ -114,7 +115,7 @@ def get_offer_details(pageaddress):
 
 	# Map barcodes to UOMs
 	barcode_uom_map = {}
-	barcodes = [item.barcode for item in doc.items if item.barcode]
+	barcodes = [item.barcode for item in active_items if item.barcode]
 	if barcodes:
 		barcode_data = frappe.get_all(
 			"Item Barcode",
@@ -159,7 +160,7 @@ def get_offer_details(pageaddress):
 			uom_pl[p.uom or ""] = p.price_list_rate
 
 	items = []
-	for item in doc.items:
+	for item in active_items:
 		item_code = item.itemcode
 		item_group = item_group_map.get(item_code)
 		stock_uom = item_stock_uom_map.get(item_code)

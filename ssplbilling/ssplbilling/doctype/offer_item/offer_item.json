@@ -6,7 +6,8 @@
  "field_order": [
   "barcode",
   "itemname",
-  "itemcode"
+  "itemcode",
+  "disabled"
  ],
  "fields": [
   {
@@ -27,6 +28,13 @@
    "in_list_view": 1,
    "label": "Item Code",
    "options": "Item"
+  },
+  {
+   "default": "0",
+   "fieldname": "disabled",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Deactivate"
   }
  ],
  "index_web_pages_for_search": 1,

@@ -329,12 +329,13 @@
                       <th v-for="column in itemColumns" :key="column.key" scope="col">
                         {{ column.label }}
                       </th>
+                      <th scope="col" class="sheet-status">Deactivate</th>
                       <th scope="col" class="sheet-action">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-if="!form.items.length">
-                      <td colspan="4" class="sheet-empty">Type an item code, name, or barcode in the Item/Barcode column to begin.</td>
+                      <td colspan="5" class="sheet-empty">Type an item code, name, or barcode in the Item/Barcode column to begin.</td>
                     </tr>
                     <tr v-for="(item, idx) in form.items" :key="idx">
                       <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
@@ -350,6 +351,16 @@
                           @focus="$event.target.select()"
                           autocomplete="off"
                           @keydown="handleItemCellKeydown($event, idx, columnIndex)"
+                        />
+                      </td>
+                      <td class="sheet-status">
+                        <input
+                          v-model="item.disabled"
+                          type="checkbox"
+                          :true-value="1"
+                          :false-value="0"
+                          :aria-label="`Deactivate item in row ${idx + 1}`"
+                          class="h-5 w-5 cursor-pointer accent-[var(--color-info)]"
                         />
                       </td>
                       <td class="sheet-action">
@@ -397,7 +408,7 @@ const emptyForm = () => ({
   tile_grid: '4',
   timer: 0,
   price_lists: [],
-  items: [{ itemcode: '', itemname: '', barcode: '' }]
+  items: [{ itemcode: '', itemname: '', barcode: '', disabled: 0 }]
 })
 
 const form = ref(emptyForm())
@@ -468,7 +479,8 @@ async function selectCatalogue(name) {
         name: i.name,
         itemcode: i.itemcode || '',
         itemname: i.itemname || '',
-        barcode: i.barcode || ''
+        barcode: i.barcode || '',
+        disabled: Number(i.disabled) === 1 ? 1 : 0
       }))
     }
     if (!form.value.items.length) addEmptyRow()
@@ -590,7 +602,8 @@ function addEmptyRow() {
   form.value.items.push({
     itemcode: '',
     itemname: '',
-    barcode: ''
+    barcode: '',
+    disabled: 0
   })
 }
 
@@ -651,7 +664,8 @@ async function handleSave() {
         doctype: 'Offer-Item',
         itemcode: i.itemcode.trim(),
         itemname: i.itemname.trim(),
-        barcode: i.barcode.trim()
+        barcode: i.barcode.trim(),
+        disabled: Number(i.disabled) === 1 ? 1 : 0
       }))
     }
 
@@ -780,6 +794,7 @@ onMounted(() => {
   font-weight: 400;
 }
 .catalogue-sheet th:nth-child(2) { width: 36%; }
+.catalogue-sheet .sheet-status { width: 130px; text-align: center; }
 .catalogue-sheet .sheet-action { width: 72px; text-align: center; }
 .catalogue-sheet thead .sheet-action { font-size: 7.35px; }
 .catalogue-sheet tbody tr { transition: background-color 120ms; }
