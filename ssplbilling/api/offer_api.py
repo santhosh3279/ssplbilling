@@ -340,7 +340,7 @@ def get_offer_list():
 			"parentfield": "items",
 			"disabled": 0,
 		},
-		fields=["parent", "count(name) as item_count"],
+		fields=["parent", {"COUNT": "name", "as": "item_count"}],
 		group_by="parent",
 	)
 	counts_by_parent = {row.parent: row.item_count for row in counts}
