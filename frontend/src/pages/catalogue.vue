@@ -760,8 +760,8 @@ onMounted(() => {
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 36px;
-  line-height: 40px;
+  font-size: 27px;
+  line-height: 30px;
 }
 .catalogue-sheet th,
 .catalogue-sheet td {
@@ -787,12 +787,12 @@ onMounted(() => {
 .catalogue-sheet tbody .sheet-row-number {
   color: var(--color-text-muted);
   font-family: monospace;
-  font-size: 30px;
+  font-size: 22.5px;
   font-weight: 400;
 }
 .catalogue-sheet th:nth-child(2) { width: 36%; }
 .catalogue-sheet .sheet-action { width: 72px; text-align: center; }
-.catalogue-sheet thead .sheet-action { font-size: 14px; }
+.catalogue-sheet thead .sheet-action { font-size: 10.5px; }
 .catalogue-sheet tbody tr { transition: background-color 120ms; }
 .catalogue-sheet tbody tr:hover { background: var(--color-surface-raised); }
 .catalogue-sheet tbody tr:focus-within {
@@ -840,8 +840,8 @@ onMounted(() => {
   padding: 24px;
   text-align: center;
   color: var(--color-text-muted);
-  font-size: 18px;
-  line-height: 28px;
+  font-size: 13.5px;
+  line-height: 21px;
 }
 
 .catalogue-display-page {
