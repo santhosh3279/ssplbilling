@@ -426,7 +426,7 @@ const routes = [
     meta: { title: 'GST Ledger' },
   },
   {
-    path: '/offer/:pageaddress',
+    path: '/catalogue/:pageaddress',
     name: 'OfferPage',
     component: OfferPage,
     meta: { public: true, title: 'Offers' },
@@ -471,7 +471,7 @@ const router = createRouter({
   history: createWebHistory(
     import.meta.env.DEV
       ? '/'
-      : window.location.pathname.startsWith('/offer/') || window.location.pathname.startsWith('/catelogue')
+      : window.location.pathname.startsWith('/catalogue/') || window.location.pathname.startsWith('/catelogue')
       ? '/'
       : '/frontend'
   ),

@@ -76,12 +76,12 @@
               <div class="text-[11px] text-[var(--color-text-muted)] flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span>Address: 
                   <a 
-                    :href="`/offer/${offer.pageaddress}`" 
+                    :href="`/catalogue/${offer.pageaddress}`"
                     target="_blank" 
                     class="text-[var(--color-info)] hover:underline font-mono"
                     @click.stop
                   >
-                    /offer/{{ offer.pageaddress }}
+                    /catalogue/{{ offer.pageaddress }}
                   </a>
                 </span>
                 <span>•</span>
@@ -197,11 +197,11 @@
                   </p>
                   <a
                     v-if="form.name"
-                    :href="`/offer/${form.pageaddress}`"
+                    :href="`/catalogue/${form.pageaddress}`"
                     target="_blank"
                     class="text-[10px] text-[var(--color-info)] hover:underline mt-1 font-mono inline-flex items-center gap-1 w-fit"
                   >
-                    🔗 View Page: /offer/{{ form.pageaddress }}
+                    🔗 View Page: /catalogue/{{ form.pageaddress }}
                   </a>
                 </div>
 

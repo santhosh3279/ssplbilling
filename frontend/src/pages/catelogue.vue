@@ -153,7 +153,7 @@ async function fetchCatalogues() {
 }
 
 function openCatalogue(pageaddress) {
-  router.push(`/offer/${pageaddress}`)
+  router.push(`/catalogue/${pageaddress}`)
 }
 
 function goDashboard() {
