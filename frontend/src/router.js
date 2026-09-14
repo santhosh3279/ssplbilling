@@ -124,7 +124,7 @@ const routes = [
     meta: { title: 'Shift Roaster' },
   },
   {
-    path: '/offer-display',
+    path: '/catalogue-editor',
     name: 'OfferDisplay',
     component: OfferDisplay,
     meta: { title: 'Offer Display' },

@@ -1160,7 +1160,7 @@ const routeAliases = {
   quotation: '/quotation',
   repack: '/repack',
   'land-cost-voucher': '/land-cost-voucher',
-  'offer-display': '/offer-display',
+  'offer-display': '/catalogue-editor',
   'purchase-invoice': '/purchase-invoice',
   payment: '/payment',
   expense: '/expense',

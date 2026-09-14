@@ -161,7 +161,7 @@ function goDashboard() {
 }
 
 function goCreateOffer() {
-  router.push('/offer-display')
+  router.push('/catalogue-editor')
 }
 
 function formatDate(dateStr) {
