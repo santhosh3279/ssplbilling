@@ -148,7 +148,7 @@
           class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-all"
           :class="{
             'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)] font-bold !text-[var(--color-text-on-focus)]': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
-            'bg-[var(--color-success)]/20': item._is_free && !item.deleted,
+            'discount-rule-row': (item._rule_discount != null || item._is_free) && !item.deleted,
             'opacity-40 bg-[var(--color-danger)]/10 grayscale-[0.5]': item.deleted,
             'hover:bg-[var(--color-surface-raised)]/50': !isReadOnly && selectedRowIdx !== index && editingRowIdx !== index && !item.deleted
           }"
@@ -3377,6 +3377,15 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.discount-rule-row {
+  background-color: #d1fae5 !important;
+}
+.discount-rule-row > td,
+.discount-rule-row > td > span,
+.discount-rule-row input,
+.discount-rule-row select {
+  color: #14532d !important;
+}
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
