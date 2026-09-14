@@ -352,7 +352,7 @@
                 </div>
               </div>
 
-              <!-- Spreadsheet-style catalogue items -->
+              <!-- Invoice-style catalogue items -->
               <p id="catalogue-grid-help" class="text-[var(--color-text-muted)]">
                 Click a cell to edit. Tab moves across cells; Enter and ↑ / ↓ move between rows.
               </p>
@@ -362,7 +362,6 @@
                     <tr>
                       <th scope="col" class="sheet-row-number">#</th>
                       <th v-for="column in itemColumns" :key="column.key" scope="col">
-                        <span class="sheet-column-letter">{{ column.letter }}</span>
                         {{ column.label }}
                       </th>
                       <th scope="col" class="sheet-action">Action</th>
@@ -380,13 +379,14 @@
                           type="text"
                           :data-cell="`${idx}-${columnIndex}`"
                           :aria-label="`${column.label}, row ${idx + 1}`"
-                          :class="{ 'sheet-mono': column.key !== 'itemname' }"
+                          :class="{ 'sheet-mono': column.key !== 'itemname', 'sheet-code': column.key === 'itemcode' }"
+                          @focus="$event.target.select()"
                           autocomplete="off"
                           @keydown="handleCellKeydown($event, idx, columnIndex)"
                         />
                       </td>
                       <td class="sheet-action">
-                        <button type="button" @click="removeItemRow(idx)" :aria-label="`Remove row ${idx + 1}`" title="Remove row" class="text-red-500 hover:text-red-700">✕</button>
+                        <button type="button" @click="removeItemRow(idx)" :aria-label="`Remove row ${idx + 1}`" title="Remove row" class="sheet-remove">×</button>
                       </td>
                     </tr>
                   </tbody>
@@ -577,9 +577,9 @@ function addItemToScope(item) {
 
 const itemsGrid = ref(null)
 const itemColumns = [
-  { key: 'itemcode', label: 'Item Code', letter: 'A' },
-  { key: 'itemname', label: 'Item Name', letter: 'B' },
-  { key: 'barcode', label: 'Barcode', letter: 'C' },
+  { key: 'itemcode', label: 'Item Code' },
+  { key: 'itemname', label: 'Item Name' },
+  { key: 'barcode', label: 'Barcode' },
 ]
 
 async function handleCellKeydown(event, row, column) {
@@ -758,11 +758,12 @@ onMounted(() => {
 }
 .catalogue-sheet {
   width: 100%;
-  min-width: 680px;
+  min-width: 1000px;
   table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
-  font-size: 14px;
+  font-size: 36px;
+  line-height: 40px;
 }
 .catalogue-sheet th,
 .catalogue-sheet td {
@@ -773,44 +774,78 @@ onMounted(() => {
   position: sticky;
   top: 0;
   z-index: 2;
-  padding: 8px;
+  padding: 8px 6px;
   text-align: left;
-  background: var(--color-surface-raised);
-}
-.sheet-column-letter {
-  display: block;
-  color: var(--color-text-muted);
-  font-size: 11px;
-  margin-bottom: 3px;
+  background: var(--color-lowlight);
+  color: var(--color-text);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 .catalogue-sheet .sheet-row-number {
-  width: 52px;
+  width: 64px;
   text-align: center;
-  background: var(--color-surface-raised);
-  color: var(--color-text-muted);
 }
-.catalogue-sheet .sheet-action { width: 64px; text-align: center; }
-.sheet-cell { padding: 0; background: var(--color-bg); }
+.catalogue-sheet tbody .sheet-row-number {
+  color: var(--color-text-muted);
+  font-family: monospace;
+  font-size: 30px;
+  font-weight: 400;
+}
+.catalogue-sheet th:nth-child(2) { width: 24%; }
+.catalogue-sheet th:nth-child(4) { width: 24%; }
+.catalogue-sheet .sheet-action { width: 72px; text-align: center; }
+.catalogue-sheet thead .sheet-action { font-size: 14px; }
+.catalogue-sheet tbody tr { transition: background-color 120ms; }
+.catalogue-sheet tbody tr:hover { background: var(--color-surface-raised); }
+.catalogue-sheet tbody tr:focus-within {
+  background: var(--color-focus);
+  color: var(--color-text-on-focus);
+  font-weight: 700;
+  box-shadow: inset 2px 0 var(--color-focus);
+}
+.sheet-cell { padding: 0; }
 .sheet-cell input {
   display: block;
   width: 100%;
   min-width: 0;
-  height: 36px;
-  padding: 6px 8px;
+  padding: 4px 8px;
   border: 0;
   border-radius: 0;
   background: transparent;
   color: var(--color-text);
-  font-size: inherit;
+  font: inherit;
+  font-weight: 500;
 }
+.sheet-cell input.sheet-mono { font-family: monospace; }
+.sheet-cell input.sheet-code { color: var(--color-highlight); }
 .sheet-cell input:focus {
-  outline: 2px solid var(--color-info);
+  outline: 2px solid var(--color-text-on-focus);
   outline-offset: -2px;
-  background: var(--color-surface);
 }
-.sheet-mono { font-family: monospace; }
-.catalogue-sheet tr:focus-within .sheet-row-number { color: var(--color-info); }
-.sheet-empty { padding: 24px; text-align: center; color: var(--color-text-muted); }
+.catalogue-sheet tbody tr:focus-within input,
+.catalogue-sheet tbody tr:focus-within .sheet-row-number {
+  color: var(--color-text-on-focus);
+  font-weight: 700;
+}
+.sheet-remove {
+  padding: 2px 4px;
+  border-radius: 4px;
+  color: var(--color-text-muted);
+}
+.catalogue-sheet tr:focus-within .sheet-remove { color: var(--color-text-on-focus); }
+.catalogue-sheet .sheet-remove:hover,
+.catalogue-sheet .sheet-remove:focus-visible {
+  background: var(--color-surface-raised);
+  color: var(--color-danger);
+}
+.sheet-empty {
+  padding: 24px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 18px;
+  line-height: 28px;
+}
 
 .catalogue-display-page {
   font-size: 19.5px !important; /* 13px * 1.5 */
