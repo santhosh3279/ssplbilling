@@ -33,7 +33,8 @@
             :key="itemMeta.item.item_code"
             class="quick-search-item px-4 cursor-pointer border-b border-[var(--color-border)] last:border-0 transition-all h-[80px] box-border flex flex-col justify-center overflow-hidden"
             :class="selectedIndex === itemMeta.globalIndex ? 'bg-[var(--color-focus)] border-l-4 border-l-[var(--color-focus)] font-bold' : 'hover:bg-[var(--color-surface-raised)]/40'"
-            @click="$emit('select', itemMeta.item)"
+            :aria-disabled="isAlreadyAdded(itemMeta.item)"
+            @click="selectItem(itemMeta.item)"
           >
             <div class="flex justify-between items-center gap-4">
               <div class="min-w-0 flex-1 flex items-center gap-3">
@@ -48,6 +49,7 @@
                 </div>
               </div>
               <div class="flex flex-col items-end shrink-0">
+                <span v-if="isAlreadyAdded(itemMeta.item)" class="rounded bg-[var(--color-surface-raised)] px-2 py-0.5 text-base font-bold text-[var(--color-text)]">Already added</span>
                 <div class="text-[1.75rem] font-mono font-bold" :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ formatPrice(getItemPrice(itemMeta.item)) }}</div>
                 <div 
                   class="text-2xl font-bold"
@@ -73,6 +75,7 @@ const props = defineProps({
   results: { type: Array, default: () => [] },
   query: { type: String, default: '' },
   excludedItemCodes: { type: Array, default: () => [] },
+  showExcludedItems: { type: Boolean, default: false },
   priceList: { type: String, default: '' },
   searchType: { type: String, default: 'Sales' },
   warehouse: { type: String, default: '' },
@@ -109,9 +112,17 @@ const allItemsWithHistory = computed(() => {
 // lookup don't each re-derive them on every keystroke.
 const excludedCodes = computed(() => new Set(props.excludedItemCodes.map(code => code.trim().toLowerCase())))
 
+function isAlreadyAdded(item) {
+  return excludedCodes.value.has((item.item_code || '').trim().toLowerCase())
+}
+
+function selectItem(item) {
+  if (!isAlreadyAdded(item)) emit('select', item)
+}
+
 const normalizedItems = computed(() => {
   return allItemsWithHistory.value
-    .filter(item => !excludedCodes.value.has((item.item_code || '').toLowerCase()))
+    .filter(item => props.showExcludedItems || !isAlreadyAdded(item))
     .map(item => ({
     item,
     code: (item.item_code || '').toLowerCase(),
@@ -325,7 +336,7 @@ function handleQuickSearchKeydown(e) {
     if (filteredItems.value[selectedIndex.value]) {
       e.preventDefault()
       e.stopPropagation()
-      emit('select', filteredItems.value[selectedIndex.value])
+      selectItem(filteredItems.value[selectedIndex.value])
     }
   } else if (e.key === 'Escape') {
     e.preventDefault()
@@ -337,7 +348,10 @@ function handleQuickSearchKeydown(e) {
 defineExpose({
   handleQuickSearchKeydown,
   getSelectedIndex: () => selectedIndex.value,
-  getSelectedValue: () => filteredItems.value[selectedIndex.value]
+  getSelectedValue: () => {
+    const item = filteredItems.value[selectedIndex.value]
+    return item && !isAlreadyAdded(item) ? item : undefined
+  }
 })
 </script>
 

@@ -332,6 +332,7 @@
                     :results="searchSuggestions"
                     :query="itemSearchQuery"
                     :excluded-item-codes="listedItemCodes"
+                    show-excluded-items
                     search-type="Sales"
                     @select="selectSearchItem"
                     @close="closeItemSearch"
