@@ -1,0 +1,26 @@
+[
+  {
+    "url": "https://github.com/santhosh3279/erpnext.git",
+    "branch": "v16.32.0"
+  },
+  {
+    "url": "https://github.com/resilient-tech/india-compliance.git",
+    "branch": "v16.8.4"
+  },
+  {
+    "url": "https://github.com/santhosh3279/ssplbilling.git",
+    "branch": "feat/socketio-gst-merge"
+  },
+  {
+    "url": "https://github.com/santhosh3279/printer_server_configuration.git",
+    "branch": "version-16"
+  },
+  {
+    "url": "https://github.com/santhosh3279/frappe_whatsapp.git",
+    "branch": "master"
+  },
+  {
+    "url": "https://github.com/santhosh3279/hrms.git",
+    "branch": "v16.16.0"
+  }
+]

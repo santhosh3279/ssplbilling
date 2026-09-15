@@ -1,0 +1,90 @@
+name: Build & Push SSPL ERPNext Image
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+      no_cache:
+        description: 'Force rebuild without cache'
+        required: false
+        type: boolean
+        default: true
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout this repo
+        uses: actions/checkout@v4
+      - name: Checkout frappe_docker
+        uses: actions/checkout@v4
+        with:
+          repository: frappe/frappe_docker
+          ref: bb3faf8a250da1d57a16d25e69ef34aa96b8b7cd
+          path: frappe_docker
+      - name: Patch Containerfile to build frontend assets + install fonts
+        run: |
+          python3 -c "
+          with open('frappe_docker/images/custom/Containerfile', 'r') as f:
+              lines = f.readlines()
+          
+          # Find the line after 'FROM frappe/erpnext' to insert font installation
+          patched = []
+          for i, line in enumerate(lines):
+              patched.append(line)
+              # Insert font installation right after FROM statement
+              if line.strip().startswith('FROM frappe/erpnext'):
+                  patched.append('\n')
+                  patched.append('# Install fonts for wkhtmltopdf PDF rendering\n')
+                  patched.append('RUN apt-get update && apt-get install -y --no-install-recommends \\\\\n')
+                  patched.append('    fonts-liberation \\\\\n')
+                  patched.append('    fonts-noto \\\\\n')
+                  patched.append('    fonts-dejavu-core \\\\\n')
+                  patched.append('    && fc-cache -f -v \\\\\n')
+                  patched.append('    && rm -rf /var/lib/apt/lists/*\n')
+                  patched.append('\n')
+              # Add bench build before .git cleanup
+              if 'find apps -mindepth 1 -path' in line and '.git' in line:
+                  patched[-1] = line.replace(
+                      'find apps -mindepth 1 -path \"*/.git\" | xargs rm -fr',
+                      'bench build && \\\\\n  find apps -mindepth 1 -path \"*/.git\" | xargs rm -fr'
+                  )
+          
+          with open('frappe_docker/images/custom/Containerfile', 'w') as f:
+              f.writelines(patched)
+          "
+      - name: Prepare apps.json
+        run: |
+          echo "APPS_JSON_BASE64=$(base64 -w 0 apps.json)" >> $GITHUB_ENV
+          echo "APPS_JSON_HASH=$(sha256sum apps.json | cut -d' ' -f1)" >> $GITHUB_ENV
+          echo "Apps JSON Hash: $(sha256sum apps.json | cut -d' ' -f1)"
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build and Push
+        uses: docker/build-push-action@v6
+        with:
+          context: frappe_docker
+          file: frappe_docker/images/custom/Containerfile
+          push: true
+          no-cache: ${{ github.event.inputs.no_cache == 'true' }}
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/sspl-erpnext:${{ github.event.inputs.version }}
+            ghcr.io/${{ github.repository_owner }}/sspl-erpnext:latest
+          build-args: |
+            APPS_JSON_BASE64=${{ env.APPS_JSON_BASE64 }}
+            FRAPPE_BRANCH=version-16
+            APPS_JSON_HASH=${{ env.APPS_JSON_HASH }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
