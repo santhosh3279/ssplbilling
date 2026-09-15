@@ -39,6 +39,7 @@ import CustomerEnquiry from './pages/CustomerEnquiry.vue'
 import ParcelAddress from './pages/ParcelAddress.vue'
 import StockReconciliation from './pages/StockReconciliation.vue'
 import SSPLBillingSettings from './pages/SSPLBillingSettings.vue'
+import UserCreation from './pages/UserCreation.vue'
 import GstDummyLedger from './pages/GstDummyLedger.vue'
 import GstLedger from './pages/GstLedger.vue'
 import DailyReport from './pages/DailyReport.vue'
@@ -204,6 +205,12 @@ const routes = [
     name: 'SSPLBillingSettings',
     component: SSPLBillingSettings,
     meta: { title: 'Settings' },
+  },
+  {
+    path: '/ssplbillingsettings/create-user',
+    name: 'UserCreation',
+    component: UserCreation,
+    meta: { title: 'Create Customer User' },
   },
   {
     path: '/',

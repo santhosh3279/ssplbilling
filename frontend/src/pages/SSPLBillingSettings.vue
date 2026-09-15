@@ -15,6 +15,12 @@
       </div>
       <div class="flex items-center gap-3">
         <button
+          @click="router.push('/ssplbillingsettings/create-user')"
+          class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
+        >
+          Create User
+        </button>
+        <button
           @click="downloadFeaturesJson"
           :disabled="isExportingFeatures"
           class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition-all hover:bg-[var(--color-midlight)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"

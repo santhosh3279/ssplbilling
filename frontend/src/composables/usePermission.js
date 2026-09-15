@@ -236,6 +236,8 @@ function getTileIdForRoute(routeName) {
 
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'Login'].includes(routeName)) return true
+  // Customer user creation shares the Settings license and route permission.
+  if (routeName === 'UserCreation') return canAccessRoute('SSPLBillingSettings')
   if (PUBLIC_HRMS_ROUTES.includes(routeName)) return true
 
   if (routeName === 'PriceListUpdate') {
