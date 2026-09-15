@@ -18,7 +18,7 @@
           @click="downloadFeaturesJson"
           :disabled="isExportingFeatures"
           class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] transition-all hover:bg-[var(--color-midlight)] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Download the dashboard tiles as a features JSON for the license generator"
+          title="Download all licensed features as JSON for the license generator"
         >
           {{ isExportingFeatures ? 'Preparing...' : '⬇ Features JSON' }}
         </button>
@@ -258,6 +258,7 @@ import { frappeGet, frappePost } from '../api.js'
 import { isValidCipherMap } from '../encryption.js'
 import DropdownField from '../components/DropdownField.vue'
 import { hasWhatsAppBridge } from '../services/whatsappBridge'
+import licenseFeatures from '../../../license_features.json'
 
 const router = useRouter()
 const isLoading = ref(true)
@@ -373,33 +374,17 @@ async function saveSettings() {
   }
 }
 
-// Exports the live SSPL Dashboard Tile records — the same records the tile access
-// doctype offers — grouped by bucket, in the shape the license generator's
-// "Upload Features JSON" reads: { "<bucket>": [{ id, label }, ...] }.
-async function downloadFeaturesJson() {
+// Export the full license catalog, including routes and reports without dashboard
+// tiles, in the generator's { "<category>": [{ id, label }, ...] } format.
+function downloadFeaturesJson() {
   isExportingFeatures.value = true
   try {
-    const tiles = await frappeGet('frappe.client.get_list', {
-      doctype: 'SSPL Dashboard Tile',
-      fields: ['tile_id', 'tile_label', 'bucket'],
-      limit_page_length: 0,
-      order_by: 'bucket asc, tile_label asc',
-    })
-
-    if (!tiles || !tiles.length) {
-      alert('No dashboard tiles found. Run "bench --site <site> migrate" to sync them first.')
-      return
-    }
-
-    const grouped = {}
-    for (const t of tiles) {
-      if (!t.tile_id) continue
-      // Buckets pass through verbatim so the export matches the records rather than
-      // the lowercase keys the Dashboard uses. "General" matches the generator default.
-      const bucket = t.bucket || 'General'
-      if (!grouped[bucket]) grouped[bucket] = []
-      grouped[bucket].push({ id: t.tile_id, label: t.tile_label || t.tile_id })
-    }
+    const grouped = Object.fromEntries(
+      Object.entries(licenseFeatures.features_by_category).map(([category, features]) => [
+        category,
+        features.map(({ id, name }) => ({ id, label: name || id })),
+      ]),
+    )
 
     const blob = new Blob([JSON.stringify(grouped, null, 2)], { type: 'application/json' })
     const link = document.createElement('a')
