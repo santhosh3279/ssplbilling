@@ -87,7 +87,11 @@ async function handleLogin() {
   loading.value = true
   try {
     await session.login(email.value.trim(), password.value)
-    
+    if (await session.checkWebsiteUser()) {
+      await router.push({ name: 'CatalogueViewer' })
+      return
+    }
+
     // Clear old settings keys
     ;['wb-general-settings-v1', 'wb-general-settings-v2', 'wb-billing-settings-v2'].forEach(k => localStorage.removeItem(k))
     

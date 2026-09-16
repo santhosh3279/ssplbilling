@@ -2,8 +2,22 @@ import json
 import os
 import frappe
 import re
+from functools import wraps
+
+
+def _system_user_only(fn):
+    @wraps(fn)
+    def protected(*args, **kwargs):
+        user = frappe.session.user
+        if user == "Guest" or frappe.get_cached_value("User", user, "user_type") != "System User":
+            frappe.throw("Billing dashboard access requires a System User.", frappe.PermissionError)
+        return fn(*args, **kwargs)
+
+    return protected
+
 
 @frappe.whitelist()
+@_system_user_only
 def get_all_naming_series():
     """Return naming series and their current values for core DocTypes."""
     from frappe.model.naming import NamingSeries
@@ -54,6 +68,7 @@ def get_all_naming_series():
     return result
 
 @frappe.whitelist()
+@_system_user_only
 def update_naming_series(doctype, series_list):
     """Update naming series options for a DocType via Property Setter."""
     if isinstance(series_list, str):
@@ -101,6 +116,7 @@ def update_naming_series(doctype, series_list):
     return {"status": "success"}
 
 @frappe.whitelist()
+@_system_user_only
 def update_single_series_counter(prefix, current):
     """Update a single naming series counter in tabSeries."""
     from frappe.model.naming import NamingSeries
@@ -113,6 +129,7 @@ def update_single_series_counter(prefix, current):
         frappe.throw(f"Failed to update counter: {str(e)}")
 
 @frappe.whitelist()
+@_system_user_only
 def get_all_users():
     """Return a list of all users from SSPL Billing Settings -> User Series."""
     settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
@@ -123,6 +140,7 @@ def get_all_users():
     ]
 
 @frappe.whitelist()
+@_system_user_only
 def get_allowed_series(doctype="Sales Invoice", user=None):
     """Return a list of naming series allowed for the current or specified user."""
 
@@ -227,6 +245,7 @@ def get_allowed_series(doctype="Sales Invoice", user=None):
     }
 
 @frappe.whitelist()
+@_system_user_only
 def save_default_zoom(zoom):
 	"""Persist zoom_value to the current user's row in the user_series child table."""
 	user = frappe.session.user
@@ -241,6 +260,7 @@ def save_default_zoom(zoom):
 
 
 @frappe.whitelist()
+@_system_user_only
 def get_system_stats():
 	"""Return current RAM and CPU usage for the server."""
 	import psutil
@@ -274,6 +294,7 @@ def get_system_stats():
 
 
 @frappe.whitelist()
+@_system_user_only
 def clear_ram_cache():
 	"""Drop Linux page cache."""
 	import os
@@ -324,6 +345,7 @@ def clear_ram_cache():
 
 
 @frappe.whitelist()
+@_system_user_only
 def clear_and_rebuild_draft_invoice_cache():
 	"""Clear the draft Sales Invoice quantities Redis cache and rebuild it from current draft Sales Invoices."""
 	from ssplbilling.api.stock_utils import clear_draft_invoice_qtys_cache, get_draft_invoice_qtys_from_redis
@@ -333,6 +355,7 @@ def clear_and_rebuild_draft_invoice_cache():
 
 
 @frappe.whitelist()
+@_system_user_only
 def clear_and_rebuild_draft_purchase_cache():
 	"""Clear the draft Purchase Invoice quantities Redis cache and rebuild it from current draft Purchase Invoices."""
 	from ssplbilling.api.stock_utils import clear_draft_purchase_qtys_cache, get_draft_purchase_qtys_from_redis
@@ -342,6 +365,7 @@ def clear_and_rebuild_draft_purchase_cache():
 
 
 @frappe.whitelist()
+@_system_user_only
 def get_active_sessions():
 	"""Return users currently active on this site."""
 	rows = frappe.db.sql(
@@ -372,6 +396,7 @@ def get_active_sessions():
 
 
 @frappe.whitelist()
+@_system_user_only
 def get_active_sites():
 	"""Return all site names in this bench."""
 	sites_path = os.path.join(os.path.dirname(frappe.get_site_path()))
@@ -403,6 +428,7 @@ def _docker_host_ip():
 
 
 @frappe.whitelist()
+@_system_user_only
 def run_manual_backup():
 	"""Run /opt/scripts/frappe_backup.sh."""
 	import subprocess
@@ -427,6 +453,7 @@ def run_manual_backup():
 
 
 @frappe.whitelist()
+@_system_user_only
 def run_terminal_command(command, cwd=None):
 	"""Execute an arbitrary bash command inside the docker container/root container or SSH to host."""
 	if frappe.session.user not in ["Administrator", "admin"] and "System Manager" not in frappe.get_roles():
@@ -608,6 +635,7 @@ def _discount_account_for_company(account, company):
 
 
 @frappe.whitelist()
+@_system_user_only
 def get_billing_settings(user=None, company=None):
 	"""Return SSPL Billing Settings; user_zoom and accounts are resolved for the current or specified user.
 
@@ -757,6 +785,7 @@ def get_billing_settings(user=None, company=None):
 
 
 @frappe.whitelist()
+@_system_user_only
 def get_allowed_tiles(user=None):
 	"""Return the dashboard tiles allowed via SSPL Dashboard Tile Access, resolved for
 	the inherited/specified user (admin only) or the session user as fallback.
@@ -815,6 +844,7 @@ def get_frappe_site_name():
 
 
 @frappe.whitelist()
+@_system_user_only
 def get_ic_api_credits():
 	"""Fetch India Compliance API credits from resilient.tech GSP service."""
 	# Only allow users with System Manager role to check it
@@ -859,6 +889,7 @@ def get_ic_api_credits():
 
 
 @frappe.whitelist()
+@_system_user_only
 def update_custom_version(version):
 	"""Updates the custom version in SSPL Billing Settings. Restricted to System Manager."""
 	if "System Manager" not in frappe.get_roles(frappe.session.user) and frappe.session.user not in ["Administrator", "admin"]:

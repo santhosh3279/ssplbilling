@@ -524,6 +524,10 @@ router.beforeEach(async (to, from, next) => {
       next({ name: 'Login' })
       return
     }
+    if (await session.checkWebsiteUser()) {
+      next({ name: 'CatalogueViewer' })
+      return
+    }
     await initTabSession()
     if (!canAccessRoute(to.name)) {
       next({ name: 'Dashboard' })

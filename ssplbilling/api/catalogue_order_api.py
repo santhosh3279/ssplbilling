@@ -13,6 +13,16 @@ def _customer_context():
 	if user == "Guest" or frappe.get_cached_value("User", user, "user_type") != "Website User":
 		frappe.throw("Sign in as a Website User to order.", frappe.PermissionError)
 
+	permissions = frappe.get_all(
+		"User Permission",
+		filters={"user": user, "allow": "Customer"},
+		fields=["for_value", "applicable_for"],
+	)
+	customers = {p.for_value for p in permissions if not p.applicable_for}
+	if len(customers) > 1:
+		frappe.throw("Your account is linked to multiple Customers. Contact an administrator.", frappe.PermissionError)
+	customer_name = next(iter(customers), None)
+
 	links = frappe.get_all(
 		"Portal User",
 		filters={"user": user, "parenttype": "Customer", "parentfield": "portal_users"},
@@ -20,7 +30,7 @@ def _customer_context():
 		order_by="creation asc",
 		limit=1,
 	)
-	customer_name = links[0].parent if links else None
+	customer_name = customer_name or (links[0].parent if links else None)
 	if not customer_name:
 		contacts = frappe.get_all(
 			"Contact Email", filters={"email_id": user}, fields=["parent"], limit=20
