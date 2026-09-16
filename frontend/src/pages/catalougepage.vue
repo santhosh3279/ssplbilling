@@ -504,10 +504,8 @@ async function handleWebsiteLogin() {
   try {
     await session.login(loginEmail.value, loginPassword.value)
     signedIn = true
-    const info = await frappeGet('frappe.client.get_value', {
-      doctype: 'User', filters: { name: session.user.value }, fieldname: 'user_type',
-    })
-    if (info?.user_type !== 'Website User') {
+    const userType = await frappeGet('ssplbilling.api.auth_api.get_current_user_type')
+    if (userType !== 'Website User') {
       await session.logout()
       loginError.value = 'Only Website Users can sign in here.'
       return
