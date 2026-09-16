@@ -71,6 +71,17 @@
           </div>
         </section>
 
+        <!-- Section: Online Order Settings -->
+        <section class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+          <h2 class="text-xl font-bold text-[var(--color-text)] border-b border-[var(--color-border)] pb-3 mb-4">Online Order Settings</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <DropdownField v-model="settings.online_order_company" :options="lists.companies" label="Company" />
+            <DropdownField v-model="settings.online_order_series" :options="lists.onlineOrderSeries" label="Sales Order Series" />
+            <DropdownField v-model="settings.online_order_warehouse" :options="lists.warehouses" label="Source Warehouse" />
+            <DropdownField v-model="settings.online_order_cost_center" :options="lists.costCenters" label="Cost Center" />
+          </div>
+        </section>
+
         <!-- Section: Billing Series -->
         <section class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm overflow-x-auto">
           <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-3 mb-4">
@@ -291,6 +302,7 @@ const lists = ref({
   costCenters: [],
   companies: [],
   series: [],
+  onlineOrderSeries: [],
   themes: ['Light', 'Dark']
 })
 
@@ -303,7 +315,7 @@ onMounted(async () => {
 
 async function fetchLists() {
   try {
-    const [acc, usr, pf, pl, tax, wh, cc, comp, serSI, serQT, prn] = await Promise.all([
+    const [acc, usr, pf, pl, tax, wh, cc, comp, serSI, serQT, serSO, prn] = await Promise.all([
       frappeGet('frappe.client.get_list', { doctype: 'Account', fields: ['name'], limit_page_length: 0 }),
       frappeGet('frappe.client.get_list', { doctype: 'User', fields: ['name'], limit_page_length: 0 }),
       frappeGet('frappe.client.get_list', { doctype: 'Print Template', fields: ['name'], limit_page_length: 0 }),
@@ -314,6 +326,7 @@ async function fetchLists() {
       frappeGet('frappe.client.get_list', { doctype: 'Company', fields: ['name'], limit_page_length: 0 }),
       frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Sales Invoice' }).catch(() => ({allowed_series: []})),
       frappeGet('ssplbilling.api.dashboard_api.get_allowed_series', { doctype: 'Quotation' }).catch(() => ({allowed_series: []})),
+      frappeGet('ssplbilling.api.dashboard_api.get_all_naming_series').catch(() => ({})),
       frappeGet('frappe.client.get_list', { doctype: 'Printer', fields: ['name'], limit_page_length: 0 }).catch(() => [])
     ])
     
@@ -330,6 +343,7 @@ async function fetchLists() {
     const s1 = serSI.allowed_series || []
     const s2 = serQT.allowed_series || []
     lists.value.series = [...new Set([...s1, ...s2])]
+    lists.value.onlineOrderSeries = (serSO['Sales Order'] || []).map(row => row.prefix)
   } catch(e) {
     console.error('Error fetching lists', e)
   }

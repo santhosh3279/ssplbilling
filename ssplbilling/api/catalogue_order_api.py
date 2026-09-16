@@ -54,16 +54,10 @@ def _customer_context():
 	if not customer.default_price_list:
 		frappe.throw("Set a default price list on the linked Customer before ordering.")
 
-	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
-	series = settings.billing_series[0].series if settings.billing_series else None
-	if not series:
-		frappe.throw("Set the first Billing Series before ordering.")
-
 	return {
 		"customer": customer_name,
 		"customer_name": customer.customer_name,
 		"price_list": customer.default_price_list,
-		"naming_series": series,
 	}
 
 
@@ -178,23 +172,23 @@ def get_cart_preview(items):
 @frappe.whitelist()
 def place_order(items):
 	preview = _preview(items)
-	company = frappe.defaults.get_global_default("company")
-	if not company:
-		frappe.throw("Set a default company before ordering.")
-
-	# This catalogue price list is fulfilled from the NCK warehouse.
-	warehouse = None
-	if preview["price_list"] == "W NCK PRICE":
-		warehouse = frappe.db.get_value(
-			"Warehouse", {"warehouse_name": "NCK", "company": company, "is_group": 0}, "name"
-		)
-	if not warehouse:
-		frappe.throw("Set a source warehouse for this catalogue price list before ordering.")
+	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
+	company = settings.online_order_company
+	series = settings.online_order_series
+	warehouse = settings.online_order_warehouse
+	cost_center = settings.online_order_cost_center
+	if not all((company, series, warehouse, cost_center)):
+		frappe.throw("Complete Company, Sales Order Series, Source Warehouse, and Cost Center in Online Order Settings.")
+	if frappe.db.get_value("Warehouse", warehouse, "company") != company or frappe.db.get_value("Warehouse", warehouse, "is_group"):
+		frappe.throw("The Online Order Settings warehouse must be a stock warehouse in the selected company.")
+	if frappe.db.get_value("Cost Center", cost_center, "company") != company or frappe.db.get_value("Cost Center", cost_center, "is_group"):
+		frappe.throw("The Online Order Settings cost center must be a leaf cost center in the selected company.")
 
 	order = frappe.new_doc("Sales Order")
 	order.company = company
 	order.set_warehouse = warehouse
-	order.naming_series = preview["naming_series"]
+	order.naming_series = series
+	order.cost_center = cost_center
 	order.customer = preview["customer"]
 	order.selling_price_list = preview["price_list"]
 	order.transaction_date = today()
@@ -205,6 +199,7 @@ def place_order(items):
 		order.append("items", {
 			"item_code": line["item_code"],
 			"warehouse": warehouse,
+			"cost_center": cost_center,
 			"qty": line["qty"],
 			"uom": line["uom"],
 			"rate": line["rate"],

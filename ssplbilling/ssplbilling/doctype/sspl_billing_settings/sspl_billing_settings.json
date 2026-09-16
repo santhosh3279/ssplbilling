@@ -21,6 +21,11 @@
   "billing_series",
   "user_series",
   "table_vycb",
+  "online_order_settings_section",
+  "online_order_company",
+  "online_order_series",
+  "online_order_warehouse",
+  "online_order_cost_center",
   "section_break_visible_accounts",
   "visible_accounts"
  ],
@@ -120,6 +125,34 @@
    "fieldtype": "Link",
    "label": "Round Off",
    "options": "Account"
+  },
+  {
+   "fieldname": "online_order_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Online Order Settings"
+  },
+  {
+   "fieldname": "online_order_company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company"
+  },
+  {
+   "fieldname": "online_order_series",
+   "fieldtype": "Data",
+   "label": "Sales Order Series"
+  },
+  {
+   "fieldname": "online_order_warehouse",
+   "fieldtype": "Link",
+   "label": "Source Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "online_order_cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center"
   },
   {
    "fieldname": "section_break_visible_accounts",
