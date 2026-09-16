@@ -69,11 +69,11 @@
           <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
           <div class="flex-1 space-y-2">
-            <!-- Icon and Date -->
+            <!-- Icon and Active Items -->
             <div class="flex items-center justify-between">
               <span class="card-icon text-3xl">📖</span>
-              <span class="card-date text-[10px] font-bold text-[var(--color-text-muted)]">
-                {{ formatDate(cat.creation) }}
+              <span class="card-item-count text-[10px] font-bold text-[var(--color-text-muted)]">
+                {{ cat.item_count ?? 0 }} active {{ cat.item_count === 1 ? 'item' : 'items' }}
               </span>
             </div>
 
@@ -82,9 +82,6 @@
               <h3 class="card-heading text-lg font-black text-[var(--color-text)] group-hover:text-[var(--color-info)] transition-colors line-clamp-2">
                 {{ cat.heading }}
               </h3>
-              <p class="text-xs font-semibold text-[var(--color-text-muted)]">
-                {{ cat.item_count ?? 0 }} active {{ cat.item_count === 1 ? 'item' : 'items' }}
-              </p>
             </div>
           </div>
 
@@ -112,7 +109,6 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 
-import { formatDMY } from '../utils/date'
 const router = useRouter()
 
 const loading = ref(true)
@@ -140,10 +136,6 @@ function openCatalogue(pageaddress) {
   router.push(`/catalogue/${pageaddress}`)
 }
 
-function formatDate(dateStr) {
-  return formatDMY(dateStr, '')
-}
-
 onMounted(fetchCatalogues)
 </script>
 
@@ -151,7 +143,7 @@ onMounted(fetchCatalogues)
 .catalogue-card {
   font-size: 26px !important;
 }
-.catalogue-card .card-date {
+.catalogue-card .card-item-count {
   font-size: 20px !important;
 }
 .catalogue-card .card-heading {
