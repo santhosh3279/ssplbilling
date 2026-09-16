@@ -133,7 +133,7 @@ async function fetchCatalogues() {
 }
 
 function openCatalogue(pageaddress) {
-  router.push(`/catalogue/${pageaddress}`)
+  router.push({ name: 'CatalougePage', params: { pageaddress } })
 }
 
 onMounted(fetchCatalogues)

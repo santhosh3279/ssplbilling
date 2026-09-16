@@ -10,7 +10,7 @@
     "features_by_category groups the same ids in \"features\" for licence picking; \"features\" itself stays a flat sorted array because the signature is computed over it."
   ],
   "wildcard": "*",
-  "page_count": 65,
+  "page_count": 66,
   "feature_count": 53,
   "category_count": 8,
   "features": [
@@ -130,7 +130,8 @@
         "id": "catalogueviewer",
         "name": "Catalogue Viewer",
         "pages": [
-          "CatalogueViewer"
+          "CatalogueViewer",
+          "CatalougePage"
         ]
       }
     ],
@@ -1110,6 +1111,16 @@
       "bucket": "SSPL Special",
       "has_dashboard_tile": true,
       "category": "Sales & Customers"
+    },
+    {
+      "page": "CatalougePage",
+      "path": "/catalougepage/:pageaddress",
+      "title": "Catalogue",
+      "feature": "catalogueviewer",
+      "feature_label": "Catalogue Viewer",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": false,
+      "category": "Sales & Customers"
     }
   ],
   "pages_by_feature": {
@@ -1132,7 +1143,8 @@
       "CashierDesk"
     ],
     "catalogueviewer": [
-      "CatalogueViewer"
+      "CatalogueViewer",
+      "CatalougePage"
     ],
     "catelogue": [
       "Catelogue"

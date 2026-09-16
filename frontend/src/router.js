@@ -51,6 +51,7 @@ import Expense from './pages/expense.vue'
 import Repack from './pages/Repack.vue'
 import Catalogue from './pages/catalogue.vue'
 import OfferPage from './pages/OfferPage.vue'
+import CatalougePage from './pages/catalougepage.vue'
 import Catelogue from './pages/catelogue.vue'
 import CatalogueViewer from './pages/catalogueviewer.vue'
 import Unreconciled from './pages/unreconciled.vue'
@@ -438,6 +439,12 @@ const routes = [
     name: 'OfferPage',
     component: OfferPage,
     meta: { public: true, title: 'Offers' },
+  },
+  {
+    path: '/catalougepage/:pageaddress',
+    name: 'CatalougePage',
+    component: CatalougePage,
+    meta: { title: 'Catalogue' },
   },
   {
     path: '/catalogueviewer',
