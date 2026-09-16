@@ -111,7 +111,9 @@ export async function frappePost(method, body = {}, { silent = false } = {}) {
       try { detail += "\n\n" + (await res.text()); } catch { /* ignore */ }
     }
     reportError(detail);
-    throw new Error(detail);
+    const error = new Error(detail);
+    error.status = res.status;
+    throw error;
   }
 
   const json = await res.json();
@@ -1131,7 +1133,7 @@ export async function getMaterialTransferReport(fromDate, toDate, company) {
 // ─── Tab Session (license-enforced concurrent tab limit) ────────────────────
 
 export async function registerTab(tabId) {
-  return frappePost("ssplbilling.api.tab_session_api.register_tab", { tab_id: tabId });
+  return frappePost("ssplbilling.api.tab_session_api.register_tab", { tab_id: tabId }, { silent: true });
 }
 
 export async function releaseTab(tabId) {

@@ -77,7 +77,22 @@ async function heartbeat() {
     tabLimitBlocked.value = res.status === 'limit_reached'
   } catch (e) {
     console.warn('[tabSession] heartbeat failed:', e)
+    if (e.status === 403) {
+      try {
+        const res = await fetch('/api/method/frappe.auth.get_logged_user')
+        const data = await res.json()
+        if (res.ok && (data.message === 'Guest' || !data.message)) {
+          if (heartbeatTimer) clearInterval(heartbeatTimer)
+          heartbeatTimer = null
+          window.location.reload()
+          return false
+        }
+      } catch (checkError) {
+        console.warn('[tabSession] session check failed:', checkError)
+      }
+    }
   }
+  return true
 }
 
 function releaseOnUnload() {
@@ -103,7 +118,8 @@ export function initTabSession() {
   if (!initPromise) {
     initPromise = resolveTabId()
       .then(() => heartbeat())
-      .then(() => {
+      .then((active) => {
+        if (!active) return
         heartbeatTimer = setInterval(heartbeat, HEARTBEAT_MS)
         window.addEventListener('beforeunload', releaseOnUnload)
       })
