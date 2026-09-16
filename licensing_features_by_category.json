@@ -7,7 +7,8 @@
     { "id": "cheques", "name": "Cheque Register" },
     { "id": "customer-enquiry", "name": "Customer Enquiry" },
     { "id": "offer-display", "name": "Offer Display" },
-    { "id": "catelogue", "name": "Catalogue" }
+    { "id": "catelogue", "name": "Catalogue" },
+    { "id": "catalogueviewer", "name": "Catalogue Viewer" }
   ],
   "Purchase & Suppliers": [
     { "id": "purchase-invoice", "name": "Purchase Invoice" },

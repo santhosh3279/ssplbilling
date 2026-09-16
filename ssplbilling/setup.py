@@ -187,6 +187,7 @@ DASHBOARD_TILES = [
 	("naming-settings", "Naming Settings", "SSPL Special"),
 	("barcode-print", "Print Barcodes", "SSPL Special"),
 	("catelogue", "Catalogues", "SSPL Special"),
+	("catalogueviewer", "Catalogue Viewer", "SSPL Special"),
 	("offer-display", "Offer Display", "SSPL Special"),
 	("hrms", "HRMS Dashboard", "SSPL Special"),
 	("employee", "Employee Directory", "SSPL Special"),

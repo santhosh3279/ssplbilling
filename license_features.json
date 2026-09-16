@@ -10,8 +10,8 @@
     "features_by_category groups the same ids in \"features\" for licence picking; \"features\" itself stays a flat sorted array because the signature is computed over it."
   ],
   "wildcard": "*",
-  "page_count": 64,
-  "feature_count": 52,
+  "page_count": 65,
+  "feature_count": 53,
   "category_count": 8,
   "features": [
     "Cashier-Management",
@@ -20,6 +20,7 @@
     "batch-reports",
     "cancellation",
     "cashier",
+    "catalogueviewer",
     "catelogue",
     "cheques",
     "cost-center-sale-report",
@@ -123,6 +124,13 @@
         "name": "Catalogue",
         "pages": [
           "Catelogue"
+        ]
+      },
+      {
+        "id": "catalogueviewer",
+        "name": "Catalogue Viewer",
+        "pages": [
+          "CatalogueViewer"
         ]
       }
     ],
@@ -1092,6 +1100,16 @@
       "bucket": "Report",
       "has_dashboard_tile": true,
       "category": "Tax & Reporting"
+    },
+    {
+      "page": "CatalogueViewer",
+      "path": "/catalogueviewer",
+      "title": "Catalogue Viewer",
+      "feature": "catalogueviewer",
+      "feature_label": "Catalogue Viewer",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true,
+      "category": "Sales & Customers"
     }
   ],
   "pages_by_feature": {
@@ -1112,6 +1130,9 @@
     ],
     "cashier": [
       "CashierDesk"
+    ],
+    "catalogueviewer": [
+      "CatalogueViewer"
     ],
     "catelogue": [
       "Catelogue"

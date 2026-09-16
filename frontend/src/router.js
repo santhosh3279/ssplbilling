@@ -52,6 +52,7 @@ import Repack from './pages/Repack.vue'
 import Catalogue from './pages/catalogue.vue'
 import OfferPage from './pages/OfferPage.vue'
 import Catelogue from './pages/catelogue.vue'
+import CatalogueViewer from './pages/catalogueviewer.vue'
 import Unreconciled from './pages/unreconciled.vue'
 import ChequeRegister from './pages/ChequeRegister.vue'
 import CashflowReport from './pages/CashflowReport.vue'
@@ -437,6 +438,12 @@ const routes = [
     name: 'OfferPage',
     component: OfferPage,
     meta: { public: true, title: 'Offers' },
+  },
+  {
+    path: '/catalogueviewer',
+    name: 'CatalogueViewer',
+    component: CatalogueViewer,
+    meta: { title: 'Catalogue Viewer' },
   },
   {
     path: '/catelogue',

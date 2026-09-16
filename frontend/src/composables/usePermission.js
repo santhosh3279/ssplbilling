@@ -295,7 +295,7 @@ export function canAccessRoute(routeName) {
     return allowed.has(routeName)
   }
 
-  if (['DailyReport', 'Catelogue'].includes(routeName)) return true
+  if (['DailyReport', 'Catelogue', 'CatalogueViewer'].includes(routeName)) return true
 
   if (role === 'accounts') return ACCOUNTS_ROUTES.has(routeName)
   if (role === 'cashier') return CASHIER_ROUTES.has(routeName)
@@ -358,6 +358,7 @@ const TILE_ROUTE_MAP = {
   'ssplbillingsettings': 'SSPLBillingSettings',
   'offer-display':     'OfferDisplay',
   'catelogue':         'Catelogue',
+  'catalogueviewer':   'CatalogueViewer',
   'unreconciled':      'Unreconciled',
   'cheques':           'ChequeRegister',
   'ledger-sales-purchase-report': 'LedgerSalesPurchaseReport',
