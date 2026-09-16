@@ -268,7 +268,7 @@
               </div>
 
               <!-- Image / Placeholder Frame -->
-              <div class="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
+              <div class="relative aspect-square w-full bg-white flex items-center justify-center p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
                 <img
                   v-if="item.image"
                   :src="item.image"
