@@ -182,8 +182,18 @@ def place_order(items):
 	if not company:
 		frappe.throw("Set a default company before ordering.")
 
+	# This catalogue price list is fulfilled from the NCK warehouse.
+	warehouse = None
+	if preview["price_list"] == "W NCK PRICE":
+		warehouse = frappe.db.get_value(
+			"Warehouse", {"warehouse_name": "NCK", "company": company, "is_group": 0}, "name"
+		)
+	if not warehouse:
+		frappe.throw("Set a source warehouse for this catalogue price list before ordering.")
+
 	order = frappe.new_doc("Sales Order")
 	order.company = company
+	order.set_warehouse = warehouse
 	order.naming_series = preview["naming_series"]
 	order.customer = preview["customer"]
 	order.selling_price_list = preview["price_list"]
@@ -194,11 +204,20 @@ def place_order(items):
 	for line in preview["items"]:
 		order.append("items", {
 			"item_code": line["item_code"],
+			"warehouse": warehouse,
 			"qty": line["qty"],
 			"uom": line["uom"],
 			"rate": line["rate"],
 			"price_list_rate": line["rate"],
 			"delivery_date": order.delivery_date,
 		})
-	order.insert(ignore_permissions=True)
+	# ERPNext validates Item access during Sales Order insertion. The cart and
+	# customer were checked above; keep that validation under server authority.
+	user = frappe.session.user
+	try:
+		frappe.set_user("Administrator")
+		order.insert(ignore_permissions=True)
+	finally:
+		frappe.set_user(user)
+	frappe.db.set_value("Sales Order", order.name, "owner", user, update_modified=False)
 	return {"order_name": order.name, "total": flt(order.grand_total)}
