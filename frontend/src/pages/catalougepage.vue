@@ -252,24 +252,24 @@
               :key="item.itemcode"
               class="group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
             >
-              <!-- Image / Placeholder Frame -->
-              <div class="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
-                <!-- Stacked Offer Badges Overlay -->
-                <div v-if="item.discount_type && item.discount_desc" class="absolute top-2 left-2 z-10 pointer-events-none flex flex-col bg-slate-900/95 border border-[var(--color-warning)]/30 rounded-lg overflow-hidden shadow-lg backdrop-blur-sm max-w-[90%]">
-                  <div class="bg-[var(--color-warning)] text-black text-[8px] font-black uppercase px-1.5 py-0.5 text-center tracking-wider shrink-0">
-                    Offer
-                  </div>
-                  <div class="flex flex-col whitespace-normal break-words font-bold text-[var(--color-warning)]" :class="badgeTextClass">
-                    <div 
-                      v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
-                      :key="lIdx"
-                      class="leading-none"
-                    >
-                      {{ line }}
-                    </div>
+              <!-- Offer banner above the item image -->
+              <div v-if="item.discount_type && item.discount_desc" class="w-full shrink-0 flex flex-col bg-slate-900/95 border border-[var(--color-warning)]/30 rounded-lg overflow-hidden shadow-lg backdrop-blur-sm">
+                <div class="bg-[var(--color-warning)] text-black text-[8px] font-black uppercase px-1.5 py-0.5 text-center tracking-wider shrink-0">
+                  Offer
+                </div>
+                <div class="flex flex-col whitespace-normal break-words font-bold text-[var(--color-warning)]" :class="badgeTextClass">
+                  <div
+                    v-for="(line, lIdx) in item.discount_desc.split(' | ')"
+                    :key="lIdx"
+                    class="leading-none"
+                  >
+                    {{ line }}
                   </div>
                 </div>
+              </div>
 
+              <!-- Image / Placeholder Frame -->
+              <div class="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
                 <img
                   v-if="item.image"
                   :src="item.image"
