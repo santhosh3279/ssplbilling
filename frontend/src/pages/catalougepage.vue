@@ -99,17 +99,19 @@
                           :key="bp.barcode"
                         >
                           <td class="py-0.5 pr-2 font-mono text-slate-200 select-all font-bold">
-                            <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-lg font-sans">({{ bp.uom }})</span>
-                          </td>
-                          <td 
-                            v-for="pl in offer.price_lists" 
-                            :key="pl.price_list"
-                            class="py-0.5 px-0.5 font-mono text-right text-indigo-400 font-bold tracking-widest"
-                          >
-                            <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                              {{ encryptPrice(bp.prices[pl.price_list]) }}
-                            </span>
-                            <span v-else class="text-slate-600 font-normal">—</span>
+                            <div>
+                              <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-lg font-sans">({{ bp.uom }})</span>
+                            </div>
+                            <div
+                              v-for="pl in offer.price_lists"
+                              :key="pl.price_list"
+                              class="py-0.5 px-0.5 font-mono text-left text-indigo-400 font-bold tracking-widest"
+                            >
+                              <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
+                                {{ encryptPrice(bp.prices[pl.price_list]) }}
+                              </span>
+                              <span v-else class="text-slate-600 font-normal">—</span>
+                            </div>
                           </td>
                         </tr>
                       </tbody>
@@ -309,17 +311,19 @@
                             class="hover:bg-[var(--color-bg)]/50 transition-colors"
                           >
                             <td class="py-0.5 pr-2 font-mono text-[var(--color-text)] select-all font-bold">
-                              <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-[var(--color-text-muted)] font-normal text-base font-sans">({{ bp.uom }})</span>
-                            </td>
-                            <td 
-                              v-for="pl in offer.price_lists" 
-                              :key="pl.price_list"
-                              class="py-0.5 px-0.5 font-mono text-right text-[var(--color-info)] font-bold tracking-widest"
-                            >
-                              <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                                {{ encryptPrice(bp.prices[pl.price_list]) }}
-                              </span>
-                              <span v-else class="text-[var(--color-text-muted)] font-normal">—</span>
+                              <div>
+                                <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-[var(--color-text-muted)] font-normal text-base font-sans">({{ bp.uom }})</span>
+                              </div>
+                              <div
+                                v-for="pl in offer.price_lists"
+                                :key="pl.price_list"
+                                class="py-0.5 px-0.5 font-mono text-left text-[var(--color-info)] font-bold tracking-widest"
+                              >
+                                <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
+                                  {{ encryptPrice(bp.prices[pl.price_list]) }}
+                                </span>
+                                <span v-else class="text-[var(--color-text-muted)] font-normal">—</span>
+                              </div>
                             </td>
                           </tr>
                         </tbody>
