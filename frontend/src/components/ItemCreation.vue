@@ -401,10 +401,7 @@
 <script setup>
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, frappeGet, uploadFile } from '../api.js'
-import { useItemCache } from '../services/itemCache.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
-
-const { lookupItemInCache } = useItemCache()
 
 const props = defineProps({
   show: Boolean,
@@ -464,49 +461,30 @@ function saveCache() {
 }
 
 function _applyItemData(data, itemCode) {
-  const isFromCache = !!data.uom  // cache uses 'uom', server response uses 'stock_uom'
-  const bcDetailed = data.barcodes_detailed || []
   form.value.item_name        = data.item_name        || ''
   form.value.item_print_name  = data.item_print_name  || ''
   form.value.image            = data.image            || ''
-  form.value.barcode           = isFromCache
-    ? (bcDetailed[0]?.barcode || itemCode)
-    : (data.barcode || itemCode)
+  form.value.barcode           = data.barcode || itemCode
   form.value.item_group        = data.item_group        || ''
   form.value.hsn_sac           = data.hsn_sac           || ''
-  form.value.stock_uom         = (isFromCache ? data.uom : data.stock_uom) || 'Nos'
+  form.value.stock_uom         = data.stock_uom || 'Nos'
   form.value.item_tax_template = data.item_tax_template || ''
-  form.value.standard_rate     = (isFromCache ? data.price : data.standard_rate) || 0
+  form.value.standard_rate     = data.standard_rate || 0
   form.value.safety_stock      = data.safety_stock      || 0
   form.value.suppliers         = (data.suppliers || []).map(s => {
     const sup = typeof s === 'string' ? s : s.supplier
     const pno = typeof s === 'string' ? '' : (s.supplier_part_no || '')
     return { supplier: sup, supplier_part_no: pno, supplier_label: sup }
   })
-  if (isFromCache) {
-    const stockUom = data.uom
-    form.value.uom_conversions = (data.uoms || [])
-      .filter(u => u.uom !== stockUom)
-      .map(u => ({ uom: u.uom, conversion_factor: parseFloat(u.conversion_factor || 1) }))
-    form.value.extra_barcodes = bcDetailed
-      .filter(b => b.barcode !== itemCode)
-      .map(b => ({ barcode: b.barcode, uom: b.uom || stockUom }))
-  } else {
-    form.value.uom_conversions = data.uom_conversions || []
-    form.value.extra_barcodes  = data.extra_barcodes  || []
-  }
+  form.value.uom_conversions = data.uom_conversions || []
+  form.value.extra_barcodes  = data.extra_barcodes  || []
   autoBarcode.value = ''
   isBarcodeManual.value = true
 }
 
 async function loadForEdit(itemCode) {
   try {
-    const cached = lookupItemInCache(itemCode)
-    if (cached) {
-      _applyItemData(cached, itemCode)
-      return
-    }
-    // Cache not populated yet — fall back to server
+    // The edit API reads the tax template from the first Item Taxes child row.
     const data = await getItemForEdit(itemCode)
     _applyItemData(data, itemCode)
   } catch (e) {
