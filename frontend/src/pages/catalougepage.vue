@@ -160,6 +160,7 @@
               ❌ Exit Play
             </button>
             <button
+              v-if="false"
               @click="loadOffer(true)"
               class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/30 transition active:scale-95"
             >
@@ -217,7 +218,8 @@
           </button>
           
           <!-- Refresh Button -->
-          <button 
+          <button
+            v-if="false"
             @click="loadOffer(false)"
             class="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-xl bg-slate-950/60 hover:bg-slate-900/80 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white border border-slate-800/50 transition active:scale-95 focus:outline-none"
           >
@@ -332,8 +334,8 @@
         </main>
       </template>
 
-      <!-- Floating Actions (Visible in normal web view) -->
-      <div v-if="!isFullscreen && offer" class="fixed bottom-10 right-10 z-40 flex flex-row items-center gap-4">
+      <!-- Floating actions hidden in the catalogue viewer detail page -->
+      <div v-if="false" class="fixed bottom-10 right-10 z-40 flex flex-row items-center gap-4">
         <!-- Export PDF Button -->
         <button
           @click="exportToPDF"
@@ -344,6 +346,7 @@
 
         <!-- Refresh Button -->
         <button
+          v-if="false"
           @click="loadOffer(false)"
           class="flex items-center gap-3 rounded-2xl bg-amber-600 hover:bg-amber-700 px-8 py-5 text-xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-amber-300 focus:bg-amber-700 focus:scale-105 transition-all duration-300 border border-amber-500"
         >
