@@ -1,5 +1,31 @@
 <template>
   <div class="h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white main-content-wrapper">
+    <button
+      v-if="!websiteUser"
+      type="button"
+      @click="showLogin = true"
+      class="fixed top-4 right-4 z-50 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+    >
+      Website User Login
+    </button>
+    <div v-if="showLogin" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" @click.self="showLogin = false">
+      <form class="w-full max-w-sm space-y-4 rounded-xl bg-[var(--color-surface)] p-6 text-[var(--color-text)] shadow-xl" @submit.prevent="handleWebsiteLogin">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold">Website User Login</h2>
+          <button type="button" aria-label="Close login" @click="showLogin = false">✕</button>
+        </div>
+        <p v-if="loginError" role="alert" class="text-sm text-red-600">{{ loginError }}</p>
+        <label class="block text-sm font-medium">Email or Username
+          <input v-model.trim="loginEmail" type="text" autocomplete="username" required class="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2" />
+        </label>
+        <label class="block text-sm font-medium">Password
+          <input v-model="loginPassword" type="password" autocomplete="current-password" required class="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2" />
+        </label>
+        <button type="submit" :disabled="loginLoading" class="w-full rounded bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
+          {{ loginLoading ? 'Signing in…' : 'Sign In' }}
+        </button>
+      </form>
+    </div>
     <!-- Loading Screen -->
     <div v-if="loading" class="flex-1 flex flex-col items-center justify-center p-8">
       <div class="relative w-16 h-16 mb-4">
@@ -460,9 +486,42 @@ import { useRoute, useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { encryptPrice } from '../encryption.js'
 import { initFrappeSocket } from '../services/frappeSocket.js'
+import { session } from '../session.js'
 
 const route = useRoute()
 const router = useRouter()
+const showLogin = ref(false)
+const loginEmail = ref('')
+const loginPassword = ref('')
+const loginError = ref('')
+const loginLoading = ref(false)
+const websiteUser = ref(false)
+
+async function handleWebsiteLogin() {
+  loginError.value = ''
+  loginLoading.value = true
+  let signedIn = false
+  try {
+    await session.login(loginEmail.value, loginPassword.value)
+    signedIn = true
+    const info = await frappeGet('frappe.client.get_value', {
+      doctype: 'User', filters: { name: session.user.value }, fieldname: 'user_type',
+    })
+    if (info?.user_type !== 'Website User') {
+      await session.logout()
+      loginError.value = 'Only Website Users can sign in here.'
+      return
+    }
+    websiteUser.value = true
+    loginPassword.value = ''
+    showLogin.value = false
+  } catch (error) {
+    if (signedIn) await session.logout()
+    loginError.value = error.message || 'Could not sign in.'
+  } finally {
+    loginLoading.value = false
+  }
+}
 
 const loading = ref(true)
 const error = ref(null)
