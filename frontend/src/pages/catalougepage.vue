@@ -994,6 +994,10 @@ watch(isFullscreen, (newVal) => {
 })
 
 function handleKeyDown(event) {
+  // Do not run catalogue shortcuts while entering login details or using browser shortcuts.
+  if (showLogin.value || event.ctrlKey || event.metaKey || event.altKey ||
+      event.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return
+
   resetControlsTimer()
   const key = event.key
   const keyCode = event.keyCode
