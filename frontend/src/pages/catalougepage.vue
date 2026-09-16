@@ -1,7 +1,11 @@
 <template>
   <div class="h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white main-content-wrapper">
+    <div v-if="isLoggedIn" class="fixed top-4 right-4 z-[70] flex items-center gap-3 rounded-xl bg-slate-950/80 px-4 py-2 text-xs text-white border border-slate-800/50 shadow-lg">
+      <span class="max-w-40 truncate">{{ userName }}</span>
+      <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
+    </div>
     <button
-      v-if="!websiteUser"
+      v-else
       type="button"
       @click="showLogin = true"
       class="fixed top-4 right-4 z-50 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300"
@@ -496,6 +500,13 @@ const loginPassword = ref('')
 const loginError = ref('')
 const loginLoading = ref(false)
 const websiteUser = session.isWebsiteUser
+const isLoggedIn = session.isLoggedIn
+const userName = computed(() => session.fullName.value || session.user.value)
+
+async function logout() {
+  await session.logout()
+  showLogin.value = false
+}
 
 function displayPrice(price) {
   if (!websiteUser.value) return encryptPrice(price)
