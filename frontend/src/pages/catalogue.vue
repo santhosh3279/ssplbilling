@@ -319,7 +319,7 @@
 
               <!-- Invoice-style catalogue items -->
               <p id="catalogue-grid-help" class="text-[var(--color-text-muted)]">
-                Click a cell to edit. Tab moves across cells; Enter and ↑ / ↓ move between rows. Enter on the last row adds a new row.
+                Enter an item code, name, or barcode in Item/Barcode. Selecting an item moves to the next row. Tab, Enter and ↑ / ↓ move between item boxes.
               </p>
               <div ref="itemsGrid" class="catalogue-grid" tabindex="0" aria-label="Catalogue items spreadsheet">
                 <table class="catalogue-sheet" aria-describedby="catalogue-grid-help">
@@ -340,10 +340,12 @@
                     <tr v-for="(item, idx) in form.items" :key="idx" :class="{ 'sheet-inactive': Number(item.disabled) === 1 }">
                       <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
                       <td v-for="(column, columnIndex) in itemColumns" :key="column.key" class="sheet-cell">
+                        <span v-if="column.key === 'itemname'" class="sheet-item-name">{{ item.itemname }}</span>
                         <input
-                          :value="column.key === 'itemcode' && searchTargetRow === idx ? itemSearchQuery : item[column.key]"
-                          @input="column.key === 'itemcode' ? searchRowItem($event, idx) : item[column.key] = $event.target.value"
-                          @blur="column.key === 'itemcode' && closeItemSearch()"
+                          v-else
+                          :value="searchTargetRow === idx ? itemSearchQuery : item.itemcode"
+                          @input="searchRowItem($event, idx)"
+                          @blur="closeItemSearch()"
                           type="text"
                           :data-cell="`${idx}-${columnIndex}`"
                           :aria-label="`${column.label}, row ${idx + 1}`"
@@ -559,10 +561,12 @@ async function selectSearchItem(item) {
     form.value.items.push(values)
   }
   closeItemSearch()
-  if (row !== null) {
-    await nextTick()
-    itemsGrid.value?.querySelector(`[data-cell="${row}-0"]`)?.focus()
-  }
+  const nextRow = row !== null ? row + 1 : form.value.items.length
+  if (nextRow === form.value.items.length) addEmptyRow()
+  await nextTick()
+  const input = itemsGrid.value?.querySelector(`[data-cell="${nextRow}-0"]`)
+  input?.focus()
+  input?.select()
 }
 
 const itemsGrid = ref(null)
@@ -579,9 +583,8 @@ async function handleCellKeydown(event, row, column) {
   else if (event.key === 'ArrowDown') nextRow++
   else if (event.key === 'ArrowUp') nextRow--
   else if (event.key === 'Tab') {
-    const nextIndex = row * itemColumns.length + column + (event.shiftKey ? -1 : 1)
-    nextRow = Math.floor(nextIndex / itemColumns.length)
-    nextColumn = (nextIndex + itemColumns.length) % itemColumns.length
+    nextRow += event.shiftKey ? -1 : 1
+    nextColumn = 0
   } else return
   if (event.key === 'Enter' && !event.shiftKey && nextRow === form.value.items.length) {
     addEmptyRow()
@@ -806,6 +809,11 @@ onMounted(() => {
   box-shadow: inset 2px 0 var(--color-focus);
 }
 .sheet-cell { padding: 0; }
+.sheet-item-name {
+  display: block;
+  padding: 4px 8px;
+  user-select: none;
+}
 .sheet-cell input {
   display: block;
   width: 100%;
@@ -818,6 +826,7 @@ onMounted(() => {
   font: inherit;
   font-weight: 500;
 }
+.catalogue-sheet .sheet-inactive .sheet-item-name,
 .catalogue-sheet .sheet-inactive .sheet-cell input {
   text-decoration: line-through;
 }
