@@ -99,7 +99,7 @@
                           :key="bp.barcode"
                         >
                           <td class="py-0.5 pr-2 font-mono text-slate-200 select-all font-bold">
-                            {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-lg font-sans">({{ bp.uom }})</span>
+                            <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-lg font-sans">({{ bp.uom }})</span>
                           </td>
                           <td 
                             v-for="pl in offer.price_lists" 
@@ -309,7 +309,7 @@
                             class="hover:bg-[var(--color-bg)]/50 transition-colors"
                           >
                             <td class="py-0.5 pr-2 font-mono text-[var(--color-text)] select-all font-bold">
-                              {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-[var(--color-text-muted)] font-normal text-base font-sans">({{ bp.uom }})</span>
+                              <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-[var(--color-text-muted)] font-normal text-base font-sans">({{ bp.uom }})</span>
                             </td>
                             <td 
                               v-for="pl in offer.price_lists" 
