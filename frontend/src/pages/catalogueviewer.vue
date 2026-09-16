@@ -9,6 +9,11 @@
         ← Back
       </a>
 
+      <div v-if="isLoggedIn" class="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-xl bg-slate-950/60 px-4 py-2 text-xs text-white border border-slate-800/50">
+        <span class="max-w-40 truncate">{{ userName }}</span>
+        <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
+      </div>
+
       <!-- Abstract glowing circles -->
       <div class="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
@@ -105,11 +110,14 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
+import { session } from '../session.js'
 
 const router = useRouter()
+const isLoggedIn = session.isLoggedIn
+const userName = computed(() => session.fullName.value || session.user.value)
 
 const loading = ref(true)
 const error = ref(null)
@@ -136,7 +144,14 @@ function openCatalogue(pageaddress) {
   router.push({ name: 'CatalougePage', params: { pageaddress } })
 }
 
-onMounted(fetchCatalogues)
+async function logout() {
+  await session.logout()
+}
+
+onMounted(() => {
+  session.init().catch((err) => console.warn('[catalogueviewer] Session check failed:', err))
+  fetchCatalogues()
+})
 </script>
 
 <style scoped>

@@ -2,10 +2,12 @@ import { ref } from 'vue'
 import { createResource } from 'frappe-ui'
 import { destroyTabSession } from './services/tabSession'
 import { primeServerTime } from './services/serverTime'
+import { frappeGet } from './api.js'
 
 const isLoggedIn = ref(false)
 const user = ref(null)
 const fullName = ref('')
+const isWebsiteUser = ref(false)
 let initialized = false
 
 const userResource = createResource({
@@ -66,6 +68,15 @@ async function init() {
   }
 }
 
+async function checkWebsiteUser() {
+  await init()
+  isWebsiteUser.value = false
+  if (isLoggedIn.value) {
+    isWebsiteUser.value = await frappeGet('ssplbilling.api.auth_api.get_current_user_type') === 'Website User'
+  }
+  return isWebsiteUser.value
+}
+
 async function login(usr, pwd) {
   const res = await fetch('/api/method/login', {
     method: 'POST',
@@ -78,6 +89,7 @@ async function login(usr, pwd) {
   }
   if (data.csrf_token) window.csrf_token = data.csrf_token
   // Refresh session
+  isWebsiteUser.value = false
   initialized = false
   await init()
   return true
@@ -89,6 +101,7 @@ async function logout() {
   isLoggedIn.value = false
   user.value = null
   fullName.value = ''
+  isWebsiteUser.value = false
   initialized = false
 }
 
@@ -96,6 +109,8 @@ export const session = {
   isLoggedIn,
   user,
   fullName,
+  isWebsiteUser,
+  checkWebsiteUser,
   init,
   login,
   logout,

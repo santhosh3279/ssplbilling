@@ -134,7 +134,7 @@
                               class="py-0.5 px-0.5 font-mono text-left text-indigo-400 font-bold tracking-widest"
                             >
                               <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                                {{ encryptPrice(bp.prices[pl.price_list]) }}
+                                {{ displayPrice(bp.prices[pl.price_list]) }}
                               </span>
                               <span v-else class="text-slate-600 font-normal">—</span>
                             </div>
@@ -346,7 +346,7 @@
                                 class="py-0.5 px-0.5 font-mono text-left text-[var(--color-info)] font-bold tracking-widest"
                               >
                                 <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                                  {{ encryptPrice(bp.prices[pl.price_list]) }}
+                                  {{ displayPrice(bp.prices[pl.price_list]) }}
                                 </span>
                                 <span v-else class="text-[var(--color-text-muted)] font-normal">—</span>
                               </div>
@@ -484,7 +484,7 @@
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
-import { encryptPrice } from '../encryption.js'
+import { encryptPrice, getFloatPrecision } from '../encryption.js'
 import { initFrappeSocket } from '../services/frappeSocket.js'
 import { session } from '../session.js'
 
@@ -495,7 +495,14 @@ const loginEmail = ref('')
 const loginPassword = ref('')
 const loginError = ref('')
 const loginLoading = ref(false)
-const websiteUser = ref(false)
+const websiteUser = session.isWebsiteUser
+
+function displayPrice(price) {
+  if (!websiteUser.value) return encryptPrice(price)
+  const value = Number(price)
+  if (Number.isNaN(value)) return '—'
+  return value % 1 === 0 ? String(value) : value.toFixed(getFloatPrecision())
+}
 
 async function handleWebsiteLogin() {
   loginError.value = ''
@@ -504,8 +511,7 @@ async function handleWebsiteLogin() {
   try {
     await session.login(loginEmail.value, loginPassword.value)
     signedIn = true
-    const userType = await frappeGet('ssplbilling.api.auth_api.get_current_user_type')
-    if (userType !== 'Website User') {
+    if (!await session.checkWebsiteUser()) {
       await session.logout()
       loginError.value = 'Only Website Users can sign in here.'
       return
@@ -1091,6 +1097,10 @@ function teardownOfferSocket() {
 }
 
 onMounted(() => {
+  session.checkWebsiteUser().catch((error) => {
+    websiteUser.value = false
+    console.warn('[catalogue] Could not verify website user:', error)
+  })
   loadOffer()
   setupOfferSocket()
   document.addEventListener('fullscreenchange', handleFullscreenChange)
