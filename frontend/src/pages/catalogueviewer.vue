@@ -2,24 +2,6 @@
   <div class="min-h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased">
     <!-- Premium Hero Header -->
     <header class="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white px-6 text-center border-b border-[var(--color-border)] shrink-0 h-[20vh] min-h-[140px] flex items-center justify-center">
-      <!-- Back to Dashboard / Home if logged in -->
-      <button 
-        v-if="isLoggedIn"
-        @click="goDashboard"
-        class="absolute top-4 left-4 z-20 flex items-center gap-2 rounded-xl bg-slate-950/60 hover:bg-slate-900/80 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white border border-slate-800/50 transition active:scale-95 focus:outline-none"
-      >
-        ← Dashboard
-      </button>
-
-      <!-- Create/Manage button if logged in and authorized -->
-      <button 
-        v-if="canCreateOffer"
-        @click="goCreateOffer"
-        class="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 px-4 py-2 text-xs font-bold text-white border border-indigo-500 transition active:scale-95 focus:outline-none"
-      >
-        ➕ Cataloge Editor
-      </button>
-
       <!-- Abstract glowing circles -->
       <div class="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
       <div class="absolute -bottom-16 -right-16 w-64 h-64 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
@@ -119,11 +101,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
-import { session } from '../session'
-import { canAccessRoute } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
 const router = useRouter()
@@ -131,12 +111,6 @@ const router = useRouter()
 const loading = ref(true)
 const error = ref(null)
 const catalogues = ref([])
-const isLoggedIn = ref(false)
-
-const canCreateOffer = computed(() => {
-  return isLoggedIn.value && canAccessRoute('OfferDisplay')
-})
-
 async function fetchCatalogues() {
   loading.value = true
   error.value = null
@@ -159,27 +133,11 @@ function openCatalogue(pageaddress) {
   router.push(`/catalogue/${pageaddress}`)
 }
 
-function goDashboard() {
-  router.push('/')
-}
-
-function goCreateOffer() {
-  router.push('/catalogue-editor')
-}
-
 function formatDate(dateStr) {
   return formatDMY(dateStr, '')
 }
 
-onMounted(async () => {
-  await fetchCatalogues()
-  try {
-    await session.init()
-    isLoggedIn.value = session.isLoggedIn.value
-  } catch (e) {
-    isLoggedIn.value = false
-  }
-})
+onMounted(fetchCatalogues)
 </script>
 
 <style scoped>
