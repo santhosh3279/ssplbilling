@@ -1,7 +1,20 @@
 import json
+from functools import wraps
+
 import frappe
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
 from ssplbilling.api.stock_utils import get_draft_invoice_qty
+
+
+def _system_user_only(fn):
+	@wraps(fn)
+	def protected(*args, **kwargs):
+		user = frappe.session.user
+		if user == "Guest" or frappe.get_cached_value("User", user, "user_type") != "System User":
+			frappe.throw("Sales Order workspace access requires a System User.", frappe.PermissionError)
+		return fn(*args, **kwargs)
+
+	return protected
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -35,6 +48,7 @@ def _get_item_tax_rate(item_code):
 
 
 @frappe.whitelist()
+@_system_user_only
 def get_item_details(item_code, price_list="Standard Selling", warehouse=None):
 	"""Look up item by code or barcode. Returns item details + stock + rate."""
 	barcode_item = frappe.db.get_value("Item Barcode", {"barcode": item_code}, "parent")
@@ -71,6 +85,7 @@ def get_item_details(item_code, price_list="Standard Selling", warehouse=None):
 
 
 @frappe.whitelist()
+@_system_user_only
 def get_item_insight(item_code, price_list="Standard Selling", warehouse=None):
 	"""Return stock across all warehouses + selling price lists + previous sales orders."""
 	if not item_code or not frappe.db.exists("Item", item_code):
@@ -131,6 +146,7 @@ def get_item_insight(item_code, price_list="Standard Selling", warehouse=None):
 # ──────────────────────────────────────────────────────────────────────────────
 
 @frappe.whitelist()
+@_system_user_only
 def get_naming_series():
 	"""Return available naming series for Sales Order."""
 	try:
@@ -156,6 +172,7 @@ def get_naming_series():
 
 
 @frappe.whitelist()
+@_system_user_only
 def get_next_order_no(naming_series):
 	"""Preview the next Sales Order number for a given series."""
 	if not naming_series:
@@ -172,14 +189,19 @@ def get_next_order_no(naming_series):
 # ──────────────────────────────────────────────────────────────────────────────
 
 @frappe.whitelist()
-def get_sales_orders(query="", limit=50, transaction_date=None, show_submitted=False):
-	"""Return list of Sales Orders for the sidebar."""
-	filters = {}
+@_system_user_only
+def get_sales_orders(query="", limit=50, transaction_date=None, naming_series=None, show_submitted=False, company=None):
+	"""Return Sales Orders matching the modify-panel filters."""
 	is_submitted = frappe.parse_json(show_submitted) if isinstance(show_submitted, str) else show_submitted
-	if transaction_date and not query and is_submitted:
+	filters = {"docstatus": ["<", 2]} if is_submitted else {"docstatus": 0}
+	if transaction_date and not query:
 		filters["transaction_date"] = transaction_date
-	if not is_submitted:
-		filters["docstatus"] = 0
+	if company:
+		filters["company"] = company
+	if naming_series:
+		series = [s.strip() for s in naming_series.split(",") if s.strip()]
+		if series:
+			filters["naming_series"] = ["in", series]
 
 	or_filters = None
 	if query:
@@ -193,7 +215,7 @@ def get_sales_orders(query="", limit=50, transaction_date=None, show_submitted=F
 		"Sales Order",
 		filters=filters,
 		or_filters=or_filters,
-		fields=["name", "customer", "customer_name", "grand_total", "rounded_total", "status", "docstatus", "transaction_date"],
+		fields=["name", "company", "naming_series", "customer", "customer_name", "grand_total", "rounded_total", "status", "docstatus", "transaction_date", "modified"],
 		order_by="modified desc",
 		limit_page_length=int(limit),
 	)
@@ -201,25 +223,31 @@ def get_sales_orders(query="", limit=50, transaction_date=None, show_submitted=F
 	return [
 		{
 			"name": o.name,
+			"company": o.company,
+			"naming_series": o.naming_series,
 			"customer": o.customer,
 			"customer_name": o.customer_name or o.customer,
 			"grand_total": float(o.grand_total or 0),
 			"rounded_total": float(o.rounded_total or o.grand_total or 0),
 			"status": o.status or ("Draft" if o.docstatus == 0 else "Submitted"),
 			"docstatus": o.docstatus,
+			"transaction_date": str(o.transaction_date or ""),
+			"modified": str(o.modified or ""),
 		}
 		for o in orders
 	]
 
 
 @frappe.whitelist()
+@_system_user_only
 def get_sales_order(order_name):
 	"""Return a single Sales Order with its items and taxes."""
 	if not frappe.db.exists("Sales Order", order_name):
 		frappe.throw(f"Sales Order {order_name} not found")
 
 	so = frappe.get_doc("Sales Order", order_name)
-	cost_center = so.items[0].cost_center if so.items else ""
+	cost_center = so.cost_center or (so.items[0].cost_center if so.items else "")
+	warehouse = so.set_warehouse or (so.items[0].warehouse if so.items else "")
 
 	def _actual_charge(keyword):
 		for t in (so.taxes or []):
@@ -248,6 +276,8 @@ def get_sales_order(order_name):
 
 	return {
 		"name": so.name,
+		"company": so.company,
+		"warehouse": warehouse,
 		"customer": so.customer,
 		"customer_name": so.customer_name,
 		"naming_series": so.naming_series,
@@ -273,6 +303,7 @@ def get_sales_order(order_name):
 # ──────────────────────────────────────────────────────────────────────────────
 
 @frappe.whitelist()
+@_system_user_only
 def create_sales_order(data):
 	"""Create a new draft Sales Order."""
 	if isinstance(data, str):
@@ -286,6 +317,9 @@ def create_sales_order(data):
 	so.transaction_date = data.get("date") or frappe.utils.today()
 	so.delivery_date = data.get("delivery_date") or frappe.utils.add_days(frappe.utils.today(), 7)
 	so.order_type = "Sales"
+	so.set_warehouse = data.get("warehouse") or ""
+	so.cost_center = data.get("cost_center") or ""
+	so.selling_price_list = data.get("price_list") or ""
 
 	if data.get("discount_percentage"):
 		so.additional_discount_percentage = data["discount_percentage"]
@@ -312,6 +346,8 @@ def create_sales_order(data):
 	for i in data.get("items", []):
 		so.append("items", {
 			"item_code": i["item_code"],
+			"warehouse": data.get("warehouse") or "",
+			"cost_center": data.get("cost_center") or "",
 			"qty": i["qty"],
 			"uom": i.get("uom"),
 			"rate": i.get("rate", 0),
@@ -327,6 +363,7 @@ def create_sales_order(data):
 
 
 @frappe.whitelist()
+@_system_user_only
 def update_sales_order(data):
 	"""Update an existing draft Sales Order."""
 	if isinstance(data, str):
@@ -359,6 +396,12 @@ def update_sales_order(data):
 		so.place_of_supply = None
 
 	so.transaction_date = data.get("date") or so.transaction_date
+	if "warehouse" in data:
+		so.set_warehouse = data.get("warehouse") or ""
+	if "cost_center" in data:
+		so.cost_center = data.get("cost_center") or ""
+	if "price_list" in data:
+		so.selling_price_list = data.get("price_list") or ""
 	if data.get("delivery_date"):
 		so.delivery_date = data["delivery_date"]
 	so.additional_discount_percentage = data.get("discount_percentage", 0)
@@ -390,6 +433,8 @@ def update_sales_order(data):
 	for i in data.get("items", []):
 		so.append("items", {
 			"item_code": i["item_code"],
+			"warehouse": data.get("warehouse") or "",
+			"cost_center": data.get("cost_center") or "",
 			"qty": i["qty"],
 			"uom": i.get("uom"),
 			"rate": i.get("rate", 0),
@@ -404,6 +449,7 @@ def update_sales_order(data):
 	return {"order_name": so.name}
 
 @frappe.whitelist()
+@_system_user_only
 def submit_sales_order(order_name):
 	"""Submit a draft Sales Order (docstatus 0 → 1)."""
 	if not order_name or not frappe.db.exists("Sales Order", order_name):

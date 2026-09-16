@@ -568,6 +568,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
+import { loadCachedPanel, saveCachedPanel, applyPanelEvent } from '../services/billPanelCache.js'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
@@ -632,6 +633,7 @@ try { localCostCenters.value = JSON.parse(localStorage.getItem('wb-cost-centers'
 const localAccounts = ref([])
 try { localAccounts.value = JSON.parse(localStorage.getItem('wb-visible-accounts') || '[]') } catch { localAccounts.value = [] }
 
+const orderCompany = ref(localStorage.getItem('wb-company') || '')
 const priceList = ref(localPriceLists.value[0] || 'Standard Selling')
 const taxTemplate = ref(localTaxTemplates.value[0] || '')
 const warehouse = ref(localStorage.getItem('wb-warehouse') || localWarehouses.value[0] || 'None')
@@ -732,20 +734,59 @@ function handleDocDateChange(days) {
   invoiceDate.value = toLocalISO(d)
 }
 
-async function fetchRecentInvoices() {
+function sidebarCacheParams() {
+  return {
+    date: sidebarDate.value,
+    series: sidebarSeries.value,
+    draftOnly: draftOnly.value,
+    company: localStorage.getItem('wb-company') || ''
+  }
+}
+
+function sortSidebarOrders(orders) {
+  return [...orders].sort((a, b) =>
+    String(b.modified || '').localeCompare(String(a.modified || '')) ||
+    String(b.name || '').localeCompare(String(a.name || ''))
+  )
+}
+
+async function fetchRecentInvoices(force = false) {
+  if (!force && !sidebarSearch.value) {
+    const cached = loadCachedPanel('Sales Order', sidebarCacheParams())
+    if (cached) {
+      recentInvoices.value = sortSidebarOrders(cached.filter(order => order.docstatus !== 2))
+      return
+    }
+  }
+
   sidebarLoading.value = true
   try {
-    recentInvoices.value = await frappeGet('ssplbilling.api.sales_order_api.get_sales_orders', {
+    const orders = await frappeGet('ssplbilling.api.sales_order_api.get_sales_orders', {
       query: sidebarSearch.value,
       limit: 100,
       transaction_date: sidebarDate.value,
       naming_series: sidebarSeries.value.join(','),
-      show_submitted: !draftOnly.value
+      show_submitted: !draftOnly.value,
+      company: localStorage.getItem('wb-company') || ''
     })
+    recentInvoices.value = sortSidebarOrders((orders || []).filter(order => order.docstatus !== 2))
+    if (!sidebarSearch.value) saveCachedPanel('Sales Order', sidebarCacheParams(), recentInvoices.value)
   } catch (e) {
     recentInvoices.value = []
+  } finally {
+    sidebarLoading.value = false
   }
-  sidebarLoading.value = false
+}
+
+function applySidebarPanelEvent(data) {
+  if (sidebarSearch.value) return false
+  const company = localStorage.getItem('wb-company') || ''
+  if (company && data?.row?.company && data.row.company !== company) return false
+  recentInvoices.value = sortSidebarOrders(applyPanelEvent(recentInvoices.value, data, {
+    date: sidebarDate.value,
+    draftOnly: draftOnly.value
+  }))
+  return true
 }
 
 function handleSidebarDateChange(days) {
@@ -772,6 +813,8 @@ async function handleSelectSidebarItem(item) {
 
     // Header
     invoiceNo.value = data.name
+    orderCompany.value = data.company || orderCompany.value
+    if (data.warehouse) warehouse.value = data.warehouse
     selectedSeries.value = data.naming_series || selectedSeries.value
     invoiceDate.value = data.transaction_date || invoiceDate.value
 
@@ -1084,6 +1127,7 @@ async function clearBill() {
   customAddress.value = { customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' }
   clearHistory()
   invoiceNo.value = 'NEW'
+  orderCompany.value = localStorage.getItem('wb-company') || ''
   isReturn.value = false
   isReadOnly.value = false
   isSaved.value = false
@@ -1182,7 +1226,10 @@ async function handleSave() {
   const isUpdate = isSaved.value
 
   const payload = {
-    company: localStorage.getItem('wb-company') || null,
+    company: orderCompany.value || localStorage.getItem('wb-company') || null,
+    warehouse: warehouse.value === 'None' ? '' : warehouse.value,
+    cost_center: costCenter.value === 'None' ? '' : costCenter.value,
+    price_list: priceList.value,
     naming_series: selectedSeries.value,
     customer: customerId.value,
     date: invoiceDate.value,
@@ -1311,6 +1358,7 @@ async function closePrintModal() {
   clearHistory()
 
   isSaved.value = false
+  orderCompany.value = localStorage.getItem('wb-company') || ''
   try {
     const nextNo = await frappeGet('ssplbilling.api.sales_order_api.get_next_order_no', { naming_series: selectedSeries.value })
     invoiceNo.value = nextNo || 'NEW'
@@ -2423,7 +2471,7 @@ onMounted(() => {
     refreshItemCache('Sales', priceList.value, warehouse.value)
   }
 
-  _billPanelCleanup = onBillPanelUpdate('Sales Order', sidebarSeries, fetchRecentInvoices)
+  _billPanelCleanup = onBillPanelUpdate('Sales Order', sidebarSeries, () => fetchRecentInvoices(true), applySidebarPanelEvent)
 })
 
 let _billPanelCleanup = null
