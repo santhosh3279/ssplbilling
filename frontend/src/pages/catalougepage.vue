@@ -2,6 +2,7 @@
   <div class="h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white main-content-wrapper">
     <div v-if="isLoggedIn" class="fixed top-4 right-4 z-[70] flex items-center gap-3 rounded-xl bg-slate-950/80 px-4 py-2 text-xs text-white border border-slate-800/50 shadow-lg">
       <span class="max-w-40 truncate">{{ userName }}</span>
+      <RouterLink v-if="websiteUser" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
       <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
     </div>
     <button
@@ -147,6 +148,14 @@
                       </tbody>
                     </table>
                   </div>
+                </div>
+                <div v-if="websiteUser" class="flex items-center justify-center gap-3 text-white">
+                  <template v-if="item.order_rate != null">
+                    <button type="button" :aria-label="`Decrease ${item.itemname}`" class="rounded-lg border border-slate-600 px-3 py-1" @click="adjustQuantity(item, -1)">−</button>
+                    <span class="w-8 text-center font-bold">{{ getQuantity(pageaddress, item.itemcode) }}</span>
+                    <button type="button" :aria-label="`Increase ${item.itemname}`" class="rounded-lg border border-slate-600 px-3 py-1" @click="adjustQuantity(item, 1)">+</button>
+                  </template>
+                  <span v-else class="text-sm text-slate-400">Price unavailable</span>
                 </div>
               </div>
             </div>
@@ -328,6 +337,14 @@
                   </h3>
                 </div>
 
+                <div v-if="websiteUser" class="flex items-center justify-center gap-3 border-t border-[var(--color-border)]/40 pt-3">
+                  <template v-if="item.order_rate != null">
+                    <button type="button" :aria-label="`Decrease ${item.itemname}`" class="rounded-lg border px-3 py-1" @click="adjustQuantity(item, -1)">−</button>
+                    <span class="w-8 text-center font-bold">{{ getQuantity(pageaddress, item.itemcode) }}</span>
+                    <button type="button" :aria-label="`Increase ${item.itemname}`" class="rounded-lg border px-3 py-1" @click="adjustQuantity(item, 1)">+</button>
+                  </template>
+                  <span v-else class="text-xs text-[var(--color-text-muted)]">Price unavailable</span>
+                </div>
                 <div class="space-y-2 shrink-0">
                   <!-- Barcode & Prices Table -->
                   <div v-if="item.barcode_prices && item.barcode_prices.length" class="pt-2 border-t border-[var(--color-border)]/40 shrink-0">
@@ -486,11 +503,12 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { frappeGet } from '../api.js'
+import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { frappeGet, frappePost } from '../api.js'
 import { encryptPrice, getFloatPrecision } from '../encryption.js'
 import { initFrappeSocket } from '../services/frappeSocket.js'
 import { session } from '../session.js'
+import { cartCount, getQuantity, setCartUser, setQuantity } from '../services/catalogueCart.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -505,7 +523,12 @@ const userName = computed(() => session.fullName.value || session.user.value)
 
 async function logout() {
   await session.logout()
+  setCartUser(null)
   showLogin.value = false
+}
+
+function adjustQuantity(item, delta) {
+  setQuantity(pageaddress, item.itemcode, getQuantity(pageaddress, item.itemcode) + delta)
 }
 
 function displayPrice(price) {
@@ -528,6 +551,8 @@ async function handleWebsiteLogin() {
       return
     }
     websiteUser.value = true
+    setCartUser(session.user.value)
+    await loadOffer()
     loginPassword.value = ''
     showLogin.value = false
   } catch (error) {
@@ -831,9 +856,10 @@ async function loadOffer(silent = false) {
   }
   error.value = null
   try {
-    const res = await frappeGet('ssplbilling.api.offer_api.get_offer_details', {
-      pageaddress: pageaddress
-    })
+    const response = websiteUser.value
+      ? await frappePost('ssplbilling.api.catalogue_order_api.get_customer_offer', { pageaddress }, { silent: true })
+      : await frappeGet('ssplbilling.api.offer_api.get_offer_details', { pageaddress })
+    const res = websiteUser.value ? response?.offer : response
     
     if (res) {
       // Blank cipher_map means encryption is off; clear any stale key.
@@ -1108,11 +1134,12 @@ function teardownOfferSocket() {
 }
 
 onMounted(() => {
-  session.checkWebsiteUser().catch((error) => {
+  session.checkWebsiteUser().then(() => {
+    if (websiteUser.value) setCartUser(session.user.value)
+  }).catch((error) => {
     websiteUser.value = false
     console.warn('[catalogue] Could not verify website user:', error)
-  })
-  loadOffer()
+  }).finally(() => loadOffer())
   setupOfferSocket()
   document.addEventListener('fullscreenchange', handleFullscreenChange)
   window.addEventListener('keydown', handleKeyDown)

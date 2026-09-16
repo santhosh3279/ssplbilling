@@ -11,6 +11,7 @@
 
       <div v-if="isLoggedIn" class="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-xl bg-slate-950/60 px-4 py-2 text-xs text-white border border-slate-800/50">
         <span class="max-w-40 truncate">{{ userName }}</span>
+        <RouterLink v-if="isWebsiteUser" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
         <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
       </div>
 
@@ -111,12 +112,14 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, RouterLink } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { session } from '../session.js'
+import { cartCount, setCartUser } from '../services/catalogueCart.js'
 
 const router = useRouter()
 const isLoggedIn = session.isLoggedIn
+const isWebsiteUser = session.isWebsiteUser
 const userName = computed(() => session.fullName.value || session.user.value)
 
 const loading = ref(true)
@@ -146,10 +149,13 @@ function openCatalogue(pageaddress) {
 
 async function logout() {
   await session.logout()
+  setCartUser(null)
 }
 
 onMounted(() => {
-  session.init().catch((err) => console.warn('[catalogueviewer] Session check failed:', err))
+  session.checkWebsiteUser().then(() => {
+    if (session.isWebsiteUser.value) setCartUser(session.user.value)
+  }).catch((err) => console.warn('[catalogueviewer] Session check failed:', err))
   fetchCatalogues()
 })
 </script>

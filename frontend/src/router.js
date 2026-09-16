@@ -54,6 +54,8 @@ import OfferPage from './pages/OfferPage.vue'
 import CatalougePage from './pages/catalougepage.vue'
 import Catelogue from './pages/catelogue.vue'
 import CatalogueViewer from './pages/catalogueviewer.vue'
+import CatalogueCart from './pages/CatalogueCart.vue'
+import CatalogueCheckout from './pages/CatalogueCheckout.vue'
 import Unreconciled from './pages/unreconciled.vue'
 import ChequeRegister from './pages/ChequeRegister.vue'
 import CashflowReport from './pages/CashflowReport.vue'
@@ -451,6 +453,18 @@ const routes = [
     name: 'CatalogueViewer',
     component: CatalogueViewer,
     meta: { public: true, title: 'Catalogue Viewer' },
+  },
+  {
+    path: '/catalogue-cart',
+    name: 'CatalogueCart',
+    component: CatalogueCart,
+    meta: { public: true, title: 'Catalogue Cart' },
+  },
+  {
+    path: '/catalogue-checkout',
+    name: 'CatalogueCheckout',
+    component: CatalogueCheckout,
+    meta: { public: true, title: 'Catalogue Checkout' },
   },
   {
     path: '/catelogue',
