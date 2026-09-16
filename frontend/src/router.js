@@ -444,13 +444,13 @@ const routes = [
     path: '/catalougepage/:pageaddress',
     name: 'CatalougePage',
     component: CatalougePage,
-    meta: { title: 'Catalogue' },
+    meta: { public: true, title: 'Catalogue' },
   },
   {
     path: '/catalogueviewer',
     name: 'CatalogueViewer',
     component: CatalogueViewer,
-    meta: { title: 'Catalogue Viewer' },
+    meta: { public: true, title: 'Catalogue Viewer' },
   },
   {
     path: '/catelogue',
