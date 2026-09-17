@@ -4,6 +4,8 @@
       ref="invoiceTemplateRef"
       title="SALES ORDER"
       title-bar-color="#b2dfb0"
+      :show-sidebar="!isSubwindow"
+      :show-back-button="!isSubwindow"
       :doc-number="invoiceNo"
       :party-id="customerId"
       :party-name="customerName"
@@ -22,16 +24,16 @@
       :items="items"
       :subtotal="subtotal"
       :item-discount-total="itemDiscountTotal"
+      :round-off="roundOff"
       :total-tax="totalTax"
       :total-amount="totalAmount"
-      :round-off="roundOff"
       :price-list="priceList"
       :tax-template="taxTemplate"
       :is-inclusive-tax="isInclusiveTax"
       :is-return="isReturn"
       :warehouse="warehouse"
-      :cost-center="costCenter"
       doctype="Sales Order"
+      :cost-center="costCenter"
       :income-account="incomeAccount"
       :sidebar-date="sidebarDate"
       :sidebar-items="recentInvoices"
@@ -42,8 +44,6 @@
       :sidebar-loading="sidebarLoading"
       :save-button-text="saveButtonText"
       :is-read-only="isReadOnly"
-      :show-submit-button="true"
-      :is-draft="isSaved && !isSubmitted"
       @sidebar-date-change="handleSidebarDateChange"
       @doc-date-change="handleDocDateChange"
       @update:sidebarSearch="sidebarSearch = $event"
@@ -64,16 +64,16 @@
       @back="goBack"
       @save="handleSave"
       @submit="handleSalesOrderSubmit"
+      :show-submit-button="true"
+      :is-draft="isSaved && !isSubmitted"
       @print="handlePrint"
       @discount-pct-keydown="handleDiscountPctKeydown"
       @discount-amt-keydown="handleDiscountAmtKeydown"
       @other-entry-enter="saveBtnRef?.focus()"
       @cancel="handleCancel"
-      @incentive="handleIncentive"
       @party-click="customerInitialQuery = ''; showCustomerModal = true"
     >
       <!-- Custom slots for additional logic if needed -->
-
       <template #row="{ item, index, formatQty }">
         <tr
           :ref="el => { if (el) rowRefs[index] = el }"
@@ -81,7 +81,7 @@
           class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-all"
           :class="{
             'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)] font-bold !text-[var(--color-text-on-focus)]': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
-            'bg-[var(--color-success)]/20': item._is_free && !item.deleted,
+            'discount-rule-row': (item._rule_discount != null || item._is_free) && !item.deleted,
             'opacity-40 bg-[var(--color-danger)]/10 grayscale-[0.5]': item.deleted,
             'hover:bg-[var(--color-surface-raised)]/50': !isReadOnly && selectedRowIdx !== index && editingRowIdx !== index && !item.deleted
           }"
@@ -109,7 +109,12 @@
 
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index && !item.deleted && !item._is_free ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
             {{ item.item_name }}
-            <span v-if="item._is_free" class="ml-1 rounded bg-[var(--color-success)] text-[var(--color-text-on-highlight)] px-1 text-[10px] font-bold uppercase leading-tight">Free</span>
+            <span v-if="item._is_free" class="ml-1 rounded bg-[var(--color-success)] text-[var(--color-text-on-highlight)] px-1.5 text-[20px] font-bold uppercase leading-tight">Free</span>
+            <span
+              v-if="item._is_free && freeRowRule(item)"
+              class="ml-1 rounded border border-[var(--color-success)]/60 px-1.5 text-[20px] font-bold uppercase leading-tight text-[var(--color-success)]"
+              :title="freeRowRule(item)"
+            >{{ freeRowRule(item) }}</span>
           </td>
 
           <!-- qty -->
@@ -173,9 +178,13 @@
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format2p(item.amount) }}</td>
           <td class="px-2 py-1 text-center">
             <button
-              class="rounded px-1 py-0.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]"
-              :class="item.deleted ? 'text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold' : (selectedRowIdx === index ? 'text-[var(--color-text)]/60 hover:text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')"
-              @click.stop="selectedRowIdx = index; deleteItem(index)"
+              :disabled="isReadOnly"
+              :tabindex="isReadOnly ? -1 : 0"
+              class="rounded px-1 py-0.5"
+              :class="isReadOnly
+                ? 'text-[var(--color-text-muted)]/40 cursor-not-allowed'
+                : ['hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]', item.deleted ? 'text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold' : (selectedRowIdx === index ? 'text-[var(--color-text)]/60 hover:text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')]"
+              @click.stop="!isReadOnly && (selectedRowIdx = index, deleteItem(index))"
             >
               {{ item.deleted ? 'Undo' : '×' }}
             </button>
@@ -186,37 +195,39 @@
       <template #bottom-left>
         <div class="flex flex-col h-full overflow-hidden">
           <div class="flex-1 overflow-y-auto px-4 pb-4 pt-2 scrollbar-none">
-            <div v-if="selectedRowIdx === -1 && !pendingItem" class="text-sm text-[var(--color-text-muted)] italic">
-              Scan an item or select a row to see history.
-            </div>
-            <div v-else-if="historyLoading" class="text-sm text-[var(--color-info)] animate-pulse">
-              Fetching history...
-            </div>
-            <div v-else-if="!selectedItemHistory.length" class="text-sm text-[var(--color-text-muted)] italic">
-              No previous history found for this customer.
-            </div>
-            <div v-else class="max-h-[110px] overflow-y-auto mb-4 custom-scrollbar">
-              <table class="w-full text-left text-lg border-collapse">
-                <thead class="sticky top-0 bg-[var(--color-bg)] z-10">
-                  <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
-                    <th class="py-0.5 pr-1 font-bold">Bill</th>
-                    <th class="py-0.5 px-1 font-bold">Date</th>
-                    <th class="py-0.5 px-1 text-right font-bold">Qty</th>
-                    <th class="py-0.5 px-1 text-right font-bold">Rate</th>
-                    <th class="py-0.5 pl-1 text-right font-bold">Disc%</th>
-                  </tr>
-                </thead>
-                <tbody class="divide-y divide-[var(--color-border)]/30">
-                  <tr v-for="(h, i) in selectedItemHistory.slice(0, 10)" :key="i" class="text-[var(--color-text)]">
-                    <td class="py-1 pr-1 font-mono leading-none whitespace-nowrap">{{ h.name }}</td>
-                    <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
-                    <td class="py-1 px-1 text-right font-mono leading-none">{{ h.qty }}</td>
-                    <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(precision) }}</td>
-                    <td class="py-1 pl-1 text-right font-mono leading-none text-[var(--color-warning)]">{{ h.discount || 0 }}%</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <template>
+              <div v-if="selectedRowIdx === -1 && !pendingItem" class="text-sm text-[var(--color-text-muted)] italic">
+                Scan an item or select a row to see history.
+              </div>
+              <div v-else-if="historyLoading" class="text-sm text-[var(--color-info)] animate-pulse">
+                Fetching history...
+              </div>
+              <div v-else-if="!selectedItemHistory.length" class="text-sm text-[var(--color-text-muted)] italic">
+                No previous history found for this customer.
+              </div>
+              <div v-else class="max-h-[110px] overflow-y-auto mb-4 custom-scrollbar">
+                <table class="w-full text-left text-lg border-collapse">
+                  <thead class="sticky top-0 bg-[var(--color-bg)] z-10">
+                    <tr class="text-[var(--color-text-muted)] border-b border-[var(--color-border)]/50">
+                      <th class="py-0.5 pr-1 font-bold">Bill</th>
+                      <th class="py-0.5 px-1 font-bold">Date</th>
+                      <th class="py-0.5 px-1 text-right font-bold">Qty</th>
+                      <th class="py-0.5 px-1 text-right font-bold">Rate</th>
+                      <th class="py-0.5 pl-1 text-right font-bold">Disc%</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-[var(--color-border)]/30">
+                    <tr v-for="(h, i) in selectedItemHistory.slice(0, 10)" :key="i" class="text-[var(--color-text)]">
+                      <td class="py-1 pr-1 font-mono leading-none whitespace-nowrap">{{ h.name }}</td>
+                      <td class="py-1 px-1 font-mono leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
+                      <td class="py-1 px-1 text-right font-mono leading-none">{{ h.qty }}</td>
+                      <td class="py-1 px-1 text-right font-mono leading-none font-bold">{{ h.rate.toFixed(precision) }}</td>
+                      <td class="py-1 pl-1 text-right font-mono leading-none text-[var(--color-warning)]">{{ h.discount || 0 }}%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </template>
 
             <!-- Warehouse Stock -->
             <div v-if="activeItemCode && itemStock.length" class="border-t border-[var(--color-border)] pt-2">
@@ -303,8 +314,8 @@
               <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Ignore Pricing Rule</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
-              <input type="checkbox" v-model="isReturn" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-danger)] disabled:opacity-50" />
-              <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Sale Return</span>
+              <input ref="halfTaxDiscountRef" type="checkbox" v-model="halfTaxDiscount" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-success)] disabled:opacity-50" />
+              <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Half Tax Discount</span>
             </label>
           </div>
 
@@ -348,7 +359,7 @@
       </template>
 
       <template #actions>
-        <div class="flex flex-col gap-2 h-full py-2">
+        <div class="flex flex-col gap-2 h-full py-2 overflow-y-auto">
           <div class="rounded-xl border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-3.5 shadow-2xl">
             <div class="flex justify-between items-start mb-1">
               <div class="text-lg font-black uppercase tracking-[0.3em] text-[var(--color-highlight)]">Total Amount</div>
@@ -364,9 +375,9 @@
             <button @click="handlePrint" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] cursor-not-allowed'">Print</button>
           </div>
           <div class="flex gap-2">
-            <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>
-            <button @click="handleIncentive" :disabled="isSubmitted" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isSubmitted ? 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/20 text-[var(--color-text-muted)] cursor-not-allowed' : 'border-[#D8C9A8] bg-[#EDE3CC] text-[#4A3520] hover:bg-[#E0D4B8]'">Incentive</button>
-          </div>
+            <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>          </div>
+          <button @click="handleBarcodePrint" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-3xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors">Print Barcode</button>
+          <button v-if="isSaved && !isSubmitted" @click="handleSalesOrderSubmit" class="w-full rounded border border-[var(--color-success)] bg-[var(--color-success)] px-4 py-2.5 text-center text-2xl font-semibold text-white">Submit Order</button>
         </div>
       </template>
 
@@ -419,11 +430,39 @@
                 @keydown="handleNewCodeKeydown"
               />
             </td>
-            <td colspan="9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to invoice</td>
+            <td colspan="9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to order</td>
           </tr>
         </template>
       </template>
     </Item_Invoice_Template>
+
+    <!-- Discount Rules Overlay Badge -->
+    <div v-if="activeItemCode && activeItemDiscountRules.length" class="fixed top-3 right-6 z-[120] flex items-center gap-5 bg-[var(--color-focus)]/30 backdrop-blur-md text-[var(--color-text)] border border-[var(--color-focus)]/40 rounded-3xl px-7 py-4.5 font-mono shrink-0 font-bold max-w-[600px] shadow-2xl">
+      <span class="text-6xl leading-none">🏷️</span>
+      <div class="flex flex-col text-left leading-tight">
+        <span class="text-lg uppercase tracking-wider text-[var(--color-text-muted)] font-sans font-black">Active Offer</span>
+        <span class="truncate font-sans font-black text-4xl text-[var(--color-text)]">
+          {{ activeItemDiscountRules[0].rule_name }}
+        </span>
+        <span class="text-xl text-[var(--color-text-muted)] font-sans mt-1.5 font-normal">
+          <span v-if="activeItemDiscountRules[0].discount_type === 'Percentage Discount'">
+            {{ activeItemDiscountRules[0].percentage_discount }}% Off (Min Qty: {{ activeItemDiscountRules[0].min_quantity }})
+          </span>
+          <span v-else-if="activeItemDiscountRules[0].discount_type === 'Product Discount'">
+            Buy {{ activeItemDiscountRules[0].min_quantity }} Get {{ activeItemDiscountRules[0].free_quantity }} Free
+          </span>
+          <span v-else-if="activeItemDiscountRules[0].discount_type === 'X to Y product discount'">
+            X to Y Offer Active
+          </span>
+          <span v-else-if="activeItemDiscountRules[0].discount_type === 'Custom Logic'">
+            Tiered Offer Active
+          </span>
+        </span>
+      </div>
+      <span v-if="activeItemDiscountRules.length > 1" class="text-xl bg-[var(--color-midlight)]/45 text-[var(--color-text)] rounded-lg px-2 py-1 ml-1.5 font-sans shrink-0 font-extrabold">
+        +{{ activeItemDiscountRules.length - 1 }}
+      </span>
+    </div>
 
     <QuickItemSearch
       ref="quickSearchRef"
@@ -461,7 +500,7 @@
       :show="showCustomerModal"
       skip-date-filter
       initial-type="Customer"
-      :allowed-types="['Customer', 'Supplier', 'Employee']"
+      :allowed-types="['Customer']"
       :initial-query="customerInitialQuery"
       :hide-secondary="false"
       :show-hide-secondary="false"
@@ -501,15 +540,6 @@
       @jump="handleJump"
     />
 
-    <IncentiveEntry
-      :show="showIncentiveModal"
-      doctype="Sales Invoice"
-      :docname="isSaved ? invoiceNo : ''"
-      :initial-rows="incentiveRows"
-      @close="showIncentiveModal = false"
-      @update:rows="onIncentiveSaved"
-    />
-
     <CustomAddress
       v-if="showCustomAddressModal"
       :initial-data="customAddress"
@@ -520,7 +550,7 @@
     <Warning
       :show="showRepriceChoice"
       title="Party Changed"
-      message="This document already has items. Keep the rates as they are, or re-apply the price list, pricing rules and party modifier for the new party?"
+      message="This bill already has items. Keep the rates as they are, or re-apply the price list, pricing rules and party modifier for the new party?"
       cancel-label="Retain Prices (Esc)"
       confirm-label="Reprice"
       @close="retainCurrentRates"
@@ -529,8 +559,8 @@
 
     <Warning
       :show="showClearWarning"
-      title="Clear Bill"
-      message="All items will be removed and a new bill number will be assigned."
+      title="Clear Order"
+      message="All items will be removed and a new order number will be assigned."
       @close="showClearWarning = false"
       @confirm="showClearWarning = false; clearBill()"
     />
@@ -540,20 +570,20 @@
       title="Exit Page"
       message="Are you sure you want to exit? Unsaved changes will be lost."
       @close="showExitWarning = false"
-      @confirm="router.push('/')"
+      @confirm="goBack()"
     />
 
     <ShortcutPage
       :show="showShortcutPage"
       extra-title="Sales Order"
       :extra="[
-        { key: 'F2', desc: 'Clear order / refresh order number' },
-        { key: 'F3', desc: 'Focus modify panel' },
+        { key: 'F2', desc: 'Clear bill / refresh bill number' },
+        { key: 'F3', desc: 'Search bills in the Modify Bill panel' },
         { key: 'F5 / P', desc: 'Print order' },
 
         { key: 'F6', desc: 'Open Custom Address' },
         { key: 'F8 / Ctrl+S', desc: 'Save order' },
-        { key: 'M', desc: 'Modify order (when order is open)' },
+        { key: 'M', desc: 'Modify bill (when bill is open)' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
       ]"
@@ -562,6 +592,24 @@
 
     <!-- Hidden file input for CSV import -->
     <input ref="csvImportRef" type="file" accept=".csv" class="hidden" @change="onCsvFileSelected" />
+
+    <!-- Barcode Print Subwindow -->
+    <BarcodePrintPage
+      v-if="showBarcodeModal"
+      isSubWindow
+      :billNo="invoiceNo"
+      :items="activeItems"
+      @close="showBarcodeModal = false"
+    />
+
+    <!-- Purchase-history modal (customer) -->
+    <PartyHistoryModal
+      v-model:show="showHistoryModal"
+      :party-name="customerName"
+      party-noun="customer"
+      :history="customerSalesHistory"
+      :current-items="activeItems"
+    />
   </div>
 </template>
 
@@ -572,6 +620,8 @@ import { loadCachedPanel, saveCachedPanel, applyPanelEvent } from '../services/b
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
+import PartyHistoryModal from '../components/PartyHistoryModal.vue'
+import BarcodePrintPage from './BarcodePrintPage.vue'
 import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
@@ -581,7 +631,6 @@ import { clearQuickQtyMap } from '../services/quickQty.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerPrice from '../components/CustomerPrice.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
-import IncentiveEntry from '../components/IncentiveEntry.vue'
 import CustomAddress from '../components/CustomAddress.vue'
 import Warning from '../components/Warning.vue'
 import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
@@ -598,9 +647,17 @@ import { useShortcuts } from '../services/shortcutManager'
 import { session } from '../session'
 import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
+import { canAccessTile } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, toLocalISO } from '../services/serverTime'
+const props = defineProps({
+  isSubwindow: Boolean,
+  invoiceName: String
+})
+
+const emit = defineEmits(['close'])
+
 const router = useRouter()
 
 const inheritedUser = computed(() => {
@@ -609,10 +666,11 @@ const inheritedUser = computed(() => {
 })
 
 // --- Data Fetching & State Management ---
-const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
+const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache, discountRules } = useItemCache()
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
-const { 
-  fetchCustomerSalesHistory, hasHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading, 
+const {
+  fetchCustomerSalesHistory, hasHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading,
+  customerSalesHistory,
   fetchItemStock, itemStock, stockLoading,
   fetchItemPrices, itemPrices, pricesLoading
 } = useCustomerHistory()
@@ -633,14 +691,15 @@ try { localCostCenters.value = JSON.parse(localStorage.getItem('wb-cost-centers'
 const localAccounts = ref([])
 try { localAccounts.value = JSON.parse(localStorage.getItem('wb-visible-accounts') || '[]') } catch { localAccounts.value = [] }
 
-const orderCompany = ref(localStorage.getItem('wb-company') || '')
 const priceList = ref(localPriceLists.value[0] || 'Standard Selling')
 const taxTemplate = ref(localTaxTemplates.value[0] || '')
 const warehouse = ref(localStorage.getItem('wb-warehouse') || localWarehouses.value[0] || 'None')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || localCostCenters.value[0] || 'None')
 const incomeAccount = ref(localStorage.getItem('wb-income-account') || localAccounts.value[0] || 'None')
 const isInclusiveTax = ref(localStorage.getItem('wb-tax-type-incl') === '1')
-const isReturn = ref(false)
+const isReturn = ref(false) // Sales Orders cannot be returns.
+const halfTaxDiscountRef = ref(null)
+const halfTaxDiscount = ref(false)
 
 // --- Additional Charges ---
 const freightEntry = ref('')
@@ -662,9 +721,8 @@ const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, 
 const showSeriesModal = ref(false)
 const showCustomerModal = ref(false)
 const showShortcutPage = ref(false)
-const showIncentiveModal = ref(false)
-const incentiveRows = ref([])
 const showCustomAddressModal = ref(false)
+const showHistoryModal = ref(false)
 const customAddress = ref({ customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' })
 const showClearWarning = ref(false)
 const showRepriceChoice = ref(false)
@@ -678,11 +736,14 @@ const inclusiveTaxRef = ref(null)
 const ignoreRuleRef = ref(null)
 const costCenterRef = ref(null)
 const showPrintModal = ref(false)
+const showBarcodeModal = ref(false)
 const pendingClearAfterPrint = ref(false)
 
 const lastEnterTime = ref(0)
 const showPriceDetectModal = ref(false)
 const showJumpModal = ref(false)
+const showGstBillCreator = ref(false)
+const showBillMirrorCreator = ref(false)
 const priceDetectData = ref(null)
 const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: number }
 
@@ -693,6 +754,11 @@ const invoiceDate = ref(serverToday())
 const sidebarDate = ref(serverToday())
 const sidebarSearch = ref('')
 const sidebarSeries = ref([])
+watch(availableSeries, (newVal) => {
+  if (newVal && newVal.length > 0) {
+    sidebarSeries.value = [...newVal]
+  }
+}, { immediate: true })
 const draftOnly = ref(false)
 const sidebarLoading = ref(false)
 const isLoadingBill = ref(false)
@@ -708,19 +774,7 @@ if (!tabId) {
 
 const hasLock = ref(false)
 
-async function releaseLock() {
-  if (!hasLock.value || !invoiceNo.value || invoiceNo.value === 'NEW') return
-  try {
-    await frappePost('ssplbilling.api.salesinvoice_api.release_bill_edit', {
-      bill_no: invoiceNo.value,
-      tab_id: tabId
-    })
-  } catch (err) {
-    console.error('Failed to release lock:', err)
-  } finally {
-    hasLock.value = false
-  }
-}
+async function releaseLock() {}
 
 const saveButtonText = computed(() => {
   if (!isSaved.value) return 'Save'
@@ -734,6 +788,17 @@ function handleDocDateChange(days) {
   invoiceDate.value = toLocalISO(d)
 }
 
+// Same-date bills must stay adjacent so the sidebar's date headers form one
+// bucket per day; dates descending, bill number descending within a day.
+function sortSidebarOrders(list) {
+  return [...list].sort((a, b) => {
+    const dateA = a.posting_date || a.transaction_date || ''
+    const dateB = b.posting_date || b.transaction_date || ''
+    if (dateA !== dateB) return dateB.localeCompare(dateA)
+    return b.name.localeCompare(a.name)
+  })
+}
+
 function sidebarCacheParams() {
   return {
     date: sidebarDate.value,
@@ -741,13 +806,6 @@ function sidebarCacheParams() {
     draftOnly: draftOnly.value,
     company: localStorage.getItem('wb-company') || ''
   }
-}
-
-function sortSidebarOrders(orders) {
-  return [...orders].sort((a, b) =>
-    String(b.modified || '').localeCompare(String(a.modified || '')) ||
-    String(b.name || '').localeCompare(String(a.name || ''))
-  )
 }
 
 async function fetchRecentInvoices(force = false) {
@@ -779,9 +837,11 @@ async function fetchRecentInvoices(force = false) {
 }
 
 function applySidebarPanelEvent(data) {
-  if (sidebarSearch.value) return false
-  const company = localStorage.getItem('wb-company') || ''
-  if (company && data?.row?.company && data.row.company !== company) return false
+  if (sidebarSearch.value) return false // search results — let the refetch handle it
+  const currentCompany = localStorage.getItem('wb-company') || ''
+  if (currentCompany && data?.row?.company && data.row.company !== currentCompany) {
+    return false
+  }
   recentInvoices.value = sortSidebarOrders(applyPanelEvent(recentInvoices.value, data, {
     date: sidebarDate.value,
     draftOnly: draftOnly.value
@@ -813,7 +873,6 @@ async function handleSelectSidebarItem(item) {
 
     // Header
     invoiceNo.value = data.name
-    orderCompany.value = data.company || orderCompany.value
     if (data.warehouse) warehouse.value = data.warehouse
     selectedSeries.value = data.naming_series || selectedSeries.value
     invoiceDate.value = data.transaction_date || invoiceDate.value
@@ -879,6 +938,7 @@ async function handleSelectSidebarItem(item) {
         deleted: false,
         _is_free: effectiveRate === 0,
         amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(precision)),
+        _rowKey: makeRowKey(),
       }
     })
 
@@ -922,6 +982,7 @@ const quickSearchQuery = computed(() => {
   }
   return newItemCode.value
 })
+
 const quickSearchRef = ref(null)
 const quickSearchAnchor = ref(null)
 const showItemSearch = ref(false)
@@ -949,6 +1010,59 @@ const activeItemCode = computed(() => {
   if (selectedRowIdx.value !== -1) return items.value[selectedRowIdx.value]?.item_code
   return null
 })
+
+// Extracted from activeItemDiscountRules so a free row can ask the same question about
+// its own item code, not just whichever row is focused.
+function discountRulesForItem(itemCode) {
+  if (!itemCode || !discountRules.value || !discountRules.value.length) return []
+  const code = itemCode.toLowerCase()
+
+  return discountRules.value.filter(rule => {
+    if (!rule.enabled) return false
+
+    // Check validity dates
+    const today = new Date().toISOString().slice(0, 10)
+    if (rule.start_date && today < rule.start_date) return false
+    if (rule.end_date   && today > rule.end_date)   return false
+
+    // Check price list restriction if any
+    if (rule.price_list && rule.price_list !== priceList.value) return false
+
+    // Check matches scope
+    if (rule.discount_type === 'X to Y product discount') {
+      const codes = (rule.x_to_y_table || []).map(i => (i.item_code || '').toLowerCase())
+      if (codes.includes(code)) return true
+    }
+    if (rule.applies_to === 'Item Code') {
+      const codes = (rule.items || []).map(i => (i.item_code || '').toLowerCase())
+      if (codes.includes(code)) return true
+    }
+    if (rule.applies_to === 'Product Group') {
+      const cached = lookupItemInCache(itemCode)
+      if (cached?.item_group && rule.product_group) {
+        if (cached.item_group.toLowerCase() === rule.product_group.toLowerCase()) return true
+      }
+    }
+    return false
+  })
+}
+
+const activeItemDiscountRules = computed(() => discountRulesForItem(activeItemCode.value))
+
+// A free row carries no rule reference (ERPNext only stores rate 0), so the rule is
+// re-derived from the item code. Product-type rules are what produce free rows, so those
+// win when an item is covered by several.
+function freeRowRule(item) {
+  const rules = discountRulesForItem(item?.item_code)
+  if (!rules.length) return ''
+  const productRule = rules.find(r =>
+    r.discount_type === 'Product Discount' || r.discount_type === 'X to Y product discount'
+  )
+  const rule = productRule || rules[0]
+  // Rule names are already written as "10+1"/"120+24", so appending the quantities would
+  // just repeat them.
+  return rule.rule_name || rule.name || ''
+}
 
 const filteredItemPrices = computed(() => {
   return (itemPrices.value || []).filter(p => {
@@ -1089,7 +1203,13 @@ watch(taxTemplate, (val) => {
 
 // --- Methods ---
 
-function goBack() { router.push('/') }
+function goBack() {
+  if (props.isSubwindow) {
+    emit('close')
+  } else {
+    router.push('/')
+  }
+}
 
 function formatDateShort(dateStr) {
   return formatDMY(dateStr, '-')
@@ -1123,22 +1243,27 @@ async function clearBill() {
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''
-  incentiveRows.value = []
   customAddress.value = { customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' }
   clearHistory()
   invoiceNo.value = 'NEW'
-  orderCompany.value = localStorage.getItem('wb-company') || ''
-  isReturn.value = false
+  halfTaxDiscount.value = false
   isReadOnly.value = false
   isSaved.value = false
   isSubmitted.value = false
 
   if (selectedSeries.value) {
     try {
-      const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Sales Order' })
-      invoiceNo.value = res.order_no || 'NEW'
-      defaultTemplate.value = res.print_format || ''
-    } catch {
+      const cached = JSON.parse(localStorage.getItem('wb-settings-v2') || 'null')
+      const seriesEntry = cached?.data?.billing_series?.find(bs => bs.series === selectedSeries.value)
+      const userDefaults = cached?.data?.user_defaults || {}
+
+      invoiceNo.value = await frappeGet('ssplbilling.api.sales_order_api.get_next_order_no', { naming_series: selectedSeries.value }) || 'NEW'
+      defaultTemplate.value = seriesEntry?.print_format || ''
+      if (userDefaults.warehouse) warehouse.value = userDefaults.warehouse
+      if (userDefaults.cost_center) costCenter.value = userDefaults.cost_center
+      if (userDefaults.income_account) incomeAccount.value = userDefaults.income_account
+    } catch (e) {
+      console.warn('[SalesOrder] Failed to resolve series defaults locally:', e)
       invoiceNo.value = 'NEW'
     }
   }
@@ -1156,7 +1281,9 @@ function handleF2() {
 }
 
 function handleF3() {
-  nextTick(() => { invoiceTemplateRef.value?.focusSidebarList() })
+  // The search box, not the list: F3 is reached with a bill number in mind, and landing on the
+  // list means arrowing through it instead of typing the number.
+  nextTick(() => { invoiceTemplateRef.value?.focusSidebar() })
 }
 
 function handleModifyPanelKeydown(e) {
@@ -1196,7 +1323,7 @@ async function handleSave() {
 
   const active = items.value.filter(i => !i.deleted)
   if (!active.length) { alert('No items to save'); return }
-  
+
   if (!customerId.value) { alert('Please select a customer first.'); return; }
   if (!selectedSeries.value) { alert('Please select a series first.'); return; }
 
@@ -1226,7 +1353,7 @@ async function handleSave() {
   const isUpdate = isSaved.value
 
   const payload = {
-    company: orderCompany.value || localStorage.getItem('wb-company') || null,
+    company: localStorage.getItem('wb-company') || null,
     warehouse: warehouse.value === 'None' ? '' : warehouse.value,
     cost_center: costCenter.value === 'None' ? '' : costCenter.value,
     price_list: priceList.value,
@@ -1242,7 +1369,7 @@ async function handleSave() {
       item_code: i.item_code,
       qty: i.qty,
       uom: i.uom || 'Nos',
-      rate: parseFloat(((i.rate || 0) * (1 - getDiscPrecision(i.discount) / 100)).toFixed(precision)),
+      rate: i.rate || 0,
       price_list_rate: i._base_rate || i.price_list_rate || i.rate,
       discount_percentage: i.discount || 0,
     }))
@@ -1268,9 +1395,8 @@ async function handleSave() {
       isReadOnly.value = true
       isSaved.value = true
       fetchRecentInvoices()
-      if (!isUpdate) {
-        pendingClearAfterPrint.value = true
-      }
+      // Keep the saved draft open so it can be submitted after print options close.
+      pendingClearAfterPrint.value = false
       showPrintModal.value = true
     }
   } catch (error) {
@@ -1291,47 +1417,42 @@ function handleDiscountAmtKeydown(e) {
 }
 
 async function handleModify() {
-  if (isSubmitted.value) {
-    alert('Bill is submitted. Modify is denied.')
-    return
-  }
-  if (!isReadOnly.value || !isSaved.value) return
-
-  try {
-    const res = await frappePost('ssplbilling.api.salesinvoice_api.record_bill_edit', {
-      bill_no: invoiceNo.value,
-      tab_id: tabId
-    })
-    if (res && res.status === 'conflict') {
-      if (res.reason === 'same_user_other_tab') {
-        alert('this bill is already editing by you in another browser tab')
-      } else {
-        alert(`the bill is in editing by the user: ${res.user}`)
-      }
-      return
-    }
-    hasLock.value = true
-  } catch (err) {
-    console.error(err)
-    alert(err.message || 'Failed to check bill editing status.')
-    return
-  }
-
+  if (isSubmitted.value || !isReadOnly.value || !isSaved.value) return
   isReadOnly.value = false
-  if (items.value.length > 0) {
-    focusRow(0)
-  } else {
-    focusBarcodeInput()
+  if (items.value.length) focusRow(0)
+  else focusBarcodeInput()
+}
+
+async function handleSalesOrderSubmit() {
+  if (!isSaved.value || isSubmitted.value) return
+  try {
+    const res = await frappePost('ssplbilling.api.sales_order_api.submit_sales_order', { order_name: invoiceNo.value })
+    if (res.order_name) {
+      isSubmitted.value = true
+      isReadOnly.value = true
+      fetchRecentInvoices()
+    }
+  } catch (e) {
+    console.error('Failed to submit sales order:', e)
+    alert('Failed to submit sales order.')
   }
 }
 
 function handlePrint() {
   if (!isReadOnly.value) return
   if (!isSaved.value) {
-    alert('Please save the invoice before printing.')
+    alert('Please save the order before printing.')
     return
   }
   showPrintModal.value = true
+}
+
+function handleBarcodePrint() {
+  if (!isSaved.value) {
+    alert('Please save the order before printing barcodes.')
+    return
+  }
+  showBarcodeModal.value = true
 }
 
 async function closePrintModal() {
@@ -1353,18 +1474,13 @@ async function closePrintModal() {
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''
-  incentiveRows.value = []
   customAddress.value = { customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' }
   clearHistory()
 
   isSaved.value = false
-  orderCompany.value = localStorage.getItem('wb-company') || ''
-  try {
-    const nextNo = await frappeGet('ssplbilling.api.sales_order_api.get_next_order_no', { naming_series: selectedSeries.value })
-    invoiceNo.value = nextNo || 'NEW'
-  } catch {
-    invoiceNo.value = 'NEW'
-  }
+  isSubmitted.value = false
+  isReadOnly.value = false
+  invoiceNo.value = await frappeGet('ssplbilling.api.sales_order_api.get_next_order_no', { naming_series: selectedSeries.value }) || 'NEW'
 
   nextTick(() => { newCodeInput.value?.focus() })
 }
@@ -1373,38 +1489,25 @@ function handleCancel() {
   const hasParty = customerId.value;
   const hasItems = activeItems.value.length > 0;
 
-  if (!isReadOnly.value && (hasParty || hasItems)) {
-    showExitWarning.value = true;
-  } else {
-    if (activeItems.value.length === 0 || isReadOnly.value) {
-      router.push('/');
+  if (props.isSubwindow) {
+    if (!isReadOnly.value && (hasParty || hasItems)) {
+      showExitWarning.value = true;
     } else {
-      focusBarcodeInput();
+      goBack();
+    }
+  } else {
+    if (!isReadOnly.value && (hasParty || hasItems)) {
+      showExitWarning.value = true;
+    } else {
+      if (activeItems.value.length === 0 || isReadOnly.value) {
+        goBack();
+      } else {
+        focusBarcodeInput();
+      }
     }
   }
 }
 
-function handleIncentive() { showIncentiveModal.value = true }
-
-function onIncentiveSaved(rows) {
-  incentiveRows.value = rows
-  showIncentiveModal.value = false
-}
-
-async function handleSalesOrderSubmit() {
-  if (!isSaved.value || isSubmitted.value) return
-  try {
-    const res = await frappePost('ssplbilling.api.sales_order_api.submit_sales_order', { order_name: invoiceNo.value })
-    if (res.order_name) {
-      isSubmitted.value = true
-      isReadOnly.value = true
-      fetchRecentInvoices()
-    }
-  } catch (e) {
-    console.error('Failed to submit sales order:', e)
-    alert('Failed to submit sales order.')
-  }
-}
 
 // --- Export / Import CSV ---
 const csvImportRef = ref(null)
@@ -1451,6 +1554,7 @@ function onCsvFileSelected(e) {
     const idx = (col) => header.indexOf(col)
     const parsed = []
     for (let i = 1; i < lines.length; i++) {
+      // handle quoted fields
       const cols = lines[i].match(/(".*?"|[^,]+)(?=,|$)/g) || []
       const get = (col) => (cols[idx(col)] || '').replace(/^"|"$/g, '').replace(/""/g, '"').trim()
       const item_code = get('item_code')
@@ -1558,10 +1662,10 @@ function applyRegionalTaxLogic() {
   if (!customerState.value || !taxTemplate.value) return
   const companyState = localStorage.getItem('wb-company-state') || ''
   if (!companyState || !customerState.value) return
-  
+
   const isInterState = companyState.toLowerCase() !== customerState.value.toLowerCase()
   const currentTax = taxTemplate.value
-  
+
   if (isInterState) {
     if (currentTax.toLowerCase().includes('in-state')) {
       const target = currentTax.replace(/in-state/i, 'Out-State')
@@ -1578,6 +1682,7 @@ function applyRegionalTaxLogic() {
 }
 
 function handleItemEntry() {
+  if (isReadOnly.value) return
   if (!newItemCode.value) return
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) return
 
@@ -1660,17 +1765,6 @@ function handleNewCodeKeydown(e) {
 
 function handlePendingQtyKeydown(e) {
   if (e.key === 'Enter') {
-    const now = Date.now()
-    const isDouble = (now - lastEnterTime.value < 400)
-    lastEnterTime.value = now
-
-    if (isDouble && (!pendingItem.value.qty || pendingItem.value.qty === 0)) {
-      e.preventDefault()
-      cancelPendingItem(true)
-      lastEnterTime.value = 0
-      return
-    }
-
     if (pendingItem.value.qty) {
       e.preventDefault()
       if (getItemUoms(pendingItem.value.item_code).length > 1) {
@@ -1681,6 +1775,8 @@ function handlePendingQtyKeydown(e) {
     }
   } else if (e.key === 'Escape') {
     cancelPendingItem()
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault(); openItemSearch(pendingItem.value.item_code); return
   } else if (e.key === 'Backspace' && (!pendingItem.value.qty || pendingItem.value.qty === 0)) {
     e.preventDefault()
     cancelPendingItem()
@@ -1690,7 +1786,8 @@ function handlePendingQtyKeydown(e) {
 function handleRowKeydown(e, idx) {
   const item = items.value[idx]
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
-  if (e.key === 'Enter' && !item.deleted && !item._is_free) { e.preventDefault(); focusEditField('code', idx) }
+  if (e.key === 'ArrowRight') { e.preventDefault(); openItemSearch(item.item_code, idx) }
+  else if (e.key === 'Enter' && !item.deleted && !item._is_free) { e.preventDefault(); focusEditField('code', idx) }
   else if (e.key === 'ArrowDown') { e.preventDefault(); if (idx < items.value.length - 1) focusRow(idx + 1, 'down'); else focusBarcodeInput() }
   else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1, 'up') }
   else if (e.key === 'End') {
@@ -1702,18 +1799,19 @@ function handleRowKeydown(e, idx) {
   else if (e.key === 'Escape') {
     e.preventDefault()
     e.stopPropagation()
-    if (activeItems.value.length === 0) {
-      router.push('/')
+    if (activeItems.value.length === 0 || props.isSubwindow) {
+      goBack()
     } else {
       clearItem(idx)
       focusBarcodeInput()
     }
   }
   // stopPropagation: shortcutManager also binds DELETE and would toggle the row right back
-  else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); e.stopPropagation(); deleteItem(idx) }
+  else if (e.key === 'Delete') { e.preventDefault(); e.stopPropagation(); deleteItem(idx) }
 }
 
 function focusEditField(field, idx) {
+  if (isReadOnly.value) return
   if (items.value[idx]?.deleted || items.value[idx]?._is_free) return
   if (editingRowIdx.value !== idx) {
     originalRowCode.value = items.value[idx].item_code
@@ -1748,11 +1846,24 @@ function getItemUoms(itemCode) {
 function onUomChange(idx) {
   const item = items.value[idx]
   if (!item) return
+  if (isReturn.value) {
+    const history = getHistoryRateAndDiscount(item.item_code, item.uom)
+    if (history) {
+      item.rate = history.rate
+      item._base_rate = history.rate
+      item.discount = history.discount
+      recalcAmount(idx)
+      return
+    }
+  }
   const cached = lookupItemInCache(item.item_code)
   if (cached) {
     const newRate = getItemRateForPriceList(cached, item.uom)
     item._base_rate = newRate
     item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(precision))
+    // The row now carries the price list rate again, so it is no longer an
+    // override and must follow later reprices.
+    item._rate_overridden = false
     recalcAmount(idx)
   }
 }
@@ -1762,8 +1873,17 @@ function finishRowEdit(idx) {
   if (item && isReturn.value) item.qty = -Math.abs(item.qty || 0)
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
 
-  const nextTarget = idx < items.value.length - 1
-    ? { type: 'row', index: idx + 1 } 
+  let nextRowIdx = -1
+  for (let j = idx + 1; j < items.value.length; j++) {
+    const nextItem = items.value[j]
+    if (nextItem && !nextItem._is_free && !nextItem.deleted) {
+      nextRowIdx = j
+      break
+    }
+  }
+
+  const nextTarget = nextRowIdx !== -1
+    ? { type: 'row', index: nextRowIdx }
     : { type: 'barcode' }
 
   if (!detectPriceChange(item, nextTarget)) {
@@ -1792,7 +1912,7 @@ function combinedFactor(item_code) {
   const globalFactor = effectiveModifier()
   let cpFactor = customerPricing.value[item_code]
   if (cpFactor === 0) cpFactor = 1
-  
+
   const factor = cpFactor != null ? globalFactor * cpFactor : globalFactor
   return factor === 0 ? 1 : factor
 }
@@ -1801,7 +1921,7 @@ function combinedFactor(item_code) {
 function getItemRateForPriceList(cachedItem, uom = null) {
   if (!cachedItem) return 0
   const plName = priceList.value
-  
+
   // 1. Check per-UOM overrides first
   const targetUom = uom || cachedItem.uom || 'Nos'
   if (cachedItem.uom_price_lists?.[plName]?.[targetUom] != null) {
@@ -1819,8 +1939,9 @@ function getItemRateForPriceList(cachedItem, uom = null) {
 }
 
 function updateTableRates() {
+  if (isReturn.value) return
   items.value.forEach((item, idx) => {
-    if (item.deleted) return
+    if (item.deleted || item._rate_overridden) return
     const cached = lookupItemInCache(item.item_code)
     if (cached) {
       const newRate = getItemRateForPriceList(cached, item.uom)
@@ -1836,10 +1957,37 @@ watch(isReturn, (val) => {
   items.value.forEach((item, idx) => {
     if (item.deleted || item._is_free) return
     item.qty = val ? -Math.abs(item.qty || 0) : Math.abs(item.qty || 0)
+
+    if (val) {
+      const history = getHistoryRateAndDiscount(item.item_code, item.uom)
+      if (history) {
+        item.rate = history.rate
+        item._base_rate = history.rate
+        item.discount = history.discount
+      }
+    } else {
+      // Restore normal pricing if toggled OFF?
+      // User probably wants to keep current prices if they manually edited,
+      // but usually toggling Return OFF means going back to standard billing.
+      const cached = lookupItemInCache(item.item_code)
+      if (cached) {
+        const base = getItemRateForPriceList(cached, item.uom)
+        item._base_rate = base
+        item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
+        // discount is reapplied by useDiscountRules unless the operator ticked Ignore Rule
+      }
+    }
     recalcAmount(idx)
   })
   if (pendingItem.value) {
     pendingItem.value.qty = val ? -Math.abs(pendingItem.value.qty || 0) : Math.abs(pendingItem.value.qty || 0)
+    if (val) {
+      const history = getHistoryRateAndDiscount(pendingItem.value.item_code, pendingItem.value.uom)
+      if (history) {
+        pendingItem.value.rate = history.rate
+        pendingItem.value.discount = history.discount
+      }
+    }
   }
 })
 
@@ -1847,28 +1995,29 @@ watch(isReturn, (val) => {
 watch(priceList, (newList) => {
   if (!newList || isLoadingBill.value) return
   localStorage.setItem('wb-pricelist-selected', newList) // Persist selection
-  
+
   // 1. Update UI INSTANTLY using whatever is already in the local cache
   updateTableRates()
-  
+
   // 2. Refresh cache in background to ensure latest rates from server
   refreshItemCache('Sales', newList, warehouse.value)
     .then(() => {
-      // 3. Re-run update once background sync completes to catch any changed values
+      // 3. Re-run update once background sync completes to catch any changed values.
+      // Re-check the guard: a saved bill may have been opened while this was in
+      // flight, and repricing it here would overwrite the stored rates.
+      if (isLoadingBill.value || priceList.value !== newList) return
       updateTableRates()
     })
-    .catch(e => console.warn('[SalesInvoice] Background price refresh failed:', e))
+    .catch(e => console.warn('[SalesOrder] Background price refresh failed:', e))
 })
 
 // Chosen from the party-change warning, or from the Refresh Prices button.
-// The operator is explicitly asking for the price list, the pricing rules and
-// the party modifier to win.
+// Clears both freeze flags: the operator is explicitly asking for the price
+// list, the pricing rules and the party modifier to win.
 async function applyCustomerPricingToRows() {
   showRepriceChoice.value = false
   if (!customerId.value) return
-  items.value.forEach(i => {
-    i._retain_rate = false
-  })
+  items.value.forEach(i => { i._retain_rate = false; i._rate_overridden = false })
   ignoreModifier.value = false
   try {
     const data = await frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: customerId.value })
@@ -1877,18 +2026,27 @@ async function applyCustomerPricingToRows() {
     customerPricing.value = {}
   }
   reapplyCustomerPricing()
-  nextTick(() => { newCodeInput.value?.focus() })
+  focusBarcodeAfterPartyChange()
 }
 
 function retainCurrentRates() {
   showRepriceChoice.value = false
   items.value.forEach(i => { if (!i.deleted) i._retain_rate = true })
-  nextTick(() => { newCodeInput.value?.focus() })
+  focusBarcodeAfterPartyChange()
+}
+
+// Hand focus back to where a party change normally leaves it, now that the
+// warning has been answered.
+function focusBarcodeAfterPartyChange() {
+  setTimeout(() => {
+    focusBarcodeInput()
+  }, 150)
 }
 
 function reapplyCustomerPricing() {
+  if (isReturn.value) return
   items.value.forEach((item, idx) => {
-    if (item.deleted || item._is_free || item._retain_rate) return
+    if (item.deleted || item._is_free || item._rate_overridden || item._retain_rate) return
     const base = item.price_list_rate || item._base_rate || item.rate
     item._base_rate = base
     item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
@@ -1898,11 +2056,30 @@ function reapplyCustomerPricing() {
 }
 
 watch(ignoreModifier, () => {
+  // loadBill sets ignoreModifier from customer_rate_multiplier in the same
+  // synchronous block that assigns items.value, so an unguarded callback
+  // reprices the rows it just loaded.
+  if (isReturn.value || isLoadingBill.value) return
   items.value.forEach(item => {
+    if (item._rate_overridden) return
     const base = item._base_rate ?? item.rate
     item._base_rate = base
     item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
     item.amount = parseFloat(((item.qty || 0) * item.rate * (1 - getDiscPrecision(item.discount) / 100)).toFixed(precision))
+  })
+})
+
+watch(halfTaxDiscount, (enabled) => {
+  if (isLoadingBill.value) return
+  items.value = items.value.map(item => {
+    if (item.deleted) return item
+    if (enabled) {
+      const t = item.tax_rate || 0
+      const disc = t > 0 ? parseFloat(((t / (2 * (100 + t))) * 100).toFixed(precision)) : 0
+      return { ...item, discount: disc }
+    } else {
+      return { ...item, discount: 0 }
+    }
   })
 })
 
@@ -1936,12 +2113,37 @@ function focusRow(idx, direction = null) {
 function focusBarcodeInput() { selectedRowIdx.value = -1; nextTick(() => { newCodeInput.value?.focus() }) }
 
 function deleteItem(idx) {
+  if (isReadOnly.value) return
   const item = items.value[idx]; if (!item) return
   item.deleted = !item.deleted
   if (item.deleted && editingRowIdx.value === idx) { editingRowIdx.value = -1; editingField.value = null }
+
+  if (item.deleted) {
+    let nextIdx = -1
+    for (let i = idx + 1; i < items.value.length; i++) {
+      if (!items.value[i].deleted) {
+        nextIdx = i
+        break
+      }
+    }
+    if (nextIdx === -1) {
+      for (let i = idx - 1; i >= 0; i--) {
+        if (!items.value[i].deleted) {
+          nextIdx = i
+          break
+        }
+      }
+    }
+    if (nextIdx !== -1) {
+      focusRow(nextIdx)
+    } else {
+      focusBarcodeInput()
+    }
+  }
 }
 
 function clearItem(idx) {
+  if (isReadOnly.value) return
   if (idx !== -1 && items.value[idx]) {
     items.value.splice(idx, 1)
     if (editingRowIdx.value === idx) {
@@ -1960,12 +2162,12 @@ function onQuickSearchRefresh() {
 
 function onQuickSearchSelect(item) {
   if (!item) return
-  
+
   // Capture the query used to find this item
-  const currentQuery = editQuickSearchRowIdx.value !== null 
+  const currentQuery = editQuickSearchRowIdx.value !== null
     ? (items.value[editQuickSearchRowIdx.value]?.item_code || '').trim()
     : newItemCode.value.trim()
-    
+
   // If the query was a barcode, lookupItemInCache will return the item with that barcode's specific UOM
   const barcodeMatch = lookupItemInCache(currentQuery)
   const finalItem = (barcodeMatch && barcodeMatch.item_code === item.item_code) ? barcodeMatch : item
@@ -1989,6 +2191,65 @@ function onQuickSearchSelect(item) {
   })
 }
 
+// Conversion factor of `uom` for an item (how many stock UOMs one `uom` holds).
+// Stock UOM is not always present in the UOM Conversion Detail table, so it is
+// resolved from the cached item's own uom (which is the stock uom) first.
+function getUomConversionFactor(itemCode, uom) {
+  if (!uom) return null
+  const cached = lookupItemInCache(itemCode)
+  if (!cached) return null
+  if (cached.uom && uom === cached.uom) return 1
+  const match = (cached.uoms || []).find(u => u.uom === uom)
+  const cf = parseFloat(match?.conversion_factor)
+  return cf > 0 ? cf : null
+}
+
+// Share of the original bill's additional (bill-level) discount carried by a history
+// row. It never reaches sii.rate, so without this a return refunds the pre-discount
+// rate. Computed server-side from net_amount / (net_amount + distributed discount).
+function getBillDiscountFactor(row) {
+  const factor = parseFloat(row?.bill_discount_factor)
+  return factor > 0 && factor <= 1 ? factor : 1
+}
+
+// Last sale rate/discount for a return row. Prefers a history row billed in the
+// same UOM; otherwise converts the newest row's rate to the requested UOM.
+// The returned rate is net of the original bill's additional discount.
+// Returns null when the rate cannot be trusted for that UOM, so the caller falls
+// back to normal price-list pricing instead of using a wrong-UOM rate.
+function getHistoryRateAndDiscount(itemCode, uom) {
+  const history = getItemHistoryFromCache(itemCode)
+  if (!history || history.length === 0) return null
+
+  // A row's rate is stored net of its own discount, while item.rate here is gross and
+  // recalcAmount re-applies the discount — so the pre-discount rate is what to hand back.
+  const grossRateOf = (row) => {
+    const gross = parseFloat(row.gross_rate)
+    return gross > 0 ? gross : row.rate
+  }
+  const discountOf = (row) => (parseFloat(row.gross_rate) > 0 ? row.discount : 0)
+
+  const priced = (row, rate) => ({
+    rate: parseFloat((rate * getBillDiscountFactor(row)).toFixed(precision)),
+    discount: discountOf(row)
+  })
+
+  // history is sorted newest first, so the first match is the latest one
+  const exact = uom ? history.find(h => h.uom === uom) : null
+  if (exact) return priced(exact, grossRateOf(exact))
+
+  const last = history[0]
+  if (!uom || !last.uom || last.uom === uom) return priced(last, grossRateOf(last))
+
+  const cfTarget = getUomConversionFactor(itemCode, uom)
+  const cfHist = parseFloat(last.conversion_factor) > 0
+    ? parseFloat(last.conversion_factor)
+    : getUomConversionFactor(itemCode, last.uom)
+  if (!cfTarget || !cfHist) return null
+
+  return priced(last, (grossRateOf(last) / cfHist) * cfTarget)
+}
+
 function applyItemToRow(rowIdx, item) {
   const row = items.value[rowIdx]
   if (!row) return
@@ -2004,17 +2265,26 @@ function applyItemToRow(rowIdx, item) {
   if (!row._rowKey) row._rowKey = makeRowKey()
 
   if (!isSameItem) {
-    const base = getItemRateForPriceList(item, row.uom)
-    row._base_rate = base
-    const cpFactor = customerPricing.value[item.item_code]
-    row._cp_applied = cpFactor != null
-    row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
-    // row.discount is handled by useDiscountRules watcher
+    const history = isReturn.value ? getHistoryRateAndDiscount(item.item_code, row.uom) : null
+    if (history) {
+      row.rate = history.rate
+      row._base_rate = history.rate
+      row.discount = history.discount
+      row._rule_discount = null // prevent rule from overwriting if possible
+    } else {
+      const base = getItemRateForPriceList(item, row.uom)
+      row._base_rate = base
+      const cpFactor = customerPricing.value[item.item_code]
+      row._cp_applied = cpFactor != null
+      row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
+      // row.discount is handled by useDiscountRules watcher
+    }
   }
   recalcAmount(rowIdx)
 }
 
 function openItemSearch(query, targetRowIdx = null) {
+  if (isReadOnly.value) return
   quickSearchResults.value = []
   editQuickSearchRowIdx.value = null
   itemSearchTargetRowIdx.value = targetRowIdx
@@ -2038,7 +2308,7 @@ function onItemSearchSelect(item) {
   showItemSearch.value = false
   const rowIdx = itemSearchTargetRowIdx.value
   itemSearchTargetRowIdx.value = null
-  
+
   // Re-check for barcode match to get correct UOM from the initial query
   const barcodeMatch = lookupItemInCache(itemSearchInitialQuery.value.trim())
   const finalItem = (barcodeMatch && barcodeMatch.item_code === item.item_code) ? barcodeMatch : item
@@ -2060,17 +2330,30 @@ function onItemSearchSelectMultiple(entries) {
   itemSearchTargetRowIdx.value = null
 
   for (const entry of entries) {
-    const baseRate = getItemRateForPriceList(entry, entry.uom) || 0
-    const cpApplied = customerPricing.value[entry.item_code] != null
-    const rate = parseFloat((baseRate * combinedFactor(entry.item_code)).toFixed(precision))
+    const history = isReturn.value ? getHistoryRateAndDiscount(entry.item_code, entry.uom || 'Nos') : null
+    let baseRate, rate, discount, cpApplied = false
+    if (history) {
+      baseRate = history.rate
+      rate = history.rate
+      discount = history.discount
+    } else {
+      baseRate = getItemRateForPriceList(entry, entry.uom) || 0
+      cpApplied = customerPricing.value[entry.item_code] != null
+      rate = parseFloat((baseRate * combinedFactor(entry.item_code)).toFixed(precision))
+      discount = 0
+    }
     const qty = isReturn.value ? -Math.abs(entry.qty) : entry.qty
-    items.value.push({
+    const newItem = {
       item_code: entry.item_code, item_name: entry.item_name, qty, uom: entry.uom || 'Nos',
-      rate, _base_rate: baseRate, _cp_applied: cpApplied,
-      discount: 0, tax_rate: entry.tax_rate || 0,
-      amount: parseFloat((qty * rate).toFixed(precision)),
+      rate: rate || 0, _base_rate: baseRate ?? rate ?? 0, _cp_applied: cpApplied,
+      discount: discount || 0, tax_rate: entry.tax_rate || 0,
+      amount: parseFloat((qty * (rate || 0)).toFixed(precision)),
       deleted: false, _rowKey: makeRowKey()
-    })
+    }
+    if (isReturn.value && discount != null) {
+      newItem._rule_discount = discount
+    }
+    items.value.push(newItem)
   }
 
   newItemCode.value = ''
@@ -2081,11 +2364,7 @@ function onItemSearchSelectMultiple(entries) {
 function onEditCodeInput(rowIdx) {
   const code = (items.value[rowIdx]?.item_code || '').trim()
   if (code.length >= 2) {
-    const rawResults = searchItemsInCache(code)
-    quickSearchResults.value = rawResults.map(item => ({
-      ...item,
-      has_history: hasHistory(item.item_code)
-    }))
+    quickSearchResults.value = searchItemsInCache(code)
     quickSearchAnchor.value = editCodeInput.value
     editQuickSearchRowIdx.value = rowIdx
   } else {
@@ -2108,6 +2387,12 @@ function onEditCodeKeydown(e, rowIdx) {
   }
 
   if (handleCellNavigation(e, rowIdx, 'code')) {
+    return
+  }
+
+  if (e.key === 'ArrowRight') {
+    e.preventDefault()
+    openItemSearch((items.value[rowIdx]?.item_code || '').trim(), rowIdx)
     return
   }
 
@@ -2137,7 +2422,7 @@ function onEditQtyKeydown(e, idx) {
   if (handleCellNavigation(e, idx, 'qty')) {
     return
   }
-  
+
   if (e.key === 'Enter') {
     e.preventDefault()
     const item = items.value[idx]
@@ -2248,11 +2533,21 @@ function handleCellNavigation(e, idx, field) {
         e.preventDefault()
         focusEditField(prev, idx)
         return true
-      } else if (idx > 0) {
-        e.preventDefault()
-        recalcAmount(idx)
-        focusEditField('disc', idx - 1)
-        return true
+      } else {
+        let prevRowIdx = -1
+        for (let j = idx - 1; j >= 0; j--) {
+          const pItem = items.value[j]
+          if (pItem && !pItem._is_free && !pItem.deleted) {
+            prevRowIdx = j
+            break
+          }
+        }
+        if (prevRowIdx !== -1) {
+          e.preventDefault()
+          recalcAmount(idx)
+          focusEditField('disc', prevRowIdx)
+          return true
+        }
       }
     }
   } else if (e.key === 'ArrowRight') {
@@ -2262,35 +2557,67 @@ function handleCellNavigation(e, idx, field) {
         e.preventDefault()
         focusEditField(next, idx)
         return true
-      } else if (idx < items.value.length - 1) {
-        e.preventDefault()
-        recalcAmount(idx)
-        focusEditField('code', idx + 1)
-        return true
+      } else {
+        let nextRowIdx = -1
+        for (let j = idx + 1; j < items.value.length; j++) {
+          const nextItem = items.value[j]
+          if (nextItem && !nextItem._is_free && !nextItem.deleted) {
+            nextRowIdx = j
+            break
+          }
+        }
+        if (nextRowIdx !== -1) {
+          e.preventDefault()
+          recalcAmount(idx)
+          focusEditField('code', nextRowIdx)
+          return true
+        } else {
+          e.preventDefault()
+          recalcAmount(idx)
+          exitEditMode(idx)
+          focusBarcodeInput()
+          return true
+        }
       }
     }
   } else if (e.key === 'ArrowUp') {
-    if (field !== 'uom' && idx > 0) {
+    let prevRowIdx = -1
+    for (let j = idx - 1; j >= 0; j--) {
+      const pItem = items.value[j]
+      if (pItem && !pItem._is_free && !pItem.deleted) {
+        prevRowIdx = j
+        break
+      }
+    }
+    if (field !== 'uom' && prevRowIdx !== -1) {
       e.preventDefault()
       recalcAmount(idx)
-      const targetItem = items.value[idx - 1]
+      const targetItem = items.value[prevRowIdx]
       let targetField = field
       if (targetField === 'uom' && getItemUoms(targetItem.item_code).length <= 1) {
         targetField = 'rate'
       }
-      focusEditField(targetField, idx - 1)
+      focusEditField(targetField, prevRowIdx)
       return true
     }
   } else if (e.key === 'ArrowDown') {
-    if (field !== 'uom' && idx < items.value.length - 1) {
+    let nextRowIdx = -1
+    for (let j = idx + 1; j < items.value.length; j++) {
+      const nextItem = items.value[j]
+      if (nextItem && !nextItem._is_free && !nextItem.deleted) {
+        nextRowIdx = j
+        break
+      }
+    }
+    if (field !== 'uom' && nextRowIdx !== -1) {
       e.preventDefault()
       recalcAmount(idx)
-      const targetItem = items.value[idx + 1]
+      const targetItem = items.value[nextRowIdx]
       let targetField = field
       if (targetField === 'uom' && getItemUoms(targetItem.item_code).length <= 1) {
         targetField = 'rate'
       }
-      focusEditField(targetField, idx + 1)
+      focusEditField(targetField, nextRowIdx)
       return true
     }
   }
@@ -2301,6 +2628,15 @@ function handleCellNavigation(e, idx, field) {
 function onPendingUomChange() {
   const p = pendingItem.value
   if (!p) return
+  if (isReturn.value) {
+    const history = getHistoryRateAndDiscount(p.item_code, p.uom)
+    if (history) {
+      p.rate = history.rate
+      p._base_rate = history.rate
+      p.discount = history.discount
+      return
+    }
+  }
   const cached = lookupItemInCache(p.item_code)
   if (cached) {
     const newRate = getItemRateForPriceList(cached, p.uom)
@@ -2310,11 +2646,19 @@ function onPendingUomChange() {
 }
 
 function setPendingItem(item) {
-  const base = item.rate || 0
-  item._base_rate = base
-  const cpFactor = customerPricing.value[item.item_code]
-  item._cp_applied = cpFactor != null
-  item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
+  const history = isReturn.value ? getHistoryRateAndDiscount(item.item_code, item.uom || 'Nos') : null
+  if (history) {
+    item.rate = history.rate
+    item._base_rate = history.rate
+    item.discount = history.discount
+  } else {
+    const base = item.rate || 0
+    item._base_rate = base
+    const cpFactor = customerPricing.value[item.item_code]
+    item._cp_applied = cpFactor != null
+    item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
+    item.discount = 0
+  }
   pendingItem.value = item
   nextTick(() => {
     pendingQtyInput.value?.focus()
@@ -2323,6 +2667,7 @@ function setPendingItem(item) {
 }
 
 function confirmPendingItem() {
+  if (isReadOnly.value) return
   if (!pendingItem.value || !pendingItem.value.qty) return
   const p = pendingItem.value
   const qty = isReturn.value ? -Math.abs(p.qty) : p.qty
@@ -2333,14 +2678,17 @@ function confirmPendingItem() {
     amount: parseFloat((qty * (p.rate || 0)).toFixed(precision)),
     deleted: false, _rowKey: makeRowKey()
   }
+  if (isReturn.value && p.discount != null) {
+    newItem._rule_discount = p.discount // Fake it so rule engine might think it's its own, or at least we have it set
+  }
   items.value.push(newItem)
   pendingItem.value = null; newItemCode.value = ''; quickSearchResults.value = []
   nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
 }
 
-function cancelPendingItem(skipFocus = false) { 
+function cancelPendingItem(skipFocus = false) {
   pendingItem.value = null
-  if (!skipFocus) nextTick(() => { newCodeInput.value?.focus() }) 
+  if (!skipFocus) nextTick(() => { newCodeInput.value?.focus() })
 }
 
 function handlePartyRefreshed(party) {
@@ -2354,15 +2702,14 @@ function handlePartyRefreshed(party) {
 function handleCustomerSelected(cust, opts = {}) {
   const { silentPricing = false } = opts
   // Only a *switch* between parties is ambiguous. Picking the first party on a
-  // doc that was started without one is the normal flow and must not prompt.
+  // bill that was started without one is the normal flow and must not prompt.
   const partyChanged = !!customerId.value && cust.name !== customerId.value
   const hasRows = items.value.some(i => !i.deleted)
-  // Switching party on a doc that already has rows must not reprice behind the
+  // Switching party on a bill that already has rows must not reprice behind the
   // operator's back — ask first. ignoreModifier is left untouched here too: its
   // watcher reprices, and resetting a flag whose effect we are suppressing
   // would leave the header showing something the rows do not follow.
   const askBeforeReprice = !silentPricing && partyChanged && hasRows
-  const repriceNow = !silentPricing && !askBeforeReprice
 
   customerName.value = cust.label || cust.name
   customerId.value = cust.name
@@ -2373,12 +2720,11 @@ function handleCustomerSelected(cust, opts = {}) {
   customerState.value = cust.state || ''
   customerModifier.value = cust.pricelist_multiplication_factor ?? null
 
+  const repriceNow = !silentPricing && !askBeforeReprice
   if (askBeforeReprice) {
     items.value.forEach(i => { if (!i.deleted) i._retain_rate = true })
   } else if (repriceNow) {
-    items.value.forEach(i => {
-      i._retain_rate = false
-    })
+    items.value.forEach(i => { i._retain_rate = false })
     ignoreModifier.value = false
   }
   customerPricing.value = {}
@@ -2392,18 +2738,27 @@ function handleCustomerSelected(cust, opts = {}) {
   if (askBeforeReprice) showRepriceChoice.value = true
   const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
   customerAddress.value = addrParts.join(', ')
+  showCustomerModal.value = false
+
+  // Ensure MOP is focused after selection, especially for new bills.
+  // We use a small timeout to ensure the modal's return-focus logic doesn't override this.
+  // Skipped while the reprice warning is up: it focuses Retain Prices, and this
+  // would pull focus off it 150ms later, leaving the default choice unreachable
+  // by keyboard.
+  if (!askBeforeReprice) {
+    setTimeout(() => {
+      focusBarcodeInput()
+    }, 150)
+  }
+
   if (cust.last_invoice_date) {
     const d = new Date(cust.last_invoice_date)
-    customerLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
+    customerLastInvDate.value = formatDMY(d, '')
   } else {
     customerLastInvDate.value = 'None'
   }
   applyRegionalTaxLogic()
   fetchCustomerSalesHistory(cust.name)
-  showCustomerModal.value = false
-  // Skipped while the reprice warning is up: it focuses Retain Prices, and this
-  // would pull focus off it, leaving the default choice unreachable by keyboard.
-  if (!askBeforeReprice) nextTick(() => { newCodeInput.value?.focus() })
 }
 
 async function handleSeriesSelected(series) {
@@ -2449,14 +2804,38 @@ useShortcuts(salesInvoiceShortcuts({
   openParcelAddress:() => { showCustomAddressModal.value = true },
   save:             () => handleSave(),
   cancel:           () => handleCancel(),
-  openIncentive:    () => { showIncentiveModal.value = true },
   pageUp:           () => handlePageUp(),
   deleteRow:        () => {
     if (selectedRowIdx.value >= 0 && (!document.activeElement || document.activeElement.tagName !== 'INPUT')) {
       deleteItem(selectedRowIdx.value)
     }
   },
-}))
+}), props.isSubwindow ? 'subwindow' : 'local')
+
+function handleGlobalEscape(e) {
+  if (e.key === 'Escape') {
+    const modalOpen = showSeriesModal.value || showCustomerModal.value ||
+                      showItemSearch.value || showPriceDetectModal.value ||
+                      showPrintModal.value || showJumpModal.value ||
+                      showCustomAddressModal.value ||
+                      showClearWarning.value || showExitWarning.value ||
+                      showRepriceChoice.value ||
+                      showShortcutPage.value || showHistoryModal.value ||
+                      showBarcodeModal.value ||
+                      quickSearchResults.value.length > 0 ||
+                      pendingItem.value || editingRowIdx.value !== -1;
+
+    if (!modalOpen) {
+      const hasParty = customerId.value;
+      const hasItems = activeItems.value.length > 0;
+      if (!isReadOnly.value && (hasParty || hasItems)) {
+        showExitWarning.value = true;
+      } else {
+        goBack();
+      }
+    }
+  }
+}
 
 function handleBeforeUnload() {
   releaseLock()
@@ -2464,9 +2843,20 @@ function handleBeforeUnload() {
 
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload)
-  fetchRecentInvoices()
-  fetchAllowedSeries('Sales Order')
-  showSeriesModal.value = true
+  if (props.isSubwindow) {
+    window.addEventListener('keydown', handleGlobalEscape)
+  }
+  if (props.isSubwindow && props.invoiceName) {
+    handleSelectSidebarItem({ name: props.invoiceName })
+  } else {
+    // Resolve the series first: the sidebarSeries watcher fires the (cache-first)
+    // list fetch once, instead of an unfiltered fetch that gets thrown away.
+    fetchAllowedSeries('Sales Order').then((series) => {
+      if (!series?.length) fetchRecentInvoices()
+    })
+    showSeriesModal.value = true
+  }
+
   if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Sales', priceList.value, warehouse.value)
   }
@@ -2477,6 +2867,7 @@ onMounted(() => {
 let _billPanelCleanup = null
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleGlobalEscape)
   window.removeEventListener('beforeunload', handleBeforeUnload)
   releaseLock()
   _billPanelCleanup?.()
@@ -2484,6 +2875,15 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.discount-rule-row {
+  background-color: #d1fae5 !important;
+}
+.discount-rule-row > td,
+.discount-rule-row > td > span,
+.discount-rule-row input,
+.discount-rule-row select {
+  color: #14532d !important;
+}
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
