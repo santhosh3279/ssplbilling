@@ -156,7 +156,7 @@ def _apply_catalogue_rules(lines, price_list):
 			if rule.discount_type == "X to Y product discount":
 				matches = matching_x_to_y is not None
 			elif rule.applies_to == "Item Code":
-				matches = any(entry.item_code.lower() == line["item_code"].lower() for entry in rule.items)
+				matches = any(entry.item_code.lower() == line["item_code"].lower() for entry in rule["items"])
 			elif rule.applies_to == "Product Group":
 				matches = line["item_group"] == rule.product_group
 			else:
