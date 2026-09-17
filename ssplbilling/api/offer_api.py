@@ -324,10 +324,12 @@ def get_offer_details(pageaddress):
 
 @frappe.whitelist(allow_guest=True)
 def get_offer_list():
+	# A site may serve requests before its DocType schema migration completes.
+	has_priority = frappe.db.has_column("Offer-Items", "priority")
 	catalogues = frappe.get_all(
 		"Offer-Items",
-		fields=["name", "heading", "pageaddress", "timer", "priority", "creation"],
-		order_by="priority asc, creation desc"
+		fields=["name", "heading", "pageaddress", "timer", "creation"] + (["priority"] if has_priority else []),
+		order_by="priority asc, creation desc" if has_priority else "creation desc"
 	)
 	if not catalogues:
 		return catalogues
