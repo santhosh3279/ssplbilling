@@ -18,7 +18,7 @@ import { useItemCache } from '../services/itemCache.js'
  *   _is_free         – true on auto-inserted free rows
  *   _free_parent_key – _rowKey of the parent that generated this free row
  */
-export function useDiscountRules({ items, priceList, lookupItemInCache }) {
+export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRules = ref(false) }) {
   const { discountRules } = useItemCache()
 
   const ignoreDiscountRule = ref(false)
@@ -252,7 +252,7 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
   }
 
   function reapplyAllDiscountRules() {
-    if (_applyingDiscount) return
+    if (_applyingDiscount || pauseRules.value) return
     _applyingDiscount = true
     try {
       items.value = items.value.filter(r => !r._is_free)
@@ -293,23 +293,28 @@ export function useDiscountRules({ items, priceList, lookupItemInCache }) {
   )
   let _discountTimer = null
   watch(_regularItemSig, () => {
-    if (_applyingDiscount || ignoreDiscountRule.value) return
+    if (_applyingDiscount || ignoreDiscountRule.value || pauseRules.value) return
     clearTimeout(_discountTimer)
     _discountTimer = setTimeout(reapplyAllDiscountRules, 350)
   })
 
   // Re-apply when discount rules finish loading (async fetch)
   watch(discountRules, () => {
-    if (_applyingDiscount || ignoreDiscountRule.value) return
+    if (_applyingDiscount || ignoreDiscountRule.value || pauseRules.value) return
     clearTimeout(_discountTimer)
     _discountTimer = setTimeout(reapplyAllDiscountRules, 50)
   })
 
   // Re-apply when price list changes (billing settings load after mount)
   watch(priceList, () => {
-    if (_applyingDiscount || ignoreDiscountRule.value) return
+    if (_applyingDiscount || ignoreDiscountRule.value || pauseRules.value) return
     clearTimeout(_discountTimer)
     _discountTimer = setTimeout(reapplyAllDiscountRules, 50)
+  })
+
+  watch(pauseRules, (paused) => {
+    clearTimeout(_discountTimer)
+    if (!paused && !ignoreDiscountRule.value) reapplyAllDiscountRules()
   })
 
   watch(ignoreDiscountRule, (ignored) => {

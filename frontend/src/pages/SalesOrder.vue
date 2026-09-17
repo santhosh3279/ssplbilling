@@ -715,7 +715,8 @@ const loadingAmt = computed(() => parseFloat(loadingEntry.value) || 0)
 const otherAmt = computed(() => parseFloat(otherEntry.value) || 0)
 
 // --- Composable Logic (Discount Rules) ---
-const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, lookupItemInCache })
+const pauseDiscountRules = ref(false)
+const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, lookupItemInCache, pauseRules: pauseDiscountRules })
 
 // --- Page & UI State ---
 const showSeriesModal = ref(false)
@@ -868,6 +869,7 @@ watch(sidebarSearch, () => {
 async function handleSelectSidebarItem(item) {
   await releaseLock()
   try {
+    pauseDiscountRules.value = true
     isLoadingBill.value = true
     const data = await frappeGet('ssplbilling.api.sales_order_api.get_sales_order', { order_name: item.name })
 
@@ -936,11 +938,27 @@ async function handleSelectSidebarItem(item) {
         uom: i.uom || 'Nos',
         tax_rate: i.tax_rate || 0,
         deleted: false,
-        _is_free: effectiveRate === 0,
+        _is_free: effectiveRate === 0 && discount === 0,
         amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(precision)),
         _rowKey: makeRowKey(),
       }
     })
+
+    // Saved free units are separate order items. Preserve their parent quantity
+    // so editing can recompute Product Discount rules from the original total.
+    let freeParent = null
+    for (const row of items.value) {
+      if (row._is_free) {
+        if (!freeParent) continue
+        row._free_parent_key = freeParent._rowKey
+        if ((row.item_code || '').toLowerCase() === (freeParent.item_code || '').toLowerCase()) {
+          freeParent._loaded_free_qty = (freeParent._loaded_free_qty || 0) + (row.qty || 0)
+          freeParent._loaded_paid_qty = freeParent.qty
+        }
+      } else {
+        freeParent = row
+      }
+    }
 
     selectedRowIdx.value = -1
     editingRowIdx.value = -1
@@ -950,6 +968,7 @@ async function handleSelectSidebarItem(item) {
     isSaved.value = true
     isSubmitted.value = data.docstatus === 1
   } catch (e) {
+    pauseDiscountRules.value = false
     console.error('Failed to load sales order:', e)
     alert('Failed to load sales order: ' + item.name)
   } finally {
@@ -1231,6 +1250,7 @@ async function clearBill() {
   await releaseLock()
   clearQuickQtyMap()
   items.value = []
+  pauseDiscountRules.value = false
   pendingItem.value = null
   newItemCode.value = ''
   quickSearchResults.value = []
@@ -1419,6 +1439,7 @@ function handleDiscountAmtKeydown(e) {
 async function handleModify() {
   if (isSubmitted.value || !isReadOnly.value || !isSaved.value) return
   isReadOnly.value = false
+  pauseDiscountRules.value = false
   if (items.value.length) focusRow(0)
   else focusBarcodeInput()
 }
