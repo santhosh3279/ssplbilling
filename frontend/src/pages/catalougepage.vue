@@ -149,11 +149,16 @@
                     </table>
                   </div>
                 </div>
-                <div v-if="websiteUser" class="flex items-center justify-center gap-3 text-white">
+                <div v-if="websiteUser" class="flex flex-wrap items-center justify-center gap-3 text-white">
                   <template v-if="item.order_rate != null">
                     <button type="button" :aria-label="`Decrease ${item.itemname}`" class="rounded-lg border border-slate-600 px-3 py-1" @click="adjustQuantity(item, -1)">−</button>
                     <span class="w-8 text-center font-bold">{{ getQuantity(pageaddress, item.itemcode) }}</span>
                     <button type="button" :aria-label="`Increase ${item.itemname}`" class="rounded-lg border border-slate-600 px-3 py-1" @click="adjustQuantity(item, 1)">+</button>
+                    <div v-if="minimumOrderQuantity(item) > 1" class="flex items-center gap-2 border-l border-slate-600 pl-3">
+                      <button type="button" :aria-label="`Decrease ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border border-slate-600 px-3 py-1" @click="adjustByMinimum(item, -1)">−</button>
+                      <span class="text-xs">Step {{ minimumOrderQuantity(item) }}</span>
+                      <button type="button" :aria-label="`Increase ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border border-slate-600 px-3 py-1" @click="adjustByMinimum(item, 1)">+</button>
+                    </div>
                   </template>
                   <span v-else class="text-sm text-slate-400">Price unavailable</span>
                 </div>
@@ -337,11 +342,16 @@
                   </h3>
                 </div>
 
-                <div v-if="websiteUser" class="flex items-center justify-center gap-3 border-t border-[var(--color-border)]/40 pt-3">
+                <div v-if="websiteUser" class="flex flex-wrap items-center justify-center gap-3 border-t border-[var(--color-border)]/40 pt-3">
                   <template v-if="item.order_rate != null">
                     <button type="button" :aria-label="`Decrease ${item.itemname}`" class="rounded-lg border px-3 py-1" @click="adjustQuantity(item, -1)">−</button>
                     <span class="w-8 text-center font-bold">{{ getQuantity(pageaddress, item.itemcode) }}</span>
                     <button type="button" :aria-label="`Increase ${item.itemname}`" class="rounded-lg border px-3 py-1" @click="adjustQuantity(item, 1)">+</button>
+                    <div v-if="minimumOrderQuantity(item) > 1" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-3">
+                      <button type="button" :aria-label="`Decrease ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-3 py-1" @click="adjustByMinimum(item, -1)">−</button>
+                      <span class="text-xs">Step {{ minimumOrderQuantity(item) }}</span>
+                      <button type="button" :aria-label="`Increase ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-3 py-1" @click="adjustByMinimum(item, 1)">+</button>
+                    </div>
                   </template>
                   <span v-else class="text-xs text-[var(--color-text-muted)]">Price unavailable</span>
                 </div>
@@ -539,11 +549,15 @@ function minimumOrderQuantity(item) {
 }
 
 function adjustQuantity(item, delta) {
+  setQuantity(pageaddress, item.itemcode, getQuantity(pageaddress, item.itemcode) + delta)
+}
+
+function adjustByMinimum(item, direction) {
   const current = getQuantity(pageaddress, item.itemcode)
   const minimum = minimumOrderQuantity(item)
-  const next = delta > 0
-    ? (current < minimum ? minimum : current + minimum)
-    : (current <= minimum ? 0 : current - minimum)
+  const next = direction > 0
+    ? current + minimum
+    : Math.max(0, current - minimum)
   setQuantity(pageaddress, item.itemcode, next)
 }
 
