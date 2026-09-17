@@ -106,6 +106,107 @@ def get_customer_offer(pageaddress):
 	return {"offer": offer, "customer": context["customer"], "price_list": price_list}
 
 
+
+def _catalogue_rules(price_list):
+	"""Read enabled rules under server authority for a website customer."""
+	rules = frappe.get_all(
+		"Discount Rule", filters={"enabled": 1},
+		fields=["name", "rule_name", "price_list", "discount_type", "applies_to",
+			"product_group", "min_quantity", "free_quantity", "recursive",
+			"percentage_discount", "custom_logic_type", "start_date", "end_date"],
+		order_by="rule_name asc", ignore_permissions=True,
+	)
+	active = []
+	current = today()
+	for rule in rules:
+		if rule.price_list and rule.price_list != price_list:
+			continue
+		if rule.start_date and str(rule.start_date) > current:
+			continue
+		if rule.end_date and str(rule.end_date) < current:
+			continue
+		rule["items"] = frappe.get_all(
+			"Discount Rule Item", filters={"parent": rule.name},
+			fields=["item_code"], ignore_permissions=True,
+		)
+		rule["custom_logic_rows"] = frappe.get_all(
+			"Discount Rule Custom Logic", filters={"parent": rule.name},
+			fields=["min_quantity", "nos", "percentage"], ignore_permissions=True,
+		)
+		rule["x_to_y_table"] = frappe.get_all(
+			"Discount Rule X to Y", filters={"parent": rule.name},
+			fields=["item_code", "min_quantity", "free_item_code", "free_item_quantity", "free_item_price"],
+			ignore_permissions=True,
+		)
+		active.append(rule)
+	return active
+
+
+def _apply_catalogue_rules(lines, price_list):
+	rules = _catalogue_rules(price_list)
+	priced = []
+	for line in lines:
+		line["requested_qty"] = line["qty"]
+		line["discount_percentage"] = 0
+		line["is_free_item"] = 0
+		priced.append(line)
+		for rule in rules:
+			matching_x_to_y = next((entry for entry in rule.x_to_y_table
+				if entry.item_code.lower() == line["item_code"].lower()), None)
+			if rule.discount_type == "X to Y product discount":
+				matches = matching_x_to_y is not None
+			elif rule.applies_to == "Item Code":
+				matches = any(entry.item_code.lower() == line["item_code"].lower() for entry in rule.items)
+			elif rule.applies_to == "Product Group":
+				matches = line["item_group"] == rule.product_group
+			else:
+				matches = False
+			if not matches:
+				continue
+
+			qty = line["requested_qty"]
+			kind = rule.discount_type
+			if kind == "Product Discount":
+				minimum, free = flt(rule.min_quantity), flt(rule.free_quantity)
+				pack = minimum + free
+				free_qty = (int(qty // pack) * free if rule.recursive else free if qty >= pack else 0) if pack > 0 and minimum > 0 and free > 0 else 0
+				if free_qty:
+					line["qty"] = qty - free_qty
+					line["amount"] = flt(line["qty"] * line["rate"])
+					priced.append({**line, "qty": free_qty, "requested_qty": 0, "rate": 0,
+						"amount": 0, "discount_percentage": 0, "is_free_item": 1})
+			elif kind == "X to Y product discount" and matching_x_to_y:
+				minimum = flt(matching_x_to_y.min_quantity) or 1
+				free_qty = int(qty // minimum) * flt(matching_x_to_y.free_item_quantity or 1)
+				if free_qty > 0 and matching_x_to_y.free_item_code:
+					free_item = frappe.get_cached_doc("Item", matching_x_to_y.free_item_code)
+					if free_item.disabled or not free_item.is_sales_item:
+						frappe.throw(f"Free item {free_item.name} is unavailable.")
+					free_rate = flt(matching_x_to_y.free_item_price)
+					priced.append({"pageaddress": line["pageaddress"], "item_code": free_item.name,
+						"item_name": free_item.item_name, "image": free_item.image, "item_group": free_item.item_group,
+						"qty": free_qty, "requested_qty": 0, "uom": free_item.stock_uom,
+						"rate": free_rate, "amount": flt(free_qty * free_rate),
+						"discount_percentage": 0, "is_free_item": 1})
+			elif kind in ("Percentage Discount", "Custom Logic"):
+				rows = sorted((row for row in rule.custom_logic_rows if qty >= flt(row.min_quantity)),
+					key=lambda row: flt(row.min_quantity), reverse=True)
+				if kind == "Custom Logic" and rule.custom_logic_type == "Product":
+					free_qty = flt(rows[0].nos) if rows else 0
+					if free_qty > 0:
+						priced.append({**line, "qty": free_qty, "requested_qty": 0, "rate": 0,
+							"amount": 0, "discount_percentage": 0, "is_free_item": 1})
+				else:
+					percent = (flt(rows[0].percentage) if rows else 0) if kind == "Custom Logic" or rule.custom_logic_rows else (
+						flt(rule.percentage_discount) if qty >= flt(rule.min_quantity) else 0)
+					line["discount_percentage"] = max(0, min(100, percent))
+					line["amount"] = flt(qty * line["rate"] * (1 - line["discount_percentage"] / 100))
+			break
+	for line in priced:
+		line.pop("item_group", None)
+	return priced
+
+
 def _preview(items):
 	context = _customer_context()
 	if isinstance(items, str):
@@ -150,6 +251,7 @@ def _preview(items):
 			"pageaddress": pageaddress,
 			"item_code": item_code,
 			"item_name": item.item_name,
+			"item_group": item.item_group,
 			"image": item.image,
 			"qty": qty,
 			"uom": uom,
@@ -157,10 +259,16 @@ def _preview(items):
 			"amount": flt(qty * rate),
 		})
 
+	priced = _apply_catalogue_rules(lines, context["price_list"])
+	subtotal = flt(sum(line["requested_qty"] * line["rate"] for line in priced)
+		+ sum(line["amount"] for line in priced if line["is_free_item"] and line["rate"]))
+	total = flt(sum(line["amount"] for line in priced))
 	return {
 		**context,
-		"items": lines,
-		"total": flt(sum(line["amount"] for line in lines)),
+		"items": priced,
+		"subtotal": subtotal,
+		"discount_total": flt(subtotal - total),
+		"total": total,
 	}
 
 
@@ -194,7 +302,7 @@ def place_order(items):
 	order.transaction_date = today()
 	order.delivery_date = add_days(today(), 7)
 	order.order_type = "Sales"
-	order.ignore_pricing_rule = 1
+	order.ignore_pricing_rule = 1  # Custom catalogue discounts are applied to each item below.
 	for line in preview["items"]:
 		order.append("items", {
 			"item_code": line["item_code"],
@@ -204,6 +312,8 @@ def place_order(items):
 			"uom": line["uom"],
 			"rate": line["rate"],
 			"price_list_rate": line["rate"],
+			"discount_percentage": line["discount_percentage"],
+			"is_free_item": line["is_free_item"],
 			"delivery_date": order.delivery_date,
 		})
 	# ERPNext validates Item access during Sales Order insertion. The cart and

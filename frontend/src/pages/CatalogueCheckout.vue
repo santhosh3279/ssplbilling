@@ -21,11 +21,13 @@
           <p class="text-sm">Order series: {{ preview.naming_series }}</p>
         </div>
         <div class="rounded-xl bg-[var(--color-surface)] p-5">
-          <div v-for="line in preview.items" :key="`${line.pageaddress}:${line.item_code}`" class="flex justify-between gap-4 border-b py-3 last:border-0">
-            <div>{{ line.item_name }} <span class="text-sm text-[var(--color-text-muted)]">× {{ line.qty }} {{ line.uom }}</span></div>
+          <div v-for="(line, index) in preview.items" :key="index" class="flex justify-between gap-4 border-b py-3 last:border-0">
+            <div>{{ line.item_name }} <span class="text-sm text-[var(--color-text-muted)]">× {{ line.qty }} {{ line.uom }}</span><span v-if="line.is_free_item" class="ml-2 text-sm text-emerald-600">{{ line.rate ? 'Offer item' : 'Free item' }}</span><span v-else-if="line.discount_percentage" class="ml-2 text-sm text-emerald-600">{{ line.discount_percentage }}% off</span></div>
             <strong>{{ money(line.amount) }}</strong>
           </div>
-          <div class="flex justify-between pt-4 text-lg font-bold"><span>Item subtotal</span><span>{{ money(preview.total) }}</span></div>
+          <div class="flex justify-between pt-4"><span>Subtotal</span><span>{{ money(preview.subtotal) }}</span></div>
+          <div v-if="preview.discount_total" class="flex justify-between text-emerald-600"><span>Discount</span><span>−{{ money(preview.discount_total) }}</span></div>
+          <div class="flex justify-between pt-2 text-lg font-bold"><span>Total</span><span>{{ money(preview.total) }}</span></div>
         </div>
         <button type="button" :disabled="placing" class="w-full rounded-xl bg-indigo-600 px-6 py-3 font-bold text-white hover:bg-indigo-700 disabled:opacity-50" @click="placeOrder">
           {{ placing ? 'Creating order…' : 'Place order' }}
