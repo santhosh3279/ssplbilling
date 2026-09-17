@@ -511,7 +511,7 @@
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
-import { encryptPrice, getFloatPrecision } from '../encryption.js'
+import { encryptPrice, getCipherMap } from '../encryption.js'
 import { initFrappeSocket } from '../services/frappeSocket.js'
 import { session } from '../session.js'
 import { cartCount, getQuantity, setCartUser, setQuantity } from '../services/catalogueCart.js'
@@ -555,11 +555,14 @@ function adjustByMinimum(item, direction) {
   setQuantity(pageaddress, item.itemcode, next)
 }
 
+const rupeeFormatter = new Intl.NumberFormat('en-IN', {
+  style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
+})
+
 function displayPrice(price) {
-  if (!websiteUser.value) return encryptPrice(price)
+  if (!websiteUser.value && getCipherMap()) return encryptPrice(price)
   const value = Number(price)
-  if (Number.isNaN(value)) return '—'
-  return value % 1 === 0 ? String(value) : value.toFixed(getFloatPrecision())
+  return price == null || !Number.isFinite(value) ? '—' : rupeeFormatter.format(value)
 }
 
 async function handleWebsiteLogin() {
