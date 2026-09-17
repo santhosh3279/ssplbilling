@@ -33,7 +33,7 @@
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-1 w-full px-6 py-12">
+    <main class="flex-1 w-full px-6 py-12" :class="isWebsiteUser && cartCount ? 'lg:pr-[21rem]' : ''">
       <!-- Loading State -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-16">
         <div class="relative w-16 h-16 mb-4">
@@ -100,6 +100,8 @@
       </div>
     </main>
 
+    <CatalogueCartPanel v-if="isWebsiteUser" />
+
     <!-- Footer -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 py-6 px-6 text-center text-[10px] text-[var(--color-text-muted)] shrink-0 mt-auto">
       <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
@@ -116,6 +118,7 @@ import { useRouter, RouterLink } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { session } from '../session.js'
 import { cartCount, setCartUser } from '../services/catalogueCart.js'
+import CatalogueCartPanel from '../components/CatalogueCartPanel.vue'
 
 const router = useRouter()
 const isLoggedIn = session.isLoggedIn

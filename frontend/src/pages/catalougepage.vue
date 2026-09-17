@@ -13,7 +13,7 @@
     >
       Website User Login
     </button>
-    <div v-if="showLogin" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4" @click.self="showLogin = false">
+    <div v-if="showLogin" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" @click.self="showLogin = false">
       <form class="w-full max-w-sm space-y-4 rounded-xl bg-[var(--color-surface)] p-6 text-[var(--color-text)] shadow-xl" @submit.prevent="handleWebsiteLogin">
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-bold">Website User Login</h2>
@@ -286,7 +286,7 @@
         </header>
 
         <!-- Items Grid Section -->
-        <main class="flex-1 w-full mx-auto px-6 py-10" :class="containerClass">
+        <main class="flex-1 w-full mx-auto px-6 py-10" :class="[containerClass, websiteUser && cartCount ? 'lg:pr-[21rem]' : '']">
           <div class="grid gap-6" :class="gridClass">
             <div
               v-for="item in offer.items"
@@ -414,6 +414,8 @@
       </div>
     </template>
 
+    <CatalogueCartPanel v-if="websiteUser" />
+
     <!-- Footer -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 py-6 px-6 text-center text-[10px] text-[var(--color-text-muted)] shrink-0">
       <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
@@ -424,7 +426,7 @@
   </div>
 
   <!-- Export Options Modal -->
-  <div v-if="showExportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+  <div v-if="showExportModal" class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
     <div class="relative w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-2xl space-y-6 text-[var(--color-text)] animate-in fade-in zoom-in duration-200">
       <!-- Title -->
       <div>
@@ -509,6 +511,7 @@ import { encryptPrice, getFloatPrecision } from '../encryption.js'
 import { initFrappeSocket } from '../services/frappeSocket.js'
 import { session } from '../session.js'
 import { cartCount, getQuantity, setCartUser, setQuantity } from '../services/catalogueCart.js'
+import CatalogueCartPanel from '../components/CatalogueCartPanel.vue'
 
 const route = useRoute()
 const router = useRouter()
