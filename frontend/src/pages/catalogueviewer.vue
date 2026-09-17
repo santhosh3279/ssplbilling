@@ -14,6 +14,9 @@
         <RouterLink v-if="isWebsiteUser" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
         <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
       </div>
+      <button v-else type="button" @click="showLogin = true" class="absolute top-4 right-4 z-20 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
+        Website User Login
+      </button>
 
       <!-- Abstract glowing circles -->
       <div class="absolute -top-12 -left-12 w-48 h-48 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
@@ -31,6 +34,25 @@
         </p>
       </div>
     </header>
+
+    <div v-if="showLogin" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" @click.self="showLogin = false">
+      <form class="w-full max-w-sm space-y-4 rounded-xl bg-[var(--color-surface)] p-6 text-[var(--color-text)] shadow-xl" @submit.prevent="handleWebsiteLogin">
+        <div class="flex items-center justify-between">
+          <h2 class="text-lg font-bold">Website User Login</h2>
+          <button type="button" aria-label="Close login" @click="showLogin = false">✕</button>
+        </div>
+        <p v-if="loginError" role="alert" class="text-sm text-red-600">{{ loginError }}</p>
+        <label class="block text-sm font-medium">Email or Username
+          <input v-model.trim="loginEmail" type="text" autocomplete="username" required class="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2" />
+        </label>
+        <label class="block text-sm font-medium">Password
+          <input v-model="loginPassword" type="password" autocomplete="current-password" required class="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2" />
+        </label>
+        <button type="submit" :disabled="loginLoading" class="w-full rounded bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
+          {{ loginLoading ? 'Signing in…' : 'Sign In' }}
+        </button>
+      </form>
+    </div>
 
     <!-- Main Content Area -->
     <main class="flex-1 w-full px-6 py-12" :class="isWebsiteUser && cartCount ? 'lg:pr-[21rem]' : ''">
@@ -124,6 +146,11 @@ const router = useRouter()
 const isLoggedIn = session.isLoggedIn
 const isWebsiteUser = session.isWebsiteUser
 const userName = computed(() => session.fullName.value || session.user.value)
+const showLogin = ref(false)
+const loginEmail = ref('')
+const loginPassword = ref('')
+const loginError = ref('')
+const loginLoading = ref(false)
 
 const loading = ref(true)
 const error = ref(null)
@@ -153,6 +180,29 @@ function openCatalogue(pageaddress) {
 async function logout() {
   await session.logout()
   setCartUser(null)
+}
+
+async function handleWebsiteLogin() {
+  loginError.value = ''
+  loginLoading.value = true
+  let signedIn = false
+  try {
+    await session.login(loginEmail.value, loginPassword.value)
+    signedIn = true
+    if (!await session.checkWebsiteUser()) {
+      await session.logout()
+      loginError.value = 'Only Website Users can sign in here.'
+      return
+    }
+    setCartUser(session.user.value)
+    loginPassword.value = ''
+    showLogin.value = false
+  } catch (err) {
+    if (signedIn) await session.logout()
+    loginError.value = err.message || 'Could not sign in.'
+  } finally {
+    loginLoading.value = false
+  }
 }
 
 onMounted(() => {
