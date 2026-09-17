@@ -1,5 +1,5 @@
 <template>
-  <main class="min-h-screen bg-[var(--color-bg)] p-6 text-[var(--color-text)]">
+  <main class="h-screen overflow-y-auto bg-[var(--color-bg)] p-6 text-[var(--color-text)]">
     <div class="mx-auto max-w-4xl space-y-6">
       <header class="flex flex-wrap items-center justify-between gap-3">
         <div>
