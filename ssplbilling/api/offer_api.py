@@ -326,8 +326,8 @@ def get_offer_details(pageaddress):
 def get_offer_list():
 	catalogues = frappe.get_all(
 		"Offer-Items",
-		fields=["name", "heading", "pageaddress", "timer", "creation"],
-		order_by="creation desc"
+		fields=["name", "heading", "pageaddress", "timer", "priority", "creation"],
+		order_by="priority asc, creation desc"
 	)
 	if not catalogues:
 		return catalogues

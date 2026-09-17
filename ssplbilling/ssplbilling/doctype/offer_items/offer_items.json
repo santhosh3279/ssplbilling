@@ -7,6 +7,7 @@
  "field_order": [
   "heading",
   "pageaddress",
+  "priority",
   "tile_grid",
   "timer",
   "price_lists",
@@ -27,6 +28,12 @@
    "label": "Page Address",
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "priority",
+   "fieldtype": "Int",
+   "label": "Priority"
   },
   {
    "default": "4",

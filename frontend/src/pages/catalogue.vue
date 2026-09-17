@@ -204,6 +204,19 @@
                   </a>
                 </div>
 
+                <!-- Priority -->
+                <div class="flex flex-col gap-1.5 md:col-span-1">
+                  <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">Priority</label>
+                  <input
+                    v-model.number="form.priority"
+                    type="number"
+                    min="0"
+                    step="1"
+                    class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs outline-none focus:border-[var(--color-info)] transition"
+                  />
+                  <p class="text-[9px] text-[var(--color-text-muted)] mt-0.5">Lower numbers appear first in the catalogue viewer.</p>
+                </div>
+
                 <!-- Tile Grid -->
                 <div class="flex flex-col gap-1.5 md:col-span-1">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">
@@ -407,6 +420,7 @@ const emptyForm = () => ({
   owner: null,
   heading: '',
   pageaddress: '',
+  priority: 0,
   tile_grid: '4',
   timer: 0,
   price_lists: [],
@@ -471,6 +485,7 @@ async function selectCatalogue(name) {
       owner: doc.owner,
       heading: doc.heading || '',
       pageaddress: doc.pageaddress || '',
+      priority: doc.priority ?? 0,
       tile_grid: doc.tile_grid || '4',
       timer: doc.timer || 0,
       price_lists: (doc.price_lists || []).map(p => ({
@@ -626,6 +641,10 @@ async function handleSave() {
     alert('Please enter a Page Address.')
     return
   }
+  if (!Number.isInteger(Number(form.value.priority)) || Number(form.value.priority) < 0) {
+    alert('Priority must be a non-negative whole number.')
+    return
+  }
   const itemRows = form.value.items
     .map((item, index) => ({ item, rowNumber: index + 1 }))
     .filter(({ item }) => [item.itemcode, item.itemname, item.barcode].some(value => value.trim()))
@@ -652,6 +671,7 @@ async function handleSave() {
       doctype: 'Offer-Items',
       heading: form.value.heading.trim(),
       pageaddress: form.value.pageaddress.trim(),
+      priority: Number(form.value.priority),
       tile_grid: form.value.tile_grid,
       timer: parseInt(form.value.timer) || 0,
       ...(form.value.modified && { modified: form.value.modified }),
