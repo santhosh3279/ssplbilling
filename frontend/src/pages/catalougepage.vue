@@ -530,8 +530,21 @@ async function logout() {
   showLogin.value = false
 }
 
+function minimumOrderQuantity(item) {
+  const description = item.discount_desc || ''
+  const minimums = [...description.matchAll(/(?:Min Qty:|Buy|Qty)\s*(\d+(?:\.\d+)?)/gi)]
+    .map(match => Math.ceil(Number(match[1])))
+    .filter(quantity => quantity > 0)
+  return minimums.length ? Math.min(...minimums) : 1
+}
+
 function adjustQuantity(item, delta) {
-  setQuantity(pageaddress, item.itemcode, getQuantity(pageaddress, item.itemcode) + delta)
+  const current = getQuantity(pageaddress, item.itemcode)
+  const minimum = minimumOrderQuantity(item)
+  const next = delta > 0
+    ? (current < minimum ? minimum : current + minimum)
+    : (current <= minimum ? 0 : current - minimum)
+  setQuantity(pageaddress, item.itemcode, next)
 }
 
 function displayPrice(price) {
