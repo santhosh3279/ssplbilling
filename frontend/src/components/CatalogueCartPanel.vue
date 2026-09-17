@@ -10,9 +10,16 @@
           <div class="break-all font-semibold">{{ item.item_code }}</div>
           <div class="truncate text-xs text-[var(--color-text-muted)]" :title="item.pageaddress">{{ item.pageaddress }}</div>
         </div>
-        <span class="shrink-0 font-bold">× {{ item.qty }}</span>
+        <div class="shrink-0 text-right font-bold">
+          <div>× {{ item.qty }}</div>
+          <div v-if="preview" class="text-xs">{{ money(itemAmount(item)) }}</div>
+        </div>
       </li>
     </ul>
+    <div v-if="preview" class="flex justify-between border-t border-[var(--color-border)] px-4 py-3 text-sm font-bold">
+      <span>Total</span>
+      <span>{{ money(preview.total) }}</span>
+    </div>
     <RouterLink to="/catalogue-cart" class="m-3 block rounded-xl bg-indigo-600 px-4 py-3 text-center text-sm font-bold text-white hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
       View cart
     </RouterLink>
@@ -20,6 +27,27 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
+import { frappePost } from '../api.js'
 import { cartCount, cartItems } from '../services/catalogueCart.js'
+
+const preview = ref(null)
+let requestId = 0
+const money = value => Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+const itemAmount = item => (preview.value?.items || [])
+  .filter(line => line.pageaddress === item.pageaddress && line.item_code === item.item_code)
+  .reduce((total, line) => total + Number(line.amount || 0), 0)
+
+watch(cartItems, async items => {
+  const currentRequest = ++requestId
+  preview.value = null
+  if (!items.length) return
+  try {
+    const result = await frappePost('ssplbilling.api.catalogue_order_api.get_cart_preview', { items }, { silent: true })
+    if (currentRequest === requestId) preview.value = result
+  } catch {
+    // The cart remains usable if its price preview cannot be loaded.
+  }
+}, { deep: true, immediate: true })
 </script>
