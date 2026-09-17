@@ -168,13 +168,13 @@ def _apply_catalogue_rules(lines, price_list):
 			kind = rule.discount_type
 			if kind == "Product Discount":
 				minimum, free = flt(rule.min_quantity), flt(rule.free_quantity)
-				pack = minimum + free
-				free_qty = (int(qty // pack) * free if rule.recursive else free if qty >= pack else 0) if pack > 0 and minimum > 0 and free > 0 else 0
+				free_qty = 0
+				if minimum > 0 and free > 0 and qty >= minimum:
+					free_qty = int(qty // minimum) * free if rule.recursive else free
 				if free_qty:
-					line["qty"] = qty - free_qty
-					line["amount"] = flt(line["qty"] * line["rate"])
 					priced.append({**line, "qty": free_qty, "requested_qty": 0, "rate": 0,
-						"amount": 0, "discount_percentage": 0, "is_free_item": 1})
+						"amount": 0, "discount_percentage": 0, "is_free_item": 1,
+						"source_item_code": line["item_code"]})
 			elif kind == "X to Y product discount" and matching_x_to_y:
 				minimum = flt(matching_x_to_y.min_quantity) or 1
 				free_qty = int(qty // minimum) * flt(matching_x_to_y.free_item_quantity or 1)
@@ -187,7 +187,8 @@ def _apply_catalogue_rules(lines, price_list):
 						"item_name": free_item.item_name, "image": free_item.image, "item_group": free_item.item_group,
 						"qty": free_qty, "requested_qty": 0, "uom": free_item.stock_uom,
 						"rate": free_rate, "amount": flt(free_qty * free_rate),
-						"discount_percentage": 0, "is_free_item": 1})
+						"discount_percentage": 0, "is_free_item": 1,
+						"source_item_code": line["item_code"]})
 			elif kind in ("Percentage Discount", "Custom Logic"):
 				rows = sorted((row for row in rule.custom_logic_rows if qty >= flt(row.min_quantity)),
 					key=lambda row: flt(row.min_quantity), reverse=True)
@@ -195,7 +196,8 @@ def _apply_catalogue_rules(lines, price_list):
 					free_qty = flt(rows[0].nos) if rows else 0
 					if free_qty > 0:
 						priced.append({**line, "qty": free_qty, "requested_qty": 0, "rate": 0,
-							"amount": 0, "discount_percentage": 0, "is_free_item": 1})
+							"amount": 0, "discount_percentage": 0, "is_free_item": 1,
+							"source_item_code": line["item_code"]})
 				else:
 					percent = (flt(rows[0].percentage) if rows else 0) if kind == "Custom Logic" or rule.custom_logic_rows else (
 						flt(rule.percentage_discount) if qty >= flt(rule.min_quantity) else 0)

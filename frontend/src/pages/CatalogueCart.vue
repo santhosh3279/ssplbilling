@@ -28,6 +28,7 @@
             <div class="font-semibold">{{ line.item_name }} <span v-if="line.is_free_item" class="text-sm text-emerald-600">{{ line.rate ? 'Offer item' : 'Free item' }}</span></div>
             <div class="text-xs text-[var(--color-text-muted)]">{{ line.item_code }} · {{ line.uom }}</div>
             <div class="text-sm">{{ money(line.rate) }} each <span v-if="line.discount_percentage" class="text-emerald-600">· {{ line.discount_percentage }}% off</span></div>
+            <div v-if="!line.is_free_item && line.discount_qty" class="text-sm font-semibold text-emerald-600">{{ line.requested_qty }} purchased + {{ line.discount_qty }} bonus = {{ line.total_qty }} items</div>
           </div>
           <div v-if="!line.is_free_item" class="flex items-center gap-2">
             <button type="button" :disabled="updating" :aria-label="`Decrease ${line.item_name}`" class="rounded-lg border px-3 py-1 disabled:opacity-50" @click="changeQuantity(line, -1)">−</button>
@@ -56,13 +57,14 @@ import { RouterLink } from 'vue-router'
 import { frappePost } from '../api.js'
 import { session } from '../session.js'
 import { cartItems, clearCart, setCartUser, setQuantity } from '../services/catalogueCart.js'
+import { addDiscountQuantities } from '../services/discount-cart.js'
 
 const isLoggedIn = session.isLoggedIn
 const loading = ref(true)
 const error = ref('')
 const preview = ref(null)
 const updating = ref(false)
-const lines = computed(() => preview.value?.items || [])
+const lines = computed(() => addDiscountQuantities(preview.value?.items || []))
 const money = value => Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 async function refreshPreview() {
