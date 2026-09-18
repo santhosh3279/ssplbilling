@@ -267,6 +267,7 @@
                     <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
                     <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
                   </div>
+                  <span v-if="draftCounts[tile.id] !== undefined" class="shrink-0 rounded-full bg-[var(--color-warning)]/20 px-2 py-1 text-xs font-bold text-[var(--color-warning)]">Drafts: {{ draftCounts[tile.id] }}</span>
                 </div>
               </div>
             </div>
@@ -295,6 +296,7 @@
                       <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
                       <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
                     </div>
+                    <span v-if="draftCounts[tile.id] !== undefined" class="shrink-0 rounded-full bg-[var(--color-warning)]/20 px-2 py-1 text-xs font-bold text-[var(--color-warning)]">Drafts: {{ draftCounts[tile.id] }}</span>
                   </div>
                 </div>
               </div>
@@ -937,6 +939,7 @@ async function loadAllowedTiles(user = null, force = false) {
   const cached = readTileCache()
   if (!force && cached && cached.user === cacheUser && (Date.now() - cached.ts) < TILE_CACHE_TTL) {
     allowedTileIds.value = cached.tiles
+    refreshDraftCounts()
     return
   }
   try {
@@ -947,6 +950,7 @@ async function loadAllowedTiles(user = null, force = false) {
   } catch (e) {
     console.warn('[Dashboard] fetchAllowedTiles failed:', e)
   }
+  refreshDraftCounts()
 }
 
 const tiles = computed(() => {
@@ -965,6 +969,34 @@ const tiles = computed(() => {
   }
   return allTiles.filter(t => canAccessTile(t.id))
 })
+
+const draftCounts = ref({})
+const draftTileFilters = {
+  sales: { doctype: 'Sales Invoice' },
+  quotation: { doctype: 'Quotation', quotation_to: 'Customer' },
+  'sales-order': { doctype: 'Sales Order' },
+  'purchase-invoice': { doctype: 'Purchase Invoice' },
+  'purchase-order': { doctype: 'Purchase Order' },
+  'store-transfer': { doctype: 'Stock Entry', purpose: 'Material Transfer' },
+}
+
+async function refreshDraftCounts() {
+  const company = localStorage.getItem('wb-company')
+  const draftTiles = tiles.value.filter(tile => draftTileFilters[tile.id])
+  await Promise.all(draftTiles.map(async (tile) => {
+    const { doctype, ...extraFilters } = draftTileFilters[tile.id]
+    const filters = { docstatus: 0, ...extraFilters }
+    if (company && ['Sales Invoice', 'Sales Order', 'Purchase Invoice'].includes(doctype)) {
+      filters.company = company
+    }
+    try {
+      const count = await frappeGet('frappe.client.get_count', { doctype, filters })
+      draftCounts.value = { ...draftCounts.value, [tile.id]: count }
+    } catch (error) {
+      console.warn(`[Dashboard] Failed to load draft count for ${doctype}:`, error)
+    }
+  }))
+}
 
 // ── Column tile table + ↑/↓/Enter navigation (only when tiles are doctype-configured) ──
 const isTileAccessMode = computed(() => Array.isArray(allowedTileIds.value))
