@@ -318,8 +318,17 @@ def place_order(items):
 			"is_free_item": line["is_free_item"],
 			"delivery_date": order.delivery_date,
 		})
-	# The authenticated customer and cart were validated above. Allow this
-	# server-side insert without granting Website Users Sales Order permissions.
-	# Keep the session user unchanged so the checkout does not log them out.
-	order.insert(ignore_permissions=True)
+	# ERPNext also checks permissions inside Sales Order validation, so the
+	# insert must run as Administrator. Restore the original session data because
+	# frappe.set_user replaces its sid and would log the website user out.
+	user = frappe.session.user
+	session_data = frappe.session.copy()
+	try:
+		frappe.set_user("Administrator")
+		order.insert(ignore_permissions=True)
+	finally:
+		frappe.set_user(user)
+		frappe.session.clear()
+		frappe.session.update(session_data)
+	frappe.db.set_value("Sales Order", order.name, "owner", user, update_modified=False)
 	return {"order_name": order.name, "total": flt(order.grand_total)}
