@@ -338,8 +338,9 @@
                 <table class="catalogue-sheet" aria-describedby="catalogue-grid-help">
                   <thead>
                     <tr>
+                      <th scope="col" class="sheet-handle-col" title="Arrange items"></th>
                       <th scope="col" class="sheet-row-number">#</th>
-                      <th v-for="column in itemColumns" :key="column.key" scope="col">
+                      <th v-for="column in itemColumns" :key="column.key" scope="col" :class="'sheet-col-' + column.key">
                         {{ column.label }}
                       </th>
                       <th scope="col" class="sheet-discount-rule">Discount Rule</th>
@@ -350,9 +351,59 @@
                   </thead>
                   <tbody>
                     <tr v-if="!form.items.length">
-                      <td colspan="7" class="sheet-empty">Type an item code, name, or barcode in the Item/Barcode column to begin.</td>
+                      <td colspan="8" class="sheet-empty">Type an item code, name, or barcode in the Item/Barcode column to begin.</td>
                     </tr>
-                    <tr v-for="(item, idx) in form.items" :key="idx" :class="{ 'sheet-inactive': Number(item.disabled) === 1 }">
+                    <tr
+                      v-for="(item, idx) in form.items"
+                      :key="item._rowId || idx"
+                      :class="{
+                        'sheet-inactive': Number(item.disabled) === 1,
+                        'sheet-dragging': draggedRowIndex === idx,
+                        'sheet-drag-over': dragOverRowIndex === idx,
+                      }"
+                      @dragover.prevent="onRowDragOver($event, idx)"
+                      @dragenter.prevent="onRowDragEnter($event, idx)"
+                      @dragleave="onRowDragLeave($event, idx)"
+                      @drop.prevent="onRowDrop($event, idx)"
+                    >
+                      <td class="sheet-handle-cell">
+                        <div class="sheet-handle-wrapper">
+                          <div
+                            class="sheet-handle-grip"
+                            draggable="true"
+                            @dragstart="onHandleDragStart($event, idx)"
+                            @dragend="onHandleDragEnd"
+                            title="Drag to rearrange (or use Alt+↑ / Alt+↓)"
+                          >
+                            <svg class="sheet-grip-icon" viewBox="0 0 24 24" fill="currentColor">
+                              <circle cx="8" cy="5" r="2" />
+                              <circle cx="8" cy="12" r="2" />
+                              <circle cx="8" cy="19" r="2" />
+                              <circle cx="16" cy="5" r="2" />
+                              <circle cx="16" cy="12" r="2" />
+                              <circle cx="16" cy="19" r="2" />
+                            </svg>
+                          </div>
+                          <div class="sheet-handle-buttons">
+                            <button
+                              type="button"
+                              tabindex="-1"
+                              :disabled="idx === 0"
+                              @click.stop="moveItemUp(idx)"
+                              class="sheet-move-btn"
+                              title="Move up (Alt+↑)"
+                            >▲</button>
+                            <button
+                              type="button"
+                              tabindex="-1"
+                              :disabled="idx === form.items.length - 1"
+                              @click.stop="moveItemDown(idx)"
+                              class="sheet-move-btn"
+                              title="Move down (Alt+↓)"
+                            >▼</button>
+                          </div>
+                        </div>
+                      </td>
                       <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
                       <td v-for="(column, columnIndex) in itemColumns" :key="column.key" class="sheet-cell">
                         <span v-if="column.key === 'itemname'" class="sheet-item-name">{{ item.itemname }}</span>
@@ -529,6 +580,71 @@ async function uploadItemImage(event) {
   }
 }
 
+let _rowIdSeed = 0
+function getRowId() {
+  return 'row_' + (++_rowIdSeed)
+}
+
+const draggedRowIndex = ref(null)
+const dragOverRowIndex = ref(null)
+
+function onHandleDragStart(event, idx) {
+  closeItemSearch()
+  draggedRowIndex.value = idx
+  event.dataTransfer.effectAllowed = 'move'
+  event.dataTransfer.setData('text/plain', String(idx))
+}
+
+function onHandleDragEnd() {
+  draggedRowIndex.value = null
+  dragOverRowIndex.value = null
+}
+
+function onRowDragOver(event, idx) {
+  event.preventDefault()
+  if (draggedRowIndex.value === null) return
+  event.dataTransfer.dropEffect = 'move'
+  if (dragOverRowIndex.value !== idx) {
+    dragOverRowIndex.value = idx
+  }
+}
+
+function onRowDragEnter(event, idx) {
+  event.preventDefault()
+  if (draggedRowIndex.value !== null) {
+    dragOverRowIndex.value = idx
+  }
+}
+
+function onRowDragLeave(event, idx) {
+  if (dragOverRowIndex.value === idx && !event.currentTarget.contains(event.relatedTarget)) {
+    dragOverRowIndex.value = null
+  }
+}
+
+function onRowDrop(event, targetIdx) {
+  event.preventDefault()
+  const fromIdx = draggedRowIndex.value
+  if (fromIdx !== null && fromIdx !== undefined && fromIdx !== targetIdx) {
+    const moved = form.value.items.splice(fromIdx, 1)[0]
+    form.value.items.splice(targetIdx, 0, moved)
+  }
+  draggedRowIndex.value = null
+  dragOverRowIndex.value = null
+}
+
+function moveItemUp(idx) {
+  if (idx <= 0) return
+  const item = form.value.items.splice(idx, 1)[0]
+  form.value.items.splice(idx - 1, 0, item)
+}
+
+function moveItemDown(idx) {
+  if (idx >= form.value.items.length - 1) return
+  const item = form.value.items.splice(idx, 1)[0]
+  form.value.items.splice(idx + 1, 0, item)
+}
+
 // Form structure
 const emptyForm = () => ({
   name: null,
@@ -541,7 +657,7 @@ const emptyForm = () => ({
   tile_grid: '4',
   timer: 0,
   price_lists: [],
-  items: [{ itemcode: '', itemname: '', barcode: '', disabled: 0 }]
+  items: [{ _rowId: getRowId(), itemcode: '', itemname: '', barcode: '', disabled: 0 }]
 })
 
 const form = ref(emptyForm())
@@ -612,6 +728,7 @@ async function selectCatalogue(name) {
         price_list: p.price_list || ''
       })),
       items: (doc.items || []).map(i => ({
+        _rowId: getRowId(),
         name: i.name,
         itemcode: i.itemcode || '',
         itemname: i.itemname || '',
@@ -676,6 +793,25 @@ function handleSearchKeydown(event) {
 }
 
 function handleItemCellKeydown(event, row, column) {
+  if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+    event.preventDefault()
+    if (event.key === 'ArrowUp' && row > 0) {
+      moveItemUp(row)
+      nextTick(() => {
+        const input = itemsGrid.value?.querySelector(`[data-cell="${row - 1}-${column}"]`)
+        input?.focus()
+        input?.select()
+      })
+    } else if (event.key === 'ArrowDown' && row < form.value.items.length - 1) {
+      moveItemDown(row)
+      nextTick(() => {
+        const input = itemsGrid.value?.querySelector(`[data-cell="${row + 1}-${column}"]`)
+        input?.focus()
+        input?.select()
+      })
+    }
+    return
+  }
   if (column === 0 && searchTargetRow.value === row) {
     handleSearchKeydown(event)
     if (event.defaultPrevented || event.isComposing) return
@@ -694,7 +830,7 @@ async function selectSearchItem(item) {
   if (row !== null && form.value.items[row]) {
     Object.assign(form.value.items[row], values)
   } else {
-    form.value.items.push(values)
+    form.value.items.push({ _rowId: getRowId(), ...values, disabled: 0 })
   }
   closeItemSearch()
   const nextRow = row !== null ? row + 1 : form.value.items.length
@@ -739,6 +875,7 @@ async function handleCellKeydown(event, row, column) {
 
 function addEmptyRow() {
   form.value.items.push({
+    _rowId: getRowId(),
     itemcode: '',
     itemname: '',
     barcode: '',
@@ -1047,8 +1184,13 @@ onMounted(() => {
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+.catalogue-sheet .sheet-handle-col {
+  width: 50px;
+  text-align: center;
+  padding: 0;
+}
 .catalogue-sheet .sheet-row-number {
-  width: 64px;
+  width: 54px;
   text-align: center;
 }
 .catalogue-sheet tbody .sheet-row-number {
@@ -1057,7 +1199,7 @@ onMounted(() => {
   font-size: 22.5px;
   font-weight: 400;
 }
-.catalogue-sheet th:nth-child(2) { width: 25%; }
+.catalogue-sheet .sheet-col-itemcode { width: 25%; }
 .catalogue-sheet .sheet-discount-rule { width: 22%; }
 .catalogue-sheet .sheet-image { width: 90px; text-align: center; }
 .sheet-image-button { padding: 3px 8px; border-radius: 4px; color: white; font-weight: 600; }
@@ -1075,6 +1217,81 @@ onMounted(() => {
   color: var(--color-text-on-focus);
   font-weight: 700;
   box-shadow: inset 2px 0 var(--color-focus);
+}
+.catalogue-sheet tbody tr.sheet-dragging {
+  opacity: 0.4;
+  background-color: var(--color-surface-raised) !important;
+}
+.catalogue-sheet tbody tr.sheet-drag-over {
+  box-shadow: inset 0 3px 0 0 var(--color-info), inset 0 -3px 0 0 var(--color-info);
+  background-color: rgba(59, 130, 246, 0.08) !important;
+}
+.sheet-handle-cell {
+  width: 50px;
+  padding: 2px 4px;
+  text-align: center;
+  vertical-align: middle;
+  user-select: none;
+}
+.sheet-handle-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  height: 100%;
+}
+.sheet-handle-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 28px;
+  border-radius: 4px;
+  cursor: grab;
+  color: var(--color-text-muted);
+  transition: color 120ms, background-color 120ms;
+}
+.sheet-handle-grip:hover {
+  color: var(--color-text);
+  background-color: var(--color-surface-raised);
+}
+.sheet-handle-grip:active {
+  cursor: grabbing;
+}
+.sheet-grip-icon {
+  width: 14px;
+  height: 18px;
+}
+.sheet-handle-buttons {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+.sheet-move-btn {
+  font-size: 8px;
+  line-height: 9px;
+  padding: 1px 3px;
+  color: var(--color-text-muted);
+  border-radius: 2px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 100ms;
+}
+.sheet-move-btn:hover:not(:disabled) {
+  color: var(--color-info);
+  background: var(--color-surface-raised);
+}
+.sheet-move-btn:disabled {
+  opacity: 0.2;
+  cursor: not-allowed;
+}
+.catalogue-sheet tbody tr:focus-within .sheet-handle-grip {
+  color: var(--color-text-on-focus);
+}
+.catalogue-sheet tbody tr:focus-within .sheet-move-btn {
+  color: var(--color-text-on-focus);
 }
 .sheet-cell { padding: 0; }
 .sheet-discount-rule-col {
