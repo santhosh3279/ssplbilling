@@ -325,7 +325,7 @@
                   >
                     <option value="itemcode">Item</option>
                     <option value="itemname">Item Name</option>
-                    <option value="discount_rule">Discount Rule</option>
+                    <option value="discount_rule">Disc</option>
                   </select>
                   <button
                     type="button"
@@ -363,10 +363,10 @@
                     <tr>
                       <th scope="col" class="sheet-handle-col" title="Arrange items"></th>
                       <th scope="col" class="sheet-row-number">#</th>
-                      <th v-for="column in itemColumns" :key="column.key" scope="col" :class="'sheet-col-' + column.key">
+                      <th v-for="column in itemColumns" :key="column.key" scope="col" :class="'sheet-col-' + column.key" :title="column.label">
                         {{ column.label }}
                       </th>
-                      <th scope="col" class="sheet-discount-rule">Discount Rule</th>
+                      <th scope="col" class="sheet-discount-rule" title="Discount Rule">Disc</th>
                       <th scope="col" class="sheet-image">Image</th>
                       <th scope="col" class="sheet-status">Deactivate</th>
                       <th scope="col" class="sheet-action">Action</th>
@@ -428,7 +428,7 @@
                         </div>
                       </td>
                       <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
-                      <td v-for="(column, columnIndex) in itemColumns" :key="column.key" class="sheet-cell">
+                      <td v-for="(column, columnIndex) in itemColumns" :key="column.key" class="sheet-cell" :class="'sheet-col-' + column.key">
                         <span v-if="column.key === 'itemname'" class="sheet-item-name">{{ item.itemname }}</span>
                         <input
                           v-else
@@ -1115,7 +1115,7 @@ const lastSorted = ref(null)
 const sortColumnLabel = computed(() => {
   if (sortColumn.value === 'itemcode') return 'Item'
   if (sortColumn.value === 'itemname') return 'Item Name'
-  if (sortColumn.value === 'discount_rule') return 'Discount Rule'
+  if (sortColumn.value === 'discount_rule') return 'Disc'
   return ''
 })
 
@@ -1391,6 +1391,9 @@ onMounted(() => {
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .catalogue-sheet .sheet-handle-col {
   width: 50px;
@@ -1407,8 +1410,20 @@ onMounted(() => {
   font-size: 22.5px;
   font-weight: 400;
 }
-.catalogue-sheet .sheet-col-itemcode { width: 25%; }
-.catalogue-sheet .sheet-discount-rule { width: 22%; }
+.catalogue-sheet .sheet-col-itemcode {
+  width: 10ch;
+  box-sizing: content-box;
+}
+.catalogue-sheet .sheet-discount-rule,
+.catalogue-sheet .sheet-discount-rule-col {
+  width: 6ch;
+  box-sizing: content-box;
+  text-align: center;
+}
+.catalogue-sheet thead .sheet-discount-rule {
+  text-align: center;
+  padding: 8px 2px;
+}
 .catalogue-sheet .sheet-image { width: 90px; text-align: center; }
 .sheet-image-button { padding: 3px 8px; border-radius: 4px; color: white; font-weight: 600; }
 .sheet-image-present { background: #16a34a; }
@@ -1504,19 +1519,23 @@ onMounted(() => {
 .sheet-cell { padding: 0; }
 .sheet-discount-rule-col {
   vertical-align: middle;
+  text-align: center;
 }
 .sheet-discount-cell {
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
   gap: 2px;
-  padding: 4px 8px;
+  padding: 4px 2px;
 }
 .sheet-discount-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  justify-content: center;
+  gap: 2px;
   overflow: hidden;
+  max-width: 100%;
 }
 .sheet-discount-badge {
   font-family: monospace;
@@ -1524,18 +1543,17 @@ onMounted(() => {
   font-weight: 700;
   color: var(--color-warning);
   white-space: nowrap;
-  flex-shrink: 0;
-}
-.sheet-discount-desc {
-  font-size: 15px;
-  color: var(--color-text-muted);
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
+  text-align: center;
+}
+.sheet-discount-desc {
+  display: none;
 }
 .sheet-discount-none {
   display: block;
-  padding: 4px 8px;
+  padding: 4px 2px;
   color: var(--color-text-muted);
   text-align: center;
   font-size: 22px;
@@ -1569,6 +1587,9 @@ onMounted(() => {
   color: var(--color-text);
   font: inherit;
   font-weight: 500;
+}
+.sheet-col-itemcode input {
+  padding: 4px 6px;
 }
 .catalogue-sheet .sheet-inactive .sheet-item-name,
 .catalogue-sheet .sheet-inactive .sheet-cell input {
