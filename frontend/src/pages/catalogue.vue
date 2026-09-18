@@ -370,7 +370,7 @@
                         />
                       </td>
                       <td class="sheet-image">
-                        <button type="button" :disabled="!item.itemcode" :aria-label="`Manage image for ${item.itemname || item.itemcode}`" class="sheet-image-button" @click="openItemImage(item)">Image</button>
+                        <button type="button" :disabled="!item.itemcode" :aria-label="`Manage image for ${item.itemname || item.itemcode}`" :class="['sheet-image-button', hasItemImage(item.itemcode) ? 'sheet-image-present' : 'sheet-image-missing']" @click="openItemImage(item)">Image</button>
                       </td>
                       <td class="sheet-status">
                         <input
@@ -439,6 +439,12 @@ const imageUrl = ref('')
 const imageLoading = ref(false)
 const imageUploading = ref(false)
 const imageFileInput = ref(null)
+const imageByCode = ref({})
+const cachedImageByCode = computed(() => new Map(cachedItems.value.map(item => [item.item_code, item.image])))
+
+function hasItemImage(code) {
+  return Boolean(Object.hasOwn(imageByCode.value, code) ? imageByCode.value[code] : cachedImageByCode.value.get(code))
+}
 
 async function openItemImage(item) {
   if (!item.itemcode) return
@@ -450,7 +456,10 @@ async function openItemImage(item) {
     const product = await frappeGet('frappe.client.get_value', {
       doctype: 'Item', filters: { name: item.itemcode }, fieldname: 'image'
     })
-    if (imageItemCode.value === item.itemcode) imageUrl.value = product?.image || ''
+    if (imageItemCode.value === item.itemcode) {
+      imageUrl.value = product?.image || ''
+      imageByCode.value[item.itemcode] = imageUrl.value
+    }
   } catch (e) {
     alert(e.message || 'Failed to load product image')
   } finally {
@@ -484,6 +493,7 @@ async function uploadItemImage(event) {
       doctype: 'Item', name: imageItemCode.value, fieldname: 'image', value: uploaded.file_url
     }, { silent: true })
     imageUrl.value = uploaded.file_url
+    imageByCode.value[imageItemCode.value] = uploaded.file_url
     const cached = cachedItems.value.find(item => item.item_code === imageItemCode.value)
     if (cached) cached.image = uploaded.file_url
   } catch (e) {
@@ -903,8 +913,10 @@ onMounted(() => {
 }
 .catalogue-sheet th:nth-child(2) { width: 36%; }
 .catalogue-sheet .sheet-image { width: 90px; text-align: center; }
-.sheet-image-button { padding: 3px 8px; border-radius: 4px; color: var(--color-info); font-weight: 600; }
-.sheet-image-button:hover { background: var(--color-surface-raised); }
+.sheet-image-button { padding: 3px 8px; border-radius: 4px; color: white; font-weight: 600; }
+.sheet-image-present { background: #16a34a; }
+.sheet-image-missing { background: #dc2626; }
+.sheet-image-button:hover:not(:disabled) { filter: brightness(0.9); }
 .sheet-image-button:disabled { opacity: 0.4; cursor: not-allowed; }
 .catalogue-sheet .sheet-status { width: 130px; text-align: center; }
 .catalogue-sheet .sheet-action { width: 72px; text-align: center; }
