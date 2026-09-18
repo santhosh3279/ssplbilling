@@ -310,10 +310,33 @@
 
             <!-- Items Table Card -->
             <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
-              <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-1.5">
+              <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)]/50 pb-2">
                 <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
                   Catalogue Items ({{ form.items.length }})
                 </h3>
+                <div class="flex items-center gap-2">
+                  <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">
+                    Sort by:
+                  </label>
+                  <select
+                    v-model="sortColumn"
+                    class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 py-1 text-xs text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition font-medium"
+                    aria-label="Select column to sort"
+                  >
+                    <option value="itemcode">Item</option>
+                    <option value="itemname">Item Name</option>
+                    <option value="discount_rule">Discount Rule</option>
+                  </select>
+                  <button
+                    type="button"
+                    @click="handleSort"
+                    class="flex items-center gap-1.5 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]/80 active:scale-95 transition shadow-sm"
+                    :title="`Click to sort by ${sortColumnLabel} (${sortDirection === 'asc' ? 'ascending' : 'descending'})`"
+                  >
+                    <span class="text-[var(--color-info)] font-mono">{{ sortDirection === 'asc' ? '▲' : '▼' }}</span>
+                    <span>Sort {{ sortDirection === 'asc' ? 'Ascending' : 'Descending' }}</span>
+                  </button>
+                </div>
               </div>
               
                 <div @mousedown.prevent>
@@ -486,7 +509,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { frappeGet, frappePost, uploadFile } from '../api.js'
@@ -1006,6 +1029,85 @@ function getRuleTooltip(rule) {
   }
   if (!rule.isActiveDate) parts.push('Status: Inactive/Expired')
   return parts.join('\n')
+}
+
+// Sorting controls
+const sortColumn = ref('itemcode')
+const sortDirection = ref('asc')
+const lastSorted = ref(null)
+
+const sortColumnLabel = computed(() => {
+  if (sortColumn.value === 'itemcode') return 'Item'
+  if (sortColumn.value === 'itemname') return 'Item Name'
+  if (sortColumn.value === 'discount_rule') return 'Discount Rule'
+  return ''
+})
+
+watch(sortColumn, () => {
+  sortDirection.value = 'asc'
+})
+
+function getItemSortValue(item, column) {
+  if (column === 'itemcode') {
+    return (item.itemcode || item.barcode || '').trim()
+  }
+  if (column === 'itemname') {
+    return (item.itemname || '').trim()
+  }
+  if (column === 'discount_rule') {
+    const rules = discountRulesForItem(item.itemcode)
+    return rules.length ? (rules[0].rule_name || rules[0].description || '').trim() : ''
+  }
+  return ''
+}
+
+function handleSort() {
+  const col = sortColumn.value
+  const dir = sortDirection.value
+
+  const populated = []
+  const empty = []
+
+  for (const item of form.value.items) {
+    if ((item.itemcode || '').trim() || (item.itemname || '').trim() || (item.barcode || '').trim()) {
+      populated.push(item)
+    } else {
+      empty.push(item)
+    }
+  }
+
+  if (!populated.length) return
+
+  populated.sort((a, b) => {
+    const valA = getItemSortValue(a, col)
+    const valB = getItemSortValue(b, col)
+
+    // Rows with values come before empty rows
+    if (!valA && !valB) return 0
+    if (!valA) return 1
+    if (!valB) return -1
+
+    const cmp = valA.localeCompare(valB, undefined, { numeric: true, sensitivity: 'base' })
+    if (cmp !== 0) {
+      return dir === 'asc' ? cmp : -cmp
+    }
+
+    // Secondary sort by itemname, then itemcode
+    const nameA = (a.itemname || '').trim()
+    const nameB = (b.itemname || '').trim()
+    const nameCmp = nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' })
+    if (nameCmp !== 0) return nameCmp
+
+    const codeA = (a.itemcode || '').trim()
+    const codeB = (b.itemcode || '').trim()
+    return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: 'base' })
+  })
+
+  form.value.items = [...populated, ...empty]
+  lastSorted.value = { column: col, direction: dir }
+
+  // Toggle direction for next click
+  sortDirection.value = dir === 'asc' ? 'desc' : 'asc'
 }
 
 // Save the catalogue document
