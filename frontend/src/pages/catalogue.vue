@@ -1023,12 +1023,88 @@ function getRuleTooltip(rule) {
     `Type: ${rule.discount_type || '—'}`
   ]
   if (rule.description) parts.push(`Offer: ${rule.description}`)
+  const pct = getRuleDiscountPercentage(rule)
+  if (pct > 0) parts.push(`Effective Discount: ${pct.toFixed(2).replace(/\.00$/, '')}%`)
   if (rule.price_list) parts.push(`Price List: ${rule.price_list}`)
   if (rule.start_date || rule.end_date) {
     parts.push(`Validity: ${rule.start_date || '—'} to ${rule.end_date || '—'}`)
   }
   if (!rule.isActiveDate) parts.push('Status: Inactive/Expired')
   return parts.join('\n')
+}
+
+function getRuleDiscountPercentage(rule) {
+  if (!rule) return 0
+
+  const type = rule.discount_type
+
+  if (type === 'Percentage Discount') {
+    const rows = rule.custom_logic_rows || []
+    if (rows.length) {
+      const pcts = rows.map(r => Number(r.percentage) || 0).filter(p => p > 0)
+      if (pcts.length) return Math.max(...pcts)
+    }
+    return Number(rule.percentage_discount) || 0
+  }
+
+  if (type === 'Product Discount') {
+    const paid = Number(rule.min_quantity) || 0
+    const free = Number(rule.free_quantity) || 0
+    if (paid > 0 && free > 0) {
+      return (free / (paid + free)) * 100
+    }
+    return 0
+  }
+
+  if (type === 'Custom Logic') {
+    const rows = rule.custom_logic_rows || []
+    if (rows.length) {
+      if (rule.custom_logic_type === 'Product') {
+        const pcts = rows.map(r => {
+          const paid = Number(r.min_quantity) || 0
+          const free = Number(r.nos) || 0
+          return paid > 0 && free > 0 ? (free / (paid + free)) * 100 : 0
+        })
+        return Math.max(0, ...pcts)
+      } else {
+        const pcts = rows.map(r => Number(r.percentage) || 0).filter(p => p > 0)
+        if (pcts.length) return Math.max(...pcts)
+      }
+    }
+    return 0
+  }
+
+  if (type === 'X to Y product discount') {
+    const rows = rule.x_to_y_table || []
+    if (rows.length) {
+      const pcts = rows.map(r => {
+        const paid = Number(r.min_quantity) || 0
+        const free = Number(r.free_item_quantity) || 0
+        return paid > 0 && free > 0 ? (free / (paid + free)) * 100 : 0
+      })
+      return Math.max(0, ...pcts)
+    }
+    return 0
+  }
+
+  // Fallback: parse from rule description if available
+  const desc = rule.description || ''
+  const percentages = [...desc.matchAll(/(\d+(?:\.\d+)?)\s*%\s*Off/gi)].map(m => Number(m[1]))
+  const freeOffers = [...desc.matchAll(/Buy\s+(\d+(?:\.\d+)?)\s+Get\s+(\d+(?:\.\d+)?)\s+Free/gi)].map(m => {
+    const paid = Number(m[1])
+    const free = Number(m[2])
+    return paid > 0 && free > 0 ? (free / (paid + free)) * 100 : 0
+  })
+
+  return Math.max(0, ...percentages, ...freeOffers)
+}
+
+function getItemDiscountPercentage(item) {
+  if (!item?.itemcode) return 0
+  const rules = discountRulesForItem(item.itemcode)
+  if (!rules.length) return 0
+  const percentages = rules.map(r => getRuleDiscountPercentage(r))
+  return Math.max(0, ...percentages)
 }
 
 // Sorting controls
@@ -1079,6 +1155,36 @@ function handleSort() {
   if (!populated.length) return
 
   populated.sort((a, b) => {
+    if (col === 'discount_rule') {
+      const pctA = getItemDiscountPercentage(a)
+      const pctB = getItemDiscountPercentage(b)
+
+      // Rows without any discount rule (pct === 0) stay at the end
+      if (pctA === 0 && pctB === 0) {
+        const nameA = (a.itemname || a.itemcode || '').trim()
+        const nameB = (b.itemname || b.itemcode || '').trim()
+        return nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' })
+      }
+      if (pctA === 0) return 1
+      if (pctB === 0) return -1
+
+      const diff = dir === 'asc' ? pctA - pctB : pctB - pctA
+      if (Math.abs(diff) > 0.0001) {
+        return diff
+      }
+
+      // Secondary sort by itemname, then itemcode
+      const nameA = (a.itemname || '').trim()
+      const nameB = (b.itemname || '').trim()
+      const nameCmp = nameA.localeCompare(nameB, undefined, { numeric: true, sensitivity: 'base' })
+      if (nameCmp !== 0) return nameCmp
+
+      const codeA = (a.itemcode || '').trim()
+      const codeB = (b.itemcode || '').trim()
+      return codeA.localeCompare(codeB, undefined, { numeric: true, sensitivity: 'base' })
+    }
+
+    // Default alphanumeric sort for itemcode and itemname
     const valA = getItemSortValue(a, col)
     const valB = getItemSortValue(b, col)
 
