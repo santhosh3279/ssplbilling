@@ -903,6 +903,7 @@ const allTiles = [
   { id: 'pricing-rules',      bucket: 'sspl',     name: 'Discount Rules',        desc: 'Manage discount rules and tiers',          icon: '🏷️', shortcut: ''    },
   { id: 'naming-settings',    bucket: 'sspl',   name: 'Naming Settings',       desc: 'Configure document series',                icon: '🔢', shortcut: ''    },
   { id: 'barcode-print',      bucket: 'sspl',   name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
+  { id: 'offer-display',      bucket: 'sspl',   name: 'Catalogue Editor',      desc: 'Manage catalogue lists and product images', icon: '🖼️', shortcut: ''    },
   { id: 'catalogueviewer',    bucket: 'sspl',   name: 'Catalogue Viewer',      desc: 'View published catalogues',                icon: '📖', shortcut: ''    },
   { id: 'catelogue',          bucket: 'sspl',   name: 'Catalogues',            desc: 'View published catalogues',                icon: '📖', shortcut: ''    },
   { id: 'hrms',               bucket: 'sspl',   name: 'HRMS Dashboard',        desc: 'Human Resource Management',                icon: '👥', shortcut: ''    },
