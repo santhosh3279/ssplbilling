@@ -267,7 +267,7 @@
                     <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
                     <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
                   </div>
-                  <span v-if="draftCounts[tile.id] !== undefined" class="shrink-0 rounded-full bg-[var(--color-warning)]/20 px-2 py-1 text-xs font-bold text-[var(--color-warning)]">Drafts: {{ draftCounts[tile.id] }}</span>
+                  <span v-if="draftCounts[tile.id] !== undefined" class="shrink-0 rounded-full bg-[var(--color-danger)]/20 px-2 py-1 text-xs font-bold text-[var(--color-danger)]">{{ draftCounts[tile.id] }}</span>
                 </div>
               </div>
             </div>
@@ -296,7 +296,7 @@
                       <div class="text-2xl font-normal truncate text-[var(--color-text)]">{{ tile.name }}</div>
                       <div class="text-[9px] truncate text-[var(--color-text)] opacity-60">{{ tile.desc }}</div>
                     </div>
-                    <span v-if="draftCounts[tile.id] !== undefined" class="shrink-0 rounded-full bg-[var(--color-warning)]/20 px-2 py-1 text-xs font-bold text-[var(--color-warning)]">Drafts: {{ draftCounts[tile.id] }}</span>
+                    <span v-if="draftCounts[tile.id] !== undefined" class="shrink-0 rounded-full bg-[var(--color-danger)]/20 px-2 py-1 text-xs font-bold text-[var(--color-danger)]">{{ draftCounts[tile.id] }}</span>
                   </div>
                 </div>
               </div>
