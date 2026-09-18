@@ -342,6 +342,7 @@
                       <th v-for="column in itemColumns" :key="column.key" scope="col">
                         {{ column.label }}
                       </th>
+                      <th scope="col" class="sheet-discount-rule">Discount Rule</th>
                       <th scope="col" class="sheet-image">Image</th>
                       <th scope="col" class="sheet-status">Deactivate</th>
                       <th scope="col" class="sheet-action">Action</th>
@@ -349,7 +350,7 @@
                   </thead>
                   <tbody>
                     <tr v-if="!form.items.length">
-                      <td colspan="6" class="sheet-empty">Type an item code, name, or barcode in the Item/Barcode column to begin.</td>
+                      <td colspan="7" class="sheet-empty">Type an item code, name, or barcode in the Item/Barcode column to begin.</td>
                     </tr>
                     <tr v-for="(item, idx) in form.items" :key="idx" :class="{ 'sheet-inactive': Number(item.disabled) === 1 }">
                       <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
@@ -368,6 +369,24 @@
                           autocomplete="off"
                           @keydown="handleItemCellKeydown($event, idx, columnIndex)"
                         />
+                      </td>
+                      <td class="sheet-cell sheet-discount-rule-col">
+                        <div v-if="discountRulesForItem(item.itemcode).length" class="sheet-discount-cell">
+                          <div
+                            v-for="r in discountRulesForItem(item.itemcode)"
+                            :key="r.name"
+                            class="sheet-discount-item"
+                            :title="getRuleTooltip(r)"
+                          >
+                            <span class="sheet-discount-badge" :class="{ 'opacity-60': !r.isActiveDate }">
+                              {{ r.rule_name }}
+                            </span>
+                            <span v-if="r.description && r.description !== r.rule_name" class="sheet-discount-desc">
+                              {{ r.description }}
+                            </span>
+                          </div>
+                        </div>
+                        <span v-else-if="item.itemcode" class="sheet-discount-none">—</span>
                       </td>
                       <td class="sheet-image">
                         <button type="button" :disabled="!item.itemcode" :aria-label="`Manage image for ${item.itemname || item.itemcode}`" :class="['sheet-image-button', hasItemImage(item.itemcode) ? 'sheet-image-present' : 'sheet-image-missing']" @click="openItemImage(item)">Image</button>
@@ -423,7 +442,13 @@ import { frappeGet, frappePost, uploadFile } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
-const { items: cachedItems, refreshItemCache } = useItemCache()
+const {
+  items: cachedItems,
+  refreshItemCache,
+  discountRules,
+  refreshDiscountRuleCache,
+  lookupItemInCache,
+} = useItemCache()
 
 // State
 const catalogues = ref([])
@@ -532,6 +557,7 @@ const searchTargetRow = ref(null)
 // Fetch all catalogue documents from the database
 async function fetchCatalogues() {
   loading.value = true
+  refreshDiscountRuleCache()
   try {
     const data = await frappeGet('frappe.client.get_list', {
       doctype: 'Offer-Items',
@@ -726,6 +752,125 @@ function removeItemRow(idx) {
   if (!form.value.items.length) addEmptyRow()
 }
 
+function formatRuleDescription(rule) {
+  if (!rule) return ''
+  const type = rule.discount_type
+  const rows = rule.custom_logic_rows || []
+
+  if (type === 'Product Discount') {
+    const minQ = Number(rule.min_quantity) || 0
+    const freeQ = Number(rule.free_quantity) || 0
+    return `Buy ${minQ} Get ${freeQ} Free`
+  }
+
+  if (type === 'Percentage Discount') {
+    if (rows.length) {
+      return rows.map(r => `Qty ${Number(r.min_quantity) || 0}+: ${Number(r.percentage) || 0}% Off`).join(' | ')
+    }
+    const pct = Number(rule.percentage_discount) || 0
+    const minQ = Number(rule.min_quantity) || 0
+    if (minQ > 0) {
+      return `${pct}% Off (Min: ${minQ})`
+    }
+    return `${pct}% Off`
+  }
+
+  if (type === 'Custom Logic') {
+    if (rows.length) {
+      if (rule.custom_logic_type === 'Product') {
+        return rows.map(r => `Buy ${Number(r.min_quantity) || 0} Get ${Number(r.nos) || 0} Free`).join(' | ')
+      }
+      return rows.map(r => `Qty ${Number(r.min_quantity) || 0}+: ${Number(r.percentage) || 0}% Off`).join(' | ')
+    }
+    return 'Offer'
+  }
+
+  if (type === 'X to Y product discount') {
+    const xToY = (rule.x_to_y_table || [])[0]
+    if (xToY) {
+      const minQ = Number(xToY.min_quantity) || 1
+      const freeQ = Number(xToY.free_item_quantity) || 1
+      const freeName = xToY.free_item_name || xToY.free_item_code || 'Free Item'
+      return `Buy ${minQ} Get ${freeQ} ${freeName} Free`
+    }
+    return 'X to Y Offer'
+  }
+
+  return ''
+}
+
+function discountRulesForItem(itemCode) {
+  if (!itemCode || !discountRules.value || !discountRules.value.length) return []
+  const code = itemCode.trim().toLowerCase()
+  const today = new Date().toISOString().slice(0, 10)
+
+  const cataloguePriceLists = (form.value.price_lists || [])
+    .map(p => p.price_list && p.price_list.trim())
+    .filter(Boolean)
+
+  const matches = []
+
+  for (const rule of discountRules.value) {
+    if (!rule.enabled) continue
+
+    let matchesItem = false
+    if (rule.discount_type === 'X to Y product discount') {
+      const codes = (rule.x_to_y_table || []).map(i => (i.item_code || '').toLowerCase())
+      matchesItem = codes.includes(code)
+    } else if (rule.applies_to === 'Item Code') {
+      const codes = (rule.items || []).map(i => (i.item_code || '').toLowerCase())
+      matchesItem = codes.includes(code)
+    } else if (rule.applies_to === 'Product Group') {
+      const cached = lookupItemInCache(itemCode)
+      if (cached?.item_group && rule.product_group) {
+        matchesItem = cached.item_group.toLowerCase() === rule.product_group.toLowerCase()
+      }
+    }
+
+    if (!matchesItem) continue
+
+    let isActiveDate = true
+    if (rule.start_date && today < rule.start_date) isActiveDate = false
+    if (rule.end_date && today > rule.end_date) isActiveDate = false
+
+    let matchesPriceList = false
+    if (!cataloguePriceLists.length || !rule.price_list) {
+      matchesPriceList = true
+    } else if (cataloguePriceLists.includes(rule.price_list)) {
+      matchesPriceList = true
+    }
+
+    matches.push({
+      ...rule,
+      isActiveDate,
+      matchesPriceList,
+      description: formatRuleDescription(rule)
+    })
+  }
+
+  matches.sort((a, b) => {
+    if (a.matchesPriceList !== b.matchesPriceList) return a.matchesPriceList ? -1 : 1
+    if (a.isActiveDate !== b.isActiveDate) return a.isActiveDate ? -1 : 1
+    return 0
+  })
+
+  return matches
+}
+
+function getRuleTooltip(rule) {
+  const parts = [
+    `Rule: ${rule.rule_name}`,
+    `Type: ${rule.discount_type || '—'}`
+  ]
+  if (rule.description) parts.push(`Offer: ${rule.description}`)
+  if (rule.price_list) parts.push(`Price List: ${rule.price_list}`)
+  if (rule.start_date || rule.end_date) {
+    parts.push(`Validity: ${rule.start_date || '—'} to ${rule.end_date || '—'}`)
+  }
+  if (!rule.isActiveDate) parts.push('Status: Inactive/Expired')
+  return parts.join('\n')
+}
+
 // Save the catalogue document
 async function handleSave() {
   if (!form.value.heading.trim()) {
@@ -861,6 +1006,7 @@ async function fetchPriceLists() {
 onMounted(() => {
   fetchCatalogues()
   fetchPriceLists()
+  refreshDiscountRuleCache()
   if (!cachedItems.value.length) {
     refreshItemCache('Sales')
   }
@@ -911,7 +1057,8 @@ onMounted(() => {
   font-size: 22.5px;
   font-weight: 400;
 }
-.catalogue-sheet th:nth-child(2) { width: 36%; }
+.catalogue-sheet th:nth-child(2) { width: 25%; }
+.catalogue-sheet .sheet-discount-rule { width: 22%; }
 .catalogue-sheet .sheet-image { width: 90px; text-align: center; }
 .sheet-image-button { padding: 3px 8px; border-radius: 4px; color: white; font-weight: 600; }
 .sheet-image-present { background: #16a34a; }
@@ -930,6 +1077,57 @@ onMounted(() => {
   box-shadow: inset 2px 0 var(--color-focus);
 }
 .sheet-cell { padding: 0; }
+.sheet-discount-rule-col {
+  vertical-align: middle;
+}
+.sheet-discount-cell {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px 8px;
+}
+.sheet-discount-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+}
+.sheet-discount-badge {
+  font-family: monospace;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-warning);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sheet-discount-desc {
+  font-size: 15px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sheet-discount-none {
+  display: block;
+  padding: 4px 8px;
+  color: var(--color-text-muted);
+  text-align: center;
+  font-size: 22px;
+}
+.catalogue-sheet tbody tr:focus-within .sheet-discount-badge {
+  color: var(--color-text-on-focus);
+}
+.catalogue-sheet tbody tr:focus-within .sheet-discount-desc {
+  color: var(--color-text-on-focus);
+  opacity: 0.9;
+}
+.catalogue-sheet tbody tr:focus-within .sheet-discount-none {
+  color: var(--color-text-on-focus);
+}
+.catalogue-sheet .sheet-inactive .sheet-discount-rule-col {
+  opacity: 0.5;
+}
 .sheet-item-name {
   display: block;
   padding: 4px 8px;
