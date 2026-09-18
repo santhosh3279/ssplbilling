@@ -72,11 +72,11 @@
             >
               <!-- Top side for offer -->
               <div class="shrink-0 flex items-start justify-start w-full mb-2">
-                <div v-if="item.discount_type && item.discount_desc" class="bg-slate-950/95 border border-amber-500/40 rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm w-full">
-                  <div class="bg-amber-500 text-black text-[9px] font-black uppercase px-2 py-0.5 text-left tracking-wider">
+                <div v-if="item.discount_type && item.discount_desc" class="bg-slate-950/95 rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm w-full border" :class="offerBannerColors(item).border">
+                  <div class="text-white text-[9px] font-black uppercase px-2 py-0.5 text-left tracking-wider" :class="offerBannerColors(item).heading">
                     Active Offer
                   </div>
-                  <div class="p-1.5 flex flex-col gap-0.5 font-normal text-[20px] text-amber-400 whitespace-normal break-words leading-tight">
+                  <div class="p-1.5 flex flex-col gap-0.5 font-normal text-[20px] whitespace-normal break-words leading-tight" :class="offerBannerColors(item).text">
                     <div 
                       v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
                       :key="lIdx"
@@ -296,8 +296,8 @@
               class="group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
             >
               <!-- Offer banner above the item image -->
-              <div v-if="item.discount_type && item.discount_desc" class="w-full shrink-0 flex flex-col bg-emerald-700 text-white text-center border border-emerald-600 rounded-lg overflow-hidden shadow-lg">
-                <div class="bg-emerald-800 uppercase px-1.5 py-0.5 tracking-wider shrink-0" :class="cardTitleClass">
+              <div v-if="item.discount_type && item.discount_desc" class="w-full shrink-0 flex flex-col text-white text-center border rounded-lg overflow-hidden shadow-lg" :class="[offerBannerColors(item).background, offerBannerColors(item).border]">
+                <div class="uppercase px-1.5 py-0.5 tracking-wider shrink-0" :class="[cardTitleClass, offerBannerColors(item).heading]">
                   Offer
                 </div>
                 <div class="flex flex-col whitespace-normal break-words p-1.5 gap-1" :class="cardTitleClass">
@@ -540,6 +540,27 @@ function minimumOrderQuantity(item) {
     .map(match => Math.ceil(Number(match[1])))
     .filter(quantity => quantity > 0)
   return minimums.length ? Math.min(...minimums) : 1
+}
+
+function discountPercentage(item) {
+  const description = item.discount_desc || ''
+  const percentages = [...description.matchAll(/(\d+(?:\.\d+)?)\s*%\s*Off/gi)]
+    .map(match => Number(match[1]))
+  const freeItemOffers = [...description.matchAll(/Buy\s+(\d+(?:\.\d+)?)\s+Get\s+(\d+(?:\.\d+)?)\s+Free/gi)]
+    .map(match => {
+      const paid = Number(match[1])
+      const free = Number(match[2])
+      return paid > 0 && free > 0 ? free / (paid + free) * 100 : 0
+    })
+  return Math.max(0, ...percentages, ...freeItemOffers)
+}
+
+function offerBannerColors(item) {
+  const percent = discountPercentage(item)
+  if (percent >= 50) return { background: 'bg-rose-700', heading: 'bg-rose-800', border: 'border-rose-500/60', text: 'text-rose-300' }
+  if (percent >= 25) return { background: 'bg-amber-700', heading: 'bg-amber-800', border: 'border-amber-500/60', text: 'text-amber-300' }
+  if (percent >= 10) return { background: 'bg-emerald-700', heading: 'bg-emerald-800', border: 'border-emerald-500/60', text: 'text-emerald-300' }
+  return { background: 'bg-teal-700', heading: 'bg-teal-800', border: 'border-teal-500/60', text: 'text-teal-300' }
 }
 
 function setItemQuantity(item, event) {
