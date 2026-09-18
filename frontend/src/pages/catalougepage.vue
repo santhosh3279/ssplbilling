@@ -153,7 +153,7 @@
                   <template v-if="item.order_rate != null">
                     <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Decrease ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-rose-300/40 bg-rose-400/20 text-black shadow-lg shadow-rose-950/20 backdrop-blur-md hover:bg-rose-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300" @click="adjustByMinimum(item, -1)">−{{ minimumOrderQuantity(item) }}</button>
                     <button type="button" :aria-label="`Decrease ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-rose-300/40 bg-rose-400/20 text-black shadow-lg shadow-rose-950/20 backdrop-blur-md hover:bg-rose-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300" @click="adjustQuantity(item, -1)">−</button>
-                    <span class="w-8 text-center font-bold">{{ getQuantity(pageaddress, item.itemcode) }}</span>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" :aria-label="`Quantity for ${item.itemname}`" :value="getQuantity(pageaddress, item.itemcode)" class="w-14 select-text rounded-lg border border-white/40 bg-white/90 px-1 py-1 text-center font-bold text-black focus:outline-none focus:ring-2 focus:ring-indigo-400" @focus="$event.target.select()" @change="setItemQuantity(item, $event)" @keydown.enter="$event.target.blur()" />
                     <button type="button" :aria-label="`Increase ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-emerald-300/40 bg-emerald-400/20 text-black shadow-lg shadow-emerald-950/20 backdrop-blur-md hover:bg-emerald-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300" @click="adjustQuantity(item, 1)">+</button>
                     <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Increase ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-emerald-300/40 bg-emerald-400/20 text-black shadow-lg shadow-emerald-950/20 backdrop-blur-md hover:bg-emerald-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300" @click="adjustByMinimum(item, 1)">+{{ minimumOrderQuantity(item) }}</button>
                   </template>
@@ -343,7 +343,7 @@
                   <template v-if="item.order_rate != null">
                     <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Decrease ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-rose-500/40 bg-rose-500/15 text-black shadow-lg shadow-rose-900/10 backdrop-blur-md hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500" @click="adjustByMinimum(item, -1)">−{{ minimumOrderQuantity(item) }}</button>
                     <button type="button" :aria-label="`Decrease ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-rose-500/40 bg-rose-500/15 text-black shadow-lg shadow-rose-900/10 backdrop-blur-md hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500" @click="adjustQuantity(item, -1)">−</button>
-                    <span class="w-8 text-center font-bold">{{ getQuantity(pageaddress, item.itemcode) }}</span>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" :aria-label="`Quantity for ${item.itemname}`" :value="getQuantity(pageaddress, item.itemcode)" class="w-14 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-center font-bold text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-indigo-400" @focus="$event.target.select()" @change="setItemQuantity(item, $event)" @keydown.enter="$event.target.blur()" />
                     <button type="button" :aria-label="`Increase ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-emerald-500/40 bg-emerald-500/15 text-black shadow-lg shadow-emerald-900/10 backdrop-blur-md hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500" @click="adjustQuantity(item, 1)">+</button>
                     <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Increase ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-emerald-500/40 bg-emerald-500/15 text-black shadow-lg shadow-emerald-900/10 backdrop-blur-md hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500" @click="adjustByMinimum(item, 1)">+{{ minimumOrderQuantity(item) }}</button>
                   </template>
@@ -540,6 +540,14 @@ function minimumOrderQuantity(item) {
     .map(match => Math.ceil(Number(match[1])))
     .filter(quantity => quantity > 0)
   return minimums.length ? Math.min(...minimums) : 1
+}
+
+function setItemQuantity(item, event) {
+  const value = event.target.value.trim()
+  if (/^\d+$/.test(value) && Number(value) <= 10000) {
+    setQuantity(pageaddress, item.itemcode, Number(value))
+  }
+  event.target.value = getQuantity(pageaddress, item.itemcode)
 }
 
 function adjustQuantity(item, delta) {
