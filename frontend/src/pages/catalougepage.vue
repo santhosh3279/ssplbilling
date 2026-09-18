@@ -557,10 +557,11 @@ function discountPercentage(item) {
 
 function offerBannerColors(item) {
   const percent = discountPercentage(item)
-  if (percent >= 50) return { background: 'bg-rose-700', heading: 'bg-rose-800', border: 'border-rose-500/60', text: 'text-rose-300' }
-  if (percent >= 25) return { background: 'bg-amber-700', heading: 'bg-amber-800', border: 'border-amber-500/60', text: 'text-amber-300' }
-  if (percent >= 10) return { background: 'bg-emerald-700', heading: 'bg-emerald-800', border: 'border-emerald-500/60', text: 'text-emerald-300' }
-  return { background: 'bg-teal-700', heading: 'bg-teal-800', border: 'border-teal-500/60', text: 'text-teal-300' }
+  if (percent >= 75) return { background: 'bg-fuchsia-700', heading: 'bg-fuchsia-800', border: 'border-fuchsia-500/60', text: 'text-fuchsia-200' }
+  if (percent >= 50) return { background: 'bg-rose-700', heading: 'bg-rose-800', border: 'border-rose-500/60', text: 'text-rose-200' }
+  if (percent >= 25) return { background: 'bg-orange-700', heading: 'bg-orange-800', border: 'border-orange-500/60', text: 'text-orange-200' }
+  if (percent >= 10) return { background: 'bg-violet-700', heading: 'bg-violet-800', border: 'border-violet-500/60', text: 'text-violet-200' }
+  return { background: 'bg-sky-700', heading: 'bg-sky-800', border: 'border-sky-500/60', text: 'text-sky-200' }
 }
 
 function setItemQuantity(item, event) {
