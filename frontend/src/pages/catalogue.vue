@@ -342,13 +342,14 @@
                       <th v-for="column in itemColumns" :key="column.key" scope="col">
                         {{ column.label }}
                       </th>
+                      <th scope="col" class="sheet-image">Image</th>
                       <th scope="col" class="sheet-status">Deactivate</th>
                       <th scope="col" class="sheet-action">Action</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr v-if="!form.items.length">
-                      <td colspan="5" class="sheet-empty">Type an item code, name, or barcode in the Item/Barcode column to begin.</td>
+                      <td colspan="6" class="sheet-empty">Type an item code, name, or barcode in the Item/Barcode column to begin.</td>
                     </tr>
                     <tr v-for="(item, idx) in form.items" :key="idx" :class="{ 'sheet-inactive': Number(item.disabled) === 1 }">
                       <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
@@ -367,6 +368,9 @@
                           autocomplete="off"
                           @keydown="handleItemCellKeydown($event, idx, columnIndex)"
                         />
+                      </td>
+                      <td class="sheet-image">
+                        <button type="button" :disabled="!item.itemcode" :aria-label="`Manage image for ${item.itemname || item.itemcode}`" class="sheet-image-button" @click="openItemImage(item)">Image</button>
                       </td>
                       <td class="sheet-status">
                         <input
@@ -390,6 +394,24 @@
         </div>
       </main>
     </div>
+    <div v-if="imageItemCode" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" @click.self="closeItemImage">
+      <div role="dialog" aria-modal="true" aria-labelledby="item-image-title" class="w-full max-w-sm rounded-xl bg-[var(--color-surface)] p-5 shadow-xl">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="item-image-title" class="text-base font-semibold">Product image</h2>
+          <button type="button" :disabled="imageUploading" aria-label="Close image window" @click="closeItemImage">×</button>
+        </div>
+        <p class="mt-1 text-xs text-[var(--color-text-muted)]">{{ imageItemName }} ({{ imageItemCode }})</p>
+        <div class="mt-4 flex min-h-44 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-3">
+          <span v-if="imageLoading" class="text-sm text-[var(--color-text-muted)]">Loading image...</span>
+          <img v-else-if="imageUrl" :src="imageUrl" :alt="imageItemName" class="max-h-56 max-w-full object-contain" />
+          <span v-else class="text-sm text-[var(--color-text-muted)]">No image uploaded</span>
+        </div>
+        <input ref="imageFileInput" type="file" accept="image/*" class="hidden" aria-label="Choose product image" @change="uploadItemImage" />
+        <button type="button" :disabled="imageLoading || imageUploading" class="mt-4 w-full rounded bg-[var(--color-info)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" @click="imageFileInput?.click()">
+          {{ imageUploading ? 'Uploading...' : imageUrl ? 'Replace image' : 'Upload photo' }}
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -397,7 +419,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
-import { frappeGet, frappePost } from '../api.js'
+import { frappeGet, frappePost, uploadFile } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 
 const router = useRouter()
@@ -411,6 +433,66 @@ const selectedName = ref(null)
 const detailLoading = ref(false)
 const saving = ref(false)
 const priceLists = ref([])
+const imageItemCode = ref('')
+const imageItemName = ref('')
+const imageUrl = ref('')
+const imageLoading = ref(false)
+const imageUploading = ref(false)
+const imageFileInput = ref(null)
+
+async function openItemImage(item) {
+  if (!item.itemcode) return
+  imageItemCode.value = item.itemcode
+  imageItemName.value = item.itemname || item.itemcode
+  imageUrl.value = ''
+  imageLoading.value = true
+  try {
+    const product = await frappeGet('frappe.client.get_value', {
+      doctype: 'Item', filters: { name: item.itemcode }, fieldname: 'image'
+    })
+    if (imageItemCode.value === item.itemcode) imageUrl.value = product?.image || ''
+  } catch (e) {
+    alert(e.message || 'Failed to load product image')
+  } finally {
+    imageLoading.value = false
+  }
+}
+
+function closeItemImage() {
+  if (imageUploading.value) return
+  imageItemCode.value = ''
+  imageUrl.value = ''
+}
+
+async function uploadItemImage(event) {
+  const file = event.target.files?.[0]
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    alert('Please choose an image file.')
+    event.target.value = ''
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    alert('File size exceeds 5MB limit.')
+    event.target.value = ''
+    return
+  }
+  imageUploading.value = true
+  try {
+    const uploaded = await uploadFile(file, { doctype: 'Item', docname: imageItemCode.value, fieldname: 'image' })
+    await frappePost('frappe.client.set_value', {
+      doctype: 'Item', name: imageItemCode.value, fieldname: 'image', value: uploaded.file_url
+    }, { silent: true })
+    imageUrl.value = uploaded.file_url
+    const cached = cachedItems.value.find(item => item.item_code === imageItemCode.value)
+    if (cached) cached.image = uploaded.file_url
+  } catch (e) {
+    alert(e.message || 'Failed to upload product image')
+  } finally {
+    imageUploading.value = false
+    event.target.value = ''
+  }
+}
 
 // Form structure
 const emptyForm = () => ({
@@ -468,6 +550,7 @@ const filteredCatalogues = computed(() => {
 
 // Select a catalogue list and load it details including the items child table
 async function selectCatalogue(name) {
+  closeItemImage()
   selectedName.value = name
   detailLoading.value = true
   isFormActive.value = true
@@ -511,6 +594,7 @@ async function selectCatalogue(name) {
 
 // Open clean form for creating new Catalogue List
 function handleNewCatalogue() {
+  closeItemImage()
   selectedName.value = null
   isFormActive.value = true
   form.value = emptyForm()
@@ -518,6 +602,7 @@ function handleNewCatalogue() {
 }
 
 function closeForm() {
+  closeItemImage()
   closeItemSearch()
   isFormActive.value = false
   selectedName.value = null
@@ -817,6 +902,10 @@ onMounted(() => {
   font-weight: 400;
 }
 .catalogue-sheet th:nth-child(2) { width: 36%; }
+.catalogue-sheet .sheet-image { width: 90px; text-align: center; }
+.sheet-image-button { padding: 3px 8px; border-radius: 4px; color: var(--color-info); font-weight: 600; }
+.sheet-image-button:hover { background: var(--color-surface-raised); }
+.sheet-image-button:disabled { opacity: 0.4; cursor: not-allowed; }
 .catalogue-sheet .sheet-status { width: 130px; text-align: center; }
 .catalogue-sheet .sheet-action { width: 72px; text-align: center; }
 .catalogue-sheet thead .sheet-action { font-size: 7.35px; }
