@@ -308,7 +308,7 @@
 
 <script setup>
 import { scrollInvoiceRowIntoView } from '../utils/invoiceScroll.js'
-import { ref, onMounted, computed, nextTick } from 'vue'
+import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useShortcuts } from '../services/shortcutManager'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
@@ -421,11 +421,25 @@ async function fetchMetadata() {
   }
 }
 
+let transferListRequest = 0
 async function fetchRecentTransfers() {
+  const request = ++transferListRequest
   sidebarLoading.value = true
-  recentTransfers.value = await frappePost('ssplbilling.api.storetransfer_api.get_recent_transfers', { date: sidebarDate.value })
-  sidebarLoading.value = false
+  try {
+    const transfers = await frappePost('ssplbilling.api.storetransfer_api.get_recent_transfers', {
+      date: sidebarDate.value,
+      draft_only: draftOnly.value
+    })
+    if (request === transferListRequest) recentTransfers.value = transfers || []
+  } catch (error) {
+    if (request === transferListRequest) recentTransfers.value = []
+    console.error('Failed to load store transfers:', error)
+  } finally {
+    if (request === transferListRequest) sidebarLoading.value = false
+  }
 }
+
+watch([sidebarDate, draftOnly], () => fetchRecentTransfers())
 
 function focusBarcodeInput() {
   selectedRowIdx.value = -1
@@ -848,7 +862,6 @@ function handleSidebarDateChange(dir) {
   const d = new Date(sidebarDate.value)
   d.setDate(d.getDate() + dir)
   sidebarDate.value = toLocalISO(d)
-  fetchRecentTransfers()
 }
 
 function handleDocDateChange(dir) {

@@ -85,19 +85,20 @@ def get_naming_series():
     return ["MAT-TRA-.YYYY.-"]
 
 @frappe.whitelist()
-def get_recent_transfers(date=None):
-    """Get recent Store Transfers for the sidebar."""
-    if not date:
-        date = frappe.utils.today()
-    
+def get_recent_transfers(date=None, draft_only=False):
+    """Get dated Store Transfers, or drafts across all dates, for the sidebar."""
+    draft_only = frappe.parse_json(draft_only)
+    filters = {"purpose": "Material Transfer", "docstatus": ["!=", 2]}
+    if draft_only:
+        filters["docstatus"] = 0
+    else:
+        filters["posting_date"] = date or frappe.utils.today()
+
     transfers = frappe.get_all(
         "Stock Entry",
-        filters={
-            "posting_date": date,
-            "purpose": "Material Transfer"
-        },
+        filters=filters,
         fields=["name", "total_amount as grand_total", "from_warehouse", "to_warehouse", "docstatus", "posting_date"],
-        order_by="creation desc"
+        order_by="posting_date desc, name desc"
     )
     
     # Map for frontend consistency
