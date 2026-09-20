@@ -768,6 +768,7 @@
 </template>
 
 <script setup>
+import { scrollInvoiceRowIntoView } from '../utils/invoiceScroll.js'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { loadCachedPanel, saveCachedPanel, applyPanelEvent } from '../services/billPanelCache.js'
@@ -2225,10 +2226,8 @@ function focusEditField(field, idx) {
 }
 
 function exitEditMode(idx, cancel = false) {
-  if (cancel && !items.value[idx]?.item_code) {
-    clearItem(idx)
-    focusBarcodeInput()
-    return
+  if (cancel && items.value[idx] && !items.value[idx].item_code) {
+    items.value[idx].item_code = originalRowCode.value
   }
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
   quickSearchResults.value = []; editQuickSearchRowIdx.value = null
@@ -2482,22 +2481,7 @@ watch(halfTaxDiscount, (enabled) => {
 })
 
 function scrollRowToEdge(idx, direction) {
-  const rowEl = rowRefs.value[idx]
-  if (!rowEl) return
-  const container = rowEl.closest('.overflow-y-auto')
-  if (!container) return
-  const rowRect = rowEl.getBoundingClientRect()
-  const cRect = container.getBoundingClientRect()
-  // The sticky header covers part of the scroll viewport. Native
-  // scrollIntoView considers that covered area visible and can hide a row there.
-  const theadH = container.querySelector('thead')?.getBoundingClientRect().height || 0
-  const visibleTop = cRect.top + container.clientTop + theadH
-  const visibleBottom = cRect.top + container.clientTop + container.clientHeight
-  if (rowRect.bottom > visibleBottom && (direction === 'down' || rowRect.top >= visibleTop)) {
-    container.scrollTop += rowRect.bottom - visibleBottom
-  } else if (rowRect.top < visibleTop) {
-    container.scrollTop += rowRect.top - visibleTop
-  }
+  scrollInvoiceRowIntoView(rowRefs.value[idx], direction)
 }
 
 function focusRow(idx, direction = null) {
@@ -2537,17 +2521,6 @@ function deleteItem(idx) {
       focusRow(nextIdx)
     } else {
       focusBarcodeInput()
-    }
-  }
-}
-
-function clearItem(idx) {
-  if (isReadOnly.value) return
-  if (idx !== -1 && items.value[idx]) {
-    items.value.splice(idx, 1)
-    if (editingRowIdx.value === idx) {
-      editingRowIdx.value = -1
-      editingField.value = null
     }
   }
 }
@@ -2781,7 +2754,7 @@ function onEditCodeKeydown(e, rowIdx) {
       quickSearchRef.value.handleQuickSearchKeydown(e)
       return
     } else if (e.key === 'Escape') {
-      e.preventDefault(); quickSearchResults.value = []; editQuickSearchRowIdx.value = null; return
+      e.preventDefault(); e.stopPropagation(); quickSearchResults.value = []; editQuickSearchRowIdx.value = null; return
     }
   }
 
@@ -2811,6 +2784,7 @@ function onEditCodeKeydown(e, rowIdx) {
     }
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     quickSearchResults.value = []
     editQuickSearchRowIdx.value = null
     exitEditMode(rowIdx, true)
@@ -2834,6 +2808,7 @@ function onEditQtyKeydown(e, idx) {
     }
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     exitEditMode(idx, true)
   } else if (e.key === 'Backspace') {
     const item = items.value[idx]
@@ -2854,6 +2829,7 @@ function onEditUomKeydown(e, idx) {
     focusEditField('rate', idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     exitEditMode(idx, true)
   }
 }
@@ -2868,6 +2844,7 @@ function onEditRateKeydown(e, idx) {
     focusEditField('disc', idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     exitEditMode(idx, true)
   }
 }
@@ -2882,6 +2859,7 @@ function onEditDiscKeydown(e, idx) {
     finishRowEdit(idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     exitEditMode(idx, true)
   }
 }

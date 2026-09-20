@@ -913,6 +913,7 @@
 </template>
 
 <script setup>
+import { scrollInvoiceRowIntoView } from '../utils/invoiceScroll.js'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
@@ -2062,20 +2063,7 @@ function recalcAmount(idx) {
 }
 
 function scrollRowToEdge(idx, direction) {
-  const rowEl = rowRefs.value[idx]
-  if (!rowEl) return
-  const container = rowEl.closest('.overflow-y-auto')
-  if (!container) return
-  const rowRect = rowEl.getBoundingClientRect()
-  const cRect = container.getBoundingClientRect()
-  if (direction === 'down') {
-    if (rowRect.bottom > cRect.bottom)
-      container.scrollTop += (rowRect.bottom - cRect.bottom)
-  } else {
-    const theadH = container.querySelector('thead')?.offsetHeight || 0
-    if (rowRect.top < cRect.top + theadH)
-      container.scrollTop += (rowRect.top - cRect.top - theadH)
-  }
+  scrollInvoiceRowIntoView(rowRefs.value[idx], direction)
 }
 
 function focusRow(idx, direction = null) {
@@ -2084,8 +2072,7 @@ function focusRow(idx, direction = null) {
     const el = rowRefs.value[idx]
     if (!el) return
     el.focus({ preventScroll: true })
-    if (direction) scrollRowToEdge(idx, direction)
-    else el.scrollIntoView({ block: 'nearest' })
+    scrollRowToEdge(idx, direction)
   })
 }
 function focusBarcodeInput() { selectedRowIdx.value = -1; nextTick(() => { newCodeInput.value?.focus() }) }
@@ -2308,7 +2295,7 @@ function onEditCodeKeydown(e, rowIdx) {
       quickSearchRef.value.handleQuickSearchKeydown(e)
       return
     } else if (e.key === 'Escape') {
-      e.preventDefault(); quickSearchResults.value = []; editQuickSearchRowIdx.value = null; return
+      e.preventDefault(); e.stopPropagation(); quickSearchResults.value = []; editQuickSearchRowIdx.value = null; return
     }
   }
 
@@ -2332,6 +2319,7 @@ function onEditCodeKeydown(e, rowIdx) {
     }
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     quickSearchResults.value = []
     editQuickSearchRowIdx.value = null
     exitEditMode(rowIdx, true)
@@ -2355,6 +2343,7 @@ function onEditQtyKeydown(e, idx) {
     }
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     exitEditMode(idx, true)
   } else if (e.key === 'Backspace') {
     const item = items.value[idx]
@@ -2375,6 +2364,7 @@ function onEditUomKeydown(e, idx) {
     focusEditField('rate', idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     exitEditMode(idx, true)
   }
 }
@@ -2389,6 +2379,7 @@ function onEditRateKeydown(e, idx) {
     focusEditField('disc', idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     exitEditMode(idx, true)
   }
 }
@@ -2403,6 +2394,7 @@ function onEditDiscKeydown(e, idx) {
     openRowPriceListUpdate(idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     exitEditMode(idx, true)
   }
 }
@@ -2864,7 +2856,7 @@ function handleRowKeydown(e, idx) {
     else focusRow(items.value.length - 1, 'down')
   }
   else if (e.key === 'Home') { e.preventDefault(); focusRow(0, 'up') }
-  else if (e.key === 'Escape') { e.preventDefault(); if (!items.value.length) goBack(); else focusBarcodeInput() }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (!items.value.length) goBack(); else focusBarcodeInput() }
   // stopPropagation: shortcutManager also binds DELETE and would toggle the row right back
   else if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); e.stopPropagation(); deleteItem(idx) }
 }
@@ -2879,31 +2871,20 @@ function focusEditField(field, idx) {
   nextTick(() => {
     const el = inputMap[field]?.value
     if (!el) return
-    el.focus()
+    el.focus({ preventScroll: true })
     if (el.select) el.select()
     if (field === 'uom' && el.showPicker) el.showPicker()
+    scrollRowToEdge(idx)
   })
 }
 
 function exitEditMode(idx, cancel = false) {
-  if (cancel && !items.value[idx]?.item_code) {
-    clearItem(idx)
-    focusBarcodeInput()
-    return
+  if (cancel && items.value[idx] && !items.value[idx].item_code) {
+    items.value[idx].item_code = originalRowCode.value
   }
   recalcAmount(idx); editingRowIdx.value = -1; editingField.value = null
   quickSearchResults.value = []; editQuickSearchRowIdx.value = null
   nextTick(() => { focusRow(idx) })
-}
-
-function clearItem(idx) {
-  if (idx !== -1 && items.value[idx]) {
-    items.value.splice(idx, 1)
-    if (editingRowIdx.value === idx) {
-      editingRowIdx.value = -1
-      editingField.value = null
-    }
-  }
 }
 
 function getItemUoms(itemCode) {

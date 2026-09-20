@@ -307,6 +307,7 @@
 </template>
 
 <script setup>
+import { scrollInvoiceRowIntoView } from '../utils/invoiceScroll.js'
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useShortcuts } from '../services/shortcutManager'
@@ -445,8 +446,8 @@ function focusRow(idx) {
   nextTick(() => {
     const el = rowRefs.value[idx]
     if (el) {
-      el.focus()
-      el.scrollIntoView({ block: 'nearest' })
+      el.focus({ preventScroll: true })
+      scrollInvoiceRowIntoView(el)
     }
   })
 }
@@ -463,12 +464,13 @@ function focusEditField(field, idx) {
   selectedRowIdx.value = idx
   nextTick(() => {
     if (field === 'code') {
-      editCodeInput.value?.focus()
+      editCodeInput.value?.focus({ preventScroll: true })
       editCodeInput.value?.select()
     } else if (field === 'qty') {
-      editQtyInput.value?.focus()
+      editQtyInput.value?.focus({ preventScroll: true })
       editQtyInput.value?.select()
     }
+    scrollInvoiceRowIntoView(rowRefs.value[idx])
   })
 }
 
