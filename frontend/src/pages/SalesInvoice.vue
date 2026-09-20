@@ -2200,7 +2200,6 @@ function handleRowKeydown(e, idx) {
     if (activeItems.value.length === 0 || props.isSubwindow) {
       goBack()
     } else {
-      clearItem(idx)
       focusBarcodeInput()
     }
   }
