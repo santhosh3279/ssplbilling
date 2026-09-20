@@ -69,36 +69,42 @@
 
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">From Date (DD-MM-YYYY)</label>
-          <input
-            ref="fromDateInput"
-            v-model="dateData.fromDisplay"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xl font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-            placeholder="DD-MM-YYYY"
-            maxlength="10"
-            @input="e => onInput(e, 'from')"
-            @focus="selectText"
-            @keydown.backspace="handleBackspace($event, 'from')"
-            @keydown.enter.prevent="focusToDate"
-            @keydown.down.prevent="focusToDate"
-            @keydown.up.prevent="focusQuickFilters"
-            @keydown.esc.stop="$emit('close')"
-          />
+          <div class="flex items-center gap-2">
+            <input
+              ref="fromDateInput"
+              v-model="dateData.fromDisplay"
+              class="min-w-0 flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xl font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+              placeholder="DD-MM-YYYY"
+              maxlength="10"
+              @input="e => onInput(e, 'from')"
+              @focus="selectText"
+              @keydown.backspace="handleBackspace($event, 'from')"
+              @keydown.enter.prevent="focusToDate"
+              @keydown.down.prevent="focusToDate"
+              @keydown.up.prevent="focusQuickFilters"
+              @keydown.esc.stop="$emit('close')"
+            />
+            <DatePickerButton :model-value="dateData.fromISO" label="Choose from date" @update:model-value="value => { dateData.fromISO = value; dateData.fromDisplay = formatDateToDisplay(value); selectedRange = '' }" />
+          </div>
         </div>
         <div class="flex flex-col gap-1.5">
           <label class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">To Date (DD-MM-YYYY)</label>
-          <input
-            ref="toDateInput"
-            v-model="dateData.toDisplay"
-            class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xl font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
-            placeholder="DD-MM-YYYY"
-            maxlength="10"
-            @input="e => onInput(e, 'to')"
-            @focus="selectText"
-            @keydown.backspace="handleBackspace($event, 'to')"
-            @keydown.enter.prevent="confirmDate"
-            @keydown.up.prevent="focusFromDate"
-            @keydown.esc.stop="$emit('close')"
-          />
+          <div class="flex items-center gap-2">
+            <input
+              ref="toDateInput"
+              v-model="dateData.toDisplay"
+              class="min-w-0 flex-1 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-xl font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+              placeholder="DD-MM-YYYY"
+              maxlength="10"
+              @input="e => onInput(e, 'to')"
+              @focus="selectText"
+              @keydown.backspace="handleBackspace($event, 'to')"
+              @keydown.enter.prevent="confirmDate"
+              @keydown.up.prevent="focusFromDate"
+              @keydown.esc.stop="$emit('close')"
+            />
+            <DatePickerButton :model-value="dateData.toISO" label="Choose to date" @update:model-value="value => { dateData.toISO = value; dateData.toDisplay = formatDateToDisplay(value); selectedRange = '' }" />
+          </div>
         </div>
       </div>
       <div class="flex justify-end gap-3 border-t border-[var(--color-border)] px-6 py-4 bg-[var(--color-surface)]">
@@ -112,6 +118,7 @@
 </template>
 
 <script setup>
+import DatePickerButton from './DatePickerButton.vue'
 import { ref, nextTick, watch } from 'vue'
 import { useSubwindow } from '../services/shortcutManager'
 

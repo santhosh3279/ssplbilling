@@ -42,6 +42,7 @@
             {{ isToday ? 'Today' : 'Past Date' }}
           </div>
           <div class="font-mono text-2xl font-black text-[var(--color-text)] leading-tight">{{ formatDateDisplay(currentDate) }}</div>
+          <DatePickerButton v-model="currentDate" :max="serverToday()" label="Choose cashier date" />
         </div>
         <button @click="shiftDate(1)" :disabled="isToday"
           class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed">
@@ -633,6 +634,7 @@
 </template>
 
 <script setup>
+import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useShortcuts } from '../services/shortcutManager'

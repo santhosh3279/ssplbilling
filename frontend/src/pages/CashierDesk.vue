@@ -648,8 +648,9 @@
                       @input="handleDueDateInput"
                       @keydown.backspace="handleDueDateKeyDown"
                       placeholder="DDMM or DD/MM/YYYY"
-                      class="w-full rounded-2xl border border-[var(--color-danger)]/50 bg-[var(--color-bg)] py-5 pl-12 pr-4 text-center font-mono font-black text-[22.5px] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-danger)] focus:ring-8 focus:ring-[var(--color-danger)]/10 transition-all outline-none"
+                      class="w-full rounded-2xl border border-[var(--color-danger)]/50 bg-[var(--color-bg)] py-5 pl-12 pr-14 text-center font-mono font-black text-[22.5px] text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-danger)] focus:ring-8 focus:ring-[var(--color-danger)]/10 transition-all outline-none"
                     />
+                    <div class="absolute right-3 top-1/2 -translate-y-1/2"><DatePickerButton :model-value="dueDate ? getIsoDueDate() : ''" label="Choose promise date" @update:model-value="dueDate = $event ? $event.split('-').reverse().join('/') : ''" /></div>
                   </div>
                   <div class="mt-3 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[var(--color-danger)]/80 bg-[var(--color-danger)]/30 rounded-lg p-2 border border-[var(--color-danger)]/40">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20"/><path d="m5 15 7 7 7-7"/></svg>
@@ -818,6 +819,7 @@
 </template>
 
 <script setup>
+import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { session } from '../session'

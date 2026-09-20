@@ -80,6 +80,7 @@
               @focus="e => e.target.select()"
               @input="onDateInput"
             />
+            <DatePickerButton v-model="postingDate" label="Choose posting date" @update:model-value="displayDate = formatDateToDisplay($event)" />
             <button
               @click="changeDate(1)"
               class="p-1 hover:bg-black/10 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all group-focus-within:text-black/70"
@@ -284,6 +285,7 @@
 </template>
 
 <script setup>
+import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappePost } from '../api.js'

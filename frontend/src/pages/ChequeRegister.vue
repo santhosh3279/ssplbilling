@@ -292,10 +292,11 @@
                   @input="onChequeDateInput"
                   @blur="autoCompleteChequeDate"
                   @keydown="onChequeDateKeydown"
-                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-4 pr-10 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)] font-mono text-[1.25rem]"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-4 pr-24 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)] font-mono text-[1.25rem]"
                   placeholder="DD-MM-YYYY"
                   maxlength="10"
                 />
+                <div class="absolute right-10 top-1/2 -translate-y-1/2"><DatePickerButton v-model="newForm.cheque_date" label="Choose cheque date" @update:model-value="newForm.cheque_date_display = formatDateToDisplay($event)" /></div>
                 <button
                   v-if="newForm.cheque_date_display"
                   type="button"
@@ -393,10 +394,11 @@
                 @input="onClearanceDateInput"
                 @blur="autoCompleteClearanceDate"
                 @keydown="onClearanceDateKeydown"
-                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-4 pr-10 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)] font-mono"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-4 pr-24 py-2.5 font-bold outline-none focus:border-[var(--color-highlight)] font-mono"
                 placeholder="DD-MM-YYYY"
                 maxlength="10"
               />
+              <div class="absolute right-10 top-1/2 -translate-y-1/2"><DatePickerButton v-model="settleForm.clearance_date" label="Choose clearance date" @update:model-value="settleForm.clearance_date_display = formatDateToDisplay($event)" /></div>
               <button
                 v-if="settleForm.clearance_date_display"
                 type="button"
@@ -462,6 +464,7 @@
 </template>
 
 <script setup>
+import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {

@@ -90,6 +90,7 @@
               <div class="flex items-center gap-1">
                 <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] leading-none flex items-center">&larr;</button>
                 <div class="text-3xl text-[var(--color-text)] tabular-nums">{{ formatDate(transferDate) }}</div>
+                <DatePickerButton v-model="transferDate" label="Choose document date" :disabled="isReadOnly" />
                 <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] leading-none flex items-center">&rarr;</button>
               </div>
             </div>
@@ -307,6 +308,7 @@
 </template>
 
 <script setup>
+import DatePickerButton from '../components/DatePickerButton.vue'
 import { scrollInvoiceRowIntoView } from '../utils/invoiceScroll.js'
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'

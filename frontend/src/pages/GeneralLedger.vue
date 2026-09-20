@@ -258,12 +258,15 @@
             <!-- Heading Filter Row -->
             <tr class="bg-[var(--color-surface-raised)] border-b border-[var(--color-border)]">
               <th class="px-2 py-1">
-                <input
-                  v-model="filters.date"
-                  type="text"
-                  placeholder="Filter..."
-                  class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
-                />
+                <div class="flex items-center gap-1">
+                  <input
+                    v-model="filters.date"
+                    type="text"
+                    placeholder="Filter..."
+                    class="min-w-0 w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-xs font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-1 focus:ring-[var(--color-info)]/30 placeholder-[var(--color-text-muted)]"
+                  />
+                  <DatePickerButton v-model="filters.date" label="Filter by date" />
+                </div>
               </th>
               <th class="px-1 py-1 w-[4ch] max-w-[4ch]">
                 <input
@@ -697,6 +700,7 @@
 </template>
 
 <script setup>
+import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, onMounted, nextTick, computed, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'

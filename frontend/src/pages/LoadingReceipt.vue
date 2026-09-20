@@ -87,6 +87,7 @@
           <div class="flex flex-col items-center leading-none">
             <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Date</span>
             <span class="text-lg font-bold text-[var(--color-text)] tabular-nums">{{ sidebarDateLabel }}</span>
+            <DatePickerButton v-model="sidebarDate" label="Choose list date" />
           </div>
           <button
             class="flex h-10 w-10 items-center justify-center rounded text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition text-xl font-bold"
@@ -415,6 +416,7 @@
 </template>
 
 <script setup>
+import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'

@@ -277,6 +277,7 @@
                       @keydown.enter.prevent="parseSuppDate"
                     />
                   </div>
+                  <DatePickerButton v-model="supplierInvoiceDate" :disabled="isReadOnly" label="Choose supplier invoice date" @update:model-value="suppDateEntry = isoToDisplayDate($event)" />
                   <button
                     @click="handleSupplierInvoiceDateChange(1)"
                     :disabled="isReadOnly"
@@ -292,6 +293,7 @@
               <div class="flex items-center gap-1">
                 <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
                 <div class="text-4xl font-bold text-[var(--color-text)] tabular-nums">{{ formatDateShort(invoiceDate) }}</div>
+                <DatePickerButton v-model="invoiceDate" label="Choose document date" :disabled="isReadOnly" />
                 <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
               </div>
             </div>
@@ -913,6 +915,7 @@
 </template>
 
 <script setup>
+import DatePickerButton from '../components/DatePickerButton.vue'
 import { scrollInvoiceRowIntoView } from '../utils/invoiceScroll.js'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'

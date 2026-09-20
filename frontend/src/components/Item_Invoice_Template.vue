@@ -20,6 +20,7 @@
         <div class="flex items-center gap-1 border-b border-[var(--color-border)] p-0 bg-[var(--color-bg)]">
           <button @click="$emit('sidebar-date-change', -1)" class="rounded p-2 text-xl text-[var(--color-text-muted)]">&larr;</button>
           <div class="flex-1 text-center font-bold text-[var(--color-text)] text-lg">{{ formatDate(sidebarDate) }}</div>
+          <DatePickerButton :model-value="sidebarDate" label="Choose sidebar date" @update:model-value="value => { if (value) $emit('sidebar-date-change', Math.round((Date.parse(value) - Date.parse(sidebarDate)) / 86400000)) }" />
           <button @click="$emit('sidebar-date-change', 1)" class="rounded p-2 text-xl text-[var(--color-text-muted)]">&rarr;</button>
         </div>
 
@@ -313,6 +314,7 @@
                 <div class="flex items-center gap-1">
                   <button @click="$emit('doc-date-change', -1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
                   <div class="text-3xl text-[var(--color-text)] tabular-nums">{{ formatDate(docDate) }}</div>
+                  <DatePickerButton :model-value="docDate" :disabled="isReadOnly" label="Choose document date" @update:model-value="value => { if (value) $emit('doc-date-change', Math.round((Date.parse(value) - Date.parse(docDate)) / 86400000)) }" />
                   <button @click="$emit('doc-date-change', 1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
                 </div>
               </div>
@@ -642,6 +644,7 @@
 </template>
 
 <script setup>
+import DatePickerButton from './DatePickerButton.vue'
 /**
  * Item_Invoice_Template.vue
  * A reusable UI template component based on SalesEntry.vue
