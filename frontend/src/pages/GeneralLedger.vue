@@ -469,6 +469,10 @@
                 <span v-if="fmtWeekday(voucherDetail.posting_date)" class="ml-1 text-[var(--color-text-muted)]">({{ fmtWeekday(voucherDetail.posting_date) }})</span>
               </span>
             </div>
+            <div v-if="ledgerData" class="flex justify-between gap-3">
+              <span class="text-[var(--color-text-muted)] shrink-0">Ledger</span>
+              <span class="font-semibold text-[var(--color-text)] text-right break-words">{{ ledgerData.label || ledgerData.party }}</span>
+            </div>
             <div v-if="selectedEntry && againstDisplay(selectedEntry)" class="flex justify-between gap-3">
               <span class="text-[var(--color-text-muted)] shrink-0">Against</span>
               <span
