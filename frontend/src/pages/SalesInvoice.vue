@@ -2218,8 +2218,9 @@ function focusEditField(field, idx) {
   nextTick(() => {
     const el = inputMap[field]?.value
     if (!el) return
-    el.focus()
+    el.focus({ preventScroll: true })
     if (el.select) el.select()
+    scrollRowToEdge(idx)
   })
 }
 
@@ -2487,13 +2488,15 @@ function scrollRowToEdge(idx, direction) {
   if (!container) return
   const rowRect = rowEl.getBoundingClientRect()
   const cRect = container.getBoundingClientRect()
-  if (direction === 'down') {
-    if (rowRect.bottom > cRect.bottom)
-      container.scrollTop += (rowRect.bottom - cRect.bottom)
-  } else {
-    const theadH = container.querySelector('thead')?.offsetHeight || 0
-    if (rowRect.top < cRect.top + theadH)
-      container.scrollTop += (rowRect.top - cRect.top - theadH)
+  // The sticky header covers part of the scroll viewport. Native
+  // scrollIntoView considers that covered area visible and can hide a row there.
+  const theadH = container.querySelector('thead')?.getBoundingClientRect().height || 0
+  const visibleTop = cRect.top + container.clientTop + theadH
+  const visibleBottom = cRect.top + container.clientTop + container.clientHeight
+  if (rowRect.bottom > visibleBottom && (direction === 'down' || rowRect.top >= visibleTop)) {
+    container.scrollTop += rowRect.bottom - visibleBottom
+  } else if (rowRect.top < visibleTop) {
+    container.scrollTop += rowRect.top - visibleTop
   }
 }
 
@@ -2503,8 +2506,7 @@ function focusRow(idx, direction = null) {
     const el = rowRefs.value[idx]
     if (!el) return
     el.focus({ preventScroll: true })
-    if (direction) scrollRowToEdge(idx, direction)
-    else el.scrollIntoView({ block: 'nearest' })
+    scrollRowToEdge(idx, direction)
   })
 }
 function focusBarcodeInput() { selectedRowIdx.value = -1; nextTick(() => { newCodeInput.value?.focus() }) }
