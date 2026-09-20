@@ -464,7 +464,10 @@
           <div class="mb-4 space-y-2 rounded-lg bg-[var(--color-surface-raised)] p-3 text-[11px]">
             <div class="flex justify-between">
               <span class="text-[var(--color-text-muted)]">Posting Date</span>
-              <span class="font-semibold text-[var(--color-text)]">{{ fmtDate(voucherDetail.posting_date) }}</span>
+              <span class="font-semibold text-[var(--color-text)]">
+                {{ fmtDate(voucherDetail.posting_date) }}
+                <span v-if="fmtWeekday(voucherDetail.posting_date)" class="ml-1 text-[var(--color-text-muted)]">({{ fmtWeekday(voucherDetail.posting_date) }})</span>
+              </span>
             </div>
             <div v-if="selectedEntry && againstDisplay(selectedEntry)" class="flex justify-between gap-3">
               <span class="text-[var(--color-text-muted)] shrink-0">Against</span>
@@ -1546,6 +1549,14 @@ function fmtDuration(ms) {
 
 function fmt(n) {
   return (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function fmtWeekday(value) {
+  if (!value) return ''
+  const datePart = String(value).split(/[ T]/)[0]
+  const date = new Date(`${datePart}T00:00:00Z`)
+  if (isNaN(date.getTime())) return ''
+  return date.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' })
 }
 
 function fmtDate(d) {
