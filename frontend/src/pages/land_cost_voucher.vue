@@ -469,6 +469,17 @@ if (props.isSubwindow) {
 
 const wb_company = computed(() => localStorage.getItem('wb-company') || '')
 
+function getBillingCostCenter() {
+  const selected = localStorage.getItem('wb-cost-center')
+  if (selected && selected !== 'None') return selected
+  try {
+    const centers = JSON.parse(localStorage.getItem('wb-cost-centers') || '[]')
+    return Array.isArray(centers) ? centers.find(center => center && center !== 'None') || '' : ''
+  } catch {
+    return ''
+  }
+}
+
 // --- STATE ---
 const doc = reactive({
   name: '',
@@ -860,7 +871,11 @@ async function fetchItems() {
 
     if (res.docs && res.docs.length > 0) {
       const updated = res.docs[0]
-      doc.items = updated.items || []
+      const billingCostCenter = getBillingCostCenter()
+      doc.items = (updated.items || []).map(item => ({
+        ...item,
+        cost_center: billingCostCenter || item.cost_center
+      }))
       distributeCharges()
       successMsg.value = 'Receipt items loaded successfully.'
     } else {
@@ -961,7 +976,7 @@ async function handleSave() {
         applicable_charges: i.applicable_charges,
         purchase_receipt_item: i.purchase_receipt_item,
         stock_entry_item: i.stock_entry_item,
-        cost_center: i.cost_center
+        cost_center: getBillingCostCenter() || i.cost_center
       }))
     }
 
@@ -1043,7 +1058,7 @@ async function handleSubmit() {
         applicable_charges: i.applicable_charges,
         purchase_receipt_item: i.purchase_receipt_item,
         stock_entry_item: i.stock_entry_item,
-        cost_center: i.cost_center
+        cost_center: getBillingCostCenter() || i.cost_center
       }))
     }
     const res = await frappePost('frappe.client.submit', { doc: payload })
