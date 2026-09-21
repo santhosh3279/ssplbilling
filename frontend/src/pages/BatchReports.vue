@@ -108,11 +108,26 @@
                 <!-- Multi-series Selector -->
                 <div class="mt-4 flex flex-col gap-2 pt-3 border-t border-[var(--color-border)]/40">
                   <span class="text-xs text-[var(--color-text-muted)] uppercase tracking-wider font-bold">Select Series:</span>
+                  <button
+                    v-if="report.id === 'hsn_summary'"
+                    type="button"
+                    :aria-pressed="syncHsnSeries"
+                    @click="syncHsnSeries = !syncHsnSeries"
+                    class="self-start rounded-lg border px-3 py-1.5 text-sm font-semibold transition cursor-pointer"
+                    :class="syncHsnSeries
+                      ? 'bg-[var(--color-info)] border-[var(--color-info)] text-[var(--color-text-on-highlight)]'
+                      : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)]'"
+                  >
+                    Match Sales Tax Register: {{ syncHsnSeries ? 'On' : 'Off' }}
+                  </button>
+                  <span v-if="report.id === 'hsn_summary' && syncHsnSeries" class="text-xs text-[var(--color-text-muted)]">
+                    Series update live from Sales Tax Register.
+                  </span>
                   <div class="flex flex-wrap gap-2">
                     <button
                       v-for="s in getSeriesListForType(report.seriesType)"
                       :key="s"
-                      :disabled="!report.selected"
+                      :disabled="!report.selected || (report.id === 'hsn_summary' && syncHsnSeries)"
                       @click="toggleSeries(report, s)"
                       type="button"
                       class="px-3.5 py-1.5 rounded-full text-sm font-semibold border transition cursor-pointer select-none disabled:opacity-40 disabled:cursor-not-allowed"
@@ -168,7 +183,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import JSZip from 'jszip'
 import ExcelJS from 'exceljs'
@@ -273,7 +288,17 @@ const reports = ref([
   },
 ])
 
+const syncHsnSeries = ref(false)
+watch(
+  () => [syncHsnSeries.value, [...reports.value.find(r => r.id === 'sales_tax').selectedSeries]],
+  ([enabled, series]) => {
+    if (enabled) reports.value.find(r => r.id === 'hsn_summary').selectedSeries = [...series]
+  },
+  { flush: 'sync' }
+)
+
 function toggleSeries(report, s) {
+  if (report.id === 'hsn_summary' && syncHsnSeries.value) return
   if (report.selectedSeries.includes(s)) {
     report.selectedSeries = report.selectedSeries.filter(val => val !== s)
   } else {
