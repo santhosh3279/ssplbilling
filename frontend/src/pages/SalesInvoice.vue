@@ -79,6 +79,14 @@
     >
       <!-- Custom slots for additional logic if needed -->
       <template #doc-number-extra>
+        <div
+          v-if="mirroredInvoice"
+          class="flex items-center gap-1 text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded px-1.5 py-0.5"
+          title="Mirrored Invoice"
+        >
+          <span>M:</span>
+          <span>{{ mirroredInvoice }}</span>
+        </div>
         <div v-if="customInvoiceNo" class="flex items-center gap-1.5 ml-2">
           <span
             class="rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/40 px-2 py-0.5 text-xs font-black tracking-widest uppercase cursor-pointer hover:bg-amber-500/30 transition-colors shadow-sm"
@@ -100,6 +108,21 @@
 
       <template #header-right>
         <div class="flex items-center gap-4">
+          <div
+            v-if="mirroredInvoice"
+            class="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-1 font-mono text-xs font-bold text-emerald-600 dark:text-emerald-400 shadow-sm"
+          >
+            <span class="text-[10px] uppercase tracking-wider text-[var(--color-text-muted)] font-sans">Mirrored:</span>
+            <a
+              :href="`/app/sales-invoice/${encodeURIComponent(mirroredInvoice)}`"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Open mirrored invoice in ERPNext"
+              class="hover:underline text-[var(--color-text)] font-mono text-sm font-bold"
+            >
+              {{ mirroredInvoice }}
+            </a>
+          </div>
           <!-- Mirrors the Sale Return checkbox in the details panel — same isReturn ref -->
           <label
             class="flex items-center gap-2 shrink-0 select-none rounded border px-3 py-1 transition-all"
@@ -940,6 +963,7 @@ const priceDetectData = ref(null)
 const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: number }
 
 const invoiceNo = ref('NEW')
+const mirroredInvoice = ref('')
 const customInvoiceNo = ref('')
 const showCustomInvoiceModal = ref(false)
 const displayedDocNumber = computed(() => {
@@ -1123,6 +1147,7 @@ async function handleSelectSidebarItem(item) {
     // Header
     customInvoiceNo.value = ''
     invoiceNo.value = data.name
+    mirroredInvoice.value = data.mirrored_invoice || ''
     postingTime.value = data.posting_time || ''
     selectedSeries.value = data.naming_series || selectedSeries.value
     invoiceDate.value = data.posting_date || invoiceDate.value
@@ -1552,6 +1577,7 @@ async function clearBill() {
   clearHistory()
   linkedPayments.value = []
   invoiceNo.value = 'NEW'
+  mirroredInvoice.value = ''
   customInvoiceNo.value = ''
   postingTime.value = ''
   isReturn.value = false
@@ -3265,6 +3291,9 @@ async function handleRetryMirrorBill() {
       sales_invoice_name: invoiceNo.value,
     }, { silent: true })
     const r = res?.message || res
+    if (r?.status === 'exists' || r?.status === 'created') {
+      mirroredInvoice.value = r.invoice_name || ''
+    }
     if (r?.status === 'exists') {
       alert(`Mirror bill already created by the system: ${r.invoice_name}`)
     } else if (r?.status === 'not_configured') {

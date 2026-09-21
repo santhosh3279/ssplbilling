@@ -172,6 +172,15 @@ def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None
 def get_sales_invoice(invoice_name):
     """Fetch a Sales Invoice with its items."""
     si = frappe.get_doc("Sales Invoice", invoice_name)
+    from ssplbilling.api.automatic_entries_api import mirror_name_for
+
+    # Automatic sales mirrors use a bidirectional trailing-slash name pair.
+    mirrored_invoice = frappe.db.exists("Sales Invoice", {
+        "name": mirror_name_for(si.name),
+        "company": ["!=", si.company],
+        "docstatus": ["!=", 2],
+    }) or ""
+
     payment_mode = si.payments[0].mode_of_payment if si.payments else "Cash"
     cost_center = si.items[0].cost_center if si.items else ""
 
@@ -326,6 +335,7 @@ def get_sales_invoice(invoice_name):
 
     return {
         "name": si.name,
+        "mirrored_invoice": mirrored_invoice,
         "customer": si.customer,
         "customer_name": si.customer_name,
         "state": party_state,
