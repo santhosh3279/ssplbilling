@@ -1289,6 +1289,7 @@ def get_cost_center_sale_report(from_date=None, to_date=None, company=None):
                         WHERE
                                 posting_date BETWEEN %s AND %s
                                 AND account IN %s
+                                AND voucher_type = 'Payment Entry'
                                 AND is_cancelled = 0
                                 AND company = %s
                         GROUP BY
@@ -1388,6 +1389,7 @@ def get_cost_center_sale_report(from_date=None, to_date=None, company=None):
                         WHERE
                                 posting_date BETWEEN %s AND %s
                                 AND account IN %s
+                                AND voucher_type = 'Payment Entry'
                                 AND is_cancelled = 0
                                 AND company = %s
                         ORDER BY
