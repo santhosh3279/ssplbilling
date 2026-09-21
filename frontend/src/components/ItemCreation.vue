@@ -183,6 +183,17 @@
               </select>
             </div>
 
+            <label class="flex items-center gap-[12px] px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)] cursor-pointer">
+              <input
+                v-model="form.custom_is_gst_item"
+                type="checkbox"
+                :true-value="1"
+                :false-value="0"
+                class="h-6 w-6 accent-[var(--color-info)]"
+              />
+              <span>GST Item</span>
+            </label>
+
             <div class="space-y-[4px] relative">
               <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">HSN/SAC Code</label>
               <input
@@ -466,6 +477,7 @@ function _applyItemData(data, itemCode) {
   form.value.image            = data.image            || ''
   form.value.barcode           = data.barcode || itemCode
   form.value.item_group        = data.item_group        || ''
+  form.value.custom_is_gst_item = Number(data.custom_is_gst_item) === 1 ? 1 : 0
   form.value.hsn_sac           = data.hsn_sac           || ''
   form.value.stock_uom         = data.stock_uom || 'Nos'
   form.value.item_tax_template = data.item_tax_template || ''
@@ -516,6 +528,7 @@ const form = ref({
   barcode: '',
   image: '',
   item_group: '',
+  custom_is_gst_item: 0,
   hsn_sac: '',
   stock_uom: 'Nos',
   standard_rate: 0,
@@ -815,6 +828,7 @@ function resetForm() {
     barcode: '',
     image: '',
     item_group:        cache.item_group        || metadata.value.item_groups[0]?.name || '',
+    custom_is_gst_item: 0,
     hsn_sac:           (retainTaxFields.value && cache.hsn_sac)           || '',
     stock_uom:         cache.stock_uom         || 'Nos',
     item_tax_template: (retainTaxFields.value && cache.item_tax_template) || '',

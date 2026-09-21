@@ -72,6 +72,8 @@ def create_item(data):
 	item.stock_uom = data.get("stock_uom")
 	item.standard_rate = float(data.get("standard_rate") or 0)
 	item.safety_stock = float(data.get("safety_stock") or 0)
+	if "custom_is_gst_item" in data:
+		item.custom_is_gst_item = 1 if frappe.utils.cint(data.get("custom_is_gst_item")) else 0
 	
 	if data.get("hsn_sac"):
 		item.gst_hsn_code = data.get("hsn_sac")
@@ -194,6 +196,7 @@ def get_item_for_edit(item_code):
 		"item_print_name": item.item_print_name or "",
 		"barcode": barcode,
 		"item_group": item.item_group or "",
+		"custom_is_gst_item": frappe.utils.cint(item.get("custom_is_gst_item")),
 		"hsn_sac": item.gst_hsn_code or "",
 		"stock_uom": item.stock_uom or "Nos",
 		"standard_rate": float(standard_rate),
@@ -224,6 +227,8 @@ def update_item(data):
 	item.item_group = data.get("item_group") or item.item_group
 	item.stock_uom = data.get("stock_uom") or item.stock_uom
 	item.safety_stock = float(data.get("safety_stock") or 0)
+	if "custom_is_gst_item" in data:
+		item.custom_is_gst_item = 1 if frappe.utils.cint(data.get("custom_is_gst_item")) else 0
 	if data.get("hsn_sac"):
 		item.gst_hsn_code = data["hsn_sac"]
 	if "image" in data:
