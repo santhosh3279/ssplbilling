@@ -255,6 +255,8 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
     if (_applyingDiscount || pauseRules.value) return
     _applyingDiscount = true
     try {
+      // Keep soft-deleted free items deleted when regular-row changes rebuild rules.
+      const deletedFreeRows = items.value.filter(r => r._is_free && r.deleted)
       items.value = items.value.filter(r => !r._is_free)
       const snap = [...items.value]
       let offset = 0
@@ -273,7 +275,13 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
         const { freeRows, discount } = _buildResult(row, rule)
         _applyDiscount(row, discount)
         if (freeRows.length) {
-          items.value.splice(i + 1 + offset, 0, ...freeRows.map(r => ({ ...r, _free_parent_key: row._rowKey })))
+          items.value.splice(i + 1 + offset, 0, ...freeRows.map(r => ({
+            ...r,
+            _free_parent_key: row._rowKey,
+            deleted: deletedFreeRows.some(deleted =>
+              deleted._free_parent_key === row._rowKey &&
+              deleted.item_code === r.item_code && deleted.uom === r.uom),
+          })))
           offset += freeRows.length
         }
       }

@@ -769,6 +769,7 @@
         { key: 'M', desc: 'Modify bill (when bill is open)' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
+        { key: 'Ctrl+Alt+N', desc: 'Soft-delete all Non-GST items' },
         { key: 'Ctrl+O', desc: 'Mirror bill to alternate company (conversion series)' },
         { key: 'Ctrl+Shift+K', desc: 'Retry the automatic mirror bill for this invoice' },
       ]"
@@ -2575,6 +2576,24 @@ function deleteItem(idx) {
   }
 }
 
+function deleteNonGstItems() {
+  if (isReadOnly.value || isLoadingBill.value || submitting.value) return
+  let changed = false
+  items.value.forEach((item, idx) => {
+    if (item.deleted || itemGstStatus.value[item.item_code] !== false) return
+    item.deleted = true
+    changed = true
+    if (editingRowIdx.value === idx) {
+      editingRowIdx.value = -1
+      editingField.value = null
+    }
+  })
+  if (!changed) return
+  const nextIdx = items.value.findIndex(item => !item.deleted)
+  if (nextIdx >= 0) focusRow(nextIdx)
+  else focusBarcodeInput()
+}
+
 function onQuickSearchRefresh() {
   // After cache refresh, re-run search if there's a query
   if (newItemCode.value) {
@@ -3239,6 +3258,7 @@ useShortcuts(salesInvoiceShortcuts({
       deleteItem(selectedRowIdx.value)
     }
   },
+  deleteNonGstItems: () => deleteNonGstItems(),
   openBillMirror:     () => handleOpenBillMirror(),
   retryMirrorBill:    () => handleRetryMirrorBill(),
 }), props.isSubwindow ? 'subwindow' : 'local')
