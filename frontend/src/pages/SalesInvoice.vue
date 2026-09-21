@@ -178,7 +178,15 @@
           @focus="!isReadOnly && (selectedRowIdx = index)"
           @keydown="!isReadOnly && handleRowKeydown($event, index)"
         >
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-center relative" :class="selectedRowIdx === index && !item.deleted ? 'text-black' : 'text-[var(--color-text-muted)]'">
+          <td
+            class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-center relative"
+            :class="itemGstStatus[item.item_code] === true
+              ? 'bg-emerald-700 text-stone-100'
+              : itemGstStatus[item.item_code] === false
+                ? 'bg-gray-600 text-stone-100'
+                : selectedRowIdx === index && !item.deleted ? 'text-black' : 'text-[var(--color-text-muted)]'"
+            :title="itemGstStatus[item.item_code] == null ? 'GST status unavailable' : itemGstStatus[item.item_code] ? 'GST Item' : 'Non-GST Item'"
+          >
             <span v-if="item._cp_applied" class="absolute left-0 inset-y-0 w-[3px] bg-[var(--color-info)] rounded-r"></span>
             <span v-if="item.deleted" class="text-[10px] bg-[var(--color-danger)] text-[var(--color-text-on-highlight)] px-1 rounded block uppercase font-bold leading-tight mb-1">Deleted</span>
             {{ index + 1 }}
@@ -195,14 +203,6 @@
               @keydown="onEditCodeKeydown($event, index)"
             />
             <span v-else class="block px-2 py-1 text-4xl font-mono" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
-            <span
-              v-if="itemGstStatus[item.item_code] != null"
-              class="mx-2 mb-1 inline-block rounded border px-1.5 py-0.5 text-xs font-bold"
-              :class="itemGstStatus[item.item_code]
-                ? 'border-emerald-600/30 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                : 'border-gray-400/40 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'"
-              title="GST Item checkbox in Item Master"
-            >{{ itemGstStatus[item.item_code] ? 'GST' : 'Non-GST' }}</span>
           </td>
 
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index && !item.deleted && !item._is_free ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
