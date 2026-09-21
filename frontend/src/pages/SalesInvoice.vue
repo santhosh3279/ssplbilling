@@ -761,7 +761,7 @@
         { key: 'M', desc: 'Modify bill (when bill is open)' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
-        { key: 'Ctrl+K', desc: 'Mirror bill to alternate company (conversion series)' },
+        { key: 'Ctrl+O', desc: 'Mirror bill to alternate company (conversion series)' },
         { key: 'Ctrl+Shift+K', desc: 'Retry the automatic mirror bill for this invoice' },
       ]"
       @close="showShortcutPage = false"
@@ -3215,7 +3215,6 @@ useShortcuts(salesInvoiceShortcuts({
       deleteItem(selectedRowIdx.value)
     }
   },
-  openGstBillCreator: () => handleOpenGstBillCreator(),
   openBillMirror:     () => handleOpenBillMirror(),
   retryMirrorBill:    () => handleRetryMirrorBill(),
 }), props.isSubwindow ? 'subwindow' : 'local')

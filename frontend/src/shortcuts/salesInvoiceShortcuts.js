@@ -17,7 +17,6 @@ export const salesInvoiceShortcuts = (handlers) => ({
   'PAGEUP':  handlers.pageUp           || (() => {}),
   'ESCAPE':  handlers.cancel           || (() => {}),
   'DELETE':  handlers.deleteRow        || (() => {}),
-  'CTRL+O':  handlers.openGstBillCreator|| (() => {}),
-  'CTRL+K':  handlers.openBillMirror    || (() => {}),
+  'CTRL+O':  handlers.openBillMirror    || (() => {}),
   'CTRL+SHIFT+K': handlers.retryMirrorBill || (() => {}),
 })
