@@ -769,7 +769,7 @@
         { key: 'M', desc: 'Modify bill (when bill is open)' },
         { key: 'Page Up', desc: 'Series (empty) / Change customer (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
-        { key: 'Ctrl+Alt+N', desc: 'Soft-delete all Non-GST items' },
+        { key: 'Ctrl+G', desc: 'Soft-delete all Non-GST items' },
         { key: 'Ctrl+O', desc: 'Mirror bill to alternate company (conversion series)' },
         { key: 'Ctrl+Shift+K', desc: 'Retry the automatic mirror bill for this invoice' },
       ]"
