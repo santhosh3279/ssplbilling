@@ -181,6 +181,16 @@ def get_sales_invoice(invoice_name):
         "docstatus": ["!=", 2],
     }) or ""
 
+    item_codes = list({row.item_code for row in si.items if row.item_code})
+    item_gst_status = {
+        row.item_code: frappe.utils.cint(row.custom_is_gst_item)
+        for row in frappe.get_all(
+            "Item",
+            filters={"name": ["in", item_codes]},
+            fields=["item_code", "custom_is_gst_item"],
+        )
+    } if item_codes else {}
+
     payment_mode = si.payments[0].mode_of_payment if si.payments else "Cash"
     cost_center = si.items[0].cost_center if si.items else ""
 
@@ -369,6 +379,7 @@ def get_sales_invoice(invoice_name):
         "items": [
             {
                 "item_code": item.item_code,
+                "custom_is_gst_item": item_gst_status.get(item.item_code),
                 "item_name": item.item_name,
                 "uom": item.uom or item.stock_uom or "",
                 "qty": float(item.qty),

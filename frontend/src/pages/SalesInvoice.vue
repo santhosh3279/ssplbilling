@@ -195,6 +195,14 @@
               @keydown="onEditCodeKeydown($event, index)"
             />
             <span v-else class="block px-2 py-1 text-4xl font-mono" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
+            <span
+              v-if="itemGstStatus[item.item_code] != null"
+              class="mx-2 mb-1 inline-block rounded border px-1.5 py-0.5 text-xs font-bold"
+              :class="itemGstStatus[item.item_code]
+                ? 'border-emerald-600/30 bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                : 'border-gray-400/40 bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300'"
+              title="GST Item checkbox in Item Master"
+            >{{ itemGstStatus[item.item_code] ? 'GST' : 'Non-GST' }}</span>
           </td>
 
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index && !item.deleted && !item._is_free ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
@@ -964,6 +972,16 @@ const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: numbe
 
 const invoiceNo = ref('NEW')
 const mirroredInvoice = ref('')
+const loadedItemGstStatus = ref({})
+const itemGstStatus = computed(() => {
+  const status = { ...loadedItemGstStatus.value }
+  for (const item of cachedItems.value) {
+    if (item.custom_is_gst_item != null) {
+      status[item.item_code] = Number(item.custom_is_gst_item) === 1
+    }
+  }
+  return status
+})
 const customInvoiceNo = ref('')
 const showCustomInvoiceModal = ref(false)
 const displayedDocNumber = computed(() => {
@@ -1148,6 +1166,11 @@ async function handleSelectSidebarItem(item) {
     customInvoiceNo.value = ''
     invoiceNo.value = data.name
     mirroredInvoice.value = data.mirrored_invoice || ''
+    loadedItemGstStatus.value = Object.fromEntries(
+      (data.items || [])
+        .filter(item => item.custom_is_gst_item != null)
+        .map(item => [item.item_code, Number(item.custom_is_gst_item) === 1])
+    )
     postingTime.value = data.posting_time || ''
     selectedSeries.value = data.naming_series || selectedSeries.value
     invoiceDate.value = data.posting_date || invoiceDate.value
@@ -1578,6 +1601,7 @@ async function clearBill() {
   linkedPayments.value = []
   invoiceNo.value = 'NEW'
   mirroredInvoice.value = ''
+  loadedItemGstStatus.value = {}
   customInvoiceNo.value = ''
   postingTime.value = ''
   isReturn.value = false
