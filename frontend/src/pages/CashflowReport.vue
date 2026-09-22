@@ -328,7 +328,7 @@ async function fetchData() {
   try {
     const [period, cumulative] = await Promise.all([
       getCashflowReport(filters.from, filters.to, filters.company),
-      getCashflowReport('1000-01-01', filters.to, filters.company),
+      getCashflowReport('1000-01-01', filters.to, filters.company, true),
     ])
     if (currentRequest !== requestId) return
     const sum = (rows, field) => (rows || []).reduce((total, row) => total + (Number(row[field]) || 0), 0)

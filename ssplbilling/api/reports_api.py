@@ -1596,7 +1596,7 @@ def _cashflow_internal_transfer_condition():
 
 
 @frappe.whitelist()
-def get_cashflow_report(from_date=None, to_date=None, company=None):
+def get_cashflow_report(from_date=None, to_date=None, company=None, balance_only=0):
 	"""Return Cost Center-wise Cash & Bank inflow, outflow, and net flow."""
 	if not from_date:
 		from_date = frappe.utils.today()
@@ -1628,6 +1628,33 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 			"internal_breakdown": [],
 			"company_name": "",
 			"company_address_lines": []
+		}
+
+	# Closing balances include both external movements and internal transfers.
+	# Avoid classifying every historical voucher (and resolving cost centers)
+	# when the caller only needs balances by account.
+	if frappe.utils.cint(balance_only):
+		params = [from_date, to_date, tuple(cash_bank_accounts)]
+		company_condition = ""
+		if company:
+			company_condition = " AND gle.company = %s"
+			params.append(company)
+		rows = frappe.db.sql(
+			f"""SELECT gle.account,
+				SUM(gle.debit) AS inflow, SUM(gle.credit) AS outflow
+			FROM `tabGL Entry` gle
+			LEFT JOIN `tabPayment Entry` pe
+				ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
+			WHERE gle.posting_date BETWEEN %s AND %s
+				AND gle.is_cancelled = 0 AND gle.account IN %s
+				{company_condition}
+				AND {_cashflow_cleared_cheque_condition()}
+			GROUP BY gle.account""",
+			tuple(params), as_dict=1,
+		)
+		return {
+			"summary": rows, "breakdown": rows,
+			"internal_summary": [], "internal_breakdown": [],
 		}
 
 	# Get company info

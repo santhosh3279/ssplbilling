@@ -918,8 +918,9 @@ export async function getQuotationSeries() {
 /**
  * Fetch Cashflow Report data.
  */
-export async function getCashflowReport(fromDate, toDate, company) {
+export async function getCashflowReport(fromDate, toDate, company, balanceOnly = false) {
   return frappeGet("ssplbilling.api.reports_api.get_cashflow_report", {
+    balance_only: balanceOnly ? 1 : 0,
     from_date: fromDate,
     to_date: toDate,
     company: company || localStorage.getItem("wb-company") || "",
