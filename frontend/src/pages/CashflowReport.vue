@@ -12,19 +12,10 @@
           </button>
           <div>
             <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Cashflow Report</h1>
-            <p class="text-xs text-[var(--color-text-muted)]">ERPNext Cash Flow · {{ companyName }}</p>
+            <p class="text-xs text-[var(--color-text-muted)]">All cash and bank accounts · {{ companyName }}</p>
           </div>
         </div>
         <div class="flex items-center gap-4">
-          <label class="flex flex-col gap-1 text-xs text-[var(--color-text-muted)]">
-            Periodicity
-            <select v-model="periodicity" @change="fetchData" class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1.5 text-sm text-[var(--color-text)]">
-              <option>Monthly</option>
-              <option>Quarterly</option>
-              <option>Half-Yearly</option>
-              <option>Yearly</option>
-            </select>
-          </label>
           <!-- Date Presets -->
           <div class="flex items-center gap-2">
             <button
@@ -129,7 +120,7 @@
           <button
             class="flex items-center gap-2 rounded-lg bg-[var(--color-info)] px-4 py-2 text-sm font-semibold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] active:scale-95 transition-all shadow-lg shadow-violet-900/20"
             @click="exportToExcel"
-            :disabled="loading || !!error || reportRows.length === 0"
+            :disabled="loading || !!error || !loadedFilters"
           >
             <span>⬇</span> Export Excel
           </button>
@@ -145,37 +136,13 @@
         <p>{{ error }}</p>
         <button type="button" @click="fetchData" class="mt-3 font-semibold underline">Try Again</button>
       </div>
-      <div v-else-if="!reportRows.length" class="py-16 text-center text-[var(--color-text-muted)]">
-        No cash flow data for the selected period.
-      </div>
-      <div v-else>
-        <div v-if="reportSummary.length" class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-          <div v-for="(summary, index) in reportSummary" :key="index" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-            <p class="text-sm text-[var(--color-text-muted)]">{{ summary.label }}</p>
-            <p class="mt-2 text-2xl font-bold tabular-nums" :class="Number(summary.value) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-              {{ formatCurrency(summary.value) }}
-              <span class="text-sm text-[var(--color-text-muted)]">{{ summary.currency }}</span>
-            </p>
-          </div>
-        </div>
-        <div class="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]">
-          <table class="w-full border-collapse text-sm">
-            <thead class="bg-[var(--color-surface-raised)]">
-              <tr>
-                <th v-for="column in visibleColumns" :key="column.fieldname" class="border-b border-[var(--color-border)] px-4 py-3 text-[var(--color-text-muted)] whitespace-nowrap" :class="isNumericColumn(column) ? 'text-right' : 'text-left'">
-                  {{ column.label }}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(row, index) in reportRows" :key="index" class="border-b border-[var(--color-border)]/50 text-[var(--color-text)]" :class="!row.parent_section ? 'font-bold bg-[var(--color-surface-raised)]/40' : ''">
-                <td v-for="column in visibleColumns" :key="column.fieldname" class="px-4 py-3" :class="isNumericColumn(column) ? 'text-right font-mono tabular-nums whitespace-nowrap' : 'text-left'" :style="column.fieldname === 'section' ? { paddingLeft: `${16 + (Number(row.indent) || 0) * 20}px` } : {}">
-                  <template v-if="isNumericColumn(column)">{{ row[column.fieldname] == null ? '' : formatCurrency(row[column.fieldname]) }}</template>
-                  <template v-else>{{ displayValue(row[column.fieldname]) }}</template>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <div v-for="summary in reportSummary" :key="summary.label" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
+          <p class="text-sm text-[var(--color-text-muted)]">{{ summary.label }}</p>
+          <p class="mt-2 text-2xl font-bold tabular-nums" :class="summary.label === 'Cash Outflow' || summary.value < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+            {{ formatCurrency(summary.value) }}
+          </p>
+          <p class="mt-2 text-xs text-[var(--color-text-muted)]">{{ summary.description }}</p>
         </div>
       </div>
     </main>
@@ -192,12 +159,13 @@ const router = useRouter()
 const loading = ref(false)
 const error = ref('')
 const companyName = ref(localStorage.getItem('wb-company') || '')
-const periodicity = ref('Yearly')
-const reportColumns = ref([])
-const reportRows = ref([])
-const reportSummary = ref([])
+const totals = ref({ inflow: 0, outflow: 0, balance: 0 })
+const reportSummary = computed(() => [
+  { label: 'Cash Inflow', value: totals.value.inflow, description: 'Received during the selected period, excluding internal transfers' },
+  { label: 'Cash Outflow', value: totals.value.outflow, description: 'Paid during the selected period, excluding internal transfers' },
+  { label: 'Net Cash in Hand', value: totals.value.balance, description: `Closing cash and bank balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
+])
 const loadedFilters = ref(null)
-const visibleColumns = computed(() => reportColumns.value.filter(column => !Number(column.hidden)))
 const today = new Date().toISOString().slice(0, 10)
 const fromDate = ref(today)
 const toDate = ref(today)
@@ -206,9 +174,7 @@ let requestId = 0
 async function fetchData() {
   const currentRequest = ++requestId
   error.value = ''
-  reportRows.value = []
-  reportColumns.value = []
-  reportSummary.value = []
+  totals.value = { inflow: 0, outflow: 0, balance: 0 }
   loadedFilters.value = null
   companyName.value = localStorage.getItem('wb-company') || ''
   if (!companyName.value || !fromDate.value || !toDate.value || fromDate.value > toDate.value) {
@@ -216,14 +182,21 @@ async function fetchData() {
     error.value = !companyName.value ? 'Select a billing company before running Cash Flow.' : 'Select a valid date range.'
     return
   }
-  const filters = { company: companyName.value, from: fromDate.value, to: toDate.value, periodicity: periodicity.value }
+  const filters = { company: companyName.value, from: fromDate.value, to: toDate.value }
   loading.value = true
   try {
-    const result = await getCashflowReport(filters.from, filters.to, filters.company, filters.periodicity)
+    const [period, cumulative] = await Promise.all([
+      getCashflowReport(filters.from, filters.to, filters.company),
+      getCashflowReport('1000-01-01', filters.to, filters.company),
+    ])
     if (currentRequest !== requestId) return
-    reportColumns.value = result.columns || []
-    reportRows.value = (result.result || []).filter(row => row && Object.keys(row).length)
-    reportSummary.value = result.report_summary || []
+    const sum = (rows, field) => (rows || []).reduce((total, row) => total + (Number(row[field]) || 0), 0)
+    const balances = [...(cumulative.summary || []), ...(cumulative.internal_summary || [])]
+    totals.value = {
+      inflow: sum(period.summary, 'inflow'),
+      outflow: sum(period.summary, 'outflow'),
+      balance: sum(balances, 'inflow') - sum(balances, 'outflow'),
+    }
     loadedFilters.value = filters
   } catch (e) {
     if (currentRequest === requestId) error.value = e.message || 'Failed to fetch cash flow report'
@@ -299,44 +272,25 @@ function setDateRange(preset) {
   }
 }
 
-function isNumericColumn(column) {
-  return ['Currency', 'Float', 'Int', 'Percent'].includes(column.fieldtype)
-}
-
-function displayValue(value) {
-  return typeof value === 'string' ? value.replace(/^'|'$/g, '') : value ?? ''
-}
-
 function formatCurrency(value) {
   return new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value) || 0)
 }
 
 async function exportToExcel() {
-  if (loading.value || error.value || !reportRows.value.length || !loadedFilters.value) return
+  if (loading.value || error.value || !loadedFilters.value) return
   try {
     const filters = { ...loadedFilters.value }
-    const columns = visibleColumns.value
     const workbook = new ExcelJS.Workbook()
     const sheet = workbook.addWorksheet('Cash Flow')
-    sheet.columns = columns.map(column => ({ width: isNumericColumn(column) ? 20 : 55 }))
+    sheet.columns = [{ width: 28 }, { width: 24 }, { width: 90 }]
     sheet.addRow([filters.company])
-    sheet.addRow([`Cash Flow: ${filters.from} to ${filters.to} (${filters.periodicity})`])
-    const currency = reportRows.value.find(row => row.currency)?.currency
-    if (currency) sheet.addRow([`Currency: ${currency}`])
+    sheet.addRow([`Cash Flow: ${filters.from} to ${filters.to}`])
+    sheet.addRow(['All cash and bank accounts; amounts in company currency'])
     sheet.addRow([])
-    const header = sheet.addRow(columns.map(column => column.label))
-    header.font = { bold: true }
-    for (const row of reportRows.value) {
-      const excelRow = sheet.addRow(columns.map(column => {
-        const value = row[column.fieldname]
-        return isNumericColumn(column) ? (value == null ? null : Number(value)) : displayValue(value)
-      }))
-      excelRow.font = { bold: !row.parent_section }
-      columns.forEach((column, index) => {
-        const cell = excelRow.getCell(index + 1)
-        if (isNumericColumn(column)) cell.numFmt = '#,##0.00;[Red]-#,##0.00'
-        else if (column.fieldname === 'section') cell.alignment = { indent: Number(row.indent) || 0 }
-      })
+    sheet.addRow(['Summary', 'Amount', 'Details']).font = { bold: true }
+    for (const summary of reportSummary.value) {
+      const row = sheet.addRow([summary.label, summary.value, summary.description])
+      row.getCell(2).numFmt = '#,##0.00;[Red]-#,##0.00'
     }
     const buffer = await workbook.xlsx.writeBuffer()
     const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))

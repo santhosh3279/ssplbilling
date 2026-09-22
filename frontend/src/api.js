@@ -918,21 +918,11 @@ export async function getQuotationSeries() {
 /**
  * Fetch Cashflow Report data.
  */
-export async function getCashflowReport(fromDate, toDate, company, periodicity = "Yearly") {
-  return frappeGet("frappe.desk.query_report.run", {
-    report_name: "Cash Flow",
-    filters: {
-      company: company || localStorage.getItem("wb-company") || "",
-      filter_based_on: "Date Range",
-      period_start_date: fromDate,
-      period_end_date: toDate,
-      periodicity,
-      accumulated_values: 0,
-      include_default_book_entries: 1,
-      finance_book: "",
-    },
-    ignore_prepared_report: 1,
-    are_default_filters: 0,
+export async function getCashflowReport(fromDate, toDate, company) {
+  return frappeGet("ssplbilling.api.reports_api.get_cashflow_report", {
+    from_date: fromDate,
+    to_date: toDate,
+    company: company || localStorage.getItem("wb-company") || "",
   });
 }
 
