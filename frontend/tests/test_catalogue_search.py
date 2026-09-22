@@ -58,5 +58,31 @@ class CatalogueSearchTest(unittest.TestCase):
         self.run_search('10%_off', -10)
         self.assertEqual(self.frappe.db.sql.call_args.args[1], {'query': '%10\\%\\_off%', 'start': 0})
 
+    def test_system_user_with_all_items_searches_all_items(self):
+        self.setUp()
+        source = Path(__file__).resolve().parents[2] / 'ssplbilling/api/catalogue_order_api.py'
+        function = next(n for n in ast.parse(source.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == 'search_catalogue_items')
+        function.decorator_list = []
+        namespace = {'_is_system_user': lambda: True, 'frappe': self.frappe, '_order_price': self.price, '_customer_context': self.context, '_order_context': Mock()}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), str(source), 'exec'), namespace)
+        with patch.dict('sys.modules', self.modules):
+            namespace['search_catalogue_items']('soap', 0, all_items=1)
+        sql, _ = self.frappe.db.sql.call_args.args
+        self.assertIn('LEFT JOIN `tabOffer-Item` line', sql)
+        self.assertIn('LEFT JOIN `tabOffer-Items` catalogue', sql)
+
+    def test_website_user_cannot_use_all_items(self):
+        self.setUp()
+        source = Path(__file__).resolve().parents[2] / 'ssplbilling/api/catalogue_order_api.py'
+        function = next(n for n in ast.parse(source.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == 'search_catalogue_items')
+        function.decorator_list = []
+        namespace = {'_is_system_user': lambda: False, 'frappe': self.frappe, '_order_price': self.price, '_customer_context': self.context}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), str(source), 'exec'), namespace)
+        with patch.dict('sys.modules', self.modules):
+            namespace['search_catalogue_items']('soap', 0, all_items=1)
+        sql, _ = self.frappe.db.sql.call_args.args
+        self.assertIn('FROM `tabOffer-Item` line', sql)
+        self.assertNotIn('LEFT JOIN `tabOffer-Item` line', sql)
+
 if __name__ == '__main__':
     unittest.main()

@@ -155,8 +155,8 @@ def get_customer_offer(pageaddress, customer=None, price_list=None):
 
 
 @frappe.whitelist(allow_guest=True)
-def search_catalogue_items(query, start=0, customer=None, price_list=None):
-	"""Search enabled catalogue items; resolve order prices only for website users."""
+def search_catalogue_items(query, start=0, customer=None, price_list=None, all_items=0):
+	"""Search enabled catalogue items (or all items for system users); resolve order prices only for logged-in users."""
 	from frappe.utils import cint
 	from ssplbilling.api.offer_api import _catalogue_stock
 
@@ -168,23 +168,57 @@ def search_catalogue_items(query, start=0, customer=None, price_list=None):
 		context = _customer_context()
 	elif _is_system_user() and customer:
 		context = _order_context(customer, price_list)
-	rows = frappe.db.sql("""
-		SELECT DISTINCT catalogue.pageaddress, catalogue.heading, item.name AS item_code,
-			item.item_name, item.image, item.stock_uom, line.barcode
-		FROM `tabOffer-Item` line
-		INNER JOIN `tabOffer-Items` catalogue ON catalogue.name = line.parent
-		INNER JOIN `tabItem` item ON item.name = line.itemcode
-		WHERE line.parenttype = 'Offer-Items' AND line.parentfield = 'items'
-			AND COALESCE(line.disabled, 0) = 0 AND item.disabled = 0 AND item.is_sales_item = 1
-			AND COALESCE(catalogue.pageaddress, '') != ''
-			AND (item.name LIKE %(query)s OR item.item_name LIKE %(query)s
-				OR line.itemname LIKE %(query)s OR line.barcode LIKE %(query)s
-				OR EXISTS (SELECT 1 FROM `tabItem Barcode` barcode
-					WHERE barcode.parent = item.name AND barcode.barcode LIKE %(query)s))
-		ORDER BY item.item_name, item.name, catalogue.pageaddress, line.barcode
-		LIMIT 31 OFFSET %(start)s
-	""", {"query": "%" + query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%",
-		"start": max(0, cint(start))}, as_dict=True)
+
+	include_all = bool(cint(all_items)) and _is_system_user()
+	escaped_query = "%" + query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+	start_offset = max(0, cint(start))
+
+	if include_all:
+		rows = frappe.db.sql("""
+			SELECT DISTINCT
+				COALESCE(catalogue.pageaddress, '') AS pageaddress,
+				COALESCE(catalogue.heading, '') AS heading,
+				item.name AS item_code,
+				item.item_name,
+				item.image,
+				item.stock_uom,
+				COALESCE(line.barcode, '') AS barcode
+			FROM `tabItem` item
+			LEFT JOIN `tabOffer-Item` line
+				ON line.itemcode = item.name
+				AND line.parenttype = 'Offer-Items'
+				AND line.parentfield = 'items'
+				AND COALESCE(line.disabled, 0) = 0
+			LEFT JOIN `tabOffer-Items` catalogue
+				ON catalogue.name = line.parent
+				AND COALESCE(catalogue.pageaddress, '') != ''
+			WHERE item.disabled = 0 AND item.is_sales_item = 1
+				AND (item.name LIKE %(query)s OR item.item_name LIKE %(query)s
+					OR (line.itemname IS NOT NULL AND line.itemname LIKE %(query)s)
+					OR (line.barcode IS NOT NULL AND line.barcode LIKE %(query)s)
+					OR EXISTS (SELECT 1 FROM `tabItem Barcode` barcode
+						WHERE barcode.parent = item.name AND barcode.barcode LIKE %(query)s))
+			ORDER BY item.item_name, item.name, catalogue.pageaddress, line.barcode
+			LIMIT 31 OFFSET %(start)s
+		""", {"query": escaped_query, "start": start_offset}, as_dict=True)
+	else:
+		rows = frappe.db.sql("""
+			SELECT DISTINCT catalogue.pageaddress, catalogue.heading, item.name AS item_code,
+				item.item_name, item.image, item.stock_uom, line.barcode
+			FROM `tabOffer-Item` line
+			INNER JOIN `tabOffer-Items` catalogue ON catalogue.name = line.parent
+			INNER JOIN `tabItem` item ON item.name = line.itemcode
+			WHERE line.parenttype = 'Offer-Items' AND line.parentfield = 'items'
+				AND COALESCE(line.disabled, 0) = 0 AND item.disabled = 0 AND item.is_sales_item = 1
+				AND COALESCE(catalogue.pageaddress, '') != ''
+				AND (item.name LIKE %(query)s OR item.item_name LIKE %(query)s
+					OR line.itemname LIKE %(query)s OR line.barcode LIKE %(query)s
+					OR EXISTS (SELECT 1 FROM `tabItem Barcode` barcode
+						WHERE barcode.parent = item.name AND barcode.barcode LIKE %(query)s))
+			ORDER BY item.item_name, item.name, catalogue.pageaddress, line.barcode
+			LIMIT 31 OFFSET %(start)s
+		""", {"query": escaped_query, "start": start_offset}, as_dict=True)
+
 	has_more = len(rows) > 30
 	rows = rows[:30]
 	stock = _catalogue_stock(list({row.item_code for row in rows}))
@@ -192,8 +226,10 @@ def search_catalogue_items(query, start=0, customer=None, price_list=None):
 		row.available_stock = stock.get(row.item_code)
 		row.order_rate = None
 		row.order_uom = row.stock_uom
+		if not row.barcode and hasattr(frappe.db, "get_value"):
+			row.barcode = frappe.db.get_value("Item Barcode", {"parent": row.item_code}, "barcode") or ""
 		if context:
-			_, row.order_uom, row.order_rate = _order_price(row.item_code, context["price_list"], row.barcode)
+			_, row.order_uom, row.order_rate = _order_price(row.item_code, context["price_list"], row.barcode or None)
 	return {"items": rows, "has_more": has_more}
 
 
@@ -314,10 +350,10 @@ def _preview(items, customer=None, price_list=None):
 	for entry in items:
 		if not isinstance(entry, dict):
 			frappe.throw("Invalid cart item.")
-		pageaddress = entry.get("pageaddress")
+		pageaddress = entry.get("pageaddress") or ""
 		item_code = entry.get("item_code")
 		qty = entry.get("qty")
-		if not isinstance(pageaddress, str) or not isinstance(item_code, str) or not pageaddress or not item_code:
+		if not isinstance(pageaddress, str) or not isinstance(item_code, str) or not item_code:
 			frappe.throw("Invalid cart item.")
 		if isinstance(qty, bool) or not isinstance(qty, int) or not 1 <= qty <= 10000:
 			frappe.throw("Quantity must be a whole number from 1 to 10000.")
@@ -326,17 +362,24 @@ def _preview(items, customer=None, price_list=None):
 			frappe.throw("Cart contains a duplicate item.")
 		seen.add(key)
 
-		offer_name = frappe.db.get_value("Offer-Items", {"pageaddress": pageaddress}, "name")
-		if not offer_name:
-			frappe.throw(f"Catalogue for {item_code} is unavailable.")
-		offer_item = frappe.db.get_value(
-			"Offer-Item",
-			{"parent": offer_name, "parenttype": "Offer-Items", "parentfield": "items", "itemcode": item_code, "disabled": 0},
-			["barcode"], as_dict=True,
-		)
-		if not offer_item:
-			frappe.throw(f"{item_code} is no longer in the catalogue.")
-		item, uom, rate = _order_price(item_code, context["price_list"], offer_item.barcode)
+		barcode = None
+		if pageaddress:
+			offer_name = frappe.db.get_value("Offer-Items", {"pageaddress": pageaddress}, "name")
+			if not offer_name:
+				frappe.throw(f"Catalogue for {item_code} is unavailable.")
+			offer_item = frappe.db.get_value(
+				"Offer-Item",
+				{"parent": offer_name, "parenttype": "Offer-Items", "parentfield": "items", "itemcode": item_code, "disabled": 0},
+				["barcode"], as_dict=True,
+			)
+			if not offer_item:
+				frappe.throw(f"{item_code} is no longer in the catalogue.")
+			barcode = offer_item.barcode
+		else:
+			if not _is_system_user():
+				frappe.throw("Non-catalogue items can only be ordered by System Users.")
+			barcode = frappe.db.get_value("Item Barcode", {"parent": item_code}, "barcode")
+		item, uom, rate = _order_price(item_code, context["price_list"], barcode)
 		if rate is None:
 			frappe.throw(f"{item_code} is unavailable in {context['price_list']}.")
 		lines.append({
