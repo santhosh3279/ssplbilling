@@ -227,8 +227,8 @@ const reportSummary = computed(() => [
   { key: 'inflow', label: 'Cash Inflow', value: totals.value.inflow, description: 'Received during the selected period, including settlements from Temporary Accounts' },
   { key: 'outflow', label: 'Cash Outflow', value: totals.value.outflow, description: 'Paid during the selected period, excluding internal transfers' },
   { key: 'netflow', label: 'Net Cash Flow', value: totals.value.netflow, description: 'Inflow minus outflow; includes Temporary Account settlements and excludes pending cheques' },
-  { key: 'balance', label: 'Cash and Bank Balance', value: totals.value.balance, description: `Current cash and bank balance as of ${loadedFilters.value?.currentDate || formatDateIso(new Date())}, including opening balances` },
   { key: 'cash_balance', label: 'Cash in Hand', value: totals.value.cash_balance, description: `Closing cash and bank balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
+  { key: 'balance', label: 'Cash and Bank Balance', value: totals.value.balance, description: `Current cash and bank balance as of ${loadedFilters.value?.currentDate || formatDateIso(new Date())}, including opening balances` },
 ])
 const loadedFilters = ref(null)
 const today = new Date().toISOString().slice(0, 10)
@@ -497,9 +497,9 @@ async function exportToExcel() {
     details.addRow(['Amounts in company currency; closing balances include opening balances and transfers'])
     details.addRow(['Incoming Temporary Account transfers are included; other internal transfers and pending cheques are excluded'])
     details.addRow([])
-    details.addRow(['Particulars', 'Cash Inflow', 'Cash Outflow', 'Net Cash Flow', 'Cash and Bank Balance', 'Cash in Hand']).font = { bold: true }
+    details.addRow(['Particulars', 'Cash Inflow', 'Cash Outflow', 'Net Cash Flow', 'Cash in Hand', 'Cash and Bank Balance']).font = { bold: true }
     for (const item of [...particulars.value, { account: 'Total', ...totals.value }]) {
-      const row = details.addRow([item.account, item.inflow, item.outflow, item.netflow, item.balance, item.cash_balance || 0])
+      const row = details.addRow([item.account, item.inflow, item.outflow, item.netflow, item.cash_balance || 0, item.balance])
       for (const index of [2, 3, 4, 5, 6]) row.getCell(index).numFmt = '#,##0.00;[Red]-#,##0.00'
     }
     details.lastRow.font = { bold: true }
