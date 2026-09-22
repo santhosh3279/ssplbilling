@@ -216,7 +216,7 @@ const reportSummary = computed(() => [
   { key: 'inflow', label: 'Cash Inflow', value: totals.value.inflow, description: 'Received during the selected period, including settlements from Temporary Accounts' },
   { key: 'outflow', label: 'Cash Outflow', value: totals.value.outflow, description: 'Paid during the selected period, excluding internal transfers' },
   { key: 'netflow', label: 'Net Cash Flow', value: totals.value.netflow, description: 'Inflow minus outflow; includes Temporary Account settlements and excludes pending cheques' },
-  { key: 'balance', label: 'Cash and Bank Balance', value: totals.value.balance, description: `Closing cash and bank balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
+  { key: 'balance', label: 'Cash and Bank Balance', value: totals.value.balance, description: `Current cash and bank balance as of ${loadedFilters.value?.currentDate || formatDateIso(new Date())}, including opening balances` },
   { key: 'cash_balance', label: 'Cash in Hand', value: totals.value.cash_balance, description: `Closing cash and bank balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
 ])
 const loadedFilters = ref(null)
@@ -259,7 +259,9 @@ async function loadCounterpart(account, counterpart) {
   target.loading = true
   target.error = ''
   const currentRequest = requestId
-  const filters = loadedFilters.value
+  const filters = expandedFlow.value === 'balance'
+    ? { ...loadedFilters.value, from: loadedFilters.value.currentDate, to: loadedFilters.value.currentDate }
+    : loadedFilters.value
   try {
     const result = await getCashflowDetails({ company: filters.company, account, from_date: filters.from, to_date: filters.to, flow: ['netflow', 'cash_balance'].includes(expandedFlow.value) ? 'balance' : expandedFlow.value, counterpart, start: target.entries.length })
     if (currentRequest !== requestId) return
@@ -294,7 +296,9 @@ async function loadDetails(account) {
   // Update via the reactive proxy so loading and completion render immediately.
   const target = detailCache.value[key]
   const currentRequest = requestId
-  const filters = loadedFilters.value
+  const filters = expandedFlow.value === 'balance'
+    ? { ...loadedFilters.value, from: loadedFilters.value.currentDate, to: loadedFilters.value.currentDate }
+    : loadedFilters.value
   try {
     const result = await getCashflowDetails({ company: filters.company, account, from_date: filters.from, to_date: filters.to, flow: ['netflow', 'cash_balance'].includes(expandedFlow.value) ? 'balance' : expandedFlow.value, group_by_account: 1 })
     if (currentRequest !== requestId) return
@@ -325,26 +329,32 @@ async function fetchData() {
     error.value = !companyName.value ? 'Select a billing company before running Cash Flow.' : 'Select a valid date range.'
     return
   }
-  const filters = { company: companyName.value, from: fromDate.value, to: toDate.value }
+  const filters = { company: companyName.value, from: fromDate.value, to: toDate.value, currentDate: formatDateIso(new Date()) }
   loading.value = true
   try {
-    const [period, cumulative] = await Promise.all([
+    const closingRequest = getCashflowReport('1000-01-01', filters.to, filters.company, true)
+    const currentRequestData = filters.to === filters.currentDate
+      ? closingRequest
+      : getCashflowReport('1000-01-01', filters.currentDate, filters.company, true)
+    const [period, cumulative, current] = await Promise.all([
       getCashflowReport(filters.from, filters.to, filters.company),
-      getCashflowReport('1000-01-01', filters.to, filters.company, true),
+      closingRequest,
+      currentRequestData,
     ])
     if (currentRequest !== requestId) return
     const sum = (rows, field) => (rows || []).reduce((total, row) => total + (Number(row[field]) || 0), 0)
     const balances = [...(cumulative.summary || []), ...(cumulative.internal_summary || [])]
+    const currentBalances = [...(current.summary || []), ...(current.internal_summary || [])]
     totals.value = {
       cash_balance: sum(balances, 'inflow') - sum(balances, 'outflow'),
       inflow: sum(period.summary, 'inflow'),
       outflow: sum(period.summary, 'outflow'),
       netflow: sum(period.summary, 'inflow') - sum(period.summary, 'outflow'),
-      balance: sum(balances, 'inflow') - sum(balances, 'outflow'),
+      balance: sum(currentBalances, 'inflow') - sum(currentBalances, 'outflow'),
     }
     const accounts = new Map()
     const accountRow = account => {
-      if (!accounts.has(account)) accounts.set(account, { account, inflow: 0, outflow: 0, balance: 0 })
+      if (!accounts.has(account)) accounts.set(account, { account, inflow: 0, outflow: 0, balance: 0, cash_balance: 0 })
       return accounts.get(account)
     }
     for (const entry of period.breakdown || []) {
@@ -356,8 +366,10 @@ async function fetchData() {
       const row = accountRow(entry.account)
       row.account_type = entry.account_type
       const balance = (Number(entry.inflow) || 0) - (Number(entry.outflow) || 0)
-      row.balance += balance
-      row.cash_balance = row.balance
+      row.cash_balance += balance
+    }
+    for (const entry of [...(current.breakdown || []), ...(current.internal_breakdown || [])]) {
+      accountRow(entry.account).balance += (Number(entry.inflow) || 0) - (Number(entry.outflow) || 0)
     }
     particulars.value = [...accounts.values()].map(row => ({ ...row, netflow: row.inflow - row.outflow })).sort((a, b) => a.account.localeCompare(b.account))
     loadedFilters.value = filters
@@ -459,6 +471,7 @@ async function exportToExcel() {
     details.columns = [{ width: 55 }, { width: 24 }, { width: 24 }, { width: 24 }, { width: 24 }, { width: 24 }]
     details.addRow([filters.company])
     details.addRow([`Cash Flow: ${filters.from} to ${filters.to}`])
+    details.addRow([`Cash and Bank Balance as of ${filters.currentDate}; Cash in Hand as of ${filters.to}`])
     details.addRow(['Amounts in company currency; closing balances include opening balances and transfers'])
     details.addRow(['Incoming Temporary Account transfers are included; other internal transfers and pending cheques are excluded'])
     details.addRow([])
