@@ -325,8 +325,8 @@
         </header>
 
         <!-- Items Grid Section -->
-        <main class="flex-1 w-full mx-auto px-6 py-10" :class="[containerClass, catalogueUser && cartCount ? 'lg:pr-[21rem]' : '']">
-          <div class="grid gap-6" :class="gridClass">
+        <main class="flex-1 w-full px-6 py-10 transition-all duration-300" :class="catalogueUser && cartCount ? 'lg:pr-[21rem]' : ''">
+          <div class="grid gap-6 w-full transition-all duration-300" :class="[gridClass, containerClass, catalogueUser && cartCount ? 'lg:ml-0 lg:mr-auto' : 'mx-auto']">
             <div
               v-for="item in offer.items"
               :key="item.itemcode"
