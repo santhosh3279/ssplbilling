@@ -10,7 +10,35 @@
       </a>
 
       <div v-if="isLoggedIn" class="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-xl bg-slate-950/60 px-4 py-2 text-xs text-white border border-slate-800/50">
-        <span class="max-w-40 truncate">{{ userName }}</span>
+        <span class="max-w-40 truncate font-semibold">{{ userName }}</span>
+
+        <!-- Selected Customer & Price list for System Users (clicking opens customer search to modify) -->
+        <button
+          v-if="session.isSystemUser.value && orderContext.customer"
+          type="button"
+          @click="toggleCustomerSection"
+          class="flex items-center gap-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/40 px-2.5 py-1 text-xs text-indigo-100 hover:text-white transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          title="Click to modify customer and price list"
+        >
+          <span class="font-bold text-white max-w-[180px] truncate">
+            {{ orderContext.customer_name || orderContext.customer }}
+          </span>
+          <span class="text-indigo-300 text-[11px] truncate max-w-[120px]">
+            ({{ orderContext.price_list }})
+          </span>
+          <span class="text-[11px] text-indigo-300 ml-0.5">✏️</span>
+        </button>
+        <button
+          v-else-if="session.isSystemUser.value"
+          type="button"
+          @click="toggleCustomerSection"
+          class="flex items-center gap-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/40 px-2.5 py-1 text-xs text-amber-200 hover:text-white transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          title="Click to select customer and price list"
+        >
+          <span class="font-bold">Select Customer</span>
+          <span class="text-[11px]">🔍</span>
+        </button>
+
         <RouterLink v-if="catalogueUser" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
         <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
       </div>
@@ -54,7 +82,11 @@
       </form>
     </div>
 
-    <CatalogueOrderParty />
+    <CatalogueOrderParty
+      v-if="session.isSystemUser.value && showCustomerSection"
+      @applied="onCustomerApplied"
+      @close="showCustomerSection = false"
+    />
     <!-- Main Content Area -->
     <main class="flex-1 w-full px-6 py-12" :class="catalogueUser && cartCount ? 'lg:pr-[21rem]' : ''">
       <section class="mb-8 space-y-4" aria-label="Search catalogue items">
@@ -73,7 +105,7 @@
             <button type="button" class="text-sm text-[var(--color-info)] underline" @click="openCatalogue(item.pageaddress)">{{ item.heading }}</button>
             <p class="text-sm">Available stock: {{ item.available_stock == null ? 'Unavailable' : item.available_stock + ' ' + item.stock_uom }}</p>
             <template v-if="catalogueUser">
-              <p v-if="session.isSystemUser.value" class="text-xs">Price list: {{ orderContext.price_list || 'Select a price list above' }}</p>
+              <p v-if="session.isSystemUser.value" class="text-xs">Price list: {{ orderContext.price_list || 'Select customer & price list in header' }}</p>
               <p>{{ item.order_rate == null ? 'Price unavailable' : priceFormatter.format(item.order_rate) + ' / ' + item.order_uom }}</p>
               <div class="flex items-center gap-3">
                 <button v-if="getQuantity(item.pageaddress, item.item_code)" type="button" :aria-label="`Remove one ${item.item_name}`" class="rounded border border-[var(--color-border)] px-3 py-2" @click="changeCartQuantity(item, -1)">−</button>
@@ -185,6 +217,24 @@ const loginEmail = ref('')
 const loginPassword = ref('')
 const loginError = ref('')
 const loginLoading = ref(false)
+
+const showCustomerSection = ref(!orderContext.value.customer)
+
+watch(() => orderContext.value.customer, (newCust, oldCust) => {
+  if (!oldCust && newCust) {
+    showCustomerSection.value = false
+  } else if (!newCust) {
+    showCustomerSection.value = true
+  }
+})
+
+function toggleCustomerSection() {
+  showCustomerSection.value = !showCustomerSection.value
+}
+
+function onCustomerApplied() {
+  showCustomerSection.value = false
+}
 
 const loading = ref(true)
 const error = ref(null)
