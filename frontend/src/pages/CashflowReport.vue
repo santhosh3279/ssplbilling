@@ -554,17 +554,9 @@ async function exportToExcel() {
   }
 }
 
-function refreshOnFocus() {
-  if (!loading.value) fetchData()
-}
-
-onMounted(() => {
-  fetchData()
-  window.addEventListener('focus', refreshOnFocus)
-})
+onMounted(fetchData)
 onUnmounted(() => {
   ++requestId
   stopLoadTimer()
-  window.removeEventListener('focus', refreshOnFocus)
 })
 </script>
