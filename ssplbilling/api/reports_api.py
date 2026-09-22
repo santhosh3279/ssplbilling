@@ -1537,10 +1537,11 @@ def _cashflow_internal_transfer_condition():
 
 	A mixed voucher with expense or other non-cash lines remains external; do not
 	discard real cash movements merely because another cash account is present.
+	Incoming settlements from Temporary Accounts are external cash inflows.
 	The caller supplies the GL alias gle and Payment Entry alias pe.
 	"""
 	clearing_names = ", ".join(frappe.db.escape(name) for name in _cashflow_cheque_clearing_accounts())
-	return f"""(
+	return f"""((
 		COALESCE(pe.payment_type, '') = 'Internal Transfer'
 		OR (
 			EXISTS (
@@ -1568,7 +1569,30 @@ def _cashflow_internal_transfer_condition():
 						OR other_account.account_name IN ({clearing_names}))
 			)
 		)
-	)"""
+	) AND NOT (
+		gle.debit != 0 AND EXISTS (
+			SELECT 1 FROM `tabGL Entry` source_leg
+			INNER JOIN `tabAccount` source_account ON source_account.name = source_leg.account
+			WHERE source_leg.company = gle.company
+				AND source_leg.voucher_type = gle.voucher_type
+				AND source_leg.voucher_no = gle.voucher_no
+				AND source_leg.is_cancelled = 0 AND source_leg.credit != 0
+				AND source_leg.account != gle.account
+				AND source_account.company = gle.company
+				AND (
+					source_account.account_type = 'Temporary'
+					OR EXISTS (
+						SELECT 1 FROM `tabAccount` temporary_group
+						WHERE temporary_group.company = source_account.company
+							AND temporary_group.is_group = 1
+							AND (temporary_group.account_name = 'Temporary Accounts'
+								OR temporary_group.account_type = 'Temporary')
+							AND source_account.lft > temporary_group.lft
+							AND source_account.rgt < temporary_group.rgt
+					)
+				)
+		)
+	))"""
 
 
 @frappe.whitelist()

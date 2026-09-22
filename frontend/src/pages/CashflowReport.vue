@@ -155,7 +155,7 @@
         </button>
         <section v-if="expandedFlow" class="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] md:col-span-2 xl:col-span-4 text-[var(--color-text)]">
           <h2 class="px-4 py-3 font-semibold">{{ activeSummary.label }} — Account Particulars</h2>
-          <p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">Expand a cash/bank account, then a counterparty account to see its vouchers. Internal transfers are hidden in all details; closing balances still reflect them. Amounts are in company currency.</p>
+          <p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">Expand a cash/bank account, then a counterparty account to see its vouchers. Incoming transfers from Temporary Accounts are included. Other internal transfers are hidden; closing balances still reflect them. Amounts are in company currency.</p>
           <div v-for="row in flowAccounts" :key="row.account" class="border-t border-[var(--color-border)]">
             <button type="button" class="flex w-full justify-between gap-4 px-4 py-3 text-left hover:bg-[var(--color-surface-raised)]" :aria-expanded="!!expandedAccounts[row.account]" @click="toggleAccount(row.account)">
               <span>{{ expandedAccounts[row.account] ? '▾' : '▸' }} {{ row.account }}</span>
@@ -213,9 +213,9 @@ const companyName = ref(localStorage.getItem('wb-company') || '')
 const particulars = ref([])
 const totals = ref({ inflow: 0, outflow: 0, netflow: 0, balance: 0 })
 const reportSummary = computed(() => [
-  { key: 'inflow', label: 'Cash Inflow', value: totals.value.inflow, description: 'Received during the selected period, excluding internal transfers' },
+  { key: 'inflow', label: 'Cash Inflow', value: totals.value.inflow, description: 'Received during the selected period, including settlements from Temporary Accounts' },
   { key: 'outflow', label: 'Cash Outflow', value: totals.value.outflow, description: 'Paid during the selected period, excluding internal transfers' },
-  { key: 'netflow', label: 'Net Cash Flow', value: totals.value.netflow, description: 'Inflow minus outflow for the selected period; excludes internal transfers and pending cheques' },
+  { key: 'netflow', label: 'Net Cash Flow', value: totals.value.netflow, description: 'Inflow minus outflow; includes Temporary Account settlements and excludes pending cheques' },
   { key: 'balance', label: 'Net Cash in Hand', value: totals.value.balance, description: `Closing cash and bank balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
 ])
 const loadedFilters = ref(null)
@@ -453,7 +453,7 @@ async function exportToExcel() {
     details.addRow([filters.company])
     details.addRow([`Cash Flow: ${filters.from} to ${filters.to}`])
     details.addRow(['Amounts in company currency; closing balances include opening balances and transfers'])
-    details.addRow(['Inflow and outflow exclude internal transfers; pending cheques are excluded'])
+    details.addRow(['Incoming Temporary Account transfers are included; other internal transfers and pending cheques are excluded'])
     details.addRow([])
     details.addRow(['Particulars', 'Cash Inflow', 'Cash Outflow', 'Net Cash Flow', 'Net Cash in Hand']).font = { bold: true }
     for (const item of [...particulars.value, { account: 'Total', ...totals.value }]) {
