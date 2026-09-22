@@ -217,7 +217,7 @@ const reportSummary = computed(() => [
   { key: 'outflow', label: 'Cash Outflow', value: totals.value.outflow, description: 'Paid during the selected period, excluding internal transfers' },
   { key: 'netflow', label: 'Net Cash Flow', value: totals.value.netflow, description: 'Inflow minus outflow; includes Temporary Account settlements and excludes pending cheques' },
   { key: 'balance', label: 'Cash and Bank Balance', value: totals.value.balance, description: `Closing cash and bank balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
-  { key: 'cash_balance', label: 'Cash in Hand', value: totals.value.cash_balance, description: `Closing cash-only balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
+  { key: 'cash_balance', label: 'Cash in Hand', value: totals.value.cash_balance, description: `Closing cash and bank balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
 ])
 const loadedFilters = ref(null)
 const today = new Date().toISOString().slice(0, 10)
@@ -231,7 +231,7 @@ const expandedCounterparts = ref({})
 const counterpartCache = ref({})
 const activeSummary = computed(() => reportSummary.value.find(row => row.key === expandedFlow.value))
 const flowAccounts = computed(() => particulars.value.filter(row => {
-  if (expandedFlow.value === 'cash_balance') return row.account_type === 'Cash'
+  if (expandedFlow.value === 'cash_balance') return true
   if (expandedFlow.value === 'balance') return true
   if (expandedFlow.value === 'netflow') return row.inflow !== 0 || row.outflow !== 0
   return row[expandedFlow.value] !== 0
@@ -335,9 +335,8 @@ async function fetchData() {
     if (currentRequest !== requestId) return
     const sum = (rows, field) => (rows || []).reduce((total, row) => total + (Number(row[field]) || 0), 0)
     const balances = [...(cumulative.summary || []), ...(cumulative.internal_summary || [])]
-    const cashBalances = balances.filter(row => row.account_type === 'Cash')
     totals.value = {
-      cash_balance: sum(cashBalances, 'inflow') - sum(cashBalances, 'outflow'),
+      cash_balance: sum(balances, 'inflow') - sum(balances, 'outflow'),
       inflow: sum(period.summary, 'inflow'),
       outflow: sum(period.summary, 'outflow'),
       netflow: sum(period.summary, 'inflow') - sum(period.summary, 'outflow'),
@@ -358,7 +357,7 @@ async function fetchData() {
       row.account_type = entry.account_type
       const balance = (Number(entry.inflow) || 0) - (Number(entry.outflow) || 0)
       row.balance += balance
-      row.cash_balance = (row.cash_balance || 0) + (entry.account_type === 'Cash' ? balance : 0)
+      row.cash_balance = row.balance
     }
     particulars.value = [...accounts.values()].map(row => ({ ...row, netflow: row.inflow - row.outflow })).sort((a, b) => a.account.localeCompare(b.account))
     loadedFilters.value = filters
