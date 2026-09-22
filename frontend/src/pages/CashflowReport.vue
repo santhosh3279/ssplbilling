@@ -137,45 +137,43 @@
         <button type="button" @click="fetchData" class="mt-3 font-semibold underline">Try Again</button>
       </div>
       <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div v-for="summary in reportSummary" :key="summary.label" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-          <p class="text-sm text-[var(--color-text-muted)]">{{ summary.label }}</p>
+        <button type="button" v-for="summary in reportSummary" :key="summary.label" @click="toggleFlow(summary.key)" :aria-expanded="expandedFlow === summary.key" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-left">
+          <p class="text-sm text-[var(--color-text-muted)]">{{ expandedFlow === summary.key ? '▾' : '▸' }} {{ summary.label }}</p>
           <p class="mt-2 text-2xl font-bold tabular-nums" :class="summary.label === 'Cash Outflow' || summary.value < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
             {{ formatCurrency(summary.value) }}
           </p>
           <p class="mt-2 text-xs text-[var(--color-text-muted)]">{{ summary.description }}</p>
-        </div>
-        <section class="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] md:col-span-3">
-          <h2 class="px-4 pt-4 font-semibold text-[var(--color-text)]">Account-wise Particulars</h2>
-          <p class="px-4 py-2 text-xs text-[var(--color-text-muted)]">Inflow and outflow exclude internal transfers. Closing balances include opening balances and transfers. Amounts are in company currency.</p>
-          <table class="w-full text-sm text-[var(--color-text)]">
-            <thead class="bg-[var(--color-surface-raised)]">
-              <tr>
-                <th class="px-4 py-3 text-left">Particulars</th>
-                <th class="px-4 py-3 text-right">Cash Inflow</th>
-                <th class="px-4 py-3 text-right">Cash Outflow</th>
-                <th class="px-4 py-3 text-right">Net Cash in Hand</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in particulars" :key="row.account" class="border-t border-[var(--color-border)]">
-                <td class="px-4 py-3">{{ row.account }}</td>
-                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(row.inflow) }}</td>
-                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(row.outflow) }}</td>
-                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(row.balance) }}</td>
-              </tr>
-              <tr v-if="!particulars.length">
-                <td colspan="4" class="px-4 py-6 text-center text-[var(--color-text-muted)]">No cash or bank entries through the selected end date.</td>
-              </tr>
-            </tbody>
-            <tfoot class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] font-bold">
-              <tr>
-                <td class="px-4 py-3">Total</td>
-                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(totals.inflow) }}</td>
-                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(totals.outflow) }}</td>
-                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(totals.balance) }}</td>
-              </tr>
-            </tfoot>
-          </table>
+        </button>
+        <section v-if="expandedFlow" class="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] md:col-span-3 text-[var(--color-text)]">
+          <h2 class="px-4 py-3 font-semibold">{{ activeSummary.label }} — Account Particulars</h2>
+          <p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">Click an account to expand its transactions. Amounts are in company currency.</p>
+          <div v-for="row in flowAccounts" :key="row.account" class="border-t border-[var(--color-border)]">
+            <button type="button" class="flex w-full justify-between gap-4 px-4 py-3 text-left hover:bg-[var(--color-surface-raised)]" :aria-expanded="!!expandedAccounts[row.account]" @click="toggleAccount(row.account)">
+              <span>{{ expandedAccounts[row.account] ? '▾' : '▸' }} {{ row.account }}</span>
+              <span class="tabular-nums font-semibold">{{ formatCurrency(row[expandedFlow]) }}</span>
+            </button>
+            <div v-if="expandedAccounts[row.account]" class="px-6 pb-4">
+              <p v-if="expandedFlow === 'balance' && detailState(row.account).loaded" class="py-2 font-semibold">Opening balance: {{ formatCurrency(detailState(row.account).opening_balance) }}</p>
+              <table v-if="detailState(row.account).entries.length" class="w-full text-sm">
+                <thead class="bg-[var(--color-surface-raised)]"><tr>
+                  <th class="p-2 text-left">Date</th><th class="p-2 text-left">Voucher</th><th class="p-2 text-left">Particulars / Party</th><th class="p-2 text-left">Cost Center</th><th class="p-2 text-left">Remarks</th>
+                  <th v-if="expandedFlow !== 'outflow'" class="p-2 text-right">Inflow</th><th v-if="expandedFlow !== 'inflow'" class="p-2 text-right">Outflow</th>
+                </tr></thead>
+                <tbody><tr v-for="entry in detailState(row.account).entries" :key="entry.name" class="border-b border-[var(--color-border)]">
+                  <td class="p-2 whitespace-nowrap">{{ entry.posting_date }}</td>
+                  <td class="p-2"><a :href="voucherUrl(entry)" target="_blank" rel="noopener noreferrer" class="text-[var(--color-info)] underline">{{ entry.voucher_no }}</a><div class="text-xs">{{ entry.voucher_type }} {{ entry.payment_type ? `· ${entry.payment_type}` : '' }}</div></td>
+                  <td class="p-2">{{ entry.party || entry.against || '—' }}</td><td class="p-2">{{ entry.cost_center || '—' }}</td><td class="p-2 whitespace-pre-wrap">{{ entry.remarks || '—' }}</td>
+                  <td v-if="expandedFlow !== 'outflow'" class="p-2 text-right tabular-nums">{{ formatCurrency(entry.debit) }}</td><td v-if="expandedFlow !== 'inflow'" class="p-2 text-right tabular-nums">{{ formatCurrency(entry.credit) }}</td>
+                </tr></tbody>
+              </table>
+              <p v-if="detailState(row.account).loading" class="py-3">Loading transactions…</p>
+              <p v-else-if="detailState(row.account).error" class="py-3 text-[var(--color-danger)]">{{ detailState(row.account).error }} <button type="button" class="underline" @click="loadDetails(row.account)">Try Again</button></p>
+              <p v-else-if="detailState(row.account).loaded && !detailState(row.account).entries.length" class="py-3">No transactions in the selected period.</p>
+              <button v-if="detailState(row.account).has_more && !detailState(row.account).loading && !detailState(row.account).error" type="button" class="py-3 text-[var(--color-info)] underline" @click="loadDetails(row.account)">Load more transactions</button>
+            </div>
+          </div>
+          <p v-if="!flowAccounts.length" class="p-4">No accounts for this cash flow.</p>
+          <div class="flex justify-between border-t border-[var(--color-border)] p-4 font-bold"><span>Total</span><span>{{ formatCurrency(activeSummary.value) }}</span></div>
         </section>
       </div>
     </main>
@@ -185,7 +183,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { getCashflowReport } from '../api.js'
+import { getCashflowReport, getCashflowDetails } from '../api.js'
 import ExcelJS from 'exceljs'
 
 const router = useRouter()
@@ -195,20 +193,66 @@ const companyName = ref(localStorage.getItem('wb-company') || '')
 const particulars = ref([])
 const totals = ref({ inflow: 0, outflow: 0, balance: 0 })
 const reportSummary = computed(() => [
-  { label: 'Cash Inflow', value: totals.value.inflow, description: 'Received during the selected period, excluding internal transfers' },
-  { label: 'Cash Outflow', value: totals.value.outflow, description: 'Paid during the selected period, excluding internal transfers' },
-  { label: 'Net Cash in Hand', value: totals.value.balance, description: `Closing cash and bank balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
+  { key: 'inflow', label: 'Cash Inflow', value: totals.value.inflow, description: 'Received during the selected period, excluding internal transfers' },
+  { key: 'outflow', label: 'Cash Outflow', value: totals.value.outflow, description: 'Paid during the selected period, excluding internal transfers' },
+  { key: 'balance', label: 'Net Cash in Hand', value: totals.value.balance, description: `Closing cash and bank balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
 ])
 const loadedFilters = ref(null)
 const today = new Date().toISOString().slice(0, 10)
 const fromDate = ref(today)
 const toDate = ref(today)
 let requestId = 0
+const expandedFlow = ref('')
+const expandedAccounts = ref({})
+const detailCache = ref({})
+const activeSummary = computed(() => reportSummary.value.find(row => row.key === expandedFlow.value))
+const flowAccounts = computed(() => particulars.value.filter(row => expandedFlow.value === 'balance' || row[expandedFlow.value] !== 0))
+const detailKey = account => JSON.stringify([expandedFlow.value, account])
+const detailState = account => detailCache.value[detailKey(account)] || { entries: [] }
+function toggleFlow(flow) {
+  expandedFlow.value = expandedFlow.value === flow ? '' : flow
+  expandedAccounts.value = {}
+}
+function toggleAccount(account) {
+  expandedAccounts.value[account] = !expandedAccounts.value[account]
+  if (expandedAccounts.value[account] && !detailState(account).loaded) loadDetails(account)
+}
+function voucherUrl(entry) {
+  return `/app/${encodeURIComponent(entry.voucher_type.toLowerCase().replaceAll(' ', '-'))}/${encodeURIComponent(entry.voucher_no)}`
+}
+async function loadDetails(account) {
+  if (!loadedFilters.value) return
+  const key = detailKey(account)
+  const state = detailCache.value[key] || { entries: [], loaded: false }
+  if (state.loading) return
+  detailCache.value[key] = state
+  state.loading = true
+  state.error = ''
+  // Update via the reactive proxy so loading and completion render immediately.
+  const target = detailCache.value[key]
+  const currentRequest = requestId
+  const filters = loadedFilters.value
+  try {
+    const result = await getCashflowDetails({ company: filters.company, account, from_date: filters.from, to_date: filters.to, flow: expandedFlow.value, start: target.entries.length })
+    if (currentRequest !== requestId) return
+    target.entries.push(...result.entries)
+    target.has_more = result.has_more
+    target.opening_balance = result.opening_balance
+    target.loaded = true
+  } catch (e) {
+    if (currentRequest === requestId) target.error = e.message || 'Failed to load transactions'
+  } finally {
+    target.loading = false
+  }
+}
 
 async function fetchData() {
   const currentRequest = ++requestId
   error.value = ''
   particulars.value = []
+  expandedFlow.value = ''
+  expandedAccounts.value = {}
+  detailCache.value = {}
   totals.value = { inflow: 0, outflow: 0, balance: 0 }
   loadedFilters.value = null
   companyName.value = localStorage.getItem('wb-company') || ''

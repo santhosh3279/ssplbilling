@@ -1671,6 +1671,49 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 
 
 @frappe.whitelist()
+def get_cashflow_details(company, account, from_date, to_date, flow="inflow", start=0):
+	"""Paged cash/bank GL particulars using the cash-flow summary's inclusion rules."""
+	from frappe.utils import cint, getdate
+
+	frappe.has_permission("GL Entry", "read", throw=True)
+	frappe.get_doc("Company", company).check_permission("read")
+	account_doc = frappe.get_doc("Account", account)
+	account_doc.check_permission("read")
+	if account_doc.company != company or account_doc.is_group or account_doc.account_type not in ("Cash", "Bank"):
+		frappe.throw("Select a cash or bank account belonging to the company")
+	if flow not in ("inflow", "outflow", "balance") or getdate(from_date) > getdate(to_date):
+		frappe.throw("Invalid cash flow filters")
+	start = max(0, cint(start))
+	params = {"company": company, "account": account, "from_date": from_date, "to_date": to_date, "start": start}
+	condition = ""
+	if flow != "balance":
+		amount_field = "debit" if flow == "inflow" else "credit"
+		condition = f"AND gle.{amount_field} != 0 AND COALESCE(pe.payment_type, '') != 'Internal Transfer'"
+	entries = frappe.db.sql(
+		f"""
+		SELECT gle.name, gle.posting_date, gle.voucher_type, gle.voucher_no,
+			gle.against, gle.party, gle.remarks, gle.cost_center, gle.debit, gle.credit,
+			pe.payment_type
+		FROM `tabGL Entry` gle
+		LEFT JOIN `tabPayment Entry` pe ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
+		WHERE gle.company = %(company)s AND gle.account = %(account)s AND gle.is_cancelled = 0
+			AND gle.posting_date BETWEEN %(from_date)s AND %(to_date)s
+			{condition}
+		ORDER BY gle.posting_date, gle.creation, gle.name
+		LIMIT 101 OFFSET %(start)s
+		""", params, as_dict=True,
+	)
+	opening_balance = 0
+	if flow == "balance":
+		opening_balance = frappe.db.sql(
+			"""SELECT COALESCE(SUM(debit - credit), 0) FROM `tabGL Entry`
+			WHERE company = %(company)s AND account = %(account)s AND is_cancelled = 0
+			AND posting_date < %(from_date)s""", params,
+		)[0][0]
+	return {"entries": entries[:100], "has_more": len(entries) > 100, "opening_balance": opening_balance}
+
+
+@frappe.whitelist()
 def get_stock_aging_report(to_date=None, warehouse=None, company=None):
 	"""FIFO-based stock ageing (0-30 / 31-60 / 61-90 / 91+ day buckets), item x warehouse-wise.
 
