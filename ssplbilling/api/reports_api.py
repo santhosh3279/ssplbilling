@@ -1502,6 +1502,13 @@ def get_cost_center_sale_report(from_date=None, to_date=None, company=None):
         }
 
 
+def _cashflow_cheque_clearing_accounts():
+	# Use the same names as the cheque register, across all company suffixes.
+	from ssplbilling.api.cheque_api import RECEIVED_ACCOUNT, ISSUED_ACCOUNT
+
+	return (RECEIVED_ACCOUNT, ISSUED_ACCOUNT)
+
+
 def _cashflow_internal_transfer_condition():
 	"""Shared SQL predicate for marked transfers and cash/bank-only vouchers.
 
@@ -1509,7 +1516,8 @@ def _cashflow_internal_transfer_condition():
 	discard real cash movements merely because another cash account is present.
 	The caller supplies the GL alias gle and Payment Entry alias pe.
 	"""
-	return """(
+	clearing_names = ", ".join(frappe.db.escape(name) for name in _cashflow_cheque_clearing_accounts())
+	return f"""(
 		COALESCE(pe.payment_type, '') = 'Internal Transfer'
 		OR (
 			EXISTS (
@@ -1521,6 +1529,7 @@ def _cashflow_internal_transfer_condition():
 					AND transfer_leg.is_cancelled = 0
 					AND transfer_leg.account != gle.account
 					AND transfer_account.account_type IN ('Cash', 'Bank')
+					AND transfer_account.account_name NOT IN ({clearing_names})
 					AND ((gle.debit != 0 AND transfer_leg.credit != 0)
 						OR (gle.credit != 0 AND transfer_leg.debit != 0))
 			)
@@ -1532,7 +1541,8 @@ def _cashflow_internal_transfer_condition():
 					AND other_leg.voucher_no = gle.voucher_no
 					AND other_leg.is_cancelled = 0
 					AND (other_leg.debit != 0 OR other_leg.credit != 0)
-					AND COALESCE(other_account.account_type, '') NOT IN ('Cash', 'Bank')
+					AND (COALESCE(other_account.account_type, '') NOT IN ('Cash', 'Bank')
+						OR other_account.account_name IN ({clearing_names}))
 			)
 		)
 	)"""
@@ -1546,7 +1556,13 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 	if not to_date:
 		to_date = frappe.utils.today()
 
-	account_filters = {"account_type": ["in", ["Cash", "Bank"]], "is_group": 0}
+	# Pending cheques are held in Bank-typed clearing accounts, not actual cash.
+	# Clearance is counted only on the real bank leg of the clearance journal.
+	account_filters = {
+		"account_type": ["in", ["Cash", "Bank"]],
+		"is_group": 0,
+		"account_name": ["not in", _cashflow_cheque_clearing_accounts()],
+	}
 	if company:
 		account_filters["company"] = company
 
@@ -1717,8 +1733,13 @@ def get_cashflow_details(company, account, from_date, to_date, flow="inflow", st
 	frappe.get_doc("Company", company).check_permission("read")
 	account_doc = frappe.get_doc("Account", account)
 	account_doc.check_permission("read")
-	if account_doc.company != company or account_doc.is_group or account_doc.account_type not in ("Cash", "Bank"):
-		frappe.throw("Select a cash or bank account belonging to the company")
+	if (
+		account_doc.company != company
+		or account_doc.is_group
+		or account_doc.account_type not in ("Cash", "Bank")
+		or account_doc.account_name in _cashflow_cheque_clearing_accounts()
+	):
+		frappe.throw("Select an actual cash or bank account belonging to the company; pending cheque accounts are excluded")
 	if flow not in ("inflow", "outflow", "balance") or getdate(from_date) > getdate(to_date):
 		frappe.throw("Invalid cash flow filters")
 	start = max(0, cint(start))

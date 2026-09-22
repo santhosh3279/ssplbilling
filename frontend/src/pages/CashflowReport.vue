@@ -12,7 +12,7 @@
           </button>
           <div>
             <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Cashflow Report</h1>
-            <p class="text-xs text-[var(--color-text-muted)]">All cash and bank accounts · {{ companyName }}</p>
+            <p class="text-xs text-[var(--color-text-muted)]">Cash and bank accounts · Pending cheques excluded · {{ companyName }}</p>
           </div>
         </div>
         <div class="flex items-center gap-4">
@@ -387,7 +387,7 @@ async function exportToExcel() {
     sheet.columns = [{ width: 28 }, { width: 24 }, { width: 90 }]
     sheet.addRow([filters.company])
     sheet.addRow([`Cash Flow: ${filters.from} to ${filters.to}`])
-    sheet.addRow(['All cash and bank accounts; amounts in company currency'])
+    sheet.addRow(['Cash and bank accounts; pending cheques excluded; amounts in company currency'])
     sheet.addRow([])
     sheet.addRow(['Summary', 'Amount', 'Details']).font = { bold: true }
     for (const summary of reportSummary.value) {
@@ -399,7 +399,7 @@ async function exportToExcel() {
     details.addRow([filters.company])
     details.addRow([`Cash Flow: ${filters.from} to ${filters.to}`])
     details.addRow(['Amounts in company currency; closing balances include opening balances and transfers'])
-    details.addRow(['Inflow and outflow exclude internal transfers'])
+    details.addRow(['Inflow and outflow exclude internal transfers; pending cheques are excluded'])
     details.addRow([])
     details.addRow(['Particulars', 'Cash Inflow', 'Cash Outflow', 'Net Cash in Hand']).font = { bold: true }
     for (const item of [...particulars.value, { account: 'Total', ...totals.value }]) {
