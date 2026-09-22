@@ -9,9 +9,10 @@ let response = { items: [{ item_code: 'A', pageaddress: 'offers', order_rate: 12
 let resolvePending
 const user = { value: true }
 const context = vm.createContext({
+  orderContext: { value: {} }, orderParams: () => ({}),
   ref: value => ({ value }), computed: getter => ({ get value() { return getter() } }),
   watch: (sources, fn) => watchers.push(fn), onMounted: () => {}, onBeforeUnmount: fn => unmount.push(fn),
-  useRouter: () => ({}), session: { isWebsiteUser: user, isLoggedIn: { value: true } },
+  useRouter: () => ({}), session: { isSystemUser: { value: false }, isWebsiteUser: user, isLoggedIn: { value: true } },
   setTimeout: () => 1, clearTimeout: () => {},
   getQuantity: (page, code) => quantities.get(`${page}:${code}`) || 0,
   setQuantity: (page, code, qty) => quantities.set(`${page}:${code}`, qty),

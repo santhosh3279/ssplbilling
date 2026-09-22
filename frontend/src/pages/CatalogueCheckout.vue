@@ -6,6 +6,7 @@
         <h1 class="text-3xl font-bold">Checkout</h1>
       </header>
 
+      <CatalogueOrderParty v-if="!placing && !orderName" />
       <p v-if="loading">Checking prices…</p>
       <p v-else-if="error && !preview" role="alert" class="rounded-xl bg-red-100 p-4 text-red-800">{{ error }}</p>
       <div v-else-if="orderName" class="space-y-4 rounded-xl bg-[var(--color-surface)] p-8 text-center">
@@ -39,10 +40,12 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { frappePost } from '../api.js'
 import { session } from '../session.js'
+import CatalogueOrderParty from '../components/CatalogueOrderParty.vue'
+import { orderContext, orderParams } from '../services/catalogueOrderContext.js'
 import { cartItems, clearCart, setCartUser } from '../services/catalogueCart.js'
 
 const loading = ref(true)
@@ -52,10 +55,30 @@ const preview = ref(null)
 const orderName = ref('')
 const money = value => Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+let ready = false
+let previewRequest = 0
+async function refreshPreview() {
+  const id = ++previewRequest
+  preview.value = null
+  loading.value = true
+  error.value = ''
+  try {
+    if (!cartItems.value.length) throw new Error('Your cart is empty.')
+    const result = await frappePost('ssplbilling.api.catalogue_order_api.get_cart_preview', { items: cartItems.value, ...orderParams() }, { silent: true })
+    if (id === previewRequest) preview.value = result
+  } catch (err) {
+    if (id === previewRequest) error.value = err.message || 'Could not load checkout.'
+  } finally {
+    if (id === previewRequest) loading.value = false
+  }
+}
+watch(orderContext, () => { if (ready && !placing.value && !orderName.value) refreshPreview() })
+
 onMounted(async () => {
   try {
-    if (!await session.checkWebsiteUser()) {
-      error.value = 'Sign in as a Website User from a catalogue to check out.'
+    await session.checkWebsiteUser()
+    if (!session.isWebsiteUser.value && !session.isSystemUser.value) {
+      error.value = 'Sign in from a catalogue to check out.'
       return
     }
     setCartUser(session.user.value)
@@ -63,20 +86,21 @@ onMounted(async () => {
       error.value = 'Your cart is empty.'
       return
     }
-    preview.value = await frappePost('ssplbilling.api.catalogue_order_api.get_cart_preview', { items: cartItems.value }, { silent: true })
+    await refreshPreview()
   } catch (err) {
     error.value = err.message || 'Could not load checkout.'
   } finally {
+    ready = true
     loading.value = false
   }
 })
 
 async function placeOrder() {
-  if (placing.value || !preview.value) return
+  if (placing.value || loading.value || !preview.value) return
   placing.value = true
   error.value = ''
   try {
-    const result = await frappePost('ssplbilling.api.catalogue_order_api.place_order', { items: cartItems.value }, { silent: true })
+    const result = await frappePost('ssplbilling.api.catalogue_order_api.place_order', { items: cartItems.value, customer: preview.value.customer, price_list: preview.value.price_list }, { silent: true })
     orderName.value = result.order_name
     clearCart()
   } catch (err) {

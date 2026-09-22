@@ -61,6 +61,53 @@ def _customer_context():
 	}
 
 
+def _is_system_user():
+	return frappe.session.user != "Guest" and frappe.get_cached_value("User", frappe.session.user, "user_type") == "System User"
+
+
+def _order_context(customer=None, price_list=None):
+	if not _is_system_user():
+		# Website users cannot override their linked customer or its price list.
+		return _customer_context()
+	frappe.has_permission("Sales Order", "create", throw=True)
+	if not customer:
+		frappe.throw("Select a customer for this order.")
+	doc = frappe.get_doc("Customer", customer)
+	doc.check_permission("read")
+	if doc.disabled:
+		frappe.throw("The selected customer is disabled.")
+	price_list = price_list or doc.default_price_list
+	if not price_list:
+		frappe.throw("Select a selling price list.")
+	prices = frappe.get_doc("Price List", price_list)
+	prices.check_permission("read")
+	if not prices.enabled or not prices.selling:
+		frappe.throw("Select an enabled selling price list.")
+	return {"customer": doc.name, "customer_name": doc.customer_name, "price_list": prices.name}
+
+
+@frappe.whitelist()
+def get_system_order_context(customer, price_list=None):
+	if not _is_system_user():
+		frappe.throw("System User access required.", frappe.PermissionError)
+	return _order_context(customer, price_list)
+
+
+@frappe.whitelist()
+def get_order_options(query=""):
+	if not _is_system_user():
+		frappe.throw("System User access required.", frappe.PermissionError)
+	frappe.has_permission("Sales Order", "create", throw=True)
+	query = (query or "").strip()[:100]
+	return {
+		"customers": frappe.get_list("Customer", filters={"disabled": 0},
+			or_filters={"name": ["like", "%" + query + "%"], "customer_name": ["like", "%" + query + "%"]},
+			fields=["name", "customer_name", "default_price_list"], order_by="customer_name", limit_page_length=30),
+		"price_lists": frappe.get_list("Price List", filters={"enabled": 1, "selling": 1},
+			fields=["name"], order_by="name", limit_page_length=0),
+	}
+
+
 def _order_price(item_code, price_list, barcode=None):
 	item = frappe.get_cached_doc("Item", item_code)
 	if item.disabled or not item.is_sales_item:
@@ -86,8 +133,8 @@ def _order_price(item_code, price_list, barcode=None):
 
 
 @frappe.whitelist()
-def get_customer_offer(pageaddress):
-	context = _customer_context()
+def get_customer_offer(pageaddress, customer=None, price_list=None):
+	context = _order_context(customer, price_list)
 	offer = get_offer_details(pageaddress)
 	if not offer:
 		return None
@@ -108,7 +155,7 @@ def get_customer_offer(pageaddress):
 
 
 @frappe.whitelist(allow_guest=True)
-def search_catalogue_items(query, start=0):
+def search_catalogue_items(query, start=0, customer=None, price_list=None):
 	"""Search enabled catalogue items; resolve order prices only for website users."""
 	from frappe.utils import cint
 	from ssplbilling.api.offer_api import _catalogue_stock
@@ -119,6 +166,8 @@ def search_catalogue_items(query, start=0):
 	context = None
 	if frappe.session.user != "Guest" and frappe.get_cached_value("User", frappe.session.user, "user_type") == "Website User":
 		context = _customer_context()
+	elif _is_system_user() and customer:
+		context = _order_context(customer, price_list)
 	rows = frappe.db.sql("""
 		SELECT DISTINCT catalogue.pageaddress, catalogue.heading, item.name AS item_code,
 			item.item_name, item.image, item.stock_uom, line.barcode
@@ -250,8 +299,8 @@ def _apply_catalogue_rules(lines, price_list):
 	return priced
 
 
-def _preview(items):
-	context = _customer_context()
+def _preview(items, customer=None, price_list=None):
+	context = _order_context(customer, price_list)
 	if isinstance(items, str):
 		try:
 			items = json.loads(items)
@@ -316,13 +365,13 @@ def _preview(items):
 
 
 @frappe.whitelist()
-def get_cart_preview(items):
-	return _preview(items)
+def get_cart_preview(items, customer=None, price_list=None):
+	return _preview(items, customer, price_list)
 
 
 @frappe.whitelist()
-def place_order(items):
-	preview = _preview(items)
+def place_order(items, customer=None, price_list=None):
+	preview = _preview(items, customer, price_list)
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
 	company = settings.online_order_company
 	series = settings.online_order_series
@@ -364,12 +413,15 @@ def place_order(items):
 	# frappe.set_user replaces its sid and would log the website user out.
 	user = frappe.session.user
 	session_data = frappe.session.copy()
-	try:
-		frappe.set_user("Administrator")
-		order.insert(ignore_permissions=True)
-	finally:
-		frappe.set_user(user)
-		frappe.session.clear()
-		frappe.session.update(session_data)
+	if _is_system_user():
+		order.insert()
+	else:
+		try:
+			frappe.set_user("Administrator")
+			order.insert(ignore_permissions=True)
+		finally:
+			frappe.set_user(user)
+			frappe.session.clear()
+			frappe.session.update(session_data)
 	frappe.db.set_value("Sales Order", order.name, "owner", user, update_modified=False)
 	return {"order_name": order.name, "total": flt(order.grand_total)}

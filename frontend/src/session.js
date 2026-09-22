@@ -8,6 +8,7 @@ const isLoggedIn = ref(false)
 const user = ref(null)
 const fullName = ref('')
 const isWebsiteUser = ref(false)
+const isSystemUser = ref(false)
 let initialized = false
 
 const userResource = createResource({
@@ -70,10 +71,9 @@ async function init() {
 
 async function checkWebsiteUser() {
   await init()
-  isWebsiteUser.value = false
-  if (isLoggedIn.value) {
-    isWebsiteUser.value = await frappeGet('ssplbilling.api.auth_api.get_current_user_type') === 'Website User'
-  }
+  const type = isLoggedIn.value ? await frappeGet('ssplbilling.api.auth_api.get_current_user_type') : null
+  isWebsiteUser.value = type === 'Website User'
+  isSystemUser.value = type === 'System User'
   return isWebsiteUser.value
 }
 
@@ -90,6 +90,7 @@ async function login(usr, pwd) {
   if (data.csrf_token) window.csrf_token = data.csrf_token
   // Refresh session
   isWebsiteUser.value = false
+  isSystemUser.value = false
   initialized = false
   await init()
   return true
@@ -102,6 +103,7 @@ async function logout() {
   user.value = null
   fullName.value = ''
   isWebsiteUser.value = false
+  isSystemUser.value = false
   initialized = false
 }
 
@@ -110,6 +112,7 @@ export const session = {
   user,
   fullName,
   isWebsiteUser,
+  isSystemUser,
   checkWebsiteUser,
   init,
   login,

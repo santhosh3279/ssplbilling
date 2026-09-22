@@ -1,8 +1,9 @@
 <template>
   <div class="h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white main-content-wrapper">
+    <CatalogueOrderParty v-if="!isFullscreen" class="mt-16" />
     <div v-if="isLoggedIn" class="fixed top-4 right-4 z-[70] flex items-center gap-3 rounded-xl bg-slate-950/80 px-4 py-2 text-xs text-white border border-slate-800/50 shadow-lg">
       <span class="max-w-40 truncate">{{ userName }}</span>
-      <RouterLink v-if="websiteUser" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
+      <RouterLink v-if="catalogueUser" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
       <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
     </div>
     <button
@@ -11,12 +12,12 @@
       @click="showLogin = true"
       class="fixed top-4 right-4 z-50 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300"
     >
-      Website User Login
+      Login
     </button>
     <div v-if="showLogin" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" @click.self="showLogin = false">
       <form class="w-full max-w-sm space-y-4 rounded-xl bg-[var(--color-surface)] p-6 text-[var(--color-text)] shadow-xl" @submit.prevent="handleWebsiteLogin">
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-bold">Website User Login</h2>
+          <h2 class="text-lg font-bold">Login</h2>
           <button type="button" aria-label="Close login" @click="showLogin = false">✕</button>
         </div>
         <p v-if="loginError" role="alert" class="text-sm text-red-600">{{ loginError }}</p>
@@ -142,7 +143,7 @@
                               class="py-0.5 px-0.5 font-mono text-left text-indigo-400 font-bold tracking-widest"
                             >
                               <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                                {{ displayPrice(bp.prices[pl.price_list]) }}
+                                {{ displayPrice(bp.prices[pl.price_list]) }} <span class="text-xs font-normal">{{ pl.price_list }}</span>
                               </span>
                               <span v-else class="text-slate-600 font-normal">—</span>
                             </div>
@@ -152,7 +153,7 @@
                     </table>
                   </div>
                 </div>
-                <div v-if="websiteUser" class="flex items-center justify-center gap-2 text-white">
+                <div v-if="catalogueUser" class="flex items-center justify-center gap-2 text-white">
                   <template v-if="item.order_rate != null">
                     <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Decrease ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-rose-300/40 bg-rose-400/20 text-black shadow-lg shadow-rose-950/20 backdrop-blur-md hover:bg-rose-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300" @click="adjustByMinimum(item, -1)">−{{ minimumOrderQuantity(item) }}</button>
                     <button type="button" :aria-label="`Decrease ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-rose-300/40 bg-rose-400/20 text-black shadow-lg shadow-rose-950/20 backdrop-blur-md hover:bg-rose-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300" @click="adjustQuantity(item, -1)">−</button>
@@ -291,7 +292,7 @@
         </header>
 
         <!-- Items Grid Section -->
-        <main class="flex-1 w-full mx-auto px-6 py-10" :class="[containerClass, websiteUser && cartCount ? 'lg:pr-[21rem]' : '']">
+        <main class="flex-1 w-full mx-auto px-6 py-10" :class="[containerClass, catalogueUser && cartCount ? 'lg:pr-[21rem]' : '']">
           <div class="grid gap-6" :class="gridClass">
             <div
               v-for="item in offer.items"
@@ -345,7 +346,7 @@
                   </p>
                 </div>
 
-                <div v-if="websiteUser" class="flex items-center justify-center gap-2 border-t border-[var(--color-border)]/40 pt-3">
+                <div v-if="catalogueUser" class="flex items-center justify-center gap-2 border-t border-[var(--color-border)]/40 pt-3">
                   <template v-if="item.order_rate != null">
                     <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Decrease ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-rose-500/40 bg-rose-500/15 text-black shadow-lg shadow-rose-900/10 backdrop-blur-md hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500" @click="adjustByMinimum(item, -1)">−{{ minimumOrderQuantity(item) }}</button>
                     <button type="button" :aria-label="`Decrease ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-rose-500/40 bg-rose-500/15 text-black shadow-lg shadow-rose-900/10 backdrop-blur-md hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500" @click="adjustQuantity(item, -1)">−</button>
@@ -377,7 +378,7 @@
                                 class="py-0.5 px-0.5 font-mono text-left text-[var(--color-info)] font-bold tracking-widest"
                               >
                                 <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                                  {{ displayPrice(bp.prices[pl.price_list]) }}
+                                  {{ displayPrice(bp.prices[pl.price_list]) }} <span class="text-xs font-normal">{{ pl.price_list }}</span>
                                 </span>
                                 <span v-else class="text-[var(--color-text-muted)] font-normal">—</span>
                               </div>
@@ -424,7 +425,7 @@
       </div>
     </template>
 
-    <CatalogueCartPanel v-if="websiteUser" />
+    <CatalogueCartPanel v-if="catalogueUser" />
 
     <!-- Footer -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 py-6 px-6 text-center text-[10px] text-[var(--color-text-muted)] shrink-0">
@@ -478,7 +479,7 @@
         </label>
 
         <!-- Encrypt Prices Checkbox (Conditional) -->
-        <div v-if="includePricesInPrint" class="animate-in slide-in-from-top-2 duration-200">
+        <div v-if="includePricesInPrint && !session.isSystemUser.value" class="animate-in slide-in-from-top-2 duration-200">
           <label class="flex items-center gap-3 cursor-pointer group bg-[var(--color-bg)]/50 p-3.5 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-info)]/60 transition">
             <input 
               v-model="encryptPricesInPrint" 
@@ -522,6 +523,8 @@ import { initFrappeSocket } from '../services/frappeSocket.js'
 import { session } from '../session.js'
 import { cartCount, getQuantity, setCartUser, setQuantity } from '../services/catalogueCart.js'
 import CatalogueCartPanel from '../components/CatalogueCartPanel.vue'
+import CatalogueOrderParty from '../components/CatalogueOrderParty.vue'
+import { orderContext, orderParams } from '../services/catalogueOrderContext.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -531,6 +534,7 @@ const loginPassword = ref('')
 const loginError = ref('')
 const loginLoading = ref(false)
 const websiteUser = session.isWebsiteUser
+const catalogueUser = computed(() => websiteUser.value || session.isSystemUser.value)
 const isLoggedIn = session.isLoggedIn
 const userName = computed(() => session.fullName.value || session.user.value)
 
@@ -602,7 +606,7 @@ function displayStock(item) {
 }
 
 function displayPrice(price) {
-  if (!websiteUser.value && getCipherMap()) return encryptPrice(price)
+  if (!catalogueUser.value && getCipherMap()) return encryptPrice(price)
   const value = Number(price)
   return price == null || !Number.isFinite(value) ? '—' : rupeeFormatter.format(value)
 }
@@ -614,12 +618,12 @@ async function handleWebsiteLogin() {
   try {
     await session.login(loginEmail.value, loginPassword.value)
     signedIn = true
-    if (!await session.checkWebsiteUser()) {
+    await session.checkWebsiteUser()
+    if (!catalogueUser.value) {
       await session.logout()
-      loginError.value = 'Only Website Users can sign in here.'
+      loginError.value = 'Sign in with a Website User or System User account.'
       return
     }
-    websiteUser.value = true
     setCartUser(session.user.value)
     await loadOffer()
     loginPassword.value = ''
@@ -913,7 +917,10 @@ function handleFullscreenChange() {
   }
 }
 
+let offerLoadId = 0
+watch(orderContext, () => loadOffer())
 async function loadOffer(silent = false) {
+  const loadId = ++offerLoadId
   if (!pageaddress) {
     loading.value = false
     error.value = 'Invalid page address'
@@ -925,10 +932,12 @@ async function loadOffer(silent = false) {
   }
   error.value = null
   try {
-    const response = websiteUser.value
-      ? await frappePost('ssplbilling.api.catalogue_order_api.get_customer_offer', { pageaddress }, { silent: true })
+    const priced = websiteUser.value || (session.isSystemUser.value && !!orderContext.value.customer)
+    const response = priced
+      ? await frappePost('ssplbilling.api.catalogue_order_api.get_customer_offer', { pageaddress, ...orderParams() }, { silent: true })
       : await frappeGet('ssplbilling.api.offer_api.get_offer_details', { pageaddress })
-    const res = websiteUser.value ? response?.offer : response
+    const res = priced ? response?.offer : response
+    if (loadId !== offerLoadId) return
     
     if (res) {
       // Blank cipher_map means encryption is off; clear any stale key.
@@ -952,13 +961,14 @@ async function loadOffer(silent = false) {
       }
     }
   } catch (err) {
+    if (loadId !== offerLoadId) return
     console.error(err)
     if (!silent) {
       error.value = err.message || 'Failed to load offers'
       focusGoHomeButton()
     }
   } finally {
-    if (!silent) {
+    if (loadId === offerLoadId) {
       loading.value = false
     }
   }
@@ -1039,7 +1049,8 @@ async function triggerPrint() {
       pageaddress: pageaddress,
       print_template: selectedPrintTemplate.value || '',
       include_prices: includePricesInPrint.value ? 1 : 0,
-      encrypt_prices: encryptPricesInPrint.value ? 1 : 0
+      encrypt_prices: !session.isSystemUser.value && encryptPricesInPrint.value ? 1 : 0,
+      ...orderParams()
     })
     if (!html) {
       alert('Could not render the catalog. Check the print template.')
@@ -1239,7 +1250,7 @@ function teardownOfferSocket() {
 
 onMounted(() => {
   session.checkWebsiteUser().then(() => {
-    if (websiteUser.value) setCartUser(session.user.value)
+    if (catalogueUser.value) setCartUser(session.user.value)
   }).catch((error) => {
     websiteUser.value = false
     console.warn('[catalogue] Could not verify website user:', error)
@@ -1251,6 +1262,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  ++offerLoadId
   stopTimer()
   stopSlideshow()
   teardownOfferSocket()

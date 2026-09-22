@@ -1,4 +1,5 @@
 import { computed, ref } from 'vue'
+import { setOrderUser } from './catalogueOrderContext.js'
 
 export const cartItems = ref([])
 export const cartCount = computed(() => cartItems.value.reduce((count, item) => count + item.qty, 0))
@@ -9,6 +10,7 @@ function storageKey() {
 }
 
 export function setCartUser(user) {
+  setOrderUser(user)
   if (activeUser === user) return
   activeUser = user || null
   cartItems.value = []

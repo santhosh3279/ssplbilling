@@ -498,7 +498,7 @@ def get_catalog_template_html(print_template=None):
 
 
 @frappe.whitelist(allow_guest=True)
-def render_offer_catalog(pageaddress, print_template=None, include_prices=0, encrypt_prices=0):
+def render_offer_catalog(pageaddress, print_template=None, include_prices=0, encrypt_prices=0, customer=None, price_list=None):
 	"""Render the offer catalogue to standalone HTML for printing.
 
 	The offer page is public, so this stays guest-accessible and reuses
@@ -509,7 +509,12 @@ def render_offer_catalog(pageaddress, print_template=None, include_prices=0, enc
 	include_prices = cint(include_prices)
 	encrypt_prices = cint(encrypt_prices)
 
-	offer = get_offer_details(pageaddress)
+	from ssplbilling.api.catalogue_order_api import _is_system_user, get_customer_offer
+	if _is_system_user():
+		encrypt_prices = 0
+		offer = (get_customer_offer(pageaddress, customer, price_list) or {}).get("offer") if customer else get_offer_details(pageaddress)
+	else:
+		offer = get_offer_details(pageaddress)
 	if not offer:
 		frappe.throw(frappe._("Offer list not found"))
 

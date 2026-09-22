@@ -9,6 +9,7 @@
         <span v-if="isLoggedIn" class="text-sm">{{ session.fullName.value || session.user.value }}</span>
       </header>
 
+      <CatalogueOrderParty />
       <p v-if="loading">Loading cart…</p>
       <div v-else-if="error && !preview" role="alert" class="space-y-3 rounded-xl bg-red-100 p-4 text-red-800">
         <p>{{ error }}</p>
@@ -52,10 +53,12 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { frappePost } from '../api.js'
 import { session } from '../session.js'
+import CatalogueOrderParty from '../components/CatalogueOrderParty.vue'
+import { orderContext, orderParams } from '../services/catalogueOrderContext.js'
 import { cartItems, clearCart, setCartUser, setQuantity } from '../services/catalogueCart.js'
 import { addDiscountQuantities } from '../services/discount-cart.js'
 
@@ -67,11 +70,25 @@ const updating = ref(false)
 const lines = computed(() => addDiscountQuantities(preview.value?.items || []))
 const money = value => Number(value || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+let ready = false
+let previewRequest = 0
 async function refreshPreview() {
-  preview.value = cartItems.value.length
-    ? await frappePost('ssplbilling.api.catalogue_order_api.get_cart_preview', { items: cartItems.value }, { silent: true })
-    : null
+  const id = ++previewRequest
+  preview.value = null
+  error.value = ''
+  loading.value = true
+  try {
+    const result = cartItems.value.length
+      ? await frappePost('ssplbilling.api.catalogue_order_api.get_cart_preview', { items: cartItems.value, ...orderParams() }, { silent: true })
+      : null
+    if (id === previewRequest) preview.value = result
+  } catch (err) {
+    if (id === previewRequest) error.value = err.message || 'Could not load cart prices.'
+  } finally {
+    if (id === previewRequest) loading.value = false
+  }
 }
+watch(orderContext, () => { if (ready) refreshPreview() })
 
 async function changeQuantity(line, delta) {
   if (updating.value) return
@@ -89,8 +106,9 @@ async function changeQuantity(line, delta) {
 
 onMounted(async () => {
   try {
-    if (!await session.checkWebsiteUser()) {
-      error.value = 'Sign in as a Website User from a catalogue to view your cart.'
+    await session.checkWebsiteUser()
+    if (!session.isWebsiteUser.value && !session.isSystemUser.value) {
+      error.value = 'Sign in from a catalogue to view your cart.'
       return
     }
     setCartUser(session.user.value)
@@ -98,6 +116,7 @@ onMounted(async () => {
   } catch (err) {
     error.value = err.message || 'Could not load cart.'
   } finally {
+    ready = true
     loading.value = false
   }
 })

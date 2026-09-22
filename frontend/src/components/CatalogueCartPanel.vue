@@ -43,6 +43,7 @@
 import { ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { frappePost } from '../api.js'
+import { orderContext, orderParams } from '../services/catalogueOrderContext.js'
 import { cartCount, cartItems } from '../services/catalogueCart.js'
 
 const preview = ref(null)
@@ -55,12 +56,12 @@ const bonusLines = item => (preview.value?.items || []).filter(line =>
   line.is_free_item && line.pageaddress === item.pageaddress && line.source_item_code === item.item_code
 )
 
-watch(cartItems, async items => {
+watch([cartItems, orderContext], async ([items]) => {
   const currentRequest = ++requestId
   preview.value = null
   if (!items.length) return
   try {
-    const result = await frappePost('ssplbilling.api.catalogue_order_api.get_cart_preview', { items }, { silent: true })
+    const result = await frappePost('ssplbilling.api.catalogue_order_api.get_cart_preview', { items, ...orderParams() }, { silent: true })
     if (currentRequest === requestId) preview.value = result
   } catch {
     // The cart remains usable if its price preview cannot be loaded.

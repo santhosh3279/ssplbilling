@@ -11,11 +11,11 @@
 
       <div v-if="isLoggedIn" class="absolute top-4 right-4 z-20 flex items-center gap-3 rounded-xl bg-slate-950/60 px-4 py-2 text-xs text-white border border-slate-800/50">
         <span class="max-w-40 truncate">{{ userName }}</span>
-        <RouterLink v-if="isWebsiteUser" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
+        <RouterLink v-if="catalogueUser" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
         <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
       </div>
       <button v-else type="button" @click="showLogin = true" class="absolute top-4 right-4 z-20 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
-        Website User Login
+        Login
       </button>
 
       <!-- Abstract glowing circles -->
@@ -38,7 +38,7 @@
     <div v-if="showLogin" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" @click.self="showLogin = false">
       <form class="w-full max-w-sm space-y-4 rounded-xl bg-[var(--color-surface)] p-6 text-[var(--color-text)] shadow-xl" @submit.prevent="handleWebsiteLogin">
         <div class="flex items-center justify-between">
-          <h2 class="text-lg font-bold">Website User Login</h2>
+          <h2 class="text-lg font-bold">Login</h2>
           <button type="button" aria-label="Close login" @click="showLogin = false">✕</button>
         </div>
         <p v-if="loginError" role="alert" class="text-sm text-red-600">{{ loginError }}</p>
@@ -54,8 +54,9 @@
       </form>
     </div>
 
+    <CatalogueOrderParty />
     <!-- Main Content Area -->
-    <main class="flex-1 w-full px-6 py-12" :class="isWebsiteUser && cartCount ? 'lg:pr-[21rem]' : ''">
+    <main class="flex-1 w-full px-6 py-12" :class="catalogueUser && cartCount ? 'lg:pr-[21rem]' : ''">
       <section class="mb-8 space-y-4" aria-label="Search catalogue items">
         <label for="catalogue-item-search" class="block text-lg font-bold">Find items to add to your cart</label>
         <div class="flex gap-2">
@@ -71,7 +72,8 @@
             <p class="text-sm text-[var(--color-text-muted)]">{{ item.item_code }} <span v-if="item.barcode">· {{ item.barcode }}</span></p>
             <button type="button" class="text-sm text-[var(--color-info)] underline" @click="openCatalogue(item.pageaddress)">{{ item.heading }}</button>
             <p class="text-sm">Available stock: {{ item.available_stock == null ? 'Unavailable' : item.available_stock + ' ' + item.stock_uom }}</p>
-            <template v-if="isWebsiteUser">
+            <template v-if="catalogueUser">
+              <p v-if="session.isSystemUser.value" class="text-xs">Price list: {{ orderContext.price_list || 'Select a price list above' }}</p>
               <p>{{ item.order_rate == null ? 'Price unavailable' : priceFormatter.format(item.order_rate) + ' / ' + item.order_uom }}</p>
               <div class="flex items-center gap-3">
                 <button v-if="getQuantity(item.pageaddress, item.item_code)" type="button" :aria-label="`Remove one ${item.item_name}`" class="rounded border border-[var(--color-border)] px-3 py-2" @click="changeCartQuantity(item, -1)">−</button>
@@ -151,7 +153,7 @@
       </div>
     </main>
 
-    <CatalogueCartPanel v-if="isWebsiteUser" />
+    <CatalogueCartPanel v-if="catalogueUser" />
 
     <!-- Footer -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 py-6 px-6 text-center text-[10px] text-[var(--color-text-muted)] shrink-0 mt-auto">
@@ -170,10 +172,13 @@ import { frappeGet } from '../api.js'
 import { session } from '../session.js'
 import { cartCount, setCartUser, getQuantity, setQuantity } from '../services/catalogueCart.js'
 import CatalogueCartPanel from '../components/CatalogueCartPanel.vue'
+import CatalogueOrderParty from '../components/CatalogueOrderParty.vue'
+import { orderContext, orderParams } from '../services/catalogueOrderContext.js'
 
 const router = useRouter()
 const isLoggedIn = session.isLoggedIn
 const isWebsiteUser = session.isWebsiteUser
+const catalogueUser = computed(() => isWebsiteUser.value || session.isSystemUser.value)
 const userName = computed(() => session.fullName.value || session.user.value)
 const showLogin = ref(false)
 const loginEmail = ref('')
@@ -206,7 +211,7 @@ async function searchItems(append = false) {
   }
   searchLoading.value = true
   try {
-    const result = await frappeGet('ssplbilling.api.catalogue_order_api.search_catalogue_items', { query, start: append ? searchResults.value.length : 0 })
+    const result = await frappeGet('ssplbilling.api.catalogue_order_api.search_catalogue_items', { ...orderParams(), query, start: append ? searchResults.value.length : 0 })
     if (request !== searchRequest) return
     searchResults.value = append ? [...searchResults.value, ...result.items] : result.items
     searchHasMore.value = result.has_more
@@ -217,7 +222,7 @@ async function searchItems(append = false) {
   }
 }
 
-watch([itemQuery, isWebsiteUser], () => {
+watch([itemQuery, catalogueUser, orderContext], () => {
   ++searchRequest
   clearTimeout(searchTimer)
   searchResults.value = []
@@ -228,7 +233,7 @@ watch([itemQuery, isWebsiteUser], () => {
 })
 
 function changeCartQuantity(item, delta) {
-  if (!isWebsiteUser.value || (delta > 0 && item.order_rate == null)) return
+  if (!catalogueUser.value || (delta > 0 && item.order_rate == null)) return
   const qty = getQuantity(item.pageaddress, item.item_code)
   setQuantity(item.pageaddress, item.item_code, qty + delta)
   if (getQuantity(item.pageaddress, item.item_code) !== qty + delta) {
@@ -275,9 +280,10 @@ async function handleWebsiteLogin() {
   try {
     await session.login(loginEmail.value, loginPassword.value)
     signedIn = true
-    if (!await session.checkWebsiteUser()) {
+    await session.checkWebsiteUser()
+    if (!catalogueUser.value) {
       await session.logout()
-      loginError.value = 'Only Website Users can sign in here.'
+      loginError.value = 'Sign in with a Website User or System User account.'
       return
     }
     setCartUser(session.user.value)
@@ -293,7 +299,7 @@ async function handleWebsiteLogin() {
 
 onMounted(() => {
   session.checkWebsiteUser().then(() => {
-    if (session.isWebsiteUser.value) setCartUser(session.user.value)
+    if (catalogueUser.value) setCartUser(session.user.value)
   }).catch((err) => console.warn('[catalogueviewer] Session check failed:', err))
   fetchCatalogues()
 })

@@ -20,7 +20,7 @@ class CatalogueSearchTest(unittest.TestCase):
         self.price = Mock(return_value=(None, 'Nos', 42))
         self.context = Mock(return_value={'price_list': 'Customer Prices'})
         self.stock = Mock(return_value={'0': 7})
-        namespace = {'frappe': self.frappe, '_order_price': self.price, '_customer_context': self.context}
+        namespace = {'_is_system_user': lambda: False, 'frappe': self.frappe, '_order_price': self.price, '_customer_context': self.context}
         exec(compile(ast.Module(body=[function], type_ignores=[]), str(source), 'exec'), namespace)
         self.search = namespace['search_catalogue_items']
         self.modules = {'frappe.utils': SimpleNamespace(cint=lambda n: int(n or 0)),
