@@ -116,6 +116,9 @@
                 >
                   {{ item.itemname }}
                 </h3>
+                <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-emerald-400' : 'text-rose-400'">
+                  Available stock: {{ displayStock(item) }}
+                </p>
                 
                 <div 
                   v-if="presentationCols < 6 && item.barcode_prices && item.barcode_prices.length"
@@ -337,6 +340,9 @@
                   <h3 class="font-bold text-[var(--color-text)] line-clamp-2 group-hover:text-[var(--color-info)] transition-colors" :class="cardTitleClass" :title="item.itemname">
                     {{ item.itemname }}
                   </h3>
+                  <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                    Available stock: {{ displayStock(item) }}
+                  </p>
                 </div>
 
                 <div v-if="websiteUser" class="flex items-center justify-center gap-2 border-t border-[var(--color-border)]/40 pt-3">
@@ -588,6 +594,12 @@ function adjustByMinimum(item, direction) {
 const rupeeFormatter = new Intl.NumberFormat('en-IN', {
   style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
 })
+
+const stockFormatter = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 6 })
+function displayStock(item) {
+  if (item.available_stock == null) return 'Unavailable'
+  return `${stockFormatter.format(item.available_stock)} ${item.stock_uom || ''}`.trim()
+}
 
 function displayPrice(price) {
   if (!websiteUser.value && getCipherMap()) return encryptPrice(price)
@@ -927,6 +939,7 @@ async function loadOffer(silent = false) {
         localStorage.removeItem('wb-cipher')
       }
       offer.value = res
+      scheduleStockRefresh()
       document.title = `${res.heading} | Deals`
       startTimer()
       if (!silent) {
@@ -1155,6 +1168,30 @@ function handleKeyDown(event) {
 let _offerSocket = null
 let _offerHandler = null
 let _offerRefreshTimer = null
+let _stockRefreshTimer = null
+let _stockRefreshId = 0
+let _offerDisposed = false
+
+async function refreshCatalogueStock() {
+  if (_offerDisposed) return
+  const id = ++_stockRefreshId
+  try {
+    const stock = await frappeGet('ssplbilling.api.offer_api.get_offer_stock', { pageaddress })
+    if (_offerDisposed || id !== _stockRefreshId) return
+    for (const item of offer.value?.items || []) item.available_stock = stock[item.itemcode] ?? null
+  } catch (error) {
+    if (_offerDisposed || id !== _stockRefreshId) return
+    for (const item of offer.value?.items || []) item.available_stock = null
+    console.warn('[catalogue] Stock refresh failed:', error)
+  }
+}
+
+function scheduleStockRefresh() {
+  if (_offerDisposed) return
+  ++_stockRefreshId
+  clearTimeout(_stockRefreshTimer)
+  _stockRefreshTimer = setTimeout(refreshCatalogueStock, 300)
+}
 
 function scheduleOfferRefresh() {
   if (_offerRefreshTimer) clearTimeout(_offerRefreshTimer)
@@ -1166,10 +1203,14 @@ function scheduleOfferRefresh() {
 
 function setupOfferSocket() {
   initFrappeSocket().then((socket) => {
-    if (!socket) return
+    if (!socket || _offerDisposed) return
     _offerSocket = socket
     _offerHandler = (data) => {
       if (!data) return
+      if (data.type === 'stock') {
+        if (offer.value?.items?.some(item => item.itemcode === data.item_code)) scheduleStockRefresh()
+        return
+      }
       const affectsThisPage =
         (data.type === 'offer' && data.pageaddress && data.pageaddress === pageaddress) ||
         (data.type === 'item' &&
@@ -1178,13 +1219,19 @@ function setupOfferSocket() {
       if (affectsThisPage) scheduleOfferRefresh()
     }
     socket.on('offer_page_update', _offerHandler)
+    socket.on('connect', scheduleStockRefresh)
+    scheduleStockRefresh()
   })
 }
 
 function teardownOfferSocket() {
+  _offerDisposed = true
+  ++_stockRefreshId
+  clearTimeout(_stockRefreshTimer)
   if (_offerRefreshTimer) clearTimeout(_offerRefreshTimer)
   if (_offerSocket && _offerHandler) {
     _offerSocket.off('offer_page_update', _offerHandler)
+    _offerSocket.off('connect', scheduleStockRefresh)
   }
   _offerSocket = null
   _offerHandler = null

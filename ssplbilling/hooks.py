@@ -177,6 +177,9 @@ after_migrate = ["ssplbilling.setup.after_migrate"]
 # Hook on document methods and events
 
 doc_events = {
+	"Stock Ledger Entry": {
+		"after_insert": "ssplbilling.api.offer_sync.publish_catalogue_stock_update",
+	},
 	"Sales Invoice": {
 		"autoname": "ssplbilling.api.SaleEntry_api.set_suffix_for_original_invoice",
 		"before_insert": "ssplbilling.api.SaleEntry_api.enforce_ignore_pricing_rule",

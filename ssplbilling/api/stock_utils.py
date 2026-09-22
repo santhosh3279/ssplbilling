@@ -132,6 +132,9 @@ def publish_stock_update(item_code, warehouse):
 	if not item_code or not warehouse:
 		return
 	frappe.publish_realtime("stock_update", get_item_available_stock(item_code, warehouse), after_commit=True)
+	# Public catalogues receive an invalidation, never private draft bill details.
+	from ssplbilling.api.offer_sync import _broadcast_offer_update
+	_broadcast_offer_update({"type": "stock", "item_code": item_code})
 
 def _iter_item_warehouse_pairs(doc):
 	"""Yield (item_code, warehouse) for every line on the doc AND on its pre-save

@@ -24,6 +24,37 @@ def resolve_rate(uom_rates, uom, stock_uom):
 		return list(uom_rates.values())[0]
 	return None
 
+def _catalogue_stock(item_codes):
+	"""Available stock in the configured online-order warehouse, in stock UOM."""
+	from ssplbilling.api.stock_utils import get_draft_invoice_qtys_batch, get_draft_purchase_qtys_batch
+
+	settings = frappe.get_single("SSPL Billing Settings")
+	warehouse = settings.get("online_order_warehouse")
+	company = settings.get("online_order_company")
+	if not item_codes or not warehouse or not company:
+		return {}
+	warehouse_doc = frappe.get_cached_doc("Warehouse", warehouse)
+	if warehouse_doc.company != company or warehouse_doc.is_group or warehouse_doc.disabled:
+		return {}
+	bins = frappe.get_all("Bin", filters={"item_code": ["in", item_codes], "warehouse": warehouse},
+		fields=["item_code", "actual_qty"])
+	actual = {row.item_code: float(row.actual_qty or 0) for row in bins}
+	sales = get_draft_invoice_qtys_batch(warehouse)
+	purchases = get_draft_purchase_qtys_batch(warehouse)
+	return {code: actual.get(code, 0.0) - sales.get((code, warehouse), 0.0)
+		+ purchases.get((code, warehouse), 0.0) for code in item_codes}
+
+
+@frappe.whitelist(allow_guest=True)
+def get_offer_stock(pageaddress):
+	"""Refresh only stock for the public catalogue's enabled items."""
+	name = frappe.db.get_value("Offer-Items", {"pageaddress": pageaddress}, "name") if pageaddress else None
+	if not name:
+		return {}
+	doc = frappe.get_doc("Offer-Items", name)
+	return _catalogue_stock([row.itemcode for row in doc.items if not row.get("disabled")])
+
+
 @frappe.whitelist(allow_guest=True)
 def get_offer_details(pageaddress):
 	if not pageaddress:
@@ -99,6 +130,7 @@ def get_offer_details(pageaddress):
 
 	# Pre-fetch item group map for offer items
 	item_codes = [item.itemcode for item in active_items]
+	live_stock = _catalogue_stock(item_codes)
 	item_group_map = {}
 	item_image_map = {}
 	item_stock_uom_map = {}
@@ -298,6 +330,8 @@ def get_offer_details(pageaddress):
 
 		items.append({
 			"itemcode": item_code,
+			"available_stock": live_stock.get(item_code),
+			"stock_uom": stock_uom,
 			"itemname": item.itemname,
 			"barcode": item.barcode,
 			"barcodes": [b["barcode"] for b in barcodes_with_prices if b["barcode"]],

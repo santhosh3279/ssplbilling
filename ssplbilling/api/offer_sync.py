@@ -33,3 +33,9 @@ def publish_offer_items_update(doc, method=None):
 	if not doc or not doc.name:
 		return
 	_broadcast_offer_update({"type": "offer", "pageaddress": getattr(doc, "pageaddress", None)})
+
+
+def publish_catalogue_stock_update(doc, method=None):
+	"""Invalidate public stock after a committed stock ledger movement."""
+	if doc and doc.item_code:
+		_broadcast_offer_update({"type": "stock", "item_code": doc.item_code})
