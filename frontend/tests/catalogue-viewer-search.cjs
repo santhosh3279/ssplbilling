@@ -34,7 +34,7 @@ vm.runInContext(source, context)
   response = null
   const pending = vm.runInContext('searchItems()', context)
   vm.runInContext("itemQuery.value = ''", context)
-  watchers[0]()
+  watchers.forEach(w => w())
   resolvePending({ items: [{ item_code: 'old' }], has_more: false })
   await pending
   assert.equal(vm.runInContext('searchResults.value.length', context), 0)
@@ -45,6 +45,17 @@ vm.runInContext(source, context)
   user.value = true
   vm.runInContext("changeCartQuantity({pageaddress: 'offers', item_code: 'A', order_rate: null}, 1)", context)
   assert.equal(quantities.get('offers:A'), 1, 'Unpriced items cannot be added')
+  vm.runInContext("adjustQuantity({pageaddress: 'offers', item_code: 'A', order_rate: 12}, 1)", context)
+  assert.equal(quantities.get('offers:A'), 2, 'adjustQuantity increments')
+  vm.runInContext("adjustQuantity({pageaddress: 'offers', item_code: 'A', order_rate: 12}, -1)", context)
+  assert.equal(quantities.get('offers:A'), 1, 'adjustQuantity decrements')
+  const event = { target: { value: '15' } }
+  context.testEvent = event
+  vm.runInContext("setItemQuantity({pageaddress: 'offers', item_code: 'A', order_rate: 12}, testEvent)", context)
+  assert.equal(quantities.get('offers:A'), 15, 'setItemQuantity sets quantity')
+  event.target.value = 'invalid'
+  vm.runInContext("setItemQuantity({pageaddress: 'offers', item_code: 'A', order_rate: 12}, testEvent)", context)
+  assert.equal(event.target.value, 15, 'invalid value resets to current quantity')
   unmount[0]()
   console.log('Viewer search, pagination, stale responses, and cart controls passed')
 })().catch(error => { console.error(error); process.exitCode = 1 })

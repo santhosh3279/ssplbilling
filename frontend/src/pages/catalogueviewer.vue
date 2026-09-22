@@ -145,10 +145,41 @@
             <template v-if="catalogueUser">
               <p v-if="session.isSystemUser.value" class="text-xs">Price list: {{ orderContext.price_list || 'Select customer & price list in header' }}</p>
               <p>{{ item.order_rate == null ? 'Price unavailable' : priceFormatter.format(item.order_rate) + ' / ' + item.order_uom }}</p>
-              <div class="flex items-center gap-3">
-                <button v-if="getQuantity(item.pageaddress || '', item.item_code)" type="button" :aria-label="`Remove one ${item.item_name}`" class="rounded border border-[var(--color-border)] px-3 py-2" @click="changeCartQuantity(item, -1)">−</button>
-                <span v-if="getQuantity(item.pageaddress || '', item.item_code)" role="status">{{ getQuantity(item.pageaddress || '', item.item_code) }} in cart</span>
-                <button type="button" :disabled="item.order_rate == null || searchLoading || getQuantity(item.pageaddress || '', item.item_code) >= 10000" class="rounded bg-indigo-600 px-4 py-2 font-bold text-white disabled:opacity-50" @click="changeCartQuantity(item, 1)">Add to Cart</button>
+              <div class="flex items-center gap-2 border-t border-[var(--color-border)]/40 pt-3">
+                <template v-if="item.order_rate != null">
+                  <button
+                    type="button"
+                    :aria-label="`Decrease ${item.item_name}`"
+                    class="rounded-lg border px-3 py-1 font-bold transition-colors border-rose-500/40 bg-rose-500/15 text-[var(--color-text)] shadow-sm hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                    :disabled="!getQuantity(item.pageaddress || '', item.item_code)"
+                    @click="adjustQuantity(item, -1)"
+                  >
+                    −
+                  </button>
+                  <input
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    maxlength="5"
+                    :aria-label="`Quantity for ${item.item_name}`"
+                    :value="getQuantity(item.pageaddress || '', item.item_code)"
+                    class="w-16 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-center font-bold text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    @focus="$event.target.select()"
+                    @change="setItemQuantity(item, $event)"
+                    @keydown.enter="$event.target.blur()"
+                  />
+                  <button
+                    type="button"
+                    :aria-label="`Increase ${item.item_name}`"
+                    class="rounded-lg border px-3 py-1 font-bold transition-colors border-emerald-500/40 bg-emerald-500/15 text-[var(--color-text)] shadow-sm hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500 disabled:opacity-40 cursor-pointer disabled:cursor-not-allowed"
+                    :disabled="getQuantity(item.pageaddress || '', item.item_code) >= 10000"
+                    @click="adjustQuantity(item, 1)"
+                  >
+                    +
+                  </button>
+                  <span v-if="getQuantity(item.pageaddress || '', item.item_code)" class="text-xs text-[var(--color-text-muted)] ml-1">in cart</span>
+                </template>
+                <span v-else class="text-xs text-[var(--color-text-muted)]">Price unavailable</span>
               </div>
             </template>
             <button v-else type="button" class="rounded bg-indigo-600 px-4 py-2 font-bold text-white" @click="showLogin = true">Sign in to add to cart</button>
@@ -327,15 +358,31 @@ watch([itemQuery, catalogueUser, orderContext, includeAllItems], () => {
   if (searchLoading.value) searchTimer = setTimeout(() => searchItems(), 300)
 })
 
-function changeCartQuantity(item, delta) {
+function setItemQuantity(item, event) {
+  if (!catalogueUser.value || item.order_rate == null) return
+  const value = event.target.value.trim()
+  const pageaddr = item.pageaddress || ''
+  if (/^\d+$/.test(value) && Number(value) <= 10000) {
+    setQuantity(pageaddr, item.item_code, Number(value))
+    if (getQuantity(pageaddr, item.item_code) !== Number(value)) {
+      searchError.value = 'Could not update the cart. It supports up to 100 items and 10,000 units per item.'
+    }
+  }
+  event.target.value = getQuantity(pageaddr, item.item_code)
+}
+
+function adjustQuantity(item, delta) {
   if (!catalogueUser.value || (delta > 0 && item.order_rate == null)) return
   const pageaddr = item.pageaddress || ''
-  const qty = getQuantity(pageaddr, item.item_code)
-  setQuantity(pageaddr, item.item_code, qty + delta)
-  if (getQuantity(pageaddr, item.item_code) !== qty + delta) {
+  const current = getQuantity(pageaddr, item.item_code)
+  const next = Math.max(0, current + delta)
+  setQuantity(pageaddr, item.item_code, next)
+  if (getQuantity(pageaddr, item.item_code) !== next) {
     searchError.value = 'Could not update the cart. It supports up to 100 items and 10,000 units per item.'
   }
 }
+
+const changeCartQuantity = adjustQuantity
 
 onBeforeUnmount(() => {
   ++searchRequest
