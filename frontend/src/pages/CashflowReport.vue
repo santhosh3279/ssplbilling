@@ -155,7 +155,7 @@
         </button>
         <section v-if="expandedFlow" class="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] md:col-span-2 xl:col-span-4 text-[var(--color-text)]">
           <h2 class="px-4 py-3 font-semibold">{{ activeSummary.label }} — Account Particulars</h2>
-          <p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">Click an account to expand its transactions. Internal transfers are hidden in all details; closing balances still reflect them. Amounts are in company currency.</p>
+          <p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">Expand a cash/bank account, then a counterparty account to see its vouchers. Internal transfers are hidden in all details; closing balances still reflect them. Amounts are in company currency.</p>
           <div v-for="row in flowAccounts" :key="row.account" class="border-t border-[var(--color-border)]">
             <button type="button" class="flex w-full justify-between gap-4 px-4 py-3 text-left hover:bg-[var(--color-surface-raised)]" :aria-expanded="!!expandedAccounts[row.account]" @click="toggleAccount(row.account)">
               <span>{{ expandedAccounts[row.account] ? '▾' : '▸' }} {{ row.account }}</span>
@@ -163,22 +163,33 @@
             </button>
             <div v-if="expandedAccounts[row.account]" class="px-6 pb-4">
               <p v-if="expandedFlow === 'balance' && detailState(row.account).loaded" class="py-2 font-semibold">Opening balance: {{ formatCurrency(detailState(row.account).opening_balance) }}</p>
-              <table v-if="detailState(row.account).entries.length" class="w-full text-sm">
+              <div v-for="group in detailState(row.account).groups" :key="group.counterpart_account" class="border-t border-[var(--color-border)]">
+                <button type="button" class="flex w-full justify-between gap-4 px-3 py-3 text-left hover:bg-[var(--color-surface-raised)]" :aria-expanded="!!expandedCounterparts[counterpartKey(row.account, group.counterpart_account)]" @click="toggleCounterpart(row.account, group.counterpart_account)">
+                  <span>{{ expandedCounterparts[counterpartKey(row.account, group.counterpart_account)] ? '▾' : '▸' }} {{ group.counterpart_account }}</span>
+                  <span class="font-semibold tabular-nums">{{ formatCurrency(counterpartAmount(group)) }}</span>
+                </button>
+                <div v-if="expandedCounterparts[counterpartKey(row.account, group.counterpart_account)]" class="pl-4 pb-3">
+              <table v-if="counterpartState(row.account, group.counterpart_account).entries.length" class="w-full text-sm">
                 <thead class="bg-[var(--color-surface-raised)]"><tr>
                   <th class="p-2 text-left">Date</th><th class="p-2 text-left">Voucher</th><th class="p-2 text-left">Particulars / Party</th><th class="p-2 text-left">Cost Center</th><th class="p-2 text-left">Remarks</th>
                   <th v-if="expandedFlow !== 'outflow'" class="p-2 text-right">Inflow</th><th v-if="expandedFlow !== 'inflow'" class="p-2 text-right">Outflow</th>
                 </tr></thead>
-                <tbody><tr v-for="entry in detailState(row.account).entries" :key="entry.name" class="border-b border-[var(--color-border)]">
+                <tbody><tr v-for="entry in counterpartState(row.account, group.counterpart_account).entries" :key="entry.name" class="border-b border-[var(--color-border)]">
                   <td class="p-2 whitespace-nowrap">{{ entry.posting_date }}</td>
                   <td class="p-2"><a :href="voucherUrl(entry)" target="_blank" rel="noopener noreferrer" class="text-[var(--color-info)] underline">{{ entry.voucher_no }}</a><div class="text-xs">{{ entry.voucher_type }} {{ entry.payment_type ? `· ${entry.payment_type}` : '' }}</div></td>
                   <td class="p-2">{{ entry.party || entry.against || '—' }}</td><td class="p-2">{{ entry.cost_center || '—' }}</td><td class="p-2 whitespace-pre-wrap">{{ entry.remarks || '—' }}</td>
                   <td v-if="expandedFlow !== 'outflow'" class="p-2 text-right tabular-nums">{{ formatCurrency(entry.debit) }}</td><td v-if="expandedFlow !== 'inflow'" class="p-2 text-right tabular-nums">{{ formatCurrency(entry.credit) }}</td>
                 </tr></tbody>
               </table>
-              <p v-if="detailState(row.account).loading" class="py-3">Loading transactions…</p>
+                  <p v-if="counterpartState(row.account, group.counterpart_account).loading" class="py-3">Loading vouchers…</p>
+                  <p v-else-if="counterpartState(row.account, group.counterpart_account).error" class="py-3 text-[var(--color-danger)]">{{ counterpartState(row.account, group.counterpart_account).error }} <button type="button" class="underline" @click="loadCounterpart(row.account, group.counterpart_account)">Try Again</button></p>
+                  <p v-else-if="counterpartState(row.account, group.counterpart_account).loaded && !counterpartState(row.account, group.counterpart_account).entries.length" class="py-3">No vouchers in the selected period.</p>
+                  <button v-if="counterpartState(row.account, group.counterpart_account).has_more && !counterpartState(row.account, group.counterpart_account).loading && !counterpartState(row.account, group.counterpart_account).error" type="button" class="py-3 text-[var(--color-info)] underline" @click="loadCounterpart(row.account, group.counterpart_account)">Load more vouchers</button>
+                </div>
+              </div>
+              <p v-if="detailState(row.account).loading" class="py-3">Loading counterparty accounts…</p>
               <p v-else-if="detailState(row.account).error" class="py-3 text-[var(--color-danger)]">{{ detailState(row.account).error }} <button type="button" class="underline" @click="loadDetails(row.account)">Try Again</button></p>
-              <p v-else-if="detailState(row.account).loaded && !detailState(row.account).entries.length" class="py-3">No transactions in the selected period.</p>
-              <button v-if="detailState(row.account).has_more && !detailState(row.account).loading && !detailState(row.account).error" type="button" class="py-3 text-[var(--color-info)] underline" @click="loadDetails(row.account)">Load more transactions</button>
+              <p v-else-if="detailState(row.account).loaded && !detailState(row.account).groups.length" class="py-3">No transactions in the selected period.</p>
             </div>
           </div>
           <p v-if="!flowAccounts.length" class="p-4">No accounts for this cash flow.</p>
@@ -215,6 +226,8 @@ let requestId = 0
 const expandedFlow = ref('')
 const expandedAccounts = ref({})
 const detailCache = ref({})
+const expandedCounterparts = ref({})
+const counterpartCache = ref({})
 const activeSummary = computed(() => reportSummary.value.find(row => row.key === expandedFlow.value))
 const flowAccounts = computed(() => particulars.value.filter(row => {
   if (expandedFlow.value === 'balance') return true
@@ -222,7 +235,41 @@ const flowAccounts = computed(() => particulars.value.filter(row => {
   return row[expandedFlow.value] !== 0
 }))
 const detailKey = account => JSON.stringify([expandedFlow.value, account])
-const detailState = account => detailCache.value[detailKey(account)] || { entries: [] }
+const detailState = account => detailCache.value[detailKey(account)] || { groups: [] }
+const counterpartKey = (account, counterpart) => JSON.stringify([expandedFlow.value, account, counterpart])
+const counterpartState = (account, counterpart) => counterpartCache.value[counterpartKey(account, counterpart)] || { entries: [] }
+function counterpartAmount(group) {
+  if (expandedFlow.value === 'inflow') return Number(group.inflow) || 0
+  if (expandedFlow.value === 'outflow') return Number(group.outflow) || 0
+  return (Number(group.inflow) || 0) - (Number(group.outflow) || 0)
+}
+function toggleCounterpart(account, counterpart) {
+  const key = counterpartKey(account, counterpart)
+  expandedCounterparts.value[key] = !expandedCounterparts.value[key]
+  if (expandedCounterparts.value[key] && !counterpartState(account, counterpart).loaded) loadCounterpart(account, counterpart)
+}
+async function loadCounterpart(account, counterpart) {
+  if (!loadedFilters.value) return
+  const key = counterpartKey(account, counterpart)
+  if (counterpartCache.value[key]?.loading) return
+  if (!counterpartCache.value[key]) counterpartCache.value[key] = { entries: [], loaded: false }
+  const target = counterpartCache.value[key]
+  target.loading = true
+  target.error = ''
+  const currentRequest = requestId
+  const filters = loadedFilters.value
+  try {
+    const result = await getCashflowDetails({ company: filters.company, account, from_date: filters.from, to_date: filters.to, flow: expandedFlow.value === 'netflow' ? 'balance' : expandedFlow.value, counterpart, start: target.entries.length })
+    if (currentRequest !== requestId) return
+    target.entries.push(...result.entries)
+    target.has_more = result.has_more
+    target.loaded = true
+  } catch (e) {
+    if (currentRequest === requestId) target.error = e.message || 'Failed to load vouchers'
+  } finally {
+    target.loading = false
+  }
+}
 function toggleFlow(flow) {
   expandedFlow.value = expandedFlow.value === flow ? '' : flow
   expandedAccounts.value = {}
@@ -237,7 +284,7 @@ function voucherUrl(entry) {
 async function loadDetails(account) {
   if (!loadedFilters.value) return
   const key = detailKey(account)
-  const state = detailCache.value[key] || { entries: [], loaded: false }
+  const state = detailCache.value[key] || { groups: [], loaded: false }
   if (state.loading) return
   detailCache.value[key] = state
   state.loading = true
@@ -247,10 +294,9 @@ async function loadDetails(account) {
   const currentRequest = requestId
   const filters = loadedFilters.value
   try {
-    const result = await getCashflowDetails({ company: filters.company, account, from_date: filters.from, to_date: filters.to, flow: expandedFlow.value === 'netflow' ? 'balance' : expandedFlow.value, start: target.entries.length })
+    const result = await getCashflowDetails({ company: filters.company, account, from_date: filters.from, to_date: filters.to, flow: expandedFlow.value === 'netflow' ? 'balance' : expandedFlow.value, group_by_account: 1 })
     if (currentRequest !== requestId) return
-    target.entries.push(...result.entries)
-    target.has_more = result.has_more
+    target.groups = result.groups
     target.opening_balance = result.opening_balance
     target.loaded = true
   } catch (e) {
@@ -267,6 +313,8 @@ async function fetchData() {
   expandedFlow.value = ''
   expandedAccounts.value = {}
   detailCache.value = {}
+  counterpartCache.value = {}
+  expandedCounterparts.value = {}
   totals.value = { inflow: 0, outflow: 0, netflow: 0, balance: 0 }
   loadedFilters.value = null
   companyName.value = localStorage.getItem('wb-company') || ''

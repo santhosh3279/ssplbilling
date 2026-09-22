@@ -1725,7 +1725,7 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 
 
 @frappe.whitelist()
-def get_cashflow_details(company, account, from_date, to_date, flow="inflow", start=0):
+def get_cashflow_details(company, account, from_date, to_date, flow="inflow", start=0, group_by_account=0, counterpart=None):
 	"""Paged cash/bank GL particulars using the cash-flow summary's inclusion rules."""
 	from frappe.utils import cint, getdate
 
@@ -1748,20 +1748,46 @@ def get_cashflow_details(company, account, from_date, to_date, flow="inflow", st
 	if flow != "balance":
 		amount_field = "debit" if flow == "inflow" else "credit"
 		condition += f" AND gle.{amount_field} != 0"
-	entries = frappe.db.sql(
-		f"""
+	# GL "against" can contain a party name. Resolve real opposite-side accounts
+	# from the voucher instead. Keep multi-account vouchers together so the cash
+	# amount is counted once, without inventing allocations between their legs.
+	base_query = f"""
 		SELECT gle.name, gle.posting_date, gle.voucher_type, gle.voucher_no,
 			gle.against, gle.party, gle.remarks, gle.cost_center, gle.debit, gle.credit,
-			pe.payment_type
+			gle.creation, pe.payment_type,
+			COALESCE((
+				SELECT GROUP_CONCAT(DISTINCT opposite.account ORDER BY opposite.account SEPARATOR ' / ')
+				FROM `tabGL Entry` opposite
+				WHERE opposite.company = gle.company
+					AND opposite.voucher_type = gle.voucher_type
+					AND opposite.voucher_no = gle.voucher_no
+					AND opposite.is_cancelled = 0 AND opposite.account != gle.account
+					AND ((gle.debit != 0 AND opposite.credit != 0)
+						OR (gle.credit != 0 AND opposite.debit != 0))
+			), 'Unspecified counterpart') AS counterpart_account
 		FROM `tabGL Entry` gle
 		LEFT JOIN `tabPayment Entry` pe ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
 		WHERE gle.company = %(company)s AND gle.account = %(account)s AND gle.is_cancelled = 0
 			AND gle.posting_date BETWEEN %(from_date)s AND %(to_date)s
 			{condition}
-		ORDER BY gle.posting_date, gle.creation, gle.name
-		LIMIT 101 OFFSET %(start)s
-		""", params, as_dict=True,
-	)
+	"""
+	if cint(group_by_account):
+		groups = frappe.db.sql(
+			f"""SELECT counterpart_account, SUM(debit) AS inflow, SUM(credit) AS outflow
+			FROM ({base_query}) cash_entries
+			GROUP BY counterpart_account ORDER BY counterpart_account""", params, as_dict=True,
+		)
+		entries = []
+	else:
+		counterpart_condition = ""
+		if counterpart is not None:
+			params["counterpart"] = counterpart
+			counterpart_condition = "WHERE counterpart_account = %(counterpart)s"
+		entries = frappe.db.sql(
+			f"""SELECT * FROM ({base_query}) cash_entries {counterpart_condition}
+			ORDER BY posting_date, creation, name LIMIT 101 OFFSET %(start)s""", params, as_dict=True,
+		)
+
 	opening_balance = 0
 	if flow == "balance":
 		opening_balance = frappe.db.sql(
@@ -1769,6 +1795,8 @@ def get_cashflow_details(company, account, from_date, to_date, flow="inflow", st
 			WHERE company = %(company)s AND account = %(account)s AND is_cancelled = 0
 			AND posting_date < %(from_date)s""", params,
 		)[0][0]
+	if cint(group_by_account):
+		return {"groups": groups, "opening_balance": opening_balance}
 	return {"entries": entries[:100], "has_more": len(entries) > 100, "opening_balance": opening_balance}
 
 
