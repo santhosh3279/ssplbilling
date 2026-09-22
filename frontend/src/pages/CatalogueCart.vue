@@ -38,6 +38,18 @@
           </div>
           <span v-else class="text-sm">Qty {{ line.qty }}</span>
           <strong class="w-28 text-right">{{ money(line.amount) }}</strong>
+          <button
+            v-if="!line.is_free_item"
+            type="button"
+            :disabled="updating"
+            :aria-label="`Delete ${line.item_name} from cart`"
+            class="flex h-8 w-8 items-center justify-center rounded-lg text-base font-bold text-[var(--color-text-muted)] hover:bg-rose-500/15 hover:text-rose-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500 disabled:opacity-50 transition cursor-pointer"
+            title="Delete item"
+            @click="deleteItem(line)"
+          >
+            ✕
+          </button>
+          <span v-else class="w-8"></span>
         </div>
         <div class="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[var(--color-surface)] p-5">
           <div class="text-lg font-bold">
@@ -95,6 +107,20 @@ async function changeQuantity(line, delta) {
   updating.value = true
   error.value = ''
   setQuantity(line.pageaddress, line.item_code, line.requested_qty + delta)
+  try {
+    await refreshPreview()
+  } catch (err) {
+    error.value = err.message || 'Could not update cart prices.'
+  } finally {
+    updating.value = false
+  }
+}
+
+async function deleteItem(line) {
+  if (updating.value) return
+  updating.value = true
+  error.value = ''
+  setQuantity(line.pageaddress, line.item_code, 0)
   try {
     await refreshPreview()
   } catch (err) {
