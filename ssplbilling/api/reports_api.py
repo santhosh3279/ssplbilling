@@ -1640,16 +1640,17 @@ def get_cashflow_report(from_date=None, to_date=None, company=None, balance_only
 			company_condition = " AND gle.company = %s"
 			params.append(company)
 		rows = frappe.db.sql(
-			f"""SELECT gle.account,
+			f"""SELECT gle.account, account.account_type,
 				SUM(gle.debit) AS inflow, SUM(gle.credit) AS outflow
 			FROM `tabGL Entry` gle
+			INNER JOIN `tabAccount` account ON account.name = gle.account
 			LEFT JOIN `tabPayment Entry` pe
 				ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
 			WHERE gle.posting_date BETWEEN %s AND %s
 				AND gle.is_cancelled = 0 AND gle.account IN %s
 				{company_condition}
 				AND {_cashflow_cleared_cheque_condition()}
-			GROUP BY gle.account""",
+			GROUP BY gle.account, account.account_type""",
 			tuple(params), as_dict=1,
 		)
 		return {

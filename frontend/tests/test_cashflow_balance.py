@@ -13,8 +13,8 @@ class CashflowBalanceTest(unittest.TestCase):
         function = next(n for n in tree.body if isinstance(n, ast.FunctionDef)
                         and n.name == 'get_cashflow_report')
         function.decorator_list = []
-        self.rows = [dict(account='Cash', inflow=150, outflow=40),
-                     dict(account='Bank', inflow=25, outflow=60)]
+        self.rows = [dict(account='Cash', account_type='Cash', inflow=150, outflow=40),
+                     dict(account='Bank', account_type='Bank', inflow=25, outflow=60)]
         self.frappe = SimpleNamespace(
             utils=SimpleNamespace(cint=lambda value: int(value or 0)),
             get_all=Mock(return_value=['Cash', 'Bank']),
@@ -34,7 +34,8 @@ class CashflowBalanceTest(unittest.TestCase):
         sql, params = self.frappe.db.sql.call_args.args
         self.assertEqual(params, ('1000-01-01', '2026-09-22', ('Cash', 'Bank'), 'Company'))
         for condition in ('gle.is_cancelled = 0', 'gle.account IN %s',
-                          'gle.company = %s', 'cleared_predicate', 'GROUP BY gle.account'):
+                          'gle.company = %s', 'cleared_predicate', 'GROUP BY gle.account, account.account_type',
+                          'account.name = gle.account'):
             self.assertIn(condition, sql)
         self.transfer.assert_not_called()
         self.assertNotIn('transfer_predicate', sql)
