@@ -144,6 +144,39 @@
           </p>
           <p class="mt-2 text-xs text-[var(--color-text-muted)]">{{ summary.description }}</p>
         </div>
+        <section class="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] md:col-span-3">
+          <h2 class="px-4 pt-4 font-semibold text-[var(--color-text)]">Account-wise Particulars</h2>
+          <p class="px-4 py-2 text-xs text-[var(--color-text-muted)]">Inflow and outflow exclude internal transfers. Closing balances include opening balances and transfers. Amounts are in company currency.</p>
+          <table class="w-full text-sm text-[var(--color-text)]">
+            <thead class="bg-[var(--color-surface-raised)]">
+              <tr>
+                <th class="px-4 py-3 text-left">Particulars</th>
+                <th class="px-4 py-3 text-right">Cash Inflow</th>
+                <th class="px-4 py-3 text-right">Cash Outflow</th>
+                <th class="px-4 py-3 text-right">Net Cash in Hand</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="row in particulars" :key="row.account" class="border-t border-[var(--color-border)]">
+                <td class="px-4 py-3">{{ row.account }}</td>
+                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(row.inflow) }}</td>
+                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(row.outflow) }}</td>
+                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(row.balance) }}</td>
+              </tr>
+              <tr v-if="!particulars.length">
+                <td colspan="4" class="px-4 py-6 text-center text-[var(--color-text-muted)]">No cash or bank entries through the selected end date.</td>
+              </tr>
+            </tbody>
+            <tfoot class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] font-bold">
+              <tr>
+                <td class="px-4 py-3">Total</td>
+                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(totals.inflow) }}</td>
+                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(totals.outflow) }}</td>
+                <td class="px-4 py-3 text-right tabular-nums">{{ formatCurrency(totals.balance) }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </section>
       </div>
     </main>
   </div>
@@ -159,6 +192,7 @@ const router = useRouter()
 const loading = ref(false)
 const error = ref('')
 const companyName = ref(localStorage.getItem('wb-company') || '')
+const particulars = ref([])
 const totals = ref({ inflow: 0, outflow: 0, balance: 0 })
 const reportSummary = computed(() => [
   { label: 'Cash Inflow', value: totals.value.inflow, description: 'Received during the selected period, excluding internal transfers' },
@@ -174,6 +208,7 @@ let requestId = 0
 async function fetchData() {
   const currentRequest = ++requestId
   error.value = ''
+  particulars.value = []
   totals.value = { inflow: 0, outflow: 0, balance: 0 }
   loadedFilters.value = null
   companyName.value = localStorage.getItem('wb-company') || ''
@@ -197,6 +232,20 @@ async function fetchData() {
       outflow: sum(period.summary, 'outflow'),
       balance: sum(balances, 'inflow') - sum(balances, 'outflow'),
     }
+    const accounts = new Map()
+    const accountRow = account => {
+      if (!accounts.has(account)) accounts.set(account, { account, inflow: 0, outflow: 0, balance: 0 })
+      return accounts.get(account)
+    }
+    for (const entry of period.breakdown || []) {
+      const row = accountRow(entry.account)
+      row.inflow += Number(entry.inflow) || 0
+      row.outflow += Number(entry.outflow) || 0
+    }
+    for (const entry of [...(cumulative.breakdown || []), ...(cumulative.internal_breakdown || [])]) {
+      accountRow(entry.account).balance += (Number(entry.inflow) || 0) - (Number(entry.outflow) || 0)
+    }
+    particulars.value = [...accounts.values()].sort((a, b) => a.account.localeCompare(b.account))
     loadedFilters.value = filters
   } catch (e) {
     if (currentRequest === requestId) error.value = e.message || 'Failed to fetch cash flow report'
@@ -292,6 +341,19 @@ async function exportToExcel() {
       const row = sheet.addRow([summary.label, summary.value, summary.description])
       row.getCell(2).numFmt = '#,##0.00;[Red]-#,##0.00'
     }
+    const details = workbook.addWorksheet('Particulars')
+    details.columns = [{ width: 55 }, { width: 24 }, { width: 24 }, { width: 24 }]
+    details.addRow([filters.company])
+    details.addRow([`Cash Flow: ${filters.from} to ${filters.to}`])
+    details.addRow(['Amounts in company currency; closing balances include opening balances and transfers'])
+    details.addRow(['Inflow and outflow exclude internal transfers'])
+    details.addRow([])
+    details.addRow(['Particulars', 'Cash Inflow', 'Cash Outflow', 'Net Cash in Hand']).font = { bold: true }
+    for (const item of [...particulars.value, { account: 'Total', ...totals.value }]) {
+      const row = details.addRow([item.account, item.inflow, item.outflow, item.balance])
+      for (const index of [2, 3, 4]) row.getCell(index).numFmt = '#,##0.00;[Red]-#,##0.00'
+    }
+    details.lastRow.font = { bold: true }
     const buffer = await workbook.xlsx.writeBuffer()
     const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
     const link = document.createElement('a')
