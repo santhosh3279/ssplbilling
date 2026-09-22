@@ -1502,6 +1502,42 @@ def get_cost_center_sale_report(from_date=None, to_date=None, company=None):
         }
 
 
+def _cashflow_internal_transfer_condition():
+	"""Shared SQL predicate for marked transfers and cash/bank-only vouchers.
+
+	A mixed voucher with expense or other non-cash lines remains external; do not
+	discard real cash movements merely because another cash account is present.
+	The caller supplies the GL alias gle and Payment Entry alias pe.
+	"""
+	return """(
+		COALESCE(pe.payment_type, '') = 'Internal Transfer'
+		OR (
+			EXISTS (
+				SELECT 1 FROM `tabGL Entry` transfer_leg
+				INNER JOIN `tabAccount` transfer_account ON transfer_account.name = transfer_leg.account
+				WHERE transfer_leg.company = gle.company
+					AND transfer_leg.voucher_type = gle.voucher_type
+					AND transfer_leg.voucher_no = gle.voucher_no
+					AND transfer_leg.is_cancelled = 0
+					AND transfer_leg.account != gle.account
+					AND transfer_account.account_type IN ('Cash', 'Bank')
+					AND ((gle.debit != 0 AND transfer_leg.credit != 0)
+						OR (gle.credit != 0 AND transfer_leg.debit != 0))
+			)
+			AND NOT EXISTS (
+				SELECT 1 FROM `tabGL Entry` other_leg
+				LEFT JOIN `tabAccount` other_account ON other_account.name = other_leg.account
+				WHERE other_leg.company = gle.company
+					AND other_leg.voucher_type = gle.voucher_type
+					AND other_leg.voucher_no = gle.voucher_no
+					AND other_leg.is_cancelled = 0
+					AND (other_leg.debit != 0 OR other_leg.credit != 0)
+					AND COALESCE(other_account.account_type, '') NOT IN ('Cash', 'Bank')
+			)
+		)
+	)"""
+
+
 @frappe.whitelist()
 def get_cashflow_report(from_date=None, to_date=None, company=None):
 	"""Return Cost Center-wise Cash & Bank inflow, outflow, and net flow."""
@@ -1542,6 +1578,8 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 		company_condition = " AND gle.company = %s"
 		sql_params.append(company)
 
+	internal_transfer = _cashflow_internal_transfer_condition()
+
 	# 1. Summary grouped by Cost Center (Payments & Receipts only, i.e., excluding Internal Transfer)
 	summary_rows = frappe.db.sql(
 		f"""
@@ -1557,7 +1595,7 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
 			{company_condition}
-			AND COALESCE(pe.payment_type, '') != 'Internal Transfer'
+			AND NOT {internal_transfer}
 		GROUP BY
 			gle.cost_center
 		ORDER BY
@@ -1583,7 +1621,7 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
 			{company_condition}
-			AND COALESCE(pe.payment_type, '') != 'Internal Transfer'
+			AND NOT {internal_transfer}
 		GROUP BY
 			gle.cost_center, gle.account
 		ORDER BY
@@ -1602,13 +1640,13 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 			SUM(gle.credit) as outflow
 		FROM
 			`tabGL Entry` gle
-			INNER JOIN `tabPayment Entry` pe ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
+			LEFT JOIN `tabPayment Entry` pe ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
 		WHERE
 			gle.posting_date BETWEEN %s AND %s
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
 			{company_condition}
-			AND pe.payment_type = 'Internal Transfer'
+			AND {internal_transfer}
 		GROUP BY
 			gle.cost_center
 		ORDER BY
@@ -1628,13 +1666,13 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 			SUM(gle.credit) as outflow
 		FROM
 			`tabGL Entry` gle
-			INNER JOIN `tabPayment Entry` pe ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
+			LEFT JOIN `tabPayment Entry` pe ON gle.voucher_type = 'Payment Entry' AND gle.voucher_no = pe.name
 		WHERE
 			gle.posting_date BETWEEN %s AND %s
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
 			{company_condition}
-			AND pe.payment_type = 'Internal Transfer'
+			AND {internal_transfer}
 		GROUP BY
 			gle.cost_center, gle.account
 		ORDER BY
@@ -1685,10 +1723,10 @@ def get_cashflow_details(company, account, from_date, to_date, flow="inflow", st
 		frappe.throw("Invalid cash flow filters")
 	start = max(0, cint(start))
 	params = {"company": company, "account": account, "from_date": from_date, "to_date": to_date, "start": start}
-	condition = ""
+	condition = f"AND NOT {_cashflow_internal_transfer_condition()}"
 	if flow != "balance":
 		amount_field = "debit" if flow == "inflow" else "credit"
-		condition = f"AND gle.{amount_field} != 0 AND COALESCE(pe.payment_type, '') != 'Internal Transfer'"
+		condition += f" AND gle.{amount_field} != 0"
 	entries = frappe.db.sql(
 		f"""
 		SELECT gle.name, gle.posting_date, gle.voucher_type, gle.voucher_no,

@@ -146,7 +146,7 @@
         </button>
         <section v-if="expandedFlow" class="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] md:col-span-3 text-[var(--color-text)]">
           <h2 class="px-4 py-3 font-semibold">{{ activeSummary.label }} — Account Particulars</h2>
-          <p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">Click an account to expand its transactions. Amounts are in company currency.</p>
+          <p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">Click an account to expand its transactions. Internal transfers are hidden in all details; closing balances still reflect them. Amounts are in company currency.</p>
           <div v-for="row in flowAccounts" :key="row.account" class="border-t border-[var(--color-border)]">
             <button type="button" class="flex w-full justify-between gap-4 px-4 py-3 text-left hover:bg-[var(--color-surface-raised)]" :aria-expanded="!!expandedAccounts[row.account]" @click="toggleAccount(row.account)">
               <span>{{ expandedAccounts[row.account] ? '▾' : '▸' }} {{ row.account }}</span>
