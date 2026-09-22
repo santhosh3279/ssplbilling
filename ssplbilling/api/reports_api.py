@@ -1509,6 +1509,29 @@ def _cashflow_cheque_clearing_accounts():
 	return (RECEIVED_ACCOUNT, ISSUED_ACCOUNT)
 
 
+def _cashflow_cleared_cheque_condition():
+	"""Exclude unprocessed register cheques and unreconciled direct cheque payments."""
+	return """(
+		NOT EXISTS (
+			SELECT 1 FROM `tabSSPL Cheque` cheque
+			WHERE cheque.company = gle.company
+				AND ((gle.voucher_type = 'Payment Entry' AND cheque.payment_entry = gle.voucher_no)
+					OR (gle.voucher_type = 'Journal Entry' AND cheque.clearance_entry = gle.voucher_no))
+				AND (cheque.status != 'Cleared' OR cheque.clearance_date IS NULL)
+		)
+		AND (
+			COALESCE(LOWER(pe.mode_of_payment), '') NOT LIKE '%%cheque%%'
+			OR pe.clearance_date IS NOT NULL
+			OR EXISTS (
+				SELECT 1 FROM `tabSSPL Cheque` cheque
+				WHERE cheque.company = gle.company AND cheque.payment_entry = gle.voucher_no
+					AND gle.voucher_type = 'Payment Entry'
+					AND cheque.status = 'Cleared' AND cheque.clearance_date IS NOT NULL
+			)
+		)
+	)"""
+
+
 def _cashflow_internal_transfer_condition():
 	"""Shared SQL predicate for marked transfers and cash/bank-only vouchers.
 
@@ -1595,6 +1618,7 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 		sql_params.append(company)
 
 	internal_transfer = _cashflow_internal_transfer_condition()
+	cleared_cheque = _cashflow_cleared_cheque_condition()
 
 	# 1. Summary grouped by Cost Center (Payments & Receipts only, i.e., excluding Internal Transfer)
 	summary_rows = frappe.db.sql(
@@ -1611,6 +1635,7 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
 			{company_condition}
+			AND {cleared_cheque}
 			AND NOT {internal_transfer}
 		GROUP BY
 			gle.cost_center
@@ -1637,6 +1662,7 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
 			{company_condition}
+			AND {cleared_cheque}
 			AND NOT {internal_transfer}
 		GROUP BY
 			gle.cost_center, gle.account
@@ -1662,6 +1688,7 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
 			{company_condition}
+			AND {cleared_cheque}
 			AND {internal_transfer}
 		GROUP BY
 			gle.cost_center
@@ -1688,6 +1715,7 @@ def get_cashflow_report(from_date=None, to_date=None, company=None):
 			AND gle.is_cancelled = 0
 			AND gle.account IN %s
 			{company_condition}
+			AND {cleared_cheque}
 			AND {internal_transfer}
 		GROUP BY
 			gle.cost_center, gle.account
@@ -1744,7 +1772,7 @@ def get_cashflow_details(company, account, from_date, to_date, flow="inflow", st
 		frappe.throw("Invalid cash flow filters")
 	start = max(0, cint(start))
 	params = {"company": company, "account": account, "from_date": from_date, "to_date": to_date, "start": start}
-	condition = f"AND NOT {_cashflow_internal_transfer_condition()}"
+	condition = f"AND NOT {_cashflow_internal_transfer_condition()} AND {_cashflow_cleared_cheque_condition()}"
 	if flow != "balance":
 		amount_field = "debit" if flow == "inflow" else "credit"
 		condition += f" AND gle.{amount_field} != 0"
@@ -1791,9 +1819,10 @@ def get_cashflow_details(company, account, from_date, to_date, flow="inflow", st
 	opening_balance = 0
 	if flow == "balance":
 		opening_balance = frappe.db.sql(
-			"""SELECT COALESCE(SUM(debit - credit), 0) FROM `tabGL Entry`
-			WHERE company = %(company)s AND account = %(account)s AND is_cancelled = 0
-			AND posting_date < %(from_date)s""", params,
+			f"""SELECT COALESCE(SUM(gle.debit - gle.credit), 0) FROM `tabGL Entry` gle
+			LEFT JOIN `tabPayment Entry` pe ON gle.voucher_type = 'Payment Entry' AND pe.name = gle.voucher_no
+			WHERE gle.company = %(company)s AND gle.account = %(account)s AND gle.is_cancelled = 0
+			AND gle.posting_date < %(from_date)s AND {_cashflow_cleared_cheque_condition()}""", params,
 		)[0][0]
 	if cint(group_by_account):
 		return {"groups": groups, "opening_balance": opening_balance}
