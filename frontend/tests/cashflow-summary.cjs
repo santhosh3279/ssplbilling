@@ -6,7 +6,12 @@ const source = fs.readFileSync('src/pages/CashflowReport.vue', 'utf8')
 const calls = []
 const detailCalls = []
 const fixedToday = '2026-09-30'
+let clock = 0
+const timers = new Set()
 const context = vm.createContext({
+  performance: { now: () => { clock += 250; return clock } },
+  setInterval: callback => { timers.add(callback); return callback },
+  clearInterval: timer => timers.delete(timer),
   Date: class extends Date { constructor(...args) { super(...(args.length ? args : [fixedToday + 'T12:00:00Z'])) } },
   getCashflowDetails: async args => { detailCalls.push(args); return { groups: [], entries: [] } },
   ref: value => ({ value }), computed: getter => ({ get value() { return getter() } }),
@@ -26,6 +31,8 @@ const context = vm.createContext({
 vm.runInContext(source, context)
 ;(async () => {
   await vm.runInContext("fromDate.value = '2026-09-01'; toDate.value = '2026-09-22'; fetchData()", context)
+  assert.equal(vm.runInContext('loadSeconds.value', context), 0.25)
+  assert.equal(timers.size, 0)
   assert.equal(vm.runInContext('totals.value.cash_balance', context), 590)
   assert.equal(vm.runInContext('totals.value.balance', context), 880)
   assert.equal(vm.runInContext('reportSummary.value.length', context), 5)

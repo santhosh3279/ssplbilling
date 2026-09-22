@@ -11,7 +11,12 @@
             &larr; Back
           </button>
           <div>
-            <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Cashflow Report</h1>
+            <div class="flex items-center gap-3">
+              <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Cashflow Report</h1>
+              <span v-if="loadSeconds !== null" role="status" class="text-xs tabular-nums text-[var(--color-text-muted)]">
+                {{ loading ? 'Loading' : error ? 'Load failed after' : 'Loaded in' }} {{ loadSeconds.toFixed(1) }}s
+              </span>
+            </div>
             <p class="text-xs text-[var(--color-text-muted)]">{{ companyName }}</p>
           </div>
         </div>
@@ -209,6 +214,12 @@ import ExcelJS from 'exceljs'
 const router = useRouter()
 const loading = ref(false)
 const error = ref('')
+const loadSeconds = ref(null)
+let loadTimer = null
+function stopLoadTimer() {
+  clearInterval(loadTimer)
+  loadTimer = null
+}
 const companyName = ref(localStorage.getItem('wb-company') || '')
 const particulars = ref([])
 const totals = ref({ inflow: 0, outflow: 0, netflow: 0, balance: 0, cash_balance: 0 })
@@ -314,6 +325,8 @@ async function loadDetails(account) {
 
 async function fetchData() {
   const currentRequest = ++requestId
+  stopLoadTimer()
+  loadSeconds.value = null
   error.value = ''
   particulars.value = []
   expandedFlow.value = ''
@@ -331,6 +344,11 @@ async function fetchData() {
   }
   const filters = { company: companyName.value, from: fromDate.value, to: toDate.value, currentDate: formatDateIso(new Date()) }
   loading.value = true
+  const loadStarted = performance.now()
+  loadSeconds.value = 0
+  loadTimer = setInterval(() => {
+    loadSeconds.value = (performance.now() - loadStarted) / 1000
+  }, 100)
   try {
     const closingRequest = getCashflowReport('1000-01-01', filters.to, filters.company, true)
     const currentRequestData = filters.to === filters.currentDate
@@ -376,7 +394,11 @@ async function fetchData() {
   } catch (e) {
     if (currentRequest === requestId) error.value = e.message || 'Failed to fetch cash flow report'
   } finally {
-    if (currentRequest === requestId) loading.value = false
+    if (currentRequest === requestId) {
+      stopLoadTimer()
+      loadSeconds.value = (performance.now() - loadStarted) / 1000
+      loading.value = false
+    }
   }
 }
 
@@ -501,5 +523,9 @@ onMounted(() => {
   fetchData()
   window.addEventListener('focus', refreshOnFocus)
 })
-onUnmounted(() => window.removeEventListener('focus', refreshOnFocus))
+onUnmounted(() => {
+  ++requestId
+  stopLoadTimer()
+  window.removeEventListener('focus', refreshOnFocus)
+})
 </script>
