@@ -1,8 +1,41 @@
 <template>
   <div class="h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white main-content-wrapper">
-    <CatalogueOrderParty v-if="!isFullscreen" class="mt-16" />
+    <CatalogueOrderParty
+      v-if="!isFullscreen && session.isSystemUser.value && showCustomerSection"
+      class="mt-16"
+      @applied="onCustomerApplied"
+      @close="showCustomerSection = false"
+    />
     <div v-if="isLoggedIn" class="fixed top-4 right-4 z-[70] flex items-center gap-3 rounded-xl bg-slate-950/80 px-4 py-2 text-xs text-white border border-slate-800/50 shadow-lg">
-      <span class="max-w-40 truncate">{{ userName }}</span>
+      <span class="max-w-40 truncate font-semibold">{{ userName }}</span>
+
+      <!-- Selected Customer & Price list for System Users (clicking opens customer search to modify) -->
+      <button
+        v-if="session.isSystemUser.value && orderContext.customer"
+        type="button"
+        @click="toggleCustomerSection"
+        class="flex items-center gap-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/40 px-2.5 py-1 text-xs text-indigo-100 hover:text-white transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+        title="Click to modify customer and price list"
+      >
+        <span class="font-bold text-white max-w-[180px] truncate">
+          {{ orderContext.customer_name || orderContext.customer }}
+        </span>
+        <span class="text-indigo-300 text-[11px] truncate max-w-[120px]">
+          ({{ orderContext.price_list }})
+        </span>
+        <span class="text-[11px] text-indigo-300 ml-0.5">✏️</span>
+      </button>
+      <button
+        v-else-if="session.isSystemUser.value"
+        type="button"
+        @click="toggleCustomerSection"
+        class="flex items-center gap-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/40 px-2.5 py-1 text-xs text-amber-200 hover:text-white transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+        title="Click to select customer and price list"
+      >
+        <span class="font-bold">Select Customer</span>
+        <span class="text-[11px]">🔍</span>
+      </button>
+
       <RouterLink v-if="catalogueUser" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
       <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
     </div>
@@ -537,6 +570,24 @@ const websiteUser = session.isWebsiteUser
 const catalogueUser = computed(() => websiteUser.value || session.isSystemUser.value)
 const isLoggedIn = session.isLoggedIn
 const userName = computed(() => session.fullName.value || session.user.value)
+
+const showCustomerSection = ref(!orderContext.value.customer)
+
+watch(() => orderContext.value.customer, (newCust, oldCust) => {
+  if (!oldCust && newCust) {
+    showCustomerSection.value = false
+  } else if (!newCust) {
+    showCustomerSection.value = true
+  }
+})
+
+function toggleCustomerSection() {
+  showCustomerSection.value = !showCustomerSection.value
+}
+
+function onCustomerApplied() {
+  showCustomerSection.value = false
+}
 
 async function logout() {
   await session.logout()
