@@ -56,6 +56,35 @@
 
     <!-- Main Content Area -->
     <main class="flex-1 w-full px-6 py-12" :class="isWebsiteUser && cartCount ? 'lg:pr-[21rem]' : ''">
+      <section class="mb-8 space-y-4" aria-label="Search catalogue items">
+        <label for="catalogue-item-search" class="block text-lg font-bold">Find items to add to your cart</label>
+        <div class="flex gap-2">
+          <input id="catalogue-item-search" v-model="itemQuery" type="search" maxlength="100" placeholder="Search by item name, code or barcode" class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[var(--color-text)]" />
+          <button v-if="itemQuery" type="button" class="rounded-xl border border-[var(--color-border)] px-4" @click="itemQuery = ''">Clear</button>
+        </div>
+        <p v-if="searchLoading" role="status">Searching items…</p>
+        <p v-if="searchError" role="alert" class="text-[var(--color-danger)]">{{ searchError }} <button type="button" class="underline" @click="searchItems()">Try Again</button></p>
+        <p v-else-if="itemQuery.trim() && !searchLoading && !searchResults.length" role="status">No matching catalogue items.</p>
+        <div v-if="searchResults.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <article v-for="item in searchResults" :key="JSON.stringify([item.pageaddress, item.item_code, item.barcode])" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-2">
+            <h2 class="font-bold">{{ item.item_name }}</h2>
+            <p class="text-sm text-[var(--color-text-muted)]">{{ item.item_code }} <span v-if="item.barcode">· {{ item.barcode }}</span></p>
+            <button type="button" class="text-sm text-[var(--color-info)] underline" @click="openCatalogue(item.pageaddress)">{{ item.heading }}</button>
+            <p class="text-sm">Available stock: {{ item.available_stock == null ? 'Unavailable' : item.available_stock + ' ' + item.stock_uom }}</p>
+            <template v-if="isWebsiteUser">
+              <p>{{ item.order_rate == null ? 'Price unavailable' : priceFormatter.format(item.order_rate) + ' / ' + item.order_uom }}</p>
+              <div class="flex items-center gap-3">
+                <button v-if="getQuantity(item.pageaddress, item.item_code)" type="button" :aria-label="`Remove one ${item.item_name}`" class="rounded border border-[var(--color-border)] px-3 py-2" @click="changeCartQuantity(item, -1)">−</button>
+                <span v-if="getQuantity(item.pageaddress, item.item_code)" role="status">{{ getQuantity(item.pageaddress, item.item_code) }} in cart</span>
+                <button type="button" :disabled="item.order_rate == null || searchLoading || getQuantity(item.pageaddress, item.item_code) >= 10000" class="rounded bg-indigo-600 px-4 py-2 font-bold text-white disabled:opacity-50" @click="changeCartQuantity(item, 1)">Add to Cart</button>
+              </div>
+            </template>
+            <button v-else type="button" class="rounded bg-indigo-600 px-4 py-2 font-bold text-white" @click="showLogin = true">Sign in to add to cart</button>
+          </article>
+        </div>
+        <button v-if="searchHasMore && !searchError" type="button" :disabled="searchLoading" class="text-[var(--color-info)] underline disabled:opacity-50" @click="searchItems(true)">Load more items</button>
+      </section>
+
       <!-- Loading State -->
       <div v-if="loading" class="flex flex-col items-center justify-center py-16">
         <div class="relative w-16 h-16 mb-4">
@@ -135,11 +164,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { session } from '../session.js'
-import { cartCount, setCartUser } from '../services/catalogueCart.js'
+import { cartCount, setCartUser, getQuantity, setQuantity } from '../services/catalogueCart.js'
 import CatalogueCartPanel from '../components/CatalogueCartPanel.vue'
 
 const router = useRouter()
@@ -155,6 +184,63 @@ const loginLoading = ref(false)
 const loading = ref(true)
 const error = ref(null)
 const catalogues = ref([])
+const itemQuery = ref('')
+const searchResults = ref([])
+const searchLoading = ref(false)
+const searchError = ref('')
+const searchHasMore = ref(false)
+const priceFormatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' })
+let searchTimer = null
+let searchRequest = 0
+
+async function searchItems(append = false) {
+  clearTimeout(searchTimer)
+  const query = itemQuery.value.trim()
+  const request = ++searchRequest
+  if (!append) searchResults.value = []
+  searchError.value = ''
+  if (!query) {
+    searchLoading.value = false
+    searchHasMore.value = false
+    return
+  }
+  searchLoading.value = true
+  try {
+    const result = await frappeGet('ssplbilling.api.catalogue_order_api.search_catalogue_items', { query, start: append ? searchResults.value.length : 0 })
+    if (request !== searchRequest) return
+    searchResults.value = append ? [...searchResults.value, ...result.items] : result.items
+    searchHasMore.value = result.has_more
+  } catch (error) {
+    if (request === searchRequest) searchError.value = error.message || 'Could not search items.'
+  } finally {
+    if (request === searchRequest) searchLoading.value = false
+  }
+}
+
+watch([itemQuery, isWebsiteUser], () => {
+  ++searchRequest
+  clearTimeout(searchTimer)
+  searchResults.value = []
+  searchHasMore.value = false
+  searchError.value = ''
+  searchLoading.value = !!itemQuery.value.trim()
+  if (searchLoading.value) searchTimer = setTimeout(() => searchItems(), 300)
+})
+
+function changeCartQuantity(item, delta) {
+  if (!isWebsiteUser.value || (delta > 0 && item.order_rate == null)) return
+  const qty = getQuantity(item.pageaddress, item.item_code)
+  setQuantity(item.pageaddress, item.item_code, qty + delta)
+  if (getQuantity(item.pageaddress, item.item_code) !== qty + delta) {
+    searchError.value = 'Could not update the cart. It supports up to 100 items and 10,000 units per item.'
+  }
+}
+
+onBeforeUnmount(() => {
+  ++searchRequest
+  clearTimeout(searchTimer)
+})
+
 async function fetchCatalogues() {
   loading.value = true
   error.value = null

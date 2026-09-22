@@ -107,6 +107,47 @@ def get_customer_offer(pageaddress):
 
 
 
+@frappe.whitelist(allow_guest=True)
+def search_catalogue_items(query, start=0):
+	"""Search enabled catalogue items; resolve order prices only for website users."""
+	from frappe.utils import cint
+	from ssplbilling.api.offer_api import _catalogue_stock
+
+	query = (query or "").strip()[:100]
+	if not query:
+		return {"items": [], "has_more": False}
+	context = None
+	if frappe.session.user != "Guest" and frappe.get_cached_value("User", frappe.session.user, "user_type") == "Website User":
+		context = _customer_context()
+	rows = frappe.db.sql("""
+		SELECT DISTINCT catalogue.pageaddress, catalogue.heading, item.name AS item_code,
+			item.item_name, item.image, item.stock_uom, line.barcode
+		FROM `tabOffer-Item` line
+		INNER JOIN `tabOffer-Items` catalogue ON catalogue.name = line.parent
+		INNER JOIN `tabItem` item ON item.name = line.itemcode
+		WHERE line.parenttype = 'Offer-Items' AND line.parentfield = 'items'
+			AND COALESCE(line.disabled, 0) = 0 AND item.disabled = 0 AND item.is_sales_item = 1
+			AND COALESCE(catalogue.pageaddress, '') != ''
+			AND (item.name LIKE %(query)s OR item.item_name LIKE %(query)s
+				OR line.itemname LIKE %(query)s OR line.barcode LIKE %(query)s
+				OR EXISTS (SELECT 1 FROM `tabItem Barcode` barcode
+					WHERE barcode.parent = item.name AND barcode.barcode LIKE %(query)s))
+		ORDER BY item.item_name, item.name, catalogue.pageaddress, line.barcode
+		LIMIT 31 OFFSET %(start)s
+	""", {"query": "%" + query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%",
+		"start": max(0, cint(start))}, as_dict=True)
+	has_more = len(rows) > 30
+	rows = rows[:30]
+	stock = _catalogue_stock(list({row.item_code for row in rows}))
+	for row in rows:
+		row.available_stock = stock.get(row.item_code)
+		row.order_rate = None
+		row.order_uom = row.stock_uom
+		if context:
+			_, row.order_uom, row.order_rate = _order_price(row.item_code, context["price_list"], row.barcode)
+	return {"items": rows, "has_more": has_more}
+
+
 def _catalogue_rules(price_list):
 	"""Read enabled rules under server authority for a website customer."""
 	rules = frappe.get_all(
