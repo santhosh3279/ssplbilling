@@ -145,7 +145,7 @@
         <p>{{ error }}</p>
         <button type="button" @click="fetchData" class="mt-3 font-semibold underline">Try Again</button>
       </div>
-      <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
         <button type="button" v-for="summary in reportSummary" :key="summary.label" @click="toggleFlow(summary.key)" :aria-expanded="expandedFlow === summary.key" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5 text-left">
           <p class="text-sm text-[var(--color-text-muted)]">{{ expandedFlow === summary.key ? '▾' : '▸' }} {{ summary.label }}</p>
           <p class="mt-2 text-2xl font-bold tabular-nums" :class="summary.label === 'Cash Outflow' || summary.value < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
@@ -153,7 +153,7 @@
           </p>
           <p class="mt-2 text-xs text-[var(--color-text-muted)]">{{ summary.description }}</p>
         </button>
-        <section v-if="expandedFlow" class="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] md:col-span-3 text-[var(--color-text)]">
+        <section v-if="expandedFlow" class="overflow-x-auto rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] md:col-span-2 xl:col-span-4 text-[var(--color-text)]">
           <h2 class="px-4 py-3 font-semibold">{{ activeSummary.label }} — Account Particulars</h2>
           <p class="px-4 pb-3 text-xs text-[var(--color-text-muted)]">Click an account to expand its transactions. Internal transfers are hidden in all details; closing balances still reflect them. Amounts are in company currency.</p>
           <div v-for="row in flowAccounts" :key="row.account" class="border-t border-[var(--color-border)]">
@@ -200,10 +200,11 @@ const loading = ref(false)
 const error = ref('')
 const companyName = ref(localStorage.getItem('wb-company') || '')
 const particulars = ref([])
-const totals = ref({ inflow: 0, outflow: 0, balance: 0 })
+const totals = ref({ inflow: 0, outflow: 0, netflow: 0, balance: 0 })
 const reportSummary = computed(() => [
   { key: 'inflow', label: 'Cash Inflow', value: totals.value.inflow, description: 'Received during the selected period, excluding internal transfers' },
   { key: 'outflow', label: 'Cash Outflow', value: totals.value.outflow, description: 'Paid during the selected period, excluding internal transfers' },
+  { key: 'netflow', label: 'Net Cash Flow', value: totals.value.netflow, description: 'Inflow minus outflow for the selected period; excludes internal transfers and pending cheques' },
   { key: 'balance', label: 'Net Cash in Hand', value: totals.value.balance, description: `Closing cash and bank balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
 ])
 const loadedFilters = ref(null)
@@ -215,7 +216,11 @@ const expandedFlow = ref('')
 const expandedAccounts = ref({})
 const detailCache = ref({})
 const activeSummary = computed(() => reportSummary.value.find(row => row.key === expandedFlow.value))
-const flowAccounts = computed(() => particulars.value.filter(row => expandedFlow.value === 'balance' || row[expandedFlow.value] !== 0))
+const flowAccounts = computed(() => particulars.value.filter(row => {
+  if (expandedFlow.value === 'balance') return true
+  if (expandedFlow.value === 'netflow') return row.inflow !== 0 || row.outflow !== 0
+  return row[expandedFlow.value] !== 0
+}))
 const detailKey = account => JSON.stringify([expandedFlow.value, account])
 const detailState = account => detailCache.value[detailKey(account)] || { entries: [] }
 function toggleFlow(flow) {
@@ -242,7 +247,7 @@ async function loadDetails(account) {
   const currentRequest = requestId
   const filters = loadedFilters.value
   try {
-    const result = await getCashflowDetails({ company: filters.company, account, from_date: filters.from, to_date: filters.to, flow: expandedFlow.value, start: target.entries.length })
+    const result = await getCashflowDetails({ company: filters.company, account, from_date: filters.from, to_date: filters.to, flow: expandedFlow.value === 'netflow' ? 'balance' : expandedFlow.value, start: target.entries.length })
     if (currentRequest !== requestId) return
     target.entries.push(...result.entries)
     target.has_more = result.has_more
@@ -262,7 +267,7 @@ async function fetchData() {
   expandedFlow.value = ''
   expandedAccounts.value = {}
   detailCache.value = {}
-  totals.value = { inflow: 0, outflow: 0, balance: 0 }
+  totals.value = { inflow: 0, outflow: 0, netflow: 0, balance: 0 }
   loadedFilters.value = null
   companyName.value = localStorage.getItem('wb-company') || ''
   if (!companyName.value || !fromDate.value || !toDate.value || fromDate.value > toDate.value) {
@@ -283,6 +288,7 @@ async function fetchData() {
     totals.value = {
       inflow: sum(period.summary, 'inflow'),
       outflow: sum(period.summary, 'outflow'),
+      netflow: sum(period.summary, 'inflow') - sum(period.summary, 'outflow'),
       balance: sum(balances, 'inflow') - sum(balances, 'outflow'),
     }
     const accounts = new Map()
@@ -298,7 +304,7 @@ async function fetchData() {
     for (const entry of [...(cumulative.breakdown || []), ...(cumulative.internal_breakdown || [])]) {
       accountRow(entry.account).balance += (Number(entry.inflow) || 0) - (Number(entry.outflow) || 0)
     }
-    particulars.value = [...accounts.values()].sort((a, b) => a.account.localeCompare(b.account))
+    particulars.value = [...accounts.values()].map(row => ({ ...row, netflow: row.inflow - row.outflow })).sort((a, b) => a.account.localeCompare(b.account))
     loadedFilters.value = filters
   } catch (e) {
     if (currentRequest === requestId) error.value = e.message || 'Failed to fetch cash flow report'
@@ -395,16 +401,16 @@ async function exportToExcel() {
       row.getCell(2).numFmt = '#,##0.00;[Red]-#,##0.00'
     }
     const details = workbook.addWorksheet('Particulars')
-    details.columns = [{ width: 55 }, { width: 24 }, { width: 24 }, { width: 24 }]
+    details.columns = [{ width: 55 }, { width: 24 }, { width: 24 }, { width: 24 }, { width: 24 }]
     details.addRow([filters.company])
     details.addRow([`Cash Flow: ${filters.from} to ${filters.to}`])
     details.addRow(['Amounts in company currency; closing balances include opening balances and transfers'])
     details.addRow(['Inflow and outflow exclude internal transfers; pending cheques are excluded'])
     details.addRow([])
-    details.addRow(['Particulars', 'Cash Inflow', 'Cash Outflow', 'Net Cash in Hand']).font = { bold: true }
+    details.addRow(['Particulars', 'Cash Inflow', 'Cash Outflow', 'Net Cash Flow', 'Net Cash in Hand']).font = { bold: true }
     for (const item of [...particulars.value, { account: 'Total', ...totals.value }]) {
-      const row = details.addRow([item.account, item.inflow, item.outflow, item.balance])
-      for (const index of [2, 3, 4]) row.getCell(index).numFmt = '#,##0.00;[Red]-#,##0.00'
+      const row = details.addRow([item.account, item.inflow, item.outflow, item.netflow, item.balance])
+      for (const index of [2, 3, 4, 5]) row.getCell(index).numFmt = '#,##0.00;[Red]-#,##0.00'
     }
     details.lastRow.font = { bold: true }
     const buffer = await workbook.xlsx.writeBuffer()
