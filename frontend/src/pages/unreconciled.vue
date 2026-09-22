@@ -384,7 +384,7 @@
           <div>
             <h3 class="text-lg font-black uppercase tracking-widest text-[var(--color-text)]">Auto Reconcile Preview</h3>
             <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mt-0.5">
-              Equal amounts only — nothing is split or partially allocated
+              Equal amounts, plus oldest-first allocations for zero-balance ledgers
             </p>
           </div>
           <button
@@ -420,8 +420,8 @@
 
           <div v-else-if="!autoPreview.length" class="py-16 text-center space-y-2">
             <div class="text-5xl">🤷</div>
-            <p class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">No equal-amount matches</p>
-            <p class="text-xs text-[var(--color-text-muted)]">Every remaining entry needs a manual allocation.</p>
+            <p class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">No automatic matches</p>
+            <p class="text-xs text-[var(--color-text-muted)]">No equal-amount matches or fully allocatable zero-balance ledgers were found.</p>
           </div>
 
           <div v-else class="space-y-5">
@@ -447,6 +447,7 @@
                   <span class="text-[var(--color-text-muted)]">&rarr;</span>
                   <span class="font-black text-[var(--color-danger)] truncate">{{ row.invoice_name }}</span>
                   <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ shortType(row.invoice_type) }}</span>
+                  <span v-if="row.match_type === 'zero_balance'" class="text-[10px] font-bold text-[var(--color-info)]">Zero balance</span>
                 </div>
                 <span class="font-mono font-black text-[var(--color-success)] shrink-0">₹{{ fmt(row.amount) }}</span>
               </div>
@@ -803,7 +804,7 @@ async function submitReconciliation() {
   }
 }
 
-// ── Auto reconcile: equal amounts across every ledger ──
+// ── Auto reconcile: equal amounts and zero-balance ledgers ──
 const showAutoModal = ref(false)
 const autoLoading = ref(false)
 const autoRunning = ref(false)

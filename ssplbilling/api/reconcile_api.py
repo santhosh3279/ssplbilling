@@ -699,10 +699,9 @@ def post_reconciliation(party_type, party, allocations):
 
 
 # ── Auto reconciliation ───────────────────────────────────────────────────────
-# Matches a payment-side entry against an outstanding-side entry only when the
-# two amounts are equal, so nothing is ever split or partially allocated without
-# an operator looking at it. The preview is what the Proceed button posts back,
-# so what is shown is exactly what is reconciled.
+# Equal individual amounts are matched by default. A zero-balance ledger may
+# also allocate oldest-first across entries when both eligible sides balance.
+# The preview is what the Proceed button posts back.
 
 AUTO_MATCH_TOLERANCE = 0.01
 
@@ -783,9 +782,67 @@ def _match_equal_amounts(payments, invoices):
 	return pairs
 
 
+def _ledger_is_zero(party_type, party):
+	"""Require one party account, matching the account used for reconciliation."""
+	rows = frappe.db.sql(
+		"""SELECT account, SUM(debit_in_account_currency - credit_in_account_currency) AS balance
+		FROM `tabGL Entry`
+		WHERE company = %s AND party_type = %s AND party = %s AND is_cancelled = 0
+		GROUP BY account""",
+		(_get_company(), party_type, party), as_dict=True,
+	)
+	return (
+		len(rows) == 1
+		and rows[0].account == _get_party_account(party_type, party)
+		and abs(float(rows[0].balance or 0)) < 0.005
+	)
+
+
+def _match_balanced_ledger(payments, invoices):
+	"""Fully allocate balanced sides oldest-first using integer paise.
+
+	Return no matches when eligible entries do not balance, even if the GL is
+	zero (for example, a return invoice may need separate manual treatment).
+	"""
+	from decimal import Decimal, ROUND_HALF_UP
+
+	def paise(amount):
+		return int((Decimal(str(amount)) * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+	order = lambda row: (row["posting_date"], row["name"], row.get("reference_row") or "")
+	pays = [(row, paise(row["amount"])) for row in sorted(payments, key=order)]
+	invs = [(row, paise(row["amount"])) for row in sorted(invoices, key=order)]
+	if not pays or not invs or any(amount <= 0 for _, amount in pays + invs):
+		return []
+	if sum(amount for _, amount in pays) != sum(amount for _, amount in invs):
+		return []
+
+	pairs = []
+	p = i = 0
+	pay_left, inv_left = pays[0][1], invs[0][1]
+	while p < len(pays) and i < len(invs):
+		pay, inv = pays[p][0], invs[i][0]
+		# A document cannot be reconciled against itself.
+		if (pay["doctype"], pay["name"]) == (inv["doctype"], inv["name"]):
+			return []
+		amount = min(pay_left, inv_left)
+		pairs.append((pay, inv, amount / 100))
+		pay_left -= amount
+		inv_left -= amount
+		if not pay_left:
+			p += 1
+			if p < len(pays):
+				pay_left = pays[p][1]
+		if not inv_left:
+			i += 1
+			if i < len(invs):
+				inv_left = invs[i][1]
+	return pairs
+
+
 @frappe.whitelist()
 def preview_auto_reconcile(party_type=None, party=None):
-	"""Equal-amount matches across every ledger, for the confirmation dialog."""
+	"""Equal-amount and zero-balance allocations for the confirmation dialog."""
 	if party_type and party:
 		parties = [{"party_type": party_type, "party": party, "label": party}]
 	else:
@@ -796,12 +853,16 @@ def preview_auto_reconcile(party_type=None, party=None):
 	for row in parties:
 		try:
 			payments, invoices = _build_reconcile_sides(row["party_type"], row["party"])
+			matches = _match_balanced_ledger(payments, invoices)
+			zero_balance = bool(matches) and _ledger_is_zero(row["party_type"], row["party"])
+			if not zero_balance:
+				matches = [(pay, inv, pay["amount"]) for pay, inv in _match_equal_amounts(payments, invoices)]
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "Auto reconcile preview failed")
 			skipped.append({"party": row.get("label") or row["party"], "reason": "Could not read entries"})
 			continue
 
-		for pay, inv in _match_equal_amounts(payments, invoices):
+		for pay, inv, amount in matches:
 			proposals.append(
 				{
 					"party_type": row["party_type"],
@@ -814,7 +875,8 @@ def preview_auto_reconcile(party_type=None, party=None):
 					"invoice_type": inv["doctype"],
 					"invoice_name": inv["name"],
 					"invoice_date": inv["posting_date"],
-					"amount": round(pay["amount"], 2),
+					"amount": round(amount, 2),
+					"match_type": "zero_balance" if zero_balance else "equal_amount",
 					"unreconciled_amount": pay["amount"],
 				}
 			)
@@ -862,6 +924,8 @@ def run_auto_reconcile(allocations):
 		savepoint = "auto_reconcile"
 		frappe.db.savepoint(savepoint)
 		try:
+			if any(r.get("match_type") == "zero_balance" for r in rows) and not _ledger_is_zero(p_type, p_name):
+				frappe.throw("Ledger balance changed since preview. Refresh the auto reconcile preview and try again.")
 			post_reconciliation(p_type, p_name, payload)
 			reconciled += len(payload)
 		except Exception as e:
