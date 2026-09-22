@@ -134,15 +134,16 @@
           <button
             class="flex items-center gap-2 rounded-lg bg-[var(--color-info)] px-4 py-2 text-sm font-semibold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] active:scale-95 transition-all shadow-lg shadow-violet-900/20"
             @click="exportToExcel"
-            :disabled="loading || !!error || !loadedFilters"
+            :disabled="loading || exporting || !!error || !loadedFilters"
           >
-            <span>⬇</span> Export Excel
+            <span>⬇</span> {{ exporting ? 'Exporting…' : 'Export Excel' }}
           </button>
         </div>
       </div>
     </header>
 
     <main class="flex-1 overflow-auto p-6">
+      <p v-if="exportError" role="alert" class="mb-4 text-[var(--color-danger)]">{{ exportError }}</p>
       <div v-if="loading" class="flex h-64 items-center justify-center text-[var(--color-text-muted)]">
         Loading cash flow report…
       </div>
@@ -214,6 +215,8 @@ import ExcelJS from 'exceljs'
 const router = useRouter()
 const loading = ref(false)
 const error = ref('')
+const exporting = ref(false)
+const exportError = ref('')
 const loadSeconds = ref(null)
 let loadTimer = null
 function stopLoadTimer() {
@@ -474,9 +477,12 @@ function formatCurrency(value) {
 }
 
 async function exportToExcel() {
-  if (loading.value || error.value || !loadedFilters.value) return
+  if (loading.value || exporting.value || error.value || !loadedFilters.value) return
+  exporting.value = true
+  exportError.value = ''
   try {
     const filters = { ...loadedFilters.value }
+    const accounts = particulars.value.map(row => ({ ...row }))
     const workbook = new ExcelJS.Workbook()
     const sheet = workbook.addWorksheet('Cash Flow')
     sheet.columns = [{ width: 28 }, { width: 24 }, { width: 90 }]
@@ -503,6 +509,37 @@ async function exportToExcel() {
       for (const index of [2, 3, 4, 5, 6]) row.getCell(index).numFmt = '#,##0.00;[Red]-#,##0.00'
     }
     details.lastRow.font = { bold: true }
+    // Fetch all pages, independently of which accounts were expanded on screen.
+    await Promise.all(['inflow', 'outflow'].map(async flow => {
+      const vouchers = workbook.addWorksheet(flow === 'inflow' ? 'Inflow Vouchers' : 'Outflow Vouchers')
+      vouchers.columns = [14, 24, 28, 45, 55, 30, 30, 60, 24, 20].map(width => ({ width }))
+      vouchers.addRow([filters.company])
+      vouchers.addRow([`${filters.from} to ${filters.to}; amounts in company currency; pending cheques and internal transfers excluded except incoming Temporary Account settlements`])
+      vouchers.addRow(['Date', 'Voucher Type', 'Voucher No', 'Cash / Bank Account', 'Counterparty Account', 'Party', 'Cost Center', 'Remarks', flow === 'inflow' ? 'Inflow' : 'Outflow', 'Payment Type']).font = { bold: true }
+      vouchers.views = [{ state: 'frozen', ySplit: 3 }]
+      let total = 0
+      for (const account of accounts) {
+        let start = 0
+        let hasMore = true
+        while (hasMore) {
+          const result = await getCashflowDetails({ company: filters.company, account: account.account, from_date: filters.from, to_date: filters.to, flow, start })
+          if (!Array.isArray(result.entries) || (result.has_more && !result.entries.length)) {
+            throw new Error('Incomplete voucher response. Please retry the export.')
+          }
+          for (const entry of result.entries) {
+            const amount = Number(flow === 'inflow' ? entry.debit : entry.credit) || 0
+            const row = vouchers.addRow([entry.posting_date, entry.voucher_type, entry.voucher_no, account.account, entry.counterpart_account || entry.against || '', entry.party || '', entry.cost_center || '', entry.remarks || '', amount, entry.payment_type || ''])
+            row.getCell(9).numFmt = '#,##0.00;[Red]-#,##0.00'
+            total += amount
+          }
+          start += result.entries.length
+          hasMore = result.has_more
+        }
+      }
+      const totalRow = vouchers.addRow(['Total', '', '', '', '', '', '', '', total])
+      totalRow.font = { bold: true }
+      totalRow.getCell(9).numFmt = '#,##0.00;[Red]-#,##0.00'
+    }))
     const buffer = await workbook.xlsx.writeBuffer()
     const url = URL.createObjectURL(new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
     const link = document.createElement('a')
@@ -511,7 +548,9 @@ async function exportToExcel() {
     link.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
   } catch (e) {
-    error.value = e.message || 'Failed to export Cash Flow'
+    exportError.value = e.message || 'Failed to export Cash Flow'
+  } finally {
+    exporting.value = false
   }
 }
 
