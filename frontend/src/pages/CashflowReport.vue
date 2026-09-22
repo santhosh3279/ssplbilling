@@ -118,6 +118,15 @@
           </div>
 
           <button
+            type="button"
+            class="rounded-lg border border-[var(--color-border)] px-4 py-2 text-sm font-semibold text-[var(--color-text)] disabled:opacity-50"
+            :disabled="loading"
+            @click="fetchData"
+          >
+            Refresh
+          </button>
+
+          <button
             class="flex items-center gap-2 rounded-lg bg-[var(--color-info)] px-4 py-2 text-sm font-semibold text-[var(--color-text-on-highlight)] hover:bg-[var(--color-info)] active:scale-95 transition-all shadow-lg shadow-violet-900/20"
             @click="exportToExcel"
             :disabled="loading || !!error || !loadedFilters"
@@ -181,7 +190,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCashflowReport, getCashflowDetails } from '../api.js'
 import ExcelJS from 'exceljs'
@@ -410,5 +419,13 @@ async function exportToExcel() {
   }
 }
 
-onMounted(fetchData)
+function refreshOnFocus() {
+  if (!loading.value) fetchData()
+}
+
+onMounted(() => {
+  fetchData()
+  window.addEventListener('focus', refreshOnFocus)
+})
+onUnmounted(() => window.removeEventListener('focus', refreshOnFocus))
 </script>
