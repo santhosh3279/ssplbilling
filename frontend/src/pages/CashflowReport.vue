@@ -12,7 +12,7 @@
           </button>
           <div>
             <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Cashflow Report</h1>
-            <p class="text-xs text-[var(--color-text-muted)]">Cash and bank accounts · Pending cheques excluded · {{ companyName }}</p>
+            <p class="text-xs text-[var(--color-text-muted)]">{{ companyName }}</p>
           </div>
         </div>
         <div class="flex items-center gap-4">
