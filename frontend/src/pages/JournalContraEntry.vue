@@ -65,6 +65,7 @@
           <label class="text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)] group-focus-within:text-[var(--color-text-on-focus)]">Posting Date</label>
           <div class="flex items-center gap-1">
             <button
+              v-if="canModifyDate()"
               @click="changeDate(-1)"
               class="p-1 hover:bg-black/10 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all group-focus-within:text-black/70"
               tabindex="-1"
@@ -74,14 +75,17 @@
             <input
               ref="dateInput"
               v-model="displayDate"
+              :readonly="!canModifyDate()"
               type="text"
               class="bg-transparent text-xl font-black text-[var(--color-text)] outline-none focus:text-inherit w-44 font-mono placeholder:text-inherit"
+              :class="!canModifyDate() ? 'cursor-default' : ''"
               placeholder="DD/MM/YYYY"
-              @focus="e => e.target.select()"
+              @focus="e => { if (canModifyDate()) e.target.select() }"
               @input="onDateInput"
             />
-            <DatePickerButton v-model="postingDate" label="Choose posting date" @update:model-value="displayDate = formatDateToDisplay($event)" />
+            <DatePickerButton v-if="canModifyDate()" v-model="postingDate" label="Choose posting date" @update:model-value="displayDate = formatDateToDisplay($event)" />
             <button
+              v-if="canModifyDate()"
               @click="changeDate(1)"
               class="p-1 hover:bg-black/10 rounded-md text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-all group-focus-within:text-black/70"
               tabindex="-1"
@@ -291,6 +295,7 @@ import { useRouter } from 'vue-router'
 import { frappePost } from '../api.js'
 import { serverToday } from '../services/serverTime'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import { canModifyDate } from '../composables/usePermission.js'
 import { useShortcuts } from '../services/shortcutManager'
 import { journalContraShortcuts } from '../shortcuts/journalContraShortcuts'
 
@@ -339,6 +344,10 @@ function formatDateToDisplay(iso) {
 }
 
 function onDateInput(e) {
+  if (!canModifyDate()) {
+    displayDate.value = formatDateToDisplay(postingDate.value)
+    return
+  }
   let val = e.target.value.replace(/\D/g, '') // Keep only digits
   
   // Smart Year Logic: If user enters 4 digits (DDMM), auto-complete the current year
@@ -375,6 +384,7 @@ function onDateInput(e) {
 }
 
 function changeDate(days) {
+  if (!canModifyDate()) return
   const d = new Date(postingDate.value)
   d.setDate(d.getDate() + days)
   postingDate.value = d.toISOString().slice(0, 10)
@@ -703,7 +713,7 @@ async function saveEntry() {
 
     const payload = {
       voucher_type: entryType.value === 'Opening Entry' ? 'Journal Entry' : entryType.value,
-      posting_date: postingDate.value,
+      posting_date: canModifyDate() ? postingDate.value : serverToday(),
       company: localStorage.getItem('wb-company') || null,
       user_remark: remarks,
       balancing_account: balancingAccount.value.name,

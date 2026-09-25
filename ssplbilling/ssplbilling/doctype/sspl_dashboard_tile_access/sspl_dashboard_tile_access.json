@@ -10,6 +10,7 @@
   "user_group",
   "column_break_1",
   "enabled",
+  "allow_date_modification",
   "title",
   "tiles_section",
   "tiles"
@@ -54,6 +55,13 @@
    "fieldtype": "Check",
    "label": "Enabled",
    "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "allow_date_modification",
+   "fieldtype": "Check",
+   "label": "Allow Date Modification",
+   "default": "0",
    "in_list_view": 1
   },
   {

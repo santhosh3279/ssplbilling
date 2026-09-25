@@ -149,6 +149,25 @@ export function canAccessAccounts() {
   return localStorage.getItem('wb-role-accounts') === '1'
 }
 
+/**
+ * Returns true if the user is allowed to modify document/posting dates.
+ * Controlled by the "Allow Date Modification" checkbox in SSPL Dashboard Tile Access.
+ * If not enabled or not configured, date modification is blocked and only the current date is allowed.
+ */
+export function canModifyDate() {
+  const flag = localStorage.getItem('wb-allow-date-modification')
+  if (flag !== null) {
+    return flag === '1'
+  }
+  try {
+    const cached = JSON.parse(localStorage.getItem('wb-allowed-tiles-v3') || 'null')
+    if (cached && typeof cached.allow_date_modification === 'boolean') {
+      return cached.allow_date_modification
+    }
+  } catch {}
+  return false
+}
+
 export function getUserRole() {
   const isAdmin    = localStorage.getItem('wb-role-admin')
   const isCashier  = localStorage.getItem('wb-role-cashier')

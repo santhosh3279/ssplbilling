@@ -32,12 +32,12 @@
       <div class="flex items-center gap-2">
         <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Default Date</span>
         <div class="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] transition-colors">
-          <button @click="adjustDate(-1)" class="p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button>
+          <button v-if="canModifyDate()" @click="adjustDate(-1)" class="p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg></button>
           <div class="relative min-w-[110px] px-3 py-1.5 text-center">
             <span class="text-2xl">{{ displayDate }}</span>
-            <input type="date" v-model="postingDate" class="absolute inset-0 opacity-0 cursor-pointer focus:outline-none" />
+            <input v-if="canModifyDate()" type="date" v-model="postingDate" class="absolute inset-0 opacity-0 cursor-pointer focus:outline-none" />
           </div>
-          <button @click="adjustDate(1)" class="p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button>
+          <button v-if="canModifyDate()" @click="adjustDate(1)" class="p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button>
         </div>
       </div>
     </header>
@@ -314,6 +314,7 @@ import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 import Warning from '../components/Warning.vue'
 
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
+import { canModifyDate } from '../composables/usePermission.js'
 
 import { serverToday, toLocalISO } from '../services/serverTime'
 const router = useRouter()
@@ -448,6 +449,7 @@ function focusPostButton() {
 
 // --- Methods ---
 function adjustDate(days) {
+  if (!canModifyDate()) return
   const d = new Date(postingDate.value)
   d.setDate(d.getDate() + days)
   postingDate.value = toLocalISO(d)

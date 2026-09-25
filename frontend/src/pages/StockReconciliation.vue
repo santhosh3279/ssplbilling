@@ -84,9 +84,9 @@
             <div class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap ml-auto">
               <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Posting Date</label>
               <div class="flex items-center gap-1">
-                <button @click="changeDate(-1)" :disabled="isReadOnly" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] leading-none flex items-center disabled:opacity-30">&larr;</button>
+                <button v-if="canModifyDate()" @click="changeDate(-1)" :disabled="isReadOnly" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] leading-none flex items-center disabled:opacity-30">&larr;</button>
                 <div class="text-3xl text-[var(--color-text)] tabular-nums">{{ formatDate(entryDate) }}</div>
-                <button @click="changeDate(1)" :disabled="isReadOnly" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] leading-none flex items-center disabled:opacity-30">&rarr;</button>
+                <button v-if="canModifyDate()" @click="changeDate(1)" :disabled="isReadOnly" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] leading-none flex items-center disabled:opacity-30">&rarr;</button>
               </div>
             </div>
           </div>
@@ -242,6 +242,7 @@ import ItemSearch from '../components/ItemSearch.vue'
 import Stock_Template from '../components/Stock_Template.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { useItemCache } from '../services/itemCache.js'
+import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, toLocalISO } from '../services/serverTime'
@@ -334,6 +335,7 @@ function changeSidebarDate(days) {
 }
 
 function changeDate(dir) {
+  if (!canModifyDate()) return
   const d = new Date(entryDate.value)
   d.setDate(d.getDate() + dir)
   entryDate.value = toLocalISO(d)

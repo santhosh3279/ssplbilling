@@ -839,7 +839,7 @@ import { useShortcuts } from '../services/shortcutManager'
 import { session } from '../session'
 import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
-import { canAccessTile } from '../composables/usePermission'
+import { canAccessTile, canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, toLocalISO } from '../services/serverTime'
@@ -1064,8 +1064,8 @@ const saveButtonText = computed(() => {
 })
 
 function handleDocDateChange(days) {
-  if (session.user.value !== 'Administrator') {
-    alert('Date change is only allowed for Administrator')
+  if (!canModifyDate()) {
+    alert('Date change is not allowed')
     return
   }
   const d = new Date(invoiceDate.value)

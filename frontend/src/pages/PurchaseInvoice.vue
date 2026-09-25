@@ -291,10 +291,10 @@
             <div v-if="invoiceDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6">
               <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Bill Date</label>
               <div class="flex items-center gap-1">
-                <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
+                <button v-if="canModifyDate()" @click="handleDocDateChange(-1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
                 <div class="text-4xl font-bold text-[var(--color-text)] tabular-nums">{{ formatDateShort(invoiceDate) }}</div>
-                <DatePickerButton v-model="invoiceDate" label="Choose document date" :disabled="isReadOnly" />
-                <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+                <DatePickerButton v-if="canModifyDate()" v-model="invoiceDate" label="Choose document date" :disabled="isReadOnly" />
+                <button v-if="canModifyDate()" @click="handleDocDateChange(1)" class="rounded p-0.5 text-4xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
               </div>
             </div>
           </div>
@@ -936,6 +936,7 @@ import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
 import { patchLedgerInCache } from '../services/ledgerCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice, getFloatPrecision } from '../encryption.js'
+import { canModifyDate } from '../composables/usePermission.js'
 
 const precision = getFloatPrecision()
 function getDiscPrecision(val) {
@@ -1253,6 +1254,7 @@ const saveButtonText = computed(() => {
 })
 
 function handleDocDateChange(days) {
+  if (!canModifyDate()) return
   const d = new Date(invoiceDate.value)
   d.setDate(d.getDate() + days)
   invoiceDate.value = toLocalISO(d)

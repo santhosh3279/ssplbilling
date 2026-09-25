@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { createResource } from 'frappe-ui'
 import { destroyTabSession } from './services/tabSession'
 import { primeServerTime } from './services/serverTime'
-import { frappeGet } from './api.js'
+import { frappeGet, fetchAllowedTiles } from './api.js'
 
 const isLoggedIn = ref(false)
 const user = ref(null)
@@ -10,6 +10,24 @@ const fullName = ref('')
 const isWebsiteUser = ref(false)
 const isSystemUser = ref(false)
 let initialized = false
+
+export async function refreshTilePermissions(targetUser) {
+  try {
+    const res = await fetchAllowedTiles(targetUser)
+    if (res) {
+      const allowDateMod = res.allow_date_modification ? '1' : '0'
+      localStorage.setItem('wb-allow-date-modification', allowDateMod)
+      localStorage.setItem('wb-allowed-tiles-v3', JSON.stringify({
+        user: targetUser || user.value,
+        tiles: res.configured ? res.tiles : null,
+        allow_date_modification: Boolean(res.allow_date_modification),
+        ts: Date.now(),
+      }))
+    }
+  } catch (e) {
+    console.warn('[session] Could not refresh tile permissions:', e)
+  }
+}
 
 const userResource = createResource({
   url: '/api/method/frappe.auth.get_logged_user',
@@ -65,7 +83,14 @@ async function init() {
   if (isLoggedIn.value) {
     // primeServerTime must resolve before any page's setup() runs — every
     // transaction date is seeded from the server clock, not the workstation.
-    await Promise.all([userInfoResource.fetch(), refreshCsrfToken(), primeServerTime()])
+    const inheritedUser = localStorage.getItem('wb-inherited-user')
+    const effectiveUser = inheritedUser && inheritedUser !== user.value ? inheritedUser : user.value
+    await Promise.all([
+      userInfoResource.fetch(),
+      refreshCsrfToken(),
+      primeServerTime(),
+      refreshTilePermissions(effectiveUser),
+    ])
   }
 }
 
@@ -99,6 +124,8 @@ async function login(usr, pwd) {
 async function logout() {
   await destroyTabSession()
   await fetch('/api/method/logout', { method: 'POST' })
+  localStorage.removeItem('wb-allow-date-modification')
+  localStorage.removeItem('wb-allowed-tiles-v3')
   isLoggedIn.value = false
   user.value = null
   fullName.value = ''

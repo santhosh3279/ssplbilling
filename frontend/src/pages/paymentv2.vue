@@ -38,6 +38,7 @@
         <span class="text-[10px] uppercase tracking-widest text-[var(--color-text-muted)]">Posting Date</span>
         <div class="flex items-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] transition-colors">
           <button
+            v-if="canModifyDate()"
             @click="adjustDate(-1)"
             class="rounded-l-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors focus:bg-black/10"
           >
@@ -45,9 +46,10 @@
           </button>
           <div class="relative min-w-[110px] px-3 py-1.5 text-center">
             <span class="text-2xl">{{ displayDate }}</span>
-            <input type="date" v-model="postingDate" class="absolute inset-0 opacity-0 cursor-pointer focus:outline-none" />
+            <input v-if="canModifyDate()" type="date" v-model="postingDate" class="absolute inset-0 opacity-0 cursor-pointer focus:outline-none" />
           </div>
           <button
+            v-if="canModifyDate()"
             @click="adjustDate(1)"
             class="rounded-r-lg p-2 text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)] hover:text-[var(--color-text)] transition-colors focus:bg-black/10"
           >
@@ -473,6 +475,7 @@ import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 import Warning from '../components/Warning.vue'
 import { useShortcuts } from '../services/shortcutManager'
 import { paymentShortcuts } from '../shortcuts/paymentShortcuts'
+import { canModifyDate } from '../composables/usePermission.js'
 
 import { serverToday, toLocalISO } from '../services/serverTime'
 const router = useRouter()
@@ -614,6 +617,7 @@ const displayDate = computed(() => {
 })
 
 function adjustDate(days) {
+  if (!canModifyDate()) return
   const d = new Date(postingDate.value)
   d.setDate(d.getDate() + days)
   postingDate.value = toLocalISO(d)
@@ -1091,7 +1095,7 @@ async function handleSubmit() {
         amount: mopRow.amount,
         mode_of_payment: mopRow.type === 'Bank' ? 'Bank' : 'Cash',
         account: payloadAccount,
-        posting_date: postingDate.value,
+        posting_date: canModifyDate() ? postingDate.value : serverToday(),
         reference_no: form.reference_no,
         reference_date: form.reference_date,
         company: localStorage.getItem('wb-company') || null,

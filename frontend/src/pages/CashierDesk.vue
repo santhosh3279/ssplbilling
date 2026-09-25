@@ -502,6 +502,7 @@
                   "
                 >
                   <button 
+                    v-if="canModifyDate()"
                     type="button"
                     @click="adjustPostingDate(-1)" 
                     class="rounded-lg p-[4px] transition-colors shrink-0"
@@ -518,11 +519,16 @@
                       ref="postingDateInput"
                       type="date"
                       v-model="postingDate"
+                      :disabled="!canModifyDate()"
                       @click="openPostingDateCalendar"
-                      class="bg-transparent border-none text-2xl font-black focus:ring-0 p-0 text-center cursor-pointer transition-all duration-300 w-[165px]"
-                      :class="postingDate !== getTodayIST() ? 'text-white' : 'text-[var(--color-text)]'"
+                      class="bg-transparent border-none text-2xl font-black focus:ring-0 p-0 text-center transition-all duration-300 w-[165px]"
+                      :class="[
+                        postingDate !== getTodayIST() ? 'text-white' : 'text-[var(--color-text)]',
+                        !canModifyDate() ? 'cursor-default pointer-events-none' : 'cursor-pointer'
+                      ]"
                     />
                     <button
+                      v-if="canModifyDate()"
                       type="button"
                       @click="openPostingDateCalendar"
                       class="rounded-lg p-[5px] transition-colors shrink-0"
@@ -541,6 +547,7 @@
                     </button>
                   </div>
                   <button 
+                    v-if="canModifyDate()"
                     type="button"
                     @click="adjustPostingDate(1)" 
                     class="rounded-lg p-[4px] transition-colors shrink-0"
@@ -834,7 +841,7 @@ import CashierEntry from '../components/CashierEntry.vue'
 import SalesInvoice from './SalesInvoice.vue'
 import BillMirrorCreator from '../components/BillMirrorCreator.vue'
 import Warning from '../components/Warning.vue'
-import { canAccessTile } from '../composables/usePermission'
+import { canAccessTile, canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
 import { serverToday } from '../services/serverTime'
@@ -1233,12 +1240,14 @@ function adjustDate(days) {
 }
 
 function adjustPostingDate(days) {
+  if (!canModifyDate()) return
   const d = new Date(postingDate.value)
   d.setDate(d.getDate() + days)
   postingDate.value = d.toISOString().slice(0, 10)
 }
 
 function openPostingDateCalendar() {
+  if (!canModifyDate()) return
   if (!postingDateInput.value) return
   try {
     if (typeof postingDateInput.value.showPicker === 'function') {
@@ -1512,7 +1521,7 @@ async function processPayment() {
       credit_amount: credit,
       is_credit: isCredit.value,
       due_date: finalDueDate,
-      posting_date: postingDate.value,
+      posting_date: canModifyDate() ? postingDate.value : getTodayIST(),
       card_ref_no: cardRefNo.value,
       cash_account: seriesAccounts.value.cash,
       upi_account: seriesAccounts.value.upi,
@@ -1921,7 +1930,15 @@ function handleKeydown(e) {
 
 // ==================== WATCHERS ====================
 watch(filterDate, (newVal) => {
-  postingDate.value = newVal
+  if (canModifyDate()) {
+    postingDate.value = newVal
+  }
+})
+
+watch(postingDate, (newVal) => {
+  if (!canModifyDate() && newVal !== getTodayIST()) {
+    postingDate.value = getTodayIST()
+  }
 })
 
 // ==================== LIFECYCLE ====================
@@ -1932,7 +1949,9 @@ const handleSeriesClickAway = (e) => {
 }
 
 const handleGlobalDateFocus = () => {
-  postingDateInput.value?.focus()
+  if (canModifyDate()) {
+    postingDateInput.value?.focus()
+  }
 }
 
 onMounted(() => {

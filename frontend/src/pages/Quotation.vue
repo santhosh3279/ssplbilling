@@ -615,6 +615,7 @@ import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useShortcuts } from '../services/shortcutManager'
 import { quotationShortcuts } from '../shortcuts/quotationShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
+import { canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, toLocalISO } from '../services/serverTime'
@@ -761,6 +762,7 @@ const saveButtonText = computed(() => {
 })
 
 function handleDocDateChange(days) {
+  if (!canModifyDate()) return
   const d = new Date(invoiceDate.value)
   d.setDate(d.getDate() + days)
   invoiceDate.value = toLocalISO(d)

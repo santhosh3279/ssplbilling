@@ -88,10 +88,10 @@
             <div class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap ml-auto">
               <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Date</label>
               <div class="flex items-center gap-1">
-                <button @click="handleDocDateChange(-1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] leading-none flex items-center">&larr;</button>
+                <button v-if="canModifyDate()" @click="handleDocDateChange(-1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] leading-none flex items-center">&larr;</button>
                 <div class="text-3xl text-[var(--color-text)] tabular-nums">{{ formatDate(transferDate) }}</div>
-                <DatePickerButton v-model="transferDate" label="Choose document date" :disabled="isReadOnly" />
-                <button @click="handleDocDateChange(1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] leading-none flex items-center">&rarr;</button>
+                <DatePickerButton v-if="canModifyDate()" v-model="transferDate" label="Choose document date" :disabled="isReadOnly" />
+                <button v-if="canModifyDate()" @click="handleDocDateChange(1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] leading-none flex items-center">&rarr;</button>
               </div>
             </div>
           </div>
@@ -322,6 +322,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import { frappePost } from '../api'
 import { useItemCache } from '../services/itemCache.js'
+import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, toLocalISO } from '../services/serverTime'
@@ -867,6 +868,7 @@ function handleSidebarDateChange(dir) {
 }
 
 function handleDocDateChange(dir) {
+  if (!canModifyDate()) return
   const d = new Date(transferDate.value)
   d.setDate(d.getDate() + dir)
   transferDate.value = toLocalISO(d)

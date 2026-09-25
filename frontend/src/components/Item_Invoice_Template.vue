@@ -312,10 +312,10 @@
               <div v-if="docDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap ml-auto">
                 <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Date</label>
                 <div class="flex items-center gap-1">
-                  <button @click="$emit('doc-date-change', -1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
+                  <button v-if="canModifyDate()" @click="$emit('doc-date-change', -1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
                   <div class="text-3xl text-[var(--color-text)] tabular-nums">{{ formatDate(docDate) }}</div>
-                  <DatePickerButton :model-value="docDate" :disabled="isReadOnly" label="Choose document date" @update:model-value="value => { if (value) $emit('doc-date-change', Math.round((Date.parse(value) - Date.parse(docDate)) / 86400000)) }" />
-                  <button @click="$emit('doc-date-change', 1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+                  <DatePickerButton v-if="canModifyDate()" :model-value="docDate" :disabled="isReadOnly" label="Choose document date" @update:model-value="value => { if (value) $emit('doc-date-change', Math.round((Date.parse(value) - Date.parse(docDate)) / 86400000)) }" />
+                  <button v-if="canModifyDate()" @click="$emit('doc-date-change', 1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
                 </div>
               </div>
             </div>
@@ -658,6 +658,7 @@ import { frappeGet } from '../api.js'
 import { patchLedgerInCache } from '../services/ledgerCache.js'
 
 import { formatDMY } from '../utils/date'
+import { canModifyDate } from '../composables/usePermission'
 const inheritedUser = computed(() => localStorage.getItem('wb-inherited-user'))
 
 function preventArrowIncrement(e) {

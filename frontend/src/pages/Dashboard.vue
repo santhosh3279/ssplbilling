@@ -939,6 +939,9 @@ async function loadAllowedTiles(user = null, force = false) {
   const cached = readTileCache()
   if (!force && cached && cached.user === cacheUser && (Date.now() - cached.ts) < TILE_CACHE_TTL) {
     allowedTileIds.value = cached.tiles
+    if (typeof cached.allow_date_modification !== 'undefined') {
+      localStorage.setItem('wb-allow-date-modification', cached.allow_date_modification ? '1' : '0')
+    }
     refreshDraftCounts()
     return
   }
@@ -946,7 +949,14 @@ async function loadAllowedTiles(user = null, force = false) {
     // Resolve for the inherited user; server falls back to the logged-in user
     const res = await fetchAllowedTiles(user)
     allowedTileIds.value = res?.configured ? res.tiles : null
-    localStorage.setItem(TILE_CACHE_KEY, JSON.stringify({ user: cacheUser, tiles: allowedTileIds.value, ts: Date.now() }))
+    const allowDateMod = res?.allow_date_modification ? '1' : '0'
+    localStorage.setItem('wb-allow-date-modification', allowDateMod)
+    localStorage.setItem(TILE_CACHE_KEY, JSON.stringify({
+      user: cacheUser,
+      tiles: allowedTileIds.value,
+      allow_date_modification: Boolean(res?.allow_date_modification),
+      ts: Date.now(),
+    }))
   } catch (e) {
     console.warn('[Dashboard] fetchAllowedTiles failed:', e)
   }

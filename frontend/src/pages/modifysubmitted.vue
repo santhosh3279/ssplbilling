@@ -233,6 +233,7 @@
                   <div class="flex items-center gap-2 mt-2">
                     <!-- Left Arrow (Previous Day) -->
                     <button
+                      v-if="canModifyDate()"
                       type="button"
                       @click="adjustDate(-1)"
                       class="h-12 w-12 shrink-0 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-info)] hover:bg-[var(--color-surface)] active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-sm"
@@ -248,13 +249,15 @@
                       <input
                         ref="newDateInputRef"
                         v-model="newBillDate"
+                        :disabled="!canModifyDate()"
                         type="date"
-                        class="w-full h-12 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-lg font-mono font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/20 transition-all cursor-pointer shadow-inner"
+                        class="w-full h-12 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-lg font-mono font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/20 transition-all cursor-pointer shadow-inner disabled:cursor-not-allowed disabled:opacity-60"
                       />
                     </div>
 
                     <!-- Right Arrow (Next Day) -->
                     <button
+                      v-if="canModifyDate()"
                       type="button"
                       @click="adjustDate(1)"
                       class="h-12 w-12 shrink-0 rounded-xl bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text)] hover:border-[var(--color-info)] hover:bg-[var(--color-surface)] active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-sm"
@@ -267,7 +270,7 @@
                   </div>
 
                   <!-- Quick date preset buttons -->
-                  <div class="flex items-center gap-2 mt-3">
+                  <div v-if="canModifyDate()" class="flex items-center gap-2 mt-3">
                     <button
                       type="button"
                       @click="setPreset('today')"
@@ -374,6 +377,7 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchSubmittedInvoice, modifySubmittedBillDate } from '../api'
+import { canModifyDate } from '../composables/usePermission.js'
 
 const router = useRouter()
 
@@ -474,6 +478,7 @@ async function handleFetch() {
 }
 
 function adjustDate(days) {
+  if (!canModifyDate()) return
   if (!newBillDate.value) return
   const [y, m, d] = newBillDate.value.split('-').map(Number)
   const dt = new Date(y, m - 1, d)
@@ -482,6 +487,7 @@ function adjustDate(days) {
 }
 
 function setPreset(preset) {
+  if (!canModifyDate()) return
   const now = new Date()
   if (preset === 'today') {
     newBillDate.value = toLocalISO(now)
@@ -509,6 +515,7 @@ function clearAll() {
 }
 
 async function handleChangeDate() {
+  if (!canModifyDate()) return
   if (!invoice.value || !isDateChanged.value || loadingUpdate.value) return
 
   loadingUpdate.value = true

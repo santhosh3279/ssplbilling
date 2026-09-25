@@ -818,20 +818,31 @@ def get_allowed_tiles(user=None):
 			)
 
 	if not access_names:
-		return {"configured": False, "tiles": None}
+		return {
+			"configured": False,
+			"tiles": None,
+			"allow_date_modification": target_user in ["Administrator", "admin"],
+		}
 
 	# Preserve the child-table row order from the doctype (first occurrence wins
 	# when multiple group records grant the same tile)
 	tiles = []
 	seen = set()
+	allow_date_modification = False
 	for name in access_names:
 		doc = frappe.get_cached_doc("SSPL Dashboard Tile Access", name)
+		if doc.get("allow_date_modification"):
+			allow_date_modification = True
 		for row in doc.tiles:
 			if row.tile and row.tile not in seen:
 				seen.add(row.tile)
 				tiles.append(row.tile)
 
-	return {"configured": True, "tiles": tiles}
+	return {
+		"configured": True,
+		"tiles": tiles,
+		"allow_date_modification": allow_date_modification,
+	}
 
 
 @frappe.whitelist(allow_guest=True)

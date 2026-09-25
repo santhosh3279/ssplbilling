@@ -603,6 +603,7 @@ import { clearQuickQtyMap } from '../services/quickQty.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
+import { canModifyDate } from '../composables/usePermission.js'
 import { useItemCache, lookupItemInCache, patchItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice, getFloatPrecision } from '../encryption.js'
@@ -726,6 +727,7 @@ const saveButtonText = computed(() => {
 })
 
 function handleDocDateChange(days) {
+  if (!canModifyDate()) return
   const d = new Date(orderDate.value)
   d.setDate(d.getDate() + days)
   orderDate.value = toLocalISO(d)
