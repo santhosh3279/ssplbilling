@@ -462,9 +462,10 @@
 
         <!-- Modal actions -->
         <div class="px-6 py-4 border-t border-[var(--color-border)] flex items-center justify-between shrink-0">
-          <span class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
-            Reconciles ledger by ledger; a failing ledger is reported and the rest still post
-          </span>
+          <label class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] cursor-pointer">
+            <input v-model="autoReconcileEverything" type="checkbox" class="h-4 w-4 accent-[var(--color-highlight)]" />
+            Reconcile everything in this preview
+          </label>
           <div class="flex items-center gap-3">
             <button
               @click="closeAutoModal"
@@ -474,7 +475,7 @@
             </button>
             <button
               @click="proceedAutoReconcile"
-              :disabled="!autoPreview.length || autoRunning || autoLoading"
+              :disabled="!autoPreview.length || !autoReconcileEverything || autoRunning || autoLoading"
               class="rounded-xl bg-[var(--color-success)] px-8 py-2.5 text-[11px] font-black uppercase tracking-widest text-white hover:brightness-105 active:scale-95 disabled:opacity-30 transition-all shadow-md"
             >
               {{ autoRunning ? 'Reconciling…' : 'Proceed' }}
@@ -812,6 +813,7 @@ const autoPreview = ref([])
 const autoSkipped = ref([])
 const autoTotal = ref(0)
 const autoPartyCount = ref(0)
+const autoReconcileEverything = ref(false)
 
 // Proposals grouped per ledger, so the dialog reads the way the landing list does
 const autoGroups = computed(() => {
@@ -838,6 +840,7 @@ function shortType(type) {
 async function openAutoPreview() {
   showAutoModal.value = true
   autoLoading.value = true
+  autoReconcileEverything.value = false
   autoPreview.value = []
   autoSkipped.value = []
   autoTotal.value = 0
@@ -863,7 +866,7 @@ function closeAutoModal() {
 
 // Posts exactly what the preview listed — no re-matching between preview and run
 async function proceedAutoReconcile() {
-  if (!autoPreview.value.length || autoRunning.value) return
+  if (!autoPreview.value.length || !autoReconcileEverything.value || autoRunning.value) return
   autoRunning.value = true
   try {
     const res = await frappePost('ssplbilling.api.reconcile_api.run_auto_reconcile', {
