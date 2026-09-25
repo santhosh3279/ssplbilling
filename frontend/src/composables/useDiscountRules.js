@@ -180,13 +180,20 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
 
     // ── Custom Logic ────────────────────────────────────────────────────────
     if (rule.discount_type === 'Custom Logic') {
+      const tierQty = r => (r.min_quantity || 0) +
+        (rule.custom_logic_type === 'Product' ? (r.nos || 0) : 0)
+      const totalQty = row._total_qty ?? row.qty
       const tier = (rule.custom_logic_rows || [])
-        .filter(r => row.qty >= (r.min_quantity || 0))
+        .filter(r => totalQty >= tierQty(r))
         .sort((a, b) => b.min_quantity - a.min_quantity)[0]
       if (!tier) return { freeRows: [], discount: null }
       if (rule.custom_logic_type === 'Product') {
         const freeQty = tier.nos || 0
         if (freeQty <= 0) return { freeRows: [], discount: null }
+        const totalQty = row._total_qty || 0
+        if (totalQty < freeQty) return { freeRows: [], discount: null }
+        row.qty = totalQty - freeQty
+        row._paid_qty = row.qty
         return { freeRows: [{ ...freeBase, qty: freeQty }], discount: null }
       }
       if (rule.custom_logic_type === 'Percentage') {

@@ -577,31 +577,33 @@
     </Item_Invoice_Template>
 
     <!-- Discount Rules Overlay Badge -->
-    <div v-if="activeItemCode && activeItemDiscountRules.length" class="fixed top-3 right-6 z-[120] flex items-center gap-5 bg-[var(--color-focus)]/30 backdrop-blur-md text-[var(--color-text)] border border-[var(--color-focus)]/40 rounded-3xl px-7 py-4.5 font-mono shrink-0 font-bold max-w-[600px] shadow-2xl">
-      <span class="text-6xl leading-none">🏷️</span>
-      <div class="flex flex-col text-left leading-tight">
+    <div v-if="activeItemCode && activeItemDiscountRules.length" class="fixed top-3 right-6 z-[120] flex items-start gap-4 bg-[var(--color-focus)]/30 backdrop-blur-md text-[var(--color-text)] border border-[var(--color-focus)]/40 rounded-3xl px-6 py-4 font-mono font-bold max-w-[600px] max-h-[55vh] shadow-2xl">
+      <span class="text-5xl leading-none">🏷️</span>
+      <div class="flex min-w-0 flex-col text-left leading-tight overflow-y-auto">
         <span class="text-lg uppercase tracking-wider text-[var(--color-text-muted)] font-sans font-black">Active Offer</span>
-        <span class="truncate font-sans font-black text-4xl text-[var(--color-text)]">
-          {{ activeItemDiscountRules[0].rule_name }}
-        </span>
-        <span class="text-xl text-[var(--color-text-muted)] font-sans mt-1.5 font-normal">
-          <span v-if="activeItemDiscountRules[0].discount_type === 'Percentage Discount'">
-            {{ activeItemDiscountRules[0].percentage_discount }}% Off (Min Qty: {{ activeItemDiscountRules[0].min_quantity }})
+        <div v-for="(rule, index) in activeItemDiscountRules" :key="rule.name || rule.rule_name || index" class="mt-2 border-t border-[var(--color-focus)]/25 pt-2">
+          <span class="block truncate font-sans font-black text-2xl text-[var(--color-text)]">
+            {{ rule.rule_name || rule.name }}
           </span>
-          <span v-else-if="activeItemDiscountRules[0].discount_type === 'Product Discount'">
-            Buy {{ activeItemDiscountRules[0].min_quantity }} Get {{ activeItemDiscountRules[0].free_quantity }} Free
+          <span class="block text-lg text-[var(--color-text-muted)] font-sans mt-1 font-normal">
+            <template v-if="rule.discount_type === 'Percentage Discount'">
+              {{ rule.custom_logic_rows?.length ? rule.custom_logic_rows.map(tier => `${tier.min_quantity}+ → ${tier.percentage || 0}% off`).join(' · ') : `${rule.percentage_discount || 0}% off (Min Qty: ${rule.min_quantity || 0})` }}
+            </template>
+            <template v-else-if="rule.discount_type === 'Product Discount'">
+              Buy {{ rule.min_quantity }} Get {{ rule.free_quantity }} Free
+            </template>
+            <template v-else-if="rule.discount_type === 'X to Y product discount'">
+              X to Y Offer Active
+            </template>
+            <template v-else-if="rule.discount_type === 'Custom Logic' && rule.custom_logic_type === 'Product'">
+              {{ (rule.custom_logic_rows || []).map(tier => `${tier.min_quantity}+${tier.nos} → ${tier.min_quantity} + ${tier.nos} free`).join(' · ') || 'Tiered offer' }}
+            </template>
+            <template v-else-if="rule.discount_type === 'Custom Logic' && rule.custom_logic_type === 'Percentage'">
+              {{ (rule.custom_logic_rows || []).map(tier => `${tier.min_quantity}+ → ${tier.percentage || 0}% off`).join(' · ') || 'Tiered discount' }}
+            </template>
           </span>
-          <span v-else-if="activeItemDiscountRules[0].discount_type === 'X to Y product discount'">
-            X to Y Offer Active
-          </span>
-          <span v-else-if="activeItemDiscountRules[0].discount_type === 'Custom Logic'">
-            Tiered Offer Active
-          </span>
-        </span>
+        </div>
       </div>
-      <span v-if="activeItemDiscountRules.length > 1" class="text-xl bg-[var(--color-midlight)]/45 text-[var(--color-text)] rounded-lg px-2 py-1 ml-1.5 font-sans shrink-0 font-extrabold">
-        +{{ activeItemDiscountRules.length - 1 }}
-      </span>
     </div>
 
     <QuickItemSearch
