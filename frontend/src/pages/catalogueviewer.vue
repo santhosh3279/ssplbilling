@@ -414,6 +414,9 @@ function openCatalogue(pageaddress) {
 async function logout() {
   await session.logout()
   setCartUser(null)
+  showLogin.value = false
+  showCustomerSection.value = true
+  searchResults.value = []
 }
 
 async function handleWebsiteLogin() {

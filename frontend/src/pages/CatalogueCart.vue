@@ -6,7 +6,16 @@
           <RouterLink to="/catalogueviewer" class="text-sm text-indigo-500 hover:underline">← Catalogues</RouterLink>
           <h1 class="text-3xl font-bold">Your cart</h1>
         </div>
-        <span v-if="isLoggedIn" class="text-sm">{{ session.fullName.value || session.user.value }}</span>
+        <div v-if="isLoggedIn" class="flex items-center gap-3">
+          <span class="text-sm font-semibold">{{ session.fullName.value || session.user.value }}</span>
+          <button
+            type="button"
+            @click="handleLogout"
+            class="text-xs font-bold text-indigo-500 hover:text-indigo-700 hover:underline"
+          >
+            Logout
+          </button>
+        </div>
       </header>
 
       <CatalogueOrderParty />
@@ -66,7 +75,7 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { frappePost } from '../api.js'
 import { session } from '../session.js'
 import CatalogueOrderParty from '../components/CatalogueOrderParty.vue'
@@ -74,7 +83,14 @@ import { orderContext, orderParams } from '../services/catalogueOrderContext.js'
 import { cartItems, clearCart, setCartUser, setQuantity } from '../services/catalogueCart.js'
 import { addDiscountQuantities } from '../services/discount-cart.js'
 
+const router = useRouter()
 const isLoggedIn = session.isLoggedIn
+
+async function handleLogout() {
+  await session.logout()
+  setCartUser(null)
+  router.replace('/catalogueviewer')
+}
 const loading = ref(true)
 const error = ref('')
 const preview = ref(null)

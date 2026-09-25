@@ -593,6 +593,7 @@ async function logout() {
   await session.logout()
   setCartUser(null)
   showLogin.value = false
+  await loadOffer()
 }
 
 function minimumOrderQuantity(item) {

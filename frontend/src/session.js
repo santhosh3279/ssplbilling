@@ -123,9 +123,49 @@ async function login(usr, pwd) {
 
 async function logout() {
   await destroyTabSession()
-  await fetch('/api/method/logout', { method: 'POST' })
+
+  const headers = {
+    'Content-Type': 'application/json',
+  }
+  const token = typeof window !== 'undefined' ? window.csrf_token : null
+  if (token) headers['X-Frappe-CSRF-Token'] = token
+
+  try {
+    await fetch('/api/method/ssplbilling.api.auth_api.logout', {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+    })
+  } catch (e) {
+    console.warn('[session] logout via auth_api failed:', e)
+  }
+
+  try {
+    await fetch('/api/method/logout', {
+      method: 'POST',
+      headers,
+      credentials: 'include',
+    })
+  } catch (e) {
+    console.warn('[session] standard logout failed:', e)
+  }
+
+  // Clear non-HttpOnly session cookies in browser
+  const cookies = ['sid', 'user_id', 'full_name', 'system_user', 'user_image', 'user_lang']
+  cookies.forEach((c) => {
+    document.cookie = `${c}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; Max-Age=0`
+  })
+
+  // Reset resources
+  if (typeof userResource.reset === 'function') userResource.reset()
+  if (typeof userInfoResource.reset === 'function') userInfoResource.reset()
+
+  // Clear tokens & localStorage
+  if (typeof window !== 'undefined') window.csrf_token = null
   localStorage.removeItem('wb-allow-date-modification')
   localStorage.removeItem('wb-allowed-tiles-v3')
+  localStorage.removeItem('wb-inherited-user')
+
   isLoggedIn.value = false
   user.value = null
   fullName.value = ''
