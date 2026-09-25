@@ -36,7 +36,7 @@
         <span class="text-[11px]">🔍</span>
       </button>
 
-      <RouterLink v-if="catalogueUser" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
+      <RouterLink v-if="showCart" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
       <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
     </div>
     <button
@@ -325,8 +325,8 @@
         </header>
 
         <!-- Items Grid Section -->
-        <main class="flex-1 w-full px-6 py-10 transition-all duration-300" :class="catalogueUser && cartCount ? 'lg:pr-[21rem]' : ''">
-          <div class="grid gap-6 w-full transition-all duration-300" :class="[gridClass, containerClass, catalogueUser && cartCount ? 'lg:ml-0 lg:mr-auto' : 'mx-auto']">
+        <main class="flex-1 w-full px-6 py-10 transition-all duration-300" :class="showCart && cartCount ? 'lg:pr-[21rem]' : ''">
+          <div class="grid gap-6 w-full transition-all duration-300" :class="[gridClass, containerClass, showCart && cartCount ? 'lg:ml-0 lg:mr-auto' : 'mx-auto']">
             <div
               v-for="item in offer.items"
               :key="item.itemcode"
@@ -458,7 +458,7 @@
       </div>
     </template>
 
-    <CatalogueCartPanel v-if="catalogueUser" />
+    <CatalogueCartPanel v-if="showCart" />
 
     <!-- Footer -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 py-6 px-6 text-center text-[10px] text-[var(--color-text-muted)] shrink-0">
@@ -568,6 +568,7 @@ const loginError = ref('')
 const loginLoading = ref(false)
 const websiteUser = session.isWebsiteUser
 const catalogueUser = computed(() => websiteUser.value || session.isSystemUser.value)
+const showCart = computed(() => catalogueUser.value && (!session.isSystemUser.value || !!orderContext.value.customer))
 const isLoggedIn = session.isLoggedIn
 const userName = computed(() => session.fullName.value || session.user.value)
 
@@ -1330,4 +1331,3 @@ onBeforeUnmount(() => {
 <style scoped>
 /* Core stylesheet variables integrated */
 </style>
-

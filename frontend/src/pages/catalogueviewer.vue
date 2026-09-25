@@ -39,7 +39,7 @@
           <span class="text-[11px]">🔍</span>
         </button>
 
-        <RouterLink v-if="catalogueUser" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
+        <RouterLink v-if="showCart" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
         <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
       </div>
       <button v-else type="button" @click="showLogin = true" class="absolute top-4 right-4 z-20 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg hover:bg-indigo-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">
@@ -88,7 +88,7 @@
       @close="showCustomerSection = false"
     />
     <!-- Main Content Area -->
-    <main class="flex-1 w-full px-6 py-12" :class="catalogueUser && cartCount ? 'lg:pr-[21rem]' : ''">
+    <main class="flex-1 w-full px-6 py-12" :class="showCart && cartCount ? 'lg:pr-[21rem]' : ''">
       <section class="mb-8 space-y-4" aria-label="Search catalogue items">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <label for="catalogue-item-search" class="block text-lg font-bold">
@@ -254,7 +254,7 @@
       </div>
     </main>
 
-    <CatalogueCartPanel v-if="catalogueUser" />
+    <CatalogueCartPanel v-if="showCart" />
 
     <!-- Footer -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 py-6 px-6 text-center text-[10px] text-[var(--color-text-muted)] shrink-0 mt-auto">
@@ -280,6 +280,7 @@ const router = useRouter()
 const isLoggedIn = session.isLoggedIn
 const isWebsiteUser = session.isWebsiteUser
 const catalogueUser = computed(() => isWebsiteUser.value || session.isSystemUser.value)
+const showCart = computed(() => catalogueUser.value && (!session.isSystemUser.value || !!orderContext.value.customer))
 const userName = computed(() => session.fullName.value || session.user.value)
 const showLogin = ref(false)
 const loginEmail = ref('')
