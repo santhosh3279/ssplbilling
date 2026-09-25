@@ -64,7 +64,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useShortcuts } from './services/shortcutManager';
 import { globalShortcuts } from './shortcuts/globalShortcuts';
 import Calculator from './components/Calculator.vue';
