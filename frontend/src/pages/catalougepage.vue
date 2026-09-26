@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white main-content-wrapper">
+  <div ref="catalogueRoot" class="h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white main-content-wrapper">
     <CatalogueOrderParty
       v-if="!isFullscreen && session.isSystemUser.value && showCustomerSection"
       class="mt-16"
@@ -47,7 +47,7 @@
     >
       Login
     </button>
-    <div v-if="showLogin" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" @click.self="showLogin = false">
+    <div data-remote-dialog v-if="showLogin" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" @click.self="showLogin = false">
       <form class="w-full max-w-sm space-y-4 rounded-xl bg-[var(--color-surface)] p-6 text-[var(--color-text)] shadow-xl" @submit.prevent="handleWebsiteLogin">
         <div class="flex items-center justify-between">
           <h2 class="text-lg font-bold">Login</h2>
@@ -328,8 +328,12 @@
         <main class="flex-1 w-full px-6 py-10 transition-all duration-300" :class="showCart && cartCount ? 'lg:pr-[21rem]' : ''">
           <div class="grid gap-6 w-full transition-all duration-300" :class="[gridClass, containerClass, showCart && cartCount ? 'lg:ml-0 lg:mr-auto' : 'mx-auto']">
             <div
-              v-for="item in offer.items"
+              v-for="(item, itemIndex) in offer.items"
               :key="item.itemcode"
+              tabindex="0"
+              role="group"
+              :aria-label="item.itemname"
+              :data-catalogue-item="itemIndex"
               class="group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
             >
               <!-- Offer banner above the item image -->
@@ -470,7 +474,7 @@
   </div>
 
   <!-- Export Options Modal -->
-  <div v-if="showExportModal" class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+  <div ref="exportDialog" data-remote-dialog v-if="showExportModal" class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
     <div class="relative w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-2xl space-y-6 text-[var(--color-text)] animate-in fade-in zoom-in duration-200">
       <!-- Title -->
       <div>
@@ -551,6 +555,7 @@
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import { handleCatalogueRemote } from '../services/catalogueRemote.js'
 import { encryptPrice, getCipherMap } from '../encryption.js'
 import { initFrappeSocket } from '../services/frappeSocket.js'
 import { session } from '../session.js'
@@ -702,6 +707,8 @@ const isPaused = ref(false)
 const slideshowTimeLeft = ref(0)
 let slideshowInterval = null
 
+const catalogueRoot = ref(null)
+const exportDialog = ref(null)
 const playButtonRef = ref(null)
 const goHomeButtonRef = ref(null)
 
@@ -932,11 +939,13 @@ function togglePause() {
 }
 
 function enterPresentationMode() {
+  const selectedItem = document.activeElement?.closest?.('[data-catalogue-item]')
+  const startIndex = Number(selectedItem?.getAttribute('data-catalogue-item')) || 0
   const docEl = document.documentElement
   if (docEl.requestFullscreen) {
     docEl.requestFullscreen().then(() => {
       isFullscreen.value = true
-      activeIndex.value = 0
+      activeIndex.value = startIndex
       isPaused.value = false
       startSlideshow()
     }).catch(err => {
@@ -944,7 +953,7 @@ function enterPresentationMode() {
     })
   } else {
     isFullscreen.value = true
-    activeIndex.value = 0
+    activeIndex.value = startIndex
     isPaused.value = false
     startSlideshow()
   }
@@ -1169,6 +1178,11 @@ watch(isFullscreen, (newVal) => {
 })
 
 function handleKeyDown(event) {
+  if (!isFullscreen.value && handleCatalogueRemote(
+    event, exportDialog.value || catalogueRoot.value,
+    catalogueRoot.value?.querySelector('[data-catalogue-item]') || playButtonRef.value
+  )) return
+  if (event.defaultPrevented || showExportModal.value) return
   // Do not run catalogue shortcuts while entering login details or using browser shortcuts.
   if (showLogin.value || event.ctrlKey || event.metaKey || event.altKey ||
       event.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return
@@ -1184,7 +1198,7 @@ function handleKeyDown(event) {
     } else if (key === 'ArrowLeft' || key === 'ArrowUp' || keyCode === 37 || keyCode === 38) {
       event.preventDefault()
       prevItem()
-    } else if (key === ' ' || key === 'Enter' || keyCode === 13 || keyCode === 32 || key === 'MediaPlayPause' || keyCode === 179) {
+    } else if (key === ' ' || key === 'Enter' || keyCode === 13 || keyCode === 23 || keyCode === 32 || key === 'Select' || key === 'OK' || key === 'Accept' || key === 'MediaPlayPause' || keyCode === 179) {
       event.preventDefault()
       togglePause()
     } else if (key === 'Escape' || key === 'Backspace' || keyCode === 27 || keyCode === 8 || keyCode === 10009 || keyCode === 461) {
@@ -1195,7 +1209,7 @@ function handleKeyDown(event) {
       loadOffer(true)
     }
   } else {
-    if (key === 'Enter' || keyCode === 13 || key === ' ' || keyCode === 32) {
+    if (key === 'Enter' || keyCode === 13 || keyCode === 23 || key === 'Select' || key === 'OK' || key === 'Accept' || key === ' ' || keyCode === 32) {
       const activeEl = document.activeElement
       const isInteractive = activeEl && (
         activeEl.tagName === 'BUTTON' ||
@@ -1208,14 +1222,6 @@ function handleKeyDown(event) {
       if (!isInteractive) {
         event.preventDefault()
         enterPresentationMode()
-      }
-    } else if (
-      key === 'ArrowRight' || key === 'ArrowLeft' || key === 'ArrowUp' || key === 'ArrowDown' ||
-      keyCode === 37 || keyCode === 38 || keyCode === 39 || keyCode === 40
-    ) {
-      if (!document.activeElement || document.activeElement === document.body) {
-        event.preventDefault()
-        focusPlayButton()
       }
     } else if (key === 'r' || key === 'R') {
       event.preventDefault()
@@ -1329,5 +1335,10 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+:deep(button:focus-visible), :deep(a:focus-visible), :deep(input:focus-visible), :deep(select:focus-visible), [data-catalogue-item]:focus {
+  outline: 3px solid var(--color-info, #818cf8);
+  outline-offset: 3px;
+}
+
 /* Core stylesheet variables integrated */
 </style>
