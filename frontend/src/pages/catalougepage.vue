@@ -93,7 +93,7 @@
     <!-- Main Content -->
     <template v-else>
       <!-- Presentation Mode Overlay (Fullscreen) -->
-      <div v-if="isFullscreen" class="fixed inset-0 z-50 bg-slate-950 text-white font-sans overflow-hidden select-none">
+      <div v-if="isFullscreen" class="fixed inset-0 z-50 bg-slate-50 text-slate-900 font-sans overflow-hidden select-none">
         
         <!-- Main Cards Area (Circular slider layout - now stays above footer controls) -->
         <main class="absolute inset-0 w-full h-screen flex items-center justify-center overflow-hidden">
@@ -102,15 +102,15 @@
               v-for="(item, idx) in offer.items"
               :key="item.itemcode"
               :style="getItemStyle(idx)"
-              class="absolute flex flex-col bg-slate-900/90 shadow-2xl hover:border-indigo-500/50 transition-all duration-300 p-6 border border-slate-800/80 rounded-2xl justify-between"
+              class="absolute flex flex-col bg-white shadow-2xl hover:border-indigo-500/50 transition-all duration-300 p-6 border border-slate-200 rounded-2xl justify-between"
             >
               <!-- Top side for offer -->
               <div class="shrink-0 flex items-start justify-start w-full mb-2">
-                <div v-if="item.discount_type && item.discount_desc" class="bg-slate-950/95 rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm w-full border" :class="offerBannerColors(item).border">
+                <div v-if="item.discount_type && item.discount_desc" class="bg-white rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm w-full border" :class="offerBannerColors(item).border">
                   <div class="text-white text-[9px] font-black uppercase px-2 py-0.5 text-left tracking-wider" :class="offerBannerColors(item).heading">
                     Active Offer
                   </div>
-                  <div class="p-1.5 flex flex-col gap-0.5 font-normal text-[20px] whitespace-normal break-words leading-tight" :class="offerBannerColors(item).text">
+                  <div class="p-1.5 flex flex-col gap-0.5 font-normal text-[20px] whitespace-normal break-words leading-tight text-slate-800">
                     <div 
                       v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
                       :key="lIdx"
@@ -133,24 +133,24 @@
                 <!-- Placeholder -->
                 <div
                   v-else
-                  class="w-full h-full min-h-[20vh] rounded-xl bg-gradient-to-br from-slate-950 to-slate-900 flex flex-col items-center justify-center text-center p-4 select-none border border-slate-800/30"
+                  class="w-full h-full min-h-[20vh] rounded-xl bg-gradient-to-br from-slate-100 to-white flex flex-col items-center justify-center text-center p-4 select-none border border-slate-200"
                 >
                   <div class="text-3xl mb-1">📦</div>
-                  <span class="text-[9px] font-bold uppercase tracking-wider text-slate-500">
+                  <span class="text-[9px] font-bold uppercase tracking-wider text-slate-600">
                     No Image Available
                   </span>
                 </div>
               </div>
 
               <!-- Bottom side for item details -->
-              <div class="shrink-0 space-y-2 pt-3 border-t border-slate-800/60">
+              <div class="shrink-0 space-y-2 pt-3 border-t border-slate-200">
                 <h3 
-                  class="font-normal text-slate-100 line-clamp-2 leading-tight"
+                  class="font-normal text-slate-900 line-clamp-2 leading-tight"
                   :class="presentationCols >= 6 ? 'text-[22px]' : 'text-2xl md:text-3xl'"
                 >
                   {{ item.itemname }}
                 </h3>
-                <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-emerald-400' : 'text-rose-400'">
+                <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-emerald-700' : 'text-rose-700'">
                   Available stock: {{ displayStock(item) }}
                 </p>
                 
@@ -158,22 +158,22 @@
                   v-if="presentationCols < 6 && item.barcode_prices && item.barcode_prices.length"
                   class="flex items-center justify-center pt-2 shrink-0"
                 >
-                  <div class="w-full max-w-xl bg-slate-950/40 rounded-xl p-3 border border-slate-800/40 shadow-inner">
+                  <div class="w-full max-w-xl bg-slate-50 rounded-xl p-3 border border-slate-200 shadow-inner">
                     <table class="w-full text-left text-2xl border-collapse">
 
-                      <tbody class="divide-y divide-slate-900/50 font-medium">
+                      <tbody class="divide-y divide-slate-200 font-medium">
                         <tr 
                           v-for="bp in item.barcode_prices" 
                           :key="bp.barcode"
                         >
-                          <td class="py-0.5 pr-2 font-mono text-slate-200 select-all font-bold">
+                          <td class="py-0.5 pr-2 font-mono text-slate-800 select-all font-bold">
                             <div>
-                              <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-500 font-normal text-lg font-sans">({{ bp.uom }})</span>
+                              <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-600 font-normal text-lg font-sans">({{ bp.uom }})</span>
                             </div>
                             <div
                               v-for="pl in offer.price_lists"
                               :key="pl.price_list"
-                              class="py-0.5 px-0.5 font-mono text-left text-indigo-400 font-bold tracking-widest"
+                              class="py-0.5 px-0.5 font-mono text-left text-indigo-700 font-bold tracking-widest"
                             >
                               <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
                                 {{ displayPrice(bp.prices[pl.price_list]) }} <span class="text-xs font-normal">{{ pl.price_list }}</span>
@@ -186,15 +186,15 @@
                     </table>
                   </div>
                 </div>
-                <div v-if="catalogueUser" class="flex items-center justify-center gap-2 text-white">
+                <div v-if="catalogueUser" class="flex items-center justify-center gap-2 text-slate-900">
                   <template v-if="item.order_rate != null">
                     <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Decrease ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-rose-300/40 bg-rose-400/20 text-black shadow-lg shadow-rose-950/20 backdrop-blur-md hover:bg-rose-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300" @click="adjustByMinimum(item, -1)">−{{ minimumOrderQuantity(item) }}</button>
                     <button type="button" :aria-label="`Decrease ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-rose-300/40 bg-rose-400/20 text-black shadow-lg shadow-rose-950/20 backdrop-blur-md hover:bg-rose-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300" @click="adjustQuantity(item, -1)">−</button>
                     <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" :aria-label="`Quantity for ${item.itemname}`" :value="getQuantity(pageaddress, item.itemcode)" class="w-14 select-text rounded-lg border border-white/40 bg-white/90 px-1 py-1 text-center font-bold text-black focus:outline-none focus:ring-2 focus:ring-indigo-400" @focus="$event.target.select()" @change="setItemQuantity(item, $event)" @keydown.enter="$event.target.blur()" />
-                    <button type="button" :aria-label="`Increase ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-emerald-300/40 bg-emerald-400/20 text-black shadow-lg shadow-emerald-950/20 backdrop-blur-md hover:bg-emerald-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300" @click="adjustQuantity(item, 1)">+</button>
-                    <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Increase ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-emerald-300/40 bg-emerald-400/20 text-black shadow-lg shadow-emerald-950/20 backdrop-blur-md hover:bg-emerald-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300" @click="adjustByMinimum(item, 1)">+{{ minimumOrderQuantity(item) }}</button>
+                    <button type="button" :aria-label="`Increase ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-emerald-300/40 bg-emerald-600/20 text-black shadow-lg shadow-emerald-950/20 backdrop-blur-md hover:bg-emerald-600/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300" @click="adjustQuantity(item, 1)">+</button>
+                    <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Increase ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-emerald-300/40 bg-emerald-600/20 text-black shadow-lg shadow-emerald-950/20 backdrop-blur-md hover:bg-emerald-600/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300" @click="adjustByMinimum(item, 1)">+{{ minimumOrderQuantity(item) }}</button>
                   </template>
-                  <span v-else class="text-sm text-slate-400">Price unavailable</span>
+                  <span v-else class="text-sm text-slate-600">Price unavailable</span>
                 </div>
               </div>
             </div>
@@ -203,24 +203,24 @@
 
         <!-- Header -->
         <header 
-          class="absolute top-0 left-0 right-0 z-40 px-8 py-5 flex items-center justify-between bg-gradient-to-b from-slate-950 via-slate-950/80 to-transparent transition-all duration-500 transform"
+          class="absolute top-0 left-0 right-0 z-40 px-8 py-5 flex items-center justify-between bg-gradient-to-b from-slate-50 via-slate-50/90 to-transparent transition-all duration-500 transform"
           :class="showControls ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'"
         >
           <div class="flex items-center gap-3">
-            <span class="inline-flex h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
-            <h1 class="text-lg font-bold tracking-tight text-slate-100">
+            <span class="inline-flex h-2 w-2 rounded-full bg-emerald-600 animate-ping"></span>
+            <h1 class="text-lg font-bold tracking-tight text-slate-900">
               {{ offer.heading }}
             </h1>
           </div>
           
           <!-- Slide Indicator -->
-          <div class="flex items-center gap-4 text-xs font-semibold text-slate-400">
-            <span class="bg-slate-900/90 px-3 py-1 rounded-full border border-slate-800 font-bold">
+          <div class="flex items-center gap-4 text-xs font-semibold text-slate-600">
+            <span class="bg-white px-3 py-1 rounded-full border border-slate-200 font-bold">
               Item {{ activeIndex + 1 }} / {{ offer.items?.length || 0 }}
             </span>
-            <span v-if="offer.timer > 0" class="text-xs uppercase tracking-wider bg-indigo-500/10 text-indigo-400 px-3 py-1 rounded-full border border-indigo-500/30 font-bold flex items-center gap-1.5 animate-pulse">
+            <span v-if="offer.timer > 0" class="text-xs uppercase tracking-wider bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-200 font-bold flex items-center gap-1.5 animate-pulse">
               <span>Next:</span>
-              <span class="font-mono text-sm font-black bg-indigo-950/80 px-2 py-0.5 rounded text-indigo-300">
+              <span class="font-mono text-sm font-black bg-indigo-100 px-2 py-0.5 rounded text-indigo-800">
                 {{ isPaused ? 'Paused' : `${slideshowTimeLeft}s` }}
               </span>
             </span>
@@ -229,20 +229,20 @@
 
         <!-- Controls / Navigation Bar -->
         <footer 
-          class="absolute bottom-0 left-0 right-0 z-40 px-8 py-6 flex items-center justify-between bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent transition-all duration-500 transform"
+          class="absolute bottom-0 left-0 right-0 z-40 px-8 py-6 flex items-center justify-between bg-gradient-to-t from-slate-50 via-slate-50/90 to-transparent transition-all duration-500 transform"
           :class="showControls ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'"
         >
           <div class="flex items-center gap-3">
             <button
               @click="exitPresentationMode"
-              class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-900 hover:text-white transition active:scale-95"
+              class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:text-slate-950 transition active:scale-95"
             >
               ❌ Exit Play
             </button>
             <button
               v-if="false"
               @click="loadOffer(true)"
-              class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/30 transition active:scale-95"
+              class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-amber-800 hover:bg-amber-500/10 hover:border-amber-500/30 transition active:scale-95"
             >
               🔄 Refresh (R)
             </button>
@@ -253,7 +253,7 @@
             <button
               @click="prevItem"
               :disabled="!offer.items || offer.items.length <= 1"
-              class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
+              class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-800 hover:bg-slate-100 hover:text-slate-950 disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
             >
               ◀ Previous
             </button>
@@ -261,8 +261,8 @@
             <!-- Pause / Play Toggle -->
             <button
               @click="togglePause"
-              class="rounded-xl border border-slate-800 bg-slate-900/80 px-6 py-2.5 text-xs font-bold transition active:scale-95 font-bold"
-              :class="isPaused ? 'text-emerald-400 hover:bg-emerald-500/10 hover:border-emerald-500/30' : 'text-amber-400 hover:bg-amber-500/10 hover:border-amber-500/30'"
+              class="rounded-xl border border-slate-200 bg-white px-6 py-2.5 text-xs font-bold transition active:scale-95 font-bold"
+              :class="isPaused ? 'text-emerald-700 hover:bg-emerald-500/10 hover:border-emerald-500/30' : 'text-amber-800 hover:bg-amber-500/10 hover:border-amber-500/30'"
             >
               {{ isPaused ? '▶ Resume timer' : '⏸ Pause timer' }}
             </button>
@@ -271,14 +271,14 @@
             <button
               @click="nextItem"
               :disabled="!offer.items || offer.items.length <= 1"
-              class="rounded-xl border border-slate-800 bg-slate-900/80 px-5 py-2.5 text-xs font-bold text-slate-200 hover:bg-slate-800 hover:text-white disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
+              class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-800 hover:bg-slate-100 hover:text-slate-950 disabled:opacity-30 disabled:pointer-events-none transition active:scale-95"
             >
               Next ▶
             </button>
           </div>
           
           <!-- Quick Keyboard Legend -->
-          <div class="text-[10px] text-slate-500 font-medium hidden md:block">
+          <div class="text-[10px] text-slate-600 font-medium hidden md:block">
             Use Esc to Exit
           </div>
         </footer>
