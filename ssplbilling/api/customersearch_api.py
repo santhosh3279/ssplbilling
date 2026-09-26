@@ -41,7 +41,7 @@ def get_user_mop_ledgers():
 
 
 @frappe.whitelist()
-def get_all_ledgers(company=None, alternative_company=None):
+def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
     """Fetch all Customers, Suppliers, and Accounts in a unified format for local preloading."""
     ledgers = []
 
@@ -195,6 +195,26 @@ def get_all_ledgers(company=None, alternative_company=None):
     for a in activity_rows:
         if a.name in ledger_map:
             ledger_map[a.name]["activity"] = int(a.activity or 0)
+
+    # Keep global activity for other searches; scope modal suggestions separately.
+    if cost_center:
+        scoped_activity = frappe.db.sql("""
+            SELECT party as name, COUNT(*) as activity
+            FROM `tabGL Entry`
+            WHERE is_cancelled = 0 AND posting_date >= %(cutoff)s
+                AND cost_center = %(cost_center)s
+                AND party IS NOT NULL AND party != ''
+            GROUP BY party
+            UNION ALL
+            SELECT account as name, COUNT(*) as activity
+            FROM `tabGL Entry`
+            WHERE is_cancelled = 0 AND posting_date >= %(cutoff)s
+                AND cost_center = %(cost_center)s AND (party IS NULL OR party = '')
+            GROUP BY account
+        """, {"cutoff": activity_cutoff, "cost_center": cost_center}, as_dict=True)
+        for row in scoped_activity:
+            if row.name in ledger_map:
+                ledger_map[row.name]["cost_center_activity"] = int(row.activity or 0)
 
     # 7. Batch fetch Last Invoice Dates (Customers only)
     last_invoices = frappe.db.sql("""

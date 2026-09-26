@@ -6,6 +6,16 @@ const ledgers = ref([])
 const partyLinks = ref({}) // { party_name: { is_primary, is_secondary, links: [] } }
 const lastSync = ref(0)
 const syncLoading = ref(false)
+const cacheContext = ref(null)
+let pendingRefresh = null
+
+function currentContext() {
+  return JSON.stringify({
+    company: localStorage.getItem('wb-company') || '',
+    alternative_company: localStorage.getItem('ae-alternative_company') || '',
+    cost_center: localStorage.getItem('wb-cost-center') || ''
+  })
+}
 
 const LEDGERS_CACHE_KEY = 'sspl-ledgers-cache'
 const PARTY_LINKS_CACHE_KEY = 'sspl-partylinks-cache'
@@ -14,7 +24,9 @@ function loadFromStorage() {
   try {
     const cachedLedgers = localStorage.getItem(LEDGERS_CACHE_KEY)
     if (cachedLedgers) {
-      const { data, ts } = JSON.parse(cachedLedgers)
+      const { data, ts, context } = JSON.parse(cachedLedgers)
+      if (context !== currentContext()) return
+      cacheContext.value = context
       ledgers.value = data || []
       lastSync.value = ts || 0
     }
@@ -31,7 +43,8 @@ function saveToStorage(ledgerData, linkData) {
   try {
     localStorage.setItem(LEDGERS_CACHE_KEY, JSON.stringify({
       data: ledgerData,
-      ts: Date.now()
+      ts: lastSync.value,
+      context: cacheContext.value
     }))
     localStorage.setItem(PARTY_LINKS_CACHE_KEY, JSON.stringify(linkData))
   } catch (e) {
@@ -46,20 +59,33 @@ loadFromStorage()
  * Fetch all ledgers from the backend and update the global cache.
  */
 export async function refreshLedgerCache(force = false) {
-  if (syncLoading.value) return ledgers.value
+  if (pendingRefresh) {
+    await pendingRefresh
+    if (cacheContext.value === currentContext()) return ledgers.value
+  }
+  pendingRefresh = fetchLedgerCache(force)
+  try {
+    return await pendingRefresh
+  } finally {
+    pendingRefresh = null
+  }
+}
+
+async function fetchLedgerCache(force) {
+  const context = currentContext()
   
   // Throttle background refreshes: skip if last sync was < 60s ago, unless forced
-  if (!force && lastSync.value > 0 && (Date.now() - lastSync.value) < 60000) {
+  if (!force && cacheContext.value === context && lastSync.value > 0 && (Date.now() - lastSync.value) < 60000) {
     return ledgers.value
   }
 
   syncLoading.value = true
   try {
-    const company = localStorage.getItem('wb-company') || ''
-    const alternative_company = localStorage.getItem('ae-alternative_company') || ''
+    const { company, alternative_company, cost_center } = JSON.parse(context)
     const data = await frappeGet('ssplbilling.api.customersearch_api.get_all_ledgers', {
       company,
-      alternative_company
+      alternative_company,
+      cost_center
     })
     const rawList = data || []
     
@@ -79,6 +105,7 @@ export async function refreshLedgerCache(force = false) {
       return rest
     })
 
+    cacheContext.value = context
     ledgers.value = cleanedLedgers
     partyLinks.value = newPartyLinks
     lastSync.value = Date.now()
@@ -144,6 +171,7 @@ export function patchLedgerInCache(name, newData) {
 export function useLedgerCache() {
   return {
     ledgers,
+    cacheContext,
     partyLinks,
     lastSync,
     syncLoading,

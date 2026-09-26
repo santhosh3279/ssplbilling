@@ -311,7 +311,8 @@ useSubwindowWatcher(computed(() => props.show))
 const router = useRouter()
 
 // ─── State ────────────────────────────────────────────────────────────────────
-const { ledgers: allLedgers, partyLinks, refreshLedgerCache, syncLoading } = useLedgerCache()
+const { ledgers: allLedgers, partyLinks, cacheContext, refreshLedgerCache, syncLoading } = useLedgerCache()
+const suggestionCostCenter = ref(localStorage.getItem('wb-cost-center') || '')
 const query        = ref('')
 const activeType   = ref(props.initialType)
 const selectedIdx  = ref(0)
@@ -342,6 +343,7 @@ watch(() => props.hideSecondary, (val) => {
 
 // ─── Data Preloading ──────────────────────────────────────────────────────────
 async function preloadLedger(force = false) {
+  suggestionCostCenter.value = localStorage.getItem('wb-cost-center') || ''
   if (force || allLedgers.value.length === 0) {
     // Block if forced or if we have no data at all
     try {
@@ -422,9 +424,18 @@ function tokenMatch(l, fields, tokens) {
   return tokens.every(t => words.some(w => w.startsWith(t)))
 }
 
+// Use this cost center's activity for ranking; global counts remain available
+// to other consumers of the shared ledger cache.
+function ledgerActivity(ledger) {
+  if (!suggestionCostCenter.value) return ledger.activity || 0
+  const context = cacheContext.value ? JSON.parse(cacheContext.value) : null
+  if (context?.cost_center !== suggestionCostCenter.value) return 0
+  return ledger.cost_center_activity || 0
+}
+
 // Rank based on ledger activity only (busiest ledgers first).
 const byActivity = (a, b) => {
-  const diff = (b.activity || 0) - (a.activity || 0)
+  const diff = ledgerActivity(b) - ledgerActivity(a)
   if (diff !== 0) return diff
   return (a.label || '').localeCompare(b.label || '')
 }
@@ -444,7 +455,7 @@ function applyTopThreeSubSort(list) {
     if (pa !== pb) return pa - pb
     
     // Preserve activity ranking if types are equal
-    const actDiff = (b.activity || 0) - (a.activity || 0)
+    const actDiff = ledgerActivity(b) - ledgerActivity(a)
     if (actDiff !== 0) return actDiff
     return (a.label || '').localeCompare(b.label || '')
   })
@@ -487,6 +498,9 @@ const results = computed(() => {
   }
 
   if (tokens.length === 0) {
+    if (suggestionCostCenter.value) {
+      list = list.filter(l => ledgerActivity(l) > 0)
+    }
     const sorted = list.sort(byActivity)
     return applyTopThreeSubSort(sorted).slice(0, 100)
   }
