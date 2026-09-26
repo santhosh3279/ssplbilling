@@ -469,7 +469,7 @@ const results = computed(() => {
 
   // When overrideLedgers is provided (e.g. row 2+ MOP accounts), use it directly
   if (props.overrideLedgers) {
-    if (tokens.length === 0) return props.overrideLedgers.slice(0, 100)
+    if (tokens.length === 0) return props.overrideLedgers.filter(l => l.type === 'Customer').slice(0, 100)
     return props.overrideLedgers
       .filter(l => tokenMatch(l, ['label', 'name'], tokens))
       .slice(0, 100)
@@ -498,6 +498,7 @@ const results = computed(() => {
   }
 
   if (tokens.length === 0) {
+    list = list.filter(l => l.type === 'Customer')
     if (suggestionCostCenter.value) {
       list = list.filter(l => ledgerActivity(l) > 0)
     }
