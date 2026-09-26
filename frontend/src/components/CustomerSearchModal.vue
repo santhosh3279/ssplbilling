@@ -455,6 +455,18 @@ const byActivity = (a, b) => {
   return (a.label || '').localeCompare(b.label || '')
 }
 
+// Prefer a matching first name word, while keeping all-token matching
+// independent of word order ("sal nck" also matches "NCK Sales").
+function bySearch(a, b, firstToken) {
+  const startsWithToken = ledger => {
+    const firstWord = String(ledger.label || ledger.name || '')
+      .toLowerCase().split(/[^a-zA-Z0-9]+/).find(Boolean) || ''
+    return firstWord.startsWith(firstToken)
+  }
+  const prefixDiff = Number(startsWithToken(b)) - Number(startsWithToken(a))
+  return prefixDiff || byActivity(a, b)
+}
+
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
   const tokens = q ? q.split(/\s+/) : []
@@ -464,7 +476,7 @@ const results = computed(() => {
     if (tokens.length === 0) return props.overrideLedgers.filter(l => l.type === 'Customer').sort(byActivity).slice(0, 100)
     return props.overrideLedgers
       .filter(l => tokenMatch(l, ['label', 'name'], tokens))
-      .sort(byActivity)
+      .sort((a, b) => bySearch(a, b, tokens[0]))
       .slice(0, 100)
   }
 
@@ -500,7 +512,8 @@ const results = computed(() => {
   }
 
   const searchFields = ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email']
-  const filtered = list.filter(l => tokenMatch(l, searchFields, tokens)).sort(byActivity)
+  const filtered = list.filter(l => tokenMatch(l, searchFields, tokens))
+    .sort((a, b) => bySearch(a, b, tokens[0]))
   return filtered.slice(0, 100)
 })
 
