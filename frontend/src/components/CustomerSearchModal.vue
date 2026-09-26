@@ -433,34 +433,26 @@ function ledgerActivity(ledger) {
   return ledger.cost_center_activity || 0
 }
 
-// Rank based on ledger activity only (busiest ledgers first).
+const TYPE_PRIORITY = { Customer: 0, Supplier: 1, Employee: 2, Account: 3 }
+
+// Current-cost-center matches first; activity and type resolve ordering
+// consistently across the whole result list.
 const byActivity = (a, b) => {
-  const diff = ledgerActivity(b) - ledgerActivity(a)
-  if (diff !== 0) return diff
+  const activityA = ledgerActivity(a)
+  const activityB = ledgerActivity(b)
+  if (suggestionCostCenter.value) {
+    const groupDiff = Number(activityB > 0) - Number(activityA > 0)
+    if (groupDiff !== 0) return groupDiff
+  }
+
+  const rankA = activityA > 0 ? activityA : (a.activity || 0)
+  const rankB = activityB > 0 ? activityB : (b.activity || 0)
+  const activityDiff = rankB - rankA
+  if (activityDiff !== 0) return activityDiff
+
+  const typeDiff = (TYPE_PRIORITY[a.type] ?? 4) - (TYPE_PRIORITY[b.type] ?? 4)
+  if (typeDiff !== 0) return typeDiff
   return (a.label || '').localeCompare(b.label || '')
-}
-
-const TYPE_PRIORITY = { Customer: 0, Supplier: 1 }
-
-// Sub-sorts the top 3 activity ledgers: Customer first, Supplier second, and Accounts/others third.
-function applyTopThreeSubSort(list) {
-  if (list.length <= 1) return list
-  const count = Math.min(3, list.length)
-  const topThree = list.slice(0, count)
-  const remainder = list.slice(count)
-
-  topThree.sort((a, b) => {
-    const pa = TYPE_PRIORITY[a.type] ?? 2
-    const pb = TYPE_PRIORITY[b.type] ?? 2
-    if (pa !== pb) return pa - pb
-    
-    // Preserve activity ranking if types are equal
-    const actDiff = ledgerActivity(b) - ledgerActivity(a)
-    if (actDiff !== 0) return actDiff
-    return (a.label || '').localeCompare(b.label || '')
-  })
-
-  return [...topThree, ...remainder]
 }
 
 const results = computed(() => {
@@ -469,9 +461,10 @@ const results = computed(() => {
 
   // When overrideLedgers is provided (e.g. row 2+ MOP accounts), use it directly
   if (props.overrideLedgers) {
-    if (tokens.length === 0) return props.overrideLedgers.filter(l => l.type === 'Customer').slice(0, 100)
+    if (tokens.length === 0) return props.overrideLedgers.filter(l => l.type === 'Customer').sort(byActivity).slice(0, 100)
     return props.overrideLedgers
       .filter(l => tokenMatch(l, ['label', 'name'], tokens))
+      .sort(byActivity)
       .slice(0, 100)
   }
 
@@ -503,12 +496,12 @@ const results = computed(() => {
       list = list.filter(l => ledgerActivity(l) > 0)
     }
     const sorted = list.sort(byActivity)
-    return applyTopThreeSubSort(sorted).slice(0, 100)
+    return sorted.slice(0, 100)
   }
 
   const searchFields = ['label', 'name', 'mobile_no', 'whatsapp', 'gstin', 'city', 'email']
   const filtered = list.filter(l => tokenMatch(l, searchFields, tokens)).sort(byActivity)
-  return applyTopThreeSubSort(filtered).slice(0, 100)
+  return filtered.slice(0, 100)
 })
 
 watch([query, activeType], () => {
