@@ -118,69 +118,71 @@
                 </div>
               </div>
 
+              <h3
+                class="shrink-0 font-normal text-slate-900 line-clamp-2 leading-tight"
+                :class="presentationCols >= 6 ? 'text-[22px]' : 'text-2xl md:text-3xl'"
+              >
+                {{ item.itemname }}
+              </h3>
+
               <!-- Middle section for image (Normal size, no stretch) -->
-              <div class="flex-1 flex items-center justify-center min-h-0 py-2">
-                <img
-                  v-if="item.image"
-                  :src="item.image"
-                  :alt="item.itemname"
-                  class="max-w-full object-contain transition-all duration-500"
-                  :class="showControls ? 'max-h-[35vh]' : 'max-h-[48vh]'"
-                />
-                <!-- Placeholder -->
-                <div
-                  v-else
-                  class="w-full h-full min-h-[20vh] rounded-xl bg-gradient-to-br from-slate-100 to-white flex flex-col items-center justify-center text-center p-4 select-none border border-slate-200"
-                >
-                  <div class="text-3xl mb-1">📦</div>
-                  <span class="text-[9px] font-bold uppercase tracking-wider text-slate-600">
-                    No Image Available
-                  </span>
+              <div class="flex-1 flex flex-col min-h-0 py-2">
+                <div class="flex-1 min-h-0 flex items-center justify-center">
+                  <img
+                    v-if="item.image"
+                    :src="item.image"
+                    :alt="item.itemname"
+                    class="max-w-full max-h-full object-contain transition-all duration-500"
+                  />
+                  <!-- Placeholder -->
+                  <div
+                    v-else
+                    class="w-full h-full min-h-[20vh] rounded-xl bg-gradient-to-br from-slate-100 to-white flex flex-col items-center justify-center text-center p-4 select-none border border-slate-200"
+                  >
+                    <div class="text-3xl mb-1">📦</div>
+                    <span class="text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                      No Image Available
+                    </span>
+                  </div>
+                </div>
+                <div v-if="item.barcode_prices && item.barcode_prices.length" class="shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 font-mono font-bold text-slate-800 select-all">
+                  <div v-for="bp in item.barcode_prices" :key="bp.barcode">
+                    <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans font-normal text-slate-600">({{ bp.uom }})</span>
+                  </div>
                 </div>
               </div>
 
               <!-- Bottom side for item details -->
               <div class="shrink-0 space-y-2 pt-3 border-t border-slate-200">
-                <h3 
-                  class="font-normal text-slate-900 line-clamp-2 leading-tight"
-                  :class="presentationCols >= 6 ? 'text-[22px]' : 'text-2xl md:text-3xl'"
-                >
-                  {{ item.itemname }}
-                </h3>
-                <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-emerald-700' : 'text-rose-700'">
-                  Available stock: {{ displayStock(item) }}
-                </p>
-                
-                <div 
-                  v-if="presentationCols < 6 && item.barcode_prices && item.barcode_prices.length"
-                  class="flex items-center justify-center pt-2 shrink-0"
-                >
+                <div class="flex items-center justify-center shrink-0">
                   <div class="w-full max-w-xl bg-slate-50 rounded-xl p-3 border border-slate-200 shadow-inner">
-                    <table class="w-full text-left text-2xl border-collapse">
+                    <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-emerald-700' : 'text-rose-700'">
+                      Available stock: {{ displayStock(item) }}
+                    </p>
+                    <template v-if="presentationCols < 6 && item.barcode_prices && item.barcode_prices.length">
+                      <table class="w-full text-left text-2xl border-collapse">
 
-                      <tbody class="divide-y divide-slate-200 font-medium">
-                        <tr 
-                          v-for="bp in item.barcode_prices" 
-                          :key="bp.barcode"
-                        >
-                          <td class="py-0.5 pr-2 font-mono text-slate-800 select-all font-bold">
-                            <div>
-                              <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-600 font-normal text-lg font-sans">({{ bp.uom }})</span>
-                            </div>
-                            <div
-                              v-for="pl in offer.price_lists"
-                              :key="pl.price_list"
-                              class="py-0.5 px-0.5 font-mono text-left text-indigo-700 font-bold tracking-widest"
-                            >
-                              <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                                {{ displayPrice(bp.prices[pl.price_list]) }}
-                              </span>
-                              <span v-else class="text-slate-600 font-normal">—</span>
-                            </div>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                        <tbody class="divide-y divide-slate-200 font-medium">
+                          <tr
+                            v-for="bp in item.barcode_prices"
+                            :key="bp.barcode"
+                          >
+                            <td class="py-0.5 pr-2 font-mono text-slate-800 select-all font-bold">
+                              <div
+                                v-for="pl in offer.price_lists"
+                                :key="pl.price_list"
+                                class="py-0.5 px-0.5 font-mono text-left text-indigo-700 font-bold tracking-widest"
+                              >
+                                <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
+                                  {{ displayPrice(bp.prices[pl.price_list]) }}
+                                </span>
+                                <span v-else class="text-slate-600 font-normal">—</span>
+                              </div>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </template>
                   </div>
                 </div>
                 <div v-if="catalogueUser" class="flex items-center justify-center gap-2 text-slate-900">
@@ -348,38 +350,40 @@
                 </div>
               </div>
 
+              <h3 class="bg-white px-4 py-2 font-bold text-slate-900 line-clamp-2 group-hover:text-indigo-700 transition-colors" :class="cardTitleClass" :title="item.itemname">
+                {{ item.itemname }}
+              </h3>
+
               <!-- Image / Placeholder Frame -->
-              <div class="relative aspect-square w-full bg-white flex items-center justify-center p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
-                <img
-                  v-if="item.image"
-                  :src="item.image"
-                  :alt="item.itemname"
-                  class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
-                <!-- Premium placeholder if no image exists -->
-                <div
-                  v-else
-                  class="w-full h-full rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 flex flex-col items-center justify-center text-center p-4 select-none"
-                >
-                  <div class="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">📦</div>
-                  <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                    No Image Available
-                  </span>
+              <div class="aspect-square w-full bg-white flex flex-col p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
+                <div class="flex-1 min-h-0 flex items-center justify-center">
+                  <img
+                    v-if="item.image"
+                    :src="item.image"
+                    :alt="item.itemname"
+                    class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <!-- Premium placeholder if no image exists -->
+                  <div
+                    v-else
+                    class="w-full h-full rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 flex flex-col items-center justify-center text-center p-4 select-none"
+                  >
+                    <div class="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">📦</div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                      No Image Available
+                    </span>
+                  </div>
+                </div>
+                <div v-if="item.barcode_prices && item.barcode_prices.length" class="w-full shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 text-sm font-mono font-bold text-slate-800 select-all">
+                  <div v-for="bp in item.barcode_prices" :key="bp.barcode">
+                    <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans font-normal text-slate-600">({{ bp.uom }})</span>
+                  </div>
                 </div>
               </div>
 
               <!-- Card Details -->
               <div class="flex-1 flex flex-col justify-between" :class="cardPaddingClass">
-                <div class="space-y-1.5">
-                  <h3 class="font-bold text-[var(--color-text)] line-clamp-2 group-hover:text-[var(--color-info)] transition-colors" :class="cardTitleClass" :title="item.itemname">
-                    {{ item.itemname }}
-                  </h3>
-                  <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                    Available stock: {{ displayStock(item) }}
-                  </p>
-                </div>
-
                 <div v-if="catalogueUser" class="flex items-center justify-center gap-2 border-t border-[var(--color-border)]/40 pt-3">
                   <template v-if="item.order_rate != null">
                     <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Decrease ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-rose-500/40 bg-rose-500/15 text-black shadow-lg shadow-rose-900/10 backdrop-blur-md hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500" @click="adjustByMinimum(item, -1)">−{{ minimumOrderQuantity(item) }}</button>
@@ -391,9 +395,12 @@
                   <span v-else class="text-xs text-[var(--color-text-muted)]">Price unavailable</span>
                 </div>
                 <div class="space-y-2 shrink-0">
-                  <!-- Barcode & Prices Table -->
-                  <div v-if="item.barcode_prices && item.barcode_prices.length" class="pt-2 border-t border-[var(--color-border)]/40 shrink-0">
-                    <div class="overflow-x-auto">
+                  <!-- Stock & Prices Table -->
+                  <div class="pt-2 border-t border-[var(--color-border)]/40 shrink-0">
+                    <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
+                      Available stock: {{ displayStock(item) }}
+                    </p>
+                    <div v-if="item.barcode_prices && item.barcode_prices.length" class="overflow-x-auto">
                       <table class="w-full text-left text-xl border-collapse">
 
                         <tbody class="divide-y divide-[var(--color-border)]/30 font-medium">
@@ -403,9 +410,6 @@
                             class="hover:bg-[var(--color-bg)]/50 transition-colors"
                           >
                             <td class="py-0.5 pr-2 font-mono text-[var(--color-text)] select-all font-bold">
-                              <div>
-                                <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-[var(--color-text-muted)] font-normal text-base font-sans">({{ bp.uom }})</span>
-                              </div>
                               <div
                                 v-for="pl in offer.price_lists"
                                 :key="pl.price_list"
