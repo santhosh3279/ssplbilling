@@ -20,9 +20,6 @@
         <span class="font-bold text-white max-w-[180px] truncate">
           {{ orderContext.customer_name || orderContext.customer }}
         </span>
-        <span class="text-indigo-300 text-[11px] truncate max-w-[120px]">
-          ({{ orderContext.price_list }})
-        </span>
         <span class="text-[11px] text-indigo-300 ml-0.5">✏️</span>
       </button>
       <button
@@ -176,7 +173,7 @@
                               class="py-0.5 px-0.5 font-mono text-left text-indigo-700 font-bold tracking-widest"
                             >
                               <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                                {{ displayPrice(bp.prices[pl.price_list]) }} <span class="text-xs font-normal">{{ pl.price_list }}</span>
+                                {{ displayPrice(bp.prices[pl.price_list]) }}
                               </span>
                               <span v-else class="text-slate-600 font-normal">—</span>
                             </div>
@@ -415,7 +412,7 @@
                                 class="py-0.5 px-0.5 font-mono text-left text-[var(--color-info)] font-bold tracking-widest"
                               >
                                 <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                                  {{ displayPrice(bp.prices[pl.price_list]) }} <span class="text-xs font-normal">{{ pl.price_list }}</span>
+                                  {{ displayPrice(bp.prices[pl.price_list]) }}
                                 </span>
                                 <span v-else class="text-[var(--color-text-muted)] font-normal">—</span>
                               </div>
