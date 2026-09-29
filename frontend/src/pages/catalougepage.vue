@@ -119,7 +119,7 @@
               </div>
 
               <h3
-                class="shrink-0 font-normal text-slate-900 line-clamp-2 leading-tight"
+                class="shrink-0 text-center font-normal text-slate-900 line-clamp-2 leading-tight"
                 :class="presentationCols >= 6 ? 'text-[22px]' : 'text-2xl md:text-3xl'"
               >
                 {{ item.itemname }}
@@ -145,7 +145,7 @@
                     </span>
                   </div>
                 </div>
-                <div v-if="item.barcode_prices && item.barcode_prices.length" class="shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 font-mono font-bold text-slate-800 select-all">
+                <div v-if="item.barcode_prices && item.barcode_prices.length" class="shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 text-2xl font-mono font-bold text-slate-800 select-all">
                   <div v-for="bp in item.barcode_prices" :key="bp.barcode">
                     <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans font-normal text-slate-600">({{ bp.uom }})</span>
                   </div>
@@ -153,9 +153,9 @@
               </div>
 
               <!-- Bottom side for item details -->
-              <div class="shrink-0 space-y-2 pt-3 border-t border-slate-200">
+              <div class="shrink-0 space-y-2 pt-3">
                 <div class="flex items-center justify-center shrink-0">
-                  <div class="w-full max-w-xl bg-slate-50 rounded-xl p-3 border border-slate-200 shadow-inner">
+                  <div class="w-full max-w-xl bg-slate-50 rounded-xl p-3 shadow-inner">
                     <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-emerald-700' : 'text-rose-700'">
                       Available stock: {{ displayStock(item) }}
                     </p>
@@ -350,7 +350,7 @@
                 </div>
               </div>
 
-              <h3 class="bg-white px-4 py-2 font-bold text-slate-900 line-clamp-2 group-hover:text-indigo-700 transition-colors" :class="cardTitleClass" :title="item.itemname">
+              <h3 class="bg-white px-4 py-2 text-center font-bold text-slate-900 line-clamp-2 group-hover:text-indigo-700 transition-colors" :class="cardTitleClass" :title="item.itemname">
                 {{ item.itemname }}
               </h3>
 
@@ -375,7 +375,7 @@
                     </span>
                   </div>
                 </div>
-                <div v-if="item.barcode_prices && item.barcode_prices.length" class="w-full shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 text-sm font-mono font-bold text-slate-800 select-all">
+                <div v-if="item.barcode_prices && item.barcode_prices.length" class="w-full shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 text-[21px] font-mono font-bold text-slate-800 select-all">
                   <div v-for="bp in item.barcode_prices" :key="bp.barcode">
                     <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans font-normal text-slate-600">({{ bp.uom }})</span>
                   </div>
@@ -396,7 +396,7 @@
                 </div>
                 <div class="space-y-2 shrink-0">
                   <!-- Stock & Prices Table -->
-                  <div class="pt-2 border-t border-[var(--color-border)]/40 shrink-0">
+                  <div class="pt-2 shrink-0">
                     <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
                       Available stock: {{ displayStock(item) }}
                     </p>
