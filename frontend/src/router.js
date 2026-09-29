@@ -467,7 +467,7 @@ const routes = [
     meta: { public: true, title: 'Catalogue Checkout' },
   },
   {
-    path: '/catelogue',
+    path: '/displaycatalogue',
     name: 'Catelogue',
     component: Catelogue,
     meta: { public: true, title: 'Catalogue' },
@@ -506,7 +506,7 @@ const router = createRouter({
   history: createWebHistory(
     import.meta.env.DEV
       ? '/'
-      : window.location.pathname.startsWith('/catalogue/') || window.location.pathname.startsWith('/catelogue')
+      : window.location.pathname.startsWith('/catalogue/') || window.location.pathname.startsWith('/displaycatalogue')
       ? '/'
       : '/frontend'
   ),

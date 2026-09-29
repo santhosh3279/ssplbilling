@@ -1054,7 +1054,7 @@
     },
     {
       "page": "Catelogue",
-      "path": "/catelogue",
+      "path": "/displaycatalogue",
       "title": "Catalogue",
       "feature": "catelogue",
       "feature_label": "Catalogues",

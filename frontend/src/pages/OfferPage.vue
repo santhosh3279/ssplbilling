@@ -810,7 +810,7 @@ function goHome() {
 }
 
 function goBackToCatalogue() {
-  router.push('/catelogue')
+  router.push('/displaycatalogue')
 }
 
 const showExportModal = ref(false)

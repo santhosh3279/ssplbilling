@@ -6,7 +6,7 @@
       <div class="flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <button
-            @click="router.push('/catelogue')"
+            @click="router.push('/displaycatalogue')"
             class="flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition"
           >
             ← Catalogue

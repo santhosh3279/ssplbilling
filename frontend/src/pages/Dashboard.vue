@@ -1232,7 +1232,7 @@ const routeAliases = {
   modifysubmitted: '/modifysubmitted',
   'modify-submitted': '/modifysubmitted',
   'naming-settings': '/naming-settings',
-  catelogue: '/catelogue',
+  catelogue: '/displaycatalogue',
   catalogueviewer: '/catalogueviewer',
   hrms: '/hrms',
   employee: '/hrms/employee',
