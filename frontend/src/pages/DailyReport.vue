@@ -274,8 +274,9 @@ function formatTime(timeStr) {
 
 const fromDate = ref(getTodayIST())
 const toDate = ref(getTodayIST())
-const costCenterFilter = ref('')
-const costCenters = ref([])
+const defaultCostCenter = localStorage.getItem('wb-cost-center') || ''
+const costCenterFilter = ref(defaultCostCenter)
+const costCenters = ref(defaultCostCenter ? [defaultCostCenter] : [])
 const seriesFilter = ref('')
 const availableSeries = ref([])
 const showSeriesDropdown = ref(false)
@@ -573,7 +574,7 @@ onMounted(() => {
     filters: localStorage.getItem('wb-company') ? { company: localStorage.getItem('wb-company') } : {},
     limit_page_length: 0
   }).then(rows => {
-    costCenters.value = (rows || []).map(row => row.name)
+    costCenters.value = [...new Set([...costCenters.value, ...(rows || []).map(row => row.name)])]
   }).catch(e => console.warn('Failed to fetch cost centers:', e))
   fetchAvailableSeries()
   fetchReport()
