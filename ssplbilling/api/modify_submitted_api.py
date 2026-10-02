@@ -49,6 +49,21 @@ def _unlink_payments_and_cancel(doc, vouchers):
 	doc.cancel()
 
 
+def _archive_cancelled_invoice(doc):
+	"""Free the original number while preserving cancelled records and their links."""
+	if doc.docstatus != 2:
+		frappe.throw("Only cancelled invoices can be archived.")
+	original_name = doc.name
+	suffix = 1
+	while frappe.db.exists(doc.doctype, f"{original_name}-{suffix}"):
+		suffix += 1
+	archived_name = frappe.rename_doc(
+		doc.doctype, original_name, f"{original_name}-{suffix}",
+		force=True, show_alert=False,
+	)
+	return frappe.get_doc(doc.doctype, archived_name)
+
+
 @frappe.whitelist()
 def get_submitted_invoice(invoice_no):
 	"""Fetch details of a submitted invoice (docstatus=1).
@@ -182,6 +197,9 @@ def move_submitted_to_draft(invoice_no, doctype="Sales Invoice"):
 	if mirror:
 		_unlink_payments_and_cancel(mirror, mirror_vouchers)
 	_unlink_payments_and_cancel(doc, vouchers)
+	if mirror:
+		mirror = _archive_cancelled_invoice(mirror)
+	doc = _archive_cancelled_invoice(doc)
 	amended = frappe.copy_doc(doc)
 	amended.amended_from = doc.name
 	amended.docstatus = 0
@@ -191,14 +209,16 @@ def move_submitted_to_draft(invoice_no, doctype="Sales Invoice"):
 		amended.set("custom_mirrored", None)
 	if hasattr(amended, "set_posting_time"):
 		amended.set_posting_time = 0
-	amended.insert()
+	# Explicit naming bypasses the usual amendment suffix. The cancelled record
+	# remains available under its archived name for amendment and ledger history.
+	amended.insert(set_name=invoice_no)
 
 	return {
 		"status": "draft_created",
 		"cancelled_invoice": doc.name,
 		"draft_invoice": amended.name,
 		"doctype": doctype,
-		"cancelled_mirror": mirror_name,
+		"cancelled_mirror": mirror.name if mirror else None,
 		"unlinked_payments": len(vouchers) + len(mirror_vouchers),
 	}
 

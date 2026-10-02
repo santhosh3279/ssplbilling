@@ -420,7 +420,7 @@
       <div class="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl">
         <h2 id="draft-confirm-title" class="text-lg font-black text-[var(--color-text)]">Move to Draft Mode?</h2>
         <p class="mt-4 text-sm text-[var(--color-text)]">This action will cancel the bill and unlink the payments. Do you want to proceed?</p>
-        <p class="mt-2 text-xs text-[var(--color-text-muted)]">A new amended draft will be created with a new invoice number.</p>
+        <p class="mt-2 text-xs text-[var(--color-text-muted)]">The cancelled bill will be saved with a suffix (-1, -2, etc.). The amended draft will keep the same invoice number.</p>
         <p class="mt-2 text-xs text-[var(--color-warning)]">Any submitted mirror bill and its payment links will also be cancelled and unlinked.</p>
         <p v-if="invoice?.mirror_invoice" class="mt-1 text-xs font-mono text-[var(--color-warning)]">Mirror: {{ invoice.mirror_invoice }}</p>
         <div class="mt-6 flex justify-end gap-3">
