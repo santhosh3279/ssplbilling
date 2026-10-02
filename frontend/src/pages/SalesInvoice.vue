@@ -171,7 +171,8 @@
           class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-all"
           :class="{
             'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)] font-bold !text-[var(--color-text-on-focus)]': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
-            'discount-rule-row': (item._rule_discount != null || item._is_free) && !item.deleted,
+            'below-valuation-row': isBelowValuation(item),
+            'discount-rule-row': (item._rule_discount != null || item._is_free) && !item.deleted && !isBelowValuation(item),
             'opacity-40 bg-[var(--color-danger)]/10 grayscale-[0.5]': item.deleted,
             'hover:bg-[var(--color-surface-raised)]/50': !isReadOnly && selectedRowIdx !== index && editingRowIdx !== index && !item.deleted
           }"
@@ -1588,6 +1589,19 @@ function format2p(val) {
   if (val === null || val === undefined || val === '') return '0.00'
   const num = Number(val)
   return isNaN(num) ? '0.00' : num.toFixed(2)
+}
+
+function isBelowValuation(item) {
+  if (item.deleted || item._is_free) return false
+  const cached = lookupItemInCache(item.item_code)
+  const valuationRate = Number(cached?.valuation_rate)
+  const rate = Number(item.rate)
+  if (!Number.isFinite(valuationRate) || valuationRate <= 0 || !Number.isFinite(rate)) return false
+
+  const conversionFactor = Number(cached.uoms?.find(u => u.uom === item.uom)?.conversion_factor) || 1
+  const costPerUom = Number((valuationRate * conversionFactor).toFixed(precision))
+  const sellingPrice = Number((rate * (1 - getDiscPrecision(item.discount) / 100)).toFixed(precision))
+  return sellingPrice < costPerUom
 }
 
 async function clearBill() {
@@ -3447,6 +3461,9 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+.below-valuation-row {
+  background-color: color-mix(in srgb, var(--color-danger) 50%, transparent) !important;
+}
 .discount-rule-row {
   background-color: #d1fae5 !important;
 }
