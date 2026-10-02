@@ -813,7 +813,7 @@
           </div>
           <div class="flex flex-col">
             <h2 class="text-lg font-black text-[var(--color-text)] uppercase tracking-tight leading-none">
-              {{ wasMirrored ? 'Bill Settled & Mirrored' : 'Bill Settled' }}
+              {{ mirrorQueued ? 'Bill Settled · Mirror Queued' : 'Bill Settled' }}
             </h2>
             <p class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-widest mt-1.5 opacity-70">
               {{ processedInvoiceName }}
@@ -901,7 +901,7 @@ const showGstWarning = ref(false)
 const cardRefNo = ref('')
 const processedInvoiceName = ref('')
 const showCashierEntry = ref(false)
-const wasMirrored = ref(false)
+const mirrorQueued = ref(false)
 
 // Block page shortcuts while any inline subwindow is open
 useSubwindowWatcher(showCardRefModal)
@@ -1535,9 +1535,9 @@ async function processPayment() {
     const wasExempted = selectedInvoice.value?.tax_template?.toLowerCase().includes('exempt')
     const invoiceName = selectedInvoice.value?.name
 
-    wasMirrored.value = false
+    mirrorQueued.value = false
     const res = await submitInvoiceWithPayment(payload)
-    wasMirrored.value = res?.mirrored || false
+    mirrorQueued.value = res?.mirror_queued || false
     
     processedInvoiceName.value = invoiceName
     showSuccessModal.value = true

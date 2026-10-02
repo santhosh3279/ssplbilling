@@ -1,6 +1,46 @@
 import json
 import frappe
 
+
+def _queue_cashier_mirror(si, payment_details=None):
+    """Queue mirroring only for eligible invoices, after the source transaction commits."""
+    from ssplbilling.api.automatic_entries_api import get_automatic_entries, should_mirror_sales_invoice
+
+    try:
+        settings = get_automatic_entries()
+        if not should_mirror_sales_invoice(si.naming_series, settings, si.company):
+            return False
+
+        frappe.enqueue(
+            "ssplbilling.api.cashier_api.run_cashier_mirror",
+            queue="long",
+            enqueue_after_commit=True,
+            job_id=f"cashier-mirror:{si.name}",
+            deduplicate=True,
+            invoice_name=si.name,
+            payment_details=payment_details,
+        )
+        return True
+    except Exception:
+        frappe.log_error(title="Automatic Entries: queue cashier mirror failed", message=frappe.get_traceback())
+        return False
+
+
+def run_cashier_mirror(invoice_name, payment_details=None):
+    """Create the mirror bill and payments in a worker after the source is committed."""
+    from ssplbilling.api.automatic_entries_api import mirror_bill
+
+    si = frappe.get_doc("Sales Invoice", invoice_name)
+    if si.docstatus != 1:
+        frappe.throw(f"Sales Invoice {invoice_name} must be submitted before mirroring.")
+
+    mirror = mirror_bill(si)
+    if mirror and payment_details:
+        from ssplbilling.api.cashier_mirroring_api import mirror_payments
+
+        mirror_payments(mirror, **payment_details)
+
+
 def _get_item_tax_rate(item_code):
     """Return the effective tax rate (%) for an item from its Item Tax Template."""
     today = frappe.utils.today()
@@ -518,18 +558,9 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			if reconcile_args:
 				reconcile_dr_cr_note(reconcile_args, si.company)
 
-	mirrored = False
 	if is_credit:
-		# Mirror credit bill if naming series matches configuration in Automatic Entries
-		try:
-			from ssplbilling.api.automatic_entries_api import mirror_bill
-			msi = mirror_bill(si)
-			if msi:
-				mirrored = True
-		except Exception:
-			frappe.log_error(title="Automatic Entries: mirror credit bill failed", message=frappe.get_traceback())
-
-		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted", "mirrored": mirrored}
+		mirror_queued = _queue_cashier_mirror(si)
+		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted", "mirrored": False, "mirror_queued": mirror_queued}
 
 	payment_entries = []
 
@@ -658,34 +689,25 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			payment_entries.append(pe_name)
 			original_card_pe = pe_name
 
-	# Mirror bill and payment entries if naming series matches configuration in Automatic Entries
-	try:
-		from ssplbilling.api.automatic_entries_api import mirror_bill
-		from ssplbilling.api.cashier_mirroring_api import mirror_payments
-		msi = mirror_bill(si)
-		if msi:
-			mirrored = True
-			mirror_payments(
-				msi,
-				cash_amount=cash_amount,
-				upi_amount=upi_amount,
-				card_amount=card_amount,
-				discount_amount=discount_amount,
-				cash_account=cash_account,
-				upi_account=upi_account,
-				card_account=card_account,
-				discount_account=discount_account,
-				card_ref_no=card_ref_no,
-				original_cash_pe=original_cash_pe,
-				original_upi_pe=original_upi_pe,
-				original_card_pe=original_card_pe,
-				original_discount_je=original_discount_je,
-				cost_center=cost_center,
-			)
-	except Exception:
-		frappe.log_error(title="Automatic Entries: mirror bill and payments failed", message=frappe.get_traceback())
+	# Source documents are committed before the worker reads or mirrors them.
+	mirror_queued = _queue_cashier_mirror(si, {
+		"cash_amount": cash_amount,
+		"upi_amount": upi_amount,
+		"card_amount": card_amount,
+		"discount_amount": discount_amount,
+		"cash_account": cash_account,
+		"upi_account": upi_account,
+		"card_account": card_account,
+		"discount_account": discount_account,
+		"card_ref_no": card_ref_no,
+		"original_cash_pe": original_cash_pe,
+		"original_upi_pe": original_upi_pe,
+		"original_card_pe": original_card_pe,
+		"original_discount_je": original_discount_je,
+		"cost_center": cost_center,
+	})
 
-	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted", "mirrored": mirrored}
+	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted", "mirrored": False, "mirror_queued": mirror_queued}
 
 @frappe.whitelist()
 def get_customer_unallocated_cash(customer, invoice_name=None, company=None):
@@ -1011,4 +1033,3 @@ def update_invoice_advances(invoice_name, total_amount=0, allocations=None):
 			"reference_row": adv.reference_row
 		} for adv in si.get("advances")]
 	}
-
