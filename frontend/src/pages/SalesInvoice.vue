@@ -508,7 +508,7 @@
             </div>
           </div>
           <div class="flex gap-2">
-            <button ref="saveBtnRef" @click="handleSave" :disabled="isSubmitted || submitting" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="isSubmitted || submitting ? 'bg-[var(--color-surface-raised)]/40 text-[var(--color-text-muted)] cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-[var(--color-success)]'">{{ saveButtonText }}</button>
+            <button ref="saveBtnRef" @click="handleSave" :disabled="isSubmitted || submitting || modifying" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="isSubmitted || submitting || modifying ? 'bg-[var(--color-surface-raised)]/40 text-[var(--color-text-muted)] cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-[var(--color-success)]'">{{ saveButtonText }}</button>
             <button @click="handlePrint" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] cursor-not-allowed'">Print</button>
           </div>
           <div class="flex gap-2">
@@ -1044,6 +1044,7 @@ if (!tabId) {
 }
 
 const hasLock = ref(false)
+const modifying = ref(false)
 
 async function releaseLock() {
   if (!hasLock.value || !invoiceNo.value || invoiceNo.value === 'NEW') return
@@ -1161,9 +1162,13 @@ watch(sidebarSearch, () => {
 
 async function handleSelectSidebarItem(item) {
   await releaseLock()
+  return loadInvoice(item.name)
+}
+
+async function loadInvoice(invoiceName) {
   try {
     isLoadingBill.value = true
-    const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: item.name })
+    const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: invoiceName })
 
     // Header
     customInvoiceNo.value = ''
@@ -1203,17 +1208,17 @@ async function handleSelectSidebarItem(item) {
     }
 
     // Settings
-    if (data.price_list) priceList.value = data.price_list
-    if (data.tax_template) taxTemplate.value = data.tax_template
+    priceList.value = data.price_list || ''
+    taxTemplate.value = data.tax_template || ''
     nextTick(() => {
       isInclusiveTax.value = data.is_inclusive === 1
     })
     isReturn.value = data.is_return === 1
     halfTaxDiscount.value = false
     ignoreModifier.value = data.customer_rate_multiplier === 0
-    if (data.cost_center) costCenter.value = data.cost_center
-    if (data.warehouse) warehouse.value = data.warehouse
-    if (data.income_account) incomeAccount.value = data.income_account
+    costCenter.value = data.cost_center || ''
+    warehouse.value = data.warehouse || ''
+    incomeAccount.value = data.income_account || ''
 
     // Charges
     freightEntry.value = data.freight_amount || ''
@@ -1304,9 +1309,11 @@ async function handleSelectSidebarItem(item) {
     isSubmitted.value = data.docstatus === 1
     linkedPayments.value = data.payments || []
     fetchCustomerSalesHistory(data.customer)
+    return true
   } catch (e) {
     console.error('Failed to load invoice:', e)
-    alert('Failed to load invoice: ' + item.name)
+    alert('Failed to load invoice: ' + invoiceName)
+    return false
   } finally {
     nextTick(() => {
       isLoadingBill.value = false
@@ -1682,7 +1689,7 @@ function handlePageUp() {
 }
 
 async function handleSave() {
-  if (isSubmitted.value || submitting.value) return
+  if (isSubmitted.value || submitting.value || modifying.value) return
   if (isReadOnly.value && isSaved.value) {
     await handleModify()
     return
@@ -1832,8 +1839,9 @@ async function handleModify() {
     alert('Bill is submitted. Modify is denied.')
     return
   }
-  if (!isReadOnly.value || !isSaved.value) return
+  if (!isReadOnly.value || !isSaved.value || modifying.value) return
 
+  modifying.value = true
   try {
     const res = await frappePost('ssplbilling.api.salesinvoice_api.record_bill_edit', {
       bill_no: invoiceNo.value,
@@ -1848,17 +1856,26 @@ async function handleModify() {
       return
     }
     hasLock.value = true
+
+    const loaded = await loadInvoice(invoiceNo.value)
+    if (!loaded || isSubmitted.value) {
+      await releaseLock()
+      if (loaded) alert('Bill is submitted. Modify is denied.')
+      return
+    }
+
+    isReadOnly.value = false
+    if (items.value.length > 0) {
+      focusRow(0)
+    } else {
+      focusBarcodeInput()
+    }
   } catch (err) {
     console.error(err)
     alert(err.message || 'Failed to check bill editing status.')
-    return
-  }
-
-  isReadOnly.value = false
-  if (items.value.length > 0) {
-    focusRow(0)
-  } else {
-    focusBarcodeInput()
+    if (hasLock.value) await releaseLock()
+  } finally {
+    modifying.value = false
   }
 }
 
