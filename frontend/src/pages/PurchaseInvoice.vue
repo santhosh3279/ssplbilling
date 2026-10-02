@@ -1779,7 +1779,9 @@ async function handleSave() {
       qty: i.qty,
       uom: i.uom || 'Nos',
       rate: parseFloat(((i.rate || 0) * (1 - getDiscPrecision(i.discount) / 100)).toFixed(precision)),
-      price_list_rate: i._base_rate || i.price_list_rate || i.rate,
+      // The purchase API derives discounted rates from price_list_rate, so it
+      // must reflect the price entered on this invoice rather than the cached list price.
+      price_list_rate: i.rate || 0,
       discount_percentage: i.discount || 0,
     }))
   }
