@@ -14,7 +14,7 @@
         </button>
         <div>
           <h1 class="text-xl font-black uppercase tracking-wider text-[var(--color-text)] flex items-center gap-2">
-            <span>Modify Submitted Bill Date</span>
+            <span>Modify Submitted</span>
             <span class="text-xs px-2 py-0.5 rounded-md bg-[var(--color-info)]/15 text-[var(--color-info)] font-bold tracking-widest uppercase">
               Submitted Only
             </span>
@@ -29,8 +29,29 @@
       </div>
     </header>
 
-    <!-- BODY CONTAINER -->
-    <main class="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">
+    <div class="flex min-h-0 flex-1 flex-col md:flex-row">
+      <aside class="w-full shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:w-64 md:border-b-0 md:border-r md:p-5">
+        <p class="mb-3 px-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Pages</p>
+        <nav aria-label="Modify Submitted pages" class="flex gap-2 overflow-x-auto md:flex-col">
+          <button
+            v-for="(page, index) in pages"
+            :key="page.id"
+            type="button"
+            @click="activePage = page.id"
+            :aria-current="activePage === page.id ? 'page' : undefined"
+            class="flex w-full min-w-max items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors md:min-w-0"
+            :class="activePage === page.id
+              ? 'border-[var(--color-info)]/40 bg-[var(--color-info)]/10 text-[var(--color-info)]'
+              : 'border-transparent text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]'"
+          >
+            <span class="text-xs font-bold font-mono">{{ String(index + 1).padStart(2, '0') }}</span>
+            <span class="text-sm font-bold">{{ page.label }}</span>
+          </button>
+        </nav>
+      </aside>
+
+      <!-- BILL DATE PAGE -->
+      <main v-if="activePage === 'bill-date'" class="min-w-0 flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">
       <div class="max-w-4xl mx-auto space-y-6">
 
         <!-- SEARCH / FETCH CARD -->
@@ -369,7 +390,8 @@
         </div>
 
       </div>
-    </main>
+      </main>
+    </div>
   </div>
 </template>
 
@@ -380,6 +402,8 @@ import { fetchSubmittedInvoice, modifySubmittedBillDate } from '../api'
 import { canModifyDate } from '../composables/usePermission.js'
 
 const router = useRouter()
+const pages = [{ id: 'bill-date', label: 'Modify Bill Date' }]
+const activePage = ref(pages[0].id)
 
 // State
 const invoiceNo = ref('')
