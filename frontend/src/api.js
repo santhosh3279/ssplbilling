@@ -1469,6 +1469,13 @@ export async function modifySubmittedBillDate(invoiceNo, newDate, doctype = "Sal
   });
 }
 
+export async function moveSubmittedToDraft(invoiceNo, doctype) {
+  return frappePost("ssplbilling.api.modify_submitted_api.move_submitted_to_draft", {
+    invoice_no: invoiceNo,
+    doctype,
+  });
+}
+
 /** Fetch one page of cash flow transaction particulars. */
 export async function getCashflowDetails(filters) {
   return frappeGet("ssplbilling.api.reports_api.get_cashflow_details", filters);

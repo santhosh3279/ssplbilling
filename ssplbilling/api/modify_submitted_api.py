@@ -3,6 +3,52 @@ from erpnext.accounts.utils import get_fiscal_year
 from frappe.utils import add_days, getdate, now
 
 
+def _submitted_mirror_name(doctype, invoice_no, company, linked_name=None):
+	"""Find an existing submitted mirror in a different company."""
+	if doctype == "Sales Invoice":
+		from ssplbilling.api.automatic_entries_api import mirror_name_for
+		linked_name = mirror_name_for(invoice_no)
+	if not linked_name:
+		return None
+	mirror = frappe.db.get_value(doctype, linked_name, ["name", "company", "docstatus"], as_dict=True)
+	if mirror and mirror.company != company and mirror.docstatus == 1:
+		return mirror.name
+	return None
+
+
+def _linked_payment_vouchers(doc):
+	from erpnext.accounts.doctype.unreconcile_payment.unreconcile_payment import (
+		get_linked_payments_for_doc,
+	)
+
+	linked = get_linked_payments_for_doc(company=doc.company, doctype=doc.doctype, docname=doc.name)
+	vouchers = {(row.reference_doctype, row.reference_name) for row in linked}
+	unsupported = sorted({voucher_type for voucher_type, _ in vouchers} - {"Payment Entry", "Journal Entry"})
+	if unsupported:
+		frappe.throw(f"Cannot unlink allocations from {', '.join(unsupported)} automatically. Please unreconcile them first.")
+	return vouchers
+
+
+def _unlink_payments_and_cancel(doc, vouchers):
+	for voucher_type, voucher_no in sorted(vouchers):
+		unreconcile = frappe.new_doc("Unreconcile Payment")
+		unreconcile.company = doc.company
+		unreconcile.voucher_type = voucher_type
+		unreconcile.voucher_no = voucher_no
+		unreconcile.add_references()
+		unreconcile.allocations = [
+			row for row in unreconcile.allocations
+			if row.reference_doctype == doc.doctype and row.reference_name == doc.name
+		]
+		if not unreconcile.allocations:
+			frappe.throw(f"Could not unlink payment {voucher_no} from {doc.name}. Please refresh and try again.")
+		unreconcile.insert()
+		unreconcile.submit()
+
+	doc.reload()
+	doc.cancel()
+
+
 @frappe.whitelist()
 def get_submitted_invoice(invoice_no):
 	"""Fetch details of a submitted invoice (docstatus=1).
@@ -85,6 +131,10 @@ def get_submitted_invoice(invoice_no):
 	)
 	total_items_count = frappe.db.count(item_doctype, {"parent": doc_data.name})
 
+	linked_mirror = None
+	if doctype == "Purchase Invoice" and frappe.get_meta(doctype).has_field("custom_mirrored"):
+		linked_mirror = frappe.db.get_value(doctype, doc_data.name, "custom_mirrored")
+
 	return {
 		"doctype": doctype,
 		"name": doc_data.name,
@@ -96,8 +146,60 @@ def get_submitted_invoice(invoice_no):
 		"grand_total": doc_data.grand_total,
 		"outstanding_amount": doc_data.outstanding_amount,
 		"company": doc_data.company,
+		"mirror_invoice": _submitted_mirror_name(doctype, doc_data.name, doc_data.company, linked_mirror),
 		"item_count": total_items_count,
 		"items": items,
+	}
+
+
+@frappe.whitelist()
+def move_submitted_to_draft(invoice_no, doctype="Sales Invoice"):
+	"""Unlink payments, cancel a submitted invoice, and create an amended draft."""
+	if frappe.session.user == "Guest":
+		frappe.throw("Authentication required to modify invoices.", frappe.PermissionError)
+	if doctype not in ("Sales Invoice", "Purchase Invoice"):
+		frappe.throw("Only Sales and Purchase Invoices can be moved to draft mode.")
+
+	invoice_no = (invoice_no or "").strip()
+	if not invoice_no:
+		frappe.throw("Please enter an invoice number.")
+
+	doc = frappe.get_doc(doctype, invoice_no)
+	doc.check_permission("cancel")
+	doc.check_permission("write")
+	if doc.docstatus != 1:
+		frappe.throw(f"Invoice '{invoice_no}' must be submitted to move it to draft mode.")
+
+	mirror_name = _submitted_mirror_name(doctype, doc.name, doc.company, doc.get("custom_mirrored"))
+	mirror = frappe.get_doc(doctype, mirror_name) if mirror_name else None
+	if mirror:
+		mirror.check_permission("cancel")
+		mirror.check_permission("write")
+
+	# Check both sets of links before mutating either invoice.
+	mirror_vouchers = _linked_payment_vouchers(mirror) if mirror else set()
+	vouchers = _linked_payment_vouchers(doc)
+	if mirror:
+		_unlink_payments_and_cancel(mirror, mirror_vouchers)
+	_unlink_payments_and_cancel(doc, vouchers)
+	amended = frappe.copy_doc(doc)
+	amended.amended_from = doc.name
+	amended.docstatus = 0
+	amended.name = None
+	amended.set("advances", [])
+	if doctype == "Purchase Invoice" and frappe.get_meta(doctype).has_field("custom_mirrored"):
+		amended.set("custom_mirrored", None)
+	if hasattr(amended, "set_posting_time"):
+		amended.set_posting_time = 0
+	amended.insert()
+
+	return {
+		"status": "draft_created",
+		"cancelled_invoice": doc.name,
+		"draft_invoice": amended.name,
+		"doctype": doctype,
+		"cancelled_mirror": mirror_name,
+		"unlinked_payments": len(vouchers) + len(mirror_vouchers),
 	}
 
 
