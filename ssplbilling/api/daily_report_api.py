@@ -1,8 +1,42 @@
 import frappe
 from frappe.utils import flt, getdate
 
+def _cost_center_document_names(doctype, child_doctype, date_field, from_date, to_date, cost_center, company):
+        """Find documents assigned to a cost center on the header or a detail row."""
+        parent_meta = frappe.get_meta(doctype)
+        header_match = "doc.cost_center = %s" if parent_meta.has_field("cost_center") else None
+        child_match = None
+        if child_doctype and frappe.get_meta(child_doctype).has_field("cost_center"):
+                child_match = (
+                        f"EXISTS (SELECT 1 FROM `tab{child_doctype}` child "
+                        "WHERE child.parent = doc.name AND child.cost_center = %s)"
+                )
+        matches = [part for part in (header_match, child_match) if part]
+        if not matches:
+                return []
+        params = [from_date, to_date]
+        conditions = [f"doc.{date_field} BETWEEN %s AND %s", "doc.docstatus < 2"]
+        if company and parent_meta.has_field("company"):
+                conditions.append("doc.company = %s")
+                params.append(company)
+        params.extend([cost_center] * len(matches))
+        return frappe.db.sql(
+                f"SELECT doc.name FROM `tab{doctype}` doc "
+                f"WHERE {' AND '.join(conditions)} AND ({' OR '.join(matches)})",
+                tuple(params), pluck=True,
+        )
+
+
+def _filter_cost_center(filters, doctype, child_doctype, date_field, from_date, to_date, cost_center, company):
+        if cost_center:
+                names = _cost_center_document_names(
+                        doctype, child_doctype, date_field, from_date, to_date, cost_center, company
+                )
+                filters["name"] = ["in", names or [""]]
+
+
 @frappe.whitelist()
-def get_daily_reports(report_type, from_date, to_date, naming_series=None, company=None):
+def get_daily_reports(report_type, from_date, to_date, naming_series=None, company=None, cost_center=None):
         """
         Returns a list of documents for a specific date range and type.
         report_type: 'Sales Invoice', 'Purchase Invoice', 'Payment', 'Journal', 'Quotation', 'Loading'
@@ -17,6 +51,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None, compa
                 }
                 if company:
                         filters["company"] = company
+                _filter_cost_center(filters, "Sales Invoice", "Sales Invoice Item", "posting_date", from_date, to_date, cost_center, company)
                 if naming_series:
                         if isinstance(naming_series, str):
                                 if naming_series.startswith("[") and naming_series.endswith("]"):
@@ -45,6 +80,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None, compa
                 }
                 if company:
                         filters["company"] = company
+                _filter_cost_center(filters, "Purchase Invoice", "Purchase Invoice Item", "posting_date", from_date, to_date, cost_center, company)
                 if naming_series:
                         if isinstance(naming_series, str):
                                 if naming_series.startswith("[") and naming_series.endswith("]"):
@@ -70,6 +106,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None, compa
                 filters = {"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]}
                 if company:
                         filters["company"] = company
+                _filter_cost_center(filters, "Payment Entry", None, "posting_date", from_date, to_date, cost_center, company)
                 return frappe.get_all(
                         "Payment Entry",
                         filters=filters,
@@ -81,6 +118,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None, compa
                 filters = {"posting_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]}
                 if company:
                         filters["company"] = company
+                _filter_cost_center(filters, "Journal Entry", 'Journal Entry Account', "posting_date", from_date, to_date, cost_center, company)
                 return frappe.get_all(
                         "Journal Entry",
                         filters=filters,
@@ -92,6 +130,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None, compa
                 filters = {"transaction_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]}
                 if company:
                         filters["company"] = company
+                _filter_cost_center(filters, "Quotation", 'Quotation Item', "transaction_date", from_date, to_date, cost_center, company)
                 return frappe.get_all(
                         "Quotation",
                         filters=filters,
@@ -105,15 +144,27 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None, compa
                 if company and frappe.get_meta("Loading Receipt").has_field("company"):
                         company_condition = " AND lr.company = %s"
                         params.append(company)
+                cost_center_condition = ""
+                if cost_center:
+                        # Loading Receipt has no cost center; its bill number links to a Sales Invoice.
+                        cost_center_condition = """ AND EXISTS (
+                                SELECT 1 FROM `tabSales Invoice` si
+                                WHERE si.name = lr.bill_no AND si.docstatus < 2
+                                  AND (si.cost_center = %s OR EXISTS (
+                                        SELECT 1 FROM `tabSales Invoice Item` sii
+                                        WHERE sii.parent = si.name AND sii.cost_center = %s
+                                  ))
+                        )"""
+                        params.extend([cost_center, cost_center])
                 return frappe.db.sql("""
                         SELECT 
                                 lr.name, lr.date, lr.customer_name, lr.bill_no,
                                 lri.item, lri.item_name, lri.qty, lri.rate, lri.amount
                         FROM `tabLoading Receipt` lr
                         JOIN `tabLoading Receipt Item` lri ON lri.parent = lr.name
-                        WHERE lr.date BETWEEN %s AND %s{company_condition}
+                        WHERE lr.date BETWEEN %s AND %s{company_condition}{cost_center_condition}
                         ORDER BY lr.date DESC, lr.creation DESC
-                """.format(company_condition=company_condition), tuple(params), as_dict=True)
+                """.format(company_condition=company_condition, cost_center_condition=cost_center_condition), tuple(params), as_dict=True)
 
         return []
 

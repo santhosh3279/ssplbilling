@@ -25,6 +25,14 @@
           </button>
         </div>
 
+        <div class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
+          <label for="daily-report-cost-center" class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)]">Cost Center</label>
+          <select id="daily-report-cost-center" v-model="costCenterFilter" @change="fetchReport" class="bg-transparent text-[14px] text-[var(--color-text)] outline-none focus:text-[var(--color-info)] max-w-44">
+            <option value="">All Cost Centers</option>
+            <option v-for="cc in costCenters" :key="cc" :value="cc">{{ cc }}</option>
+          </select>
+        </div>
+
         <!-- Series Filter (only for Invoice tabs) -->
         <div v-if="activeTab === 'Sales Invoice' || activeTab === 'Purchase Invoice'" class="flex items-center gap-3 bg-[var(--color-surface-raised)] px-4 py-1.5 rounded-xl border border-[var(--color-border)] shadow-sm">
           <label class="text-[12px] font-normal uppercase tracking-widest text-[var(--color-text-muted)]">Series</label>
@@ -266,6 +274,8 @@ function formatTime(timeStr) {
 
 const fromDate = ref(getTodayIST())
 const toDate = ref(getTodayIST())
+const costCenterFilter = ref('')
+const costCenters = ref([])
 const seriesFilter = ref('')
 const availableSeries = ref([])
 const showSeriesDropdown = ref(false)
@@ -461,6 +471,7 @@ async function fetchReport() {
       from_date: fromDate.value,
       to_date: toDate.value,
       naming_series: namingSeriesParam,
+      cost_center: costCenterFilter.value,
       company: localStorage.getItem('wb-company') || ''
     })
     reportData.value = (data || []).map(row => {
@@ -556,6 +567,14 @@ watch(activeTab, () => {
 })
 
 onMounted(() => {
+  frappeGet('frappe.client.get_list', {
+    doctype: 'Cost Center',
+    fields: ['name'],
+    filters: localStorage.getItem('wb-company') ? { company: localStorage.getItem('wb-company') } : {},
+    limit_page_length: 0
+  }).then(rows => {
+    costCenters.value = (rows || []).map(row => row.name)
+  }).catch(e => console.warn('Failed to fetch cost centers:', e))
   fetchAvailableSeries()
   fetchReport()
 
