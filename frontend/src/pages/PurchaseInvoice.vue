@@ -1308,6 +1308,7 @@ async function handleSelectSidebarItem(item) {
 
     supplierId.value = data.supplier || ''
     supplierName.value = data.supplier_name || data.customer_name || 'Select Supplier...'
+    supplierAddressName.value = data.supplier_address || ''
     supplierState.value = data.state || ''
 
     customRemarks.value = data.custom_remarks || ''
@@ -1374,6 +1375,7 @@ const supplierName = ref('Select Supplier...')
 const supplierId = ref('')
 const supplierDetails = ref('')
 const supplierAddress = ref('')
+const supplierAddressName = ref('')
 const supplierMobile = ref('')
 const supplierGstin = ref('')
 const supplierLastInvDate = ref('')
@@ -1725,10 +1727,12 @@ async function handleSave() {
       supplierDetails.value = supplier.mobile || supplier.email || ''
       supplierMobile.value = supplier.mobile || ''
       supplierGstin.value = supplier.gstin || ''
-      supplierState.value = supplier.state || ''
-      
-      const addrParts = [supplier.address_line1, supplier.city, supplier.state].filter(Boolean)
-      supplierAddress.value = addrParts.join(', ')
+      if (!supplierAddressName.value || supplierAddressName.value === supplier.address_name) {
+        supplierAddressName.value = supplier.address_name || ''
+        supplierState.value = supplier.state || ''
+        const addrParts = [supplier.address_line1, supplier.city, supplier.state].filter(Boolean)
+        supplierAddress.value = addrParts.join(', ')
+      }
     }
   } catch (err) {
     console.error('Failed to fetch latest supplier details from server:', err)
@@ -1760,6 +1764,7 @@ async function handleSave() {
     company: localStorage.getItem('wb-company') || '',
     naming_series: selectedSeries.value,
     supplier: supplierId.value,
+    supplier_address: supplierAddressName.value,
     bill_no: supplierInvoiceNo.value,
     bill_date: supplierInvoiceDate.value,
     update_stock: 1,
@@ -2662,6 +2667,7 @@ function handleSupplierSelected(party) {
   supplierDetails.value = party.mobile_no || party.email || ''
   supplierMobile.value = party.mobile_no || ''
   supplierGstin.value = party.gstin || ''
+  supplierAddressName.value = party.address_name || ''
   supplierState.value = party.state || ''
   const addrParts = [party.address_line1, party.city, party.state].filter(Boolean)
   supplierAddress.value = addrParts.join(', ')

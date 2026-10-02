@@ -4,6 +4,7 @@ import re
 import frappe
 from frappe.model.naming import parse_naming_series
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
+from ssplbilling.api.party_address import set_party_address
 from ssplbilling.api.stock_utils import get_draft_invoice_qty
 
 
@@ -336,6 +337,7 @@ def get_quotation(quotation_name):
 	return {
 		"name": qt.name,
 		"customer": qt.party_name,
+		"customer_address": qt.customer_address or "",
 		"customer_name": qt.customer_name,
 		"state": party_state,
 		"naming_series": qt.naming_series,
@@ -380,9 +382,7 @@ def create_quotation(data):
 		qt.company = data["company"]
 	qt.naming_series = data.get("naming_series", "SSPL-QT-.YYYY.-")
 	qt.quotation_to = "Customer"
-	qt.party_name = data["customer"]
-	if data.get("customer_address"):
-		qt.customer_address = data["customer_address"]
+	set_party_address(qt, "Customer", data["customer"], data.get("customer_address"), "party_name")
 	qt.transaction_date = data.get("date") or frappe.utils.today()
 	if data.get("valid_till"):
 		qt.valid_till = data["valid_till"]
@@ -454,22 +454,8 @@ def update_quotation(data):
 	if qt.docstatus != 0:
 		frappe.throw("Cannot edit a submitted or cancelled Quotation")
 
-	if qt.party_name != data["customer"]:
-		qt.party_name = data["customer"]
-		qt.customer_address = data.get("customer_address")
-		qt.shipping_address_name = None
-		qt.contact_person = None
-		qt.contact_display = None
-		qt.contact_mobile = None
-		qt.contact_email = None
-		qt.address_display = None
-		qt.tax_category = None
-		qt.gst_category = None
-		qt.billing_address_gstin = None
-		qt.customer_name = None
-		qt.place_of_supply = None
-	elif data.get("customer_address"):
-		qt.customer_address = data["customer_address"]
+	customer_address = data.get("customer_address", qt.customer_address if qt.party_name == data["customer"] else None)
+	set_party_address(qt, "Customer", data["customer"], customer_address, "party_name")
 
 	qt.transaction_date = data.get("date") or qt.transaction_date
 	if data.get("valid_till"):

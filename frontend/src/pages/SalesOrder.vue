@@ -884,6 +884,7 @@ async function handleSelectSidebarItem(item) {
     // Customer
     customerId.value = data.customer || ''
     customerName.value = data.customer_name || 'Select Customer...'
+    customerAddressName.value = data.customer_address || ''
     customerState.value = data.state || ''
 
     if (data.customer) {
@@ -984,6 +985,7 @@ const customerName = ref('Select Customer...')
 const customerId = ref('')          // actual Customer doc name (for backend calls)
 const customerDetails = ref('')
 const customerAddress = ref('')
+const customerAddressName = ref('')
 const customerMobile = ref('')
 const customerGstin = ref('')
 const customerBalance = ref(null)
@@ -1381,6 +1383,7 @@ async function handleSave() {
     price_list: priceList.value,
     naming_series: selectedSeries.value,
     customer: customerId.value,
+    customer_address: customerAddressName.value,
     date: invoiceDate.value,
     discount_percentage: parseFloat(discountPct.value) || 0,
     additional_discount_amount: parseFloat(discountDirectAmt.value) || 0,
@@ -2718,6 +2721,7 @@ function handleCustomerSelected(cust, opts = {}) {
   customerMobile.value = cust.mobile_no || ''
   customerGstin.value = cust.gstin || ''
   customerBalance.value = cust.balance ?? 0
+  customerAddressName.value = cust.address_name || ''
   customerState.value = cust.state || ''
   customerModifier.value = cust.pricelist_multiplication_factor ?? null
 

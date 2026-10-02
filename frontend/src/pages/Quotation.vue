@@ -809,6 +809,7 @@ async function loadQuotationData(data, forceHalfTaxFalse = false) {
   // Customer
   customerId.value = data.customer || ''
   customerName.value = data.customer_name || 'Select Customer...'
+  customerAddressName.value = data.customer_address || ''
   customerState.value = data.state || ''
 
   if (data.customer) {
@@ -915,6 +916,7 @@ const customerName = ref('Select Customer...')
 const customerId = ref('')
 const customerDetails = ref('')
 const customerAddress = ref('')
+const customerAddressName = ref('')
 const customerMobile = ref('')
 const customerGstin = ref('')
 const customerBalance = ref(null)
@@ -1214,13 +1216,15 @@ async function handleSave() {
       customerDetails.value = cust.mobile || cust.email || ''
       customerMobile.value = cust.mobile || ''
       customerGstin.value = cust.gstin || ''
-      customerState.value = cust.state || ''
       customerModifier.value = cust.pricelist_multiplication_factor ?? null
-      
-      const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
-      customerAddress.value = addrParts.join(', ')
 
-      applyRegionalTaxLogic()
+      if (!customerAddressName.value || customerAddressName.value === cust.address_name) {
+        customerAddressName.value = cust.address_name || ''
+        customerState.value = cust.state || ''
+        const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
+        customerAddress.value = addrParts.join(', ')
+        applyRegionalTaxLogic()
+      }
     }
   } catch (err) {
     console.error('Failed to fetch latest customer details from server:', err)
@@ -1252,6 +1256,7 @@ async function handleSave() {
     company: localStorage.getItem('wb-company') || null,
     naming_series: selectedSeries.value,
     customer: customerId.value,
+    customer_address: customerAddressName.value,
     date: invoiceDate.value,
     price_list: priceList.value,
     discount_percentage: parseFloat(discountPct.value) || 0,
@@ -2437,6 +2442,7 @@ function handleCustomerSelected(cust, opts = {}) {
   customerMobile.value = cust.mobile_no || ''
   customerGstin.value = cust.gstin || ''
   customerBalance.value = cust.balance ?? 0
+  customerAddressName.value = cust.address_name || ''
   customerState.value = cust.state || ''
   customerModifier.value = cust.pricelist_multiplication_factor ?? null
 

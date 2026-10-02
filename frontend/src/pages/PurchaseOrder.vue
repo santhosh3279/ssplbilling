@@ -777,6 +777,7 @@ async function handleSelectSidebarItem(item) {
 
     supplierId.value = data.supplier || ''
     supplierName.value = data.supplier_name || 'Select Supplier...'
+    supplierAddressName.value = data.supplier_address || ''
     supplierState.value = data.state || ''
 
     if (data.price_list) priceList.value = data.price_list
@@ -840,6 +841,7 @@ const supplierName = ref('Select Supplier...')
 const supplierId = ref('')
 const supplierDetails = ref('')
 const supplierAddress = ref('')
+const supplierAddressName = ref('')
 const supplierMobile = ref('')
 const supplierGstin = ref('')
 const supplierLastInvDate = ref('')
@@ -1134,6 +1136,7 @@ async function handleSave() {
     company: localStorage.getItem('wb-company') || null,
     naming_series: selectedSeries.value,
     supplier: supplierId.value,
+    supplier_address: supplierAddressName.value,
     date: orderDate.value,
     price_list: priceList.value,
     discount_percentage: discountPct.value,
@@ -1785,6 +1788,7 @@ function handleSupplierSelected(party) {
   supplierName.value = party.label || party.name; supplierId.value = party.name
   supplierDetails.value = party.mobile_no || party.email || ''; supplierMobile.value = party.mobile_no || ''
   supplierGstin.value = party.gstin || ''; supplierState.value = party.state || ''
+  supplierAddressName.value = party.address_name || ''
   const addrParts = [party.address_line1, party.city, party.state].filter(Boolean)
   supplierAddress.value = addrParts.join(', ')
   if (party.last_invoice_date) {

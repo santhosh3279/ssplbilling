@@ -1,6 +1,7 @@
 import json
 import frappe
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
+from ssplbilling.api.party_address import set_party_address
 
 
 def _apply_due_date(pi):
@@ -239,7 +240,7 @@ def create_purchase_invoice(data=None, **kwargs):
         frappe.throw("At least one item is required")
 
     pi = frappe.new_doc("Purchase Invoice")
-    pi.supplier = data["supplier"]
+    set_party_address(pi, "Supplier", data["supplier"], data.get("supplier_address"), "supplier")
     if data.get("company"):
         pi.company = data["company"]
     pi.bill_no = data.get("bill_no")
@@ -466,6 +467,7 @@ def get_purchase_invoice(invoice_name):
     return {
         "name": pi.name,
         "supplier": pi.supplier,
+        "supplier_address": pi.supplier_address or "",
         "supplier_name": pi.supplier_name,
         "customer_name": pi.supplier_name,
         "custom_remarks": pi.get("custom_remarks") or "",
@@ -524,19 +526,8 @@ def update_purchase_invoice(data=None, **kwargs):
     if data.get("company"):
         pi.company = data["company"]
     
-    if pi.supplier != data["supplier"]:
-        pi.supplier = data["supplier"]
-        pi.supplier_address = None
-        pi.shipping_address_name = None
-        pi.contact_person = None
-        pi.contact_display = None
-        pi.contact_mobile = None
-        pi.contact_email = None
-        pi.address_display = None
-        pi.tax_category = None
-        pi.gst_category = None
-        pi.supplier_gstin = None
-        pi.place_of_supply = None
+    supplier_address = data.get("supplier_address", pi.supplier_address if pi.supplier == data["supplier"] else None)
+    set_party_address(pi, "Supplier", data["supplier"], supplier_address, "supplier")
 
     pi.is_return = data.get("is_return", 0)
     pi.update_stock = 1
@@ -934,5 +925,4 @@ def set_suffix_for_original_purchase_invoice(doc, method=None, ae=None):
 		generated_name = make_autoname(naming_series, doc=doc)
 		if not generated_name.endswith("/"):
 			doc.name = f"{generated_name}/"
-
 

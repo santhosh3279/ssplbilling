@@ -1,6 +1,7 @@
 import json
 import frappe
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
+from ssplbilling.api.party_address import set_party_address
 
 
 def _get_item_tax_rate(item_code):
@@ -210,7 +211,7 @@ def create_purchase_order(data=None, **kwargs):
     po = frappe.new_doc("Purchase Order")
     if data.get("company"):
         po.company = data["company"]
-    po.supplier = data["supplier"]
+    set_party_address(po, "Supplier", data["supplier"], data.get("supplier_address"), "supplier")
     po.transaction_date = data.get("date") or frappe.utils.today()
     po.naming_series = data.get("naming_series", "PUR-ORD-.YY.-")
     po.is_subcontracted = data.get("is_subcontracted", 0)
@@ -386,6 +387,7 @@ def get_purchase_order(order_name):
     return {
         "name": po.name,
         "supplier": po.supplier,
+        "supplier_address": po.supplier_address or "",
         "supplier_name": po.supplier_name,
         "customer_name": po.supplier_name,
         "state": party_state,
@@ -434,15 +436,8 @@ def update_purchase_order(data=None, **kwargs):
     if data.get("company"):
         po.company = data["company"]
     
-    if po.supplier != data["supplier"]:
-        po.supplier = data["supplier"]
-        po.supplier_address = None
-        po.contact_person = None
-        po.address_display = None
-        po.tax_category = None
-        po.gst_category = None
-        po.supplier_gstin = None
-        po.place_of_supply = None
+    supplier_address = data.get("supplier_address", po.supplier_address if po.supplier == data["supplier"] else None)
+    set_party_address(po, "Supplier", data["supplier"], supplier_address, "supplier")
 
     po.transaction_date = data.get("date") or frappe.utils.today()
     po.additional_discount_percentage = float(data.get("discount_percentage") or 0)

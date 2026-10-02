@@ -3,6 +3,7 @@ from functools import wraps
 
 import frappe
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
+from ssplbilling.api.party_address import set_party_address
 from ssplbilling.api.stock_utils import get_draft_invoice_qty
 
 
@@ -248,6 +249,7 @@ def get_sales_order(order_name):
 	so = frappe.get_doc("Sales Order", order_name)
 	cost_center = so.cost_center or (so.items[0].cost_center if so.items else "")
 	warehouse = so.set_warehouse or (so.items[0].warehouse if so.items else "")
+	party_state = frappe.db.get_value("Address", so.customer_address, "state") if so.customer_address else ""
 
 	def _actual_charge(keyword):
 		for t in (so.taxes or []):
@@ -279,7 +281,9 @@ def get_sales_order(order_name):
 		"company": so.company,
 		"warehouse": warehouse,
 		"customer": so.customer,
+		"customer_address": so.customer_address or "",
 		"customer_name": so.customer_name,
+		"state": party_state or "",
 		"naming_series": so.naming_series,
 		"transaction_date": str(so.transaction_date or ""),
 		"delivery_date": str(so.delivery_date or ""),
@@ -313,7 +317,7 @@ def create_sales_order(data):
 	if data.get("company"):
 		so.company = data["company"]
 	so.naming_series = data.get("naming_series", "SSPL-SO-.YYYY.-")
-	so.customer = data["customer"]
+	set_party_address(so, "Customer", data["customer"], data.get("customer_address"), "customer")
 	so.transaction_date = data.get("date") or frappe.utils.today()
 	so.delivery_date = data.get("delivery_date") or frappe.utils.add_days(frappe.utils.today(), 7)
 	so.order_type = "Sales"
@@ -379,21 +383,8 @@ def update_sales_order(data):
 	if so.docstatus != 0:
 		frappe.throw("Cannot edit a submitted or cancelled Sales Order")
 
-	if so.customer != data["customer"]:
-		so.customer = data["customer"]
-		so.customer_address = None
-		so.shipping_address_name = None
-		so.contact_person = None
-		so.contact_display = None
-		so.contact_mobile = None
-		so.contact_email = None
-		so.address_display = None
-		so.tax_category = None
-		so.gst_category = None
-		so.billing_address_gstin = None
-		so.tax_id = None
-		so.customer_name = None
-		so.place_of_supply = None
+	customer_address = data.get("customer_address", so.customer_address if so.customer == data["customer"] else None)
+	set_party_address(so, "Customer", data["customer"], customer_address, "customer")
 
 	so.transaction_date = data.get("date") or so.transaction_date
 	if "warehouse" in data:

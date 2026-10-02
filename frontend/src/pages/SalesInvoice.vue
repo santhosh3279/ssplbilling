@@ -1623,7 +1623,6 @@ async function clearBill() {
   packingEntry.value = ''
   otherEntry.value = ''
   customAddress.value = { customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' }
-  customerAddressName.value = ''
   clearHistory()
   linkedPayments.value = []
   invoiceNo.value = 'NEW'
