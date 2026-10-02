@@ -1431,7 +1431,9 @@ async function syncBillingSettings(targetUser, force) {
       cached.data?._current_user === targetUser &&
       // Payload written before SSPL Printer Setting existed: refetch instead of
       // leaving wb-printer-records unwritten until the TTL expires
-      cached.data?.printer_records !== undefined
+      cached.data?.printer_records !== undefined &&
+      // Older settings payloads must be refreshed to populate wb-gst.
+      cached.data?.company_gstin !== undefined
     if (cacheValid) {
       settings = cached.data
     } else {
@@ -1443,6 +1445,9 @@ async function syncBillingSettings(targetUser, force) {
     }
     
     systemSettings.value = settings
+    if (settings) {
+      localStorage.setItem('wb-gst', settings.company_gstin || '')
+    }
     if (settings && settings.currency_precision !== undefined && settings.currency_precision !== null) {
       localStorage.setItem('wb-prcision', String(settings.currency_precision))
     }

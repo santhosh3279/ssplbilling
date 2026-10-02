@@ -404,6 +404,7 @@ function applyToLocalStorage(settings, targetUserArg) {
   if (!settings) return
   const targetUser = targetUserArg || localStorage.getItem('wb-inherited-user') || session.user.value
   
+  localStorage.setItem('wb-gst', settings.company_gstin || '')
   if (settings.company_state) {
     localStorage.setItem('wb-company-state', settings.company_state)
   }

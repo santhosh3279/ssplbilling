@@ -685,10 +685,14 @@ def get_billing_settings(user=None, company=None):
 		"theme": user_theme,
 	}
 
+	gst_company = user_defaults["company"] or company
+	company_gstin = (frappe.get_cached_value("Company", gst_company, "gstin") or "") if gst_company else ""
+
 	return {
 		"app_version": settings.custom_version or ssplbilling.__version__,
 		"last_updated": last_updated,
 		"company_state": company_state,
+		"company_gstin": company_gstin,
 		"currency_precision": frappe.db.get_single_value('System Settings', 'currency_precision') or 2,
 		"discount_account": _discount_account_for_company(settings.discount_account, company),
 		"short_or_excess_account": settings.short_or_excess_account or "",
