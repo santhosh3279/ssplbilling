@@ -1187,6 +1187,7 @@ async function loadInvoice(invoiceName) {
     // Customer
     customerId.value = data.customer || ''
     customerName.value = data.customer_name || 'Select Customer...'
+    customerAddressName.value = data.customer_address || ''
     customerState.value = data.state || ''
     mop.value = data.mop || 'Cash'
 
@@ -1326,6 +1327,7 @@ const customerName = ref('Select Customer...')
 const customerId = ref('')          // actual Customer doc name (for backend calls)
 const customerDetails = ref('')
 const customerAddress = ref('')
+const customerAddressName = ref('')
 const customerMobile = ref('')
 const customerGstin = ref('')
 const customerBalance = ref(null)
@@ -1621,6 +1623,7 @@ async function clearBill() {
   packingEntry.value = ''
   otherEntry.value = ''
   customAddress.value = { customer_name: '', mobile_number: '', remarks: '', address_line_1: '', address_line_2: '' }
+  customerAddressName.value = ''
   clearHistory()
   linkedPayments.value = []
   invoiceNo.value = 'NEW'
@@ -1726,13 +1729,16 @@ async function handleSave() {
       customerDetails.value = cust.mobile || cust.email || ''
       customerMobile.value = cust.mobile || ''
       customerGstin.value = cust.gstin || ''
-      customerState.value = cust.state || ''
       customerModifier.value = cust.pricelist_multiplication_factor ?? null
-      
-      const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
-      customerAddress.value = addrParts.join(', ')
 
-      applyRegionalTaxLogic()
+      // Keep the address chosen on the bill when the customer has multiple addresses.
+      if (!customerAddressName.value || customerAddressName.value === cust.address_name) {
+        customerAddressName.value = cust.address_name || ''
+        customerState.value = cust.state || ''
+        const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
+        customerAddress.value = addrParts.join(', ')
+        applyRegionalTaxLogic()
+      }
     }
   } catch (err) {
     console.error('Failed to fetch latest customer details from server:', err)
@@ -1765,6 +1771,7 @@ async function handleSave() {
     series: selectedSeries.value,
     custom_invoice_no: customInvoiceNo.value ? customInvoiceNo.value.trim().toUpperCase() : '',
     customer: customerId.value,
+    customer_address: customerAddressName.value,
     mop: mop.value,
     posting_date: invoiceDate.value,
     update_stock: 1,
@@ -3196,6 +3203,7 @@ function handleCustomerSelected(cust, opts = {}) {
   customerMobile.value = cust.mobile_no || ''
   customerGstin.value = cust.gstin || ''
   customerBalance.value = cust.balance ?? 0
+  customerAddressName.value = cust.address_name || ''
   customerState.value = cust.state || ''
   customerModifier.value = cust.pricelist_multiplication_factor ?? null
 

@@ -131,8 +131,8 @@ def _apply_payload_to_doc(doc, payload):
     state_name = payload.get("place_of_supply") or ""
     if state_name and state_name in STATE_NUMBERS:
         doc.place_of_supply = f"{STATE_NUMBERS[state_name]}-{state_name}"
-    elif state_name:
-        doc.place_of_supply = state_name
+    else:
+        doc.place_of_supply = state_name or None
 
     doc.is_return = frappe.utils.cint(payload.get("is_return"))
     doc.customer_rate_multiplier = frappe.utils.cint(payload.get("customer_rate_multiplier"))
@@ -142,11 +142,26 @@ def _apply_payload_to_doc(doc, payload):
     warehouse = payload.get("warehouse")
     income_account = payload.get("income_account")
 
-    # Clear address/contact fields so Frappe re-derives them from the customer;
-    # stale values from a previous customer cause a ValidationError.
-    doc.customer_address = None
+    # Frappe's update_if_missing only fills None fields. Clear all values derived
+    # from the previous party/address before asking it to populate the new one.
+    customer_address = payload.get("customer_address") or None
+    if customer_address and not frappe.db.exists("Dynamic Link", {
+        "parent": customer_address,
+        "parenttype": "Address",
+        "link_doctype": "Customer",
+        "link_name": doc.customer,
+    }):
+        frappe.throw(f"Address {customer_address} is not linked to customer {doc.customer}")
+    doc.customer_address = customer_address
     doc.shipping_address_name = None
     doc.contact_person = None
+    doc.customer_name = None
+    doc.address_display = None
+    doc.shipping_address = None
+    doc.contact_display = None
+    doc.contact_mobile = None
+    doc.contact_email = None
+    doc.tax_category = None
 
     # The GST fields are fetch_from customer_address, and _validate_links() skips
     # the refresh entirely when that link is empty. A customer without a linked

@@ -348,6 +348,7 @@ def get_sales_invoice(invoice_name):
         "mirrored_invoice": mirrored_invoice,
         "customer": si.customer,
         "customer_name": si.customer_name,
+        "customer_address": si.customer_address or "",
         "state": party_state,
         "posting_date": str(si.posting_date),
         "posting_time": str(si.posting_time) if si.posting_time else "",
