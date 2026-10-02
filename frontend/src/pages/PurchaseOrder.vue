@@ -356,7 +356,7 @@
               class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 disabled:cursor-default"
             >
               <option value="">-- None --</option>
-              <option v-for="tax in localTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
+              <option v-for="tax in visibleTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
             </select>
           </div>
 
@@ -595,6 +595,7 @@ import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
+import { filterTaxTemplates, matchingTaxTemplate } from '../utils/gstTaxTemplates'
 import Userseries from '../components/Userseries.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
@@ -844,6 +845,15 @@ const supplierAddress = ref('')
 const supplierAddressName = ref('')
 const supplierMobile = ref('')
 const supplierGstin = ref('')
+
+const visibleTaxTemplates = computed(() => isReadOnly.value
+  ? localTaxTemplates.value
+  : filterTaxTemplates(localTaxTemplates.value, localStorage.getItem('wb-gst'), supplierGstin.value))
+watch([supplierGstin, taxTemplate, isReadOnly], () => {
+  if (isReadOnly.value || isLoadingBill.value) return
+  const matching = matchingTaxTemplate(taxTemplate.value, localTaxTemplates.value, localStorage.getItem('wb-gst'), supplierGstin.value)
+  if (matching !== taxTemplate.value) taxTemplate.value = matching
+}, { flush: 'sync' })
 const supplierLastInvDate = ref('')
 const supplierState = ref('')
 const submitting = ref(false)

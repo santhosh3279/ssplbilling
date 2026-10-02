@@ -299,7 +299,7 @@
               class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 disabled:cursor-default"
             >
               <option value="">-- None --</option>
-              <option v-for="tax in localTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
+              <option v-for="tax in visibleTaxTemplates" :key="tax" :value="tax">{{ tax }}</option>
             </select>
           </div>
 
@@ -621,6 +621,7 @@ import { loadCachedPanel, saveCachedPanel, applyPanelEvent } from '../services/b
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
+import { filterTaxTemplates, matchingTaxTemplate } from '../utils/gstTaxTemplates'
 import PartyHistoryModal from '../components/PartyHistoryModal.vue'
 import BarcodePrintPage from './BarcodePrintPage.vue'
 import Userseries from '../components/Userseries.vue'
@@ -988,6 +989,15 @@ const customerAddress = ref('')
 const customerAddressName = ref('')
 const customerMobile = ref('')
 const customerGstin = ref('')
+
+const visibleTaxTemplates = computed(() => isReadOnly.value
+  ? localTaxTemplates.value
+  : filterTaxTemplates(localTaxTemplates.value, localStorage.getItem('wb-gst'), customerGstin.value))
+watch([customerGstin, taxTemplate, isReadOnly], () => {
+  if (isReadOnly.value || isLoadingBill.value) return
+  const matching = matchingTaxTemplate(taxTemplate.value, localTaxTemplates.value, localStorage.getItem('wb-gst'), customerGstin.value)
+  if (matching !== taxTemplate.value) taxTemplate.value = matching
+}, { flush: 'sync' })
 const customerBalance = ref(null)
 const customerLastInvDate = ref('')
 const customerState = ref('')
@@ -1221,7 +1231,6 @@ watch([pendingItem, selectedRowIdx], ([pending, rowIdx]) => {
 watch(taxTemplate, (val) => {
   if (!val) return
   isInclusiveTax.value = val.toLowerCase().includes('inclusive')
-  applyRegionalTaxLogic()
 })
 
 // --- Methods ---
@@ -1682,29 +1691,6 @@ function dismissPriceModal() {
   }
   priceDetectData.value = null
   postModalFocusTarget.value = null
-}
-
-function applyRegionalTaxLogic() {
-  if (!customerState.value || !taxTemplate.value) return
-  const companyState = localStorage.getItem('wb-company-state') || ''
-  if (!companyState || !customerState.value) return
-
-  const isInterState = companyState.toLowerCase() !== customerState.value.toLowerCase()
-  const currentTax = taxTemplate.value
-
-  if (isInterState) {
-    if (currentTax.toLowerCase().includes('in-state')) {
-      const target = currentTax.replace(/in-state/i, 'Out-State')
-      const found = localTaxTemplates.value.find(t => t.toLowerCase() === target.toLowerCase())
-      if (found) taxTemplate.value = found
-    }
-  } else {
-    if (currentTax.toLowerCase().includes('out-state')) {
-      const target = currentTax.replace(/out-state/i, 'In-State')
-      const found = localTaxTemplates.value.find(t => t.toLowerCase() === target.toLowerCase())
-      if (found) taxTemplate.value = found
-    }
-  }
 }
 
 function handleItemEntry() {
@@ -2762,7 +2748,6 @@ function handleCustomerSelected(cust, opts = {}) {
   } else {
     customerLastInvDate.value = 'None'
   }
-  applyRegionalTaxLogic()
   fetchCustomerSalesHistory(cust.name)
 }
 
