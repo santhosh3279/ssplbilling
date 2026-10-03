@@ -470,10 +470,11 @@ function bySearch(a, b, firstToken) {
 const results = computed(() => {
   const q = query.value.trim().toLowerCase()
   const tokens = q ? q.split(/\s+/) : []
+  const suggestionType = activeType.value === 'All' ? 'Customer' : activeType.value
 
   // When overrideLedgers is provided (e.g. row 2+ MOP accounts), use it directly
   if (props.overrideLedgers) {
-    if (tokens.length === 0) return props.overrideLedgers.filter(l => l.type === 'Customer').sort(byActivity).slice(0, 100)
+    if (tokens.length === 0) return props.overrideLedgers.filter(l => l.type === suggestionType).sort(byActivity).slice(0, 100)
     return props.overrideLedgers
       .filter(l => tokenMatch(l, ['label', 'name'], tokens))
       .sort((a, b) => bySearch(a, b, tokens[0]))
@@ -503,8 +504,8 @@ const results = computed(() => {
   }
 
   if (tokens.length === 0) {
-    list = list.filter(l => l.type === 'Customer')
-    if (suggestionCostCenter.value) {
+    list = list.filter(l => l.type === suggestionType)
+    if (suggestionType === 'Customer' && suggestionCostCenter.value) {
       list = list.filter(l => ledgerActivity(l) > 0)
     }
     const sorted = list.sort(byActivity)
