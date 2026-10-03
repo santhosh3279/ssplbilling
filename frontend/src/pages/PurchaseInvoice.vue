@@ -1337,7 +1337,9 @@ async function handleSelectSidebarItem(item) {
       const discount = i.discount || 0
       const effectiveRate = i.rate || 0
       const preDiscountRate = discount > 0
-        ? parseFloat((effectiveRate / (1 - getDiscPrecision(discount) / 100)).toFixed(precision))
+        ? (i.price_list_rate ?? (discount < 100
+          ? parseFloat((effectiveRate / (1 - getDiscPrecision(discount) / 100)).toFixed(precision))
+          : 0))
         : effectiveRate
       return {
         item_code: i.item_code,

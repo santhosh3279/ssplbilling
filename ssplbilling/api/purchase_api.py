@@ -267,7 +267,9 @@ def create_purchase_invoice(data=None, **kwargs):
     for item in data["items"]:
         disc = float(item.get("discount_percentage") or 0)
         price_list_rate = float(item.get("price_list_rate") or item["rate"])
-        rate = float(item["rate"]) if not disc else round(price_list_rate * (1 - disc / 100), 9)
+        # Let ERPNext calculate percentage discounts using its field precision.
+        # A separately rounded net rate can make validation clear the percentage.
+        rate = 0 if disc > 0 else float(item["rate"])
         qty = float(item["qty"])
         if pi.is_return:
             qty = -abs(qty)
@@ -570,7 +572,9 @@ def update_purchase_invoice(data=None, **kwargs):
     for item in data["items"]:
         disc = float(item.get("discount_percentage") or 0)
         price_list_rate = float(item.get("price_list_rate") or item["rate"])
-        rate = float(item["rate"]) if not disc else round(price_list_rate * (1 - disc / 100), 9)
+        # Let ERPNext calculate percentage discounts using its field precision.
+        # A separately rounded net rate can make validation clear the percentage.
+        rate = 0 if disc > 0 else float(item["rate"])
         qty = float(item["qty"])
         if pi.is_return:
             qty = -abs(qty)
