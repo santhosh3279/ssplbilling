@@ -407,7 +407,9 @@ const columns = computed(() => {
     return [
       { label: 'Date', key: 'date', type: 'date' },
       { label: 'Payment ID', key: 'name' },
-      { label: 'Party', key: 'party_name' },
+      { label: 'Paid From', key: 'paid_from' },
+      { label: 'Paid To', key: 'paid_to' },
+      { label: 'Party Name', key: 'party_name' },
       { label: 'MOP', key: 'mode_of_payment' },
       { label: 'Amount', key: 'display_amount', type: 'currency' },
       { label: 'Status', key: 'docstatus' },
@@ -416,6 +418,9 @@ const columns = computed(() => {
     return [
       { label: 'Date', key: 'date', type: 'date' },
       { label: 'Journal ID', key: 'name' },
+      { label: 'Paid From', key: 'paid_from' },
+      { label: 'Paid To', key: 'paid_to' },
+      { label: 'Party Name', key: 'party_name' },
       { label: 'Type', key: 'voucher_type' },
       { label: 'Remark', key: 'user_remark' },
       { label: 'Amount', key: 'display_amount', type: 'currency' },

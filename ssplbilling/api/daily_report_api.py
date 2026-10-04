@@ -35,6 +35,47 @@ def _filter_cost_center(filters, doctype, child_doctype, date_field, from_date, 
                 filters["name"] = ["in", names or [""]]
 
 
+def _add_journal_accounts_and_parties(journals):
+        """Summarize account sides and party display names without duplicating journals."""
+        if not journals:
+                return journals
+        lines = frappe.get_all(
+                "Journal Entry Account",
+                filters={"parent": ["in", [journal.name for journal in journals]],
+                         "parenttype": "Journal Entry", "parentfield": "accounts"},
+                fields=["parent", "account", "party_type", "party", "debit", "credit",
+                        "debit_in_account_currency", "credit_in_account_currency"],
+                order_by="parent asc, idx asc",
+                limit=0,
+        )
+        parties_by_type = {}
+        for line in lines:
+                if line.party_type and line.party:
+                        parties_by_type.setdefault(line.party_type, set()).add(line.party)
+        party_names = {}
+        for party_type, names in parties_by_type.items():
+                title_field = frappe.get_meta(party_type).title_field or "name"
+                for party in frappe.get_all(
+                        party_type, filters={"name": ["in", list(names)]},
+                        fields=["name", f"{title_field} as party_name"], limit=0,
+                ):
+                        party_names[(party_type, party.name)] = party.party_name or party.name
+
+        details = {journal.name: {"paid_from": [], "paid_to": [], "party_name": []} for journal in journals}
+        for line in lines:
+                detail = details[line.parent]
+                if line.account and (flt(line.credit) or flt(line.credit_in_account_currency)):
+                        detail["paid_from"].append(line.account)
+                if line.account and (flt(line.debit) or flt(line.debit_in_account_currency)):
+                        detail["paid_to"].append(line.account)
+                if line.party:
+                        detail["party_name"].append(party_names.get((line.party_type, line.party), line.party))
+        for journal in journals:
+                for field, values in details[journal.name].items():
+                        journal[field] = ", ".join(dict.fromkeys(values))
+        return journals
+
+
 @frappe.whitelist()
 def get_daily_reports(report_type, from_date, to_date, naming_series=None, company=None, cost_center=None):
         """
@@ -110,7 +151,7 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None, compa
                 return frappe.get_all(
                         "Payment Entry",
                         filters=filters,
-                        fields=["name", "party_name", "paid_amount", "received_amount", "mode_of_payment", "docstatus", "posting_date", "payment_type"],
+                        fields=["name", "party_name", "paid_from", "paid_to", "paid_amount", "received_amount", "mode_of_payment", "docstatus", "posting_date", "payment_type"],
                         order_by="posting_date desc, creation desc"
                 )
 
@@ -119,12 +160,13 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None, compa
                 if company:
                         filters["company"] = company
                 _filter_cost_center(filters, "Journal Entry", 'Journal Entry Account', "posting_date", from_date, to_date, cost_center, company)
-                return frappe.get_all(
+                journals = frappe.get_all(
                         "Journal Entry",
                         filters=filters,
                         fields=["name", "voucher_type", "total_debit", "total_credit", "docstatus", "user_remark", "posting_date"],
                         order_by="posting_date desc, creation desc"
                 )
+                return _add_journal_accounts_and_parties(journals)
 
         elif report_type == 'Quotation':
                 filters = {"transaction_date": ["between", [from_date, to_date]], "docstatus": ["<", 2]}
