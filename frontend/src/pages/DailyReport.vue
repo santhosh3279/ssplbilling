@@ -191,7 +191,7 @@
                 <td v-for="col in columns" :key="col.key" class="px-2 py-1.5 font-normal text-[var(--color-text)] text-[21px]">
                   <template v-if="col.type === 'currency'">
                     ₹ {{ (row[col.key] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
-                    <span v-if="row.direction && col.key === 'display_amount'" class="ml-1 text-sm font-bold" :class="row.direction === 'CR' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ row.direction }}</span>
+                    <span v-if="row.direction && col.key === 'display_amount'" class="ml-1 text-[10.5px] font-bold" :class="row.direction === 'CR' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ row.direction }}</span>
                   </template>
                   <template v-else-if="col.type === 'date'">
                     {{ formatDate(row[col.key]) }}
@@ -201,7 +201,7 @@
                   </template>
                   <template v-else-if="col.key === 'docstatus'">
                     <span 
-                      class="px-2 py-0.5 rounded text-[18px]"
+                      class="px-2 py-0.5 rounded text-[13.5px]"
                       :class="row[col.key] === 1 ? 'bg-[var(--color-success)]/30 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/30 text-[var(--color-warning)]'"
                     >
                       {{ row[col.key] === 1 ? 'Submitted' : 'Draft' }}
@@ -602,7 +602,7 @@ onMounted(() => {
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-.custom-table td, .custom-table th { font-size: 21px !important; }
+.custom-table td, .custom-table th { font-size: 15.75px !important; }
 
 /* Ensure no bold text globally in this component */
 * { font-weight: 400 !important; }
