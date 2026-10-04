@@ -40,6 +40,37 @@ def get_user_mop_ledgers():
 	]
 
 
+def _get_search_accounts(company=None, alternative_company=None):
+    """Return accounts listed in Visible Accounts OR checked for ledger search."""
+    settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
+    visible_accounts = [row.account for row in (settings.visible_accounts or []) if row.account]
+    visibility_filters = []
+    if visible_accounts:
+        visibility_filters.append(["name", "in", visible_accounts])
+    # Settings accounts still work before migration installs the new checkbox.
+    if frappe.get_meta("Account").has_field("custom_show_in_ledger_search"):
+        visibility_filters.append(["custom_show_in_ledger_search", "=", 1])
+    if not visibility_filters:
+        return []
+
+    filters = {
+        "disabled": 0,
+        "is_group": 0,
+        "account_type": ["not in", ["Receivable", "Payable"]],
+    }
+    companies = list(dict.fromkeys(value for value in (company, alternative_company) if value))
+    if companies:
+        filters["company"] = ["in", companies]
+
+    return frappe.get_all(
+        "Account",
+        filters=filters,
+        or_filters=visibility_filters,
+        fields=["name", "account_name as label", "account_type as group", "company"],
+        limit=0,
+    )
+
+
 @frappe.whitelist()
 def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
     """Fetch all Customers, Suppliers, and Accounts in a unified format for local preloading."""
@@ -80,23 +111,11 @@ def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
         e["whatsapp"] = ""
     ledgers.extend(employees)
 
-    # 4. Accounts (Ledgers)
-    account_filters = {"disabled": 0, "is_group": 0, "account_type": ["not in", ["Receivable", "Payable"]]}
-    if company and alternative_company:
-        account_filters["company"] = ["in", [company, alternative_company]]
-    elif company:
-        account_filters["company"] = company
-    elif alternative_company:
-        account_filters["company"] = alternative_company
-
-    accounts = frappe.get_all(
-        "Account",
-        filters=account_filters,
-        fields=["name", "account_name as label", "account_type as group", "company"],
-        limit=0
-    )
+    # Fetch accounts enabled by either billing settings or the Account checkbox.
+    accounts = _get_search_accounts(company, alternative_company)
     for a in accounts:
         a["type"] = "Account"
+        a["ledger_search_visible"] = True
         a["mobile_no"] = ""
         a["email"] = ""
         a["gstin"] = ""

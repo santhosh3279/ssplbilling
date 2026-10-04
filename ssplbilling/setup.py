@@ -3,6 +3,16 @@ from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
 
 
 CUSTOM_FIELDS = {
+	"Account": [
+		{
+			"fieldname": "custom_show_in_ledger_search",
+			"label": "Show in Ledger Search",
+			"fieldtype": "Check",
+			"insert_after": "account_type",
+			"default": "0",
+			"description": "Show in billing ledger search even when not listed in SSPL Billing Settings Visible Accounts.",
+		},
+	],
 	"Item": [
 		{
 			"fieldname": "custom_pricelist_percentages",

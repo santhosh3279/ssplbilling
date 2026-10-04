@@ -275,9 +275,7 @@
 <script setup>
 import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { frappeGet } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
-import { getUserRole } from '../composables/usePermission.js'
 import { useLedgerCache } from '../services/ledgerCache.js'
 import DateFilter from './DateFilter.vue'
 import CustomerCreator from './CustomerCreator.vue'
@@ -360,8 +358,6 @@ async function preloadLedger(force = false) {
 }
 
 // ─── Filtering ────────────────────────────────────────────────────────────────
-const userRole = computed(() => getUserRole())
-
 const isSameCompany = computed(() => {
   const wbCompany = localStorage.getItem('wb-company')
   const aeCompany = localStorage.getItem('ae-alternative_company')
@@ -375,39 +371,12 @@ function getDisplayBalance(c) {
   return c.balance || 0
 }
 
-const allowedAccountSet = computed(() => {
-  const role = userRole.value
-  if (role === 'admin' || role === 'accounts') return null
-
-  const accounts = [
-    localStorage.getItem('wb-cash'),
-    localStorage.getItem('wb-card'),
-    localStorage.getItem('wb-bank'),
-    localStorage.getItem('wb-upi'),
-  ].filter(Boolean)
-
-  try {
-    const raw = localStorage.getItem('wb-visible-accounts')
-    if (raw) accounts.push(...JSON.parse(raw))
-  } catch (_) {}
-
-  const allowed = new Set(accounts)
-
-  if (isSameCompany.value) {
-    const wbCompany = localStorage.getItem('wb-company')
-    const wbAbbr = wbCompany === 'CHETTIYAR KADA' ? 'SSPL' : 'NCK'
-    const altAbbr = wbCompany === 'CHETTIYAR KADA' ? 'NCK' : 'SSPL'
-
-    accounts.forEach(acc => {
-      if (acc.endsWith(` - ${wbAbbr}`)) {
-        const altAcc = acc.replace(` - ${wbAbbr}`, ` - ${altAbbr}`)
-        allowed.add(altAcc)
-      }
-    })
-  }
-
-  return allowed
-})
+// The backend has already applied Visible Accounts OR the Account checkbox.
+const allowedAccountSet = computed(() => new Set(
+  allLedgers.value
+    .filter(ledger => ledger.type === 'Account' && ledger.ledger_search_visible === true)
+    .map(ledger => ledger.name)
+))
 
 function tokenMatch(l, fields, tokens) {
   if (tokens.length === 0) return true
@@ -472,10 +441,14 @@ const results = computed(() => {
   const tokens = q ? q.split(/\s+/) : []
   const suggestionType = activeType.value === 'All' ? 'Customer' : activeType.value
 
-  // When overrideLedgers is provided (e.g. row 2+ MOP accounts), use it directly
+  const allowedSet = allowedAccountSet.value
+  const accountIsVisible = ledger => ledger.type !== 'Account' || allowedSet.has(ledger.name)
+
+  // Supplied account lists must meet the same visibility rules as cached accounts.
   if (props.overrideLedgers) {
-    if (tokens.length === 0) return props.overrideLedgers.filter(l => l.type === suggestionType).sort(byActivity).slice(0, 100)
-    return props.overrideLedgers
+    const overrides = props.overrideLedgers.filter(accountIsVisible)
+    if (tokens.length === 0) return overrides.filter(l => l.type === suggestionType).sort(byActivity).slice(0, 100)
+    return overrides
       .filter(l => tokenMatch(l, ['label', 'name'], tokens))
       .sort((a, b) => bySearch(a, b, tokens[0]))
       .slice(0, 100)
@@ -489,10 +462,7 @@ const results = computed(() => {
   }
 
   // Account visibility filter
-  const allowedSet = allowedAccountSet.value
-  if (allowedSet && allowedSet.size > 0) {
-    list = list.filter(l => l.type !== 'Account' || allowedSet.has(l.name))
-  }
+  list = list.filter(accountIsVisible)
 
   if (activeType.value !== 'All') {
     list = list.filter(l => l.type === activeType.value)
@@ -694,7 +664,7 @@ watch(() => props.show, (val) => {
       activeType.value = props.initialType
     }
     
-    if (!props.overrideLedgers) preloadLedger()
+    preloadLedger()
     focus()
   } else {
     closeSubForm()
@@ -743,7 +713,7 @@ onMounted(() => {
   if (props.show) {
     query.value = props.initialQuery || ''
     activeType.value = props.initialType
-    if (!props.overrideLedgers) preloadLedger()
+    preloadLedger()
     focus()
   }
   window.addEventListener('keydown', handleWindowKeyDown)

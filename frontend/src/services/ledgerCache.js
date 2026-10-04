@@ -17,7 +17,7 @@ function currentContext() {
   })
 }
 
-const LEDGERS_CACHE_KEY = 'sspl-ledgers-cache'
+const LEDGERS_CACHE_KEY = 'sspl-ledgers-cache-v2'
 const PARTY_LINKS_CACHE_KEY = 'sspl-partylinks-cache'
 
 function loadFromStorage() {
