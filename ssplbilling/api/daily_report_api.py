@@ -234,17 +234,17 @@ def get_daily_voucher_details(doctype, name):
         doc.apply_fieldlevel_read_permissions()
         data = doc.as_dict()
         meta = frappe.get_meta(doctype)
-        fields = _voucher_detail_fields(meta, data.keys())
-        fields.extend(
+        fields = [
                 {"fieldname": key, "label": label, "fieldtype": fieldtype}
                 for key, label, fieldtype in [
-                        ("docstatus", "Document Status", "Select"),
+                        ("company", "Company", "Link"),
+                        ("company_gstin", "GSTIN", "Data"),
+                        ("payment_type" if doctype == "Payment Entry" else "voucher_type", "Entry Type", "Select"),
+                        ("naming_series", "Series", "Data"),
+                        ("posting_date", "Posting Date", "Date"),
                         ("owner", "Created By", "Data"),
-                        ("creation", "Created On", "Datetime"),
-                        ("modified", "Last Modified", "Datetime"),
-                        ("modified_by", "Modified By", "Data"),
                 ] if key in data
-        )
+        ]
         tables = []
         for field in meta.fields:
                 if field.fieldtype not in table_fields or field.fieldname not in data:
