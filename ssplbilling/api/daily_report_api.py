@@ -233,6 +233,11 @@ def get_daily_voucher_details(doctype, name):
         doc.check_permission("read")
         doc.apply_fieldlevel_read_permissions()
         data = doc.as_dict()
+        if doctype == "Payment Entry":
+                received = flt(data.get("received_amount"))
+                data["display_amount"] = received if received > 0 else flt(data.get("paid_amount"))
+        else:
+                data["display_amount"] = flt(data.get("total_debit")) or flt(data.get("total_credit"))
         meta = frappe.get_meta(doctype)
         fields = [
                 {"fieldname": key, "label": label, "fieldtype": fieldtype}
@@ -243,6 +248,7 @@ def get_daily_voucher_details(doctype, name):
                         ("naming_series", "Series", "Data"),
                         ("posting_date", "Posting Date", "Date"),
                         ("owner", "Created By", "Data"),
+                        ("display_amount", "Amount", "Currency"),
                 ] if key in data
         ]
         tables = []
@@ -255,6 +261,41 @@ def get_daily_voucher_details(doctype, name):
                         "fieldname": field.fieldname,
                         "label": field.label or field.fieldname,
                         "fields": _voucher_detail_fields(frappe.get_meta(field.options), available_keys),
+                })
+        if doctype == "Payment Entry":
+                entries = frappe.get_all(
+                        "GL Entry",
+                        filters={"voucher_type": doctype, "voucher_no": name,
+                                 "company": doc.company, "is_cancelled": 0},
+                        fields=["name", "account", "party_type", "party", "debit", "credit",
+                                "cost_center", "remarks"],
+                        order_by="creation asc, name asc", limit=0,
+                )
+                for entry in entries:
+                        entry["party_name"] = (
+                                data.get("party_name") if entry.party and entry.party == data.get("party") else entry.party
+                        ) or entry.party or ""
+                data["accounting_entries"] = entries
+                tables.insert(0, {
+                        "fieldname": "accounting_entries",
+                        "label": "Accounting Entries",
+                        "empty_message": "No posted accounting entries.",
+                        "fields": [
+                                {"fieldname": key, "label": label, "fieldtype": fieldtype}
+                                for key, label, fieldtype in [
+                                        ("account", "Account", "Link"),
+                                        ("party_type", "Party Type", "Data"),
+                                        ("party_name", "Party Name", "Data"),
+                                        ("debit", "Debit", "Currency"),
+                                        ("credit", "Credit", "Currency"),
+                                        ("cost_center", "Cost Center", "Link"),
+                                        ("remarks", "Remarks", "Small Text"),
+                                ]
+                        ],
+                        "totals": {
+                                "debit": sum(flt(entry.debit) for entry in entries),
+                                "credit": sum(flt(entry.credit) for entry in entries),
+                        },
                 })
         return {"document": data, "fields": fields, "tables": tables}
 

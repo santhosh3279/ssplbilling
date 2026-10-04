@@ -33,9 +33,17 @@
                 </td>
               </tr>
             </tbody>
+            <tfoot v-if="table.totals" class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)]">
+              <tr>
+                <td class="px-3 py-2">Total</td>
+                <td v-for="field in table.fields" :key="field.fieldname" class="px-3 py-2">
+                  {{ table.totals[field.fieldname] !== undefined ? fieldValue(table.totals[field.fieldname], field) : '' }}
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
-        <p v-else class="px-5 py-4 text-[var(--color-text-muted)]">No entries.</p>
+        <p v-else class="px-5 py-4 text-[var(--color-text-muted)]">{{ table.empty_message || 'No entries.' }}</p>
       </section>
     </template>
   </div>
