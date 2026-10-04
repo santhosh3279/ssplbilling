@@ -173,7 +173,7 @@
         <table class="w-full border-collapse custom-table">
           <thead>
             <tr class="bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] text-left border-b border-[var(--color-border)]">
-              <th v-for="col in columns" :key="col.key" class="px-2 py-1.5 font-normal text-[21px]">{{ col.label }}</th>
+              <th v-for="col in columns" :key="col.key" :title="col.label" class="px-2 py-1.5 font-normal text-[21px]">{{ col.label }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-700">
@@ -188,7 +188,7 @@
                 class="hover:bg-[var(--color-surface-raised)] transition-colors cursor-pointer"
                 @click="handleRowClick(row)"
               >
-                <td v-for="col in columns" :key="col.key" class="px-2 py-1.5 font-normal text-[var(--color-text)] text-[21px]">
+                <td v-for="col in columns" :key="col.key" :title="reportCellTitle(row, col)" class="px-2 py-1.5 font-normal text-[var(--color-text)] text-[21px]">
                   <template v-if="col.type === 'currency'">
                     ₹ {{ (row[col.key] || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                     <span v-if="row.direction && col.key === 'display_amount'" class="ml-1 text-[10.5px] font-bold" :class="row.direction === 'CR' ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ row.direction }}</span>
@@ -221,6 +221,7 @@
       <div v-else class="h-full">
         <SalesInvoice v-if="modalType === 'Sales Invoice'" :is-subwindow="true" :invoice-name="selectedDoc" @close="backToReport" />
         <Quotation v-else-if="modalType === 'Quotation'" :is-subwindow="true" :quotation-name="selectedDoc" @close="backToReport" />
+        <VoucherDetail v-else-if="modalType === 'Payment' || modalType === 'Journal'" :doctype="modalType === 'Payment' ? 'Payment Entry' : 'Journal Entry'" :name="selectedDoc" />
       </div>
     </div>
   </div>
@@ -232,6 +233,7 @@ import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
+import VoucherDetail from '../components/VoucherDetail.vue'
 
 import { formatDMY } from '../utils/date'
 import { toLocalISO } from '../services/serverTime'
@@ -243,6 +245,8 @@ const pageTitle = computed(() => {
   if (!showDetail.value) return 'Daily Reports'
   if (modalType.value === 'Sales Invoice') return `Sales Invoice: ${selectedDoc.value}`
   if (modalType.value === 'Quotation') return `Quotation: ${selectedDoc.value}`
+  if (modalType.value === 'Payment') return `Payment Entry: ${selectedDoc.value}`
+  if (modalType.value === 'Journal') return `Journal Entry: ${selectedDoc.value}`
   return 'Daily Reports'
 })
 
@@ -556,6 +560,18 @@ function isSeriesSelected(s) {
   return selectedSeriesList.value.includes(s)
 }
 
+function reportCellTitle(row, column) {
+  const value = row[column.key]
+  if (column.type === 'currency') {
+    const amount = `₹ ${Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+    return column.key === 'display_amount' && row.direction ? `${amount} ${row.direction}` : amount
+  }
+  if (column.type === 'date') return formatDate(value)
+  if (column.type === 'time') return formatTime(value)
+  if (column.key === 'docstatus') return value === 1 ? 'Submitted' : 'Draft'
+  return String(value ?? '')
+}
+
 function handleRowClick(row) {
   if (activeTab.value === 'Loading' || activeTab.value === 'Purchase Invoice') {
     // For now, no detail view for Loading and Purchase Invoice
@@ -602,7 +618,13 @@ onMounted(() => {
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #64748b; }
 
-.custom-table td, .custom-table th { font-size: 15.75px !important; }
+.custom-table { table-layout: fixed; }
+.custom-table td, .custom-table th {
+  font-size: 15.75px !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 /* Ensure no bold text globally in this component */
 * { font-weight: 400 !important; }

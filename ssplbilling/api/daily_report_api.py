@@ -210,6 +210,55 @@ def get_daily_reports(report_type, from_date, to_date, naming_series=None, compa
 
         return []
 
+def _voucher_detail_fields(meta, available_keys):
+        from frappe.model import no_value_fields, table_fields
+
+        return [
+                {"fieldname": field.fieldname, "label": field.label or field.fieldname,
+                 "fieldtype": field.fieldtype}
+                for field in meta.fields
+                if field.fieldname in available_keys
+                and field.fieldtype not in (*no_value_fields, *table_fields, "Password")
+        ]
+
+
+@frappe.whitelist()
+def get_daily_voucher_details(doctype, name):
+        """Return complete readable payment/journal fields and child rows for the detail view."""
+        from frappe.model import table_fields
+
+        if doctype not in ("Payment Entry", "Journal Entry"):
+                frappe.throw("Only payments and journals are supported.")
+        doc = frappe.get_doc(doctype, name)
+        doc.check_permission("read")
+        doc.apply_fieldlevel_read_permissions()
+        data = doc.as_dict()
+        meta = frappe.get_meta(doctype)
+        fields = _voucher_detail_fields(meta, data.keys())
+        fields.extend(
+                {"fieldname": key, "label": label, "fieldtype": fieldtype}
+                for key, label, fieldtype in [
+                        ("docstatus", "Document Status", "Select"),
+                        ("owner", "Created By", "Data"),
+                        ("creation", "Created On", "Datetime"),
+                        ("modified", "Last Modified", "Datetime"),
+                        ("modified_by", "Modified By", "Data"),
+                ] if key in data
+        )
+        tables = []
+        for field in meta.fields:
+                if field.fieldtype not in table_fields or field.fieldname not in data:
+                        continue
+                rows = data[field.fieldname] or []
+                available_keys = set().union(*(row.keys() for row in rows)) if rows else set()
+                tables.append({
+                        "fieldname": field.fieldname,
+                        "label": field.label or field.fieldname,
+                        "fields": _voucher_detail_fields(frappe.get_meta(field.options), available_keys),
+                })
+        return {"document": data, "fields": fields, "tables": tables}
+
+
 @frappe.whitelist()
 def get_current_fiscal_year_dates():
         """
