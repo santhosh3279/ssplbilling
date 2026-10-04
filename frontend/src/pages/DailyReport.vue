@@ -421,7 +421,6 @@ const columns = computed(() => {
       { label: 'Paid From', key: 'paid_from' },
       { label: 'Paid To', key: 'paid_to' },
       { label: 'Party Name', key: 'party_name' },
-      { label: 'Type', key: 'voucher_type' },
       { label: 'Remark', key: 'user_remark' },
       { label: 'Amount', key: 'display_amount', type: 'currency' },
       { label: 'Status', key: 'docstatus' },
