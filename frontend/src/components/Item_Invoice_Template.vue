@@ -404,7 +404,7 @@
             aria-live="polite"
           >
             <div class="flex items-baseline gap-2 whitespace-nowrap text-[1.09375rem] leading-6 font-bold transition-[font-size] group-hover:text-[1.3125rem] group-focus-within:text-[1.3125rem]">
-              <span class="text-[var(--color-text-muted)]">Total Upto {{ selectedRowIndex + 1 }}</span>
+              <span class="text-[0.5em] text-[var(--color-text-muted)]">Total Upto {{ selectedRowIndex + 1 }}</span>
               <span class="font-mono tabular-nums text-[var(--color-highlight)]">₹ {{ format(totalUpToLine.total) }}</span>
             </div>
             <div role="tooltip" class="absolute left-0 right-0 top-full z-50 hidden pt-1 group-hover:block group-focus-within:block">
