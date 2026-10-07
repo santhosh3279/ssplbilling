@@ -326,7 +326,7 @@
       <!-- Items Table Area -->
       <div class="flex flex-col overflow-hidden" :class="tableClass">
         <div class="flex-1 overflow-y-auto overflow-x-hidden scrollbar-none">
-          <table class="w-full text-sm border-collapse border-l border-t border-[var(--color-border)]">
+          <table class="w-full text-sm border-collapse border-l border-t border-[var(--color-border)]" :class="{ 'compact-discount-columns': doctype !== 'Stock Entry' }">
             <thead>
               <tr class="sticky top-0 z-10 bg-[var(--color-lowlight)] border-b border-[var(--color-border)]">
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-8">#</th>
@@ -340,9 +340,9 @@
                 <th v-if="doctype === 'Purchase Order'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Max Ord Qty</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-14">UOM</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Rate</th>
-                <th v-if="doctype !== 'Stock Entry'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">Disc %</th>
-                <th v-if="doctype !== 'Stock Entry'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-warning)] w-24">DISC</th>
-                <th v-if="doctype !== 'Stock Entry'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Tax %</th>
+                <th v-if="doctype !== 'Stock Entry'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase text-[var(--color-text)] w-px whitespace-nowrap">Disc %</th>
+                <th v-if="doctype !== 'Stock Entry'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase text-[var(--color-warning)] w-px whitespace-nowrap">DISC</th>
+                <th v-if="doctype !== 'Stock Entry'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase text-[var(--color-text)] w-px whitespace-nowrap">Tax %</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Amount</th>
                 <th class="border-b border-[var(--color-border)] w-8"></th>
               </tr>
@@ -1033,6 +1033,20 @@ async function refreshSelectedParty() {
 </script>
 
 <style scoped>
+/* Keep the trailing discount and tax columns sized to their displayed values.
+   Counting from the end also covers Purchase Order's extra stock columns. */
+.compact-discount-columns :deep(td:nth-last-child(5)),
+.compact-discount-columns :deep(td:nth-last-child(4)),
+.compact-discount-columns :deep(td:nth-last-child(3)) {
+  width: 1%;
+  white-space: nowrap;
+}
+
+.compact-discount-columns :deep(td:nth-last-child(5) input) {
+  width: calc(6ch + 1rem);
+  min-width: 0;
+}
+
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
