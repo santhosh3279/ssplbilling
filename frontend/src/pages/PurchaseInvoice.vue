@@ -2166,11 +2166,7 @@ function onQuickSearchSelect(item) {
     const rowIdx = editQuickSearchRowIdx.value
     editQuickSearchRowIdx.value = null
     applyItemToRow(rowIdx, finalItem)
-    if (getItemUoms(finalItem.item_code).length > 1) {
-      focusEditField('uom', rowIdx)
-    } else {
-      focusEditField('qty', rowIdx)
-    }
+    focusEditField('qty', rowIdx)
     return
   }
   newItemCode.value = ''
@@ -2334,11 +2330,7 @@ function onEditCodeKeydown(e, rowIdx) {
     const match = lookupItemInCache(code)
     if (match) {
       applyItemToRow(rowIdx, match)
-      if (getItemUoms(match.item_code).length > 1) {
-        focusEditField('uom', rowIdx)
-      } else {
-        focusEditField('qty', rowIdx)
-      }
+      focusEditField('qty', rowIdx)
     } else {
       openItemSearch(code, rowIdx)
     }
@@ -2360,7 +2352,11 @@ function onEditQtyKeydown(e, idx) {
     e.preventDefault()
     const item = items.value[idx]
     if (item && item.qty) {
-      focusEditField('rate', idx)
+      if (getItemUoms(item.item_code).length > 1) {
+        focusEditField('uom', idx)
+      } else {
+        focusEditField('rate', idx)
+      }
     }
   } else if (e.key === 'Escape') {
     e.preventDefault()
@@ -2382,7 +2378,7 @@ function onEditUomKeydown(e, idx) {
 
   if (e.key === 'Enter') {
     e.preventDefault()
-    focusEditField('qty', idx)
+    focusEditField('rate', idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
     e.stopPropagation()
