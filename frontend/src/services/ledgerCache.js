@@ -59,9 +59,11 @@ loadFromStorage()
  * Fetch all ledgers from the backend and update the global cache.
  */
 export async function refreshLedgerCache(force = false) {
-  if (pendingRefresh) {
+  // A forced realtime refresh must start after any older request finishes:
+  // that request may have read balances before the voucher was committed.
+  while (pendingRefresh) {
     await pendingRefresh
-    if (cacheContext.value === currentContext()) return ledgers.value
+    if (!force && cacheContext.value === currentContext()) return ledgers.value
   }
   pendingRefresh = fetchLedgerCache(force)
   try {

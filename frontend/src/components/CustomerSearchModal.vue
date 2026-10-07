@@ -67,10 +67,6 @@
             </button>
           </div>
 
-          <label class="flex items-center gap-2 text-sm font-semibold text-[var(--color-text)] cursor-pointer" title="Refresh balances every 30 seconds while this window is open">
-            <input v-model="liveBalances" type="checkbox" class="h-4 w-4 accent-[var(--color-highlight)]" />
-            Live balances
-          </label>
           <button
             @click="preloadLedger(true)"
             :disabled="loading"
@@ -320,14 +316,6 @@ const query        = ref('')
 const activeType   = ref(props.initialType)
 const selectedIdx  = ref(0)
 const loading      = computed(() => syncLoading.value)
-const liveBalances = ref(localStorage.getItem('wb-live-ledger-balances') === '1')
-let balanceRefreshTimer = null
-
-function stopBalanceRefresh() {
-  clearInterval(balanceRefreshTimer)
-  balanceRefreshTimer = null
-}
-
 const searchInput        = ref(null)
 const scrollContainer    = ref(null)
 const customerCreatorRef = ref(null)
@@ -371,16 +359,24 @@ async function preloadLedger(force = false) {
 
 // ─── Filtering ────────────────────────────────────────────────────────────────
 const isSameCompany = computed(() => {
-  const wbCompany = localStorage.getItem('wb-company')
-  const aeCompany = localStorage.getItem('ae-alternative_company')
+  const context = cacheContext.value ? JSON.parse(cacheContext.value) : null
+  const wbCompany = context?.company ?? localStorage.getItem('wb-company')
+  const aeCompany = context?.alternative_company ?? localStorage.getItem('ae-alternative_company')
   return wbCompany && aeCompany && wbCompany === aeCompany
 })
 
+// Supplied result lists can outlive a realtime cache refresh. Resolve balances
+// from the reactive cache while preserving the caller's list and metadata.
+const balanceLedgers = computed(() => new Map(
+  allLedgers.value.map(ledger => [JSON.stringify([ledger.type, ledger.name]), ledger])
+))
+
 function getDisplayBalance(c) {
+  const ledger = balanceLedgers.value.get(JSON.stringify([c.type, c.name])) || c
   if (isSameCompany.value) {
-    return c.alternative_balance || 0
+    return ledger.alternative_balance || 0
   }
-  return c.balance || 0
+  return ledger.balance || 0
 }
 
 // The backend has already applied Visible Accounts OR the Account checkbox.
@@ -656,16 +652,6 @@ watch(selectedIdx, async (idx) => {
   }
 })
 
-watch([() => props.show, liveBalances], ([show, live]) => {
-  stopBalanceRefresh()
-  localStorage.setItem('wb-live-ledger-balances', live ? '1' : '0')
-  if (!show || !live) return
-  preloadLedger(true)
-  balanceRefreshTimer = setInterval(() => {
-    if (!syncLoading.value && document.visibilityState === 'visible') preloadLedger(true)
-  }, 30000)
-}, { immediate: true })
-
 watch(() => props.show, (val) => {
   if (val) {
     if (shouldRestoreState.value) {
@@ -742,7 +728,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  stopBalanceRefresh()
   window.removeEventListener('keydown', handleWindowKeyDown)
 })
 

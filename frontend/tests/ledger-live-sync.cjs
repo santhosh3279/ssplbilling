@@ -79,43 +79,57 @@ async function flush() {
   assert.equal(timers.size, 0)
   console.log('Ledger sync: scoped refresh, debounce, in-flight changes, reconnect, errors and cleanup passed')
 
-  const modal = fs.readFileSync('src/components/CustomerSearchModal.vue', 'utf8')
-  const pollStart = modal.indexOf('function stopBalanceRefresh()')
-  const pollEnd = modal.indexOf('\n}', pollStart) + 2
-  const watchStart = modal.indexOf('watch([() => props.show, liveBalances]')
-  const watchEnd = modal.indexOf('}, { immediate: true })', watchStart) + '}, { immediate: true })'.length
-  let callback
-  let refreshes = 0
-  const intervals = new Set()
-  const pollContext = vm.createContext({
-    balanceRefreshTimer: null,
-    props: { show: false }, liveBalances: { value: false }, syncLoading: { value: false },
-    document: { visibilityState: 'visible' },
-    localStorage: { setItem() {} },
-    preloadLedger: force => { assert.equal(force, true); refreshes++ },
-    setInterval: (fn, ms) => { assert.equal(ms, 30000); intervals.add(fn); return fn },
-    clearInterval: fn => intervals.delete(fn),
-    watch: (_, fn) => { callback = fn },
+  const { ref, computed } = require('vue')
+  const storage = new Map([
+    ['wb-company', 'Company A'], ['ae-alternative_company', 'Company B'],
+  ])
+  let apiCalls = 0
+  let resolveOld
+  let latest = [{ name: 'Customer A', type: 'Customer', balance: 120, alternative_balance: 80 }]
+  const cache = vm.createContext({
+    ref, console, Date, JSON, Number, setTimeout, clearTimeout,
+    localStorage: {
+      getItem: key => storage.get(key) || null,
+      setItem: (key, value) => storage.set(key, value),
+    },
+    frappeGet: async (method, args) => {
+      assert.equal(method, 'ssplbilling.api.customersearch_api.get_all_ledgers')
+      assert.equal(args.company, storage.get('wb-company'))
+      assert.equal(args.alternative_company, storage.get('ae-alternative_company'))
+      if (++apiCalls === 1) return new Promise(resolve => { resolveOld = resolve })
+      return latest
+    },
   })
-  vm.runInContext(modal.slice(pollStart, pollEnd) + '\n' + modal.slice(watchStart, watchEnd), pollContext)
-  callback([true, true])
-  assert.equal(refreshes, 1)
-  assert.equal(intervals.size, 1)
-  const tick = [...intervals][0]
-  tick()
-  assert.equal(refreshes, 2)
-  pollContext.syncLoading.value = true
-  tick()
-  assert.equal(refreshes, 2, 'Busy requests are not overlapped')
-  pollContext.syncLoading.value = false
-  pollContext.document.visibilityState = 'hidden'
-  tick()
-  assert.equal(refreshes, 2, 'Hidden tabs do not poll')
-  callback([false, true])
-  assert.equal(intervals.size, 0, 'Closing modal stops polling')
-  callback([true, true])
-  callback([true, false])
-  assert.equal(intervals.size, 0, 'Disabling live balances stops polling')
-  assert.ok(modal.includes('onUnmounted(() => {\n  stopBalanceRefresh()'))
-  console.log('Live option: immediate refresh, interval, busy/hidden guards and close/disable cleanup passed')
+  const cacheSource = fs.readFileSync('src/services/ledgerCache.js', 'utf8')
+  vm.runInContext(cacheSource.replace(/^import .*\n/gm, '').replace(/export /g, ''), cache)
+  const older = vm.runInContext('refreshLedgerCache()', cache)
+  const forced = vm.runInContext('refreshLedgerCache(true)', cache)
+  resolveOld([{ name: 'Customer A', type: 'Customer', balance: 10, alternative_balance: 5 }])
+  await Promise.all([older, forced])
+  assert.equal(apiCalls, 2, 'Forced socket refresh fetches new data after an older in-flight request')
+
+  const modal = fs.readFileSync('src/components/CustomerSearchModal.vue', 'utf8')
+  assert.ok(!modal.includes('liveBalances'), 'No live balance checkbox or polling remains')
+  const displayStart = modal.indexOf('const isSameCompany = computed(')
+  const displayEnd = modal.indexOf('// The backend has already applied', displayStart)
+  const display = vm.createContext({
+    computed,
+    allLedgers: vm.runInContext('ledgers', cache),
+    cacheContext: vm.runInContext('cacheContext', cache),
+    localStorage: cache.localStorage,
+  })
+  vm.runInContext(modal.slice(displayStart, displayEnd), display)
+  const getBalance = vm.runInContext('getDisplayBalance', display)
+  const supplied = { name: 'Customer A', type: 'Customer', balance: 10, alternative_balance: 5 }
+  assert.equal(getBalance(supplied), 120, 'Balance column uses refreshed company balance, even with supplied result lists')
+  latest = [{ name: 'Customer A', type: 'Customer', balance: 240, alternative_balance: 160 }]
+  await vm.runInContext('refreshLedgerCache(true)', cache)
+  assert.equal(getBalance(supplied), 240, 'Balance column reacts to subsequent cache replacements')
+  storage.set('wb-company', 'Company B')
+  latest = [{ name: 'Customer A', type: 'Customer', balance: 240, alternative_balance: 160 }]
+  await vm.runInContext('refreshLedgerCache(true)', cache)
+  assert.equal(getBalance(supplied), 160, 'Alternative company balance responds to context changes')
+  assert.equal(getBalance({ name: 'Uncached', type: 'Customer', alternative_balance: 42 }), 42)
+  assert.equal(getBalance({ name: 'Customer A', type: 'Supplier', alternative_balance: 7 }), 7, 'Party types do not collide')
+  console.log('Balance column: forced refresh race, company filters, supplied lists, reactive updates and alternative company passed')
 })().catch(error => { console.error(error); process.exitCode = 1 })
