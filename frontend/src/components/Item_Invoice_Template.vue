@@ -399,12 +399,27 @@
         <div v-if="showBottomMiddle" class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:236px;max-width:270px;">
           <div
             v-if="showTotalUpToLine"
-            class="mx-2 mt-2 rounded border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-2"
+            class="group relative mx-2 mt-2 shrink-0 rounded border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-2 outline-none focus:ring-2 focus:ring-[var(--color-focus)]"
+            tabindex="0"
             aria-live="polite"
           >
-            <div class="text-sm font-bold uppercase text-[var(--color-text-muted)]">Total up to line {{ selectedRowIndex + 1 }}</div>
-            <div class="text-3xl font-bold font-mono tabular-nums text-[var(--color-highlight)]">₹ {{ format(totalUpToLine) }}</div>
-            <div class="text-sm text-[var(--color-text-muted)]">Including tax</div>
+            <div class="flex items-baseline gap-2 whitespace-nowrap text-sm font-bold">
+              <span class="text-[var(--color-text-muted)]">Total Upto {{ selectedRowIndex + 1 }}</span>
+              <span class="font-mono tabular-nums text-[var(--color-highlight)]">₹ {{ format(totalUpToLine.total) }}</span>
+            </div>
+            <div role="tooltip" class="absolute left-0 right-0 top-full z-50 hidden pt-1 group-hover:block group-focus-within:block">
+              <div class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-2 text-sm shadow-xl">
+                <div class="mb-2 font-bold text-[var(--color-text-muted)]">Total Upto {{ selectedRowIndex + 1 }}</div>
+                <dl class="grid grid-cols-[1fr_auto] gap-x-2 gap-y-1">
+                  <dt>Without tax</dt>
+                  <dd class="text-right font-mono tabular-nums">₹ {{ format(totalUpToLine.net) }}</dd>
+                  <dt>Tax amount</dt>
+                  <dd class="text-right font-mono tabular-nums">₹ {{ format(totalUpToLine.tax) }}</dd>
+                  <dt class="border-t border-[var(--color-border)] pt-1 font-bold">Total</dt>
+                  <dd class="border-t border-[var(--color-border)] pt-1 text-right font-bold font-mono tabular-nums text-[var(--color-highlight)]">₹ {{ format(totalUpToLine.total) }}</dd>
+                </dl>
+              </div>
+            </div>
           </div>
           <slot name="bottom-middle">
             <div class="flex flex-col gap-2 p-2">
@@ -763,14 +778,20 @@ const showTotalUpToLine = computed(() => {
 })
 
 const totalUpToLine = computed(() => {
-  if (!showTotalUpToLine.value) return 0
-  const taxIncluded = props.isInclusiveTax || props.taxTemplate.toLowerCase().includes('exempt')
-  return props.items.slice(0, props.selectedRowIndex + 1).reduce((total, item) => {
-    if (item.deleted) return total
+  const totals = { net: 0, tax: 0, total: 0 }
+  if (!showTotalUpToLine.value) return totals
+  const isExempt = props.taxTemplate.toLowerCase().includes('exempt')
+  return props.items.slice(0, props.selectedRowIndex + 1).reduce((totals, item) => {
+    if (item.deleted) return totals
     const amount = Number(item.amount) || 0
-    const taxRate = Number(item.tax_rate ?? props.defaultTaxRate) || 0
-    return total + amount * (taxIncluded ? 1 : 1 + taxRate / 100)
-  }, 0)
+    const taxRate = isExempt ? 0 : (Number(item.tax_rate ?? props.defaultTaxRate) || 0)
+    const net = props.isInclusiveTax ? amount / (1 + taxRate / 100) : amount
+    const total = props.isInclusiveTax ? amount : amount * (1 + taxRate / 100)
+    totals.net += net
+    totals.tax += total - net
+    totals.total += total
+    return totals
+  }, totals)
 })
 
 const emit = defineEmits([
