@@ -2360,11 +2360,7 @@ function onEditQtyKeydown(e, idx) {
     e.preventDefault()
     const item = items.value[idx]
     if (item && item.qty) {
-      if (getItemUoms(item.item_code).length > 1) {
-        focusEditField('uom', idx)
-      } else {
-        focusEditField('rate', idx)
-      }
+      focusEditField('rate', idx)
     }
   } else if (e.key === 'Escape') {
     e.preventDefault()
@@ -2386,7 +2382,7 @@ function onEditUomKeydown(e, idx) {
 
   if (e.key === 'Enter') {
     e.preventDefault()
-    focusEditField('rate', idx)
+    focusEditField('qty', idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
     e.stopPropagation()
