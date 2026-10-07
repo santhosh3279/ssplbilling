@@ -132,9 +132,8 @@
               ref="editQtyInput"
               v-model.number="item.qty"
               type="number" min="0"
-              :step="item.uom === 'Nos' ? '1' : '0.01'"
+              step="0.001"
               class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-              @input="item.uom === 'Nos' && (item.qty = Math.floor(item.qty))"
               @keydown="onEditQtyKeydown($event, index)"
             />
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatQty(item.qty, item.uom) }}</span>
@@ -434,6 +433,7 @@
                 ref="pendingQtyInput"
                 v-model.number="pendingItem.qty"
                 type="number"
+                step="0.001"
                 min="0"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 @keydown="handlePendingQtyKeydown"

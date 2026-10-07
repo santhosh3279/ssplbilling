@@ -350,7 +350,7 @@
             <tbody>
               <!-- #row slot wraps the entire <tr> so consumers can add :class/:ref/@click on the row -->
               <template v-for="(item, idx) in items" :key="idx">
-                <slot name="row" :item="item" :index="idx" :formatQty="formatQty2p" :format="format2p">
+                <slot name="row" :item="item" :index="idx" :formatQty="formatQty" :format="format2p">
                    <tr 
                     class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]/50 focus:bg-[var(--color-focus)] outline-none"
                     tabindex="0"
@@ -360,7 +360,7 @@
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">{{ idx + 1 }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-4xl font-mono">{{ item.item_code }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-medium">{{ item.item_name }}</td>
-                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-6xl font-mono text-right tabular-nums">{{ formatQty2p(item.qty, item.uom) }}</td>
+                    <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-6xl font-mono text-right tabular-nums">{{ formatQty(item.qty, item.uom) }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom || 'Nos' }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ format2p(item.rate) }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-warning)] text-4xl font-mono text-right">{{ format2p(item.discount_percentage) }}</td>
@@ -983,15 +983,10 @@ function format2p(val) {
   return isNaN(num) ? '0.00' : num.toFixed(2)
 }
 
-function formatQty2p(val, uom) {
-  if (val === null || val === undefined || val === '') return '0'
+function formatQty(val) {
   const num = Number(val)
-  if (isNaN(num)) return '0'
-  // For 'Nos' UOM, don't show decimals and don't allow float (truncate)
-  if (uom === 'Nos' || !uom) {
-    return Math.floor(num).toString()
-  }
-  return num.toFixed(2)
+  if (!Number.isFinite(num)) return '0'
+  return Number(num.toFixed(3)).toString()
 }
 
 function getPrecision() {
@@ -1007,17 +1002,6 @@ function format(val) {
   return isNaN(num) ? (0).toFixed(p) : num.toFixed(p)
 }
 
-function formatQty(val, uom) {
-  if (val === null || val === undefined || val === '') return '0'
-  const num = Number(val)
-  if (isNaN(num)) return '0'
-  // For 'Nos' UOM, don't show decimals and don't allow float (truncate)
-  if (uom === 'Nos' || !uom) {
-    return Math.floor(num).toString()
-  }
-  const p = getPrecision()
-  return num.toFixed(p)
-}
 
 const partyType = computed(() => {
   if (props.doctype === 'Purchase Invoice' || props.doctype === 'Purchase Order') {
