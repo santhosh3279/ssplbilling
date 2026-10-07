@@ -1,53 +1,74 @@
 import { getFrappeSocket } from '../services/frappeSocket.js'
-import { updateLedgerBalanceInCache, patchLedgerInCache } from '../services/ledgerCache.js'
-import { frappeGet } from '../api.js'
+import { refreshLedgerCache } from '../services/ledgerCache.js'
 
+let _socket = null
 let _balanceHandler = null
 let _customerHandler = null
+let _connectHandler = null
+let _refreshTimer = null
+let _refreshRunning = false
+let _refreshQueued = false
 
-async function _patchCustomer(customerName) {
-  console.log('[useLedgerSync] patching cache for customer:', customerName)
+function scheduleLedgerRefresh(delay = 500) {
+  if (!_socket) return
+  _refreshQueued = true
+  if (_refreshTimer !== null || _refreshRunning) return
+  _refreshTimer = setTimeout(refreshLedgers, delay)
+}
+
+async function refreshLedgers() {
+  _refreshTimer = null
+  if (!_socket) return
+  const socket = _socket
+  _refreshQueued = false
+  _refreshRunning = true
   try {
-    const result = await frappeGet('ssplbilling.api.customersearch_api.get_single_ledger', {
-      party_name: customerName,
-      party_type: 'Customer'
-    })
-    patchLedgerInCache(customerName, result || null)
-    window.dispatchEvent(new CustomEvent('wb-ledger-cache-updated'))
+    // Event balances and get_single_ledger are not company-filtered. Fetch the
+    // active and alternative company balances together instead of patching them.
+    await refreshLedgerCache(true)
+    if (_socket === socket) {
+      window.dispatchEvent(new CustomEvent('wb-ledger-cache-updated'))
+    }
   } catch (e) {
-    console.warn('[useLedgerSync] customer patch failed:', e)
+    console.warn('[useLedgerSync] ledger refresh failed:', e)
+  } finally {
+    _refreshRunning = false
+    if (_refreshQueued) scheduleLedgerRefresh()
   }
 }
 
 export function initLedgerSync() {
   const socket = getFrappeSocket()
+  if (!socket || _socket === socket) return
+  destroyLedgerSync()
+  _socket = socket
 
   _balanceHandler = (data) => {
-    if (!data?.name) return
-    console.log('[useLedgerSync] received ledger_balance_update:', data)
-    updateLedgerBalanceInCache(data.name, data.balance)
-    window.dispatchEvent(new CustomEvent('wb-ledger-cache-updated'))
+    if (data?.name) scheduleLedgerRefresh()
   }
-  socket.on('ledger_balance_update', _balanceHandler)
-
   _customerHandler = (data) => {
-    if (!data?.name) return
-    console.log('[useLedgerSync] received customer_update:', data)
-    _patchCustomer(data.name)
+    if (data?.name) scheduleLedgerRefresh()
   }
-  socket.on('customer_update', _customerHandler)
+  _connectHandler = () => scheduleLedgerRefresh(0)
 
-  console.log('[useLedgerSync] listening for ledger_balance_update and customer_update')
+  socket.on('ledger_balance_update', _balanceHandler)
+  socket.on('customer_update', _customerHandler)
+  socket.on('connect', _connectHandler)
+  // Reconcile changes missed before subscription, including persisted balances.
+  scheduleLedgerRefresh(0)
 }
 
 export function destroyLedgerSync() {
-  const socket = getFrappeSocket()
-  if (_balanceHandler) {
-    socket.off('ledger_balance_update', _balanceHandler)
-    _balanceHandler = null
+  if (_socket) {
+    _socket.off('ledger_balance_update', _balanceHandler)
+    _socket.off('customer_update', _customerHandler)
+    _socket.off('connect', _connectHandler)
   }
-  if (_customerHandler) {
-    socket.off('customer_update', _customerHandler)
-    _customerHandler = null
-  }
+  clearTimeout(_refreshTimer)
+  _refreshTimer = null
+  _refreshQueued = false
+  _balanceHandler = null
+  _customerHandler = null
+  _connectHandler = null
+  _socket = null
 }

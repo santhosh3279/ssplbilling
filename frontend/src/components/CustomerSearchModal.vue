@@ -67,8 +67,13 @@
             </button>
           </div>
 
+          <label class="flex items-center gap-2 text-sm font-semibold text-[var(--color-text)] cursor-pointer" title="Refresh balances every 30 seconds while this window is open">
+            <input v-model="liveBalances" type="checkbox" class="h-4 w-4 accent-[var(--color-highlight)]" />
+            Live balances
+          </label>
           <button
             @click="preloadLedger(true)"
+            :disabled="loading"
             class="flex items-center gap-2 rounded-lg border border-[var(--color-highlight)] bg-[var(--color-highlight)]/10 px-4 py-2 text-lg font-semibold text-[var(--color-highlight)] transition-colors"
           >
             🔄 Refresh <kbd class="ml-1 rounded border border-[var(--color-highlight)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-xs text-[var(--color-highlight)]">F5</kbd>
@@ -315,6 +320,13 @@ const query        = ref('')
 const activeType   = ref(props.initialType)
 const selectedIdx  = ref(0)
 const loading      = computed(() => syncLoading.value)
+const liveBalances = ref(localStorage.getItem('wb-live-ledger-balances') === '1')
+let balanceRefreshTimer = null
+
+function stopBalanceRefresh() {
+  clearInterval(balanceRefreshTimer)
+  balanceRefreshTimer = null
+}
 
 const searchInput        = ref(null)
 const scrollContainer    = ref(null)
@@ -644,6 +656,16 @@ watch(selectedIdx, async (idx) => {
   }
 })
 
+watch([() => props.show, liveBalances], ([show, live]) => {
+  stopBalanceRefresh()
+  localStorage.setItem('wb-live-ledger-balances', live ? '1' : '0')
+  if (!show || !live) return
+  preloadLedger(true)
+  balanceRefreshTimer = setInterval(() => {
+    if (!syncLoading.value && document.visibilityState === 'visible') preloadLedger(true)
+  }, 30000)
+}, { immediate: true })
+
 watch(() => props.show, (val) => {
   if (val) {
     if (shouldRestoreState.value) {
@@ -720,6 +742,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  stopBalanceRefresh()
   window.removeEventListener('keydown', handleWindowKeyDown)
 })
 
