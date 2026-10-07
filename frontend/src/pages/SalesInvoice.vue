@@ -22,6 +22,7 @@
       @reprice-prices="applyCustomerPricingToRows"
       :doc-date="invoiceDate"
       :items="items"
+      :selected-row-index="selectedRowIdx"
       :subtotal="subtotal"
       :item-discount-total="itemDiscountTotal"
       :round-off="roundOff"

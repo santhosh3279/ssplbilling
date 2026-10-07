@@ -397,6 +397,15 @@
 
         <!-- Settings / Middle Column -->
         <div v-if="showBottomMiddle" class="flex flex-col border-r border-[var(--color-border)] bg-[var(--color-bg)] overflow-y-auto scrollbar-none" style="min-width:236px;max-width:270px;">
+          <div
+            v-if="showTotalUpToLine"
+            class="mx-2 mt-2 rounded border border-[var(--color-highlight)]/40 bg-[var(--color-highlight)]/10 p-2"
+            aria-live="polite"
+          >
+            <div class="text-sm font-bold uppercase text-[var(--color-text-muted)]">Total up to line {{ selectedRowIndex + 1 }}</div>
+            <div class="text-3xl font-bold font-mono tabular-nums text-[var(--color-highlight)]">₹ {{ format(totalUpToLine) }}</div>
+            <div class="text-sm text-[var(--color-text-muted)]">Including tax</div>
+          </div>
           <slot name="bottom-middle">
             <div class="flex flex-col gap-2 p-2">
               <!-- Export/Import buttons -->
@@ -691,6 +700,7 @@ const props = defineProps({
   ignoreModifier: { type: Boolean, default: false },
   docDate: { type: String, default: '' },
   items: { type: Array, default: () => [] },
+  selectedRowIndex: { type: Number, default: -1 },
   
   // Sidebar Props (sidebarDate supports v-model via update:sidebarDate emit)
   sidebarDate: { type: String, default: '' },
@@ -743,6 +753,24 @@ const props = defineProps({
   showSubmitButton: { type: Boolean, default: false },
   isDraft: { type: Boolean, default: false },
   doctype: { type: String, default: 'Sales Invoice' }
+})
+
+const showTotalUpToLine = computed(() => {
+  const index = props.selectedRowIndex
+  const item = props.items[index]
+  return !props.isReadOnly && Number.isInteger(index) && index >= 0 &&
+    index < props.items.length - 1 && item && !item.deleted && !item._is_free
+})
+
+const totalUpToLine = computed(() => {
+  if (!showTotalUpToLine.value) return 0
+  const taxIncluded = props.isInclusiveTax || props.taxTemplate.toLowerCase().includes('exempt')
+  return props.items.slice(0, props.selectedRowIndex + 1).reduce((total, item) => {
+    if (item.deleted) return total
+    const amount = Number(item.amount) || 0
+    const taxRate = Number(item.tax_rate ?? props.defaultTaxRate) || 0
+    return total + amount * (taxIncluded ? 1 : 1 + taxRate / 100)
+  }, 0)
 })
 
 const emit = defineEmits([

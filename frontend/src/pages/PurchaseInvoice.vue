@@ -17,6 +17,7 @@
       @party-refreshed="handlePartyRefreshed"
       :doc-date="invoiceDate"
       :items="items"
+      :selected-row-index="selectedRowIdx"
       :subtotal="subtotal"
       :item-discount-total="itemDiscountTotal"
       :total-tax="totalTax"
