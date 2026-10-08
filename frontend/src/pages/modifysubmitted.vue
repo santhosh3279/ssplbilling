@@ -54,62 +54,7 @@
       <main class="min-w-0 flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8">
       <div class="max-w-4xl mx-auto space-y-6">
 
-        <!-- SEARCH / FETCH CARD -->
-        <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
-          <label class="block text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] mb-2">
-            Enter Invoice Number
-          </label>
-          <div class="flex items-center gap-3">
-            <div class="relative flex-1">
-              <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-[var(--color-text-muted)] pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                  <polyline points="14 2 14 8 20 8"/>
-                  <line x1="16" y1="13" x2="8" y2="13"/>
-                  <line x1="16" y1="17" x2="8" y2="17"/>
-                  <polyline points="10 9 9 9 8 9"/>
-                </svg>
-              </span>
-              <input
-                ref="invoiceInputRef"
-                v-model="invoiceNo"
-                @keydown.enter.prevent="handleFetch"
-                type="text"
-                placeholder="e.g. CTRG08392 or PO01052"
-                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-11 pr-10 text-lg font-mono font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/20 transition-all placeholder:text-[var(--color-text-muted)]/50 uppercase"
-                :disabled="loadingFetch || loadingUpdate || loadingDraft"
-              />
-              <button
-                v-if="invoiceNo"
-                @click="clearAll"
-                type="button"
-                class="absolute inset-y-0 right-0 flex items-center pr-3 text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors"
-                title="Clear"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
-                </svg>
-              </button>
-            </div>
-
-            <button
-              @click="handleFetch"
-              :disabled="!invoiceNo.trim() || loadingFetch || loadingUpdate || loadingDraft"
-              class="flex items-center gap-2 rounded-xl bg-[var(--color-info)] hover:brightness-110 active:scale-95 px-6 py-3 text-base font-bold text-[var(--color-text-on-highlight)] transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            >
-              <svg v-if="loadingFetch" class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"/>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-              </svg>
-              <span>{{ loadingFetch ? 'Fetching...' : 'Fetch' }}</span>
-            </button>
-          </div>
-
+        <div v-if="fetchError || (updateSuccessMessage && activePage === 'bill-date')" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm">
           <!-- Error message -->
           <div
             v-if="fetchError"
@@ -144,6 +89,11 @@
           <p v-if="draftResult.cancelled_mirror" class="mt-1 text-sm text-[var(--color-text)]">Mirror bill {{ draftResult.cancelled_mirror }} was also cancelled.</p>
           <p class="mt-2 text-sm font-bold text-[var(--color-text)]">New draft: <span class="font-mono text-[var(--color-info)]">{{ draftResult.draft_invoice }}</span></p>
         </div>
+
+        <div v-if="!invoice && !draftResult && !loadingFetch" class="rounded-2xl border border-dashed border-[var(--color-border)] p-8 text-center text-[var(--color-text-muted)]">
+          Select a submitted bill from the bill palette to {{ activePage === 'bill-date' ? 'change its date' : 'move it to draft mode' }}.
+        </div>
+        <div v-if="loadingFetch" class="p-8 text-center text-[var(--color-text-muted)]">Fetching bill…</div>
 
         <!-- INVOICE DETAILS (Rendered once invoice is loaded) -->
         <div v-if="invoice" class="space-y-6">
@@ -340,7 +290,7 @@
                   <line x1="12" y1="16" x2="12" y2="12"/>
                   <line x1="12" y1="8" x2="12.01" y2="8"/>
                 </svg>
-                <span>Updates Invoice, GL entries, stock ledger, and payment ledger in database.</span>
+                <span>{{ invoice.doctype.includes('Invoice') ? 'Updates the invoice date and its ledger entries.' : 'Updates the document transaction date.' }}</span>
               </div>
 
               <button
@@ -363,7 +313,7 @@
           <!-- DRAFT MODE ACTION -->
           <div v-if="activePage === 'draft-mode'" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
             <h2 class="text-base font-black uppercase tracking-wider text-[var(--color-text)]">Submit to Draft Mode</h2>
-            <p class="mt-3 text-sm text-[var(--color-text-muted)]">Cancel this submitted bill, unlink its payments, and create a new amended draft bill.</p>
+            <p class="mt-3 text-sm text-[var(--color-text-muted)]">Cancel this submitted document, unlink applicable payments, and create a new amended draft.</p>
             <button
               type="button"
               @click="showDraftConfirm = true"
@@ -411,6 +361,13 @@
 
       </div>
       </main>
+      <SubmittedBillPalette
+        ref="billPaletteRef"
+        :busy="loadingFetch || loadingUpdate || loadingDraft"
+        :selected-name="invoice?.name || ''"
+        :selected-doctype="invoice?.doctype || ''"
+        @select="handlePaletteSelect"
+      />
     </div>
 
     <div v-if="showDraftConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="draft-confirm-title">
@@ -432,6 +389,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
+import SubmittedBillPalette from '../components/SubmittedBillPalette.vue'
 import { fetchSubmittedInvoice, modifySubmittedBillDate, moveSubmittedToDraft } from '../api'
 
 const router = useRouter()
@@ -443,7 +401,7 @@ const activePage = ref(pages[0].id)
 
 // State
 const invoiceNo = ref('')
-const invoiceInputRef = ref(null)
+const billPaletteRef = ref(null)
 const newDateInputRef = ref(null)
 
 const loadingFetch = ref(false)
@@ -518,7 +476,13 @@ const dateDiffLabel = computed(() => {
 })
 
 // Actions
-async function handleFetch() {
+async function handlePaletteSelect(bill) {
+  if (loadingFetch.value || loadingUpdate.value || loadingDraft.value) return
+  invoiceNo.value = bill.name
+  await handleFetch(bill.doctype)
+}
+
+async function handleFetch(doctype) {
   const query = invoiceNo.value.trim()
   if (!query) return
 
@@ -528,7 +492,7 @@ async function handleFetch() {
   loadingFetch.value = true
 
   try {
-    const res = await fetchSubmittedInvoice(query)
+    const res = await fetchSubmittedInvoice(query, doctype)
     invoice.value = res
     newBillDate.value = res.posting_date || ''
     await nextTick()
@@ -574,7 +538,7 @@ function clearAll() {
   showDraftConfirm.value = false
   newBillDate.value = ''
   nextTick(() => {
-    invoiceInputRef.value?.focus()
+    billPaletteRef.value?.focusSearch()
   })
 }
 
@@ -595,6 +559,7 @@ async function handleChangeDate() {
     updateSuccessMessage.value = res.message || `Bill date successfully modified to ${newBillDate.value}.`
     // Update local state to reflect new date
     invoice.value.posting_date = newBillDate.value
+    billPaletteRef.value?.refresh()
   } catch (err) {
     fetchError.value = err.message || 'Failed to update bill date.'
   } finally {
@@ -614,6 +579,7 @@ async function handleMoveToDraft() {
     invoice.value = null
     invoiceNo.value = ''
     newBillDate.value = ''
+    billPaletteRef.value?.refresh()
   } catch (err) {
     fetchError.value = err.message || 'Failed to create an amended draft.'
   } finally {
@@ -643,7 +609,7 @@ function handleKeyDown(e) {
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
   nextTick(() => {
-    invoiceInputRef.value?.focus()
+    billPaletteRef.value?.focusSearch()
   })
 })
 

@@ -1455,9 +1455,10 @@ export async function deleteEmployeeCheckin(name) {
 
 // ─── Modify Submitted Invoices ───────────────────────────────────────────────
 
-export async function fetchSubmittedInvoice(invoiceNo) {
+export async function fetchSubmittedInvoice(invoiceNo, doctype) {
   return await frappeGet("ssplbilling.api.modify_submitted_api.get_submitted_invoice", {
     invoice_no: invoiceNo,
+    ...(doctype ? { doctype } : {}),
   });
 }
 

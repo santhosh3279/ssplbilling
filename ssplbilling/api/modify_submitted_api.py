@@ -3,8 +3,25 @@ from erpnext.accounts.utils import get_fiscal_year
 from frappe.utils import add_days, getdate, now
 
 
+SUPPORTED_DOCTYPES = ("Sales Invoice", "Purchase Invoice", "Quotation", "Sales Order", "Purchase Order")
+INVOICE_DOCTYPES = ("Sales Invoice", "Purchase Invoice")
+
+
+def _validate_doctype(doctype):
+	if doctype not in SUPPORTED_DOCTYPES:
+		frappe.throw("Select a Sales/Purchase Invoice, Quotation, Sales Order, or Purchase Order.")
+	return doctype
+
+
+def _check_authenticated():
+	if frappe.session.user == "Guest":
+		frappe.throw("Authentication required to modify bills.", frappe.PermissionError)
+
+
 def _submitted_mirror_name(doctype, invoice_no, company, linked_name=None):
 	"""Find an existing submitted mirror in a different company."""
+	if doctype not in INVOICE_DOCTYPES:
+		return None
 	if doctype == "Sales Invoice":
 		from ssplbilling.api.automatic_entries_api import mirror_name_for
 		linked_name = mirror_name_for(invoice_no)
@@ -17,6 +34,17 @@ def _submitted_mirror_name(doctype, invoice_no, company, linked_name=None):
 
 
 def _linked_payment_vouchers(doc):
+	if doc.doctype == "Quotation":
+		return set()
+	if doc.doctype in ("Sales Order", "Purchase Order"):
+		# Order advances are linked through references rather than invoice PLEs.
+		payments = frappe.get_all("Payment Entry Reference", filters={
+			"reference_doctype": doc.doctype, "reference_name": doc.name, "docstatus": 1,
+		}, pluck="parent")
+		journals = frappe.get_all("Journal Entry Account", filters={
+			"reference_type": doc.doctype, "reference_name": doc.name, "docstatus": 1,
+		}, pluck="parent")
+		return {("Payment Entry", name) for name in payments} | {("Journal Entry", name) for name in journals}
 	from erpnext.accounts.doctype.unreconcile_payment.unreconcile_payment import (
 		get_linked_payments_for_doc,
 	)
@@ -65,105 +93,45 @@ def _archive_cancelled_invoice(doc):
 
 
 @frappe.whitelist()
-def get_submitted_invoice(invoice_no):
-	"""Fetch details of a submitted invoice (docstatus=1).
-
-	Searches Sales Invoice first, then Purchase Invoice.
-	Throws an informative error if draft, cancelled, or not found.
-	"""
+def get_submitted_invoice(invoice_no, doctype=None):
+	"""Fetch a submitted billing document; explicit type avoids number collisions."""
+	_check_authenticated()
 	invoice_no = (invoice_no or "").strip()
 	if not invoice_no:
-		frappe.throw("Please enter an invoice number.")
+		frappe.throw("Please select a bill.")
+	if doctype:
+		_validate_doctype(doctype)
+	else:
+		matches = [kind for kind in SUPPORTED_DOCTYPES if frappe.db.exists(kind, invoice_no)]
+		if len(matches) > 1:
+			frappe.throw("This bill number exists in multiple document types. Select it from the bill palette.")
+		doctype = matches[0] if matches else None
+	if not doctype or not frappe.db.exists(doctype, invoice_no):
+		frappe.throw(f"Bill '{invoice_no}' was not found.")
 
-	# Search in Sales Invoice
-	si = frappe.db.get_value(
-		"Sales Invoice",
-		{"name": invoice_no},
-		[
-			"name",
-			"docstatus",
-			"posting_date",
-			"posting_time",
-			"customer",
-			"customer_name",
-			"grand_total",
-			"outstanding_amount",
-			"company",
-			"due_date",
-		],
-		as_dict=True,
-	)
-
-	doctype = "Sales Invoice"
-	doc_data = si
-
-	# If not found in Sales Invoice, search in Purchase Invoice
-	if not doc_data:
-		pi = frappe.db.get_value(
-			"Purchase Invoice",
-			{"name": invoice_no},
-			[
-				"name",
-				"docstatus",
-				"posting_date",
-				"posting_time",
-				"supplier as customer",
-				"supplier_name as customer_name",
-				"grand_total",
-				"outstanding_amount",
-				"company",
-				"due_date",
-			],
-			as_dict=True,
-		)
-		if pi:
-			doctype = "Purchase Invoice"
-			doc_data = pi
-
-	if not doc_data:
-		frappe.throw(f"Invoice '{invoice_no}' was not found.")
-
-	# Check submission status
-	if doc_data.docstatus == 0:
-		frappe.throw(
-			f"Invoice '{doc_data.name}' is a Draft (not submitted). "
-			"You can edit the date of draft invoices directly in the invoice form."
-		)
-	elif doc_data.docstatus == 2:
-		frappe.throw(f"Invoice '{doc_data.name}' is Cancelled. Only submitted invoices can be modified.")
-	elif doc_data.docstatus != 1:
-		frappe.throw(f"Invoice '{doc_data.name}' is not in submitted state (docstatus={doc_data.docstatus}).")
-
-	# Fetch items preview
-	item_doctype = "Sales Invoice Item" if doctype == "Sales Invoice" else "Purchase Invoice Item"
-	items = frappe.db.sql(
-		f"""SELECT item_code, item_name, qty, uom, rate, amount
-		   FROM `tab{item_doctype}`
-		   WHERE parent = %(parent)s
-		   ORDER BY idx ASC LIMIT 10""",
-		{"parent": doc_data.name},
-		as_dict=True,
-	)
-	total_items_count = frappe.db.count(item_doctype, {"parent": doc_data.name})
-
-	linked_mirror = None
-	if doctype == "Purchase Invoice" and frappe.get_meta(doctype).has_field("custom_mirrored"):
-		linked_mirror = frappe.db.get_value(doctype, doc_data.name, "custom_mirrored")
-
+	doc = frappe.get_doc(doctype, invoice_no)
+	doc.check_permission("read")
+	if doc.docstatus != 1:
+		frappe.throw(f"Bill '{invoice_no}' must be submitted. Draft and cancelled documents cannot be modified here.")
+	date_field = "posting_date" if doctype in INVOICE_DOCTYPES else "transaction_date"
+	party = doc.get("supplier") or doc.get("customer") or doc.get("party_name")
+	party_name = doc.get("supplier_name") or doc.get("customer_name") or party
+	items = doc.get("items") or []
 	return {
 		"doctype": doctype,
-		"name": doc_data.name,
-		"party": doc_data.customer,
-		"party_name": doc_data.customer_name,
-		"posting_date": str(doc_data.posting_date),
-		"posting_time": str(doc_data.posting_time or ""),
-		"due_date": str(doc_data.due_date) if doc_data.due_date else "",
-		"grand_total": doc_data.grand_total,
-		"outstanding_amount": doc_data.outstanding_amount,
-		"company": doc_data.company,
-		"mirror_invoice": _submitted_mirror_name(doctype, doc_data.name, doc_data.company, linked_mirror),
-		"item_count": total_items_count,
-		"items": items,
+		"name": doc.name,
+		"party": party,
+		"party_name": party_name,
+		"posting_date": str(doc.get(date_field)),
+		"date_field": date_field,
+		"posting_time": str(doc.get("posting_time") or ""),
+		"due_date": str(doc.get("due_date") or ""),
+		"grand_total": doc.get("grand_total") or 0,
+		"outstanding_amount": doc.get("outstanding_amount") or 0,
+		"company": doc.company,
+		"mirror_invoice": _submitted_mirror_name(doctype, doc.name, doc.company, doc.get("custom_mirrored")),
+		"item_count": len(items),
+		"items": [{field: item.get(field) for field in ("item_code", "item_name", "qty", "uom", "rate", "amount")} for item in items[:10]],
 	}
 
 
@@ -172,8 +140,7 @@ def move_submitted_to_draft(invoice_no, doctype="Sales Invoice"):
 	"""Unlink payments, cancel a submitted invoice, and create an amended draft."""
 	if frappe.session.user == "Guest":
 		frappe.throw("Authentication required to modify invoices.", frappe.PermissionError)
-	if doctype not in ("Sales Invoice", "Purchase Invoice"):
-		frappe.throw("Only Sales and Purchase Invoices can be moved to draft mode.")
+	_validate_doctype(doctype)
 
 	invoice_no = (invoice_no or "").strip()
 	if not invoice_no:
@@ -204,7 +171,8 @@ def move_submitted_to_draft(invoice_no, doctype="Sales Invoice"):
 	amended.amended_from = doc.name
 	amended.docstatus = 0
 	amended.name = None
-	amended.set("advances", [])
+	if amended.meta.has_field("advances"):
+		amended.set("advances", [])
 	if doctype == "Purchase Invoice" and frappe.get_meta(doctype).has_field("custom_mirrored"):
 		amended.set("custom_mirrored", None)
 	if hasattr(amended, "set_posting_time"):
@@ -245,14 +213,7 @@ def modify_submitted_bill_date(invoice_no, new_date, doctype="Sales Invoice"):
 	except Exception:
 		frappe.throw(f"Invalid date format: {new_date}")
 
-	# Determine doctype if not recognized or verify
-	if doctype not in ("Sales Invoice", "Purchase Invoice"):
-		if frappe.db.exists("Sales Invoice", invoice_no):
-			doctype = "Sales Invoice"
-		elif frappe.db.exists("Purchase Invoice", invoice_no):
-			doctype = "Purchase Invoice"
-		else:
-			frappe.throw(f"Document '{invoice_no}' does not exist.")
+	_validate_doctype(doctype)
 
 	doc = frappe.get_doc(doctype, invoice_no)
 	if doc.docstatus != 1:
@@ -260,6 +221,9 @@ def modify_submitted_bill_date(invoice_no, new_date, doctype="Sales Invoice"):
 			f"Invoice '{invoice_no}' is not in submitted state (docstatus={doc.docstatus}). "
 			"Only submitted invoices can be modified."
 		)
+
+	if doctype not in INVOICE_DOCTYPES:
+		return _modify_transaction_date(doc, new_date_str)
 
 	old_date = doc.posting_date
 	old_date_str = str(old_date)
@@ -403,3 +367,31 @@ def modify_submitted_bill_date(invoice_no, new_date, doctype="Sales Invoice"):
 		"new_date": new_date_str,
 		"message": f"Bill date for {invoice_no} changed from {old_date_str} to {new_date_str} successfully.",
 	}
+
+
+def _modify_transaction_date(doc, new_date):
+	"""Orders and quotations have no invoice ledgers; update their transaction date."""
+	doc.check_permission("write")
+	old_date = str(doc.transaction_date)
+	if old_date == new_date:
+		return {"status": "unchanged", "name": doc.name, "doctype": doc.doctype,
+			"new_date": new_date, "message": f"Bill date for {doc.name} is already {new_date}."}
+
+	# Preserve normal date constraints without silently moving delivery/validity dates.
+	for field in ("delivery_date", "schedule_date", "valid_till"):
+		if doc.get(field) and getdate(doc.get(field)) < getdate(new_date):
+			frappe.throw(f"New bill date cannot be after {doc.meta.get_label(field)} ({doc.get(field)}).")
+	for table in ("items", "payment_schedule"):
+		for row in doc.get(table) or []:
+			for field in ("delivery_date", "schedule_date", "due_date"):
+				if row.get(field) and getdate(row.get(field)) < getdate(new_date):
+					frappe.throw(f"New bill date cannot be after {field.replace('_', ' ')} ({row.get(field)}).")
+
+	frappe.db.set_value(doc.doctype, doc.name, {
+		"transaction_date": new_date, "modified": now(), "modified_by": frappe.session.user,
+	}, update_modified=False)
+	frappe.clear_document_cache(doc.doctype, doc.name)
+	doc.add_comment("Info", f"Bill date modified from {old_date} to {new_date} by {frappe.session.user}")
+	return {"status": "success", "name": doc.name, "doctype": doc.doctype,
+		"old_date": old_date, "new_date": new_date,
+		"message": f"Bill date for {doc.name} changed from {old_date} to {new_date} successfully."}
