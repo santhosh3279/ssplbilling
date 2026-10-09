@@ -83,6 +83,7 @@ async function fetchLedgerCache(force) {
   }
 
   syncLoading.value = true
+  const startedAt = serverNow().getTime() / 1000
   try {
     const { company, alternative_company, cost_center } = JSON.parse(context)
     const data = await frappeGet('ssplbilling.api.customersearch_api.get_all_ledgers', {
@@ -110,6 +111,8 @@ async function fetchLedgerCache(force) {
 
     cacheContext.value = context
     ledgers.value = cleanedLedgers
+    // Balances pushed while this request ran may be newer than what it read.
+    reapplyPushesSince(startedAt)
     partyLinks.value = newPartyLinks
     lastSync.value = serverNow().getTime()
     
@@ -142,6 +145,59 @@ export function updateLedgerBalanceInCache(name, balance) {
   ledgers.value.splice(idx, 1, { ...ledgers.value[idx], balance: Number(balance) || 0 })
   lastSync.value = serverNow().getTime()
   _schedulePersist()
+}
+
+// Latest pushed snapshot per ledger: { ts (server seconds), snapshot }. Lets a full refresh that
+// started before a push re-apply it, and drops pushes that arrive out of order.
+const PUSH_RETENTION_S = 600
+const recentPushes = new Map()
+
+function applySnapshot(snapshot) {
+  const { company, alternative_company } = JSON.parse(currentContext())
+  const balances = snapshot.balances || {}
+  // Same scoping as get_all_ledgers: no company selected means the sum over all companies.
+  const balance = company
+    ? balances[company] || 0
+    : Object.values(balances).reduce((sum, value) => sum + (Number(value) || 0), 0)
+  let changed = false
+  ledgers.value.forEach((ledger, idx) => {
+    if (ledger.name !== snapshot.name) return
+    const next = { ...ledger, balance }
+    if (alternative_company) next.alternative_balance = balances[alternative_company] || 0
+    if (snapshot.last_invoice_date) next.last_invoice_date = snapshot.last_invoice_date
+    ledgers.value.splice(idx, 1, next)
+    changed = true
+  })
+  return changed
+}
+
+function reapplyPushesSince(startedAt) {
+  const cutoff = serverNow().getTime() / 1000 - PUSH_RETENTION_S
+  for (const [name, push] of recentPushes) {
+    if (push.ts < cutoff) recentPushes.delete(name)
+    else if (push.ts > startedAt) applySnapshot(push.snapshot)
+  }
+}
+
+/**
+ * Apply a realtime `ledger_balances` push ({ ts, ledgers: [{ name, balances: { company: bal },
+ * last_invoice_date? }] }) to the cached rows. Returns true when any cached ledger changed.
+ */
+export function applyLedgerBalancePush(payload) {
+  const ts = Number(payload?.ts) || 0
+  let changed = false
+  for (const snapshot of payload?.ledgers || []) {
+    if (!snapshot?.name) continue
+    const previous = recentPushes.get(snapshot.name)
+    if (previous && previous.ts > ts) continue
+    recentPushes.set(snapshot.name, { ts, snapshot })
+    if (applySnapshot(snapshot)) changed = true
+  }
+  if (changed) {
+    lastSync.value = serverNow().getTime()
+    _schedulePersist()
+  }
+  return changed
 }
 
 /**
@@ -180,6 +236,7 @@ export function useLedgerCache() {
     syncLoading,
     refreshLedgerCache,
     updateLedgerBalanceInCache,
+    applyLedgerBalancePush,
     patchLedgerInCache,
     searchLedgersInCache
   }
