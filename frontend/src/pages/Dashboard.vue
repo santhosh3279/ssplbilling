@@ -447,10 +447,10 @@
             <dl class="text-xs space-y-1.5">
               <div class="flex justify-between gap-2">
                 <dt class="text-[var(--color-text-muted)]">Clock source:</dt>
-                <dd class="font-bold text-[var(--color-text)]">{{ clockStatus.synced ? 'Server' : 'Computer fallback' }}</dd>
+                <dd class="font-bold text-[var(--color-text)]">Server</dd>
               </div>
               <div class="flex justify-between gap-2">
-                <dt class="text-[var(--color-text-muted)]">Current time:</dt>
+                <dt class="text-[var(--color-text-muted)]">Server time:</dt>
                 <dd class="font-mono tabular-nums text-[var(--color-text)]">{{ clockStatus.time }}</dd>
               </div>
               <div class="flex justify-between gap-2">
@@ -463,7 +463,7 @@
               </div>
             </dl>
             <p v-if="clockStatus.error" class="text-xs text-amber-500">
-              Sync failed. {{ clockStatus.synced ? 'Continuing with the last server time.' : 'Using this computer’s clock.' }}
+              Server time unavailable. Try syncing again.
             </p>
             <button
               type="button"
@@ -684,13 +684,19 @@ function _onItemCacheUpdated() {
 
 // Keep the card aligned with manual and background server-time synchronization.
 function readClockStatus() {
-  return { ...getServerTimeStatus(), time: serverNowTime(), timezone: serverTimezone() }
+  const status = getServerTimeStatus()
+  const showServerTime = status.synced && !status.error && !status.syncing
+  return {
+    ...status,
+    time: showServerTime ? serverNowTime() : '--:--:--',
+    timezone: status.synced ? serverTimezone() : '—',
+  }
 }
 const clockStatus = ref(readClockStatus())
 const clockSyncLabel = computed(() => {
   if (clockStatus.value.syncing) return 'Syncing…'
   if (clockStatus.value.error) return 'Retry needed'
-  return clockStatus.value.synced ? 'Synced' : 'Fallback'
+  return clockStatus.value.synced ? 'Synced' : 'Unavailable'
 })
 const clockLastSync = computed(() => {
   if (!clockStatus.value.lastSyncedAt) return 'Not yet synced'
@@ -706,7 +712,7 @@ async function handleServerTimeSync() {
   try {
     await request
   } catch {
-    // The shared status supplies the card's error and active fallback source.
+    // The shared status hides the time and supplies the card's error.
   } finally {
     clockStatus.value = readClockStatus()
     now.value = serverCalendarDate()
