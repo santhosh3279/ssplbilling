@@ -183,6 +183,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import JSZip from 'jszip'
@@ -325,7 +326,7 @@ const reportColumns = computed(() => [
 
 // Setup date values on load
 function defaultDates() {
-  const today = new Date()
+  const today = serverCalendarDate()
   const y = today.getFullYear()
   const m = String(today.getMonth() + 1).padStart(2, '0')
   const d = String(today.getDate()).padStart(2, '0')
@@ -341,15 +342,15 @@ function setPreset(key) {
     return `${y}-${m}-${d}`
   }
 
-  const today = new Date()
-  let start = new Date()
-  let end = new Date()
+  const today = serverCalendarDate()
+  let start = serverCalendarDate()
+  let end = serverCalendarDate()
 
   if (key === 'today') {
     start = today
     end = today
   } else if (key === 'yesterday') {
-    const yesterday = new Date()
+    const yesterday = serverCalendarDate()
     yesterday.setDate(today.getDate() - 1)
     start = yesterday
     end = yesterday

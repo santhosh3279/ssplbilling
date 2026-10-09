@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { createResource } from 'frappe-ui'
 import { destroyTabSession } from './services/tabSession'
-import { primeServerTime } from './services/serverTime'
+import { serverNow } from './services/serverTime'
 import { frappeGet, fetchAllowedTiles } from './api.js'
 
 const isLoggedIn = ref(false)
@@ -21,7 +21,7 @@ export async function refreshTilePermissions(targetUser) {
         user: targetUser || user.value,
         tiles: res.configured ? res.tiles : null,
         allow_date_modification: Boolean(res.allow_date_modification),
-        ts: Date.now(),
+        ts: serverNow().getTime(),
       }))
     }
   } catch (e) {
@@ -81,14 +81,11 @@ async function init() {
   initialized = true
   await userResource.fetch()
   if (isLoggedIn.value) {
-    // primeServerTime must resolve before any page's setup() runs — every
-    // transaction date is seeded from the server clock, not the workstation.
     const inheritedUser = localStorage.getItem('wb-inherited-user')
     const effectiveUser = inheritedUser && inheritedUser !== user.value ? inheritedUser : user.value
     await Promise.all([
       userInfoResource.fetch(),
       refreshCsrfToken(),
-      primeServerTime(),
       refreshTilePermissions(effectiveUser),
     ])
   }

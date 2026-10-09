@@ -281,6 +281,7 @@
 </template>
 
 <script setup>
+import { serverToday, serverCalendarDate, toLocalISO } from '../services/serverTime'
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
@@ -297,7 +298,7 @@ const API = 'ssplbilling.api.gst_ledger_api'
 const selectedCustomer = ref(null)
 const customerQuery = ref('')
 const fromDate = ref('')
-const toDate = ref(new Date().toISOString().split('T')[0])
+const toDate = ref(serverToday())
 const loading = ref(false)
 const ledgerData = ref(null)
 const selectedEntry = ref(null)
@@ -477,9 +478,9 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeyDown)
   refreshLedgerCache(false).catch(e => console.error('Cache sync failed', e))
   // Default from date: 90 days ago
-  const d = new Date()
+  const d = serverCalendarDate()
   d.setDate(d.getDate() - 90)
-  fromDate.value = d.toISOString().split('T')[0]
+  fromDate.value = toLocalISO(d)
 })
 
 onUnmounted(() => {

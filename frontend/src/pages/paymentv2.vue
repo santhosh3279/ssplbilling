@@ -477,7 +477,7 @@ import { useShortcuts } from '../services/shortcutManager'
 import { paymentShortcuts } from '../shortcuts/paymentShortcuts'
 import { canModifyDate } from '../composables/usePermission.js'
 
-import { serverToday, toLocalISO } from '../services/serverTime'
+import { serverToday, serverNow, serverCalendarDate, serverTimezone, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const router = useRouter()
 
 // --- State ---
@@ -608,7 +608,7 @@ useShortcuts(paymentShortcuts({
 const postingDate = ref(serverToday())
 const displayDate = computed(() => {
   if (!postingDate.value) return ''
-  const d = new Date(postingDate.value)
+  const d = parseCalendarDate(postingDate.value)
   const day = String(d.getDate()).padStart(2, '0')
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   const month = months[d.getMonth()]
@@ -618,7 +618,7 @@ const displayDate = computed(() => {
 
 function adjustDate(days) {
   if (!canModifyDate()) return
-  const d = new Date(postingDate.value)
+  const d = parseCalendarDate(postingDate.value)
   d.setDate(d.getDate() + days)
   postingDate.value = toLocalISO(d)
 }
@@ -732,14 +732,14 @@ const totalAllocated = computed(() =>
 )
 
 const todayDate = computed(() => {
-  return new Date().toLocaleDateString('en-IN', {
+  return serverCalendarDate().toLocaleDateString('en-IN', {
     day: '2-digit', month: 'short', year: 'numeric'
   })
 })
 
 const currentTime = ref('')
 function updateTime() {
-  currentTime.value = new Date().toLocaleTimeString('en-IN', {
+  currentTime.value = serverNow().toLocaleTimeString('en-IN', { timeZone: serverTimezone(),
     hour: '2-digit', minute: '2-digit', second: '2-digit'
   })
 }

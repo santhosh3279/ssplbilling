@@ -58,6 +58,7 @@
 </template>
 
 <script setup>
+import { serverToday, serverNow } from '../services/serverTime'
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
@@ -99,7 +100,7 @@ async function handleLogin() {
     try {
       const settings = await dashboardApi.getBillingSettings()
       if (settings) {
-        localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({ data: settings, ts: Date.now() }))
+        localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({ data: settings, ts: serverNow().getTime() }))
         if (settings.wb_theme) {
           const t = settings.wb_theme.toLowerCase() === 'dark' ? 'dark' : 'light'
           localStorage.setItem('wb-theme', t)
@@ -119,7 +120,7 @@ async function handleLogin() {
       }
       
       // Also pre-load opening_cash
-      const today = new Date().toLocaleDateString('en-CA')
+      const today = serverToday()
       const openingRes = await frappeGet('ssplbilling.api.cahierlog_api.get_opening_total', { date: today })
       if (openingRes) {
         const boxCash = String(openingRes.total || 0)

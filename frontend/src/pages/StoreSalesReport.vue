@@ -227,6 +227,7 @@
 </template>
 
 <script setup>
+import { serverToday, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getStoreSaleReport } from '../api.js'
@@ -242,7 +243,7 @@ const priceLists = ref([])
 const billsData = ref([])
 
 // Default dates: Today
-const today = new Date().toISOString().slice(0, 10)
+const today = serverToday()
 const fromDate = ref(today)
 const toDate = ref(today)
 
@@ -267,9 +268,9 @@ async function fetchData() {
 
 function adjustDate(type, days) {
   const ref_ = type === 'from' ? fromDate : toDate
-  const d = new Date(ref_.value)
+  const d = parseCalendarDate(ref_.value)
   d.setDate(d.getDate() + days)
-  ref_.value = d.toISOString().slice(0, 10)
+  ref_.value = toLocalISO(d)
   fetchData()
 }
 
@@ -281,7 +282,7 @@ function formatDateIso(date) {
 }
 
 function setDateRange(preset) {
-  const now = new Date()
+  const now = serverCalendarDate()
   const year = now.getFullYear()
   const month = now.getMonth()
 
@@ -289,7 +290,7 @@ function setDateRange(preset) {
   let to = ''
 
   if (preset === 'yesterday') {
-    const yesterday = new Date()
+    const yesterday = serverCalendarDate()
     yesterday.setDate(now.getDate() - 1)
     from = formatDateIso(yesterday)
     to = formatDateIso(yesterday)

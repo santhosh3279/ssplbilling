@@ -326,7 +326,7 @@ import { useItemCache } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
-import { serverToday, toLocalISO } from '../services/serverTime'
+import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const showPrintModal = ref(false)
 const showJumpModal = ref(false)
 const defaultTemplate = ref('')
@@ -863,14 +863,14 @@ function handleJump(targetNo) {
 }
 
 function handleSidebarDateChange(dir) {
-  const d = new Date(sidebarDate.value)
+  const d = parseCalendarDate(sidebarDate.value)
   d.setDate(d.getDate() + dir)
   sidebarDate.value = toLocalISO(d)
 }
 
 function handleDocDateChange(dir) {
   if (!canModifyDate()) return
-  const d = new Date(transferDate.value)
+  const d = parseCalendarDate(transferDate.value)
   d.setDate(d.getDate() + dir)
   transferDate.value = toLocalISO(d)
 }

@@ -127,6 +127,7 @@
 </template>
 
 <script setup>
+import { serverNow } from '../services/serverTime'
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
@@ -680,13 +681,13 @@ async function sendWhatsApp() {
     const sameChatStillOpen =
       waTab === lastWhatsappTab &&
       waUrl === lastWhatsappUrl &&
-      Date.now() - lastWhatsappAt < WHATSAPP_REUSE_MS
+      serverNow().getTime() - lastWhatsappAt < WHATSAPP_REUSE_MS
     if (!sameChatStillOpen) {
       waTab.location = waUrl
       lastWhatsappTab = waTab
       lastWhatsappUrl = waUrl
     }
-    lastWhatsappAt = Date.now()
+    lastWhatsappAt = serverNow().getTime()
 
     success.value = recipient.phone
       ? `Saved "${billName}" — drag it into the WhatsApp chat`

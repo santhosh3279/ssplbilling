@@ -916,9 +916,9 @@ def update_custom_version(version):
 
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=True)
 def get_server_time():
-	"""Authoritative clock for the SPA.
+	"""Authoritative clock for the SPA, including public catalogue pages.
 
 	The front-end seeds every transaction date from this instead of the
 	workstation clock, so a drifting or mis-zoned till PC cannot post
@@ -930,8 +930,8 @@ def get_server_time():
 		"date": frappe.utils.nowdate(),
 		"time": frappe.utils.nowtime(),
 		"datetime": str(frappe.utils.now_datetime()),
-		# Timezone-independent anchor: the client derives its clock offset from
-		# this, so a workstation in the wrong timezone still lands on the right day.
+		# The client advances this anchor using monotonic elapsed time, independent
+		# of the workstation clock and timezone.
 		"epoch_ms": int(time.time() * 1000),
 		"timezone": frappe.db.get_single_value("System Settings", "time_zone") or "Asia/Kolkata",
 	}

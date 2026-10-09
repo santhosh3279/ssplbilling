@@ -207,6 +207,7 @@
 </template>
 
 <script setup>
+import { serverToday, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getCashflowReport, getCashflowDetails } from '../api.js'
@@ -231,10 +232,10 @@ const reportSummary = computed(() => [
   { key: 'outflow', label: 'Cash Outflow', value: totals.value.outflow, description: 'Paid during the selected period, excluding internal transfers' },
   { key: 'netflow', label: 'Net Cash Flow', value: totals.value.netflow, description: 'Inflow minus outflow; includes Temporary Account settlements and excludes pending cheques' },
   { key: 'cash_balance', label: 'Cash in Hand', value: totals.value.cash_balance, description: `Closing cash and bank balance as of ${loadedFilters.value?.to || toDate.value}, including opening balances` },
-  { key: 'balance', label: 'Cash and Bank Balance', value: totals.value.balance, description: `Current cash and bank balance as of ${loadedFilters.value?.currentDate || formatDateIso(new Date())}, including opening balances` },
+  { key: 'balance', label: 'Cash and Bank Balance', value: totals.value.balance, description: `Current cash and bank balance as of ${loadedFilters.value?.currentDate || formatDateIso(serverCalendarDate())}, including opening balances` },
 ])
 const loadedFilters = ref(null)
-const today = new Date().toISOString().slice(0, 10)
+const today = serverToday()
 const fromDate = ref(today)
 const toDate = ref(today)
 let requestId = 0
@@ -345,7 +346,7 @@ async function fetchData() {
     error.value = !companyName.value ? 'Select a billing company before running Cash Flow.' : 'Select a valid date range.'
     return
   }
-  const filters = { company: companyName.value, from: fromDate.value, to: toDate.value, currentDate: formatDateIso(new Date()) }
+  const filters = { company: companyName.value, from: fromDate.value, to: toDate.value, currentDate: formatDateIso(serverCalendarDate()) }
   loading.value = true
   const loadStarted = performance.now()
   loadSeconds.value = 0
@@ -407,20 +408,20 @@ async function fetchData() {
 
 function adjustDate(type, days) {
   const ref_ = type === 'from' ? fromDate : toDate
-  const d = new Date(ref_.value)
+  const d = parseCalendarDate(ref_.value)
   d.setDate(d.getDate() + days)
-  ref_.value = d.toISOString().slice(0, 10)
+  ref_.value = toLocalISO(d)
   fetchData()
 }
 
 function shiftRange(days) {
-  const from = new Date(fromDate.value)
+  const from = parseCalendarDate(fromDate.value)
   from.setDate(from.getDate() + days)
-  fromDate.value = from.toISOString().slice(0, 10)
+  fromDate.value = toLocalISO(from)
 
-  const to = new Date(toDate.value)
+  const to = parseCalendarDate(toDate.value)
   to.setDate(to.getDate() + days)
-  toDate.value = to.toISOString().slice(0, 10)
+  toDate.value = toLocalISO(to)
 
   fetchData()
 }
@@ -433,7 +434,7 @@ function formatDateIso(date) {
 }
 
 function setDateRange(preset) {
-  const now = new Date()
+  const now = serverCalendarDate()
   const year = now.getFullYear()
   const month = now.getMonth()
 
@@ -441,7 +442,7 @@ function setDateRange(preset) {
   let to = ''
 
   if (preset === 'yesterday') {
-    const yesterday = new Date()
+    const yesterday = serverCalendarDate()
     yesterday.setDate(now.getDate() - 1)
     from = formatDateIso(yesterday)
     to = formatDateIso(yesterday)

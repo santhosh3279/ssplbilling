@@ -416,6 +416,7 @@
 </template>
 
 <script setup>
+import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
@@ -429,12 +430,12 @@ const router = useRouter()
 const API = 'ssplbilling.api.loading_receipt_api'
 
 // ── HELPERS ─────────────────────────────────────────────────────────
-const today = new Date().toISOString().split('T')[0]
+const today = serverToday()
 
 function addDays(dateStr, n) {
-  const d = new Date(dateStr)
+  const d = parseCalendarDate(dateStr)
   d.setDate(d.getDate() + n)
-  return d.toISOString().split('T')[0]
+  return toLocalISO(d)
 }
 
 function formatDateLabel(dateStr) {

@@ -1,3 +1,4 @@
+import { serverNow } from './serverTime'
 // localStorage cache for the sidebar bill panels (Sales Invoice, Purchase
 // Invoice, orders, quotations). One entry per doctype holding the last
 // default-view list (no search query) plus the params it was fetched with.
@@ -37,7 +38,7 @@ function sameParams(a, b) {
 export function loadCachedPanel(doctype, params) {
   const cached = readCache(doctype)
   if (!cached || !cached.params) return null
-  if ((Date.now() - (cached.ts || 0)) > CACHE_TTL) return null
+  if ((serverNow().getTime() - (cached.ts || 0)) > CACHE_TTL) return null
   if (!sameParams(cached.params, params)) return null
   return cached.rows
 }
@@ -48,7 +49,7 @@ export function saveCachedPanel(doctype, params, rows) {
     localStorage.setItem(cacheKey(doctype), JSON.stringify({
       params: { date: params.date, series: params.series || [], draftOnly: Boolean(params.draftOnly), company: params.company },
       rows: (rows || []).slice(0, MAX_ROWS),
-      ts: Date.now(),
+      ts: serverNow().getTime(),
     }))
   } catch (e) {
     console.warn('[billPanelCache] save failed:', e)

@@ -387,6 +387,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import SubmittedBillPalette from '../components/SubmittedBillPalette.vue'
@@ -514,7 +515,7 @@ function adjustDate(days) {
 }
 
 function setPreset(preset) {
-  const now = new Date()
+  const now = serverCalendarDate()
   if (preset === 'today') {
     newBillDate.value = toLocalISO(now)
   } else if (preset === 'yesterday') {

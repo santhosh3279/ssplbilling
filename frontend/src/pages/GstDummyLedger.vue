@@ -242,12 +242,12 @@ import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 
 import { formatDMY } from '../utils/date'
-import { toLocalISO } from '../services/serverTime'
+import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const router = useRouter()
 const API = 'ssplbilling.api.gst_ledger_api'
 
 // --- State ---
-const today = new Date().toISOString().split('T')[0]
+const today = serverToday()
 const emptyForm = () => ({
   date: today,
   customer: '',
@@ -326,7 +326,7 @@ function handleInputKeydown(e) {
 // --- computed ---
 const displayDate = computed(() => {
   if (!form.value.date) return ''
-  const d = new Date(form.value.date)
+  const d = parseCalendarDate(form.value.date)
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')
 })
 
@@ -339,7 +339,7 @@ const newBalance = computed(() => {
 
 // --- date navigators ---
 function adjustDate(dir) {
-  const d = new Date(form.value.date)
+  const d = parseCalendarDate(form.value.date)
   d.setDate(d.getDate() + dir)
   form.value.date = toLocalISO(d)
 }

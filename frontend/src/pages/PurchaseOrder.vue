@@ -621,7 +621,7 @@ import ShortcutPage from '../components/ShortcutPage.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 
 import { formatDMY } from '../utils/date'
-import { serverToday, toLocalISO } from '../services/serverTime'
+import { serverToday, serverNow, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const router = useRouter()
 
 // --- Data Fetching & State Management ---
@@ -730,7 +730,7 @@ const saveButtonText = computed(() => {
 
 function handleDocDateChange(days) {
   if (!canModifyDate()) return
-  const d = new Date(orderDate.value)
+  const d = parseCalendarDate(orderDate.value)
   d.setDate(d.getDate() + days)
   orderDate.value = toLocalISO(d)
 }
@@ -752,7 +752,7 @@ async function fetchRecentOrders() {
 }
 
 function handleSidebarDateChange(days) {
-  const d = new Date(sidebarDate.value)
+  const d = parseCalendarDate(sidebarDate.value)
   d.setDate(d.getDate() + days)
   sidebarDate.value = toLocalISO(d)
 }
@@ -1803,7 +1803,7 @@ function handleSupplierSelected(party) {
   const addrParts = [party.address_line1, party.city, party.state].filter(Boolean)
   supplierAddress.value = addrParts.join(', ')
   if (party.last_invoice_date) {
-    const d = new Date(party.last_invoice_date)
+    const d = parseCalendarDate(party.last_invoice_date)
     supplierLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
   } else supplierLastInvDate.value = 'None'
   fetchCustomerSalesHistory(party.name); showSupplierModal.value = false; nextTick(() => { newCodeInput.value?.focus() })
@@ -1929,7 +1929,7 @@ function onNewCodeInput() {
 
 function handleNewCodeKeydown(e) {
   if (e.key === 'Enter') {
-    const now = Date.now(); const isDouble = (now - lastEnterTime.value < 400); lastEnterTime.value = now
+    const now = serverNow().getTime(); const isDouble = (now - lastEnterTime.value < 400); lastEnterTime.value = now
     if (isDouble) { e.preventDefault(); cancelPendingItem(true); newItemCode.value = ''; quickSearchResults.value = []; lastEnterTime.value = 0; return }
   }
   if (e.key === 'ArrowRight') { e.preventDefault(); openItemSearch(newItemCode.value.trim()); return }
@@ -2137,7 +2137,7 @@ onMounted(() => {
   fetchRecentOrders()
   fetchAllowedSeries('Purchase Order')
   showSeriesModal.value = true
-  if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) refreshItemCache('Purchase', priceList.value, warehouse.value)
+  if (!cachedItems.value.length || (serverNow().getTime() - lastSync.value) > 5 * 60 * 1000) refreshItemCache('Purchase', priceList.value, warehouse.value)
 
   _billPanelCleanup = onBillPanelUpdate('Purchase Order', sidebarSeries, fetchRecentOrders)
 })

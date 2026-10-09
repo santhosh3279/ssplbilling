@@ -232,7 +232,7 @@ import { frappeGet, frappePost } from '../api.js'
 import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 import { useLedgerCache } from '../services/ledgerCache'
 
-import { serverToday, toLocalISO } from '../services/serverTime'
+import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const router = useRouter()
 const { searchLedgersInCache, refreshLedgerCache } = useLedgerCache()
 
@@ -263,7 +263,7 @@ const doc = reactive({
 // ── Date Navigation ────────────────────────────────────────────────────────
 const displayDate = computed(() => {
   if (!doc.posting_date) return ''
-  const d = new Date(doc.posting_date)
+  const d = parseCalendarDate(doc.posting_date)
   const day = String(d.getDate()).padStart(2, '0')
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   const month = months[d.getMonth()]
@@ -272,7 +272,7 @@ const displayDate = computed(() => {
 })
 
 function adjustDate(days) {
-  const d = new Date(doc.posting_date)
+  const d = parseCalendarDate(doc.posting_date)
   d.setDate(d.getDate() + days)
   doc.posting_date = toLocalISO(d)
 }

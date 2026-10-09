@@ -118,6 +118,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate } from '../services/serverTime'
 import DatePickerButton from './DatePickerButton.vue'
 import { ref, nextTick, watch } from 'vue'
 import { useSubwindow } from '../services/shortcutManager'
@@ -214,8 +215,8 @@ function formatDateToDisplay(iso) {
 }
 
 function getLocalDateParts() {
-  const now = new Date()
-  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const now = serverCalendarDate()
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
   const formatter = new Intl.DateTimeFormat('en-CA', options)
   return formatter.format(now).split('-').map(Number)
 }
@@ -246,7 +247,7 @@ function setDateRange(range) {
     fromISO = todayISO
     toISO = todayISO
   } else if (range === 'Yesterday') {
-    const date = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
+    const date = serverCalendarDate()
     date.setDate(date.getDate() - 1)
     const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
     const formatter = new Intl.DateTimeFormat('en-CA', options)
@@ -301,8 +302,8 @@ function onInput(e, field) {
     const month = parseInt(val.slice(2, 4))
     
     if (!isNaN(day) && !isNaN(month) && month >= 1 && month <= 12) {
-      const now = new Date()
-      const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' }
+      const now = serverCalendarDate()
+      const options = { year: 'numeric', month: '2-digit' }
       const formatter = new Intl.DateTimeFormat('en-CA', options)
       const [y, m] = formatter.format(now).split('-').map(Number)
 
@@ -375,8 +376,8 @@ function autoCompleteDate(field) {
   if (val.length >= 1 && val.length <= 2) {
     const day = parseInt(val)
     if (!isNaN(day) && day >= 1 && day <= 31) {
-      const now = new Date()
-      const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' }
+      const now = serverCalendarDate()
+      const options = { year: 'numeric', month: '2-digit' }
       const formatter = new Intl.DateTimeFormat('en-CA', options)
       const [y, m] = formatter.format(now).split('-').map(Number)
 

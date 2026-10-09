@@ -449,7 +449,7 @@ import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 
 import { formatDMY } from '../utils/date'
-import { serverToday, toLocalISO } from '../services/serverTime'
+import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const props = defineProps({
   isSubwindow: Boolean,
   prelinkDocType: { type: String, default: 'Purchase Invoice' },
@@ -572,7 +572,7 @@ const filteredVouchers = computed(() => {
 // --- DATE ADJUSTMENT ---
 function adjustDate(days) {
   if (isReadOnly.value || !doc.posting_date) return
-  const d = new Date(doc.posting_date)
+  const d = parseCalendarDate(doc.posting_date)
   d.setDate(d.getDate() + days)
   doc.posting_date = toLocalISO(d)
 }

@@ -277,7 +277,7 @@ import { useItemCache } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
-import { serverToday, toLocalISO } from '../services/serverTime'
+import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const router = useRouter()
 
 useShortcuts({
@@ -705,7 +705,7 @@ function goBack() {
 }
 
 function handleSidebarDateChange(dir) {
-  const d = new Date(sidebarDate.value)
+  const d = parseCalendarDate(sidebarDate.value)
   d.setDate(d.getDate() + dir)
   sidebarDate.value = toLocalISO(d)
   fetchRecentRepacks()
@@ -713,7 +713,7 @@ function handleSidebarDateChange(dir) {
 
 function handleDocDateChange(dir) {
   if (!canModifyDate()) return
-  const d = new Date(repackDate.value)
+  const d = parseCalendarDate(repackDate.value)
   d.setDate(d.getDate() + dir)
   repackDate.value = toLocalISO(d)
 }

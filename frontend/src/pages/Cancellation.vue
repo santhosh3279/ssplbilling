@@ -386,6 +386,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted, watch } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 
@@ -400,7 +401,7 @@ const tabs = [
 ]
 
 function getTodayIST() {
-  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
+  return new Intl.DateTimeFormat('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(serverCalendarDate())
 }
 
 // --- state ---
@@ -507,9 +508,9 @@ function switchTab(val) {
 
 function adjustDate(field, delta) {
   const ref_ = field === 'from' ? fromDate : toDate
-  const d = new Date(ref_.value)
+  const d = parseCalendarDate(ref_.value)
   d.setDate(d.getDate() + delta)
-  ref_.value = d.toISOString().slice(0, 10)
+  ref_.value = toLocalISO(d)
   loadDocs()
 }
 

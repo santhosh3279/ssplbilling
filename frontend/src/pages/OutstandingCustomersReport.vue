@@ -171,6 +171,7 @@
 </template>
 
 <script setup>
+import { serverToday } from '../services/serverTime'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getOutstandingCustomersReport } from '../api.js'
@@ -182,7 +183,7 @@ const router = useRouter()
 const loading = ref(false)
 const error = ref('')
 const rows = ref([])
-const asOnDate = ref(new Date().toISOString().slice(0, 10))
+const asOnDate = ref(serverToday())
 const partyType = ref('Customer')
 const focusedRowIdx = ref(-1)
 

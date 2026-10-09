@@ -187,6 +187,7 @@
 </template>
 
 <script setup>
+import { serverTimezone } from '../services/serverTime'
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useItemCache } from '../services/itemCache.js'
@@ -199,7 +200,7 @@ const search = ref('')
 
 const lastSyncLabel = computed(() => {
   if (!lastSync.value) return ''
-  return new Date(lastSync.value).toLocaleTimeString()
+  return new Date(lastSync.value).toLocaleTimeString('en-IN', { timeZone: serverTimezone() })
 })
 
 const filteredRules = computed(() => {

@@ -380,7 +380,7 @@ import { canModifyDate } from '../composables/usePermission.js'
 
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
 
-import { serverToday, toLocalISO } from '../services/serverTime'
+import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const router = useRouter()
 
 // --- State ---
@@ -435,7 +435,7 @@ const successDocName = ref('')
 // --- Computed ---
 const displayDate = computed(() => {
   if (!postingDate.value) return ''
-  const d = new Date(postingDate.value)
+  const d = parseCalendarDate(postingDate.value)
   const day = String(d.getDate()).padStart(2, '0')
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`
@@ -502,7 +502,7 @@ function focusPostButton() {
 // --- Methods ---
 function adjustDate(days) {
   if (!canModifyDate()) return
-  const d = new Date(postingDate.value)
+  const d = parseCalendarDate(postingDate.value)
   d.setDate(d.getDate() + days)
   postingDate.value = toLocalISO(d)
 }

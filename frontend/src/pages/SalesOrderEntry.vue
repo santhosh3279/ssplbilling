@@ -178,7 +178,7 @@
                 <div v-if="selectedCustomerDetails.last_invoice_date" class="flex flex-col items-end leading-none">
                   <span class="text-[8px] uppercase tracking-wider text-[var(--color-text-muted)] font-bold mb-0.5">Last Inv</span>
                   <span class="text-sm text-[var(--color-text)] font-medium">
-                    {{ new Date(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
+                    {{ parseCalendarDate(selectedCustomerDetails.last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' }) }}
                   </span>
                 </div>
                 <div v-if="selectedCustomerDetails.balance !== undefined" class="flex flex-col items-end leading-none border-l border-[var(--color-border)] pl-6">
@@ -683,7 +683,7 @@ import { salesOrderShortcuts } from '../shortcuts/salesOrderShortcuts'
 import * as XLSX from 'xlsx'
 
 import { formatDMY } from '../utils/date'
-import { toLocalISO } from '../services/serverTime'
+import { serverToday, serverNow, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const router = useRouter()
 
 const inheritedUser = computed(() => {
@@ -727,7 +727,7 @@ function exportItems() {
   const ws = XLSX.utils.json_to_sheet(data)
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Items')
-  XLSX.writeFile(wb, `SalesOrder_Items_${new Date().toISOString().slice(0, 10)}.xlsx`)
+  XLSX.writeFile(wb, `SalesOrder_Items_${serverToday()}.xlsx`)
 }
 
 async function handleImportFile(event) {
@@ -1177,7 +1177,7 @@ async function fetchSidebarBills() {
 }
 
 function changeSidebarDate(days) {
-  const d = new Date(sidebarDate.value)
+  const d = parseCalendarDate(sidebarDate.value)
   d.setDate(d.getDate() + days)
   sidebarDate.value = toLocalISO(d)
 }
@@ -1425,7 +1425,7 @@ onMounted(() => {
 
   const { lastParams: cacheLastParams } = useItemCache()
   const needsRefresh = !cachedItems.value.length ||
-    (Date.now() - lastSync.value) > 5 * 60 * 1000 ||
+    (serverNow().getTime() - lastSync.value) > 5 * 60 * 1000 ||
     cacheLastParams.value.searchType !== 'Sales'
   if (needsRefresh) refreshItemCache('Sales', priceList.value, defaultWarehouse.value)
 

@@ -286,6 +286,7 @@
 </template>
 
 <script setup>
+import { serverToday } from '../services/serverTime'
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappePost } from '../api.js'
@@ -296,7 +297,7 @@ import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache.js
 
 const router = useRouter()
 const API = 'ssplbilling.api.enquiry_api'
-const today = new Date().toISOString().split('T')[0]
+const today = serverToday()
 
 // ── COST CENTERS (from localStorage, synced by Dashboard) ───────────
 let localCostCenters = []

@@ -300,6 +300,7 @@
 </template>
 
 <script setup>
+import { serverToday, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getStoreWiseItemSalesReport, getIncomeAccounts } from '../api.js'
@@ -315,7 +316,7 @@ const reportData = ref([])
 const searchQuery = ref('')
 
 // Dates configuration
-const todayStr = new Date().toISOString().slice(0, 10)
+const todayStr = serverToday()
 const fromDate = ref(todayStr)
 const toDate = ref(todayStr)
 
@@ -403,9 +404,9 @@ const uniqueStoresCount = computed(() => {
 
 function adjustDate(type, days) {
   const ref_ = type === 'from' ? fromDate : toDate
-  const d = new Date(ref_.value)
+  const d = parseCalendarDate(ref_.value)
   d.setDate(d.getDate() + days)
-  ref_.value = d.toISOString().slice(0, 10)
+  ref_.value = toLocalISO(d)
   fetchData()
 }
 
@@ -417,7 +418,7 @@ function formatDateIso(date) {
 }
 
 function setDateRange(preset) {
-  const now = new Date()
+  const now = serverCalendarDate()
   const year = now.getFullYear()
   const month = now.getMonth()
 
@@ -425,7 +426,7 @@ function setDateRange(preset) {
   let to = ''
 
   if (preset === 'yesterday') {
-    const yesterday = new Date()
+    const yesterday = serverCalendarDate()
     yesterday.setDate(now.getDate() - 1)
     from = formatDateIso(yesterday)
     to = formatDateIso(yesterday)

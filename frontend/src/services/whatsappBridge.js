@@ -1,3 +1,4 @@
+import { serverNow } from './serverTime'
 /**
  * whatsappBridge.js
  * ─────────────────────────────────────────────────────────────────────────────
@@ -54,7 +55,7 @@ export function openWhatsAppTab(url, attachment = null) {
     })
   }
 
-  const requestId = `wa-${Date.now()}-${++requestCounter}`
+  const requestId = `wa-${serverNow().getTime()}-${++requestCounter}`
 
   return new Promise((resolve) => {
     let settled = false

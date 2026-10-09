@@ -1,3 +1,4 @@
+import { serverNow } from './serverTime'
 import { dashboardApi } from './dashboard.js'
 
 // Naming-series localStorage cache for the core billing DocTypes.
@@ -43,7 +44,7 @@ let inflight = null
  */
 export async function syncNamingSeries(force = false) {
   const ts = Number(localStorage.getItem(NAMING_SERIES_TS_KEY) || 0)
-  if (!force && (Date.now() - ts) < CACHE_TTL && cacheIsComplete()) return
+  if (!force && (serverNow().getTime() - ts) < CACHE_TTL && cacheIsComplete()) return
 
   if (!inflight) {
     inflight = (async () => {
@@ -61,7 +62,7 @@ export async function syncNamingSeries(force = false) {
         })
       })
       localStorage.setItem(ALL_PREFIXES_KEY, JSON.stringify([...allPrefixes]))
-      localStorage.setItem(NAMING_SERIES_TS_KEY, String(Date.now()))
+      localStorage.setItem(NAMING_SERIES_TS_KEY, String(serverNow().getTime()))
     })().finally(() => { inflight = null })
   }
   await inflight

@@ -482,7 +482,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Warning from '../components/Warning.vue'
 
 import { formatDMY } from '../utils/date'
-import { serverToday } from '../services/serverTime'
+import { serverToday, serverCalendarDate } from '../services/serverTime'
 const router = useRouter()
 
 const receivedBtnRef = ref(null)
@@ -549,15 +549,15 @@ const showPrintModal = ref(false)
 const showWarningModal = ref(false)
 const printTargetName = ref('')
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => serverToday()
 
 function formatDateToDisplay(iso) {
   return formatDMY(iso, '')
 }
 
 function getLocalDateParts() {
-  const now = new Date()
-  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const now = serverCalendarDate()
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
   const formatter = new Intl.DateTimeFormat('en-CA', options)
   return formatter.format(now).split('-').map(Number)
 }

@@ -410,6 +410,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate } from '../services/serverTime'
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { fetchStockLedger, frappeGet } from '../api.js'
@@ -495,15 +496,16 @@ function clearItem() {
 }
 
 function getTodayIST() {
-  const date = new Date()
-  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const date = serverCalendarDate()
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
   const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
   return formatter.format(date)
 }
 
 function getSevenDaysAgoIST() {
-  const date = new Date(Date.now() - 7 * 86400000)
-  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const date = serverCalendarDate()
+  date.setDate(date.getDate() - 7)
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
   const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
   return formatter.format(date)
 }

@@ -294,6 +294,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate, parseCalendarDate } from '../services/serverTime'
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { frappeGet } from '../api.js'
 
@@ -601,8 +602,8 @@ function fmtDate(dateStr) {
 
 function dueDays(dateStr) {
   if (!dateStr) return 0
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const d = new Date(dateStr); d.setHours(0, 0, 0, 0)
+  const today = serverCalendarDate(); today.setHours(0, 0, 0, 0)
+  const d = parseCalendarDate(dateStr); d.setHours(0, 0, 0, 0)
   return Math.floor((today - d) / 86400000)
 }
 

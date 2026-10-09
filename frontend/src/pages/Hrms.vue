@@ -530,6 +530,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate } from '../services/serverTime'
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
@@ -556,7 +557,7 @@ const employeeCount = ref(0)
 const presentCount = ref(0)
 const onLeaveCount = ref(0)
 
-const now = ref(new Date())
+const now = ref(serverCalendarDate())
 
 const todayDate = computed(() => {
   return now.value.toLocaleDateString('en-IN', {

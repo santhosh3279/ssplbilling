@@ -344,7 +344,7 @@
             </p>
           </div>
 
-          <!-- Device clock: read on probe, corrected against this computer's clock -->
+          <!-- Device clock: read on probe, corrected against the server clock -->
           <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3">
             <div class="flex items-center justify-between gap-3">
               <div>
@@ -363,11 +363,11 @@
                 :disabled="!newMachine.ip_address || probing || settingTime"
                 class="rounded-xl border border-[var(--color-employee)]/40 bg-[var(--color-employee)]/10 text-[var(--color-employee)] px-4 py-2 text-xs font-bold hover:bg-[var(--color-employee)]/20 disabled:opacity-50 transition-colors"
               >
-                {{ settingTime ? 'Setting...' : 'Set to computer time' }}
+                {{ settingTime ? 'Setting...' : 'Set to server time' }}
               </button>
             </div>
             <p class="mt-2 text-[11px] text-[var(--color-text-muted)]">
-              This computer: <span class="font-mono">{{ formatDate(computerTime) }}</span>
+              Server time: <span class="font-mono">{{ formatDate(serverTimeDisplay) }}</span>
             </p>
           </div>
 
@@ -397,6 +397,7 @@
 </template>
 
 <script setup>
+import { serverToday, serverNowTime, serverCalendarDate, toLocalISO } from '../services/serverTime'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
 import { formatDMYTime } from '../utils/date'
@@ -439,20 +440,15 @@ const settingTime = ref(false)
 // state, so it is shown as a badge next to the serial number, not as an error.
 const deviceOffline = ref('')
 const deviceTime = ref('')
-// Computer clock at the instant the device clock was read — drift is measured
+// Server clock at the instant the device clock was read — drift is measured
 // against that snapshot, not against the ticking clock.
 const deviceReadAt = ref('')
-const computerTime = ref(localTimestamp())
+const serverTimeDisplay = ref(localTimestamp())
 let clockTimer = null
 
-// Local wall-clock "YYYY-MM-DD HH:MM:SS". Deliberately not toISOString(), which is
-// UTC and would set every device 5:30 off on IST.
-function localTimestamp(d = new Date()) {
-  const p = (n) => String(n).padStart(2, '0')
-  return (
-    `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ` +
-    `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
-  )
+// Site wall-clock timestamp expected by attendance devices.
+function localTimestamp() {
+  return `${serverToday()} ${serverNowTime()}`
 }
 
 function parseLocal(str) {
@@ -475,7 +471,7 @@ const driftLabel = computed(() => {
   if (abs <= 60) return `In sync (${abs}s off)`
   const mins = Math.round(abs / 60)
   const span = mins >= 120 ? `${Math.round(mins / 60)}h` : `${mins}m`
-  return drift > 0 ? `Device ${span} ahead of this computer` : `Device ${span} behind this computer`
+  return drift > 0 ? `Device ${span} ahead of the server` : `Device ${span} behind the server`
 })
 
 const driftClass = computed(() => {
@@ -546,9 +542,9 @@ function formatDate(dateStr) {
 }
 
 function defaultFromDate() {
-  const d = new Date()
+  const d = serverCalendarDate()
   d.setDate(d.getDate() - 30)
-  return d.toISOString().slice(0, 10)
+  return toLocalISO(d)
 }
 
 function loadCachedSync() {
@@ -760,7 +756,7 @@ onMounted(() => {
   loadMachines()
   loadCachedSync()
   clockTimer = setInterval(() => {
-    computerTime.value = localTimestamp()
+    serverTimeDisplay.value = localTimestamp()
   }, 1000)
 })
 

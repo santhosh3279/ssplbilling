@@ -24,7 +24,7 @@ import {
   createSalesInvoice,
 } from "../api.js";
 import { searchCustomers } from "../customersearch.js";
-import { serverToday } from "../services/serverTime";
+import { serverToday, serverNow } from '../services/serverTime';
 
 // ─── Row factory ──────────────────────────────────────────────────────────────
 
@@ -329,7 +329,7 @@ export function useBilling() {
   // ─── Toasts ────────────────────────────────────────────────────────────────
 
   function pushToast(message, type = "info") {
-    const id = Date.now() + Math.random();
+    const id = serverNow().getTime() + Math.random();
     toasts.value.push({ id, message, type });
     setTimeout(() => {
       toasts.value = toasts.value.filter((t) => t.id !== id);

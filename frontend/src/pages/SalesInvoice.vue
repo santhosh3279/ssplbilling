@@ -847,7 +847,7 @@ import ShortcutPage from '../components/ShortcutPage.vue'
 import { canAccessTile, canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
-import { serverToday, toLocalISO } from '../services/serverTime'
+import { serverToday, serverNow, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const props = defineProps({
   isSubwindow: Boolean,
   invoiceName: String
@@ -1074,7 +1074,7 @@ function handleDocDateChange(days) {
     alert('Date change is not allowed')
     return
   }
-  const d = new Date(invoiceDate.value)
+  const d = parseCalendarDate(invoiceDate.value)
   d.setDate(d.getDate() + days)
   invoiceDate.value = toLocalISO(d)
 }
@@ -1148,7 +1148,7 @@ function applySidebarPanelEvent(data) {
 }
 
 function handleSidebarDateChange(days) {
-  const d = new Date(sidebarDate.value)
+  const d = parseCalendarDate(sidebarDate.value)
   d.setDate(d.getDate() + days)
   sidebarDate.value = toLocalISO(d)
 }
@@ -1201,7 +1201,7 @@ async function loadInvoice(invoiceName) {
         customerBalance.value = custDetails.gst_balance ?? 0
         customerModifier.value = custDetails.pricelist_multiplication_factor ?? null
         if (custDetails.last_invoice_date) {
-          const d = new Date(custDetails.last_invoice_date)
+          const d = parseCalendarDate(custDetails.last_invoice_date)
           customerLastInvDate.value = formatDMY(d, '')
         } else {
           customerLastInvDate.value = 'None'
@@ -1398,7 +1398,7 @@ function discountRulesForItem(itemCode) {
     if (!rule.enabled) return false
 
     // Check validity dates
-    const today = new Date().toISOString().slice(0, 10)
+    const today = serverToday()
     if (rule.start_date && today < rule.start_date) return false
     if (rule.end_date   && today > rule.end_date)   return false
 
@@ -2195,7 +2195,7 @@ function onNewCodeInput() {
 
 function handleNewCodeKeydown(e) {
   if (e.key === 'Enter') {
-    const now = Date.now()
+    const now = serverNow().getTime()
     const isDouble = (now - lastEnterTime.value < 400)
     lastEnterTime.value = now
 
@@ -3224,7 +3224,7 @@ function handleCustomerSelected(cust, opts = {}) {
   }
 
   if (cust.last_invoice_date) {
-    const d = new Date(cust.last_invoice_date)
+    const d = parseCalendarDate(cust.last_invoice_date)
     customerLastInvDate.value = formatDMY(d, '')
   } else {
     customerLastInvDate.value = 'None'
@@ -3435,7 +3435,7 @@ onMounted(() => {
     showSeriesModal.value = true
   }
 
-  if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
+  if (!cachedItems.value.length || (serverNow().getTime() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Sales', priceList.value, warehouse.value)
   }
 

@@ -245,7 +245,7 @@ import { useItemCache } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
-import { serverToday, toLocalISO } from '../services/serverTime'
+import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const router = useRouter()
 const API = 'ssplbilling.api.stock_reconciliation_api'
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
@@ -329,14 +329,14 @@ function navigateSidebarEntry(idx, dir) {
 }
 
 function changeSidebarDate(days) {
-  const d = new Date(sidebarDate.value)
+  const d = parseCalendarDate(sidebarDate.value)
   d.setDate(d.getDate() + days)
   sidebarDate.value = toLocalISO(d)
 }
 
 function changeDate(dir) {
   if (!canModifyDate()) return
-  const d = new Date(entryDate.value)
+  const d = parseCalendarDate(entryDate.value)
   d.setDate(d.getDate() + dir)
   entryDate.value = toLocalISO(d)
 }

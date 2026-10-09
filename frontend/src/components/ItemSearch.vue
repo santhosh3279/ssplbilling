@@ -289,6 +289,7 @@
 </template>
 
 <script setup>
+import { serverNow } from '../services/serverTime'
 import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useItemCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
@@ -364,7 +365,7 @@ useSubwindowWatcher(computed(() => props.show), {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     // Swallow a stray Enter that lands right after the supplier search closes
     // (double-tap / key bounce) — it must never fall through to item selection.
-    if (Date.now() - supplierModalClosedAt.value < 350) return
+    if (serverNow().getTime() - supplierModalClosedAt.value < 350) return
     if (quickQtyMode.value) {
       // Toggle qty cell focus on the current row: focused → commit + blur,
       // unfocused → focus it again. Never moves the selection.
@@ -633,7 +634,7 @@ function openSupplierSearch() {
 function handleSupplierSelect(supplier) {
   selectedSupplier.value = supplier
   showSupplierModal.value = false
-  supplierModalClosedAt.value = Date.now()
+  supplierModalClosedAt.value = serverNow().getTime()
   focus()
 }
 

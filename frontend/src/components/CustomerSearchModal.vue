@@ -197,7 +197,7 @@
             <span class="text-2xl font-bold uppercase text-[var(--color-text-muted)] truncate">Last Inv</span>
             <span class="text-4xl font-semibold text-[var(--color-text)] truncate">
               {{ results[selectedIdx].last_invoice_date
-                  ? new Date(results[selectedIdx].last_invoice_date).toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: '2-digit' })
+                  ? parseCalendarDate(results[selectedIdx].last_invoice_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
                   : 'None' }}
             </span>
           </div>
@@ -274,6 +274,7 @@
 </template>
 
 <script setup>
+import { parseCalendarDate } from '../services/serverTime'
 import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSubwindowWatcher } from '../services/shortcutManager'

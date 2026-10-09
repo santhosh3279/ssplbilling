@@ -1,3 +1,4 @@
+import { serverNow } from './serverTime'
 import ExcelJS from 'exceljs'
 
 /**
@@ -7,7 +8,7 @@ export async function generateCashierReport(data) {
   const { date, docs, bills, ledgerEntries, ledgerOpening, upiLedgerEntries, upiLedgerOpening, metadata, getMopAmount } = data
   const workbook = new ExcelJS.Workbook()
   workbook.creator = 'Gemini CLI'
-  workbook.created = new Date()
+  workbook.created = serverNow()
 
   // ── SHEET 1: DAILY CASH SUMMARY ───────────────────────────────────
   const summarySheet = workbook.addWorksheet('Daily Cash Summary', {

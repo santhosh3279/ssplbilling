@@ -952,7 +952,7 @@ import PriceListUpdate from './PriceListUpdate.vue'
 import BarcodePrintPage from './BarcodePrintPage.vue'
 
 import { formatDMY } from '../utils/date'
-import { serverToday, toLocalISO } from '../services/serverTime'
+import { serverToday, serverNow, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const router = useRouter()
 
 const props = defineProps({
@@ -1001,7 +1001,7 @@ const supplierInvoiceNo = ref('')
 const supplierInvoiceDate = ref(serverToday())
 
 function handleSupplierInvoiceDateChange(days) {
-  const d = new Date(supplierInvoiceDate.value)
+  const d = parseCalendarDate(supplierInvoiceDate.value)
   d.setDate(d.getDate() + days)
   supplierInvoiceDate.value = toLocalISO(d)
 }
@@ -1115,8 +1115,8 @@ function onSuppDateInput(e) {
     const day = parseInt(val.slice(0, 2))
     const month = parseInt(val.slice(2, 4))
     if (!isNaN(day) && !isNaN(month) && month >= 1 && month <= 12) {
-      const now = new Date()
-      const opts = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' }
+      const now = serverCalendarDate()
+      const opts = { year: 'numeric', month: '2-digit' }
       const [y, m] = new Intl.DateTimeFormat('en-CA', opts).format(now).split('-').map(Number)
       let year = y
       if (month > m) year--
@@ -1157,8 +1157,8 @@ function autoCompleteSuppDate() {
   if (val.length >= 1 && val.length <= 2) {
     const day = parseInt(val)
     if (!isNaN(day) && day >= 1 && day <= 31) {
-      const now = new Date()
-      const opts = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit' }
+      const now = serverCalendarDate()
+      const opts = { year: 'numeric', month: '2-digit' }
       const [y, m] = new Intl.DateTimeFormat('en-CA', opts).format(now).split('-').map(Number)
       const dayStr = day.toString().padStart(2, '0')
       const monthStr = m.toString().padStart(2, '0')
@@ -1257,7 +1257,7 @@ const saveButtonText = computed(() => {
 
 function handleDocDateChange(days) {
   if (!canModifyDate()) return
-  const d = new Date(invoiceDate.value)
+  const d = parseCalendarDate(invoiceDate.value)
   d.setDate(d.getDate() + days)
   invoiceDate.value = toLocalISO(d)
 }
@@ -1280,7 +1280,7 @@ async function fetchRecentInvoices() {
 }
 
 function handleSidebarDateChange(days) {
-  const d = new Date(sidebarDate.value)
+  const d = parseCalendarDate(sidebarDate.value)
   d.setDate(d.getDate() + days)
   sidebarDate.value = toLocalISO(d)
 }
@@ -2677,7 +2677,7 @@ function handleSupplierSelected(party) {
   const addrParts = [party.address_line1, party.city, party.state].filter(Boolean)
   supplierAddress.value = addrParts.join(', ')
   if (party.last_invoice_date) {
-    const d = new Date(party.last_invoice_date)
+    const d = parseCalendarDate(party.last_invoice_date)
     supplierLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
   } else {
     supplierLastInvDate.value = 'None'
@@ -2775,7 +2775,7 @@ function onNewCodeInput() {
 
 function handleNewCodeKeydown(e) {
   if (e.key === 'Enter') {
-    const now = Date.now()
+    const now = serverNow().getTime()
     const isDouble = (now - lastEnterTime.value < 400)
     lastEnterTime.value = now
 
@@ -3065,7 +3065,7 @@ onMounted(() => {
     fetchAllowedSeries('Purchase Invoice')
     showSeriesModal.value = true
   }
-  if (!cachedItems.value.length || (Date.now() - lastSync.value) > 5 * 60 * 1000) {
+  if (!cachedItems.value.length || (serverNow().getTime() - lastSync.value) > 5 * 60 * 1000) {
     refreshItemCache('Purchase', priceList.value, warehouse.value)
   }
 

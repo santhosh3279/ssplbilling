@@ -1,3 +1,4 @@
+import { serverNow } from './serverTime'
 import { ref } from 'vue'
 import { registerTab, releaseTab } from '../api'
 
@@ -19,7 +20,7 @@ channel.addEventListener('message', (e) => {
 })
 
 function generateTabId() {
-  return `tab_${Date.now()}_${Math.random().toString(36).slice(2)}`
+  return `tab_${serverNow().getTime()}_${Math.random().toString(36).slice(2)}`
 }
 
 export function getTabId() {

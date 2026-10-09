@@ -59,6 +59,7 @@
 </template>
 
 <script setup>
+import { serverNowTime } from '../services/serverTime'
 import { ref, onMounted, onUnmounted } from 'vue'
 
 defineProps({
@@ -71,10 +72,7 @@ const secondDeg = ref(0)
 let timer = null
 
 function updateClock() {
-  const now = new Date()
-  const seconds = now.getSeconds()
-  const minutes = now.getMinutes()
-  const hours = now.getHours()
+  const [hours, minutes, seconds] = serverNowTime().split(':').map(Number)
 
   secondDeg.value = seconds * 6
   minuteDeg.value = minutes * 6 + seconds * 0.1

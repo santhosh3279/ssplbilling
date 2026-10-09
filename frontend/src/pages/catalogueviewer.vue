@@ -259,7 +259,7 @@
     <!-- Footer -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 py-6 px-6 text-center text-[10px] text-[var(--color-text-muted)] shrink-0 mt-auto">
       <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-        <span>© {{ new Date().getFullYear() }} Sundaram and Sons Private Ltd.</span>
+        <span>© {{ serverCalendarDate().getFullYear() }} Sundaram and Sons Private Ltd.</span>
         <span>Keyboard Fast wholesale Billing system</span>
       </div>
     </footer>
@@ -267,6 +267,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter, RouterLink } from 'vue-router'
 import { frappeGet } from '../api.js'

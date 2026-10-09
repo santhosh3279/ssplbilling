@@ -64,6 +64,7 @@
 </template>
 
 <script setup>
+import { serverNow } from './services/serverTime'
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useShortcuts } from './services/shortcutManager';
 import { globalShortcuts } from './shortcuts/globalShortcuts';
@@ -103,7 +104,7 @@ function updateCompanies() {
   alternativeCompany.value = localStorage.getItem('ae-alternative_company') || '';
 }
 function showToast(message, type = 'success', duration = 2000) {
-  const id = Date.now() + Math.random().toString(36).substr(2, 9);
+  const id = serverNow().getTime() + Math.random().toString(36).substr(2, 9);
   toasts.value.push({ id, message, type });
   setTimeout(() => {
     toasts.value = toasts.value.filter(t => t.id !== id);

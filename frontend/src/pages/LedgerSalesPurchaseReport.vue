@@ -201,6 +201,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate, toLocalISO } from '../services/serverTime'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getLedgerWiseSalesPurchaseReport } from '../api.js'
@@ -214,10 +215,10 @@ const salesRows = ref([])
 const purchaseRows = ref([])
 
 // Current FY defaults
-const today = new Date()
+const today = serverCalendarDate()
 const fy = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1
 const fromDate = ref(`${fy}-04-01`)
-const toDate = ref(today.toISOString().slice(0, 10))
+const toDate = ref(toLocalISO(today))
 
 const dateShortcuts = [
   { label: 'CD', value: 'CD' },
@@ -238,7 +239,7 @@ const totalPurchaseCr = computed(() => purchaseRows.value.reduce((sum, r) => sum
 
 function setDateShortcut(value) {
   activeDateShortcut.value = value
-  const today = new Date()
+  const today = serverCalendarDate()
   const fmt = (d) => {
     const y = d.getFullYear()
     const m = String(d.getMonth() + 1).padStart(2, '0')

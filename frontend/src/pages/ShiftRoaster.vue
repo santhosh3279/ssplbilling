@@ -372,6 +372,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted } from 'vue'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
 import { formatDMY } from '../utils/date'
@@ -429,7 +430,7 @@ function emptyDraft() {
 }
 
 function today() {
-  const d = new Date()
+  const d = serverCalendarDate()
   const p = (n) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }

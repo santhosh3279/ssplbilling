@@ -844,7 +844,7 @@ import Warning from '../components/Warning.vue'
 import { canAccessTile, canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
-import { serverToday } from '../services/serverTime'
+import { serverToday, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
 /**
  * HELPER: getTodayIST
  * Defined early to ensure it's available for ref initialization.
@@ -971,9 +971,9 @@ const bucketedInvoices = computed(() => {
   }
 
   const today = getTodayIST()
-  const yesterday = new Date()
+  const yesterday = serverCalendarDate()
   yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = yesterday.toISOString().slice(0, 10)
+  const yesterdayStr = toLocalISO(yesterday)
 
   return Object.keys(groups)
     .sort((a, b) => b.localeCompare(a))
@@ -1020,8 +1020,7 @@ const discountLabel = computed(() => {
 })
 
 const todayStr = computed(() => {
-  return new Date().toLocaleDateString('en-IN', { 
-    timeZone: 'Asia/Kolkata',
+  return serverCalendarDate().toLocaleDateString('en-IN', {
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
@@ -1233,17 +1232,17 @@ function formatTime(timeStr) {
 }
 
 function adjustDate(days) {
-  const d = new Date(filterDate.value)
+  const d = parseCalendarDate(filterDate.value)
   d.setDate(d.getDate() + days)
-  filterDate.value = d.toISOString().slice(0, 10)
+  filterDate.value = toLocalISO(d)
   loadInvoices()
 }
 
 function adjustPostingDate(days) {
   if (!canModifyDate()) return
-  const d = new Date(postingDate.value)
+  const d = parseCalendarDate(postingDate.value)
   d.setDate(d.getDate() + days)
-  postingDate.value = d.toISOString().slice(0, 10)
+  postingDate.value = toLocalISO(d)
 }
 
 function openPostingDateCalendar() {
@@ -1871,7 +1870,7 @@ function handleDueDateInput(e) {
   if (raw.length === 4) {
     const day = raw.slice(0, 2)
     const month = raw.slice(2, 4)
-    const year = new Date().getFullYear()
+    const year = serverCalendarDate().getFullYear()
     dueDate.value = `${day}/${month}/${year}`
     return
   }

@@ -293,7 +293,7 @@ import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappePost } from '../api.js'
-import { serverToday } from '../services/serverTime'
+import { serverToday, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { canModifyDate } from '../composables/usePermission.js'
 import { useShortcuts } from '../services/shortcutManager'
@@ -327,8 +327,8 @@ watch(entryType, () => {
 })
 
 function getTodayIST() {
-  const date = new Date()
-  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const date = serverCalendarDate()
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
   const formatter = new Intl.DateTimeFormat('en-CA', options) // 'en-CA' gives YYYY-MM-DD
   return formatter.format(date)
 }
@@ -356,7 +356,7 @@ function onDateInput(e) {
     const month = parseInt(val.slice(2, 4))
     
     if (!isNaN(day) && !isNaN(month) && month >= 1 && month <= 12) {
-      const year = new Date().getFullYear()
+      const year = serverCalendarDate().getFullYear()
       const dayStr = day.toString().padStart(2, '0')
       const monthStr = month.toString().padStart(2, '0')
       
@@ -385,9 +385,9 @@ function onDateInput(e) {
 
 function changeDate(days) {
   if (!canModifyDate()) return
-  const d = new Date(postingDate.value)
+  const d = parseCalendarDate(postingDate.value)
   d.setDate(d.getDate() + days)
-  postingDate.value = d.toISOString().slice(0, 10)
+  postingDate.value = toLocalISO(d)
   displayDate.value = formatDateToDisplay(postingDate.value)
 }
 

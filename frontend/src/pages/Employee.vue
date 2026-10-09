@@ -277,6 +277,7 @@
 </template>
 
 <script setup>
+import { serverToday } from '../services/serverTime'
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
@@ -314,7 +315,7 @@ function resetForm() {
     last_name: '',
     gender: 'Male',
     date_of_birth: '',
-    date_of_joining: new Date().toISOString().split('T')[0],
+    date_of_joining: serverToday(),
     mobile: '',
     email: '',
     current_address: ''

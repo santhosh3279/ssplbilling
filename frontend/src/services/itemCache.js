@@ -1,3 +1,4 @@
+import { serverNow } from './serverTime'
 import { ref } from 'vue'
 import { frappeGet } from '../api.js'
 
@@ -72,7 +73,7 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
       i.price = plRate ? parseFloat(plRate.rate) || 0 : parseFloat(i.rate) || 0
     }
     lastParams.value.priceList = priceList
-    lastSync.value = Date.now()
+    lastSync.value = serverNow().getTime()
     return items.value
   }
 
@@ -88,7 +89,7 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
     items.value = data || []
     saveUomsToStorage(items.value)
     savePercentagesToStorage(items.value)
-    lastSync.value = Date.now()
+    lastSync.value = serverNow().getTime()
 
     lastParams.value = { searchType, priceList, warehouse }
     return items.value
@@ -131,7 +132,7 @@ export function patchItemInCache(itemCode, newData) {
     if (insertAt === -1) items.value.push(newData)
     else items.value.splice(insertAt, 0, newData)
   }
-  lastSync.value = Date.now()
+  lastSync.value = serverNow().getTime()
 }
 
 /**
@@ -251,7 +252,7 @@ export function updateItemPriceInCache(itemCode, priceList, rate, uom) {
   }
 
   items.value.splice(idx, 1, item)
-  lastSync.value = Date.now()
+  lastSync.value = serverNow().getTime()
 }
 
 /**
@@ -281,7 +282,7 @@ export function updateItemStockInCache(itemCode, warehouse, qty, redisStock, red
   item.redis_purchase_stock = redisPurchaseStock
 
   items.value.splice(idx, 1, item)
-  lastSync.value = Date.now()
+  lastSync.value = serverNow().getTime()
 }
 
 export function useItemCache() {

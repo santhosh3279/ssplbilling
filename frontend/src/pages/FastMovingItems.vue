@@ -331,6 +331,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getFastMovingItemsReport, getIncomeAccounts } from '../api.js'
@@ -350,7 +351,7 @@ const reportData = ref([])
 const searchQuery = ref('')
 
 // Dates configuration (Default to current month)
-const today = new Date()
+const today = serverCalendarDate()
 const firstDay = new Date(today.getFullYear(), today.getMonth(), 1)
 const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0)
 const formatDateIso = (date) => {
@@ -455,14 +456,14 @@ const grandTotalTransactions = computed(() => {
 
 function adjustDate(type, days) {
   const ref_ = type === 'from' ? fromDate : toDate
-  const d = new Date(ref_.value)
+  const d = parseCalendarDate(ref_.value)
   d.setDate(d.getDate() + days)
-  ref_.value = d.toISOString().slice(0, 10)
+  ref_.value = toLocalISO(d)
   fetchData()
 }
 
 function setDateRange(preset) {
-  const now = new Date()
+  const now = serverCalendarDate()
   const year = now.getFullYear()
   const month = now.getMonth()
 
@@ -470,7 +471,7 @@ function setDateRange(preset) {
   let to = ''
 
   if (preset === 'yesterday') {
-    const yesterday = new Date()
+    const yesterday = serverCalendarDate()
     yesterday.setDate(now.getDate() - 1)
     from = formatDateIso(yesterday)
     to = formatDateIso(yesterday)

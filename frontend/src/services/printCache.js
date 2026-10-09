@@ -1,3 +1,4 @@
+import { serverNow } from './serverTime'
 // Cached lookups for the two lists every print dialog needs: the Print Templates
 // valid for a doctype and the configured Printers. Both change rarely (admin-only
 // masters) but each open used to cost a separate sequential HTTP round trip, which
@@ -43,7 +44,7 @@ function readCache(key, bucket) {
     // the entire bucketed object.
     const entry = bucket === null ? raw : raw?.[bucket]
     if (!entry || !Array.isArray(entry.data)) return null
-    return { data: entry.data, fresh: Date.now() - (entry.ts || 0) < TTL }
+    return { data: entry.data, fresh: serverNow().getTime() - (entry.ts || 0) < TTL }
   } catch (e) {
     return null
   }
@@ -51,7 +52,7 @@ function readCache(key, bucket) {
 
 function writeCache(key, bucket, data) {
   try {
-    const entry = { ts: Date.now(), data }
+    const entry = { ts: serverNow().getTime(), data }
     if (bucket === null) {
       localStorage.setItem(key, JSON.stringify(entry))
     } else {

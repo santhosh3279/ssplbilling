@@ -598,6 +598,7 @@
 </template>
 
 <script setup>
+import { serverToday, serverNow, serverCalendarDate, serverTimezone } from '../services/serverTime'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
@@ -636,7 +637,7 @@ let _flashTimer = null
 function _onSocketConnect() { socketConnected.value = true }
 function _onSocketDisconnect() { socketConnected.value = false }
 function _onItemCacheUpdated() {
-  lastSyncTime.value = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  lastSyncTime.value = serverNow().toLocaleTimeString('en-IN', { timeZone: serverTimezone(), hour: '2-digit', minute: '2-digit', second: '2-digit' })
   syncFlash.value = true
   clearTimeout(_flashTimer)
   _flashTimer = setTimeout(() => { syncFlash.value = false }, 3000)
@@ -829,12 +830,11 @@ async function handleLogout() {
 }
 
 // ==================== DATE ====================
-const now = ref(new Date())
+const now = ref(serverCalendarDate())
 let timeInterval = null
 
 const todayDate = computed(() => {
   return now.value.toLocaleDateString('en-IN', {
-    timeZone: 'Asia/Kolkata',
     day: '2-digit',
     month: 'long',
     year: 'numeric'
@@ -843,7 +843,6 @@ const todayDate = computed(() => {
 
 const todayDay = computed(() => {
   return now.value.toLocaleDateString('en-IN', {
-    timeZone: 'Asia/Kolkata',
     weekday: 'long'
   })
 })
@@ -937,7 +936,7 @@ const allowedTileIds = ref(_tileCache && _tileCache.user === selectedUser.value 
 async function loadAllowedTiles(user = null, force = false) {
   const cacheUser = user || session.user.value
   const cached = readTileCache()
-  if (!force && cached && cached.user === cacheUser && (Date.now() - cached.ts) < TILE_CACHE_TTL) {
+  if (!force && cached && cached.user === cacheUser && (serverNow().getTime() - cached.ts) < TILE_CACHE_TTL) {
     allowedTileIds.value = cached.tiles
     if (typeof cached.allow_date_modification !== 'undefined') {
       localStorage.setItem('wb-allow-date-modification', cached.allow_date_modification ? '1' : '0')
@@ -955,7 +954,7 @@ async function loadAllowedTiles(user = null, force = false) {
       user: cacheUser,
       tiles: allowedTileIds.value,
       allow_date_modification: Boolean(res?.allow_date_modification),
-      ts: Date.now(),
+      ts: serverNow().getTime(),
     }))
   } catch (e) {
     console.warn('[Dashboard] fetchAllowedTiles failed:', e)
@@ -1403,12 +1402,12 @@ async function syncAllowedSeries(targetUser, force) {
     let d = null
     const cached = JSON.parse(localStorage.getItem(ALLOWED_SERIES_CACHE_KEY) || 'null')
     const cacheValid = !force && cached && cached.user === targetUser &&
-      (Date.now() - cached.ts) < GENERIC_CACHE_TTL
+      (serverNow().getTime() - cached.ts) < GENERIC_CACHE_TTL
     if (cacheValid) {
       d = cached.data
     } else {
       d = await dashboardApi.getAllowedSeries(targetUser)
-      localStorage.setItem(ALLOWED_SERIES_CACHE_KEY, JSON.stringify({ data: d, user: targetUser, ts: Date.now() }))
+      localStorage.setItem(ALLOWED_SERIES_CACHE_KEY, JSON.stringify({ data: d, user: targetUser, ts: serverNow().getTime() }))
     }
     availableSeries.value = d.allowed_series || []
     userAllowedString.value = d.user_allowed_string || ''
@@ -1427,7 +1426,7 @@ async function syncBillingSettings(targetUser, force) {
     let settings = null
     const cached = JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null')
     const cacheValid = !force && cached &&
-      (Date.now() - cached.ts) < BILLING_SETTINGS_TTL &&
+      (serverNow().getTime() - cached.ts) < BILLING_SETTINGS_TTL &&
       cached.data?._current_user === targetUser &&
       // Payload written before SSPL Printer Setting existed: refetch instead of
       // leaving wb-printer-records unwritten until the TTL expires
@@ -1440,7 +1439,7 @@ async function syncBillingSettings(targetUser, force) {
       settings = await dashboardApi.getBillingSettings(targetUser)
       if (settings) {
         const settingsWithUser = { ...settings, _current_user: targetUser }
-        localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({ data: settingsWithUser, ts: Date.now() }))
+        localStorage.setItem(SETTINGS_CACHE_KEY, JSON.stringify({ data: settingsWithUser, ts: serverNow().getTime() }))
       }
     }
     
@@ -1561,7 +1560,7 @@ async function syncLicenseStatus() {
 //    (date-keyed, NOT TTL: a stale value here would show yesterday's opening).
 async function syncOpeningBoxCash(force) {
   try {
-    const today = new Date().toLocaleDateString('en-CA')
+    const today = serverToday()
     const haveToday = localStorage.getItem(OPENING_CASH_DATE_KEY) === today &&
       localStorage.getItem('wb-opening-box-cash') != null
     if (force || !haveToday) {
@@ -1745,11 +1744,11 @@ onMounted(async () => {
   // Items: skip if already cached this session and still fresh (WebSocket keeps stock live).
   // Seed warehouse-scoped (user's default warehouse) so per-warehouse stock is correct from
   // load and the first Ctrl+I in Sales Entry — same warehouse — needs no re-scope refetch.
-  if (!cachedItems.value.length || (Date.now() - itemsLastSync.value) > ITEM_CACHE_TTL) {
+  if (!cachedItems.value.length || (serverNow().getTime() - itemsLastSync.value) > ITEM_CACHE_TTL) {
     refreshItemCache('Sales', null, defaultWarehouse.value || null) // Preload items for fast entry
   }
   // Ledgers: hydrated from localStorage at module init; refresh only if empty or stale
-  if (!cachedLedgers.value.length || (Date.now() - ledgersLastSync.value) > ITEM_CACHE_TTL) {
+  if (!cachedLedgers.value.length || (serverNow().getTime() - ledgersLastSync.value) > ITEM_CACHE_TTL) {
     refreshLedgerCache()      // Preload ledgers for fast search
   }
   // MQTT is live connection health — don't persist it; poll at most once per browser session
@@ -1759,7 +1758,7 @@ onMounted(async () => {
   }
 
   timeInterval = setInterval(() => {
-    now.value = new Date()
+    now.value = serverCalendarDate()
   }, 1000)
 })
 onUnmounted(() => {

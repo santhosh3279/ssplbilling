@@ -700,6 +700,7 @@
 </template>
 
 <script setup>
+import { serverToday, serverCalendarDate, toLocalISO } from '../services/serverTime'
 import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, onMounted, nextTick, computed, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
@@ -780,8 +781,8 @@ function toggleAgainstReveal(entry) {
   else set.add(entry)
 }
 const selectedParty = ref(null)   // { name, label, type }
-const fromDate = ref((() => { const d = new Date(); d.setDate(d.getDate() - 90); return d.toISOString().split('T')[0] })())
-const toDate = ref(new Date().toISOString().split('T')[0])
+const fromDate = ref((() => { const d = serverCalendarDate(); d.setDate(d.getDate() - 90); return toLocalISO(d) })())
+const toDate = ref(serverToday())
 
 onMounted(async () => {
   window.addEventListener('keydown', onGlobalKeydown)
@@ -1078,8 +1079,8 @@ function handleDateConfirm(dates) {
 }
 
 function getLocalDateParts() {
-  const now = new Date()
-  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const now = serverCalendarDate()
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
   const formatter = new Intl.DateTimeFormat('en-CA', options)
   return formatter.format(now).split('-').map(Number)
 }
@@ -1090,7 +1091,7 @@ function todayISO() {
 }
 
 function yesterdayISO() {
-  const date = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }))
+  const date = serverCalendarDate()
   date.setDate(date.getDate() - 1)
   const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
   const formatter = new Intl.DateTimeFormat('en-CA', options)

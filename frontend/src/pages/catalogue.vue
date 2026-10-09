@@ -509,6 +509,7 @@
 </template>
 
 <script setup>
+import { serverToday } from '../services/serverTime'
 import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
@@ -962,7 +963,7 @@ function formatRuleDescription(rule) {
 function discountRulesForItem(itemCode) {
   if (!itemCode || !discountRules.value || !discountRules.value.length) return []
   const code = itemCode.trim().toLowerCase()
-  const today = new Date().toISOString().slice(0, 10)
+  const today = serverToday()
 
   const cataloguePriceLists = (form.value.price_lists || [])
     .map(p => p.price_list && p.price_list.trim())

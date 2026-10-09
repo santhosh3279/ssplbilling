@@ -357,6 +357,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate, toLocalISO } from '../services/serverTime'
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { utils, writeFile } from 'xlsx'
@@ -419,16 +420,16 @@ onMounted(async () => {
 
 // ── Date defaults (current FY) ────────────────────────────────────────────────
 function defaultDates() {
-  const today = new Date()
+  const today = serverCalendarDate()
   const fy = today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1
   return {
     from: `${fy}-04-01`,
-    to: today.toISOString().slice(0, 10),
+    to: toLocalISO(today),
   }
 }
 
 function setLastMonth() {
-  const today = new Date()
+  const today = serverCalendarDate()
   const firstDayPrevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
   const lastDayPrevMonth = new Date(today.getFullYear(), today.getMonth(), 0)
 

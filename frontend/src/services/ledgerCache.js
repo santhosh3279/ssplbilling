@@ -1,3 +1,4 @@
+import { serverNow } from './serverTime'
 import { ref } from 'vue'
 import { frappeGet } from '../api.js'
 
@@ -77,7 +78,7 @@ async function fetchLedgerCache(force) {
   const context = currentContext()
   
   // Throttle background refreshes: skip if last sync was < 60s ago, unless forced
-  if (!force && cacheContext.value === context && lastSync.value > 0 && (Date.now() - lastSync.value) < 60000) {
+  if (!force && cacheContext.value === context && lastSync.value > 0 && (serverNow().getTime() - lastSync.value) < 60000) {
     return ledgers.value
   }
 
@@ -110,7 +111,7 @@ async function fetchLedgerCache(force) {
     cacheContext.value = context
     ledgers.value = cleanedLedgers
     partyLinks.value = newPartyLinks
-    lastSync.value = Date.now()
+    lastSync.value = serverNow().getTime()
     
     saveToStorage(cleanedLedgers, newPartyLinks)
     return cleanedLedgers
@@ -139,7 +140,7 @@ export function updateLedgerBalanceInCache(name, balance) {
   const idx = ledgers.value.findIndex(l => l.name === name)
   if (idx === -1) return
   ledgers.value.splice(idx, 1, { ...ledgers.value[idx], balance: Number(balance) || 0 })
-  lastSync.value = Date.now()
+  lastSync.value = serverNow().getTime()
   _schedulePersist()
 }
 
@@ -166,7 +167,7 @@ export function patchLedgerInCache(name, newData) {
     if (insertAt === -1) ledgers.value.push(newData)
     else ledgers.value.splice(insertAt, 0, newData)
   }
-  lastSync.value = Date.now()
+  lastSync.value = serverNow().getTime()
   _schedulePersist()
 }
 

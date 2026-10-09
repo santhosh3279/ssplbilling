@@ -380,6 +380,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
@@ -454,8 +455,8 @@ function navigateBills(dir) {
 
 // --- COMPUTED ---
 const todayStr = computed(() => {
-  const now = new Date()
-  const weekday = now.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long' })
+  const now = serverCalendarDate()
+  const weekday = now.toLocaleDateString('en-IN', {  weekday: 'long' })
   return `${weekday}, ${formatDMY(now, '')}`
 })
 

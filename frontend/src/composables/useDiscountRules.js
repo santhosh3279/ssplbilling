@@ -1,3 +1,4 @@
+import { serverToday } from '../services/serverTime'
 import { ref, computed, watch } from 'vue'
 import { useItemCache } from '../services/itemCache.js'
 
@@ -31,7 +32,7 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
   // ── rule matching ─────────────────────────────────────────────────────────
 
   function _isRuleActive(rule) {
-    const today = new Date().toISOString().slice(0, 10)
+    const today = serverToday()
     if (rule.start_date && today < rule.start_date) return false
     if (rule.end_date   && today > rule.end_date)   return false
     return true

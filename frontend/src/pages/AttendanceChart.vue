@@ -300,6 +300,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted } from 'vue'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
 import { fetchAttendanceSummary, fetchEmployees, fetchEmployeeCheckinDays } from '../api.js'
@@ -319,35 +320,35 @@ const error = ref('')
 const employees = ref([])
 const employee = ref('')
 const fromDate = ref(isoDate(startOfMonth()))
-const toDate = ref(isoDate(new Date()))
+const toDate = ref(isoDate(serverCalendarDate()))
 
 const days = ref([])
 // { '2026-08-12': [{ hours: 9.5, auto: 0 }, ...] } — the punches behind each bar
 const punchesByDate = ref({})
-const todayIso = isoDate(new Date())
+const todayIso = isoDate(serverCalendarDate())
 
 // Each preset returns the [from, to] it selects. Last month is a calendar month,
 // not the trailing 30 days — payroll is run on the month, so the two differ.
 const presets = [
-  { label: 'This month', range: () => [startOfMonth(), new Date()] },
+  { label: 'This month', range: () => [startOfMonth(), serverCalendarDate()] },
   { label: 'Last month', range: () => lastMonth() },
-  { label: 'Last 7 days', range: () => [daysBack(7), new Date()] },
-  { label: 'Last 30 days', range: () => [daysBack(30), new Date()] },
+  { label: 'Last 7 days', range: () => [daysBack(7), serverCalendarDate()] },
+  { label: 'Last 30 days', range: () => [daysBack(30), serverCalendarDate()] },
 ]
 
 function startOfMonth() {
-  const d = new Date()
+  const d = serverCalendarDate()
   return new Date(d.getFullYear(), d.getMonth(), 1)
 }
 
 function lastMonth() {
-  const d = new Date()
+  const d = serverCalendarDate()
   // Day 0 of this month is the last day of the previous one
   return [new Date(d.getFullYear(), d.getMonth() - 1, 1), new Date(d.getFullYear(), d.getMonth(), 0)]
 }
 
 function daysBack(n) {
-  const d = new Date()
+  const d = serverCalendarDate()
   d.setDate(d.getDate() - (n - 1))
   return d
 }

@@ -236,7 +236,7 @@ import Quotation from './Quotation.vue'
 import VoucherDetail from '../components/VoucherDetail.vue'
 
 import { formatDMY } from '../utils/date'
-import { toLocalISO } from '../services/serverTime'
+import { serverCalendarDate, toLocalISO } from '../services/serverTime'
 const router = useRouter()
 const showDetail = ref(false)
 const selectedDoc = ref('')
@@ -257,8 +257,8 @@ function backToReport() {
 }
 
 function getTodayIST() {
-  const date = new Date()
-  const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }
+  const date = serverCalendarDate()
+  const options = { year: 'numeric', month: '2-digit', day: '2-digit' }
   const formatter = new Intl.DateTimeFormat('en-CA', options)
   return formatter.format(date)
 }
@@ -337,9 +337,9 @@ const presets = [
 ]
 
 async function setPreset(type) {
-  const now = new Date()
-  let from = new Date()
-  let to = new Date()
+  const now = serverCalendarDate()
+  let from = serverCalendarDate()
+  let to = serverCalendarDate()
 
   if (type === 'yesterday') {
     from.setDate(now.getDate() - 1)

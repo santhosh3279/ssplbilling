@@ -557,6 +557,7 @@
 </template>
 
 <script setup>
+import { serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import HrmsSidebar from '../components/HrmsSidebar.vue'
@@ -649,17 +650,17 @@ const shiftEndPresets = computed(() => {
 })
 
 function daysAgo(n) {
-  const d = new Date()
+  const d = serverCalendarDate()
   d.setDate(d.getDate() - n)
-  return d.toISOString().slice(0, 10)
+  return toLocalISO(d)
 }
 
 function changeDate(offset) {
   if (!selectedDate.value) return
-  const d = new Date(selectedDate.value)
+  const d = parseCalendarDate(selectedDate.value)
   if (isNaN(d.getTime())) return
   d.setDate(d.getDate() + offset)
-  selectedDate.value = d.toISOString().slice(0, 10)
+  selectedDate.value = toLocalISO(d)
   loadRecords()
 }
 

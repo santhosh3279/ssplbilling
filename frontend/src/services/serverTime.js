@@ -1,98 +1,108 @@
-// Server-authoritative clock.
-//
-// Every transaction date (invoices, orders, quotations, payments, stock entries)
-// must come from the Frappe server, not the workstation clock — a drifting or
-// mis-zoned till PC would otherwise post documents on the wrong day.
-//
-// `primeServerTime()` is awaited inside `session.init()`, which the router guard
-// runs before every non-public route. By the time any page's `setup()` executes,
-// the offset is already in place, so `serverToday()` can stay synchronous.
-
-let offsetMs = 0
+// All current dates/times come from the server. performance.now() only measures
+// elapsed time: changing the workstation clock cannot move this clock.
+let anchorEpoch = null
+let anchorTick = 0
 let timezone = null
-let primed = false
+let pendingSync = null
 
-/** Local calendar date of a Date object as `yyyy-mm-dd` (never UTC). */
+/** Serialize a calendar Date's local fields, without converting to UTC. */
 export function toLocalISO(date) {
-  const d = date instanceof Date ? date : new Date(date)
+  const d = date instanceof Date ? date : parseCalendarDate(date)
   if (isNaN(d.getTime())) return ''
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/** Fetch the server clock once and remember the offset (not the date itself,
- *  so a session left open past midnight still rolls over correctly). */
-export async function primeServerTime() {
-  try {
-    const res = await fetch('/api/method/ssplbilling.api.dashboard_api.get_server_time')
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
-    const json = await res.json()
-    const data = json.message || json
-    // epoch_ms is timezone-independent; the naive `datetime` string is only a
-    // fallback for an older backend and assumes the browser shares the site tz.
-    const serverEpoch = Number(data?.epoch_ms) ||
-      (data?.datetime ? new Date(String(data.datetime).replace(' ', 'T')).getTime() : NaN)
-    if (!isNaN(serverEpoch) && serverEpoch > 0) offsetMs = serverEpoch - Date.now()
-    timezone = data?.timezone || null
-    primed = true
-  } catch (e) {
-    // Leave offsetMs at 0 — the client clock is the fallback, and every
-    // transaction endpoint also defaults to the server date when the payload
-    // date is missing, so a bad clock still cannot corrupt a posting date.
-    console.warn('[serverTime] Could not prime server clock:', e)
+/** Date-only values are calendar fields, not UTC instants. Noon avoids DST gaps. */
+export function parseCalendarDate(value) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return new Date(`${value}T12:00:00`)
   }
-  return primed
+  return new Date(value)
 }
 
-/** Current instant according to the server. */
+/** Synchronize once per request; reject missing/invalid server data. No PC fallback. */
+export function primeServerTime() {
+  if (pendingSync) return pendingSync
+  pendingSync = (async () => {
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 15000)
+    try {
+      const started = performance.now()
+      const res = await fetch('/api/method/ssplbilling.api.dashboard_api.get_server_time', {
+        cache: 'no-store', signal: controller.signal,
+      })
+      if (!res.ok) throw new Error(`Server time: HTTP ${res.status}`)
+      const json = await res.json()
+      const data = json.message || json
+      const epoch = Number(data?.epoch_ms)
+      if (!Number.isFinite(epoch) || epoch <= 0 || !data?.timezone) {
+        throw new Error('Server time response is missing a valid epoch or timezone')
+      }
+      // Validate before replacing an existing good anchor.
+      new Intl.DateTimeFormat('en', { timeZone: data.timezone }).format(new Date(epoch))
+      const received = performance.now()
+      anchorEpoch = epoch + (received - started) / 2
+      anchorTick = received
+      timezone = data.timezone
+      return true
+    } finally {
+      clearTimeout(timeout)
+    }
+  })().finally(() => { pendingSync = null })
+  return pendingSync
+}
+
+export function isServerTimePrimed() {
+  return anchorEpoch !== null
+}
+
 export function serverNow() {
-  return new Date(Date.now() + offsetMs)
+  if (!isServerTimePrimed()) throw new Error('Server time is not synchronized')
+  return new Date(anchorEpoch + performance.now() - anchorTick)
 }
 
-/** Server "today" as `yyyy-mm-dd`, in the site timezone when known. */
+export function serverTimezone() {
+  if (!timezone) throw new Error('Server timezone is not synchronized')
+  return timezone
+}
+
 export function serverToday() {
-  const now = serverNow()
-  if (timezone) {
-    try {
-      return new Intl.DateTimeFormat('en-CA', {
-        timeZone: timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-      }).format(now)
-    } catch (e) {
-      // Unknown timezone id — fall through to local formatting.
-    }
-  }
-  return toLocalISO(now)
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: serverTimezone(), year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts(serverNow())
+  const fields = Object.fromEntries(parts.map(p => [p.type, p.value]))
+  return `${fields.year}-${fields.month}-${fields.day}`
 }
 
-/** Server clock time as `HH:MM:SS`. */
+/** Calendar-only carrier for date arithmetic. Do not use as an instant/time. */
+export function serverCalendarDate() {
+  return parseCalendarDate(serverToday())
+}
+
 export function serverNowTime() {
-  const d = serverNow()
-  if (timezone) {
-    try {
-      return new Intl.DateTimeFormat('en-GB', {
-        timeZone: timezone,
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false,
-      }).format(d)
-    } catch (e) {
-      // Unknown timezone id — fall through to local formatting.
-    }
-  }
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: serverTimezone(), hour: '2-digit', minute: '2-digit', second: '2-digit',
+    hourCycle: 'h23',
+  }).format(serverNow())
 }
 
-/** True when the given `yyyy-mm-dd` string is the server's current date. */
 export function isServerToday(isoDate) {
   return String(isoDate || '') === serverToday()
 }
 
-export function isServerTimePrimed() {
-  return primed
+/** Refresh long-running tabs and tabs returning from suspension. */
+export function startServerTimeSync() {
+  const refresh = () => primeServerTime().catch(error => {
+    // Retain the last server anchor, never substitute workstation time.
+    console.warn('[serverTime] Could not refresh server clock:', error)
+  })
+  const onVisible = () => { if (document.visibilityState === 'visible') refresh() }
+  const timer = setInterval(refresh, 60000)
+  window.addEventListener('focus', refresh)
+  document.addEventListener('visibilitychange', onVisible)
+  return () => {
+    clearInterval(timer)
+    window.removeEventListener('focus', refresh)
+    document.removeEventListener('visibilitychange', onVisible)
+  }
 }
