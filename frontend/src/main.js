@@ -3,10 +3,9 @@ import { FrappeUI } from 'frappe-ui'
 import { primeServerTime, startServerTimeSync } from './services/serverTime'
 import './index.css'
 
-// Longest the first render waits for server time; a slower sync keeps running in the background.
-const BOOT_SYNC_WAIT_MS = 2000
-
 async function bootstrap() {
+  // Longest the first render waits for server time; a slower sync keeps running in the background.
+  const BOOT_SYNC_WAIT_MS = 2000
   try {
     // Includes public catalogue routes and any module-level date defaults.
     let timer

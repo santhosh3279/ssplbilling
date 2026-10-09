@@ -170,7 +170,10 @@ test('startup attempts server time before loading routes and continues on failur
   let mounts = 0
   const root = { textContent: '' }
   let warnings = 0
+  let pendingTimer = null
   const context = {
+    setTimeout: (fn, ms) => { pendingTimer = { fn, ms }; return 1 },
+    clearTimeout: () => { pendingTimer = null },
     document: { querySelector: () => root },
     console: { warn() { warnings++ } },
     primeServerTime: () => sync,
@@ -192,4 +195,15 @@ test('startup attempts server time before loading routes and continues on failur
   assert.equal(warnings, 1)
   assert.equal(loads, 4)
   assert.equal(mounts, 2)
+  // A server that never answers delays the first render by at most the boot cap.
+  sync = new Promise(() => {})
+  runInNewContext(script, context)
+  await Promise.resolve()
+  assert.equal(loads, 4)
+  assert.equal(pendingTimer.ms, 2000)
+  pendingTimer.fn()
+  await context.boot
+  assert.equal(warnings, 2)
+  assert.equal(loads, 6)
+  assert.equal(mounts, 3)
 })
