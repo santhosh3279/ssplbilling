@@ -1,6 +1,23 @@
 import frappe
 import json
 
+def _draft_item_rows(parent_doctype, child_doctype):
+	"""Item rows of all draft invoices of `parent_doctype`.
+
+	The child table has no docstatus index, so filtering it directly scans every invoice line ever
+	posted (~0.2-1 s, on every save). Starting from the parent's drafts and joining on the indexed
+	`parent` column reads only the draft lines (~5 ms)."""
+	return frappe.db.sql(
+		f"""SELECT child.item_code, child.warehouse, child.qty
+		   FROM `tab{parent_doctype}` parent
+		   JOIN `tab{child_doctype}` child
+		     ON child.parent = parent.name AND child.parenttype = %(parenttype)s
+		   WHERE parent.docstatus = 0""",
+		{"parenttype": parent_doctype},
+		as_dict=True,
+	)
+
+
 def get_draft_invoice_qtys_from_redis():
 	"""Fetch draft invoice quantities from Redis cache. If not present, query database and cache it."""
 	cache_key = "ssplbilling:draft_invoice_qtys"
@@ -12,11 +29,7 @@ def get_draft_invoice_qtys_from_redis():
 			pass
 
 	# Cache miss: query database for all draft Sales Invoices
-	rows = frappe.get_all(
-		"Sales Invoice Item",
-		filters={"docstatus": 0},
-		fields=["item_code", "warehouse", "qty"]
-	)
+	rows = _draft_item_rows("Sales Invoice", "Sales Invoice Item")
 	
 	qtys = {}
 	for r in rows:
@@ -39,11 +52,7 @@ def get_draft_purchase_qtys_from_redis():
 			pass
 
 	# Cache miss: query database for all draft Purchase Invoices
-	rows = frappe.get_all(
-		"Purchase Invoice Item",
-		filters={"docstatus": 0},
-		fields=["item_code", "warehouse", "qty"]
-	)
+	rows = _draft_item_rows("Purchase Invoice", "Purchase Invoice Item")
 	
 	qtys = {}
 	for r in rows:
