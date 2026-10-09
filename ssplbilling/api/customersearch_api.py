@@ -152,68 +152,53 @@ def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
         if w.name in ledger_map:
             ledger_map[w.name]["whatsapp"] = w.whatsapp
 
-    # 6. Batch fetch Balances (Unified)
-    # Active company balances
-    active_balance_cond = ""
-    active_params = []
+    # 6. Batch fetch Balances (Unified) — one GL pass grouped by company serves both the active
+    # and the alternative company. Party rows sum by party; rows without a party sum by account.
+    company_cond = ""
+    balance_params = {}
     if company:
-        active_balance_cond = " AND company = %s"
-        active_params = [company, company]
-
-    active_balances = frappe.db.sql(f"""
-        SELECT party as name, SUM(debit) - SUM(credit) as balance
+        company_cond = " AND company IN %(companies)s"
+        balance_params["companies"] = tuple(c for c in (company, alternative_company) if c)
+    balance_rows = frappe.db.sql(f"""
+        SELECT (party IS NOT NULL AND party != '') AS is_party,
+            IF(party IS NOT NULL AND party != '', party, account) AS ledger,
+            company, SUM(debit) - SUM(credit) AS balance
         FROM `tabGL Entry`
-        WHERE is_cancelled = 0 {active_balance_cond}
-        GROUP BY party
-        UNION
-        SELECT account as name, SUM(debit) - SUM(credit) as balance
-        FROM `tabGL Entry`
-        WHERE is_cancelled = 0 {active_balance_cond} AND (party IS NULL OR party = '')
-        GROUP BY account
-    """, tuple(active_params), as_dict=True)
+        WHERE is_cancelled = 0 {company_cond}
+        GROUP BY is_party, ledger, company
+    """, balance_params, as_dict=True)
 
-    for b in active_balances:
-        if b.name in ledger_map:
-            ledger_map[b.name]["balance"] = float(b.balance or 0)
-
-    # Alternate company balances
-    if alternative_company:
-        alt_balance_cond = " AND company = %s"
-        alt_params = [alternative_company, alternative_company]
-
-        alt_balances = frappe.db.sql(f"""
-            SELECT party as name, SUM(debit) - SUM(credit) as balance
-            FROM `tabGL Entry`
-            WHERE is_cancelled = 0 {alt_balance_cond}
-            GROUP BY party
-            UNION
-            SELECT account as name, SUM(debit) - SUM(credit) as balance
-            FROM `tabGL Entry`
-            WHERE is_cancelled = 0 {alt_balance_cond} AND (party IS NULL OR party = '')
-            GROUP BY account
-        """, tuple(alt_params), as_dict=True)
-
-        for b in alt_balances:
-            if b.name in ledger_map:
-                ledger_map[b.name]["alternative_balance"] = float(b.balance or 0)
+    # (is_party, ledger) -> {company: balance}. Party totals are applied before account totals so
+    # that, as before, an account wins when a party and an account share a name.
+    grouped = {}
+    for b in balance_rows:
+        grouped.setdefault((b.is_party, b.ledger), {})[b.company] = b.balance or 0
+    for (_is_party, ledger), by_company in sorted(grouped.items(), key=lambda kv: -kv[0][0]):
+        if ledger not in ledger_map:
+            continue
+        # A company with no postings leaves the field unset, as the per-company queries did.
+        if not company:
+            # GL amounts carry 9 decimals; rounding drops float noise from adding per-company sums.
+            ledger_map[ledger]["balance"] = round(float(sum(by_company.values())), 9)
+        elif company in by_company:
+            ledger_map[ledger]["balance"] = float(by_company[company])
+        if alternative_company and alternative_company in by_company:
+            ledger_map[ledger]["alternative_balance"] = float(by_company[alternative_company])
 
     # 6b. Batch fetch activity counts (GL postings in the last 90 days) —
     # the front-end ledger search ranks busier ledgers first.
     activity_cutoff = frappe.utils.add_days(frappe.utils.today(), -90)
     activity_rows = frappe.db.sql("""
-        SELECT party as name, COUNT(*) as activity
+        SELECT (party IS NOT NULL AND party != '') AS is_party,
+            IF(party IS NOT NULL AND party != '', party, account) AS ledger, COUNT(*) AS activity
         FROM `tabGL Entry`
-        WHERE is_cancelled = 0 AND posting_date >= %(cutoff)s AND party IS NOT NULL AND party != ''
-        GROUP BY party
-        UNION
-        SELECT account as name, COUNT(*) as activity
-        FROM `tabGL Entry`
-        WHERE is_cancelled = 0 AND posting_date >= %(cutoff)s AND (party IS NULL OR party = '')
-        GROUP BY account
+        WHERE is_cancelled = 0 AND posting_date >= %(cutoff)s
+        GROUP BY is_party, ledger
+        ORDER BY is_party DESC
     """, {"cutoff": activity_cutoff}, as_dict=True)
     for a in activity_rows:
-        if a.name in ledger_map:
-            ledger_map[a.name]["activity"] = int(a.activity or 0)
+        if a.ledger in ledger_map:
+            ledger_map[a.ledger]["activity"] = int(a.activity or 0)
 
     # Keep global activity for other searches; scope modal suggestions separately.
     if cost_center:

@@ -11,6 +11,7 @@ const document = {
   addEventListener: (type, fn) => docListeners.set(type, fn),
   removeEventListener: (type, fn) => { if (docListeners.get(type) === fn) docListeners.delete(type) },
 }
+const syncStorage = new Map()
 let calls = 0
 let pendingResolve = null
 let hold = false
@@ -41,6 +42,7 @@ const context = vm.createContext({
   Math: Object.assign(Object.create(Math), { random: () => 0.5 }),
   console: { warn() {} },
   document,
+  localStorage: { getItem: key => syncStorage.get(key) ?? null },
   window: { dispatchEvent: event => events.push(event.type) },
   CustomEvent: class { constructor(type) { this.type = type } },
 })
@@ -56,6 +58,10 @@ async function flush(expectedDelay) {
 const tick = () => new Promise(resolve => setImmediate(resolve))
 
 ;(async () => {
+  vm.runInContext('initLedgerSync()', context)
+  assert.equal(timers.size, 0, 'No company yet (fresh browser): no all-company refresh')
+  vm.runInContext('destroyLedgerSync()', context)
+  syncStorage.set('wb-company', 'Company A')
   vm.runInContext('initLedgerSync(); initLedgerSync()', context)
   assert.equal(handlers.size, 3, 'Subscriptions are not duplicated')
   await flush(0)

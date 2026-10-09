@@ -102,8 +102,10 @@ export function initLedgerSync() {
   socket.on('customer_update', _customerHandler)
   socket.on('connect', _connectHandler)
   document.addEventListener('visibilitychange', _visibilityHandler)
-  // Reconcile changes missed before subscription, including persisted balances.
-  scheduleLedgerRefresh(0)
+  // Reconcile changes missed before subscription, including persisted balances. A browser that
+  // has never synced settings has no company yet; the Dashboard loads ledgers once it does,
+  // instead of fetching an all-company list here that is thrown away seconds later.
+  if (localStorage.getItem('wb-company')) scheduleLedgerRefresh(0)
 }
 
 export function destroyLedgerSync() {

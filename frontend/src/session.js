@@ -11,6 +11,8 @@ const fullName = ref('')
 const isWebsiteUser = ref(false)
 const isSystemUser = ref(false)
 let initialized = false
+// User type cannot change within a login; resolved once and reset with `initialized`.
+let userTypePromise = null
 
 export async function refreshTilePermissions(targetUser) {
   try {
@@ -94,7 +96,14 @@ async function init() {
 
 async function checkWebsiteUser() {
   await init()
-  const type = isLoggedIn.value ? await frappeGet('ssplbilling.api.auth_api.get_current_user_type') : null
+  if (!isLoggedIn.value) {
+    userTypePromise = null
+  } else if (!userTypePromise) {
+    // Every route navigation lands here; fetch once per login instead of once per navigation.
+    userTypePromise = frappeGet('ssplbilling.api.auth_api.get_current_user_type')
+      .catch((e) => { userTypePromise = null; throw e })
+  }
+  const type = isLoggedIn.value ? await userTypePromise : null
   isWebsiteUser.value = type === 'Website User'
   isSystemUser.value = type === 'System User'
   return isWebsiteUser.value
@@ -115,6 +124,7 @@ async function login(usr, pwd) {
   isWebsiteUser.value = false
   isSystemUser.value = false
   initialized = false
+  userTypePromise = null
   await init()
   return true
 }
@@ -172,6 +182,7 @@ async function logout() {
   isWebsiteUser.value = false
   isSystemUser.value = false
   initialized = false
+  userTypePromise = null
 }
 
 export const session = {

@@ -805,7 +805,7 @@
 
 <script setup>
 import { scrollInvoiceRowIntoView } from '../utils/invoiceScroll.js'
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick, toRaw } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { loadCachedPanel, saveCachedPanel, applyPanelEvent } from '../services/billPanelCache.js'
 import { useRouter } from 'vue-router'
@@ -979,11 +979,20 @@ const postModalFocusTarget = ref(null) // { type: 'row'|'barcode', index?: numbe
 const invoiceNo = ref('NEW')
 const mirroredInvoice = ref('')
 const loadedItemGstStatus = ref({})
+// Index the ~12k cached items by code without going through Vue proxies. lastSync bumps on every
+// cache patch (stock/price/item updates), which in-place splices would not otherwise signal here.
+const cachedItemIndex = computed(() => {
+  void lastSync.value
+  return new Map(toRaw(cachedItems.value).map(i => [i.item_code, i]))
+})
+// GST status only for the codes on this invoice (template and deleteNonGstItems read row codes).
 const itemGstStatus = computed(() => {
   const status = { ...loadedItemGstStatus.value }
-  for (const item of cachedItems.value) {
-    if (item.custom_is_gst_item != null) {
-      status[item.item_code] = Number(item.custom_is_gst_item) === 1
+  const index = cachedItemIndex.value
+  for (const row of items.value) {
+    const cached = index.get(row.item_code)
+    if (cached && cached.custom_is_gst_item != null) {
+      status[row.item_code] = Number(cached.custom_is_gst_item) === 1
     }
   }
   return status

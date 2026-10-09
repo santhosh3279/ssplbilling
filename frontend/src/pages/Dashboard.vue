@@ -744,7 +744,7 @@ function handleFullscreenChange() {
 
 
 const { items: cachedItems, refreshItemCache, refreshDiscountRuleCache } = useItemCache()
-const { ledgers: cachedLedgers, refreshLedgerCache } = useLedgerCache()
+const { refreshLedgerCache } = useLedgerCache()
 
 // ==================== PERMISSIONS & ROLES ====================
 const permissionTrigger = ref(0)
@@ -1828,22 +1828,24 @@ onMounted(async () => {
     fetchICCredits()
   }
 
-  // Settings/series/opening-cash/naming-series: fetch only on cache miss/expiry (see fetchSettings)
-  fetchSettings(selectedUser.value)
+  // Settings/series/opening-cash/naming-series: fetch only on cache miss/expiry (see fetchSettings).
+  // Item and ledger preloads wait for it: it writes the company / warehouse they are scoped to,
+  // so starting them earlier on a fresh browser downloads everything twice.
+  const settingsReady = fetchSettings(selectedUser.value)
   // Per-user/group dashboard tile selection (SSPL Dashboard Tile Access),
   // resolved for the inherited settings user (falls back to logged-in user)
   loadAllowedTiles(selectedUser.value !== session.user.value ? selectedUser.value : null)
   // Items: load once per page; afterwards WebSocket patches keep stock/prices live, and the
   // IndexedDB snapshot + delta sync make a reload cheap. Seed warehouse-scoped (user's default
   // warehouse) so the first Ctrl+I in Sales Entry — same warehouse — needs no re-scope refetch.
-  if (!cachedItems.value.length) {
-    refreshItemCache('Sales', null, defaultWarehouse.value || null) // Preload items for fast entry
-  }
-  // Ledgers: useLedgerSync reconciles once per page load and pushed balances keep them live;
-  // only fetch here when nothing is cached at all.
-  if (!cachedLedgers.value.length) {
+  settingsReady.then(() => {
+    if (!cachedItems.value.length) {
+      refreshItemCache('Sales', null, defaultWarehouse.value || null) // Preload items for fast entry
+    }
+    // Ledgers: useLedgerSync reconciles once per page load and pushed balances keep them live.
+    // Non-forced, so this only fetches when nothing matches the (now known) company context.
     refreshLedgerCache()      // Preload ledgers for fast search
-  }
+  })
   // MQTT status is fetched by App.vue's connectMqtt() on every page load (shared refs).
 
 })
