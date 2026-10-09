@@ -4,8 +4,6 @@ import { primeServerTime, startServerTimeSync } from './services/serverTime'
 import './index.css'
 
 async function bootstrap() {
-  const root = document.querySelector('#app')
-  root.textContent = 'Connecting to server…'
   try {
     // Includes public catalogue routes and any module-level date defaults.
     await primeServerTime()
