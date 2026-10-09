@@ -661,7 +661,7 @@ import { APP_VERSION, APP_UPDATED } from '../version'
 
 const router = useRouter()
 
-const { isConnected, isConnecting, serverInfo, refreshConnection, checkStatus } = useMqtt()
+const { isConnected, isConnecting, serverInfo, refreshConnection } = useMqtt()
 
 async function handleMqttRefresh() {
   await refreshConnection()
@@ -743,8 +743,8 @@ function handleFullscreenChange() {
 
 
 
-const { items: cachedItems, lastSync: itemsLastSync, refreshItemCache, refreshDiscountRuleCache } = useItemCache()
-const { ledgers: cachedLedgers, lastSync: ledgersLastSync, refreshLedgerCache } = useLedgerCache()
+const { items: cachedItems, refreshItemCache, refreshDiscountRuleCache } = useItemCache()
+const { ledgers: cachedLedgers, refreshLedgerCache } = useLedgerCache()
 
 // ==================== PERMISSIONS & ROLES ====================
 const permissionTrigger = ref(0)
@@ -1359,7 +1359,8 @@ const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 const ALLOWED_SERIES_CACHE_KEY = 'wb-allowed-series-v1'
 const OPENING_CASH_DATE_KEY = 'wb-opening-box-cash-date'
 const GENERIC_CACHE_TTL = 30 * 60 * 1000 // 30 mins — series / naming series
-const ITEM_CACHE_TTL = 5 * 60 * 1000 // 5 mins — items / ledgers freshness window
+const LICENSE_CACHE_KEY = 'wb-license-checked-v1'
+const EWAY_CACHE_KEY = 'wb-eway-threshold-ts'
 
 
 
@@ -1622,9 +1623,16 @@ async function syncBillingSettings(targetUser, force) {
 }
 
 // 2.5 Fetch license status from server
-async function syncLicenseStatus() {
+async function syncLicenseStatus(force) {
   try {
+    // License state only changes on renewal: check once per day (or on a forced settings refresh).
+    const today = serverToday()
+    if (!force && localStorage.getItem(LICENSE_CACHE_KEY) === today && localStorage.getItem('ae_license_info')) {
+      updateLicenseState()
+      return
+    }
     const lic = await frappeGet('ssplbilling.api.license_api.get_license_status')
+    localStorage.setItem(LICENSE_CACHE_KEY, today)
     localStorage.setItem('ae_license_info', JSON.stringify(lic))
     updateLicenseState()
   } catch (e) {
@@ -1665,12 +1673,15 @@ async function syncNamingSeriesStep(force) {
 }
 
 // 5. Fetch and store E-Way Bill threshold value
-async function syncEwayThreshold() {
+async function syncEwayThreshold(force) {
   try {
+    const ts = Number(localStorage.getItem(EWAY_CACHE_KEY) || 0)
+    if (!force && localStorage.getItem('wb-eway-threshold') != null && (serverNow().getTime() - ts) < GENERIC_CACHE_TTL) return
     const ewayVal = await frappeGet('ssplbilling.api.ewaybill_api.get_eway_threshold')
     const threshold = String(ewayVal || 0)
     localStorage.setItem('wb-eway-threshold', threshold)
     localStorage.setItem('wb-eway-threshould', threshold)
+    localStorage.setItem(EWAY_CACHE_KEY, String(serverNow().getTime()))
   } catch (e) {
     console.warn('[Dashboard] get_eway_threshold failed:', e)
   }
@@ -1678,12 +1689,14 @@ async function syncEwayThreshold() {
 
 async function fetchSettings(user = null, force = false) {
   const targetUser = user || session.user.value
-  await syncAllowedSeries(targetUser, force)
-  await syncBillingSettings(targetUser, force)
-  await syncLicenseStatus()
-  await syncOpeningBoxCash(force)
-  await syncNamingSeriesStep(force)
-  await syncEwayThreshold()
+  // Independent steps run together; naming series waits for billing settings (company defaults).
+  await Promise.all([
+    syncAllowedSeries(targetUser, force),
+    syncBillingSettings(targetUser, force).then(() => syncNamingSeriesStep(force)),
+    syncLicenseStatus(force),
+    syncOpeningBoxCash(force),
+    syncEwayThreshold(force),
+  ])
 }
 
 const appVersion = ref(APP_VERSION)
@@ -1808,11 +1821,10 @@ onMounted(async () => {
   }
   
   if (isActualAdmin.value) {
-    try {
-      allUsers.value = await dashboardApi.getAllUsers()
-    } catch (e) {
-      console.warn('[Dashboard] getAllUsers failed:', e)
-    }
+    // Not awaited: the user list only feeds the admin switcher, so it must not delay the rest.
+    dashboardApi.getAllUsers()
+      .then(users => { allUsers.value = users })
+      .catch(e => console.warn('[Dashboard] getAllUsers failed:', e))
     fetchICCredits()
   }
 
@@ -1821,21 +1833,18 @@ onMounted(async () => {
   // Per-user/group dashboard tile selection (SSPL Dashboard Tile Access),
   // resolved for the inherited settings user (falls back to logged-in user)
   loadAllowedTiles(selectedUser.value !== session.user.value ? selectedUser.value : null)
-  // Items: skip if already cached this session and still fresh (WebSocket keeps stock live).
-  // Seed warehouse-scoped (user's default warehouse) so per-warehouse stock is correct from
-  // load and the first Ctrl+I in Sales Entry — same warehouse — needs no re-scope refetch.
-  if (!cachedItems.value.length || (serverNow().getTime() - itemsLastSync.value) > ITEM_CACHE_TTL) {
+  // Items: load once per page; afterwards WebSocket patches keep stock/prices live, and the
+  // IndexedDB snapshot + delta sync make a reload cheap. Seed warehouse-scoped (user's default
+  // warehouse) so the first Ctrl+I in Sales Entry — same warehouse — needs no re-scope refetch.
+  if (!cachedItems.value.length) {
     refreshItemCache('Sales', null, defaultWarehouse.value || null) // Preload items for fast entry
   }
-  // Ledgers: hydrated from localStorage at module init; refresh only if empty or stale
-  if (!cachedLedgers.value.length || (serverNow().getTime() - ledgersLastSync.value) > ITEM_CACHE_TTL) {
+  // Ledgers: useLedgerSync reconciles once per page load and pushed balances keep them live;
+  // only fetch here when nothing is cached at all.
+  if (!cachedLedgers.value.length) {
     refreshLedgerCache()      // Preload ledgers for fast search
   }
-  // MQTT is live connection health — don't persist it; poll at most once per browser session
-  if (!sessionStorage.getItem('wb-mqtt-checked')) {
-    checkStatus()             // Retrieve MQTT server status once on load
-    sessionStorage.setItem('wb-mqtt-checked', '1')
-  }
+  // MQTT status is fetched by App.vue's connectMqtt() on every page load (shared refs).
 
 })
 onUnmounted(() => {

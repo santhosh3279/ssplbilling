@@ -11,13 +11,13 @@ export function useMqtt() {
   async function checkStatus() {
     isConnecting.value = true
     try {
+      // Status also (re)starts the daemon server-side; the settings read is independent of it.
+      const settingsReq = frappeGet('frappe.client.get', { doctype: 'MQTT Settings', name: 'MQTT Settings' })
+      settingsReq.catch(() => {}) // a status failure below must not leave this rejection unhandled
       const res = await frappeGet('ssplbilling.api.mqtt_api.get_mqtt_status')
       isConnected.value = res.connected || false
-      
-      const settings = await frappeGet('frappe.client.get', {
-        doctype: 'MQTT Settings',
-        name: 'MQTT Settings'
-      })
+      const settings = await settingsReq
+
       if (settings) {
         serverInfo.value = {
           server: settings.mqtt_server || '',
