@@ -3,10 +3,17 @@ import { FrappeUI } from 'frappe-ui'
 import { primeServerTime, startServerTimeSync } from './services/serverTime'
 import './index.css'
 
+// Longest the first render waits for server time; a slower sync keeps running in the background.
+const BOOT_SYNC_WAIT_MS = 2000
+
 async function bootstrap() {
   try {
     // Includes public catalogue routes and any module-level date defaults.
-    await primeServerTime()
+    let timer
+    const slow = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`no response within ${BOOT_SYNC_WAIT_MS} ms`)), BOOT_SYNC_WAIT_MS)
+    })
+    await Promise.race([primeServerTime(), slow]).finally(() => clearTimeout(timer))
   } catch (error) {
     console.warn('[serverTime] Starting with computer time; synchronization will retry:', error)
   }
