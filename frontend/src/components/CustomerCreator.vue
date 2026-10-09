@@ -476,6 +476,8 @@ function handleFormEnter(e) {
 }
 
 async function submit() {
+  // Keyboard shortcuts call this directly, bypassing the disabled button.
+  if (saving.value || editLoading.value) return
   if (!validate()) return
   saving.value = true
   try {
@@ -487,11 +489,11 @@ async function submit() {
     const result = props.isEdit
       ? await updateCustomer(form.value.name, payload)
       : await createCustomer(payload)
+    // Keep the latch until unmount: the parent refreshes ledgers asynchronously.
     emit('saved', result)
   } catch (e) {
-    alert('Failed to save customer: ' + e.message)
-  } finally {
     saving.value = false
+    alert('Failed to save customer: ' + e.message)
   }
 }
 

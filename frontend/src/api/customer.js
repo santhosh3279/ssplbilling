@@ -1,90 +1,6 @@
 import { frappeGet, frappePost } from '../api.js'
 
 /**
- * Creates a Billing Address linked to a Customer.
- * Only called when address_line1 contains non-whitespace text.
- */
-async function createAddress(data, customerName) {
-  const doc = {
-    doctype: 'Address',
-    address_title: data.customer_name,
-    address_type: 'Billing',
-    address_line1: data.address_line1 || '',
-    address_line2: data.address_line2 || '',
-    address_line3: data.address_line3 || '',
-    city: data.city || '',
-    pincode: data.pincode || '',
-    state: data.state || '',
-    country: 'India',
-    gstin: data.gstin || '',
-    links: [{ link_doctype: 'Customer', link_name: customerName }],
-  }
-  return frappePost('frappe.client.insert', { doc })
-}
-
-/**
- * Updates or appends WhatsApp number to a Contact linked to the Customer.
- * WhatsApp is treated as the Second Mobile Number (Index 1) in the phone_nos table.
- */
-async function syncContactPhones(customerName, mobile, whatsapp) {
-  try {
-    const contacts = await frappeGet('frappe.client.get_list', {
-      doctype: 'Contact',
-      fields: ['name'],
-      filters: [
-        ['Dynamic Link', 'link_doctype', '=', 'Customer'],
-        ['Dynamic Link', 'link_name', '=', customerName],
-      ],
-      limit_page_length: 1,
-    })
-    if (!contacts.length) return
-
-    const contact = await frappeGet('frappe.client.get', {
-      doctype: 'Contact',
-      name: contacts[0].name,
-    })
-
-    contact.phone_nos = contact.phone_nos || []
-
-    // Update or add Primary Mobile (Index 0)
-    if (mobile || mobile === '') {
-      if (contact.phone_nos.length > 0) {
-        contact.phone_nos[0].phone = mobile
-        contact.phone_nos[0].is_primary_mobile_no = 1
-      } else {
-        contact.phone_nos.push({ phone: mobile, is_primary_mobile_no: 1, type: 'Mobile' })
-      }
-    }
-
-    // Update or add WhatsApp as the Second Mobile Number (Index 1)
-    if (whatsapp || whatsapp === '') {
-      if (contact.phone_nos.length > 1) {
-        contact.phone_nos[1].phone = whatsapp
-        contact.phone_nos[1].is_primary_mobile_no = 0
-      } else {
-        // Ensure there's at least one entry before adding the second
-        if (contact.phone_nos.length === 0) {
-          contact.phone_nos.push({ phone: mobile || '', is_primary_mobile_no: 1, type: 'Mobile' })
-        }
-        contact.phone_nos.push({ phone: whatsapp, is_primary_mobile_no: 0, type: 'Mobile' })
-      }
-    }
-
-    await frappePost('frappe.client.save', { doc: contact })
-  } catch (e) {
-    console.warn('[customer] syncContactPhones failed:', e.message)
-  }
-}
-
-/**
- * After ERPNext auto-creates a Contact for the Customer, find it and append
- * the WhatsApp number to its phone_nos child table.
- */
-async function addWhatsAppToContact(customerName, whatsapp) {
-  return syncContactPhones(customerName, null, whatsapp)
-}
-
-/**
  * Fetches all non-group Customer Groups for selection.
  */
 export async function fetchCustomerGroups() {
@@ -100,55 +16,11 @@ export async function fetchCustomerGroups() {
   return list.map(d => d.name)
 }
 
-/**
- * Creates a Party Link between a primary party and the newly created customer.
- */
-async function createPartyLink(primaryParty, primaryRole, secondaryParty) {
-  const doc = {
-    doctype: 'Party Link',
-    primary_party: primaryParty,
-    primary_role: primaryRole,
-    secondary_party: secondaryParty,
-    secondary_role: 'Customer',
-    type: 'Customer', // As requested: "type as customer"
-  }
-  return frappePost('frappe.client.insert', { doc })
-}
-
-/**
- * Creates a Customer with mobile_no and email_id set directly on the doc.
- */
+/** Create the customer and related records in one server transaction. */
 export async function createCustomer(data) {
-  const customerDoc = {
-    doctype: 'Customer',
-    customer_name: data.customer_name,
-    customer_print_name: data.customer_print_name || '',
-    customer_type: 'Individual',
-    customer_group: data.customer_group,
-    territory: 'All Territories',
-    mobile_no: data.mobile || '',
-    email_id: data.email || '',
-    gstin: data.gstin || '',
-    gst_category: data.gstin ? 'Registered Regular' : 'Unregistered',
-    disabled: data.disabled ? 1 : 0,
-    pricelist_multiplication_factor: data.pricelist_modifier != null
-      ? (1 + data.pricelist_modifier / 100)
-      : 1.0,
-  }
-
-  const customer = await frappePost('frappe.client.insert', { doc: customerDoc })
-
-  // After creating the party (customer), run this logic
-  if (data.primary_party) {
-    await createPartyLink(data.primary_party, data.primary_party_role, customer.name)
-  }
-
-  await Promise.all([
-    data.address_line1?.trim() ? createAddress(data, customer.name) : Promise.resolve(),
-    data.whatsapp ? addWhatsAppToContact(customer.name, data.whatsapp) : Promise.resolve(),
-  ])
-
-  return customer
+  return frappePost('ssplbilling.api.customersearch_api.create_customer_full', {
+    data: JSON.stringify(data),
+  }, { silent: true })
 }
 
 /**

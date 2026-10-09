@@ -735,6 +735,83 @@ def update_customer_full(data):
 
 	return {"name": cust.name, "customer_name": cust.customer_name}
 
+@frappe.whitelist(methods=["POST"])
+def create_customer_full(data):
+    """Create a customer and related records in one request transaction.
+
+    Let validation/permission errors propagate: Frappe rolls back the entire
+    POST on failure. Do not commit or swallow related-document errors here.
+    """
+    if isinstance(data, str):
+        data = json.loads(data)
+
+    customer_name = (data.get("customer_name") or "").strip()
+    if not customer_name:
+        frappe.throw("Customer Name is required")
+    if not data.get("customer_group"):
+        frappe.throw("Customer Group is required")
+    mobile = str(data.get("mobile") or "").strip()
+    if len(mobile) != 10 or not mobile.isascii() or not mobile.isdigit():
+        frappe.throw("Valid 10-digit Mobile required")
+
+    modifier = data.get("pricelist_modifier")
+    customer = frappe.get_doc({
+        "doctype": "Customer",
+        "customer_name": customer_name,
+        "customer_print_name": data.get("customer_print_name") or "",
+        "customer_type": "Individual",
+        "customer_group": data["customer_group"],
+        "territory": "All Territories",
+        "mobile_no": mobile,
+        "email_id": data.get("email") or "",
+        "gstin": data.get("gstin") or "",
+        "gst_category": "Registered Regular" if data.get("gstin") else "Unregistered",
+        "disabled": 1 if data.get("disabled") else 0,
+        "pricelist_multiplication_factor": 1 + float(modifier or 0) / 100,
+    })
+    customer.insert()
+
+    if data.get("primary_party"):
+        frappe.get_doc({
+            "doctype": "Party Link",
+            "primary_party": data["primary_party"],
+            "primary_role": data.get("primary_party_role") or "",
+            "secondary_party": customer.name,
+            "secondary_role": "Customer",
+            "type": "Customer",
+        }).insert()
+
+    if (data.get("address_line1") or "").strip():
+        frappe.get_doc({
+            "doctype": "Address",
+            "address_title": customer_name,
+            "address_type": "Billing",
+            "address_line1": data["address_line1"],
+            "address_line2": data.get("address_line2") or "",
+            "address_line3": data.get("address_line3") or "",
+            "city": data.get("city") or "",
+            "pincode": data.get("pincode") or "",
+            "state": data.get("state") or "",
+            "country": "India",
+            "gstin": data.get("gstin") or "",
+            "links": [{"link_doctype": "Customer", "link_name": customer.name}],
+        }).insert()
+
+    # ERPNext creates the primary contact during customer.insert(). Reuse it.
+    if data.get("whatsapp"):
+        contact = frappe.get_doc("Contact", customer.customer_primary_contact)
+        if len(contact.phone_nos) > 1:
+            contact.phone_nos[1].phone = data["whatsapp"]
+            contact.phone_nos[1].is_primary_mobile_no = 0
+        else:
+            contact.append("phone_nos", {
+                "phone": data["whatsapp"], "is_primary_mobile_no": 0,
+            })
+        contact.save()
+
+    return customer.as_dict()
+
+
 @frappe.whitelist()
 def quick_create_customer(data=None, **kwargs):
     """Create a Customer with basic details."""
