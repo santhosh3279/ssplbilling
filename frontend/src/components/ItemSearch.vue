@@ -290,13 +290,12 @@
 
 <script setup>
 import { serverNow } from '../services/serverTime'
-import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue'
+import { ref, nextTick, watch, computed, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import { useItemCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { frappeGet } from '../api.js'
 import DateFilter from './DateFilter.vue'
 import ItemCreation from './ItemCreation.vue'
-import PriceListUpdate from '../pages/PriceListUpdate.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { canAccessTile } from '../composables/usePermission'
 import { getCipherMap } from '../encryption.js'
@@ -308,6 +307,9 @@ import {
   saveQuickQtyOrder as persistQuickQtyOrder,
   clearQuickQtyMap as clearStoredQuickQty
 } from '../services/quickQty.js'
+
+// Price update sub-window loads on first open so its page graph stays out of the boot bundle.
+const PriceListUpdate = defineAsyncComponent(() => import('../pages/PriceListUpdate.vue'))
 
 const props = defineProps({
   show: Boolean,

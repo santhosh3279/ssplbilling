@@ -4,74 +4,74 @@ import { canAccessRoute } from './composables/usePermission'
 import { initTabSession } from './services/tabSession'
 import Login from './pages/Login.vue'
 import Dashboard from './pages/Dashboard.vue'
-import SalesInvoice from './pages/SalesInvoice.vue'
-import Quotation from './pages/Quotation.vue'
-import PurchaseInvoice from './pages/PurchaseInvoice.vue'
-import PriceListUpdate from './pages/PriceListUpdate.vue'
-import BarcodePrintPage from './pages/BarcodePrintPage.vue'
-import CashierDesk from './pages/CashierDesk.vue'
-import PurchaseSubmit from './pages/PurchaseSubmit.vue'
-import GeneralLedger from './pages/GeneralLedger.vue'
-import PaymentV2 from './pages/paymentv2.vue'
-import JournalContraEntry from './pages/JournalContraEntry.vue'
-import CashierManagement from './pages/CashierManagement.vue'
-import PricingRuleSync from './pages/PricingRuleSync.vue'
-import DiscountRule from './pages/DiscountRule.vue'
-import PurchaseOrder from './pages/PurchaseOrder.vue'
-import SalesOrderEntry from './pages/SalesOrderEntry.vue'
-import SalesOrder from './pages/SalesOrder.vue'
-import IncentiveLedger from './pages/IncentiveLedger.vue'
-import IncentiveRedeem from './pages/IncentiveRedeem.vue'
-import IncentiveEntry from './pages/IncentiveEntry.vue'
-import Reports from './pages/Reports.vue'
-import StoreSalesReport from './pages/StoreSalesReport.vue'
-import CostCenterSalesReport from './pages/CostCenterSalesReport.vue'
-import StockStatusReport from './pages/StockStatusReport.vue'
-import StockAgingReport from './pages/StockAgingReport.vue'
-import OutstandingCustomersReport from './pages/OutstandingCustomersReport.vue'
-import LedgerSalesPurchaseReport from './pages/LedgerSalesPurchaseReport.vue'
-import ItemSalesSummary from './pages/ItemSalesSummary.vue'
-import StoreWiseItemSales from './pages/StoreWiseItemSales.vue'
-import FastMovingItems from './pages/FastMovingItems.vue'
-import MaterialTransferReport from './pages/MaterialTransferReport.vue'
-import LoadingReceipt from './pages/LoadingReceipt.vue'
-import CustomerEnquiry from './pages/CustomerEnquiry.vue'
-import ParcelAddress from './pages/ParcelAddress.vue'
-import StockReconciliation from './pages/StockReconciliation.vue'
-import SSPLBillingSettings from './pages/SSPLBillingSettings.vue'
-import UserCreation from './pages/UserCreation.vue'
-import GstDummyLedger from './pages/GstDummyLedger.vue'
-import GstLedger from './pages/GstLedger.vue'
-import DailyReport from './pages/DailyReport.vue'
-import StoreTransfer from './pages/StoreTransfer.vue'
-import SingleEntry from './pages/SingleEntry.vue'
-import Cancellation from './pages/Cancellation.vue'
-import NamingSettings from './pages/NamingSettings.vue'
-import Expense from './pages/expense.vue'
-import Repack from './pages/Repack.vue'
-import Catalogue from './pages/catalogue.vue'
-import OfferPage from './pages/OfferPage.vue'
-import CatalougePage from './pages/catalougepage.vue'
-import Catelogue from './pages/catelogue.vue'
-import CatalogueViewer from './pages/catalogueviewer.vue'
-import CatalogueCart from './pages/CatalogueCart.vue'
-import CatalogueCheckout from './pages/CatalogueCheckout.vue'
-import Unreconciled from './pages/unreconciled.vue'
-import ChequeRegister from './pages/ChequeRegister.vue'
-import CashflowReport from './pages/CashflowReport.vue'
-import LandCostVoucher from './pages/land_cost_voucher.vue'
-import AccountTree from './pages/AccountTree.vue'
-import Hrms from './pages/Hrms.vue'
-import Employee from './pages/Employee.vue'
-import Employees from './pages/employees.vue'
-import EsslMachines from './pages/EsslMachines.vue'
-import EsslMapping from './pages/EsslMapping.vue'
-import EsslAttendance from './pages/EsslAttendance.vue'
-import DeviceUsers from './pages/DeviceUsers.vue'
-import AttendanceChart from './pages/AttendanceChart.vue'
-import ShiftRoaster from './pages/ShiftRoaster.vue'
-import BatchReports from './pages/BatchReports.vue'
-import ModifySubmitted from './pages/modifysubmitted.vue'
+const SalesInvoice = () => import('./pages/SalesInvoice.vue')
+const Quotation = () => import('./pages/Quotation.vue')
+const PurchaseInvoice = () => import('./pages/PurchaseInvoice.vue')
+const PriceListUpdate = () => import('./pages/PriceListUpdate.vue')
+const BarcodePrintPage = () => import('./pages/BarcodePrintPage.vue')
+const CashierDesk = () => import('./pages/CashierDesk.vue')
+const PurchaseSubmit = () => import('./pages/PurchaseSubmit.vue')
+const GeneralLedger = () => import('./pages/GeneralLedger.vue')
+const PaymentV2 = () => import('./pages/paymentv2.vue')
+const JournalContraEntry = () => import('./pages/JournalContraEntry.vue')
+const CashierManagement = () => import('./pages/CashierManagement.vue')
+const PricingRuleSync = () => import('./pages/PricingRuleSync.vue')
+const DiscountRule = () => import('./pages/DiscountRule.vue')
+const PurchaseOrder = () => import('./pages/PurchaseOrder.vue')
+const SalesOrderEntry = () => import('./pages/SalesOrderEntry.vue')
+const SalesOrder = () => import('./pages/SalesOrder.vue')
+const IncentiveLedger = () => import('./pages/IncentiveLedger.vue')
+const IncentiveRedeem = () => import('./pages/IncentiveRedeem.vue')
+const IncentiveEntry = () => import('./pages/IncentiveEntry.vue')
+const Reports = () => import('./pages/Reports.vue')
+const StoreSalesReport = () => import('./pages/StoreSalesReport.vue')
+const CostCenterSalesReport = () => import('./pages/CostCenterSalesReport.vue')
+const StockStatusReport = () => import('./pages/StockStatusReport.vue')
+const StockAgingReport = () => import('./pages/StockAgingReport.vue')
+const OutstandingCustomersReport = () => import('./pages/OutstandingCustomersReport.vue')
+const LedgerSalesPurchaseReport = () => import('./pages/LedgerSalesPurchaseReport.vue')
+const ItemSalesSummary = () => import('./pages/ItemSalesSummary.vue')
+const StoreWiseItemSales = () => import('./pages/StoreWiseItemSales.vue')
+const FastMovingItems = () => import('./pages/FastMovingItems.vue')
+const MaterialTransferReport = () => import('./pages/MaterialTransferReport.vue')
+const LoadingReceipt = () => import('./pages/LoadingReceipt.vue')
+const CustomerEnquiry = () => import('./pages/CustomerEnquiry.vue')
+const ParcelAddress = () => import('./pages/ParcelAddress.vue')
+const StockReconciliation = () => import('./pages/StockReconciliation.vue')
+const SSPLBillingSettings = () => import('./pages/SSPLBillingSettings.vue')
+const UserCreation = () => import('./pages/UserCreation.vue')
+const GstDummyLedger = () => import('./pages/GstDummyLedger.vue')
+const GstLedger = () => import('./pages/GstLedger.vue')
+const DailyReport = () => import('./pages/DailyReport.vue')
+const StoreTransfer = () => import('./pages/StoreTransfer.vue')
+const SingleEntry = () => import('./pages/SingleEntry.vue')
+const Cancellation = () => import('./pages/Cancellation.vue')
+const NamingSettings = () => import('./pages/NamingSettings.vue')
+const Expense = () => import('./pages/expense.vue')
+const Repack = () => import('./pages/Repack.vue')
+const Catalogue = () => import('./pages/catalogue.vue')
+const OfferPage = () => import('./pages/OfferPage.vue')
+const CatalougePage = () => import('./pages/catalougepage.vue')
+const Catelogue = () => import('./pages/catelogue.vue')
+const CatalogueViewer = () => import('./pages/catalogueviewer.vue')
+const CatalogueCart = () => import('./pages/CatalogueCart.vue')
+const CatalogueCheckout = () => import('./pages/CatalogueCheckout.vue')
+const Unreconciled = () => import('./pages/unreconciled.vue')
+const ChequeRegister = () => import('./pages/ChequeRegister.vue')
+const CashflowReport = () => import('./pages/CashflowReport.vue')
+const LandCostVoucher = () => import('./pages/land_cost_voucher.vue')
+const AccountTree = () => import('./pages/AccountTree.vue')
+const Hrms = () => import('./pages/Hrms.vue')
+const Employee = () => import('./pages/Employee.vue')
+const Employees = () => import('./pages/employees.vue')
+const EsslMachines = () => import('./pages/EsslMachines.vue')
+const EsslMapping = () => import('./pages/EsslMapping.vue')
+const EsslAttendance = () => import('./pages/EsslAttendance.vue')
+const DeviceUsers = () => import('./pages/DeviceUsers.vue')
+const AttendanceChart = () => import('./pages/AttendanceChart.vue')
+const ShiftRoaster = () => import('./pages/ShiftRoaster.vue')
+const BatchReports = () => import('./pages/BatchReports.vue')
+const ModifySubmitted = () => import('./pages/modifysubmitted.vue')
 
 const routes = [
   {
@@ -539,7 +539,20 @@ router.beforeEach(async (to, from, next) => {
   }
 })
 
+// Pages load lazily, and billing tabs outlive deploys that delete old chunks. When a page chunk is
+// gone, hard-load the target once so the tab picks up the new build; the key prevents a reload loop.
+const CHUNK_RELOAD_KEY = 'wb-chunk-reload'
+router.onError((error, to) => {
+  const message = String(error?.message || '')
+  if (!/dynamically imported module|Importing a module script failed/i.test(message)) return
+  const target = to ? router.resolve(to.fullPath).href : window.location.href
+  if (sessionStorage.getItem(CHUNK_RELOAD_KEY) === target) return
+  sessionStorage.setItem(CHUNK_RELOAD_KEY, target)
+  window.location.assign(target)
+})
+
 router.afterEach((to) => {
+  sessionStorage.removeItem(CHUNK_RELOAD_KEY)
   const title = to.meta.title || 'Billing'
   document.title = title
 })

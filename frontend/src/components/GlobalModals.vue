@@ -60,11 +60,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed, defineAsyncComponent } from 'vue'
 import CustomerSearchModal from './CustomerSearchModal.vue'
 import ItemSearch from './ItemSearch.vue'
-import GeneralLedger from '../pages/GeneralLedger.vue'
-import StockLedger from '../pages/StockLedger.vue'
+// Sub-windows load on first open so their page graphs stay out of the boot bundle.
+const GeneralLedger = defineAsyncComponent(() => import('../pages/GeneralLedger.vue'))
+const StockLedger = defineAsyncComponent(() => import('../pages/StockLedger.vue'))
 import OutstandingBillsModal from './OutstandingBillsModal.vue'
 import GstValidator from './GstValidator.vue'
 import { frappeGet } from '../api.js'

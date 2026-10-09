@@ -49,6 +49,8 @@ export default defineConfig(({ command }) => ({
   build: {
     outDir: '../ssplbilling/public/frontend',  // FIXED: Hardcoded relative path
     emptyOutDir: true,
+    // www/frontend.py reads this to find the entry and the chunks to preload.
+    manifest: true,
     target: 'es2020',
   },
   esbuild: {
