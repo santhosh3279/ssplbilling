@@ -2,11 +2,14 @@ import { getFrappeSocket } from '../services/frappeSocket.js'
 import { frappeGet } from '../api.js'
 import {
   patchItemInCache, updateItemPriceInCache, updateItemStockInCache, refreshDiscountRuleCache,
-  getLoadedItemScopes, reconcileItemDatasets,
+  getLoadedItemScopes, reconcileItemDatasets, removePriceListFromCache, updatePriceListFlagsInCache,
+  renamePriceListInCache, setPriceListRatesInCache,
 } from '../services/itemCache.js'
 
 // A server restart reconnects every tab at once; spread their catch-up deltas.
 const RECONNECT_SPREAD_MS = 30000
+// A newly enabled price list makes every tab fetch its ~12k rates; spread those requests.
+const PRICE_LIST_FETCH_SPREAD_MS = 5000
 
 let _socket = null
 let _handler = null
@@ -14,6 +17,7 @@ let _priceHandler = null
 let _stockHandler = null
 let _discountRuleHandler = null
 let _connectHandler = null
+let _priceListHandler = null
 let _debounceTimer = null
 let _reconcileTimer = null
 let _reconcileOnVisible = false
@@ -39,6 +43,18 @@ async function _patchItem(itemCode) {
     }
   }
   window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
+}
+
+async function _loadPriceListRates(name) {
+  await new Promise(resolve => setTimeout(resolve, Math.random() * PRICE_LIST_FETCH_SPREAD_MS))
+  try {
+    const res = await frappeGet('ssplbilling.api.pricelist_api.get_price_list_rates', { price_list: name })
+    if (res?.enabled) setPriceListRatesInCache(res)
+    else removePriceListFromCache(name)
+    window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
+  } catch (e) {
+    console.warn('[useItemSync] price list rates fetch failed:', e)
+  }
 }
 
 function _flushPendingPatches() {
@@ -113,6 +129,29 @@ export function initItemSync() {
   }
   socket.on('stock_update', _stockHandler)
 
+  // Price List enabled / disabled / re-flagged / renamed / deleted: patch cached items in place.
+  _priceListHandler = (data) => {
+    if (!data?.name) return
+    console.log('[useItemSync] received price_list_update:', data)
+    if (data.old_name) {
+      if (data.merge) {
+        removePriceListFromCache(data.old_name)
+        _loadPriceListRates(data.name)
+      } else {
+        renamePriceListInCache(data.old_name, data.name)
+      }
+    } else if (!data.enabled) {
+      removePriceListFromCache(data.name)
+    } else if (!data.was_enabled) {
+      _loadPriceListRates(data.name) // newly created or re-enabled: rates were never cached
+      return
+    } else {
+      updatePriceListFlagsInCache(data.name, data.buying, data.selling)
+    }
+    window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
+  }
+  socket.on('price_list_update', _priceListHandler)
+
   _discountRuleHandler = (data) => {
     console.log('[useItemSync] received discount_rule_update:', data)
     refreshDiscountRuleCache()
@@ -160,6 +199,10 @@ export function destroyItemSync() {
   if (_discountRuleHandler) {
     socket.off('discount_rule_update', _discountRuleHandler)
     _discountRuleHandler = null
+  }
+  if (_priceListHandler) {
+    socket.off('price_list_update', _priceListHandler)
+    _priceListHandler = null
   }
   if (_connectHandler) {
     socket.off('connect', _connectHandler)

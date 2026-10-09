@@ -298,6 +298,11 @@ doc_events = {
 		"on_update": "ssplbilling.api.pricelist_api.on_item_price_update",
 		"on_trash": "ssplbilling.api.pricelist_api.on_item_price_update",
 	},
+	"Price List": {
+		"on_update": "ssplbilling.api.pricelist_api.on_price_list_update",
+		"on_trash": "ssplbilling.api.pricelist_api.on_price_list_update",
+		"after_rename": "ssplbilling.api.pricelist_api.on_price_list_rename",
+	},
 }
 
 

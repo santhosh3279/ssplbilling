@@ -131,5 +131,30 @@ function fullResponse(args) {
     assert.ok(!run("datasets.has('u@x|Co|Sales|W1')"), 'Least recently used scope is dropped')
     assert.ok(!isProxy(run("datasets.get('u@x|Co|Sales|W4').list")))
   }
-  console.log('Item cache datasets: no refetch on switch, late-sync guard, per-scope stock/price patches, reconnect delta and LRU passed')
+  {
+    const { run } = loadCache()
+    await run("refreshItemCache('Sales', 'Retail', 'W1')")
+    await run("refreshItemCache('Sales', 'Retail', 'W2')") // W1 becomes inactive
+    // JSON copy: values built inside the sandbox have that realm's prototypes.
+    const item = (key, code = 'A') => JSON.parse(JSON.stringify(toRaw(run(`datasets.get(${JSON.stringify(key)}).list`)).find(i => i.item_code === code)))
+    const before = run('items.value')
+    run("removePriceListFromCache('Retail')")
+    assert.notEqual(run('items.value'), before, 'Active list is swapped in one assignment')
+    for (const key of ['u@x|Co|Sales|W1', 'u@x|Co|Sales|W2']) {
+      assert.deepEqual(item(key).price_lists, [], `Disabled list removed from ${key}`)
+      assert.equal(item(key).price, 5, 'Price falls back to the standard rate')
+    }
+    run("setPriceListRatesInCache({ name: 'Retail', buying: 0, selling: 1, rates: [['A', '', 8], ['A', 'Box', 80], ['B', 'Box', 90]] })")
+    assert.deepEqual(item('u@x|Co|Sales|W1').price_lists, [{ name: 'Retail', rate: 8, buying: false, selling: true }])
+    assert.equal(item('u@x|Co|Sales|W1').price, 8, 'Re-enabled base rate drives price again')
+    assert.deepEqual(item('u@x|Co|Sales|W2', 'B').uom_price_lists, { Retail: { Box: 90 } })
+    run("updatePriceListFlagsInCache('Retail', 1, 1)")
+    assert.equal(item('u@x|Co|Sales|W1').price_lists[0].buying, true)
+    run("renamePriceListInCache('Retail', 'Retail 2')")
+    assert.equal(item('u@x|Co|Sales|W2').price_lists[0].name, 'Retail 2')
+    assert.deepEqual(item('u@x|Co|Sales|W2', 'B').uom_price_lists, { 'Retail 2': { Box: 90 } })
+    assert.equal(run("datasets.get('u@x|Co|Sales|W1').priceList"), 'Retail 2', 'Selected list follows the rename')
+    assert.equal(item('u@x|Co|Sales|W1').price, 8)
+  }
+  console.log('Item cache datasets: no refetch on switch, late-sync guard, per-scope stock/price patches, reconnect delta, LRU and price list enable/disable/flags/rename passed')
 })().catch(error => { console.error(error); process.exitCode = 1 })

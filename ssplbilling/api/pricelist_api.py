@@ -185,3 +185,53 @@ def on_item_price_update(doc, method=None):
 		)
 
 
+
+
+def on_price_list_update(doc, method=None):
+	"""Doc event (Price List on_update / on_trash): tell clients how the list changed so cached items
+	can add, drop or re-flag its rates without a reload. Item caches only carry enabled lists."""
+	before = doc.get_doc_before_save() if method == "on_update" else None
+	frappe.publish_realtime(
+		"price_list_update",
+		{
+			"name": doc.name,
+			"enabled": 0 if method == "on_trash" else int(doc.enabled or 0),
+			"was_enabled": int(before.enabled or 0) if before else 0,
+			"buying": int(doc.buying or 0),
+			"selling": int(doc.selling or 0),
+			"deleted": int(method == "on_trash"),
+		},
+		after_commit=True,
+	)
+
+
+def on_price_list_rename(doc, method=None, old=None, new=None, merge=False):
+	"""Doc event (Price List after_rename): clients rename the list in place, or drop + refetch on merge."""
+	frappe.publish_realtime(
+		"price_list_update",
+		{"name": new, "old_name": old, "merge": int(bool(merge)), "enabled": int(doc.enabled or 0),
+			"buying": int(doc.buying or 0), "selling": int(doc.selling or 0)},
+		after_commit=True,
+	)
+
+
+@frappe.whitelist()
+def get_price_list_rates(price_list):
+	"""Every Item Price of one enabled price list as compact [item_code, uom, rate] rows, for clients
+	adding a newly enabled list to their item cache (same rows get_all_items_detailed would use)."""
+	pl = frappe.db.get_value("Price List", price_list, ["name", "enabled", "buying", "selling"], as_dict=True)
+	if not pl or not pl.enabled:
+		return {"name": price_list, "enabled": 0, "rates": []}
+	rows = frappe.get_all(
+		"Item Price",
+		filters={"price_list": price_list},
+		fields=["item_code", "uom", "price_list_rate"],
+		as_list=True,
+	)
+	return {
+		"name": pl.name,
+		"enabled": 1,
+		"buying": int(pl.buying or 0),
+		"selling": int(pl.selling or 0),
+		"rates": [[code, uom or "", float(rate or 0)] for code, uom, rate in rows],
+	}

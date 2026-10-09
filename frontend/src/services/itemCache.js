@@ -490,6 +490,100 @@ export function updateItemStockInCache(event) {
   lastSync.value = serverNow().getTime()
 }
 
+/**
+ * Rebuild every loaded dataset with `change(item)` (returns a replacement item, or nothing to keep
+ * it), swapping each list in one assignment so a 12k-item update is a single reactive change.
+ */
+function rewriteAllDatasets(change) {
+  for (const ds of datasets.values()) {
+    let changed = false
+    const next = toRaw(listFor(ds)).map(item => {
+      const updated = change(item)
+      if (!updated) return item
+      changed = true
+      return updated
+    })
+    if (!changed) continue
+    applyPriceList(next, ds.priceList)
+    ds.list = next
+    if (ds.key === activeKey) items.value = next
+  }
+  lastSync.value = serverNow().getTime()
+}
+
+function withoutPriceList(item, name) {
+  const inBase = (item.price_lists || []).some(p => p.name === name)
+  const inUom = item.uom_price_lists && name in item.uom_price_lists
+  if (!inBase && !inUom) return null
+  const uomPriceLists = { ...(item.uom_price_lists || {}) }
+  delete uomPriceLists[name]
+  return { ...item, price_lists: (item.price_lists || []).filter(p => p.name !== name), uom_price_lists: uomPriceLists }
+}
+
+/** Drop a disabled / deleted price list from every cached item. */
+export function removePriceListFromCache(name) {
+  rewriteAllDatasets(item => withoutPriceList(item, name))
+}
+
+/** Update the buying / selling flags carried on an enabled list's base-rate entries. */
+export function updatePriceListFlagsInCache(name, buying, selling) {
+  const flags = { buying: Boolean(buying), selling: Boolean(selling) }
+  rewriteAllDatasets(item => {
+    if (!(item.price_lists || []).some(p => p.name === name && (p.buying !== flags.buying || p.selling !== flags.selling))) return null
+    return { ...item, price_lists: item.price_lists.map(p => (p.name === name ? { ...p, ...flags } : p)) }
+  })
+}
+
+/** Rename a price list in place across every cached item. */
+export function renamePriceListInCache(oldName, newName) {
+  // Point selections at the new name first: the rewrite recomputes `price` from ds.priceList.
+  for (const ds of datasets.values()) {
+    if (ds.priceList === oldName) ds.priceList = newName
+  }
+  rewriteAllDatasets(item => {
+    const inBase = (item.price_lists || []).some(p => p.name === oldName)
+    const inUom = item.uom_price_lists && oldName in item.uom_price_lists
+    if (!inBase && !inUom) return null
+    const uomPriceLists = { ...(item.uom_price_lists || {}) }
+    if (inUom) {
+      uomPriceLists[newName] = uomPriceLists[oldName]
+      delete uomPriceLists[oldName]
+    }
+    return {
+      ...item,
+      price_lists: (item.price_lists || []).map(p => (p.name === oldName ? { ...p, name: newName } : p)),
+      uom_price_lists: uomPriceLists,
+    }
+  })
+}
+
+/**
+ * Replace one price list's rates on every cached item with `rates` ([item_code, uom, rate] rows from
+ * get_price_list_rates), the way get_all_items_detailed builds them: per-UOM rows go to
+ * uom_price_lists, UOM-less rows to price_lists with the list's buying / selling flags.
+ */
+export function setPriceListRatesInCache({ name, buying, selling, rates }) {
+  const byCode = new Map()
+  for (const [code, uom, rate] of rates || []) {
+    if (!byCode.has(code)) byCode.set(code, [])
+    byCode.get(code).push([uom, rate])
+  }
+  rewriteAllDatasets(item => {
+    const own = byCode.get(item.item_code)
+    const stripped = withoutPriceList(item, name)
+    if (!own) return stripped
+    const next = stripped || { ...item, price_lists: [...(item.price_lists || [])], uom_price_lists: { ...(item.uom_price_lists || {}) } }
+    for (const [uom, rate] of own) {
+      if (uom) {
+        next.uom_price_lists[name] = { ...(next.uom_price_lists[name] || {}), [uom]: rate }
+      } else {
+        next.price_lists.push({ name, rate, buying: Boolean(buying), selling: Boolean(selling) })
+      }
+    }
+    return next
+  })
+}
+
 export function useItemCache() {
   return {
     items,
