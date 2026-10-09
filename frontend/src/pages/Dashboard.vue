@@ -435,6 +435,45 @@
               Items refreshed
             </div>
           </div>
+
+          <!-- Server Time Sync -->
+          <section aria-labelledby="server-time-sync-title" class="bg-[var(--color-surface)] p-5 rounded-3xl border border-[var(--color-border)] shadow-xl flex flex-col gap-3">
+            <div class="flex items-center justify-between gap-2 border-b border-[var(--color-border)]/50 pb-2">
+              <h2 id="server-time-sync-title" class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.15em]">Server Time Sync</h2>
+              <span role="status" class="text-xs font-bold" :class="clockStatus.syncing ? 'text-[var(--color-info)]' : clockStatus.synced && !clockStatus.error ? 'text-emerald-500' : 'text-amber-500'">
+                {{ clockSyncLabel }}
+              </span>
+            </div>
+            <dl class="text-xs space-y-1.5">
+              <div class="flex justify-between gap-2">
+                <dt class="text-[var(--color-text-muted)]">Clock source:</dt>
+                <dd class="font-bold text-[var(--color-text)]">{{ clockStatus.synced ? 'Server' : 'Computer fallback' }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-[var(--color-text-muted)]">Current time:</dt>
+                <dd class="font-mono tabular-nums text-[var(--color-text)]">{{ clockStatus.time }}</dd>
+              </div>
+              <div class="flex justify-between gap-2">
+                <dt class="text-[var(--color-text-muted)]">Timezone:</dt>
+                <dd class="text-right break-all text-[var(--color-text)]">{{ clockStatus.timezone }}</dd>
+              </div>
+              <div class="flex justify-between items-start gap-2">
+                <dt class="text-[var(--color-text-muted)] shrink-0">Last sync:</dt>
+                <dd class="font-mono text-right text-[var(--color-text)]">{{ clockLastSync }}</dd>
+              </div>
+            </dl>
+            <p v-if="clockStatus.error" class="text-xs text-amber-500">
+              Sync failed. {{ clockStatus.synced ? 'Continuing with the last server time.' : 'Using this computer’s clock.' }}
+            </p>
+            <button
+              type="button"
+              @click="handleServerTimeSync"
+              :disabled="clockStatus.syncing"
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-2.5 text-xs font-bold text-[var(--color-text)] hover:bg-[var(--color-midlight)] disabled:opacity-50 disabled:cursor-wait transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-highlight)]"
+            >
+              {{ clockStatus.syncing ? 'Syncing…' : 'Sync now' }}
+            </button>
+          </section>
         </div>
       </div>
     </div>
@@ -598,7 +637,7 @@
 </template>
 
 <script setup>
-import { serverToday, serverNow, serverCalendarDate, serverTimezone } from '../services/serverTime'
+import { serverToday, serverNow, serverCalendarDate, serverTimezone, serverNowTime, getServerTimeStatus, primeServerTime } from '../services/serverTime'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
@@ -641,6 +680,37 @@ function _onItemCacheUpdated() {
   syncFlash.value = true
   clearTimeout(_flashTimer)
   _flashTimer = setTimeout(() => { syncFlash.value = false }, 3000)
+}
+
+// Keep the card aligned with manual and background server-time synchronization.
+function readClockStatus() {
+  return { ...getServerTimeStatus(), time: serverNowTime(), timezone: serverTimezone() }
+}
+const clockStatus = ref(readClockStatus())
+const clockSyncLabel = computed(() => {
+  if (clockStatus.value.syncing) return 'Syncing…'
+  if (clockStatus.value.error) return 'Retry needed'
+  return clockStatus.value.synced ? 'Synced' : 'Fallback'
+})
+const clockLastSync = computed(() => {
+  if (!clockStatus.value.lastSyncedAt) return 'Not yet synced'
+  return new Date(clockStatus.value.lastSyncedAt).toLocaleString('en-GB', {
+    timeZone: clockStatus.value.timezone,
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  })
+})
+async function handleServerTimeSync() {
+  const request = primeServerTime()
+  clockStatus.value = readClockStatus()
+  try {
+    await request
+  } catch {
+    // The shared status supplies the card's error and active fallback source.
+  } finally {
+    clockStatus.value = readClockStatus()
+    now.value = serverCalendarDate()
+  }
 }
 
 const isFullscreen = ref(false)
@@ -1711,6 +1781,10 @@ function cleanupOldKeys() {
 }
 
 onMounted(async () => {
+  timeInterval = setInterval(() => {
+    now.value = serverCalendarDate()
+    clockStatus.value = readClockStatus()
+  }, 1000)
   updateLicenseState()
   cleanupOldKeys()
   document.addEventListener('click', handleClickOutside)
@@ -1757,9 +1831,6 @@ onMounted(async () => {
     sessionStorage.setItem('wb-mqtt-checked', '1')
   }
 
-  timeInterval = setInterval(() => {
-    now.value = serverCalendarDate()
-  }, 1000)
 })
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)

@@ -5,6 +5,7 @@ let anchorEpoch = null
 let anchorTick = 0
 let timezone = null
 let pendingSync = null
+let lastSyncError = null
 
 /** Serialize a calendar Date's local fields, without converting to UTC. */
 export function toLocalISO(date) {
@@ -24,6 +25,7 @@ export function parseCalendarDate(value) {
 /** Synchronize once per request; reject invalid data without replacing a good anchor. */
 export function primeServerTime() {
   if (pendingSync) return pendingSync
+  lastSyncError = null
   pendingSync = (async () => {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 15000)
@@ -46,6 +48,9 @@ export function primeServerTime() {
       anchorTick = received
       timezone = data.timezone
       return true
+    } catch (error) {
+      lastSyncError = error?.message || 'Server time synchronization failed'
+      throw error
     } finally {
       clearTimeout(timeout)
     }
@@ -55,6 +60,16 @@ export function primeServerTime() {
 
 export function isServerTimePrimed() {
   return anchorEpoch !== null
+}
+
+/** Snapshot shared by automatic refreshes and the dashboard's manual sync. */
+export function getServerTimeStatus() {
+  return {
+    synced: isServerTimePrimed(),
+    syncing: pendingSync !== null,
+    lastSyncedAt: anchorEpoch,
+    error: lastSyncError,
+  }
 }
 
 export function serverNow() {

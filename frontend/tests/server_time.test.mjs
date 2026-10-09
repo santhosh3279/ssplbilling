@@ -14,6 +14,7 @@ async function clock(t, data = { epoch_ms: Date.parse('2026-10-09T18:29:59Z'), t
 
 test('computer clock and timezone are used until synchronization succeeds', async t => {
   const c = await clock(t)
+  assert.deepEqual(c.getServerTimeStatus(), { synced: false, syncing: false, lastSyncedAt: null, error: null })
   assert.equal(c.isServerTimePrimed(), false)
   const local = new Date('2030-02-03T12:34:56')
   t.mock.method(Date, 'now', () => local.getTime())
@@ -27,6 +28,7 @@ test('computer clock and timezone are used until synchronization succeeds', asyn
   assert.equal(c.isServerTimePrimed(), true)
   assert.equal(c.serverToday(), '2026-10-09')
   assert.equal(c.serverNowTime(), '23:59:59')
+  assert.deepEqual(c.getServerTimeStatus(), { synced: true, syncing: false, lastSyncedAt: c.serverNow().getTime(), error: null })
 })
 
 test('computer clock changes do not change server time; elapsed time crosses server midnight', async t => {
@@ -60,6 +62,8 @@ test('failed initial synchronization uses computer time and recovers on retry', 
   const c = await clock(t)
   fetch.mock.mockImplementation(async () => { throw new Error('offline') })
   await assert.rejects(c.primeServerTime(), /offline/)
+  assert.equal(c.getServerTimeStatus().error, 'offline')
+  assert.equal(c.getServerTimeStatus().syncing, false)
   assert.equal(c.isServerTimePrimed(), false)
   t.mock.method(Date, 'now', () => 1000000000000)
   assert.equal(c.serverNow().getTime(), 1000000000000)
@@ -68,6 +72,7 @@ test('failed initial synchronization uses computer time and recovers on retry', 
   assert.equal(c.isServerTimePrimed(), true)
   assert.equal(c.serverNow().getTime(), 1791568800000)
   assert.equal(c.serverTimezone(), 'UTC')
+  assert.equal(c.getServerTimeStatus().error, null)
 })
 
 test('invalid epochs, missing zones, invalid zones and HTTP failures cannot initialize the clock', async t => {
@@ -87,7 +92,11 @@ test('failed refresh retains the last server anchor and later refresh corrects i
   await c.primeServerTime()
   fetch.mock.mockImplementation(async () => { throw new Error('offline') })
   c.advance(2000)
+  const lastSyncedAt = c.getServerTimeStatus().lastSyncedAt
   await assert.rejects(c.primeServerTime())
+  assert.equal(c.getServerTimeStatus().synced, true)
+  assert.equal(c.getServerTimeStatus().lastSyncedAt, lastSyncedAt)
+  assert.equal(c.getServerTimeStatus().error, 'offline')
   assert.equal(c.serverToday(), '2026-10-10')
   fetch.mock.mockImplementation(async () => ({ ok: true, json: async () => ({ epoch_ms: Date.parse('2026-10-11T12:00:00Z'), timezone: 'UTC' }) }))
   await c.primeServerTime()
@@ -97,7 +106,10 @@ test('failed refresh retains the last server anchor and later refresh corrects i
 
 test('concurrent refreshes share one uncached request', async t => {
   const c = await clock(t)
-  await Promise.all([c.primeServerTime(), c.primeServerTime()])
+  const first = c.primeServerTime()
+  assert.equal(c.getServerTimeStatus().syncing, true)
+  await Promise.all([first, c.primeServerTime()])
+  assert.equal(c.getServerTimeStatus().syncing, false)
   assert.equal(fetch.mock.callCount(), 1)
   assert.equal(fetch.mock.calls[0].arguments[1].cache, 'no-store')
 })
