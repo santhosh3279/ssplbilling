@@ -57,11 +57,6 @@ export function saveDiscountRulesToStorage(rules) {
 }
 const discountRules = ref(loadDiscountRulesFromStorage())
 
-// The server resolves a missing price list the same way; keep in-memory switching consistent with it.
-function effectivePriceList(searchType, priceList) {
-  return priceList || (searchType === 'Sales' ? 'Standard Selling' : 'Standard Buying')
-}
-
 // In-flight syncs per snapshot key, so a Dashboard preload and a page mount share one request.
 const inflight = new Map()
 
@@ -82,7 +77,7 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
 
     // Only the price list changed! We have all rates locally cached. Switch in-memory.
     console.log('[itemCache] switching price list in-memory to:', priceList)
-    applyPriceList(items.value, effectivePriceList(searchType, priceList))
+    applyPriceList(items.value, priceList)
     lastParams.value.priceList = priceList
     lastSync.value = serverNow().getTime()
     return items.value
@@ -106,7 +101,9 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
 
 async function syncItems(key, company, searchType, priceList, warehouse, force) {
   syncLoading.value = true
-  const params = { search_type: searchType, price_list: priceList, warehouse, company }
+  // The previous GET transport stringified nulls to "null" (no warehouse filter match, base rate as
+  // price); send them the same way so stock/price semantics stay unchanged under POST.
+  const params = { search_type: searchType, price_list: String(priceList), warehouse: String(warehouse), company }
   try {
     let snapshot = null
     let base = null
@@ -121,7 +118,7 @@ async function syncItems(key, company, searchType, priceList, warehouse, force) 
 
     if (base) {
       // Serve the persisted cache right away; the delta below refreshes it in place.
-      items.value = applyPriceList(base, effectivePriceList(searchType, priceList))
+      items.value = applyPriceList(base, priceList)
       lastParams.value = { searchType, priceList, warehouse }
       lastSync.value = snapshot.savedAt
     }
@@ -147,7 +144,7 @@ async function syncItems(key, company, searchType, priceList, warehouse, force) 
       list = data.items || []
     }
 
-    items.value = applyPriceList(list, effectivePriceList(searchType, priceList))
+    items.value = applyPriceList(list, priceList)
     saveUomsToStorage(items.value)
     savePercentagesToStorage(items.value)
     lastSync.value = serverNow().getTime()
