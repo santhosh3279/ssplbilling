@@ -12,11 +12,17 @@ async function clock(t, data = { epoch_ms: Date.parse('2026-10-09T18:29:59Z'), t
   return { ...api, advance: ms => { tick += ms } }
 }
 
-test('server time is unavailable until synchronization succeeds', async t => {
+test('computer clock and timezone are used until synchronization succeeds', async t => {
   const c = await clock(t)
   assert.equal(c.isServerTimePrimed(), false)
-  assert.throws(c.serverToday, /not synchronized/)
-  assert.throws(c.serverNow, /not synchronized/)
+  const local = new Date('2030-02-03T12:34:56')
+  t.mock.method(Date, 'now', () => local.getTime())
+  assert.equal(c.serverNow().getTime(), local.getTime())
+  assert.equal(c.serverTimezone(), Intl.DateTimeFormat().resolvedOptions().timeZone)
+  assert.equal(c.serverToday(), '2030-02-03')
+  assert.equal(c.serverNowTime(), '12:34:56')
+  Date.now.mock.mockImplementation(() => local.getTime() + 1000)
+  assert.equal(c.serverNowTime(), '12:34:57')
   await c.primeServerTime()
   assert.equal(c.isServerTimePrimed(), true)
   assert.equal(c.serverToday(), '2026-10-09')
@@ -50,15 +56,18 @@ test('server timezone determines calendar fields and date navigation', async t =
   assert.equal(c.toLocalISO(leapDay), '2028-03-01')
 })
 
-test('failed initial synchronization never falls back and can be retried', async t => {
+test('failed initial synchronization uses computer time and recovers on retry', async t => {
   const c = await clock(t)
   fetch.mock.mockImplementation(async () => { throw new Error('offline') })
   await assert.rejects(c.primeServerTime(), /offline/)
   assert.equal(c.isServerTimePrimed(), false)
-  assert.throws(c.serverNow, /not synchronized/)
+  t.mock.method(Date, 'now', () => 1000000000000)
+  assert.equal(c.serverNow().getTime(), 1000000000000)
   fetch.mock.mockImplementation(async () => ({ ok: true, json: async () => ({ epoch_ms: 1791568800000, timezone: 'UTC' }) }))
   await c.primeServerTime()
   assert.equal(c.isServerTimePrimed(), true)
+  assert.equal(c.serverNow().getTime(), 1791568800000)
+  assert.equal(c.serverTimezone(), 'UTC')
 })
 
 test('invalid epochs, missing zones, invalid zones and HTTP failures cannot initialize the clock', async t => {
@@ -122,12 +131,12 @@ test('refresh runs periodically and after focus/visibility changes, and cleans u
   assert.equal(fetch.mock.callCount(), 3)
 })
 
-test('app source cannot reintroduce computer-clock reads', async () => {
+test('computer-clock reads stay confined to the shared fallback', async () => {
   async function inspect(directory) {
     for (const entry of await readdir(directory, { withFileTypes: true })) {
       const path = new URL(entry.name + (entry.isDirectory() ? '/' : ''), directory)
       if (entry.isDirectory()) await inspect(path)
-      else if (/\.(js|vue)$/.test(entry.name)) {
+      else if (/\.(js|vue)$/.test(entry.name) && path.pathname !== new URL('../src/services/serverTime.js', import.meta.url).pathname) {
         const text = await readFile(path, 'utf8')
         assert.doesNotMatch(text, /\bDate\.now\s*\(|new\s+Date\s*\(\s*\)/, path.pathname)
       }
@@ -136,7 +145,7 @@ test('app source cannot reintroduce computer-clock reads', async () => {
   await inspect(new URL('../src/', import.meta.url))
 })
 
-test('startup waits for server time before loading routes, and offers retry on failure', async t => {
+test('startup attempts server time before loading routes and continues on failure', async t => {
   const { runInNewContext } = await import('node:vm')
   const main = await readFile(new URL('../src/main.js', import.meta.url), 'utf8')
   const script = main.replace(/^import .*\n/gm, '')
@@ -147,9 +156,11 @@ test('startup waits for server time before loading routes, and offers retry on f
   let sync = new Promise(resolve => { resolveSync = resolve })
   let loads = 0
   let mounts = 0
-  const root = { textContent: '', appendChild(button) { this.retry = button } }
+  const root = { textContent: '' }
+  let warnings = 0
   const context = {
-    document: { querySelector: () => root, createElement: () => ({}) },
+    document: { querySelector: () => root },
+    console: { warn() { warnings++ } },
     primeServerTime: () => sync,
     startServerTimeSync: () => () => {},
     FrappeUI: {},
@@ -166,10 +177,7 @@ test('startup waits for server time before loading routes, and offers retry on f
   sync = Promise.reject(new Error('offline'))
   runInNewContext(script, context)
   await context.boot
-  assert.match(root.textContent, /Unable to synchronize/)
-  assert.equal(mounts, 1)
-  assert.equal(root.retry.textContent, 'Retry')
-  sync = Promise.resolve()
-  await root.retry.onclick()
+  assert.equal(warnings, 1)
+  assert.equal(loads, 4)
   assert.equal(mounts, 2)
 })

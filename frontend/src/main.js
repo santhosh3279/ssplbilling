@@ -10,12 +10,7 @@ async function bootstrap() {
     // Includes public catalogue routes and any module-level date defaults.
     await primeServerTime()
   } catch (error) {
-    root.textContent = 'Unable to synchronize server time. Check your connection and retry. '
-    const retry = document.createElement('button')
-    retry.textContent = 'Retry'
-    retry.onclick = bootstrap
-    root.appendChild(retry)
-    return
+    console.warn('[serverTime] Starting with computer time; synchronization will retry:', error)
   }
   const [{ default: App }, { default: router }] = await Promise.all([
     import('./App.vue'), import('./router'),

@@ -1,5 +1,6 @@
-// All current dates/times come from the server. performance.now() only measures
-// elapsed time: changing the workstation clock cannot move this clock.
+// Prefer server time; use the computer clock until synchronization succeeds.
+// Once synchronized, monotonic elapsed time keeps computer-clock changes from
+// moving the server clock, even if a later refresh fails.
 let anchorEpoch = null
 let anchorTick = 0
 let timezone = null
@@ -20,7 +21,7 @@ export function parseCalendarDate(value) {
   return new Date(value)
 }
 
-/** Synchronize once per request; reject missing/invalid server data. No PC fallback. */
+/** Synchronize once per request; reject invalid data without replacing a good anchor. */
 export function primeServerTime() {
   if (pendingSync) return pendingSync
   pendingSync = (async () => {
@@ -57,13 +58,12 @@ export function isServerTimePrimed() {
 }
 
 export function serverNow() {
-  if (!isServerTimePrimed()) throw new Error('Server time is not synchronized')
+  if (!isServerTimePrimed()) return new Date(Date.now())
   return new Date(anchorEpoch + performance.now() - anchorTick)
 }
 
 export function serverTimezone() {
-  if (!timezone) throw new Error('Server timezone is not synchronized')
-  return timezone
+  return timezone || Intl.DateTimeFormat().resolvedOptions().timeZone
 }
 
 export function serverToday() {
@@ -93,7 +93,7 @@ export function isServerToday(isoDate) {
 /** Refresh long-running tabs and tabs returning from suspension. */
 export function startServerTimeSync() {
   const refresh = () => primeServerTime().catch(error => {
-    // Retain the last server anchor, never substitute workstation time.
+    // Keep the last server anchor, or continue the computer fallback until synced.
     console.warn('[serverTime] Could not refresh server clock:', error)
   })
   const onVisible = () => { if (document.visibilityState === 'visible') refresh() }
