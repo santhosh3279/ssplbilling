@@ -1,61 +1,88 @@
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { frappeGet } from '../api.js'
-import { patchItemInCache, updateItemPriceInCache, updateItemStockInCache, useItemCache, refreshDiscountRuleCache } from '../services/itemCache.js'
+import {
+  patchItemInCache, updateItemPriceInCache, updateItemStockInCache, refreshDiscountRuleCache,
+  getLoadedItemScopes, reconcileItemDatasets,
+} from '../services/itemCache.js'
 
-const { lastParams } = useItemCache()
+// A server restart reconnects every tab at once; spread their catch-up deltas.
+const RECONNECT_SPREAD_MS = 30000
 
+let _socket = null
 let _handler = null
 let _priceHandler = null
 let _stockHandler = null
 let _discountRuleHandler = null
+let _connectHandler = null
 let _debounceTimer = null
+let _reconcileTimer = null
+let _reconcileOnVisible = false
 const pendingPatches = new Set()
 
 async function _patchItem(itemCode) {
-  const { searchType, priceList, warehouse } = lastParams.value
-  const company = localStorage.getItem('wb-company') || ''
-  const params = { item_code: itemCode, search_type: searchType || 'Sales' }
-  if (priceList) params.price_list = priceList
-  if (warehouse) params.warehouse = warehouse
-  if (company) params.company = company
-
   console.log('[useItemSync] patching cache for item:', itemCode)
-  try {
-    const result = await frappeGet('ssplbilling.api.itemsearch_api.get_single_item_detailed', params)
-    // frappeGet returns json.message ?? json. When Python returns None, result = {message:null}
-    // so check for item_code presence to detect "deleted / filtered out"
-    patchItemInCache(itemCode, result?.item_code ? result : null)
-    window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
-  } catch (e) {
-    console.warn('[useItemSync] patch failed:', e)
+  // Each loaded scope gets the row exactly as its own bulk sync would have built it.
+  for (const scope of getLoadedItemScopes()) {
+    try {
+      const result = await frappeGet('ssplbilling.api.itemsearch_api.get_single_item_detailed', {
+        item_code: itemCode,
+        search_type: scope.searchType,
+        price_list: scope.priceList,
+        warehouse: scope.warehouse,
+        company: scope.company,
+      })
+      // frappeGet returns json.message ?? json. When Python returns None, result = {message:null}
+      // so check for item_code presence to detect "deleted / filtered out"
+      patchItemInCache(itemCode, result?.item_code ? result : null, scope.key)
+    } catch (e) {
+      console.warn('[useItemSync] patch failed:', e)
+    }
   }
+  window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
+}
+
+function _flushPendingPatches() {
+  _debounceTimer = null
+  const codes = [...pendingPatches]
+  pendingPatches.clear()
+  for (const itemCode of codes) _patchItem(itemCode)
+}
+
+function _scheduleReconcile(delay) {
+  if (_reconcileTimer !== null) return
+  _reconcileTimer = setTimeout(() => {
+    _reconcileTimer = null
+    reconcileItemDatasets()
+  }, delay)
 }
 
 function _handleVisibilityChange() {
-  if (!document.hidden && pendingPatches.size > 0) {
+  if (document.hidden) return
+  if (pendingPatches.size > 0) {
     console.log('[useItemSync] Tab became visible. Processing deferred patches:', [...pendingPatches])
-    for (const itemCode of pendingPatches) {
-      _patchItem(itemCode)
-    }
-    pendingPatches.clear()
+    _flushPendingPatches()
+  }
+  if (_reconcileOnVisible) {
+    _reconcileOnVisible = false
+    _scheduleReconcile(Math.random() * 5000)
   }
 }
 
 export function initItemSync() {
   const socket = getFrappeSocket()
+  _socket = socket
   socket.emit('doctype_subscribe', 'Item')
 
   _handler = (data) => {
     if (data?.doctype !== 'Item' || !data.name) return
-    
+    // Collect a burst of item saves and patch each once (hidden tabs wait until visible).
+    pendingPatches.add(data.name)
     if (document.hidden) {
-      pendingPatches.add(data.name)
       console.log('[useItemSync] Tab is hidden. Queueing patch for:', data.name)
       return
     }
-
     clearTimeout(_debounceTimer)
-    _debounceTimer = setTimeout(() => _patchItem(data.name), 500)
+    _debounceTimer = setTimeout(_flushPendingPatches, 500)
   }
   socket.on('list_update', _handler)
 
@@ -81,7 +108,7 @@ export function initItemSync() {
     }
 
     console.log('[useItemSync] received stock_update:', data)
-    updateItemStockInCache(data.item_code, data.warehouse, data.qty, data.redis_stock, data.redis_purchase_stock)
+    updateItemStockInCache(data)
     window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
   }
   socket.on('stock_update', _stockHandler)
@@ -92,14 +119,32 @@ export function initItemSync() {
   }
   socket.on('discount_rule_update', _discountRuleHandler)
 
+  // Events sent while disconnected are lost: catch up with a delta per loaded scope. The first
+  // connect is the initial one (the page load already synced); hidden tabs wait until visible.
+  let initialConnectPending = !socket.connected
+  _connectHandler = () => {
+    socket.emit('doctype_subscribe', 'Item')
+    if (initialConnectPending) {
+      initialConnectPending = false
+      return
+    }
+    if (document.hidden) _reconcileOnVisible = true
+    else _scheduleReconcile(Math.random() * RECONNECT_SPREAD_MS)
+  }
+  socket.on('connect', _connectHandler)
+
   document.addEventListener('visibilitychange', _handleVisibilityChange)
   console.log('[useItemSync] subscribed to doctype:Item, listening for list_update, item_price_update, stock_update and discount_rule_update')
 }
 
 export function destroyItemSync() {
   clearTimeout(_debounceTimer)
+  clearTimeout(_reconcileTimer)
+  _debounceTimer = null
+  _reconcileTimer = null
+  _reconcileOnVisible = false
   pendingPatches.clear()
-  const socket = getFrappeSocket()
+  const socket = _socket || getFrappeSocket()
   if (_handler) {
     socket.off('list_update', _handler)
     _handler = null
@@ -116,7 +161,10 @@ export function destroyItemSync() {
     socket.off('discount_rule_update', _discountRuleHandler)
     _discountRuleHandler = null
   }
+  if (_connectHandler) {
+    socket.off('connect', _connectHandler)
+    _connectHandler = null
+  }
   document.removeEventListener('visibilitychange', _handleVisibilityChange)
+  _socket = null
 }
-
-

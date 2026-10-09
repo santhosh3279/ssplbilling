@@ -1,4 +1,4 @@
-import { serverNow } from './serverTime'
+import { serverNow, serverToday } from './serverTime'
 import { ref, toRaw } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 import { session } from '../session'
@@ -57,59 +57,105 @@ export function saveDiscountRulesToStorage(rules) {
 }
 const discountRules = ref(loadDiscountRulesFromStorage())
 
-// In-flight syncs per snapshot key, so a Dashboard preload and a page mount share one request.
+// Every (company, search type, warehouse) combination loaded in this page session stays in memory
+// and is kept current by socket events (useItemSync), so switching pages or scopes never refetches.
+// Only a page reload (IndexedDB snapshot + small delta), a socket reconnect (delta) or an explicit
+// forced refresh talks to the server again.
+const MAX_DATASETS = 3
+const datasets = new Map() // key -> { key, company, searchType, warehouse, priceList, list, syncTs, draftCodes }
+let activeKey = null
+let requestedKey = null
+
+// In-flight syncs per dataset key, so a Dashboard preload and a page mount share one request.
 const inflight = new Map()
 
+// Keyed by exactly what the server receives: String(null) -> "null" is a different scope from ''.
+function datasetKey(company, searchType, warehouse) {
+  return [session.user.value || '', company, searchType, String(warehouse)].join('|')
+}
+
+function syncParams(ds) {
+  // The previous GET transport stringified nulls to "null" (no warehouse filter match, base rate as
+  // price); send them the same way so stock/price semantics stay unchanged under POST.
+  return { search_type: ds.searchType, price_list: String(ds.priceList), warehouse: String(ds.warehouse), company: ds.company }
+}
+
+// The active dataset is mutated through the reactive `items` proxy; inactive ones directly.
+function listFor(ds) {
+  return ds.key === activeKey ? items.value : ds.list
+}
+
+function storeDataset(ds) {
+  datasets.delete(ds.key)
+  datasets.set(ds.key, ds)
+  for (const key of datasets.keys()) {
+    if (datasets.size <= MAX_DATASETS) break
+    if (key !== activeKey && key !== ds.key) datasets.delete(key)
+  }
+  return ds
+}
+
+function activateDataset(ds, searchType, priceList, warehouse) {
+  if (ds.priceList !== priceList) {
+    console.log('[itemCache] switching price list in-memory to:', priceList)
+    applyPriceList(ds.list, priceList)
+    ds.priceList = priceList
+    lastSync.value = serverNow().getTime()
+  }
+  if (activeKey !== ds.key || toRaw(items.value) !== ds.list) {
+    activeKey = ds.key
+    items.value = ds.list
+  }
+  lastParams.value = { searchType, priceList, warehouse }
+  storeDataset(ds) // most recently used
+}
+
 /**
- * Load the item cache: IndexedDB snapshot first (usable immediately), then a delta sync
- * from the server; a full download only when there is no usable snapshot or `force` is set.
+ * Make the item cache for (searchType, warehouse) active. A combination already loaded in this
+ * page session is switched to in memory; otherwise it is loaded from the IndexedDB snapshot plus a
+ * delta (or downloaded in full when there is no snapshot or `force` is set).
  */
 export async function refreshItemCache(searchType = 'Sales', priceList = null, warehouse = null, force = false) {
-  if (!force &&
-      items.value.length > 0 &&
-      lastParams.value.searchType === searchType &&
-      lastParams.value.warehouse === warehouse) {
+  const company = localStorage.getItem('wb-company') || ''
+  const key = datasetKey(company, searchType, warehouse)
+  requestedKey = key
 
-    if (lastParams.value.priceList === priceList) {
-      // Nothing changed! Skip API call completely.
+  if (!force) {
+    const loaded = datasets.get(key)
+    if (loaded) {
+      activateDataset(loaded, searchType, priceList, warehouse)
       return items.value
     }
-
-    // Only the price list changed! We have all rates locally cached. Switch in-memory.
-    console.log('[itemCache] switching price list in-memory to:', priceList)
-    applyPriceList(items.value, priceList)
-    lastParams.value.priceList = priceList
-    lastSync.value = serverNow().getTime()
-    return items.value
+    if (inflight.has(key)) {
+      const ds = await inflight.get(key)
+      // Another scope may have been requested meanwhile; never let a late sync take over.
+      if (requestedKey !== key) return ds.list
+      activateDataset(ds, searchType, priceList, warehouse)
+      return items.value
+    }
   }
 
-  const company = localStorage.getItem('wb-company') || ''
-  const key = [session.user.value || '', company, searchType, warehouse || ''].join('|')
-  if (!force && inflight.has(key)) {
-    await inflight.get(key)
-    return refreshItemCache(searchType, priceList, warehouse)
-  }
-
-  const run = syncItems(key, company, searchType, priceList, warehouse, force)
+  const spec = { key, company, searchType, warehouse, priceList }
+  const run = loadDataset(spec, force)
   inflight.set(key, run)
   try {
-    return await run
+    const ds = await run
+    if (requestedKey !== key) return ds.list
+    activateDataset(ds, searchType, priceList, warehouse)
+    return items.value
   } finally {
     if (inflight.get(key) === run) inflight.delete(key)
   }
 }
 
-async function syncItems(key, company, searchType, priceList, warehouse, force) {
+async function loadDataset(spec, force) {
   syncLoading.value = true
-  // The previous GET transport stringified nulls to "null" (no warehouse filter match, base rate as
-  // price); send them the same way so stock/price semantics stay unchanged under POST.
-  const params = { search_type: searchType, price_list: String(priceList), warehouse: String(warehouse), company }
   try {
     let snapshot = null
     let base = null
     if (!force) {
       try {
-        snapshot = await readItemSnapshot(key)
+        snapshot = await readItemSnapshot(spec.key)
         if (snapshot?.schema === SYNC_SCHEMA && snapshot.syncTs) base = JSON.parse(snapshot.items)
       } catch (e) {
         console.warn('[itemCache] Snapshot unavailable:', e)
@@ -117,41 +163,20 @@ async function syncItems(key, company, searchType, priceList, warehouse, force) 
     }
 
     if (base) {
-      // Serve the persisted cache right away; the delta below refreshes it in place.
-      items.value = applyPriceList(base, priceList)
-      lastParams.value = { searchType, priceList, warehouse }
-      lastSync.value = snapshot.savedAt
+      // Serve the persisted cache right away; the delta below refreshes it.
+      const ds = storeDataset({
+        ...spec, list: applyPriceList(base, spec.priceList),
+        syncTs: snapshot.syncTs, draftCodes: snapshot.draftCodes || [],
+      })
+      if (requestedKey === spec.key) {
+        activateDataset(ds, spec.searchType, spec.priceList, spec.warehouse)
+        lastSync.value = snapshot.savedAt
+      }
+      return await syncDelta(ds, { keepOnError: true })
     }
-
-    let data
-    try {
-      data = await frappePost(SYNC_METHOD, {
-        ...params,
-        since: base ? snapshot.syncTs : null,
-        draft_codes: base ? snapshot.draftCodes || [] : [],
-      }, { silent: true })
-    } catch (e) {
-      if (!base) throw e
-      console.warn('[itemCache] Delta sync failed, keeping persisted cache:', e)
-      return items.value
-    }
-
-    let list = data.full || !base ? data.items || [] : mergeItemDelta(base, data.items || [], data.removed || [])
-    if (!data.full && list.length !== data.total) {
-      // Delta drifted from the server (e.g. a renamed item) — fall back to a full download.
-      console.warn('[itemCache] Cache count mismatch, resyncing all items:', list.length, data.total)
-      data = await frappePost(SYNC_METHOD, { ...params, since: null, draft_codes: [] }, { silent: true })
-      list = data.items || []
-    }
-
-    items.value = applyPriceList(list, priceList)
-    saveUomsToStorage(items.value)
-    savePercentagesToStorage(items.value)
-    lastSync.value = serverNow().getTime()
-
-    lastParams.value = { searchType, priceList, warehouse }
-    persistSnapshot(key, list, data, priceList)
-    return items.value
+    // Not stored until the download lands, so concurrent callers wait on `inflight` instead of
+    // switching to an empty list.
+    return await syncDelta({ ...spec, list: [], syncTs: null, draftCodes: [] }, { keepOnError: false })
   } catch (e) {
     console.error('[itemCache] Refresh failed:', e)
     throw e
@@ -160,8 +185,75 @@ async function syncItems(key, company, searchType, priceList, warehouse, force) 
   }
 }
 
+/**
+ * Bring a dataset up to date with one get_items_sync call: a delta when it has a sync point,
+ * otherwise a full download. The merged list replaces the dataset's list (and `items` if active).
+ */
+async function syncDelta(ds, { keepOnError }) {
+  const params = syncParams(ds)
+  let data
+  try {
+    data = await frappePost(SYNC_METHOD, {
+      ...params,
+      since: ds.syncTs || null,
+      draft_codes: ds.syncTs ? ds.draftCodes || [] : [],
+    }, { silent: true })
+  } catch (e) {
+    if (!keepOnError) throw e
+    console.warn('[itemCache] Delta sync failed, keeping cached items:', e)
+    return ds
+  }
+
+  const base = toRaw(listFor(ds))
+  let list = data.full || !ds.syncTs ? data.items || [] : mergeItemDelta(base, data.items || [], data.removed || [])
+  if (!data.full && list.length !== data.total) {
+    // Delta drifted from the server (e.g. a renamed item) — fall back to a full download.
+    console.warn('[itemCache] Cache count mismatch, resyncing all items:', list.length, data.total)
+    data = await frappePost(SYNC_METHOD, { ...params, since: null, draft_codes: [] }, { silent: true })
+    list = data.items || []
+  }
+
+  applyPriceList(list, ds.priceList)
+  ds.list = list
+  ds.syncTs = data.sync_ts
+  ds.draftCodes = data.draft_codes || []
+  storeDataset(ds)
+  if (ds.key === activeKey) items.value = list
+  saveUomsToStorage(list)
+  savePercentagesToStorage(list)
+  lastSync.value = serverNow().getTime()
+  persistSnapshot(ds)
+  return ds
+}
+
+/**
+ * Catch up every loaded dataset after a socket reconnect (events sent while disconnected were
+ * missed). Datasets last synced on an earlier day are left for the next page reload: the server
+ * answers those with a full download, which every counter would otherwise fetch at once.
+ */
+export async function reconcileItemDatasets() {
+  const today = serverToday()
+  for (const ds of [...datasets.values()]) {
+    if (!ds.syncTs || String(ds.syncTs).slice(0, 10) !== today) continue
+    try {
+      await syncDelta(ds, { keepOnError: true })
+    } catch (e) {
+      console.warn('[itemCache] Reconnect delta failed:', e)
+    }
+  }
+  window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
+}
+
+/** Scopes of the loaded datasets, for fetching per-scope realtime item patches. */
+export function getLoadedItemScopes() {
+  return [...datasets.values()].map(({ key, company, searchType, priceList, warehouse }) => ({
+    key, company, searchType, priceList, warehouse,
+  }))
+}
+
 // Serialising ~10 MB blocks the main thread, so defer it until the browser is idle.
-function persistSnapshot(key, list, data, priceList) {
+function persistSnapshot(ds) {
+  const { key, list, syncTs, draftCodes, priceList } = ds
   const write = () => {
     let json
     try {
@@ -174,8 +266,8 @@ function persistSnapshot(key, list, data, priceList) {
     writeItemSnapshot({
       key,
       schema: SYNC_SCHEMA,
-      syncTs: data.sync_ts,
-      draftCodes: data.draft_codes || [],
+      syncTs,
+      draftCodes,
       priceList,
       savedAt: serverNow().getTime(),
       items: json,
@@ -201,20 +293,22 @@ export async function refreshDiscountRuleCache() {
 }
 
 /**
- * Patch a single item in the cache without a full refresh.
+ * Patch a single item in one loaded dataset (the active one by default) without a refresh.
  * Pass null as newData to remove the item (deleted / disabled / filtered out).
  */
-export function patchItemInCache(itemCode, newData) {
-  const idx = items.value.findIndex(i => i.item_code === itemCode)
+export function patchItemInCache(itemCode, newData, key = activeKey) {
+  const ds = datasets.get(key)
+  const list = ds ? listFor(ds) : items.value
+  const idx = list.findIndex(i => i.item_code === itemCode)
   if (newData === null) {
-    if (idx !== -1) items.value.splice(idx, 1)
+    if (idx !== -1) list.splice(idx, 1)
   } else if (idx !== -1) {
-    items.value.splice(idx, 1, newData)
+    list.splice(idx, 1, newData)
   } else {
     // New item — insert maintaining item_name alphabetical order
-    const insertAt = items.value.findIndex(i => (i.item_name || '') > (newData.item_name || ''))
-    if (insertAt === -1) items.value.push(newData)
-    else items.value.splice(insertAt, 0, newData)
+    const insertAt = list.findIndex(i => (i.item_name || '') > (newData.item_name || ''))
+    if (insertAt === -1) list.push(newData)
+    else list.splice(insertAt, 0, newData)
   }
   lastSync.value = serverNow().getTime()
 }
@@ -307,65 +401,91 @@ export function searchItemsInCache(query, maxResults = 50) {
   return filtered.slice(0, maxResults)
 }
 
+/** Apply an Item Price change to every loaded dataset. */
 export function updateItemPriceInCache(itemCode, priceList, rate, uom) {
-  const idx = items.value.findIndex(i => i.item_code === itemCode)
-  if (idx === -1) return
+  const targets = datasets.size ? [...datasets.values()] : [null]
+  for (const ds of targets) {
+    const list = ds ? listFor(ds) : items.value
+    const idx = list.findIndex(i => i.item_code === itemCode)
+    if (idx === -1) continue
 
-  const item = { ...items.value[idx] }
-  
-  if (!item.price_lists) item.price_lists = []
-  if (!item.uom_price_lists) item.uom_price_lists = {}
+    const item = { ...list[idx] }
+    item.price_lists = [...(item.price_lists || [])]
+    item.uom_price_lists = { ...(item.uom_price_lists || {}) }
 
-  if (uom) {
-    if (!item.uom_price_lists[priceList]) item.uom_price_lists[priceList] = {}
-    item.uom_price_lists[priceList][uom] = rate
-  } else {
-    const plIdx = item.price_lists.findIndex(pl => pl.name === priceList)
-    if (plIdx !== -1) {
-      item.price_lists[plIdx] = { ...item.price_lists[plIdx], rate }
+    if (uom) {
+      item.uom_price_lists[priceList] = { ...(item.uom_price_lists[priceList] || {}), [uom]: rate }
     } else {
-      item.price_lists.push({ name: priceList, rate })
-    }
-    
-    const { priceList: activePriceList } = lastParams.value
-    const mainPriceList = activePriceList || 'Standard Selling'
-    if (priceList === mainPriceList) {
-      item.price = rate
-      item.rate = rate
-    }
-  }
+      const plIdx = item.price_lists.findIndex(pl => pl.name === priceList)
+      if (plIdx !== -1) {
+        item.price_lists[plIdx] = { ...item.price_lists[plIdx], rate }
+      } else {
+        item.price_lists.push({ name: priceList, rate })
+      }
 
-  items.value.splice(idx, 1, item)
+      const mainPriceList = (ds ? ds.priceList : lastParams.value.priceList) || 'Standard Selling'
+      if (priceList === mainPriceList) {
+        item.price = rate
+        item.rate = rate
+      }
+    }
+
+    list.splice(idx, 1, item)
+  }
   lastSync.value = serverNow().getTime()
 }
 
+function sumCompanyDrafts(byWarehouse, fallbackTotal) {
+  if (!byWarehouse) return fallbackTotal
+  let allowed = []
+  try { allowed = JSON.parse(localStorage.getItem('wb-warehouses') || '[]') } catch {}
+  return Object.entries(byWarehouse)
+    .filter(([warehouse]) => !allowed.length || allowed.includes(warehouse))
+    .reduce((sum, [, qty]) => sum + (Number(qty) || 0), 0)
+}
+
 /**
- * Apply a realtime stock_update event to the cache: patches the affected warehouse's
- * qty, recomputes the item's total stock, and updates its redis (draft) stock figure.
- * Ignored if the cache is currently scoped to a different single warehouse.
+ * Apply a realtime stock_update event ({ item_code, warehouse, qty, redis_stock,
+ * redis_purchase_stock, draft_qty?, draft_purchase_qty?, valuation_rate? }) to every loaded dataset,
+ * recomputing each one's warehouse-scoped figures the way get_all_items_detailed does.
  */
-export function updateItemStockInCache(itemCode, warehouse, qty, redisStock, redisPurchaseStock) {
-  const { warehouse: activeWarehouse } = lastParams.value
-  if (activeWarehouse && activeWarehouse !== warehouse) return
+export function updateItemStockInCache(event) {
+  const { item_code: itemCode, warehouse, qty } = event
+  for (const ds of datasets.values()) {
+    const list = listFor(ds)
+    const idx = list.findIndex(i => i.item_code === itemCode)
+    if (idx === -1) continue
 
-  const idx = items.value.findIndex(i => i.item_code === itemCode)
-  if (idx === -1) return
+    const item = { ...list[idx] }
+    const warehouseStock = [...(item.warehouse_stock || [])]
+    const whIdx = warehouseStock.findIndex(w => w.warehouse === warehouse)
+    if (whIdx !== -1) {
+      warehouseStock[whIdx] = { ...warehouseStock[whIdx], qty }
+    } else {
+      warehouseStock.push({ warehouse, qty })
+    }
+    item.warehouse_stock = warehouseStock
 
-  const item = { ...items.value[idx] }
-  const warehouseStock = [...(item.warehouse_stock || [])]
-  const whIdx = warehouseStock.findIndex(w => w.warehouse === warehouse)
-  if (whIdx !== -1) {
-    warehouseStock[whIdx] = { ...warehouseStock[whIdx], qty }
-  } else {
-    warehouseStock.push({ warehouse, qty })
+    // The server sums every warehouse only when no warehouse is sent ('' is falsy there);
+    // any other value — including "null" — counts that one warehouse.
+    const scope = String(ds.warehouse)
+    if (scope === '') {
+      item.stock = warehouseStock.reduce((sum, w) => sum + (w.qty || 0), 0)
+      // The server counts drafts in the company's warehouses only; the event totals cover all.
+      item.redis_stock = sumCompanyDrafts(event.draft_by_warehouse, event.redis_stock)
+      item.redis_purchase_stock = sumCompanyDrafts(event.draft_purchase_by_warehouse, event.redis_purchase_stock)
+      // valuation_rate is left as synced: the server takes whichever Bin it happens to read last.
+    } else {
+      item.stock = warehouseStock.reduce((sum, w) => sum + (w.warehouse === scope ? w.qty || 0 : 0), 0)
+      if (warehouse === scope) {
+        if (event.draft_qty !== undefined) item.redis_stock = event.draft_qty
+        if (event.draft_purchase_qty !== undefined) item.redis_purchase_stock = event.draft_purchase_qty
+        if (event.valuation_rate > 0) item.valuation_rate = event.valuation_rate
+      }
+    }
+
+    list.splice(idx, 1, item)
   }
-
-  item.warehouse_stock = warehouseStock
-  item.stock = warehouseStock.reduce((sum, w) => sum + (w.qty || 0), 0)
-  item.redis_stock = redisStock
-  item.redis_purchase_stock = redisPurchaseStock
-
-  items.value.splice(idx, 1, item)
   lastSync.value = serverNow().getTime()
 }
 

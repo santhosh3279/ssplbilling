@@ -126,15 +126,38 @@ def get_draft_purchase_qtys_batch(warehouse=None):
 
 def get_item_available_stock(item_code, warehouse):
 	"""Compute the live available qty (Bin actual_qty minus draft invoice qty plus draft purchase qty) for one
-	item+warehouse, plus the item's total draft (redis) qty across all warehouses."""
-	actual_qty = frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": warehouse}, "actual_qty") or 0.0
+	item+warehouse, plus the item's total draft (redis) qty across all warehouses.
+
+	The warehouse-scoped draft quantities and Bin valuation rate let warehouse-scoped client caches
+	recompute `redis_stock` / `valuation_rate` exactly as get_all_items_detailed would."""
+	bin_row = frappe.db.get_value(
+		"Bin", {"item_code": item_code, "warehouse": warehouse}, ["actual_qty", "valuation_rate"], as_dict=True
+	) or {}
+	draft_qty = get_draft_invoice_qty(item_code, warehouse)
+	draft_purchase_qty = get_draft_purchase_qty(item_code, warehouse)
 	return {
 		"item_code": item_code,
 		"warehouse": warehouse,
-		"qty": float(actual_qty) - get_draft_invoice_qty(item_code, warehouse) + get_draft_purchase_qty(item_code, warehouse),
+		"qty": float(bin_row.get("actual_qty") or 0) - draft_qty + draft_purchase_qty,
 		"redis_stock": get_draft_invoice_qty(item_code),
 		"redis_purchase_stock": get_draft_purchase_qty(item_code),
+		"draft_qty": draft_qty,
+		"draft_purchase_qty": draft_purchase_qty,
+		# Per-warehouse drafts let all-warehouse caches sum only their company's warehouses.
+		"draft_by_warehouse": _item_qtys_by_warehouse(get_draft_invoice_qtys_from_redis(), item_code),
+		"draft_purchase_by_warehouse": _item_qtys_by_warehouse(get_draft_purchase_qtys_from_redis(), item_code),
+		"valuation_rate": float(bin_row.get("valuation_rate") or 0),
 	}
+
+
+def _item_qtys_by_warehouse(qtys_raw, item_code):
+	"""{warehouse: qty} for one item from a raw "item:warehouse" -> qty draft map."""
+	by_warehouse = {}
+	for key, qty in qtys_raw.items():
+		parts = key.split(":")
+		if len(parts) == 2 and parts[0] == item_code:
+			by_warehouse[parts[1]] = by_warehouse.get(parts[1], 0.0) + float(qty)
+	return by_warehouse
 
 def publish_stock_update(item_code, warehouse):
 	"""Broadcast the live stock/redis-stock figures for an item+warehouse to all clients."""
@@ -144,6 +167,34 @@ def publish_stock_update(item_code, warehouse):
 	# Public catalogues receive an invalidation, never private draft bill details.
 	from ssplbilling.api.offer_sync import _broadcast_offer_update
 	_broadcast_offer_update({"type": "stock", "item_code": item_code})
+
+def publish_stock_ledger_update(doc, method=None):
+	"""Doc event (Stock Ledger Entry after_insert): queue a stock_update for the entry's item+warehouse.
+
+	Covers every stock movement (Stock Entry, Delivery Note, Purchase Receipt, Stock Reconciliation,
+	repack, invoice submit/cancel), so client item caches can rely on realtime updates instead of
+	refetching. Pairs are de-duplicated per transaction and computed after commit, when the Bin holds
+	the final quantity."""
+	if not doc or not doc.item_code or not doc.warehouse:
+		return
+	pending = getattr(frappe.local, "_sspl_stock_pairs", None)
+	if pending is None:
+		pending = frappe.local._sspl_stock_pairs = set()
+		frappe.db.after_commit.add(_flush_stock_ledger_updates)
+		frappe.db.after_rollback.add(_discard_stock_ledger_updates)
+	pending.add((doc.item_code, doc.warehouse))
+
+
+def _flush_stock_ledger_updates():
+	pending = getattr(frappe.local, "_sspl_stock_pairs", None) or set()
+	frappe.local._sspl_stock_pairs = None
+	for item_code, warehouse in pending:
+		frappe.publish_realtime("stock_update", get_item_available_stock(item_code, warehouse), after_commit=False)
+
+
+def _discard_stock_ledger_updates():
+	frappe.local._sspl_stock_pairs = None
+
 
 def _iter_item_warehouse_pairs(doc):
 	"""Yield (item_code, warehouse) for every line on the doc AND on its pre-save
