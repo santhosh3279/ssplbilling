@@ -1,6 +1,12 @@
 import { serverNow } from './serverTime'
-import { ref } from 'vue'
-import { frappeGet } from '../api.js'
+import { ref, toRaw } from 'vue'
+import { frappeGet, frappePost } from '../api.js'
+import { session } from '../session'
+import { readItemSnapshot, writeItemSnapshot, applyPriceList, mergeItemDelta } from './itemCacheStore'
+
+// Must match ITEM_SYNC_SCHEMA in ssplbilling/api/itemsearch_api.py.
+const SYNC_SCHEMA = 1
+const SYNC_METHOD = 'ssplbilling.api.itemsearch_api.get_items_sync'
 
 // Global reactive state for items
 const items = ref([])
@@ -51,16 +57,24 @@ export function saveDiscountRulesToStorage(rules) {
 }
 const discountRules = ref(loadDiscountRulesFromStorage())
 
+// The server resolves a missing price list the same way; keep in-memory switching consistent with it.
+function effectivePriceList(searchType, priceList) {
+  return priceList || (searchType === 'Sales' ? 'Standard Selling' : 'Standard Buying')
+}
+
+// In-flight syncs per snapshot key, so a Dashboard preload and a page mount share one request.
+const inflight = new Map()
+
 /**
- * Fetch all items with details from the backend and update the global cache.
- * Also syncs discount rules in parallel.
+ * Load the item cache: IndexedDB snapshot first (usable immediately), then a delta sync
+ * from the server; a full download only when there is no usable snapshot or `force` is set.
  */
 export async function refreshItemCache(searchType = 'Sales', priceList = null, warehouse = null, force = false) {
   if (!force &&
       items.value.length > 0 &&
       lastParams.value.searchType === searchType &&
       lastParams.value.warehouse === warehouse) {
-    
+
     if (lastParams.value.priceList === priceList) {
       // Nothing changed! Skip API call completely.
       return items.value
@@ -68,30 +82,78 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
 
     // Only the price list changed! We have all rates locally cached. Switch in-memory.
     console.log('[itemCache] switching price list in-memory to:', priceList)
-    for (const i of items.value) {
-      const plRate = (i.price_lists || []).find(p => p.name === priceList)
-      i.price = plRate ? parseFloat(plRate.rate) || 0 : parseFloat(i.rate) || 0
-    }
+    applyPriceList(items.value, effectivePriceList(searchType, priceList))
     lastParams.value.priceList = priceList
     lastSync.value = serverNow().getTime()
     return items.value
   }
 
-  syncLoading.value = true
   const company = localStorage.getItem('wb-company') || ''
+  const key = [session.user.value || '', company, searchType, warehouse || ''].join('|')
+  if (!force && inflight.has(key)) {
+    await inflight.get(key)
+    return refreshItemCache(searchType, priceList, warehouse)
+  }
+
+  const run = syncItems(key, company, searchType, priceList, warehouse, force)
+  inflight.set(key, run)
   try {
-    const data = await frappeGet('ssplbilling.api.itemsearch_api.get_all_items_detailed', {
-      search_type: searchType,
-      price_list: priceList,
-      warehouse: warehouse,
-      company: company
-    })
-    items.value = data || []
+    return await run
+  } finally {
+    if (inflight.get(key) === run) inflight.delete(key)
+  }
+}
+
+async function syncItems(key, company, searchType, priceList, warehouse, force) {
+  syncLoading.value = true
+  const params = { search_type: searchType, price_list: priceList, warehouse, company }
+  try {
+    let snapshot = null
+    let base = null
+    if (!force) {
+      try {
+        snapshot = await readItemSnapshot(key)
+        if (snapshot?.schema === SYNC_SCHEMA && snapshot.syncTs) base = JSON.parse(snapshot.items)
+      } catch (e) {
+        console.warn('[itemCache] Snapshot unavailable:', e)
+      }
+    }
+
+    if (base) {
+      // Serve the persisted cache right away; the delta below refreshes it in place.
+      items.value = applyPriceList(base, effectivePriceList(searchType, priceList))
+      lastParams.value = { searchType, priceList, warehouse }
+      lastSync.value = snapshot.savedAt
+    }
+
+    let data
+    try {
+      data = await frappePost(SYNC_METHOD, {
+        ...params,
+        since: base ? snapshot.syncTs : null,
+        draft_codes: base ? snapshot.draftCodes || [] : [],
+      }, { silent: true })
+    } catch (e) {
+      if (!base) throw e
+      console.warn('[itemCache] Delta sync failed, keeping persisted cache:', e)
+      return items.value
+    }
+
+    let list = data.full || !base ? data.items || [] : mergeItemDelta(base, data.items || [], data.removed || [])
+    if (!data.full && list.length !== data.total) {
+      // Delta drifted from the server (e.g. a renamed item) — fall back to a full download.
+      console.warn('[itemCache] Cache count mismatch, resyncing all items:', list.length, data.total)
+      data = await frappePost(SYNC_METHOD, { ...params, since: null, draft_codes: [] }, { silent: true })
+      list = data.items || []
+    }
+
+    items.value = applyPriceList(list, effectivePriceList(searchType, priceList))
     saveUomsToStorage(items.value)
     savePercentagesToStorage(items.value)
     lastSync.value = serverNow().getTime()
 
     lastParams.value = { searchType, priceList, warehouse }
+    persistSnapshot(key, list, data, priceList)
     return items.value
   } catch (e) {
     console.error('[itemCache] Refresh failed:', e)
@@ -99,6 +161,31 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
   } finally {
     syncLoading.value = false
   }
+}
+
+// Serialising ~10 MB blocks the main thread, so defer it until the browser is idle.
+function persistSnapshot(key, list, data, priceList) {
+  const write = () => {
+    let json
+    try {
+      // Live socket patches since the sync land in `list` too; the next delta refetches them anyway.
+      json = JSON.stringify(toRaw(list))
+    } catch (e) {
+      console.warn('[itemCache] Snapshot serialisation failed:', e)
+      return
+    }
+    writeItemSnapshot({
+      key,
+      schema: SYNC_SCHEMA,
+      syncTs: data.sync_ts,
+      draftCodes: data.draft_codes || [],
+      priceList,
+      savedAt: serverNow().getTime(),
+      items: json,
+    }).catch(e => console.warn('[itemCache] Snapshot write failed:', e))
+  }
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(write, { timeout: 5000 })
+  else setTimeout(write, 1000)
 }
 
 /**

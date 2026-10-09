@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { createResource } from 'frappe-ui'
 import { destroyTabSession } from './services/tabSession'
 import { serverNow } from './services/serverTime'
+import { clearItemSnapshots } from './services/itemCacheStore'
 import { frappeGet, fetchAllowedTiles } from './api.js'
 
 const isLoggedIn = ref(false)
@@ -162,6 +163,8 @@ async function logout() {
   localStorage.removeItem('wb-allow-date-modification')
   localStorage.removeItem('wb-allowed-tiles-v3')
   localStorage.removeItem('wb-inherited-user')
+  // Persisted item snapshots carry every price list and valuation rate.
+  await clearItemSnapshots().catch((e) => console.warn('[session] Could not clear item cache:', e))
 
   isLoggedIn.value = false
   user.value = null

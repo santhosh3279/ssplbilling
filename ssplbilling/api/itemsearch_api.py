@@ -208,6 +208,10 @@ def get_single_item_detailed(item_code, search_type="Sales", price_list=None, wa
 @frappe.whitelist()
 def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None, company=None):
 	"""Fetch all items with price, stock, and ALL price lists in bulk for local caching."""
+	return _build_items_detailed(search_type, price_list, warehouse, company)
+
+
+def _item_filters(search_type):
 	filters = {"disabled": 0}
 	if search_type == "Sales":
 		filters["is_sales_item"] = 1
@@ -215,6 +219,24 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None,
 		filters["is_purchase_item"] = 1
 	elif search_type == "Stock":
 		filters["is_stock_item"] = 1
+	return filters
+
+
+def _company_warehouses(company):
+	if not company:
+		return None
+	return frappe.get_all(
+		"Warehouse", filters={"company": company, "disabled": 0, "is_group": 0}, pluck="name"
+	)
+
+
+def _build_items_detailed(search_type, price_list, warehouse, company, item_codes=None):
+	"""Build the detailed item rows; restricted to `item_codes` when given (delta sync)."""
+	filters = _item_filters(search_type)
+	if item_codes is not None:
+		if not item_codes:
+			return []
+		filters["name"] = ["in", list(item_codes)]
 
 	items = frappe.get_all(
 		"Item",
@@ -224,6 +246,9 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None,
 		limit=0,
 		order_by="item_name asc",
 	)
+
+	if not items:
+		return []
 
 	item_map = {i.item_code: i for i in items}
 	item_codes = list(item_map.keys())
@@ -281,13 +306,8 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None,
 
 	# 2. Batch fetch stock
 	stock_filters = {"item_code": ["in", item_codes]}
-	allowed_warehouses = None
-	if company:
-		allowed_warehouses = frappe.get_all(
-			"Warehouse",
-			filters={"company": company, "disabled": 0, "is_group": 0},
-			pluck="name"
-		)
+	allowed_warehouses = _company_warehouses(company)
+	if allowed_warehouses is not None:
 		stock_filters["warehouse"] = ["in", allowed_warehouses]
 
 	bins = frappe.get_all(
@@ -439,6 +459,112 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None,
 		i["pricelist_percentages"] = item_percentages_map.get(i.item_code, [])
 
 	return items
+
+
+# Bump together with SYNC_SCHEMA in frontend/src/services/itemCache.js whenever the item row shape changes.
+ITEM_SYNC_SCHEMA = 1
+# `modified` is stamped before commit, so a slow transaction can land behind the previous sync_ts.
+_SYNC_OVERLAP_SECONDS = 60
+_SYNC_MAX_DELTA = 3000
+# Any change here alters every item's price/tax/stock shape, so the client must refetch everything.
+_SYNC_FULL_RESET_DOCTYPES = ("Price List", "Item Tax Template", "Warehouse")
+
+
+def _current_draft_codes(company):
+	"""Item codes with quantity in any draft Sales/Purchase Invoice in the company's warehouses."""
+	allowed = _company_warehouses(company)
+	codes = set()
+	for qtys in (get_draft_invoice_qtys_batch(allowed), get_draft_purchase_qtys_batch(allowed)):
+		codes.update(item_code for item_code, _wh in qtys)
+	return codes
+
+
+def _changed_item_codes(since, now):
+	"""Item codes whose cached row may differ since `since`, or None when a full resync is required."""
+	# Item Tax validity is compared against today(), so rates can change at midnight without any edit.
+	if since > now or since.date() != now.date():
+		return None
+
+	cutoff = frappe.utils.add_to_date(since, seconds=-_SYNC_OVERLAP_SECONDS)
+	for doctype in _SYNC_FULL_RESET_DOCTYPES:
+		if frappe.db.exists(doctype, {"modified": [">", cutoff]}):
+			return None
+	if frappe.db.exists(
+		"Deleted Document",
+		{"deleted_doctype": ["in", _SYNC_FULL_RESET_DOCTYPES], "creation": [">", cutoff]},
+	):
+		return None
+
+	codes = set(frappe.get_all("Item", filters={"modified": [">", cutoff]}, pluck="name"))
+	codes.update(
+		frappe.get_all("Item Price", filters={"modified": [">", cutoff]}, pluck="item_code", distinct=True)
+	)
+	codes.update(frappe.get_all("Bin", filters={"modified": [">", cutoff]}, pluck="item_code", distinct=True))
+
+	deleted = frappe.get_all(
+		"Deleted Document",
+		filters={"deleted_doctype": ["in", ["Item", "Item Price"]], "creation": [">", cutoff]},
+		fields=["deleted_doctype", "deleted_name", "data"],
+	)
+	for d in deleted:
+		if d.deleted_doctype == "Item":
+			codes.add(d.deleted_name)
+			continue
+		try:
+			item_code = frappe.parse_json(d.data).get("item_code")
+		except Exception:
+			return None
+		if item_code:
+			codes.add(item_code)
+
+	codes.discard(None)
+	return codes
+
+
+@frappe.whitelist()
+def get_items_sync(
+	search_type="Sales", price_list=None, warehouse=None, company=None, since=None, draft_codes=None
+):
+	"""Full or delta item sync for the client's persistent cache.
+
+	With `since` (the sync_ts of the client's snapshot) only rows that may have changed are rebuilt.
+	Draft invoice quantities live in redis and carry no timestamps, so the client echoes back the
+	draft item codes it received last time; those plus the current draft codes are always rebuilt,
+	which covers lines added to, edited in or removed from drafts.
+	"""
+	now = frappe.utils.now_datetime()
+	sync_ts = str(now)
+	current_draft_codes = _current_draft_codes(company)
+
+	changed = None
+	if since:
+		try:
+			changed = _changed_item_codes(frappe.utils.get_datetime(since), now)
+		except Exception:
+			changed = None
+	if changed is not None:
+		if draft_codes:
+			changed.update(frappe.parse_json(draft_codes) or [])
+		changed.update(current_draft_codes)
+		if len(changed) > _SYNC_MAX_DELTA:
+			changed = None
+
+	response = {
+		"schema": ITEM_SYNC_SCHEMA,
+		"sync_ts": sync_ts,
+		"draft_codes": sorted(current_draft_codes),
+		"total": frappe.db.count("Item", _item_filters(search_type)),
+	}
+	if changed is None:
+		response.update(
+			full=True, items=_build_items_detailed(search_type, price_list, warehouse, company), removed=[]
+		)
+		return response
+
+	items = _build_items_detailed(search_type, price_list, warehouse, company, item_codes=changed)
+	returned = {i.item_code for i in items}
+	response.update(full=False, items=items, removed=sorted(changed - returned))
+	return response
 
 
 
