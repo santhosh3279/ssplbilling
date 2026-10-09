@@ -653,11 +653,11 @@ async function submit() {
     const result = props.isEdit
       ? await updateSupplier(form.name, payload)
       : await createSupplier(payload)
+    // Keep the latch until unmount: the parent refreshes ledgers asynchronously.
     emit('saved', result)
   } catch (e) {
-    alert('Failed to save supplier: ' + e.message)
-  } finally {
     saving.value = false
+    alert('Failed to save supplier: ' + e.message)
   }
 }
 
