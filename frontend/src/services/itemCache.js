@@ -59,8 +59,8 @@ const discountRules = ref(loadDiscountRulesFromStorage())
 
 // Every (company, search type, warehouse) combination loaded in this page session stays in memory
 // and is kept current by socket events (useItemSync), so switching pages or scopes never refetches.
-// Only a page reload (IndexedDB snapshot + small delta), a socket reconnect (delta) or an explicit
-// forced refresh talks to the server again.
+// Only a page reload (IndexedDB snapshot + small delta), a socket reconnect (delta) or a refresh
+// button (delta) talks to the server again.
 const MAX_DATASETS = 3
 const datasets = new Map() // key -> { key, company, searchType, warehouse, priceList, list, syncTs, draftCodes }
 let activeKey = null
@@ -113,33 +113,27 @@ function activateDataset(ds, searchType, priceList, warehouse) {
 /**
  * Make the item cache for (searchType, warehouse) active. A combination already loaded in this
  * page session is switched to in memory; otherwise it is loaded from the IndexedDB snapshot plus a
- * delta (or downloaded in full when there is no snapshot or `force` is set).
+ * delta (a full download only when there is no snapshot). `force` (the refresh buttons) catches a
+ * loaded combination up with a delta right away instead of waiting for socket events.
  */
 export async function refreshItemCache(searchType = 'Sales', priceList = null, warehouse = null, force = false) {
   const company = localStorage.getItem('wb-company') || ''
   const key = datasetKey(company, searchType, warehouse)
   requestedKey = key
 
-  if (!force) {
+  let run = inflight.get(key)
+  if (!run) {
     const loaded = datasets.get(key)
-    if (loaded) {
+    if (loaded && !force) {
       activateDataset(loaded, searchType, priceList, warehouse)
       return items.value
     }
-    if (inflight.has(key)) {
-      const ds = await inflight.get(key)
-      // Another scope may have been requested meanwhile; never let a late sync take over.
-      if (requestedKey !== key) return ds.list
-      activateDataset(ds, searchType, priceList, warehouse)
-      return items.value
-    }
+    run = loaded ? catchUpDataset(loaded) : loadDataset({ key, company, searchType, warehouse, priceList })
+    inflight.set(key, run)
   }
-
-  const spec = { key, company, searchType, warehouse, priceList }
-  const run = loadDataset(spec, force)
-  inflight.set(key, run)
   try {
     const ds = await run
+    // Another scope may have been requested meanwhile; never let a late sync take over.
     if (requestedKey !== key) return ds.list
     activateDataset(ds, searchType, priceList, warehouse)
     return items.value
@@ -148,18 +142,25 @@ export async function refreshItemCache(searchType = 'Sales', priceList = null, w
   }
 }
 
-async function loadDataset(spec, force) {
+async function catchUpDataset(ds) {
+  syncLoading.value = true
+  try {
+    return await syncDelta(ds, { keepOnError: false })
+  } finally {
+    syncLoading.value = false
+  }
+}
+
+async function loadDataset(spec) {
   syncLoading.value = true
   try {
     let snapshot = null
     let base = null
-    if (!force) {
-      try {
-        snapshot = await readItemSnapshot(spec.key)
-        if (snapshot?.schema === SYNC_SCHEMA && snapshot.syncTs) base = JSON.parse(snapshot.items)
-      } catch (e) {
-        console.warn('[itemCache] Snapshot unavailable:', e)
-      }
+    try {
+      snapshot = await readItemSnapshot(spec.key)
+      if (snapshot?.schema === SYNC_SCHEMA && snapshot.syncTs) base = JSON.parse(snapshot.items)
+    } catch (e) {
+      console.warn('[itemCache] Snapshot unavailable:', e)
     }
 
     if (base) {

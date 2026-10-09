@@ -61,8 +61,11 @@ function fullResponse(args) {
     assert.equal(run('lastParams.value.searchType'), 'Sales')
     assert.equal(run('items.value')[0].price, 5, 'Price list switches in memory')
     await run("refreshItemCache('Sales', null, 'W1', true)")
-    assert.equal(calls.length, 3, 'A forced refresh still downloads')
-    assert.equal(calls[2].since, null)
+    assert.equal(calls.length, 3, 'A refresh button catches up immediately')
+    assert.equal(calls[2].since, '2026-10-09 09:00:00', 'Refresh buttons send a delta, not a full download')
+    assert.equal(run('lastParams.value.searchType'), 'Sales')
+    await run("refreshItemCache('Purchase', null, 'W9', true)")
+    assert.equal(calls.at(-1).since, null, 'A never-loaded scope without a snapshot still needs a full download')
   }
 
   {
