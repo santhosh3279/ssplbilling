@@ -118,25 +118,25 @@
         </div>
 
         <!-- Warehouses -->
-        <div v-if="item.warehouse_stock.length > 1" class="border-t border-[var(--color-border)] px-3 py-2">
-          <div class="mb-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">By Warehouse</div>
-          <div v-for="w in item.warehouse_stock" :key="w.warehouse" class="flex justify-between py-0.5 text-sm">
-            <span class="truncate pr-2">{{ w.warehouse }}</span>
-            <span class="font-mono font-semibold tabular-nums">{{ fmtQty(w.qty) }}</span>
+        <template v-if="item.warehouse_stock.length > 1">
+          <div class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">By Warehouse</div>
+          <div class="grid gap-px border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-xs" :class="gridCols(item.warehouse_stock.length)">
+            <div v-for="w in item.warehouse_stock" :key="w.warehouse" class="bg-[var(--color-surface)] px-2 py-2">
+              <div class="truncate text-[var(--color-text-muted)]" :title="w.warehouse">{{ w.warehouse }}</div>
+              <div class="font-mono text-sm font-bold tabular-nums">{{ fmtQty(w.qty) }}</div>
+            </div>
           </div>
-        </div>
+        </template>
 
         <!-- Selling prices -->
-        <div class="border-t border-[var(--color-border)] px-3 py-2">
-          <div class="mb-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Selling Price</div>
-          <div v-if="!item.prices.length" class="text-sm italic text-[var(--color-text-muted)]">No selling price set</div>
-          <div v-for="p in item.prices" :key="p.price_list" class="flex items-start justify-between gap-3 py-0.5 text-sm">
-            <span class="truncate">{{ p.price_list }}</span>
-            <span class="text-right">
-              <span v-for="(rate, uom) in p.rates" :key="uom" class="block font-mono font-semibold tabular-nums">
-                {{ rate }}<span v-if="Object.keys(p.rates).length > 1 || uom !== item.uom" class="ml-1 font-sans text-xs font-normal text-[var(--color-text-muted)]">/ {{ uom }}</span>
-              </span>
-            </span>
+        <div class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Selling Price</div>
+        <div v-if="!item.prices.length" class="border-t border-[var(--color-border)] px-3 py-2 text-center text-sm italic text-[var(--color-text-muted)]">No selling price set</div>
+        <div v-else class="grid gap-px border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-xs" :class="gridCols(item.prices.length)">
+          <div v-for="p in item.prices" :key="p.price_list" class="bg-[var(--color-surface)] px-2 py-2">
+            <div class="truncate text-[var(--color-text-muted)]" :title="p.price_list">{{ p.price_list }}</div>
+            <div v-for="(rate, uom) in p.rates" :key="uom" class="font-mono text-sm font-bold tabular-nums">
+              {{ rate }}<span v-if="Object.keys(p.rates).length > 1 || uom !== item.uom" class="ml-1 font-sans text-[10px] font-normal text-[var(--color-text-muted)]">/ {{ uom }}</span>
+            </div>
           </div>
         </div>
       </article>
@@ -314,6 +314,11 @@ function clearSearch() {
 
 function otherBarcodes(item) {
   return (item.barcodes || []).filter(b => b !== item.item_code)
+}
+
+// Same 3-across cell layout as the stock breakdown; fewer cells stretch to fill the row
+function gridCols(n) {
+  return n === 1 ? 'grid-cols-1' : n === 2 || n === 4 ? 'grid-cols-2' : 'grid-cols-3'
 }
 
 function fmtQty(n) {
