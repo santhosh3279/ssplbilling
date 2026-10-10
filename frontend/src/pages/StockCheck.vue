@@ -1,7 +1,7 @@
 <template>
-  <div class="flex h-[100dvh] flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
+  <div class="fixed inset-x-0 top-0 flex h-[100dvh] flex-col bg-[var(--color-bg)] text-[var(--color-text)]" :style="viewportStyle">
     <!-- Search bar (top) · scrolling results · on-screen keyboard (bottom) -->
-    <header class="z-20 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-3 pt-4 shadow-sm">
+    <header class="z-20 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] shadow-sm">
       <div class="mb-2 flex items-center justify-between">
         <h1 class="text-lg font-bold">Stock Check</h1>
         <span v-if="loading" class="text-xs font-semibold text-[var(--color-info)] animate-pulse">Searching…</span>
@@ -359,10 +359,27 @@ function fmtQty(n) {
   return Number.isInteger(v) ? String(v) : v.toFixed(2)
 }
 
+// Fit the page to the area the browser actually shows (between its address bar
+// and bottom toolbar), which changes as those bars slide in and out. 100dvh is the
+// fallback for browsers without visualViewport.
+const viewportHeight = ref(0)
+const viewportStyle = computed(() => (viewportHeight.value ? { height: viewportHeight.value + 'px' } : null))
+
+function fitViewport() {
+  viewportHeight.value = Math.round(window.visualViewport?.height || window.innerHeight)
+}
+
 onMounted(() => {
+  fitViewport()
+  window.visualViewport?.addEventListener('resize', fitViewport)
+  window.addEventListener('resize', fitViewport)
   searchRef.value?.focus()
   clockTimer = setInterval(() => { now.value = Date.now() }, 15000)
 })
 
-onBeforeUnmount(() => clearInterval(clockTimer))
+onBeforeUnmount(() => {
+  clearInterval(clockTimer)
+  window.visualViewport?.removeEventListener('resize', fitViewport)
+  window.removeEventListener('resize', fitViewport)
+})
 </script>
