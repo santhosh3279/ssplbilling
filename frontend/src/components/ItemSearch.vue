@@ -909,7 +909,9 @@ function openEditModal() {
   showEditModal.value = true
 }
 
-function handleItemUpdated() {
+function handleItemUpdated(item) {
+  // "New Item" from the edit window creates a fresh item — keep the window open
+  if (item?.is_new) return
   showEditModal.value = false
   focus()
 }

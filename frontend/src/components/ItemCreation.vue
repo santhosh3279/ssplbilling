@@ -820,7 +820,8 @@ async function handleSubmit() {
         item_name: form.value.item_name,
         price: form.value.standard_rate,
         uom: form.value.stock_uom,
-        tax_rate: 0
+        tax_rate: 0,
+        is_new: true,
       })
       resetForm()
       nextTick(() => {
