@@ -6,6 +6,8 @@ from ssplbilling.api.offer_api import encrypt_price, parse_cipher
 
 MAX_RESULTS = 20
 DEFAULT_CIPHER = list("KLMNOPQRST")
+# Selling price lists not shown on the public stock check
+HIDDEN_PRICE_LISTS = ("MRP",)
 
 
 def _like(token):
@@ -100,7 +102,10 @@ def search_stock(query=None):
 	order = {code: n for n, code in enumerate(codes)}
 	rows.sort(key=lambda r: order.get(r["item_code"], len(order)))
 	selling_lists = frappe.get_all(
-		"Price List", filters={"enabled": 1, "selling": 1}, pluck="name", order_by="creation asc"
+		"Price List",
+		filters={"enabled": 1, "selling": 1, "name": ["not in", HIDDEN_PRICE_LISTS]},
+		pluck="name",
+		order_by="creation asc",
 	)
 	# Rates leave the server only as cipher text; with encryption switched off in
 	# Settings the default cipher still applies, since this page is public

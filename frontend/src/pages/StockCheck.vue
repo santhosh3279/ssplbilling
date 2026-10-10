@@ -181,7 +181,7 @@ let requestSeq = 0
 // Searches are kept in localStorage so repeat searches, narrowing a search
 // ("pen" → "pen red") and OCR code checks are answered without the server.
 // Stock moves, so entries older than CACHE_TTL are shown at once but refetched.
-const CACHE_KEY = 'sc-search-cache-v1'
+const CACHE_KEY = 'sc-search-cache-v2' // bump when the server's row shape or content rules change
 const CACHE_TTL = 2 * 60 * 1000
 const CACHE_MAX = 40
 const SERVER_LIMIT = 20 // stock_check_api.MAX_RESULTS: fewer rows means the list is complete
