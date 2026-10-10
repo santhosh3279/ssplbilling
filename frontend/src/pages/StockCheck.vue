@@ -88,8 +88,8 @@
 
           <!-- Name + stock -->
           <div class="min-w-0 flex-1">
-            <h2 class="text-base font-bold leading-snug">{{ item.item_name }}</h2>
-            <div class="mt-0.5 truncate font-mono text-xs text-[var(--color-text-muted)]">
+            <h2 class="text-2xl font-bold leading-tight">{{ item.item_name }}</h2>
+            <div class="mt-0.5 truncate font-mono text-lg text-[var(--color-text-muted)]">
               {{ item.item_code }}<template v-if="otherBarcodes(item).length"> · {{ otherBarcodes(item).join(', ') }}</template>
             </div>
             <div class="mt-2 flex items-baseline gap-1.5">
