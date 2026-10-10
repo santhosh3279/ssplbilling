@@ -411,7 +411,7 @@
           :class="canSubmit ? 'bg-[var(--color-info)] hover:bg-[var(--color-info)]/80' : 'bg-[var(--color-surface-raised)]'"
         >
           <span v-if="isSubmitting" class="h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
-          <span v-else>{{ isEditMode ? 'Update Item' : 'Create Item' }}</span>
+          <span v-else>{{ isEditMode ? 'Update Item' : 'Create Item' }} <kbd class="ml-1 rounded border border-current px-1.5 py-0.5 font-mono text-xl opacity-70">End</kbd></span>
           <svg v-if="!isSubmitting" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
         </button>
       </div>
@@ -431,7 +431,10 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'created'])
 
-useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
+useSubwindowWatcher(computed(() => props.show), {
+  ESCAPE: () => emit('close'),
+  END: () => handleSubmit(),   // save from any field
+})
 
 // Set by "New Item" while editing: the window switches to create mode even
 // though the parent still passes editItemCode. Cleared each time it opens.
