@@ -305,16 +305,17 @@
       <template #row="{ item, index, formatQty }">
         <tr
           :ref="el => { if (el) rowRefs[index] = el }"
-          :tabindex="isReadOnly ? -1 : 0"
+          :tabindex="isReadOnly && !isViewing ? -1 : 0"
           class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-all"
           :class="{
-            'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)] font-bold !text-[var(--color-text-on-focus)]': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
+            'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)] font-bold !text-[var(--color-text-on-focus)]': (!isReadOnly || isViewing) && (selectedRowIdx === index || editingRowIdx === index) && !item.deleted && !item._is_free,
             'bg-[var(--color-success)]/20': item._is_free && !item.deleted,
             'opacity-40 bg-[var(--color-danger)]/10 grayscale-[0.5]': item.deleted,
             'hover:bg-[var(--color-surface-raised)]/50': !isReadOnly && selectedRowIdx !== index && editingRowIdx !== index && !item.deleted
           }"
-          @focus="!isReadOnly && (selectedRowIdx = index)"
-          @keydown="!isReadOnly && handleRowKeydown($event, index)"
+          @focus="(!isReadOnly || isViewing) && (selectedRowIdx = index)"
+          @keydown="isViewing ? handleViewRowKeydown($event, index) : (!isReadOnly && handleRowKeydown($event, index))"
+          @focusout="isViewing && handleViewRowFocusOut($event)"
         >
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-center relative" :class="selectedRowIdx === index && !item.deleted ? 'text-black' : 'text-[var(--color-text-muted)]'">
             <span v-if="item.deleted" class="text-[10px] bg-[var(--color-danger)] text-[var(--color-text-on-highlight)] px-1 rounded block uppercase font-bold leading-tight mb-1">Deleted</span>
@@ -1417,6 +1418,8 @@ const pendingUomSelect = ref(null)
 const pendingRateInput = ref(null)
 const pendingDiscInput = ref(null)
 const selectedRowIdx = ref(-1)
+const isViewing = ref(false)
+let viewReturnFocus = null
 const rowRefs = ref([])
 const editingRowIdx = ref(-1)
 const originalRowCode = ref('')
@@ -1719,7 +1722,7 @@ function handlePageUp() {
 async function handleSave() {
   // Submitted bills cannot change; browse their items read-only instead
   if (isSubmitted.value) {
-    invoiceTemplateRef.value?.startView()
+    startViewMode()
     return
   }
   if (submitting.value) return
@@ -2096,6 +2099,45 @@ function scrollRowToEdge(idx, direction) {
   scrollInvoiceRowIntoView(rowRefs.value[idx], direction)
 }
 
+// ── View mode (submitted bills): browse item rows read-only, no column editing ──
+function startViewMode() {
+  if (!items.value.length) return
+  // Esc hands focus back to whatever opened view mode (the View button)
+  viewReturnFocus = document.activeElement
+  isViewing.value = true
+  focusRow(0, 'up')
+}
+
+function exitViewMode() {
+  isViewing.value = false
+  selectedRowIdx.value = -1
+}
+
+function handleViewRowKeydown(e, idx) {
+  const last = items.value.length - 1
+  const moves = { ArrowDown: idx + 1, ArrowUp: idx - 1, PageDown: idx + 10, PageUp: idx - 10, Home: 0, End: last }
+  if (e.key in moves) {
+    e.preventDefault()
+    e.stopPropagation()
+    const next = Math.min(Math.max(moves[e.key], 0), last)
+    if (next !== idx) focusRow(next, next > idx ? 'down' : 'up')
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
+    exitViewMode()
+    if (viewReturnFocus?.isConnected) viewReturnFocus.focus()
+  } else if (['Enter', 'ArrowLeft', 'ArrowRight', 'Delete', 'Backspace'].includes(e.key)) {
+    // Read mode: no column editing, item search or row deletion
+    e.preventDefault()
+    e.stopPropagation()
+  }
+}
+
+function handleViewRowFocusOut(e) {
+  // Leave view mode once focus moves anywhere other than another item row
+  if (!rowRefs.value.includes(e.relatedTarget)) exitViewMode()
+}
+
 function focusRow(idx, direction = null) {
   selectedRowIdx.value = idx
   nextTick(() => {
@@ -2108,6 +2150,7 @@ function focusRow(idx, direction = null) {
 function focusBarcodeInput() { selectedRowIdx.value = -1; nextTick(() => { newCodeInput.value?.focus() }) }
 
 function deleteItem(idx) {
+  if (isViewing.value) return
   const item = items.value[idx]; if (!item) return
   item.deleted = !item.deleted
   if (item.deleted && editingRowIdx.value === idx) { editingRowIdx.value = -1; editingField.value = null }
