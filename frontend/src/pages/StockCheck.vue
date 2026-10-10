@@ -94,10 +94,10 @@
             </div>
             <div class="mt-2 flex items-baseline gap-1.5">
               <span
-                class="font-mono text-2xl font-black tabular-nums"
+                class="font-mono text-4xl font-black tabular-nums"
                 :class="item.stock > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'"
               >{{ fmtQty(item.stock) }}</span>
-              <span class="text-sm text-[var(--color-text-muted)]">{{ item.uom }} available</span>
+              <span class="text-[1.3125rem] text-[var(--color-text-muted)]">{{ item.uom }} available</span>
             </div>
           </div>
         </div>
@@ -118,22 +118,22 @@
         <!-- Stock: book stock, draft (redis) quantities, then each warehouse, in one row
              (scrolls sideways only if there are too many warehouses to fit) -->
         <div class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Stock</div>
-        <div class="grid grid-flow-col auto-cols-[minmax(3.75rem,1fr)] gap-px overflow-x-auto border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-[11px] leading-tight">
+        <div class="grid grid-flow-col auto-cols-[minmax(4.5rem,1fr)] gap-px overflow-x-auto border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-base leading-tight">
           <div class="flex flex-col justify-between bg-[var(--color-surface)] px-1 py-2">
             <div class="text-[var(--color-text-muted)]">Book Stock</div>
-            <div class="mt-0.5 font-mono text-sm font-bold tabular-nums">{{ fmtQty(item.actual_stock) }}</div>
+            <div class="mt-0.5 font-mono text-[1.3125rem] font-bold tabular-nums">{{ fmtQty(item.actual_stock) }}</div>
           </div>
           <div class="flex flex-col justify-between bg-[var(--color-surface)] px-1 py-2">
             <div class="text-[var(--color-text-muted)]">Draft Bills</div>
-            <div class="mt-0.5 font-mono text-sm font-bold tabular-nums text-[var(--color-warning)]">−{{ fmtQty(item.redis_stock) }}</div>
+            <div class="mt-0.5 font-mono text-[1.3125rem] font-bold tabular-nums text-[var(--color-warning)]">−{{ fmtQty(item.redis_stock) }}</div>
           </div>
           <div class="flex flex-col justify-between bg-[var(--color-surface)] px-1 py-2">
             <div class="text-[var(--color-text-muted)]">Draft Purchase</div>
-            <div class="mt-0.5 font-mono text-sm font-bold tabular-nums text-[var(--color-info)]">+{{ fmtQty(item.redis_purchase_stock) }}</div>
+            <div class="mt-0.5 font-mono text-[1.3125rem] font-bold tabular-nums text-[var(--color-info)]">+{{ fmtQty(item.redis_purchase_stock) }}</div>
           </div>
           <div v-for="w in item.warehouse_stock" :key="w.warehouse" class="flex flex-col justify-between bg-[var(--color-surface)] px-1 py-2">
             <div class="truncate text-[var(--color-text-muted)]" :title="w.warehouse">{{ shortWarehouse(w.warehouse) }}</div>
-            <div class="mt-0.5 font-mono text-sm font-bold tabular-nums">{{ fmtQty(w.qty) }}</div>
+            <div class="mt-0.5 font-mono text-[1.3125rem] font-bold tabular-nums">{{ fmtQty(w.qty) }}</div>
           </div>
         </div>
       </article>
