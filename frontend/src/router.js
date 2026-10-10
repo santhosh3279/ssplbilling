@@ -8,6 +8,7 @@ const SalesInvoice = () => import('./pages/SalesInvoice.vue')
 const Quotation = () => import('./pages/Quotation.vue')
 const PurchaseInvoice = () => import('./pages/PurchaseInvoice.vue')
 const PriceListUpdate = () => import('./pages/PriceListUpdate.vue')
+const StockCheck = () => import('./pages/StockCheck.vue')
 const BarcodePrintPage = () => import('./pages/BarcodePrintPage.vue')
 const CashierDesk = () => import('./pages/CashierDesk.vue')
 const PurchaseSubmit = () => import('./pages/PurchaseSubmit.vue')
@@ -145,6 +146,13 @@ const routes = [
     name: 'Login',
     component: Login,
     meta: { public: true, title: 'Login' },
+  },
+  {
+    // Public mobile page: no login, no license gate (guest API: stock_check_api.search_stock)
+    path: '/stock-check',
+    name: 'StockCheck',
+    component: StockCheck,
+    meta: { public: true, title: 'Stock Check' },
   },
   {
     path: '/naming-settings',

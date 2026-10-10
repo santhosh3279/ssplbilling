@@ -38,6 +38,7 @@ export const BILLER_ROUTES = new Set([
   'GstLedger',
   'DailyReport',
   'StockLedger',
+  'StockCheck',
   'StoreTransfer',
   'Repack',
   'OfferDisplay',
@@ -231,6 +232,9 @@ export function isDevLicense(info) {
 // HRMS sub-pages are now restricted under the 'hrms' license feature.
 export const PUBLIC_HRMS_ROUTES = []
 
+// Tiles that are never gated by the license `features` list (free with every license)
+const LICENSE_FREE_TILES = new Set(['stock-check'])
+
 function getTileIdForRoute(routeName) {
   const hrmsRoutes = [
     'Hrms',
@@ -271,7 +275,7 @@ export function canAccessRoute(routeName) {
     }
     if (Array.isArray(license.features)) {
       const tileId = getTileIdForRoute(routeName)
-      if (tileId && !license.features.includes(tileId) && !license.features.includes('*')) {
+      if (tileId && !LICENSE_FREE_TILES.has(tileId) && !license.features.includes(tileId) && !license.features.includes('*')) {
         return false
       }
     }
@@ -328,6 +332,7 @@ export function canAccessRoute(routeName) {
  * identified by its route id (path segment, e.g. 'sales', 'cashier').
  */
 const TILE_ROUTE_MAP = {
+  'stock-check':       'StockCheck',
   'sales':             'SalesInvoice',
   'purchase-invoice':  'PurchaseInvoice',
   'quotation':         'Quotation',
@@ -396,7 +401,7 @@ export function canAccessTile(tileId) {
     return canAccessTile('purchase-invoice')
   }
 
-  const license = getLicenseInfo()
+  const license = LICENSE_FREE_TILES.has(tileId) ? null : getLicenseInfo()
   if (license) {
     if (!license.valid || license.days_remaining < 0) {
       return false
