@@ -2,31 +2,34 @@ import frappe
 import json
 
 
-def _check_duplicate_item_name(item_name, exclude_item=None):
-	"""Item names must be unique (print names may repeat). Comparison is trimmed and
-	case-insensitive, matching the DB collation."""
+def _find_item_by_name(item_name, exclude_item=None):
+	"""Return the code of an item whose name matches, else "". Both sides are trimmed —
+	legacy rows carry leading spaces — and the DB collation makes it case-insensitive."""
 	item_name = (item_name or "").strip()
 	if not item_name:
-		return
-	filters = {"item_name": item_name}
-	if exclude_item:
-		filters["name"] = ["!=", exclude_item]
-	existing = frappe.db.get_value("Item", filters, "name")
+		return ""
+	rows = frappe.db.sql(
+		"select name from `tabItem` where trim(item_name) = %s and name != %s limit 1",
+		(item_name, exclude_item or ""),
+	)
+	return rows[0][0] if rows else ""
+
+
+def _check_duplicate_item_name(item_name, exclude_item=None):
+	"""Item names must be unique (print names may repeat)."""
+	existing = _find_item_by_name(item_name, exclude_item)
 	if existing:
-		frappe.throw(f"Item name '{item_name}' already exists (Item {existing})", title="Duplicate Item Name")
+		frappe.throw(
+			f"Item name '{(item_name or '').strip()}' already exists (Item {existing})",
+			title="Duplicate Item Name",
+		)
 
 
 @frappe.whitelist()
 def check_item_name_exists(item_name, exclude_item=None):
 	"""Live duplicate check for the item creation form. Returns the existing item code, or ""
 	(not None — the frontend transport falls back to the whole response on a null message)."""
-	item_name = (item_name or "").strip()
-	if not item_name:
-		return ""
-	filters = {"item_name": item_name}
-	if exclude_item:
-		filters["name"] = ["!=", exclude_item]
-	return frappe.db.get_value("Item", filters, "name") or ""
+	return _find_item_by_name(item_name, exclude_item)
 
 
 @frappe.whitelist()
@@ -97,7 +100,7 @@ def create_item(data):
 		
 	item = frappe.new_doc("Item")
 	item.item_code = barcode
-	item.item_name = data.get("item_name")
+	item.item_name = (data.get("item_name") or "").strip()
 	item.item_print_name = data.get("item_print_name")
 	item.item_group = data.get("item_group")
 	item.stock_uom = data.get("stock_uom")
@@ -257,7 +260,7 @@ def update_item(data):
 	# Only on rename, so items that already share a name can still be edited
 	if new_name and new_name.lower() != (item.item_name or "").strip().lower():
 		_check_duplicate_item_name(new_name, exclude_item=item_code)
-	item.item_name = data.get("item_name") or item.item_name
+	item.item_name = new_name or item.item_name
 	item.item_print_name = data.get("item_print_name") or ""
 	item.item_group = data.get("item_group") or item.item_group
 	item.stock_uom = data.get("stock_uom") or item.stock_uom
