@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tesseract.js-data/eng": "^1.0.0",
     "@zxing/browser": "0.1.5",
     "@zxing/library": "0.21.3",
     "exceljs": "^4.4.0",
@@ -15,6 +16,7 @@
     "frappe-ui": "^0.0.105",
     "mqtt": "^5.15.1",
     "nord": "^0.2.1",
+    "tesseract.js": "7.0.0",
     "vue": "^3.2.25",
     "vue-router": "^4.0.12",
     "xlsx": "^0.18.5"

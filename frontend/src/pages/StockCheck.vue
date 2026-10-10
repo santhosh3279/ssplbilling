@@ -136,7 +136,7 @@
       </article>
     </main>
 
-    <BarcodeScanner v-if="showScanner" @detected="onScanned" @close="showScanner = false" />
+    <BarcodeScanner v-if="showScanner" :verify="codeExists" @detected="onScanned" @close="showScanner = false" />
 
     <!-- Full-size photo -->
     <div
@@ -205,6 +205,17 @@ function onScanned(code) {
   query.value = code
   // Search now instead of waiting out the typing debounce the query watcher just armed
   nextTick(runSearch)
+}
+
+// OCR readings are guesses: accept one only when it is an exact item code or barcode
+async function codeExists(code) {
+  try {
+    const rows = await frappeGet('ssplbilling.api.stock_check_api.search_stock', { query: code })
+    const c = code.toUpperCase()
+    return (rows || []).some(r => r.item_code.toUpperCase() === c || (r.barcodes || []).some(b => b.toUpperCase() === c))
+  } catch (e) {
+    return false
+  }
 }
 
 function clearSearch() {

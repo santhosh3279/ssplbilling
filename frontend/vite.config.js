@@ -17,6 +17,20 @@ try {
   console.log('Using default ports (site config not found)')
 }
 
+// Self-host the OCR engine (worker, wasm core, English model) used by the barcode
+// scanner, so phones on the LAN never need the tesseract CDN. Served from public/ocr.
+const OCR_ASSETS = {
+  'worker.min.js': 'node_modules/tesseract.js/dist/worker.min.js',
+  'tesseract-core-lstm.wasm.js': 'node_modules/tesseract.js-core/tesseract-core-lstm.wasm.js',
+  'tesseract-core-simd-lstm.wasm.js': 'node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js',
+  'tesseract-core-relaxedsimd-lstm.wasm.js': 'node_modules/tesseract.js-core/tesseract-core-relaxedsimd-lstm.wasm.js',
+  'eng.traineddata.gz': 'node_modules/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz',
+}
+fs.mkdirSync('public/ocr', { recursive: true })
+for (const [name, src] of Object.entries(OCR_ASSETS)) {
+  if (!fs.existsSync(`public/ocr/${name}`) && fs.existsSync(src)) fs.copyFileSync(src, `public/ocr/${name}`)
+}
+
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => ({
   // Dev server serves from root; production assets live under Frappe's asset path

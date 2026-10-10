@@ -59,3 +59,6 @@ ssplbilling/public/frontend/*
 
 # But keep the directory itself
 !ssplbilling/public/frontend/.gitkeep
+
+# OCR engine assets, copied from node_modules by vite.config.js
+frontend/public/ocr/
