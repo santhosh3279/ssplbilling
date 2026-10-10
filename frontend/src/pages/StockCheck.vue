@@ -102,7 +102,20 @@
           </div>
         </div>
 
+        <!-- Selling prices -->
+        <div class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Selling Price</div>
+        <div v-if="!item.prices.length" class="border-t border-[var(--color-border)] px-3 py-2 text-center text-sm italic text-[var(--color-text-muted)]">No selling price set</div>
+        <div v-else class="grid gap-px border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-xs" :class="gridCols(item.prices.length)">
+          <div v-for="p in item.prices" :key="p.price_list" class="bg-[var(--color-surface)] px-2 py-2">
+            <div class="truncate text-[var(--color-text-muted)]" :title="p.price_list">{{ p.price_list }}</div>
+            <div v-for="(rate, uom) in p.rates" :key="uom" class="font-mono text-sm font-bold tabular-nums">
+              {{ rate }}<span v-if="Object.keys(p.rates).length > 1 || uom !== item.uom" class="ml-1 font-sans text-[10px] font-normal text-[var(--color-text-muted)]">/ {{ uom }}</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Stock: book stock, draft (redis) quantities, then each warehouse, in one grid -->
+        <div class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Stock</div>
         <div class="grid grid-cols-3 gap-px border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-xs">
           <div class="bg-[var(--color-surface)] px-2 py-2">
             <div class="text-[var(--color-text-muted)]">Book Stock</div>
@@ -122,18 +135,6 @@
           </div>
           <!-- Pad the last row so it has no gap-coloured holes -->
           <div v-for="n in (3 - item.warehouse_stock.length % 3) % 3" :key="'pad' + n" class="bg-[var(--color-surface)]"></div>
-        </div>
-
-        <!-- Selling prices -->
-        <div class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Selling Price</div>
-        <div v-if="!item.prices.length" class="border-t border-[var(--color-border)] px-3 py-2 text-center text-sm italic text-[var(--color-text-muted)]">No selling price set</div>
-        <div v-else class="grid gap-px border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-xs" :class="gridCols(item.prices.length)">
-          <div v-for="p in item.prices" :key="p.price_list" class="bg-[var(--color-surface)] px-2 py-2">
-            <div class="truncate text-[var(--color-text-muted)]" :title="p.price_list">{{ p.price_list }}</div>
-            <div v-for="(rate, uom) in p.rates" :key="uom" class="font-mono text-sm font-bold tabular-nums">
-              {{ rate }}<span v-if="Object.keys(p.rates).length > 1 || uom !== item.uom" class="ml-1 font-sans text-[10px] font-normal text-[var(--color-text-muted)]">/ {{ uom }}</span>
-            </div>
-          </div>
         </div>
       </article>
     </main>
