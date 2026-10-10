@@ -13,6 +13,16 @@
         </div>
         <div class="flex items-center gap-[16px]">
           <button
+            v-if="isEditMode"
+            type="button"
+            @click="startNewFromCurrent"
+            class="flex items-center gap-[10px] rounded-xl border border-[var(--color-info)] px-[16px] py-[10px] text-2xl font-bold uppercase tracking-wider text-[var(--color-info)] bg-[var(--color-info)]/10 hover:bg-[var(--color-info)]/20 transition-all active:scale-95"
+            title="Create a new item copying these details (except name and print name)"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            <span>New Item</span>
+          </button>
+          <button
             type="button"
             @click="toggleRetainTaxFields"
             class="flex items-center gap-[10px] rounded-xl border px-[16px] py-[10px] text-2xl font-bold uppercase tracking-wider transition-all active:scale-95"
@@ -423,7 +433,11 @@ const emit = defineEmits(['close', 'created'])
 
 useSubwindowWatcher(computed(() => props.show), { ESCAPE: () => emit('close') })
 
-const isEditMode = computed(() => !!props.editItemCode)
+// Set by "New Item" while editing: the window switches to create mode even
+// though the parent still passes editItemCode. Cleared each time it opens.
+const forceCreate = ref(false)
+
+const isEditMode = computed(() => !!props.editItemCode && !forceCreate.value)
 
 function gotoERPNext() {
   const url = isEditMode.value
@@ -844,8 +858,25 @@ function resetForm() {
   if (selectedSeries.value) generateBarcode()
 }
 
+// Switch from edit to create, keeping every field except the names. Barcodes are
+// cleared too — they are unique per item, so a fresh one is generated instead.
+function startNewFromCurrent() {
+  forceCreate.value = true
+  form.value.item_name = ''
+  form.value.item_print_name = ''
+  form.value.barcode = ''
+  form.value.extra_barcodes = []
+  extraBarcodeInputs.value = []
+  supplierOptions.value = []
+  isBarcodeManual.value = false
+  autoBarcode.value = ''
+  if (selectedSeries.value) generateBarcode()
+  nextTick(() => itemNameInput.value?.focus())
+}
+
 watch(() => props.show, async (newVal) => {
   if (newVal) {
+    forceCreate.value = false
     if (!isEditMode.value) {
       resetForm()
       await loadMetadata()
