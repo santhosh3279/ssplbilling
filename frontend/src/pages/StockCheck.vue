@@ -117,7 +117,7 @@
             <span class="truncate">{{ p.price_list }}</span>
             <span class="text-right">
               <span v-for="(rate, uom) in p.rates" :key="uom" class="block font-mono font-semibold tabular-nums">
-                ₹{{ fmtRate(rate) }}<span v-if="Object.keys(p.rates).length > 1 || uom !== item.uom" class="ml-1 font-sans text-xs font-normal text-[var(--color-text-muted)]">/ {{ uom }}</span>
+                {{ rate }}<span v-if="Object.keys(p.rates).length > 1 || uom !== item.uom" class="ml-1 font-sans text-xs font-normal text-[var(--color-text-muted)]">/ {{ uom }}</span>
               </span>
             </span>
           </div>
@@ -197,10 +197,6 @@ function otherBarcodes(item) {
 function fmtQty(n) {
   const v = Number(n) || 0
   return Number.isInteger(v) ? String(v) : v.toFixed(2)
-}
-
-function fmtRate(n) {
-  return (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
 onMounted(() => searchRef.value?.focus())

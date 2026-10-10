@@ -2,8 +2,10 @@ import frappe
 from frappe.rate_limiter import rate_limit
 
 from ssplbilling.api.itemsearch_api import _build_items_detailed
+from ssplbilling.api.offer_api import encrypt_price, parse_cipher
 
 MAX_RESULTS = 20
+DEFAULT_CIPHER = list("KLMNOPQRST")
 
 
 def _like(token):
@@ -48,16 +50,16 @@ def _search_item_codes(query):
 	return [r[0] for r in rows]
 
 
-def _public_row(item, selling_lists):
+def _public_row(item, selling_lists, cipher):
 	"""Only what a public stock check may show: no valuation, buying rates or tax internals."""
 	# {price_list: {uom: rate}} from per-UOM Item Prices, with the base (no-UOM) rate as the stock UOM
 	prices = {}
 	for pl_name, uom_rates in (item.get("uom_price_lists") or {}).items():
 		if pl_name in selling_lists:
-			prices[pl_name] = dict(uom_rates)
+			prices[pl_name] = {uom: encrypt_price(rate, cipher) for uom, rate in uom_rates.items()}
 	for pl in item.get("price_lists", []):
 		if pl["name"] in selling_lists:
-			prices.setdefault(pl["name"], {}).setdefault(item.get("uom"), pl["rate"])
+			prices.setdefault(pl["name"], {}).setdefault(item.get("uom"), encrypt_price(pl["rate"], cipher))
 
 	stock = float(item.get("stock") or 0)
 	redis_stock = float(item.get("redis_stock") or 0)
@@ -96,4 +98,8 @@ def search_stock(query=None):
 	order = {code: n for n, code in enumerate(codes)}
 	rows.sort(key=lambda r: order.get(r["item_code"], len(order)))
 	selling_lists = set(frappe.get_all("Price List", filters={"enabled": 1, "selling": 1}, pluck="name"))
-	return [_public_row(r, selling_lists) for r in rows]
+	# Rates leave the server only as cipher text; with encryption switched off in
+	# Settings the default cipher still applies, since this page is public
+	cipher_map = frappe.db.get_single_value("SSPL Billing Settings", "cipher_map")
+	cipher = parse_cipher(cipher_map) or DEFAULT_CIPHER
+	return [_public_row(r, selling_lists, cipher) for r in rows]
