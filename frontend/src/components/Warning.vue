@@ -17,19 +17,19 @@
 
       <div class="flex gap-4">
         <button
-          ref="noBtn"
-          class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 text-xl font-bold text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-raised)] outline-none focus:border-[10px] focus:border-[var(--color-focus)]"
-          @click="$emit('close')"
-        >
-          {{ cancelLabel }}
-        </button>
-        <button
           v-if="extraLabel"
           ref="extraBtn"
           class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 text-xl font-bold text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-raised)] outline-none focus:border-[10px] focus:border-[var(--color-focus)]"
           @click="$emit('extra')"
         >
           {{ extraLabel }}
+        </button>
+        <button
+          ref="noBtn"
+          class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 text-xl font-bold text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-raised)] outline-none focus:border-[10px] focus:border-[var(--color-focus)]"
+          @click="$emit('close')"
+        >
+          {{ cancelLabel }}
         </button>
         <button
           ref="yesBtn"
@@ -67,9 +67,11 @@ const extraBtn = ref(null)
 const yesBtn = ref(null)
 
 function moveFocus(dir) {
-  const btns = [noBtn.value, extraBtn.value, yesBtn.value].filter(Boolean)
-  const cur = btns.indexOf(document.activeElement)
-  const next = cur === -1 ? (dir > 0 ? btns.length - 1 : 0) : Math.min(Math.max(cur + dir, 0), btns.length - 1)
+  const btns = [extraBtn.value, noBtn.value, yesBtn.value].filter(Boolean)
+  // Unfocused: step from No (the default)
+  let cur = btns.indexOf(document.activeElement)
+  if (cur === -1) cur = btns.indexOf(noBtn.value)
+  const next = Math.min(Math.max(cur + dir, 0), btns.length - 1)
   btns[next]?.focus()
 }
 
