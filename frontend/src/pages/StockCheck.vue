@@ -18,8 +18,9 @@
         <input
           ref="searchRef"
           v-model="query"
-          type="search"
+          type="text"
           inputmode="search"
+          enterkeyhint="search"
           autocomplete="off"
           autocapitalize="off"
           spellcheck="false"
