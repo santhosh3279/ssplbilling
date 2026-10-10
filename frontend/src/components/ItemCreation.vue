@@ -823,10 +823,15 @@ async function handleSubmit() {
         tax_rate: 0,
         is_new: true,
       })
-      resetForm()
-      nextTick(() => {
-        itemNameInput.value?.focus()
-      })
+      // Opened via "New Item" from edit: keep copying the details for the next one
+      if (forceCreate.value) {
+        startNewFromCurrent()
+      } else {
+        resetForm()
+        nextTick(() => {
+          itemNameInput.value?.focus()
+        })
+      }
     }
   } catch (e) {
     alert(`Failed to ${isEditMode.value ? 'update' : 'create'} item: ` + e.message)
