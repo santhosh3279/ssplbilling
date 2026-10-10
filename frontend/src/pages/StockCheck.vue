@@ -101,32 +101,27 @@
           </div>
         </div>
 
-        <!-- Stock breakdown (book stock vs draft/redis quantities) -->
-        <div class="grid grid-cols-3 border-t border-[var(--color-border)] text-center text-xs">
-          <div class="border-r border-[var(--color-border)] px-2 py-2">
+        <!-- Stock: book stock, draft (redis) quantities, then each warehouse, in one grid -->
+        <div class="grid grid-cols-3 gap-px border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-xs">
+          <div class="bg-[var(--color-surface)] px-2 py-2">
             <div class="text-[var(--color-text-muted)]">Book Stock</div>
             <div class="font-mono text-sm font-bold tabular-nums">{{ fmtQty(item.actual_stock) }}</div>
           </div>
-          <div class="border-r border-[var(--color-border)] px-2 py-2">
+          <div class="bg-[var(--color-surface)] px-2 py-2">
             <div class="text-[var(--color-text-muted)]">In Draft Bills</div>
             <div class="font-mono text-sm font-bold tabular-nums text-[var(--color-warning)]">−{{ fmtQty(item.redis_stock) }}</div>
           </div>
-          <div class="px-2 py-2">
+          <div class="bg-[var(--color-surface)] px-2 py-2">
             <div class="text-[var(--color-text-muted)]">Draft Purchase</div>
             <div class="font-mono text-sm font-bold tabular-nums text-[var(--color-info)]">+{{ fmtQty(item.redis_purchase_stock) }}</div>
           </div>
-        </div>
-
-        <!-- Warehouses -->
-        <template v-if="item.warehouse_stock.length > 1">
-          <div class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">By Warehouse</div>
-          <div class="grid gap-px border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-xs" :class="gridCols(item.warehouse_stock.length)">
-            <div v-for="w in item.warehouse_stock" :key="w.warehouse" class="bg-[var(--color-surface)] px-2 py-2">
-              <div class="truncate text-[var(--color-text-muted)]" :title="w.warehouse">{{ w.warehouse }}</div>
-              <div class="font-mono text-sm font-bold tabular-nums">{{ fmtQty(w.qty) }}</div>
-            </div>
+          <div v-for="w in item.warehouse_stock" :key="w.warehouse" class="bg-[var(--color-surface)] px-2 py-2">
+            <div class="truncate text-[var(--color-text-muted)]" :title="w.warehouse">{{ w.warehouse }}</div>
+            <div class="font-mono text-sm font-bold tabular-nums">{{ fmtQty(w.qty) }}</div>
           </div>
-        </template>
+          <!-- Pad the last row so it has no gap-coloured holes -->
+          <div v-for="n in (3 - item.warehouse_stock.length % 3) % 3" :key="'pad' + n" class="bg-[var(--color-surface)]"></div>
+        </div>
 
         <!-- Selling prices -->
         <div class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Selling Price</div>
