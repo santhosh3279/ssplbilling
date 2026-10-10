@@ -3,8 +3,8 @@
     v-if="show"
     class="fixed inset-0 z-[200] flex items-center justify-center bg-black/80 backdrop-blur-sm"
     @keydown.esc.stop="$emit('close')"
-    @keydown.left.prevent="focusBtn('no')"
-    @keydown.right.prevent="focusBtn('yes')"
+    @keydown.left.prevent="moveFocus(-1)"
+    @keydown.right.prevent="moveFocus(1)"
   >
     <div class="w-[450px] rounded-2xl border-[10px] border-[color-mix(in_srgb,var(--color-danger)_70%,black_30%)] bg-[color-mix(in_srgb,var(--color-bg)_70%,var(--color-danger)_30%)] p-8 shadow-2xl">
       <div class="mb-6 flex flex-col items-center text-center">
@@ -22,6 +22,14 @@
           @click="$emit('close')"
         >
           {{ cancelLabel }}
+        </button>
+        <button
+          v-if="extraLabel"
+          ref="extraBtn"
+          class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 text-xl font-bold text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-raised)] outline-none focus:border-[10px] focus:border-[var(--color-focus)]"
+          @click="$emit('extra')"
+        >
+          {{ extraLabel }}
         </button>
         <button
           ref="yesBtn"
@@ -47,17 +55,22 @@ const props = defineProps({
   title: { type: String, default: 'Confirm Action' },
   message: { type: String, default: 'Are you sure you want to proceed?' },
   cancelLabel: { type: String, default: 'No (Esc)' },
-  confirmLabel: { type: String, default: 'Yes' }
+  confirmLabel: { type: String, default: 'Yes' },
+  // Optional middle button; hidden unless a label is given
+  extraLabel: { type: String, default: '' }
 })
 
-const emit = defineEmits(['close', 'confirm'])
+const emit = defineEmits(['close', 'confirm', 'extra'])
 
 const noBtn = ref(null)
+const extraBtn = ref(null)
 const yesBtn = ref(null)
 
-function focusBtn(type) {
-  if (type === 'no') noBtn.value?.focus()
-  else yesBtn.value?.focus()
+function moveFocus(dir) {
+  const btns = [noBtn.value, extraBtn.value, yesBtn.value].filter(Boolean)
+  const cur = btns.indexOf(document.activeElement)
+  const next = cur === -1 ? (dir > 0 ? btns.length - 1 : 0) : Math.min(Math.max(cur + dir, 0), btns.length - 1)
+  btns[next]?.focus()
 }
 
 watch(() => props.show, (val) => {

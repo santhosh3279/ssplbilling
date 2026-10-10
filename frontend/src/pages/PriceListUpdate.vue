@@ -324,6 +324,8 @@
         : 'Markup percentages are not saved in the Item Master yet. Save them before saving prices?'"
       cancelLabel="No (Esc)"
       confirmLabel="Yes"
+      extraLabel="Update %"
+      @extra="editPercentages"
       @confirm="onPercentagePromptAnswer(true)"
       @close="onPercentagePromptAnswer(false)"
     />
@@ -688,6 +690,12 @@ async function onPercentagePromptAnswer(confirmed) {
     if (!ok) return
   }
   savePrices()
+}
+
+// Close the prompt without saving and jump to the first editable % input
+function editPercentages() {
+  showPercentagePrompt.value = false
+  focusInput(inputRefs.value['calc-1'] ? 'calc-1' : 'calc-0')
 }
 
 async function savePrices() {
