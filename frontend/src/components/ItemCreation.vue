@@ -823,15 +823,10 @@ async function handleSubmit() {
         tax_rate: 0,
         is_new: true,
       })
-      // Opened via "New Item" from edit: keep copying the details for the next one
-      if (forceCreate.value) {
-        startNewFromCurrent()
-      } else {
-        resetForm()
-        nextTick(() => {
-          itemNameInput.value?.focus()
-        })
-      }
+      resetForm()
+      nextTick(() => {
+        itemNameInput.value?.focus()
+      })
     }
   } catch (e) {
     alert(`Failed to ${isEditMode.value ? 'update' : 'create'} item: ` + e.message)
@@ -858,6 +853,10 @@ function resetForm() {
     uom_conversions: [],
     extra_barcodes: [],
   }
+  startFreshBarcode()
+}
+
+function startFreshBarcode() {
   supplierOptions.value = []
   isBarcodeManual.value = false
   autoBarcode.value = ''
@@ -872,11 +871,7 @@ function startNewFromCurrent() {
   form.value.item_print_name = ''
   form.value.barcode = ''
   form.value.extra_barcodes = []
-  extraBarcodeInputs.value = []
-  supplierOptions.value = []
-  isBarcodeManual.value = false
-  autoBarcode.value = ''
-  if (selectedSeries.value) generateBarcode()
+  startFreshBarcode()
   nextTick(() => itemNameInput.value?.focus())
 }
 
