@@ -33,15 +33,21 @@
         type="button"
         aria-label="Scan barcode with camera"
         title="Scan barcode"
-        class="flex w-14 shrink-0 items-center justify-center rounded-xl bg-[var(--color-info)] text-white shadow-sm active:scale-95"
-        @click="showScanner = true"
+        :disabled="decodingPhoto"
+        class="flex w-14 shrink-0 items-center justify-center rounded-xl bg-[var(--color-info)] text-white shadow-sm active:scale-95 disabled:opacity-60"
+        @click="openScanner"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8"/><path d="M11 8v8"/><path d="M15 8v8"/><path d="M18 8v8"/></svg>
       </button>
+      <!-- http fallback: the phone's camera app takes a photo, decoded in the browser -->
+      <input ref="photoInputRef" type="file" accept="image/*" capture="environment" class="hidden" @change="onPhotoPicked" />
       </div>
     </header>
 
     <main class="mx-auto max-w-xl space-y-3 px-4 py-4">
+      <div v-if="decodingPhoto" class="rounded-xl border border-[var(--color-info)]/40 bg-[var(--color-info)]/10 p-3 text-sm text-[var(--color-info)] animate-pulse">
+        Reading barcode from photo…
+      </div>
       <div v-if="error" class="rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 p-3 text-sm text-[var(--color-danger)]">
         {{ error }}
       </div>
@@ -153,6 +159,7 @@
 import { ref, reactive, watch, onMounted, nextTick } from 'vue'
 import { frappeGet } from '../api.js'
 import BarcodeScanner from '../components/BarcodeScanner.vue'
+import { decodeBarcodeFromFile } from '../services/barcodeImage.js'
 
 const query = ref('')
 const lastQuery = ref('')
@@ -164,6 +171,11 @@ const previewImage = ref('')
 const brokenImages = reactive({})
 const searchRef = ref(null)
 const showScanner = ref(false)
+const photoInputRef = ref(null)
+const decodingPhoto = ref(false)
+
+// Live camera video needs https (or localhost); over plain http fall back to a photo
+const canLiveScan = window.isSecureContext && !!navigator.mediaDevices?.getUserMedia
 
 let debounceTimer = null
 let requestSeq = 0
@@ -199,6 +211,29 @@ watch(query, () => {
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(runSearch, 350)
 })
+
+function openScanner() {
+  if (canLiveScan) showScanner.value = true
+  else photoInputRef.value?.click()
+}
+
+async function onPhotoPicked(e) {
+  const file = e.target.files?.[0]
+  e.target.value = '' // let the same photo be picked again
+  if (!file) return
+  decodingPhoto.value = true
+  error.value = ''
+  try {
+    const code = await decodeBarcodeFromFile(file)
+    if (code) onScanned(code)
+    else error.value = 'No barcode found in the photo. Hold the camera closer, keep the barcode flat and well lit, then try again.'
+  } catch (err) {
+    console.error('[StockCheck] photo decode failed', err)
+    error.value = 'Could not read the photo: ' + (err?.message || err)
+  } finally {
+    decodingPhoto.value = false
+  }
+}
 
 function onScanned(code) {
   showScanner.value = false
