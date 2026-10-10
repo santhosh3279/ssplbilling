@@ -114,27 +114,26 @@
           </div>
         </div>
 
-        <!-- Stock: book stock, draft (redis) quantities, then each warehouse, in one grid -->
+        <!-- Stock: book stock, draft (redis) quantities, then each warehouse, in one row
+             (scrolls sideways only if there are too many warehouses to fit) -->
         <div class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Stock</div>
-        <div class="grid grid-cols-3 gap-px border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-xs">
-          <div class="bg-[var(--color-surface)] px-2 py-2">
+        <div class="grid grid-flow-col auto-cols-[minmax(3.75rem,1fr)] gap-px overflow-x-auto border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-[11px] leading-tight">
+          <div class="flex flex-col justify-between bg-[var(--color-surface)] px-1 py-2">
             <div class="text-[var(--color-text-muted)]">Book Stock</div>
-            <div class="font-mono text-sm font-bold tabular-nums">{{ fmtQty(item.actual_stock) }}</div>
+            <div class="mt-0.5 font-mono text-sm font-bold tabular-nums">{{ fmtQty(item.actual_stock) }}</div>
           </div>
-          <div class="bg-[var(--color-surface)] px-2 py-2">
-            <div class="text-[var(--color-text-muted)]">In Draft Bills</div>
-            <div class="font-mono text-sm font-bold tabular-nums text-[var(--color-warning)]">−{{ fmtQty(item.redis_stock) }}</div>
+          <div class="flex flex-col justify-between bg-[var(--color-surface)] px-1 py-2">
+            <div class="text-[var(--color-text-muted)]">Draft Bills</div>
+            <div class="mt-0.5 font-mono text-sm font-bold tabular-nums text-[var(--color-warning)]">−{{ fmtQty(item.redis_stock) }}</div>
           </div>
-          <div class="bg-[var(--color-surface)] px-2 py-2">
+          <div class="flex flex-col justify-between bg-[var(--color-surface)] px-1 py-2">
             <div class="text-[var(--color-text-muted)]">Draft Purchase</div>
-            <div class="font-mono text-sm font-bold tabular-nums text-[var(--color-info)]">+{{ fmtQty(item.redis_purchase_stock) }}</div>
+            <div class="mt-0.5 font-mono text-sm font-bold tabular-nums text-[var(--color-info)]">+{{ fmtQty(item.redis_purchase_stock) }}</div>
           </div>
-          <div v-for="w in item.warehouse_stock" :key="w.warehouse" class="bg-[var(--color-surface)] px-2 py-2">
-            <div class="truncate text-[var(--color-text-muted)]" :title="w.warehouse">{{ w.warehouse }}</div>
-            <div class="font-mono text-sm font-bold tabular-nums">{{ fmtQty(w.qty) }}</div>
+          <div v-for="w in item.warehouse_stock" :key="w.warehouse" class="flex flex-col justify-between bg-[var(--color-surface)] px-1 py-2">
+            <div class="truncate text-[var(--color-text-muted)]" :title="w.warehouse">{{ shortWarehouse(w.warehouse) }}</div>
+            <div class="mt-0.5 font-mono text-sm font-bold tabular-nums">{{ fmtQty(w.qty) }}</div>
           </div>
-          <!-- Pad the last row so it has no gap-coloured holes -->
-          <div v-for="n in (3 - item.warehouse_stock.length % 3) % 3" :key="'pad' + n" class="bg-[var(--color-surface)]"></div>
         </div>
       </article>
     </main>
@@ -316,6 +315,11 @@ function otherBarcodes(item) {
 // Same 3-across cell layout as the stock breakdown; fewer cells stretch to fill the row
 function gridCols(n) {
   return n === 1 ? 'grid-cols-1' : n === 2 || n === 4 ? 'grid-cols-2' : 'grid-cols-3'
+}
+
+// "NCK - SSPL" → "NCK": the company suffix is the same on every warehouse
+function shortWarehouse(name) {
+  return name.replace(/\s+-\s+[^-]+$/, '')
 }
 
 function fmtQty(n) {
