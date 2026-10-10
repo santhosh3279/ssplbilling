@@ -51,7 +51,9 @@ let done = false
 const NATIVE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'code_93', 'codabar', 'itf', 'qr_code']
 
 function cameraErrorMessage(e) {
-  if (!window.isSecureContext) return 'Camera needs a secure (https) connection. Open this page over https.'
+  if (!window.isSecureContext) {
+    return `Live scanning needs a secure connection. Open this page with https:// instead of http:// (${location.host}).`
+  }
   if (e?.name === 'NotAllowedError') return 'Camera permission was denied. Allow camera access in the browser settings and try again.'
   if (e?.name === 'NotFoundError' || e?.name === 'OverconstrainedError') return 'No camera found on this device.'
   return 'Could not start the camera: ' + (e?.message || e)

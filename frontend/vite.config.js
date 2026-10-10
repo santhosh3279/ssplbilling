@@ -30,6 +30,9 @@ export default defineConfig(({ command }) => ({
   server: {
     port: 8080,
     host: true,
+    // `VITE_HTTPS=1 yarn dev` serves https with Vite's self-signed cert. Phones only
+    // allow live camera video (Stock Check barcode scanner) on https pages.
+    https: process.env.VITE_HTTPS === '1',
     proxy: {
       // Frappe backend
       ...getProxyOptions({ port: webserver_port }),
