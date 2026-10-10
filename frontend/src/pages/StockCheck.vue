@@ -5,7 +5,13 @@
       <div class="mb-2 flex items-center justify-between">
         <h1 class="text-lg font-bold">Stock Check</h1>
         <span v-if="loading" class="text-xs font-semibold text-[var(--color-info)] animate-pulse">Searching…</span>
-        <span v-else-if="searched" class="text-xs text-[var(--color-text-muted)]">{{ results.length }} found</span>
+        <button
+          v-else-if="searched"
+          type="button"
+          title="Refresh stock from server"
+          class="rounded-lg px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
+          @click="runSearch(true)"
+        >{{ results.length }} found · {{ ageLabel }} ↻</button>
       </div>
       <div class="flex gap-2">
       <div class="relative flex-1">
@@ -19,7 +25,7 @@
           spellcheck="false"
           placeholder="Item name, code or barcode"
           class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-4 pr-11 text-base outline-none focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/30"
-          @keydown.enter.prevent="runSearch"
+          @keydown.enter.prevent="runSearch()"
         />
         <button
           v-if="query"
@@ -150,7 +156,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { frappeGet } from '../api.js'
 import BarcodeScanner from '../components/BarcodeScanner.vue'
 
@@ -164,11 +170,84 @@ const previewImage = ref('')
 const brokenImages = reactive({})
 const searchRef = ref(null)
 const showScanner = ref(false)
+const fetchedAt = ref(0)
+const now = ref(Date.now())
 
 let debounceTimer = null
+let clockTimer = null
 let requestSeq = 0
 
-async function runSearch() {
+// ── Local result cache ────────────────────────────────────────────
+// Searches are kept in localStorage so repeat searches, narrowing a search
+// ("pen" → "pen red") and OCR code checks are answered without the server.
+// Stock moves, so entries older than CACHE_TTL are shown at once but refetched.
+const CACHE_KEY = 'sc-search-cache-v1'
+const CACHE_TTL = 2 * 60 * 1000
+const CACHE_MAX = 40
+const SERVER_LIMIT = 20 // stock_check_api.MAX_RESULTS: fewer rows means the list is complete
+
+function loadCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY)) || {} } catch (e) { return {} }
+}
+const cache = loadCache()
+
+function saveCache() {
+  const keys = Object.keys(cache).sort((a, b) => cache[b].t - cache[a].t)
+  for (const k of keys.slice(CACHE_MAX)) delete cache[k]
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)) } catch (e) { /* storage full or blocked */ }
+}
+
+const normalize = q => q.trim().toLowerCase().replace(/\s+/g, ' ')
+const tokensOf = q => normalize(q).split(' ').filter(Boolean)
+
+function rowMatches(row, tokens) {
+  const hay = [row.item_code, row.item_name, ...(row.barcodes || [])].join('\n').toLowerCase()
+  return tokens.every(t => hay.includes(t))
+}
+
+function isExact(row, key) {
+  return row.item_code.toLowerCase() === key || (row.barcodes || []).some(b => b.toLowerCase() === key)
+}
+
+/** Cached answer for `key`: its own entry, or a complete entry for a broader query filtered down. */
+function fromCache(key) {
+  if (cache[key]) return cache[key]
+  const tokens = tokensOf(key)
+  let best = null
+  for (const [k, entry] of Object.entries(cache)) {
+    if (entry.rows.length >= SERVER_LIMIT || Date.now() - entry.t > CACHE_TTL) continue
+    // Every broader word must be inside one of the new words, so the new matches are a subset
+    if (!tokensOf(k).every(o => tokens.some(n => n.includes(o)))) continue
+    if (!best || entry.t > best.t) best = entry
+  }
+  if (!best) return null
+  const rows = best.rows.filter(r => rowMatches(r, tokens))
+  // Server puts exact code/barcode hits first; keep that order
+  rows.sort((a, b) => isExact(b, key) - isExact(a, key))
+  return { t: best.t, rows }
+}
+
+async function fetchRows(q) {
+  const rows = await frappeGet('ssplbilling.api.stock_check_api.search_stock', { query: q })
+  const entry = { t: Date.now(), rows: Array.isArray(rows) ? rows : [] }
+  cache[normalize(q)] = entry
+  saveCache()
+  return entry
+}
+
+const ageLabel = computed(() => {
+  const s = Math.max(0, Math.round((now.value - fetchedAt.value) / 1000))
+  return s < 10 ? 'just now' : s < 60 ? `${s}s ago` : `${Math.floor(s / 60)}m ago`
+})
+
+function show(entry, q) {
+  results.value = entry.rows
+  fetchedAt.value = entry.t
+  lastQuery.value = q
+  searched.value = true
+}
+
+async function runSearch(force = false) {
   clearTimeout(debounceTimer)
   const q = query.value.trim()
   if (q.length < 2) {
@@ -179,14 +258,18 @@ async function runSearch() {
   }
   // Only the latest request may update the list (typing fires overlapping searches)
   const seq = ++requestSeq
-  loading.value = true
   error.value = ''
+  const cached = force ? null : fromCache(normalize(q))
+  if (cached) {
+    show(cached, q)
+    loading.value = false
+    if (Date.now() - cached.t < CACHE_TTL) return
+  }
+  loading.value = true
   try {
-    const rows = await frappeGet('ssplbilling.api.stock_check_api.search_stock', { query: q })
+    const entry = await fetchRows(q)
     if (seq !== requestSeq) return
-    results.value = Array.isArray(rows) ? rows : []
-    lastQuery.value = q
-    searched.value = true
+    show(entry, q)
   } catch (e) {
     if (seq !== requestSeq) return
     error.value = e.message?.includes('429') ? 'Too many searches. Wait a moment and try again.' : 'Search failed: ' + e.message
@@ -204,15 +287,21 @@ function onScanned(code) {
   showScanner.value = false
   query.value = code
   // Search now instead of waiting out the typing debounce the query watcher just armed
-  nextTick(runSearch)
+  nextTick(() => runSearch())
 }
 
-// OCR readings are guesses: accept one only when it is an exact item code or barcode
+// OCR readings are guesses: accept one only when it is an exact item code or barcode.
+// Any code seen in a cached search answers without the server; misses are cached too.
 async function codeExists(code) {
+  const key = code.toLowerCase()
+  for (const entry of Object.values(cache)) {
+    if (entry.rows.some(r => isExact(r, key))) return true
+  }
+  const cached = cache[normalize(code)]
+  if (cached && Date.now() - cached.t < CACHE_TTL) return false
   try {
-    const rows = await frappeGet('ssplbilling.api.stock_check_api.search_stock', { query: code })
-    const c = code.toUpperCase()
-    return (rows || []).some(r => r.item_code.toUpperCase() === c || (r.barcodes || []).some(b => b.toUpperCase() === c))
+    const entry = await fetchRows(code)
+    return entry.rows.some(r => isExact(r, key))
   } catch (e) {
     return false
   }
@@ -232,5 +321,10 @@ function fmtQty(n) {
   return Number.isInteger(v) ? String(v) : v.toFixed(2)
 }
 
-onMounted(() => searchRef.value?.focus())
+onMounted(() => {
+  searchRef.value?.focus()
+  clockTimer = setInterval(() => { now.value = Date.now() }, 15000)
+})
+
+onBeforeUnmount(() => clearInterval(clockTimer))
 </script>

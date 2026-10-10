@@ -51,7 +51,9 @@ def _search_item_codes(query):
 
 
 def _public_row(item, selling_lists, cipher):
-	"""Only what a public stock check may show: no valuation, buying rates or tax internals."""
+	"""Only what a public stock check may show: no valuation, buying rates or tax internals.
+
+	`selling_lists` is in Price List doctype order (creation); prices follow that order."""
 	# {price_list: {uom: rate}} from per-UOM Item Prices, with the base (no-UOM) rate as the stock UOM
 	prices = {}
 	for pl_name, uom_rates in (item.get("uom_price_lists") or {}).items():
@@ -77,7 +79,7 @@ def _public_row(item, selling_lists, cipher):
 		"redis_purchase_stock": redis_purchase,
 		"actual_stock": stock + redis_stock - redis_purchase,
 		"warehouse_stock": [w for w in item.get("warehouse_stock", []) if w.get("qty")],
-		"prices": [{"price_list": k, "rates": v} for k, v in sorted(prices.items()) if v],
+		"prices": [{"price_list": pl, "rates": prices[pl]} for pl in selling_lists if prices.get(pl)],
 	}
 
 
@@ -97,7 +99,9 @@ def search_stock(query=None):
 	rows = _build_items_detailed("Sales", None, None, company, item_codes=codes)
 	order = {code: n for n, code in enumerate(codes)}
 	rows.sort(key=lambda r: order.get(r["item_code"], len(order)))
-	selling_lists = set(frappe.get_all("Price List", filters={"enabled": 1, "selling": 1}, pluck="name"))
+	selling_lists = frappe.get_all(
+		"Price List", filters={"enabled": 1, "selling": 1}, pluck="name", order_by="creation asc"
+	)
 	# Rates leave the server only as cipher text; with encryption switched off in
 	# Settings the default cipher still applies, since this page is public
 	cipher_map = frappe.db.get_single_value("SSPL Billing Settings", "cipher_map")
