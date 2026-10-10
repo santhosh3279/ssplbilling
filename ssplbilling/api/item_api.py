@@ -17,6 +17,19 @@ def _check_duplicate_item_name(item_name, exclude_item=None):
 
 
 @frappe.whitelist()
+def check_item_name_exists(item_name, exclude_item=None):
+	"""Live duplicate check for the item creation form. Returns the existing item code, or ""
+	(not None — the frontend transport falls back to the whole response on a null message)."""
+	item_name = (item_name or "").strip()
+	if not item_name:
+		return ""
+	filters = {"item_name": item_name}
+	if exclude_item:
+		filters["name"] = ["!=", exclude_item]
+	return frappe.db.get_value("Item", filters, "name") or ""
+
+
+@frappe.whitelist()
 def get_item_creation_metadata(company=None):
 	"""Fetch all metadata needed for the item creation form.
 

@@ -56,10 +56,16 @@
                 ref="itemNameInput"
                 v-model="form.item_name"
                 type="text"
-                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-4xl font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
+                class="w-full rounded-xl border bg-[var(--color-surface)] px-[20px] py-[12px] text-4xl font-medium text-[var(--color-text)] outline-none transition-all"
+                :class="duplicateItemName
+                  ? 'border-[var(--color-danger)] border-2 bg-[var(--color-danger)]/10 focus:border-[var(--color-danger)]'
+                  : 'border-[var(--color-border)] focus:border-[var(--color-info)]'"
                 placeholder="Enter full item name..."
                 @keydown.enter.prevent="itemPrintNameInput?.focus()"
               />
+              <p v-if="duplicateItemName" class="px-[20px] text-2xl font-bold text-[var(--color-danger)]">
+                Item name already exists ({{ duplicateItemName }})
+              </p>
             </div>
 
             <div class="space-y-[4px]">
@@ -672,6 +678,35 @@ watch(() => form.value.item_name, (newVal) => {
   }
 })
 
+// ── Live duplicate item-name check (print name may repeat) ──────────────────
+// Holds the existing item code when the typed name is taken, else ''.
+const duplicateItemName = ref('')
+const isCheckingItemName = ref(false)
+let itemNameCheckTimeout = null
+let itemNameCheckSeq = 0
+
+watch([() => form.value.item_name, isEditMode], ([name]) => {
+  clearTimeout(itemNameCheckTimeout)
+  const seq = ++itemNameCheckSeq
+  duplicateItemName.value = ''
+  const q = (name || '').trim()
+  if (!q) { isCheckingItemName.value = false; return }
+  isCheckingItemName.value = true
+  itemNameCheckTimeout = setTimeout(async () => {
+    try {
+      const existing = await frappeGet('ssplbilling.api.item_api.check_item_name_exists', {
+        item_name: q,
+        exclude_item: isEditMode.value ? props.editItemCode : '',
+      })
+      if (seq === itemNameCheckSeq) duplicateItemName.value = existing || ''
+    } catch (_) {
+      // Server-side check on save still guards against duplicates.
+    } finally {
+      if (seq === itemNameCheckSeq) isCheckingItemName.value = false
+    }
+  }, 300)
+})
+
 // Track manual changes — strip all leading zeros on every change
 watch(() => form.value.barcode, (newVal, oldVal) => {
   if (newVal && /^0/.test(newVal)) {
@@ -721,6 +756,7 @@ const availableUoms = computed(() => {
 
 const canSubmit = computed(() => {
   return form.value.item_name.trim() && form.value.item_group && form.value.stock_uom && form.value.item_tax_template
+    && !duplicateItemName.value && !isCheckingItemName.value
 })
 
 async function loadMetadata() {
