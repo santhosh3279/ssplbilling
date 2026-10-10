@@ -316,6 +316,17 @@
       <span>{{ toast.message }}</span>
       <button @click="toast = null" class="ml-2 hover:opacity-85 text-xs font-black">✕</button>
     </div>
+    <Warning
+      :show="showPercentagePrompt"
+      :title="hasFetchedPercentages ? 'Update % to Item Master?' : 'Save % to Item Master?'"
+      :message="hasFetchedPercentages
+        ? 'Markup percentages changed. Update them in the Item Master before saving prices?'
+        : 'Markup percentages are not saved in the Item Master yet. Save them before saving prices?'"
+      cancelLabel="No (Esc)"
+      confirmLabel="Yes"
+      @confirm="onPercentagePromptAnswer(true)"
+      @close="onPercentagePromptAnswer(false)"
+    />
     </div>
   </div>
 </template>
@@ -328,6 +339,7 @@ import { useSubwindow } from '../services/shortcutManager'
 import { useItemCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { canAccessTile } from '../composables/usePermission'
+import Warning from '../components/Warning.vue'
 
 import { formatDMY } from '../utils/date'
 const props = defineProps({
@@ -359,6 +371,7 @@ const loading = ref(false)
 const saving = ref(false)
 const savingPercentage = ref(false)
 const hasFetchedPercentages = ref(false)
+const showPercentagePrompt = ref(false)
 const manualItemCode = ref('')
 const activeRow = ref(0)
 const inputRefs = ref({})
@@ -648,7 +661,36 @@ function applyCalc(p, idx) {
   }
 }
 
-async function saveAll() {
+// True when any markup differs from what was last saved to the Item Master
+function percentagesChanged() {
+  return prices.value.some(p => {
+    const saved = loadedPercentages.value.find(fp => fp.pricelist === p.price_list)
+    if (!saved) return true
+    const savedVal = parseFloat(saved.percentage) || 0
+    return Number((Number(p.markup) || 0).toFixed(4)) !== Number(savedVal.toFixed(4))
+  })
+}
+
+function saveAll() {
+  if (!currentItemCode.value || saving.value || showPercentagePrompt.value) return
+  // Never saved: always ask. Already saved: ask only if a markup changed.
+  if (!hasFetchedPercentages.value || percentagesChanged()) {
+    showPercentagePrompt.value = true
+    return
+  }
+  savePrices()
+}
+
+async function onPercentagePromptAnswer(confirmed) {
+  showPercentagePrompt.value = false
+  if (confirmed) {
+    const ok = await savePercentageToItemMaster()
+    if (!ok) return
+  }
+  savePrices()
+}
+
+async function savePrices() {
   const code = currentItemCode.value
   if (!code) return
 
@@ -696,7 +738,7 @@ async function savePercentageToItemMaster() {
   const code = currentItemCode.value
   if (!code) {
     showToast('Item code is required.', 'error')
-    return
+    return false
   }
 
   const percentages = prices.value.map(p => ({
@@ -710,10 +752,15 @@ async function savePercentageToItemMaster() {
       item_code: code,
       percentages: JSON.stringify(percentages)
     })
+    // Track what is now saved so later saves only prompt on further changes
+    loadedPercentages.value = percentages
+    hasFetchedPercentages.value = true
     showToast('Percentages saved to Item Master successfully.', 'success')
+    return true
   } catch (e) {
     console.error('Failed to save percentages:', e)
     showToast('Failed to save percentages: ' + (e.message || e), 'error')
+    return false
   } finally {
     savingPercentage.value = false
   }
@@ -766,6 +813,11 @@ function focusInput(key) {
 }
 
 const handleGlobalKeydown = (e) => {
+  // Warning dialog owns the keyboard while open
+  if (showPercentagePrompt.value) {
+    e.stopPropagation()
+    return
+  }
   if (e.key === 'F8') {
     e.preventDefault()
     e.stopPropagation()
