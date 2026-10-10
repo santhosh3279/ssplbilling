@@ -667,11 +667,24 @@ async function loadLedger() {
       selectedWarehouse.value || null,
       localStorage.getItem('wb-company') || null
     )
+    focusLastRow()
   } catch (e) {
     error.value = e.message
   } finally {
     loading.value = false
   }
+}
+
+// Open on the latest entry; leave any field the load was triggered from (warehouse
+// select, item search) so the row keys work straight away
+function focusLastRow() {
+  nextTick(() => {
+    const len = filteredEntries.value?.length || 0
+    if (!len) return
+    if (['INPUT', 'SELECT'].includes(document.activeElement?.tagName)) document.activeElement.blur()
+    updatePreview(filteredEntries.value[len - 1], len - 1)
+    scrollRowIntoView(len - 1)
+  })
 }
 
 // Prop Syncing
@@ -756,6 +769,11 @@ function onTableKeydown(e) {
     const prevIdx = Math.max(focusedIdx.value - 1, 0)
     updatePreview(filteredEntries.value[prevIdx], prevIdx)
     scrollRowIntoView(prevIdx)
+  } else if (e.key === 'Home' || e.key === 'End') {
+    e.preventDefault()
+    const idx = e.key === 'Home' ? 0 : len - 1
+    updatePreview(filteredEntries.value[idx], idx)
+    scrollRowIntoView(idx)
   } else if (e.key === 'Enter' && focusedIdx.value >= 0) {
     e.preventDefault()
     const entry = filteredEntries.value[focusedIdx.value]
