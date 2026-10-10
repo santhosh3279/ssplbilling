@@ -625,7 +625,7 @@
             </div>
           </div>
           <div class="flex gap-2">
-            <button ref="saveBtnRef" @click="handleSave" :disabled="isSubmitted || submitting" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="isSubmitted || submitting ? 'bg-[var(--color-surface-raised)]/40 text-[var(--color-text-muted)] cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-[var(--color-success)]'">{{ saveButtonText }}</button>
+            <button ref="saveBtnRef" @click="handleSave" :disabled="submitting" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="submitting ? 'bg-[var(--color-surface-raised)]/40 text-[var(--color-text-muted)] cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-[var(--color-success)]'">{{ saveButtonText }}</button>
             <button @click="handlePrint" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] cursor-not-allowed'">Print</button>
           </div>
           <div class="flex gap-2">
@@ -1251,7 +1251,7 @@ async function releaseLock() {
 
 const saveButtonText = computed(() => {
   if (!isSaved.value) return 'Save'
-  if (isSubmitted.value) return 'Submitted'
+  if (isSubmitted.value) return 'View'
   return isReadOnly.value ? 'Modify Bill' : 'Update Bill'
 })
 
@@ -1717,7 +1717,12 @@ function handlePageUp() {
 }
 
 async function handleSave() {
-  if (isSubmitted.value || submitting.value) return
+  // Submitted bills cannot change; browse their items read-only instead
+  if (isSubmitted.value) {
+    invoiceTemplateRef.value?.startView()
+    return
+  }
+  if (submitting.value) return
   if (isReadOnly.value && isSaved.value) {
     await handleModify()
     return

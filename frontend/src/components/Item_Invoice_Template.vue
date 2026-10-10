@@ -326,7 +326,7 @@
       <!-- Items Table Area -->
       <div class="flex flex-col overflow-hidden" :class="tableClass">
         <div class="flex-1 overflow-y-auto overflow-x-hidden scrollbar-none">
-          <table class="w-full text-sm border-collapse border-l border-t border-[var(--color-border)]" :class="{ 'compact-discount-columns': doctype !== 'Stock Entry' }">
+          <table class="view-mode-table w-full text-sm border-collapse border-l border-t border-[var(--color-border)]" :class="{ 'compact-discount-columns': doctype !== 'Stock Entry' }">
             <thead>
               <tr class="sticky top-0 z-10 bg-[var(--color-lowlight)] border-b border-[var(--color-border)]">
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-8">#</th>
@@ -347,7 +347,7 @@
                 <th class="border-b border-[var(--color-border)] w-8"></th>
               </tr>
             </thead>
-            <tbody>
+            <tbody ref="tbodyRef" @keydown="onViewKeydown" @focusout="onViewFocusOut">
               <!-- #row slot wraps the entire <tr> so consumers can add :class/:ref/@click on the row -->
               <template v-for="(item, idx) in items" :key="idx">
                 <slot name="row" :item="item" :index="idx" :formatQty="formatQty" :format="format2p">
@@ -940,8 +940,77 @@ defineExpose({
   focusDiscountAmt: () => { discountAmtRef.value?.focus(); discountAmtRef.value?.select() },
   focusSaveBtn: () => saveBtnRef.value?.focus(),
   focusMop: () => mopSelectRef.value?.focus(),
-  toggleSidebar: () => { isSidebarCollapsed.value = !isSidebarCollapsed.value }
+  toggleSidebar: () => { isSidebarCollapsed.value = !isSidebarCollapsed.value },
+  startView
 })
+
+// ── View mode: read-only keyboard browsing of item rows (submitted bills) ──
+const tbodyRef = ref(null)
+const viewIdx = ref(-1)
+let viewReturnFocus = null
+
+function itemRowEls() {
+  // Item rows come first in tbody; table-extra-rows follow and are skipped
+  return Array.from(tbodyRef.value?.children || [])
+    .filter(el => el.tagName === 'TR')
+    .slice(0, props.items.length)
+}
+
+function focusViewRow(i) {
+  const rows = itemRowEls()
+  if (!rows.length) return
+  const next = Math.min(Math.max(i, 0), rows.length - 1)
+  rows.forEach(r => r.classList.remove('view-row-active'))
+  const row = rows[next]
+  viewIdx.value = next
+  row.classList.add('view-row-active')
+  // Rows of a read-only bill have tabindex -1; that still allows programmatic focus
+  if (!row.hasAttribute('tabindex')) row.setAttribute('tabindex', '-1')
+  row.focus({ preventScroll: true })
+  row.scrollIntoView({ block: 'nearest' })
+}
+
+function startView() {
+  if (!props.items.length) return
+  // Esc hands focus back to whatever opened view mode (the page's View button)
+  viewReturnFocus = document.activeElement
+  nextTick(() => focusViewRow(0))
+}
+
+function exitView() {
+  if (viewIdx.value < 0) return
+  itemRowEls().forEach(r => r.classList.remove('view-row-active'))
+  viewIdx.value = -1
+}
+
+function onViewKeydown(e) {
+  if (viewIdx.value < 0) return
+  const moves = {
+    ArrowDown: viewIdx.value + 1,
+    ArrowUp: viewIdx.value - 1,
+    PageDown: viewIdx.value + 10,
+    PageUp: viewIdx.value - 10,
+    Home: 0,
+    End: props.items.length - 1
+  }
+  if (e.key in moves) {
+    e.preventDefault()
+    e.stopPropagation()
+    focusViewRow(moves[e.key])
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
+    exitView()
+    if (viewReturnFocus?.isConnected) viewReturnFocus.focus()
+    else e.target.blur?.()
+  }
+}
+
+function onViewFocusOut(e) {
+  if (viewIdx.value >= 0 && !tbodyRef.value?.contains(e.relatedTarget)) exitView()
+}
+
+watch(() => [props.docNumber, props.items.length], exitView)
 
 onMounted(() => {
   const handleKeyDown = (e) => {
@@ -1045,6 +1114,14 @@ async function refreshSelectedParty() {
 .compact-discount-columns :deep(td:nth-last-child(5) input) {
   width: calc(6ch + 1rem);
   min-width: 0;
+}
+
+/* Row highlighted while browsing a submitted bill with the View button */
+.view-mode-table :deep(tr.view-row-active) {
+  background: var(--color-focus) !important;
+  color: var(--color-text-on-focus);
+  outline: 3px solid var(--color-focus);
+  outline-offset: -3px;
 }
 
 .scrollbar-none::-webkit-scrollbar {
