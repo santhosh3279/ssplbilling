@@ -115,12 +115,14 @@
                       v-model.number="p.markup"
                       step="0.01"
                       placeholder="%"
-                      class="w-32 rounded border border-[var(--color-info)]/30 bg-[var(--color-info)]/5 px-1 py-1 text-right font-mono font-bold text-[var(--color-info)] text-[18px] outline-none focus:ring-1 transition-colors"
+                      :disabled="isLocked(idx)"
+                      class="disabled:opacity-40 w-32 rounded border border-[var(--color-info)]/30 bg-[var(--color-info)]/5 px-1 py-1 text-right font-mono font-bold text-[var(--color-info)] text-[18px] outline-none focus:ring-1 transition-colors"
                       @keydown.enter.prevent="onCalcEnter(idx)"
                       @keydown.down.prevent="focusInput(`rate-${idx}-0`)"
                     />
                     <button
                       @click="applyCalc(p, idx)"
+                      :disabled="isLocked(idx)"
                       class="rounded bg-[var(--color-info)] p-1 text-white hover:bg-[var(--color-info)]/80 shadow-sm transition-transform active:scale-95 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                       title="Apply to all UOMs"
                     >
@@ -177,7 +179,9 @@
                         type="number"
                         v-model.number="p.uom_rates[u.uom]"
                         step="0.01"
-                        class="w-44 rounded border bg-[var(--color-surface)] px-1 py-1 text-right font-mono font-bold text-[var(--color-text)] text-[20px] outline-none focus:ring-1 transition-colors"
+                        :disabled="isLocked(idx)"
+                        :title="isLocked(idx) ? 'Buying price is locked for a submitted bill' : ''"
+                        class="disabled:opacity-50 disabled:cursor-not-allowed w-44 rounded border bg-[var(--color-surface)] px-1 py-1 text-right font-mono font-bold text-[var(--color-text)] text-[20px] outline-none focus:ring-1 transition-colors"
                         :class="u.uom === stockUom ? 'border-[var(--color-border)] focus:border-[var(--color-info)] focus:ring-[var(--color-info)]/20' : 'border-[var(--color-warning)]/40 focus:border-[var(--color-warning)] focus:ring-amber-500/20'"
                         @keydown.enter.prevent="onRateEnter(idx, uidx)"
                         @keydown.up.prevent="moveVertical(uidx, -1, idx)"
@@ -202,7 +206,7 @@
                       p.price_list === selectedPriceList ? 'bg-[var(--color-info)]/5 border-x-2 border-[var(--color-info)]' : '',
                       idx !== 0 ? 'cursor-pointer hover:underline decoration-dotted' : ''
                     ]"
-                    @click="idx !== 0 && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2)))"
+                    @click="idx !== 0 && !isLocked(idx) && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2)))"
                     :title="idx !== 0 ? 'Click to apply to proposed' : ''"
                   >
                     {{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}
@@ -354,7 +358,9 @@ const props = defineProps({
   initialDiscount: { type: Number, default: 0 },
   taxRate: { type: Number, default: 0 },
   isInclusive: { type: Boolean, default: false },
-  supplier: { type: String, default: '' }
+  supplier: { type: String, default: '' },
+  // Opened from a submitted bill: buying price lists are read-only
+  lockBuying: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -417,6 +423,16 @@ function showToast(message, type = 'success') {
       toast.value = null
     }
   }, 3000)
+}
+
+function isLocked(idx) {
+  return props.lockBuying && !!prices.value[idx]?.buying
+}
+
+// Nearest editable price list column at or after idx, or -1 if none
+function editableFrom(idx) {
+  for (let i = idx; i < prices.value.length; i++) if (!isLocked(i)) return i
+  return -1
 }
 
 const calculatedRatesByUom = computed(() => {
@@ -623,7 +639,7 @@ async function loadPrices(code) {
       }
 
       // Apply initial rate from props if provided for this price list and UOM
-      if (props.selectedPriceList && p.price_list === props.selectedPriceList && props.initialRate && props.initialUom) {
+      if (!(props.lockBuying && res.buying) && props.selectedPriceList && p.price_list === props.selectedPriceList && props.initialRate && props.initialUom) {
         res.uom_rates[props.initialUom] = props.initialRate
         if (props.initialUom === stockUom.value) {
           res.rate = props.initialRate
@@ -647,6 +663,8 @@ async function loadPrices(code) {
       if (prices.value[startPlIdx]?.buying && startPlIdx + 1 < prices.value.length) {
         focusPlIdx = startPlIdx + 1
       }
+      const editable = editableFrom(focusPlIdx)
+      if (editable !== -1) focusPlIdx = editable
       focusInput(`rate-${focusPlIdx}-0`)
     })
   } catch (e) {
@@ -703,7 +721,8 @@ async function savePrices() {
   if (!code) return
 
   // Only update prices that have changed (base rate or any uom rate)
-  const changedPrices = prices.value.filter(p => {
+  const changedPrices = prices.value.filter((p, idx) => {
+    if (isLocked(idx)) return false
     if (p.rate !== p.original_rate) return true
     for (const u of uoms.value) {
       if ((p.uom_rates[u.uom] ?? 0) !== (p.original_uom_rates[u.uom] ?? 0)) return true
@@ -775,18 +794,20 @@ async function savePercentageToItemMaster() {
 }
 
 function onCalcEnter(idx) {
-  if (idx < prices.value.length - 1) {
-    focusInput(`calc-${idx + 1}`)
+  const nextIdx = editableFrom(idx + 1)
+  if (nextIdx !== -1) {
+    focusInput(`calc-${nextIdx}`)
   } else {
-    focusInput(`rate-0-0`)
+    focusInput(`rate-${Math.max(editableFrom(0), 0)}-0`)
   }
 }
 
 function onRateEnter(idx, uidx) {
   activeRow.value = uidx
   // Move right across Price List columns first
-  if (idx < prices.value.length - 1) {
-    focusInput(`rate-${idx + 1}-${uidx}`)
+  const nextIdx = editableFrom(idx + 1)
+  if (nextIdx !== -1) {
+    focusInput(`rate-${nextIdx}-${uidx}`)
     return
   }
   // Last PL column: go to next UOM row
@@ -796,7 +817,7 @@ function onRateEnter(idx, uidx) {
 function goToNextRow(uidx) {
   if (uidx < uoms.value.length - 1) {
     activeRow.value = uidx + 1
-    focusInput(`rate-0-${uidx + 1}`)
+    focusInput(`rate-${Math.max(editableFrom(0), 0)}-${uidx + 1}`)
   } else {
     saveAll()
   }

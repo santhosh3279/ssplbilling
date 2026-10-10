@@ -846,6 +846,7 @@
       :tax-rate="priceListUpdateTaxRate"
       :is-inclusive="isInclusiveTax"
       :supplier="supplierId"
+      :lock-buying="viewPriceUpdate"
       @close="onPriceListUpdateClose"
       @saved="onPriceListUpdateSaved"
     />
@@ -1185,6 +1186,7 @@ const pendingClearAfterPrint = ref(false)
 const showJumpModal = ref(false)
 const showPriceListUpdate = ref(false)
 const editRowPriceUpdateIdx = ref(null) // null = pending-item context, number = row-edit context
+const viewPriceUpdate = ref(false) // opened from view mode: selling prices only, bill untouched
 const priceListUpdateItemCode = computed(() => {
   if (editRowPriceUpdateIdx.value !== null) return items.value[editRowPriceUpdateIdx.value]?.item_code || ''
   return pendingItem.value?.item_code || ''
@@ -2126,7 +2128,14 @@ function handleViewRowKeydown(e, idx) {
     e.stopPropagation()
     exitViewMode()
     if (viewReturnFocus?.isConnected) viewReturnFocus.focus()
-  } else if (['Enter', 'ArrowLeft', 'ArrowRight', 'Delete', 'Backspace'].includes(e.key)) {
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!items.value[idx]?.item_code) return
+    // Submitted bill: update selling prices only; buying price list stays locked
+    viewPriceUpdate.value = true
+    openRowPriceListUpdate(idx)
+  } else if (['ArrowLeft', 'ArrowRight', 'Delete', 'Backspace'].includes(e.key)) {
     // Read mode: no column editing, item search or row deletion
     e.preventDefault()
     e.stopPropagation()
@@ -2135,6 +2144,8 @@ function handleViewRowKeydown(e, idx) {
 
 function handleViewRowFocusOut(e) {
   // Leave view mode once focus moves anywhere other than another item row
+  // (the price list update window opened from view mode doesn't count)
+  if (showPriceListUpdate.value) return
   if (!rowRefs.value.includes(e.relatedTarget)) exitViewMode()
 }
 
@@ -2594,7 +2605,17 @@ function openRowPriceListUpdate(idx) {
   showPriceListUpdate.value = true
 }
 
+// Back to the same row in view mode; the submitted bill's items are never touched
+function closeViewPriceUpdate() {
+  showPriceListUpdate.value = false
+  viewPriceUpdate.value = false
+  const idx = editRowPriceUpdateIdx.value
+  editRowPriceUpdateIdx.value = null
+  if (isViewing.value && idx !== null) focusRow(idx)
+}
+
 function onPriceListUpdateSaved(data) {
+  if (viewPriceUpdate.value) return closeViewPriceUpdate()
   showPriceListUpdate.value = false
   if (editRowPriceUpdateIdx.value !== null) {
     const idx = editRowPriceUpdateIdx.value
@@ -2626,6 +2647,7 @@ function onPriceListUpdateSaved(data) {
 }
 
 function onPriceListUpdateClose() {
+  if (viewPriceUpdate.value) return closeViewPriceUpdate()
   showPriceListUpdate.value = false
   if (editRowPriceUpdateIdx.value !== null) {
     const idx = editRowPriceUpdateIdx.value
