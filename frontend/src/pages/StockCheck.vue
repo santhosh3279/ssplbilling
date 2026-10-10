@@ -7,7 +7,8 @@
         <span v-if="loading" class="text-xs font-semibold text-[var(--color-info)] animate-pulse">Searching…</span>
         <span v-else-if="searched" class="text-xs text-[var(--color-text-muted)]">{{ results.length }} found</span>
       </div>
-      <div class="relative">
+      <div class="flex gap-2">
+      <div class="relative flex-1">
         <input
           ref="searchRef"
           v-model="query"
@@ -27,6 +28,16 @@
           class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2.5 py-1 text-lg text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
           @click="clearSearch"
         >&times;</button>
+      </div>
+      <button
+        type="button"
+        aria-label="Scan barcode with camera"
+        title="Scan barcode"
+        class="flex w-14 shrink-0 items-center justify-center rounded-xl bg-[var(--color-info)] text-white shadow-sm active:scale-95"
+        @click="showScanner = true"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8"/><path d="M11 8v8"/><path d="M15 8v8"/><path d="M18 8v8"/></svg>
+      </button>
       </div>
     </header>
 
@@ -125,6 +136,8 @@
       </article>
     </main>
 
+    <BarcodeScanner v-if="showScanner" @detected="onScanned" @close="showScanner = false" />
+
     <!-- Full-size photo -->
     <div
       v-if="previewImage"
@@ -137,8 +150,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted } from 'vue'
+import { ref, reactive, watch, onMounted, nextTick } from 'vue'
 import { frappeGet } from '../api.js'
+import BarcodeScanner from '../components/BarcodeScanner.vue'
 
 const query = ref('')
 const lastQuery = ref('')
@@ -149,6 +163,7 @@ const error = ref('')
 const previewImage = ref('')
 const brokenImages = reactive({})
 const searchRef = ref(null)
+const showScanner = ref(false)
 
 let debounceTimer = null
 let requestSeq = 0
@@ -184,6 +199,13 @@ watch(query, () => {
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(runSearch, 350)
 })
+
+function onScanned(code) {
+  showScanner.value = false
+  query.value = code
+  // Search now instead of waiting out the typing debounce the query watcher just armed
+  nextTick(runSearch)
+}
 
 function clearSearch() {
   query.value = ''
