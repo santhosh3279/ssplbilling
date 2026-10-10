@@ -725,11 +725,6 @@ async function loadMetadata() {
     const data = await fetchItemCreationMetadata()
     metadata.value = data
 
-    if (data.item_groups?.length && !form.value.item_group) {
-      const allGroup = data.item_groups.find(g => g.name === 'All Item Groups')
-      form.value.item_group = allGroup ? allGroup.name : data.item_groups[0].name
-    }
-
     if (data.naming_series?.length) {
       selectedSeries.value = data.naming_series[0]
       if (!isEditMode.value) generateBarcode()
@@ -835,14 +830,16 @@ async function handleSubmit() {
   }
 }
 
-function resetForm() {
-  const cache = loadCache()
+// blank=true (window just opened, e.g. via F2) ignores the field cache so every
+// field starts empty; after a save the cache carries values over to the next item.
+function resetForm(blank = false) {
+  const cache = blank ? {} : loadCache()
   form.value = {
     item_name: '',
     item_print_name: '',
     barcode: '',
     image: '',
-    item_group:        cache.item_group        || metadata.value.item_groups[0]?.name || '',
+    item_group:        blank ? '' : (cache.item_group || metadata.value.item_groups[0]?.name || ''),
     custom_is_gst_item: 0,
     hsn_sac:           (retainTaxFields.value && cache.hsn_sac)           || '',
     stock_uom:         cache.stock_uom         || 'Nos',
@@ -879,7 +876,7 @@ watch(() => props.show, async (newVal) => {
   if (newVal) {
     forceCreate.value = false
     if (!isEditMode.value) {
-      resetForm()
+      resetForm(true)
       await loadMetadata()
     } else {
       await loadMetadata()
@@ -891,7 +888,7 @@ watch(() => props.show, async (newVal) => {
 
 onMounted(async () => {
   if (props.show) {
-    if (!isEditMode.value) resetForm()
+    if (!isEditMode.value) resetForm(true)
     await loadMetadata()
     if (isEditMode.value) {
       await loadForEdit(props.editItemCode)
