@@ -1,7 +1,7 @@
 <template>
-  <div class="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
-    <!-- Sticky search bar -->
-    <header class="sticky top-0 z-20 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-3 pt-4 shadow-sm">
+  <div class="flex h-[100dvh] flex-col bg-[var(--color-bg)] text-[var(--color-text)]">
+    <!-- Search bar (top) · scrolling results · on-screen keyboard (bottom) -->
+    <header class="z-20 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-3 pt-4 shadow-sm">
       <div class="mb-2 flex items-center justify-between">
         <h1 class="text-lg font-bold">Stock Check</h1>
         <span v-if="loading" class="text-xs font-semibold text-[var(--color-info)] animate-pulse">Searching…</span>
@@ -19,8 +19,7 @@
           ref="searchRef"
           v-model="query"
           type="text"
-          inputmode="search"
-          enterkeyhint="search"
+          inputmode="none"
           autocomplete="off"
           autocapitalize="off"
           spellcheck="false"
@@ -48,7 +47,8 @@
       </div>
     </header>
 
-    <main class="mx-auto max-w-xl space-y-3 px-4 py-4">
+    <main class="min-h-0 flex-1 overflow-y-auto">
+    <div class="mx-auto max-w-xl space-y-3 px-4 py-4">
       <div v-if="error" class="rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 p-3 text-sm text-[var(--color-danger)]">
         {{ error }}
       </div>
@@ -137,7 +137,16 @@
           </div>
         </div>
       </article>
+    </div>
     </main>
+
+    <MobileSearchKeyboard
+      class="shrink-0"
+      @key="typeKey"
+      @backspace="backspace"
+      @clear="clearSearch"
+      @enter="runSearch()"
+    />
 
     <BarcodeScanner v-if="showScanner" :verify="codeExists" @detected="onScanned" @close="showScanner = false" />
 
@@ -156,6 +165,7 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { frappeGet } from '../api.js'
 import BarcodeScanner from '../components/BarcodeScanner.vue'
+import MobileSearchKeyboard from '../components/MobileSearchKeyboard.vue'
 
 const query = ref('')
 const lastQuery = ref('')
@@ -307,6 +317,32 @@ async function codeExists(code) {
 function clearSearch() {
   query.value = ''
   searchRef.value?.focus()
+}
+
+// On-screen keyboard edits at the caret (the input stays focused, inputmode="none")
+function editAtCaret(edit) {
+  const el = searchRef.value
+  const v = query.value
+  const start = el?.selectionStart ?? v.length
+  const end = el?.selectionEnd ?? v.length
+  const { text, caret } = edit(v, start, end)
+  query.value = text
+  nextTick(() => {
+    el?.focus()
+    el?.setSelectionRange(caret, caret)
+  })
+}
+
+function typeKey(ch) {
+  editAtCaret((v, s, e) => ({ text: v.slice(0, s) + ch + v.slice(e), caret: s + ch.length }))
+}
+
+function backspace() {
+  editAtCaret((v, s, e) => {
+    if (s !== e) return { text: v.slice(0, s) + v.slice(e), caret: s }
+    if (s === 0) return { text: v, caret: 0 }
+    return { text: v.slice(0, s - 1) + v.slice(s), caret: s - 1 }
+  })
 }
 
 function otherBarcodes(item) {
