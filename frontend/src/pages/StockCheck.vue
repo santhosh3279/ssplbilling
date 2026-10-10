@@ -102,16 +102,17 @@
           </div>
         </div>
 
-        <!-- Selling prices -->
-        <div class="border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Selling Price</div>
+        <!-- Selling prices: price list names form the shaded heading row, rates below -->
         <div v-if="!item.prices.length" class="border-t border-[var(--color-border)] px-3 py-2 text-center text-sm italic text-[var(--color-text-muted)]">No selling price set</div>
-        <div v-else class="grid gap-px border-t border-[var(--color-border)] bg-[var(--color-border)] text-center text-xs" :class="gridCols(item.prices.length)">
-          <div v-for="p in item.prices" :key="p.price_list" class="bg-[var(--color-surface)] px-2 py-2">
-            <div class="truncate text-[var(--color-text-muted)]" :title="p.price_list">{{ p.price_list }}</div>
-            <div v-for="(rate, uom) in p.rates" :key="uom" class="font-mono text-sm font-bold tabular-nums">
-              {{ rate }}<span v-if="Object.keys(p.rates).length > 1 || uom !== item.uom" class="ml-1 font-sans text-[10px] font-normal text-[var(--color-text-muted)]">/ {{ uom }}</span>
+        <div v-else class="grid grid-flow-col grid-rows-[auto_auto] auto-cols-fr gap-px border-t border-[var(--color-border)] bg-[var(--color-border)] text-center">
+          <template v-for="p in item.prices" :key="p.price_list">
+            <div class="truncate bg-[var(--color-surface-raised)] px-1 py-1 text-[11px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]" :title="p.price_list">{{ p.price_list }}</div>
+            <div class="bg-[var(--color-surface)] px-1 py-1.5">
+              <div v-for="(rate, uom) in p.rates" :key="uom" class="font-mono text-[1.75rem] font-bold leading-tight tabular-nums">
+                {{ rate }}<span v-if="Object.keys(p.rates).length > 1 || uom !== item.uom" class="ml-1 font-sans text-[10px] font-normal text-[var(--color-text-muted)]">/ {{ uom }}</span>
+              </div>
             </div>
-          </div>
+          </template>
         </div>
 
         <!-- Stock: book stock, draft (redis) quantities, then each warehouse, in one row
@@ -310,11 +311,6 @@ function clearSearch() {
 
 function otherBarcodes(item) {
   return (item.barcodes || []).filter(b => b !== item.item_code)
-}
-
-// Same 3-across cell layout as the stock breakdown; fewer cells stretch to fill the row
-function gridCols(n) {
-  return n === 1 ? 'grid-cols-1' : n === 2 || n === 4 ? 'grid-cols-2' : 'grid-cols-3'
 }
 
 // "NCK - SSPL" → "NCK": the company suffix is the same on every warehouse
