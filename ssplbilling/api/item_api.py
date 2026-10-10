@@ -1,6 +1,21 @@
 import frappe
 import json
 
+
+def _check_duplicate_item_name(item_name, exclude_item=None):
+	"""Item names must be unique (print names may repeat). Comparison is trimmed and
+	case-insensitive, matching the DB collation."""
+	item_name = (item_name or "").strip()
+	if not item_name:
+		return
+	filters = {"item_name": item_name}
+	if exclude_item:
+		filters["name"] = ["!=", exclude_item]
+	existing = frappe.db.get_value("Item", filters, "name")
+	if existing:
+		frappe.throw(f"Item name '{item_name}' already exists (Item {existing})", title="Duplicate Item Name")
+
+
 @frappe.whitelist()
 def get_item_creation_metadata(company=None):
 	"""Fetch all metadata needed for the item creation form.
@@ -47,6 +62,9 @@ def create_item(data):
 	"""Create a new Item."""
 	if isinstance(data, str):
 		data = json.loads(data)
+
+	# Before make_autoname so a rejected item does not consume a series number
+	_check_duplicate_item_name(data.get("item_name"))
 	
 	is_manual = data.get("is_manual_barcode")
 	naming_series = data.get("naming_series")
@@ -222,6 +240,10 @@ def update_item(data):
 		frappe.throw("Item not found")
 
 	item = frappe.get_doc("Item", item_code)
+	new_name = (data.get("item_name") or "").strip()
+	# Only on rename, so items that already share a name can still be edited
+	if new_name and new_name.lower() != (item.item_name or "").strip().lower():
+		_check_duplicate_item_name(new_name, exclude_item=item_code)
 	item.item_name = data.get("item_name") or item.item_name
 	item.item_print_name = data.get("item_print_name") or ""
 	item.item_group = data.get("item_group") or item.item_group
