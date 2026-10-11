@@ -128,7 +128,23 @@ def _apply_payload_to_doc(doc, payload):
     doc.additional_discount_percentage = discount_pct if discount_pct > 0 else 0
     doc.discount_amount = discount_amt if discount_amt > 0 else 0
 
+    # The client no longer refreshes the customer before saving, so resolve the address
+    # here: default to the customer's latest address (same pick as
+    # customersearch_api.get_customer_full) and take the state from the Address itself.
+    customer_address = payload.get("customer_address") or None
+    address_from_payload = bool(customer_address)
+    if not customer_address and doc.customer:
+        customer_address = frappe.db.get_value(
+            "Dynamic Link",
+            {"link_doctype": "Customer", "link_name": doc.customer, "parenttype": "Address"},
+            "parent",
+            order_by="modified desc",
+        )
     state_name = payload.get("place_of_supply") or ""
+    if customer_address:
+        address_state = frappe.db.get_value("Address", customer_address, "state")
+        if address_state is not None:
+            state_name = address_state
     if state_name and state_name in STATE_NUMBERS:
         doc.place_of_supply = f"{STATE_NUMBERS[state_name]}-{state_name}"
     else:
@@ -144,8 +160,7 @@ def _apply_payload_to_doc(doc, payload):
 
     # Frappe's update_if_missing only fills None fields. Clear all values derived
     # from the previous party/address before asking it to populate the new one.
-    customer_address = payload.get("customer_address") or None
-    if customer_address and not frappe.db.exists("Dynamic Link", {
+    if address_from_payload and not frappe.db.exists("Dynamic Link", {
         "parent": customer_address,
         "parenttype": "Address",
         "link_doctype": "Customer",
@@ -195,13 +210,9 @@ def _apply_payload_to_doc(doc, payload):
             item_row["allow_zero_valuation_rate"] = 1
         doc.append("items", item_row)
 
-    doc.set_missing_values()
-    # set_missing_values() overwrites item warehouses with each item's default warehouse;
-    # re-apply the invoice-level warehouse so all rows use the correct one.
-    if warehouse:
-        for row in doc.items:
-            row.warehouse = warehouse
-
+    # set_missing_values() and calculate_taxes_and_totals() are left to the controller's
+    # validate(): it runs both on insert/save, and calling them here too doubled the
+    # per-row get_item_details() lookups (~half the save time on large bills).
     if doc.taxes_and_charges:
         doc.set("taxes", _erpnext_tax_rows("Sales Taxes and Charges Template", doc.taxes_and_charges) or [])
 
@@ -227,8 +238,6 @@ def _apply_payload_to_doc(doc, payload):
 
     for row, item in zip(doc.items, payload.get("items", [])):
         _preserve_percentage_rate(row, item)
-
-    doc.calculate_taxes_and_totals()
 
     if payload.get("custom_customer_name"):
         doc.custom_customer_name = payload.get("custom_customer_name")

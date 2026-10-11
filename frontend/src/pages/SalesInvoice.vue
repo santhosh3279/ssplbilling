@@ -1726,6 +1726,29 @@ function handlePageUp() {
   }
 }
 
+async function refreshCustomerDetails(customer) {
+  try {
+    const cust = await frappeGet('ssplbilling.api.salesinvoice_api.get_customer_details', { customer })
+    // Ignore a late reply once the bill has moved on to another customer (or was cleared).
+    if (!cust || customerId.value !== customer) return
+    customerName.value = cust.customer_name || cust.name || customerName.value
+    customerDetails.value = cust.mobile || cust.email || ''
+    customerMobile.value = cust.mobile || ''
+    customerGstin.value = cust.gstin || ''
+    customerModifier.value = cust.pricelist_multiplication_factor ?? null
+
+    // Keep the address chosen on the bill when the customer has multiple addresses.
+    if (!customerAddressName.value || customerAddressName.value === cust.address_name) {
+      customerAddressName.value = cust.address_name || ''
+      customerState.value = cust.state || ''
+      const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
+      customerAddress.value = addrParts.join(', ')
+    }
+  } catch (err) {
+    console.error('Failed to fetch latest customer details from server:', err)
+  }
+}
+
 async function handleSave() {
   // Submitted bills cannot change; browse their items read-only instead
   if (isSubmitted.value) {
@@ -1746,28 +1769,10 @@ async function handleSave() {
 
   submitting.value = true
 
-  // Fetch the latest customer details from the server before saving
-  try {
-    const cust = await frappeGet('ssplbilling.api.salesinvoice_api.get_customer_details', { customer: customerId.value })
-    if (cust) {
-      customerName.value = cust.customer_name || cust.name || customerName.value
-      customerId.value = cust.name || customerId.value
-      customerDetails.value = cust.mobile || cust.email || ''
-      customerMobile.value = cust.mobile || ''
-      customerGstin.value = cust.gstin || ''
-      customerModifier.value = cust.pricelist_multiplication_factor ?? null
+  // The server resolves the latest address/state itself, so the save no longer waits on
+  // this; it only keeps the on-screen customer details current.
+  refreshCustomerDetails(customerId.value)
 
-      // Keep the address chosen on the bill when the customer has multiple addresses.
-      if (!customerAddressName.value || customerAddressName.value === cust.address_name) {
-        customerAddressName.value = cust.address_name || ''
-        customerState.value = cust.state || ''
-        const addrParts = [cust.address_line1, cust.city, cust.state].filter(Boolean)
-        customerAddress.value = addrParts.join(', ')
-      }
-    }
-  } catch (err) {
-    console.error('Failed to fetch latest customer details from server:', err)
-  }
   const additionalCharges = []
   const freight = parseFloat(freightEntry.value) || 0
   const loading = parseFloat(loadingEntry.value) || 0
