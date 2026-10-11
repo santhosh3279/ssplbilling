@@ -454,7 +454,7 @@ useSubwindowWatcher(computed(() => props.show), {
 })
 
 const { items: allItems, refreshItemCache, lookupItemInCache, updateItemPriceInCache, lastSync, syncLoading: loading, lastParams } = useItemCache()
-const { hasHistory, getItemHistoryFromCache } = useCustomerHistory()
+const { hasHistory, getItemHistoryQty } = useCustomerHistory()
 
 const query = ref('')
 const selectedIdx = ref(0)
@@ -810,6 +810,9 @@ function updateItemInsight(item) {
 // ─── Local Filtering ─────────────────────────────────────────────────────────
 
 const results = computed(() => {
+  // The watcher below keeps this computed live even while the modal is closed; without this
+  // guard every stock socket update re-filtered ~12k items (and their sales history) unseen.
+  if (!props.show) return []
   const q = query.value.trim().toLowerCase()
   const terms = q.split(/\s+/).filter(Boolean)
   let list = allItems.value
@@ -885,7 +888,7 @@ const results = computed(() => {
       ...i,
       price: displayPrice,
       has_history: hasHistory(i.item_code),
-      history_qty: getItemHistoryFromCache(i.item_code).reduce((s, h) => s + h.qty, 0)
+      history_qty: getItemHistoryQty(i.item_code)
     }
   })
 })

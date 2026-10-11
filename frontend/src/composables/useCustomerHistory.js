@@ -22,6 +22,19 @@ const customerHistoryItemCodes = computed(() => {
   return set
 })
 
+// History rows grouped by item code, in fetch order. Lookups used to filter the whole
+// history (up to 15k rows) per item, and item lists call them for every visible row.
+const customerHistoryByItem = computed(() => {
+  const map = new Map()
+  for (const h of customerSalesHistory.value) {
+    if (!h.item_code) continue
+    let rows = map.get(h.item_code)
+    if (!rows) map.set(h.item_code, (rows = []))
+    rows.push(h)
+  }
+  return map
+})
+
 const supplierHistoryItemCodes = computed(() => {
   const set = new Set()
   for (const h of supplierPurchaseHistory.value) {
@@ -213,7 +226,13 @@ export function useCustomerHistory() {
   function getItemHistoryFromCache(itemCode) {
     if (!itemCode) return []
     const company = localStorage.getItem('wb-company') || ''
-    return customerSalesHistory.value.filter(h => h.item_code === itemCode && (!company || h.company === company))
+    const rows = customerHistoryByItem.value.get(itemCode) || []
+    return rows.filter(h => !company || h.company === company)
+  }
+
+  /** Total qty this customer bought of an item (current company). */
+  function getItemHistoryQty(itemCode) {
+    return getItemHistoryFromCache(itemCode).reduce((s, h) => s + h.qty, 0)
   }
 
   function hasSupplierHistory(itemCode) {
@@ -283,6 +302,7 @@ export function useCustomerHistory() {
     fetchSupplierPurchaseHistory,
     hasHistory,
     getItemHistoryFromCache,
+    getItemHistoryQty,
     hasSupplierHistory,
     getSupplierItemHistoryFromCache,
     clearHistory,

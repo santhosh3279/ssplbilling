@@ -1,7 +1,7 @@
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { frappeGet } from '../api.js'
 import {
-  patchItemInCache, updateItemPriceInCache, updateItemStockInCache, refreshDiscountRuleCache,
+  patchItemInCache, updateItemPriceInCache, updateItemStockInCache, updateItemStocksInCache, refreshDiscountRuleCache,
   getLoadedItemScopes, reconcileItemDatasets, removePriceListFromCache, updatePriceListFlagsInCache,
   renamePriceListInCache, setPriceListRatesInCache,
 } from '../services/itemCache.js'
@@ -15,6 +15,7 @@ let _socket = null
 let _handler = null
 let _priceHandler = null
 let _stockHandler = null
+let _stockBatchHandler = null
 let _discountRuleHandler = null
 let _connectHandler = null
 let _priceListHandler = null
@@ -84,6 +85,18 @@ function _handleVisibilityChange() {
   }
 }
 
+function _allowedWarehouses() {
+  try {
+    return JSON.parse(localStorage.getItem('wb-warehouses') || '[]')
+  } catch {
+    return []
+  }
+}
+
+function _inCompanyWarehouses(warehouse, allowed) {
+  return !allowed.length || allowed.includes(warehouse)
+}
+
 export function initItemSync() {
   const socket = getFrappeSocket()
   _socket = socket
@@ -114,11 +127,7 @@ export function initItemSync() {
     if (!data?.item_code || !data?.warehouse) return
 
     // Filter stock updates by company's warehouses
-    let allowedWarehouses = []
-    try {
-      allowedWarehouses = JSON.parse(localStorage.getItem('wb-warehouses') || '[]')
-    } catch {}
-    if (allowedWarehouses.length && !allowedWarehouses.includes(data.warehouse)) {
+    if (!_inCompanyWarehouses(data.warehouse, _allowedWarehouses())) {
       console.log('[useItemSync] ignoring stock_update for warehouse not in current company:', data.warehouse)
       return
     }
@@ -128,6 +137,19 @@ export function initItemSync() {
     window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
   }
   socket.on('stock_update', _stockHandler)
+
+  // One message per saved document (every line's stock), applied as one cache change.
+  _stockBatchHandler = (data) => {
+    const allowed = _allowedWarehouses()
+    const updates = (data?.updates || []).filter(
+      u => u?.item_code && u?.warehouse && _inCompanyWarehouses(u.warehouse, allowed)
+    )
+    if (!updates.length) return
+    console.log(`[useItemSync] received stock_update_batch: ${updates.length} item(s)`)
+    updateItemStocksInCache(updates)
+    window.dispatchEvent(new CustomEvent('wb-item-cache-updated'))
+  }
+  socket.on('stock_update_batch', _stockBatchHandler)
 
   // Price List enabled / disabled / re-flagged / renamed / deleted: patch cached items in place.
   _priceListHandler = (data) => {
@@ -195,6 +217,10 @@ export function destroyItemSync() {
   if (_stockHandler) {
     socket.off('stock_update', _stockHandler)
     _stockHandler = null
+  }
+  if (_stockBatchHandler) {
+    socket.off('stock_update_batch', _stockBatchHandler)
+    _stockBatchHandler = null
   }
   if (_discountRuleHandler) {
     socket.off('discount_rule_update', _discountRuleHandler)

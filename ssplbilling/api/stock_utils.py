@@ -211,14 +211,9 @@ def _flush_stock_ledger_updates():
 	frappe.local._sspl_stock_pairs = None
 	if not pending:
 		return
-	draft_qtys = get_draft_invoice_qtys_from_redis()
-	purchase_qtys = get_draft_purchase_qtys_from_redis()
-	for item_code, warehouse in pending:
-		frappe.publish_realtime(
-			"stock_update",
-			get_item_available_stock(item_code, warehouse, draft_qtys, purchase_qtys),
-			after_commit=False,
-		)
+	frappe.publish_realtime(
+		"stock_update_batch", {"updates": _stock_payloads(pending)}, after_commit=False
+	)
 
 
 def _discard_stock_ledger_updates():
@@ -244,13 +239,23 @@ def _publish_stock_updates_for_doc(doc):
 	spanning both its current and pre-save line items."""
 	if doc is None:
 		return
-	pairs = dict.fromkeys(_iter_item_warehouse_pairs(doc))
+	pairs = list(dict.fromkeys(_iter_item_warehouse_pairs(doc)))
 	if not pairs:
 		return
+	frappe.publish_realtime("stock_update_batch", {"updates": _stock_payloads(pairs)}, after_commit=True)
+	# Public catalogues receive an invalidation, never private draft bill details.
+	from ssplbilling.api.offer_sync import _broadcast_offer_update
+	for item_code in dict.fromkeys(item_code for item_code, _ in pairs):
+		_broadcast_offer_update({"type": "stock", "item_code": item_code})
+
+
+def _stock_payloads(pairs):
+	"""stock_update payloads for many (item_code, warehouse) pairs, sent as one
+	stock_update_batch message: a 70-line bill used to fan out into 70 socket messages,
+	and every client re-ran its reactive item lists once per message."""
 	draft_qtys = get_draft_invoice_qtys_from_redis()
 	purchase_qtys = get_draft_purchase_qtys_from_redis()
-	for item_code, warehouse in pairs:
-		publish_stock_update(item_code, warehouse, draft_qtys, purchase_qtys)
+	return [get_item_available_stock(ic, wh, draft_qtys, purchase_qtys) for ic, wh in pairs]
 
 def publish_stock_updates(doc, method=None):
 	"""Doc event handler: broadcast live stock figures for every item on a stock document."""

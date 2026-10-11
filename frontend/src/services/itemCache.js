@@ -451,43 +451,72 @@ function sumCompanyDrafts(byWarehouse, fallbackTotal) {
  * recomputing each one's warehouse-scoped figures the way get_all_items_detailed does.
  */
 export function updateItemStockInCache(event) {
-  const { item_code: itemCode, warehouse, qty } = event
   for (const ds of datasets.values()) {
     const list = listFor(ds)
-    const idx = list.findIndex(i => i.item_code === itemCode)
+    const idx = list.findIndex(i => i.item_code === event.item_code)
     if (idx === -1) continue
-
-    const item = { ...list[idx] }
-    const warehouseStock = [...(item.warehouse_stock || [])]
-    const whIdx = warehouseStock.findIndex(w => w.warehouse === warehouse)
-    if (whIdx !== -1) {
-      warehouseStock[whIdx] = { ...warehouseStock[whIdx], qty }
-    } else {
-      warehouseStock.push({ warehouse, qty })
-    }
-    item.warehouse_stock = warehouseStock
-
-    // The server sums every warehouse only when no warehouse is sent ('' is falsy there);
-    // any other value — including "null" — counts that one warehouse.
-    const scope = String(ds.warehouse)
-    if (scope === '') {
-      item.stock = warehouseStock.reduce((sum, w) => sum + (w.qty || 0), 0)
-      // The server counts drafts in the company's warehouses only; the event totals cover all.
-      item.redis_stock = sumCompanyDrafts(event.draft_by_warehouse, event.redis_stock)
-      item.redis_purchase_stock = sumCompanyDrafts(event.draft_purchase_by_warehouse, event.redis_purchase_stock)
-      // valuation_rate is left as synced: the server takes whichever Bin it happens to read last.
-    } else {
-      item.stock = warehouseStock.reduce((sum, w) => sum + (w.warehouse === scope ? w.qty || 0 : 0), 0)
-      if (warehouse === scope) {
-        if (event.draft_qty !== undefined) item.redis_stock = event.draft_qty
-        if (event.draft_purchase_qty !== undefined) item.redis_purchase_stock = event.draft_purchase_qty
-        if (event.valuation_rate > 0) item.valuation_rate = event.valuation_rate
-      }
-    }
-
-    list.splice(idx, 1, item)
+    list.splice(idx, 1, stockPatchedItem(list[idx], event, ds))
   }
   lastSync.value = serverNow().getTime()
+}
+
+/**
+ * Apply a stock_update_batch (many stock_update events from one save) with a single reactive
+ * change per dataset. Patching row by row re-ran every computed/watcher over the ~12k-item list
+ * once per event, which froze the page for seconds after saving a large bill.
+ */
+export function updateItemStocksInCache(events) {
+  if (!events?.length) return
+  for (const ds of datasets.values()) {
+    const base = toRaw(listFor(ds))
+    const indexByCode = new Map()
+    // First match wins, like the findIndex in updateItemStockInCache.
+    base.forEach((item, idx) => { if (!indexByCode.has(item.item_code)) indexByCode.set(item.item_code, idx) })
+    let next = null
+    for (const event of events) {
+      const idx = indexByCode.get(event.item_code)
+      if (idx === undefined) continue
+      if (!next) next = base.slice()
+      next[idx] = stockPatchedItem(next[idx], event, ds)
+    }
+    if (!next) continue
+    ds.list = next
+    if (ds.key === activeKey) items.value = next
+  }
+  lastSync.value = serverNow().getTime()
+}
+
+/** Copy of `cached` with one stock_update event applied, scoped to the dataset's warehouse. */
+function stockPatchedItem(cached, event, ds) {
+  const { warehouse, qty } = event
+  const item = { ...cached }
+  const warehouseStock = [...(item.warehouse_stock || [])]
+  const whIdx = warehouseStock.findIndex(w => w.warehouse === warehouse)
+  if (whIdx !== -1) {
+    warehouseStock[whIdx] = { ...warehouseStock[whIdx], qty }
+  } else {
+    warehouseStock.push({ warehouse, qty })
+  }
+  item.warehouse_stock = warehouseStock
+
+  // The server sums every warehouse only when no warehouse is sent ('' is falsy there);
+  // any other value — including "null" — counts that one warehouse.
+  const scope = String(ds.warehouse)
+  if (scope === '') {
+    item.stock = warehouseStock.reduce((sum, w) => sum + (w.qty || 0), 0)
+    // The server counts drafts in the company's warehouses only; the event totals cover all.
+    item.redis_stock = sumCompanyDrafts(event.draft_by_warehouse, event.redis_stock)
+    item.redis_purchase_stock = sumCompanyDrafts(event.draft_purchase_by_warehouse, event.redis_purchase_stock)
+    // valuation_rate is left as synced: the server takes whichever Bin it happens to read last.
+  } else {
+    item.stock = warehouseStock.reduce((sum, w) => sum + (w.warehouse === scope ? w.qty || 0 : 0), 0)
+    if (warehouse === scope) {
+      if (event.draft_qty !== undefined) item.redis_stock = event.draft_qty
+      if (event.draft_purchase_qty !== undefined) item.redis_purchase_stock = event.draft_purchase_qty
+      if (event.valuation_rate > 0) item.valuation_rate = event.valuation_rate
+    }
+  }
+  return item
 }
 
 /**
