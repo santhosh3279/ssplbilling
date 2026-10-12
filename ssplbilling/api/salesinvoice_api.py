@@ -192,7 +192,9 @@ def record_bill_edit(bill_no, tab_id=None):
 		if stored_user != frappe.session.user:
 			user_info = frappe.db.get_value("User", stored_user, "full_name") or stored_user
 			return {"status": "conflict", "reason": "other_user", "user": user_info}
-		else:
+		# The same tab re-taking its own lock (left behind by a refresh, crash or closed modify
+		# window) is not a conflict; only a different tab of the same user is.
+		if not tab_id or stored_tab_id != tab_id:
 			return {"status": "conflict", "reason": "same_user_other_tab"}
 
 	val_to_store = f"{frappe.session.user}|{tab_id or ''}"

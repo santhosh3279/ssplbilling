@@ -1760,26 +1760,24 @@ async function handleSave() {
   } catch (err) {
     console.error('Failed to fetch latest supplier details from server:', err)
   }
+  // Charges are always sent; without an account configured in this browser the server reuses
+  // the bill's existing account for that charge, or refuses instead of dropping it.
   const additionalCharges = []
   const freight = parseFloat(freightEntry.value) || 0
   const loading = parseFloat(loadingEntry.value) || 0
   const packing = parseFloat(packingEntry.value) || 0
   const other = parseFloat(otherEntry.value) || 0
   if (freight !== 0) {
-    const acct = localStorage.getItem('wb_freight')
-    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: freight, description: 'Freight' })
+    additionalCharges.push({ charge_type: 'Actual', account_head: localStorage.getItem('wb_freight') || null, tax_amount: freight, description: 'Freight' })
   }
   if (loading !== 0) {
-    const acct = localStorage.getItem('wb-tax-paid-on-purchase')
-    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: loading, description: 'Tax Paid' })
+    additionalCharges.push({ charge_type: 'Actual', account_head: localStorage.getItem('wb-tax-paid-on-purchase') || null, tax_amount: loading, description: 'Tax Paid' })
   }
   if (packing !== 0) {
-    const acct = localStorage.getItem('wb-packing')
-    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: packing, description: 'Packing' })
+    additionalCharges.push({ charge_type: 'Actual', account_head: localStorage.getItem('wb-packing') || null, tax_amount: packing, description: 'Packing' })
   }
   if (other !== 0) {
-    const acct = localStorage.getItem('wb-other-charges')
-    if (acct) additionalCharges.push({ charge_type: 'Actual', account_head: acct, tax_amount: other, description: 'Other Charges' })
+    additionalCharges.push({ charge_type: 'Actual', account_head: localStorage.getItem('wb-other-charges') || null, tax_amount: other, description: 'Other Charges' })
   }
 
 
@@ -1796,6 +1794,7 @@ async function handleSave() {
     custom_remarks: customRemarks.value || '',
     custom_mirrored: customMirrored.value || '',
     discount_percentage: discountPct.value,
+    discount_amount: discountDirectAmt.value,
     tax_template: taxTemplate.value,
     cost_center: costCenter.value,
     set_warehouse: warehouse.value,

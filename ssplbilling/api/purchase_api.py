@@ -226,6 +226,69 @@ def get_item_insight(item_code, supplier=None, warehouse=None):
     }
 
 
+# Extra charge rows the purchase screen sends (freight, packing, loading, other), keyed by the
+# description it uses, with the keywords get_purchase_invoice matches when reading them back.
+_CHARGE_KEYWORDS = {
+    "freight": ("freight",),
+    "packing": ("packing",),
+    "tax paid": ("tax paid", "loading"),
+    "other charges": ("other",),
+}
+# SSPL Billing Settings field holding each charge's account (what General Settings copies into
+# the browser's localStorage).
+_CHARGE_SETTINGS_FIELD = {
+    "freight": "freight",
+    "packing": "packing_charge",
+    "tax paid": "tax_paid_on_purchase",
+    "other charges": "other_charges",
+}
+
+
+def _apply_bill_discount(pi, data):
+    """Bill-level discount, the way the screen totals it: a percentage wins; otherwise the
+    typed amount. Requests without `discount_amount` (older clients) leave the amount alone."""
+    pct = frappe.utils.flt(data.get("discount_percentage"))
+    pi.additional_discount_percentage = pct if pct > 0 else 0
+    if "discount_amount" in data:
+        amount = frappe.utils.flt(data.get("discount_amount"))
+        pi.discount_amount = 0 if pct > 0 else max(amount, 0)
+
+
+def _append_extra_charges(pi, charges, previous_taxes=()):
+    """Append freight/packing/loading/other rows. The screen only knows a charge's account when
+    it is in that browser's settings; without one, reuse the account the bill's existing row of
+    the same kind used, then the SSPL Billing Settings account (in the bill's company), and only
+    then refuse — never silently drop the charge."""
+    from ssplbilling.api.dashboard_api import _discount_account_for_company
+
+    for row in charges or []:
+        row = dict(row)
+        if not row.get("account_head"):
+            kind = (row.get("description") or "").strip().lower()
+            keywords = _CHARGE_KEYWORDS.get(kind, ())
+            previous = next(
+                (
+                    t for t in previous_taxes
+                    if t.get("charge_type") == "Actual"
+                    and any(k in (t.get("description") or "").lower() for k in keywords)
+                    and t.get("account_head")
+                ),
+                None,
+            )
+            account = previous["account_head"] if previous else None
+            if not account and _CHARGE_SETTINGS_FIELD.get(kind):
+                configured = frappe.db.get_single_value("SSPL Billing Settings", _CHARGE_SETTINGS_FIELD[kind])
+                account = _discount_account_for_company(configured, pi.company) if configured else None
+            if not account:
+                frappe.throw(
+                    frappe._("No account is set for the {0} charge. Set it in SSPL Billing Settings and save again.").format(
+                        frappe.bold(row.get("description") or "extra")
+                    )
+                )
+            row["account_head"] = account
+        pi.append("taxes", row)
+
+
 @frappe.whitelist()
 def create_purchase_invoice(data=None, **kwargs):
     """Create Purchase Invoice in Draft."""
@@ -261,8 +324,7 @@ def create_purchase_invoice(data=None, **kwargs):
     if "custom_mirrored" in data:
         pi.custom_mirrored = data.get("custom_mirrored") or ""
 
-    if data.get("discount_percentage"):
-        pi.additional_discount_percentage = float(data["discount_percentage"])
+    _apply_bill_discount(pi, data)
 
     for item in data["items"]:
         disc = float(item.get("discount_percentage") or 0)
@@ -304,8 +366,7 @@ def create_purchase_invoice(data=None, **kwargs):
                     tax.included_in_print_rate = 1
 
     # Append extra charge rows from taxes key (freight, packing, loading, other)
-    for tax_row in data.get("taxes") or []:
-        pi.append("taxes", tax_row)
+    _append_extra_charges(pi, data.get("taxes"))
 
     pi.insert()
 
@@ -551,7 +612,9 @@ def update_purchase_invoice(data=None, **kwargs):
     if not pi.posting_time:
         pi.posting_time = frappe.utils.nowtime()
     
-    pi.additional_discount_percentage = float(data.get("discount_percentage") or 0)
+    _apply_bill_discount(pi, data)
+    # The charge rows below are rebuilt; keep the old ones to recover their accounts.
+    previous_taxes = [t.as_dict() for t in pi.taxes]
     if data.get("tax_template"):
         pi.taxes_and_charges = data["tax_template"]
     elif "tax_template" in data:
@@ -597,8 +660,7 @@ def update_purchase_invoice(data=None, **kwargs):
         pi.append("items", row)
 
     # Append extra charge rows from taxes key (freight, packing, loading, other)
-    for tax_row in data.get("taxes") or []:
-        pi.append("taxes", tax_row)
+    _append_extra_charges(pi, data.get("taxes"), previous_taxes)
 
     pi.save()
 
