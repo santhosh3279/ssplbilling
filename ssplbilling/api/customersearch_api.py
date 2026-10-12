@@ -164,7 +164,8 @@ def _changed_ledger_names(cutoff, company=None, alternative_company=None):
         names.update(l.get("link_name") for l in data.get("links") or [] if l.get("link_doctype") in ("Customer", "Supplier"))
 
     # The Visible Accounts list decides which accounts are ledgers; recheck every candidate account.
-    if frappe.db.get_value("SSPL Billing Settings", None, "modified") > cutoff:
+    settings_modified = frappe.db.get_value("SSPL Billing Settings", None, "modified")
+    if settings_modified and frappe.utils.get_datetime(settings_modified) > cutoff:
         filters = {"is_group": 0}
         companies = [c for c in (company, alternative_company) if c]
         if companies:
