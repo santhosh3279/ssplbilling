@@ -8,6 +8,10 @@ import {
 
 // A server restart reconnects every tab at once; spread their catch-up deltas.
 const RECONNECT_SPREAD_MS = 30000
+// Safety net for changes that reached no socket event (missed message, import, console edit):
+// every 15 minutes, catch up with a delta. Skipped if a catch-up ran within the last 5 minutes.
+const PERIODIC_CHECK_MS = 15 * 60 * 1000
+const PERIODIC_MIN_GAP_MS = 5 * 60 * 1000
 // A newly enabled price list makes every tab fetch its ~12k rates; spread those requests.
 const PRICE_LIST_FETCH_SPREAD_MS = 5000
 
@@ -22,6 +26,8 @@ let _priceListHandler = null
 let _debounceTimer = null
 let _reconcileTimer = null
 let _reconcileOnVisible = false
+let _periodicTimer = null
+let _lastReconcileAt = 0
 const pendingPatches = new Set()
 
 async function _patchItem(itemCode) {
@@ -69,8 +75,16 @@ function _scheduleReconcile(delay) {
   if (_reconcileTimer !== null) return
   _reconcileTimer = setTimeout(() => {
     _reconcileTimer = null
+    _lastReconcileAt = Date.now()
     reconcileItemDatasets()
   }, delay)
+}
+
+function _periodicCheck() {
+  if (Date.now() - _lastReconcileAt < PERIODIC_MIN_GAP_MS) return
+  // Hidden tabs catch up when the operator returns, like a reconnect.
+  if (document.hidden) _reconcileOnVisible = true
+  else _scheduleReconcile(Math.random() * 5000)
 }
 
 function _handleVisibilityChange() {
@@ -195,14 +209,19 @@ export function initItemSync() {
   socket.on('connect', _connectHandler)
 
   document.addEventListener('visibilitychange', _handleVisibilityChange)
+  clearInterval(_periodicTimer)
+  _lastReconcileAt = Date.now() // the page load just synced
+  _periodicTimer = setInterval(_periodicCheck, PERIODIC_CHECK_MS)
   console.log('[useItemSync] subscribed to doctype:Item, listening for list_update, item_price_update, stock_update and discount_rule_update')
 }
 
 export function destroyItemSync() {
   clearTimeout(_debounceTimer)
   clearTimeout(_reconcileTimer)
+  clearInterval(_periodicTimer)
   _debounceTimer = null
   _reconcileTimer = null
+  _periodicTimer = null
   _reconcileOnVisible = false
   pendingPatches.clear()
   const socket = _socket || getFrappeSocket()
