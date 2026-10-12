@@ -205,6 +205,7 @@
 <script setup>
 import { ref, watch, nextTick, computed } from 'vue'
 import { frappeGet } from '../api.js'
+import { searchEmployeesInCache } from '../services/ledgerCache.js'
 import { session } from '../session.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
@@ -323,7 +324,8 @@ function onEmpInput(idx) {
 async function searchEmployees(idx, query) {
   if (!query || query.length < 2) { localRows.value[idx].dropResults = []; return }
   try {
-    const res = await frappeGet('ssplbilling.api.incentive_api.search_employees', { query })
+    const res = searchEmployeesInCache(query, { limit: 10, matchId: false }) ??
+      await frappeGet('ssplbilling.api.incentive_api.search_employees', { query })
     localRows.value[idx].dropResults = res || []
     localRows.value[idx].showDrop = true
   } catch (_) {}
@@ -354,7 +356,8 @@ function onNewEmpInput() {
 async function searchNewEmployees(query) {
   if (!query || query.length < 2) { newDropResults.value = []; return }
   try {
-    const res = await frappeGet('ssplbilling.api.incentive_api.search_employees', { query })
+    const res = searchEmployeesInCache(query, { limit: 10, matchId: false }) ??
+      await frappeGet('ssplbilling.api.incentive_api.search_employees', { query })
     newDropResults.value = res || []
     newShowDrop.value = true
   } catch (_) {}

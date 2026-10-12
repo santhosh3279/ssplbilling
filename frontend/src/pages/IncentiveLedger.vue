@@ -258,6 +258,7 @@
 import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
+import { searchEmployeesInCache } from '../services/ledgerCache.js'
 import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
 
 import { formatDMY } from '../utils/date'
@@ -315,7 +316,8 @@ function onEmpInput(e) {
   if (!q.trim()) { empOptions.value = []; return }
   empSearchTimer = setTimeout(async () => {
     try {
-      const raw = await frappeGet('ssplbilling.api.incentive_ledger_api.search_employees', { query: q, limit: 15 })
+      const raw = searchEmployeesInCache(q, { limit: 15 }) ??
+        await frappeGet('ssplbilling.api.incentive_ledger_api.search_employees', { query: q, limit: 15 })
       empOptions.value = raw.map(e => ({
         ...e,
         label: e.employee_name,

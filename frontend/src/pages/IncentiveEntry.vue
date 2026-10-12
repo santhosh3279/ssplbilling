@@ -308,6 +308,7 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { session } from '../session'
 import { frappeGet, frappePost, getUnpostedBills, calculateBillIncentive } from '../api.js'
+import { searchEmployeesInCache } from '../services/ledgerCache.js'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, serverNowTime } from '../services/serverTime'
@@ -591,7 +592,8 @@ function onEmployeeSearch(index, query) {
 
   searchTimer = setTimeout(async () => {
     try {
-      const raw = await frappeGet('ssplbilling.api.incentive_api.search_employees', { query })
+      const raw = searchEmployeesInCache(query, { limit: 10, matchId: false }) ??
+        await frappeGet('ssplbilling.api.incentive_api.search_employees', { query })
       empOptions.value = raw
       activeOptionIndex.value = raw.length > 0 ? 0 : -1
     } catch {

@@ -230,7 +230,7 @@ import { ref, reactive, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import QuickLedgerSearch from '../components/QuickLedgerSearch.vue'
-import { useLedgerCache } from '../services/ledgerCache'
+import { useLedgerCache, searchEmployeesInCache } from '../services/ledgerCache'
 
 import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const router = useRouter()
@@ -319,10 +319,11 @@ function onEmpInput(e) {
     return
   }
   
-  // Use remote search to ensure latest points are fetched
+  // Cached rows are kept current over the socket; pickEmployee still fetches the exact balance.
   empTimer = setTimeout(async () => {
     try {
-      const raw = await frappeGet('ssplbilling.api.incentive_ledger_api.search_employees', { query: q })
+      const raw = searchEmployeesInCache(q) ??
+        await frappeGet('ssplbilling.api.incentive_ledger_api.search_employees', { query: q })
       empOptions.value = raw.map(e => ({
         ...e,
         label: e.employee_name,

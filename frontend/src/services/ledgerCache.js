@@ -281,6 +281,29 @@ export function patchLedgerInCache(name, newData) {
   _schedulePersist()
 }
 
+/**
+ * Employee search from the cache, shaped like the server's search_employees endpoints
+ * ({ name, employee_name, designation, balance_incentive }), sorted by name like them.
+ * Returns null while this company's ledgers aren't loaded so callers fall back to the server.
+ * `matchId` also matches the employee ID (incentive_ledger_api does; incentive_api doesn't).
+ */
+export function searchEmployeesInCache(query, { limit = 20, matchId = true } = {}) {
+  if (cacheContext.value !== currentContext()) return null
+  const employees = ledgers.value.filter(l => l.type === 'Employee')
+  if (!employees.length) return null
+  const q = (query || '').toLowerCase()
+  return employees
+    .filter(e => (e.label || '').toLowerCase().includes(q) || (matchId && e.name.toLowerCase().includes(q)))
+    .map(e => ({
+      name: e.name,
+      employee_name: e.label || '',
+      designation: e.designation || '',
+      balance_incentive: e.balance_incentive ?? 0
+    }))
+    .sort((a, b) => a.employee_name.toLowerCase().localeCompare(b.employee_name.toLowerCase()))
+    .slice(0, limit)
+}
+
 export function useLedgerCache() {
   return {
     ledgers,
