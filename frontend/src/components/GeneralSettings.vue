@@ -539,7 +539,7 @@ function showDebug(mode) {
       { name: 'Ledgers (Local)', count: cachedLedgers.value.length },
       { name: 'Party Links (Local)', count: Object.keys(cachedPartyLinks.value).length },
       { name: 'Discount Rules (Local)', count: cachedDiscountRules.value.length },
-      { name: 'UOM Map (Local)', count: Object.keys(JSON.parse(localStorage.getItem('sspl-item-uoms') || '{}')).length }
+      { name: 'Items with UOMs (Memory)', count: cachedItems.value.filter(i => i.uoms?.length).length }
     ]
   }
 

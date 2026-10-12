@@ -4,6 +4,7 @@ import { destroyTabSession } from './services/tabSession'
 import { serverNow } from './services/serverTime'
 import { clearItemSnapshots } from './services/itemCacheStore'
 import { clearLedgerSnapshot } from './services/ledgerCacheStore'
+import { clearAttendanceSync } from './services/attendanceStore'
 import { frappeGet, fetchAllowedTiles } from './api.js'
 
 const isLoggedIn = ref(false)
@@ -178,6 +179,7 @@ async function logout() {
   await clearItemSnapshots().catch((e) => console.warn('[session] Could not clear item cache:', e))
   // The ledger snapshot carries every party's balance.
   await clearLedgerSnapshot().catch((e) => console.warn('[session] Could not clear ledger cache:', e))
+  await clearAttendanceSync().catch((e) => console.warn('[session] Could not clear attendance cache:', e))
 
   isLoggedIn.value = false
   user.value = null

@@ -105,7 +105,7 @@
           {{ error }}
         </div>
 
-        <!-- Attendance sync summary (cached in localStorage, nothing stored server-side) -->
+        <!-- Attendance sync summary (cached in IndexedDB, nothing stored server-side) -->
         <div
           v-if="lastSync"
           class="mb-6 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-md overflow-hidden"
@@ -410,12 +410,11 @@ import {
   fetchEsslMachineInfo,
   setEsslMachineTime,
 } from '../api.js'
+import { readAttendanceSync, writeAttendanceSync, clearAttendanceSync } from '../services/attendanceStore'
 
-// Attendance logs live only in localStorage — the sync writes nothing server-side.
-const ATTENDANCE_KEY = 'wb-essl-attendance-v1'
-// ~90 bytes per log, so 5000 is roughly 450 KB — well inside the 5 MB origin quota
-// even alongside the item/customer caches.
-const MAX_STORED_LOGS = 5000
+// Attendance logs live only in this browser (IndexedDB) — the sync writes nothing server-side.
+// Earlier builds kept up to 5000 of them in localStorage under this key; it is removed on load.
+const LEGACY_ATTENDANCE_KEY = 'wb-essl-attendance-v1'
 
 const loading = ref(false)
 const error = ref('')
@@ -547,21 +546,29 @@ function defaultFromDate() {
   return toLocalISO(d)
 }
 
-function loadCachedSync() {
+function summarise(sync) {
+  return {
+    syncedAt: sync.syncedAt,
+    fromDate: sync.fromDate,
+    total: sync.total,
+    stored: (sync.logs || []).length,
+    machines: sync.machines || [],
+    skippedInactive: sync.skippedInactive || [],
+  }
+}
+
+async function loadCachedSync() {
   try {
-    const raw = localStorage.getItem(ATTENDANCE_KEY)
-    if (!raw) return
-    const cached = JSON.parse(raw)
-    lastSync.value = {
-      syncedAt: cached.syncedAt,
-      fromDate: cached.fromDate,
-      total: cached.total,
-      stored: (cached.logs || []).length,
-      machines: cached.machines || [],
-      skippedInactive: cached.skippedInactive || [],
+    let cached = await readAttendanceSync()
+    const legacy = localStorage.getItem(LEGACY_ATTENDANCE_KEY)
+    if (!cached && legacy) {
+      cached = JSON.parse(legacy)
+      await writeAttendanceSync(cached)
     }
-  } catch {
-    localStorage.removeItem(ATTENDANCE_KEY)
+    localStorage.removeItem(LEGACY_ATTENDANCE_KEY)
+    if (cached) lastSync.value = summarise(cached)
+  } catch (err) {
+    console.warn('Could not read cached attendance logs:', err)
   }
 }
 
@@ -571,40 +578,25 @@ async function syncAttendance() {
   cacheError.value = ''
   try {
     const res = await syncEsslAttendance({ fromDate: fromDate.value || null })
-    const logs = res?.logs || []
-    // Server already sorts newest first; keep only what fits comfortably in localStorage
-    const stored = logs.slice(0, MAX_STORED_LOGS)
-
     const payload = {
       syncedAt: res?.synced_at || '',
       fromDate: res?.from_date || fromDate.value || null,
-      total: res?.total ?? logs.length,
+      total: res?.total ?? (res?.logs || []).length,
       machines: res?.machines || [],
       skippedInactive: res?.skipped_inactive || [],
-      logs: stored,
+      logs: res?.logs || [],
     }
 
     try {
-      localStorage.setItem(ATTENDANCE_KEY, JSON.stringify(payload))
-      if (payload.total > stored.length) {
-        cacheError.value = `Only the newest ${stored.length} of ${payload.total} logs were cached. Narrow the date range to keep fewer.`
-      }
-    } catch (quotaErr) {
-      // Quota blown — keep the summary so the sync result is still visible
-      console.error('Could not cache attendance logs:', quotaErr)
-      localStorage.setItem(ATTENDANCE_KEY, JSON.stringify({ ...payload, logs: [] }))
+      await writeAttendanceSync(payload)
+    } catch (storeErr) {
+      // Storage blocked or full — keep the summary visible for this session
+      console.error('Could not cache attendance logs:', storeErr)
       payload.logs = []
-      cacheError.value = 'Too many logs to cache locally — narrow the date range and sync again.'
+      cacheError.value = 'Could not cache the logs in this browser — the sync result is shown but not saved.'
     }
 
-    lastSync.value = {
-      syncedAt: payload.syncedAt,
-      fromDate: payload.fromDate,
-      total: payload.total,
-      stored: payload.logs.length,
-      machines: payload.machines,
-      skippedInactive: payload.skippedInactive,
-    }
+    lastSync.value = summarise(payload)
   } catch (err) {
     console.error('Attendance sync failed:', err)
     error.value = err.message || 'Attendance sync failed.'
@@ -747,7 +739,7 @@ async function saveMachine() {
 }
 
 function clearAttendanceCache() {
-  localStorage.removeItem(ATTENDANCE_KEY)
+  clearAttendanceSync().catch(err => console.warn('Could not clear cached attendance logs:', err))
   lastSync.value = null
   cacheError.value = ''
 }

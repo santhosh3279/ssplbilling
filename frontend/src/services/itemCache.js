@@ -14,38 +14,11 @@ const lastSync = ref(0)
 const syncLoading = ref(false)
 const lastParams = ref({ searchType: null, priceList: null, warehouse: null })
 
-// UOM map cache — persisted to localStorage: { item_code: [{uom, conversion_factor}] }
-const ITEM_UOMS_KEY = 'sspl-item-uoms'
-function loadUomsFromStorage() {
-  try { return JSON.parse(localStorage.getItem(ITEM_UOMS_KEY) || '{}') } catch { return {} }
+// Units and price-list percentages ride on each cached item (IndexedDB snapshot); these
+// localStorage copies of them (~2-3 MB) are obsolete. Remove them once.
+for (const key of ['sspl-item-uoms', 'sspl-item-pricelist-percentages']) {
+  try { localStorage.removeItem(key) } catch {}
 }
-function saveUomsToStorage(itemList) {
-  try {
-    const map = {}
-    for (const i of itemList) {
-      if (i.uoms?.length) map[i.item_code] = i.uoms
-    }
-    localStorage.setItem(ITEM_UOMS_KEY, JSON.stringify(map))
-  } catch {}
-}
-const storedUoms = loadUomsFromStorage()
-
-// Pricelist Percentages cache — persisted to localStorage: { item_code: [{pricelist, percentage}] }
-const ITEM_PERCENTAGES_KEY = 'sspl-item-pricelist-percentages'
-function loadPercentagesFromStorage() {
-  try { return JSON.parse(localStorage.getItem(ITEM_PERCENTAGES_KEY) || '{}') } catch { return {} }
-}
-function savePercentagesToStorage(itemList) {
-  try {
-    const map = {}
-    for (const i of itemList) {
-      if (i.pricelist_percentages?.length) map[i.item_code] = i.pricelist_percentages
-    }
-    localStorage.setItem(ITEM_PERCENTAGES_KEY, JSON.stringify(map))
-  } catch {}
-}
-const storedPercentages = loadPercentagesFromStorage()
-
 
 // Discount Rules cache (custom Discount Rule doctype) — persisted to localStorage
 const DISCOUNT_RULES_KEY = 'sspl-discount-rules'
@@ -220,8 +193,6 @@ async function syncDelta(ds, { keepOnError }) {
   ds.draftCodes = data.draft_codes || []
   storeDataset(ds)
   if (ds.key === activeKey) items.value = list
-  saveUomsToStorage(list)
-  savePercentagesToStorage(list)
   lastSync.value = serverNow().getTime()
   persistSnapshot(ds)
   return ds
@@ -326,12 +297,6 @@ export function lookupItemInCache(code) {
   let found = items.value.find(i => (i.item_code || '').toLowerCase() === cleanCode)
   if (found) {
     const item = { ...found }
-    if (!item.uoms?.length && storedUoms[item.item_code]?.length) {
-      item.uoms = storedUoms[item.item_code]
-    }
-    if (!item.pricelist_percentages?.length && storedPercentages[item.item_code]?.length) {
-      item.pricelist_percentages = storedPercentages[item.item_code]
-    }
     return item
   }
 
@@ -347,12 +312,6 @@ export function lookupItemInCache(code) {
     if (match && match.uom) {
       item.uom = match.uom // Use the UOM linked to this specific barcode
       item._from_barcode = true
-    }
-    if (!item.uoms?.length && storedUoms[item.item_code]?.length) {
-      item.uoms = storedUoms[item.item_code]
-    }
-    if (!item.pricelist_percentages?.length && storedPercentages[item.item_code]?.length) {
-      item.pricelist_percentages = storedPercentages[item.item_code]
     }
     return item
   }
