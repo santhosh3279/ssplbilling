@@ -3,6 +3,7 @@ import { createResource } from 'frappe-ui'
 import { destroyTabSession } from './services/tabSession'
 import { serverNow } from './services/serverTime'
 import { clearItemSnapshots } from './services/itemCacheStore'
+import { clearLedgerSnapshot } from './services/ledgerCacheStore'
 import { frappeGet, fetchAllowedTiles } from './api.js'
 
 const isLoggedIn = ref(false)
@@ -175,6 +176,8 @@ async function logout() {
   localStorage.removeItem('wb-inherited-user')
   // Persisted item snapshots carry every price list and valuation rate.
   await clearItemSnapshots().catch((e) => console.warn('[session] Could not clear item cache:', e))
+  // The ledger snapshot carries every party's balance.
+  await clearLedgerSnapshot().catch((e) => console.warn('[session] Could not clear ledger cache:', e))
 
   isLoggedIn.value = false
   user.value = null

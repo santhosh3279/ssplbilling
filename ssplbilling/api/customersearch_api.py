@@ -89,6 +89,93 @@ def get_ledgers_by_name(names, company=None, alternative_company=None, cost_cent
     return {"ledgers": ledgers, "removed": [n for n in names if n not in returned]}
 
 
+# Re-check this long before `since`: a document saved in a transaction that started earlier can
+# commit with an older modified/creation than the previous sync's timestamp.
+_LEDGER_SYNC_OVERLAP_SECONDS = 120
+_LEDGER_DOCTYPES = ("Customer", "Supplier", "Employee", "Account")
+
+
+@frappe.whitelist()
+def get_ledgers_sync(since=None, company=None, alternative_company=None, cost_center=None):
+    """Ledger cache sync. Without `since`: every ledger (as get_all_ledgers). With `since` (a
+    `sync_ts` from an earlier response): only ledgers that may have changed after it, plus the
+    names that no longer qualify in `removed`. `sync_ts` is the server time to send next."""
+    sync_ts = str(frappe.utils.now_datetime())
+    if not since:
+        return {
+            "full": True,
+            "sync_ts": sync_ts,
+            "ledgers": _build_ledgers(company, alternative_company, cost_center),
+            "removed": [],
+        }
+    cutoff = frappe.utils.add_to_date(frappe.utils.get_datetime(since), seconds=-_LEDGER_SYNC_OVERLAP_SECONDS)
+    names = _changed_ledger_names(cutoff, company, alternative_company)
+    ledgers = _build_ledgers(company, alternative_company, cost_center, names=names) if names else []
+    returned = {l["name"] for l in ledgers}
+    return {
+        "full": False,
+        "sync_ts": sync_ts,
+        "ledgers": ledgers,
+        "removed": [n for n in names if n not in returned],
+    }
+
+
+def _changed_ledger_names(cutoff, company=None, alternative_company=None):
+    """Ledger names whose cached row may differ since `cutoff` (a superset is fine: unchanged rows
+    rebuild identically). Balances move with new GL rows; cancellations add reversing rows too."""
+    names = set()
+    for doctype in _LEDGER_DOCTYPES:
+        names.update(frappe.get_all(doctype, filters={"modified": [">", cutoff]}, pluck="name"))
+
+    # Address / Contact edits change a party's address or WhatsApp number.
+    changed_parents = []
+    for doctype in ("Address", "Contact"):
+        changed_parents += frappe.get_all(doctype, filters={"modified": [">", cutoff]}, pluck="name")
+    if changed_parents:
+        names.update(frappe.get_all(
+            "Dynamic Link",
+            filters={"parent": ["in", changed_parents], "link_doctype": ["in", ["Customer", "Supplier"]]},
+            pluck="link_name",
+        ))
+
+    for pl in frappe.get_all(
+        "Party Link", filters={"modified": [">", cutoff]}, fields=["primary_party", "secondary_party"]
+    ):
+        names.update((pl.primary_party, pl.secondary_party))
+
+    names.update(r[0] for r in frappe.db.sql("""
+        SELECT DISTINCT IF(party IS NOT NULL AND party != '', party, account)
+        FROM `tabGL Entry` WHERE creation > %s
+    """, (cutoff,)))
+
+    for d in frappe.get_all(
+        "Deleted Document",
+        filters={"deleted_doctype": ["in", [*_LEDGER_DOCTYPES, "Address", "Contact", "Party Link"]], "creation": [">", cutoff]},
+        fields=["deleted_doctype", "deleted_name", "data"],
+    ):
+        if d.deleted_doctype in _LEDGER_DOCTYPES:
+            names.add(d.deleted_name)
+            continue
+        try:
+            data = frappe.parse_json(d.data) or {}
+        except Exception:
+            continue
+        names.update((data.get("primary_party"), data.get("secondary_party")))
+        names.update(l.get("link_name") for l in data.get("links") or [] if l.get("link_doctype") in ("Customer", "Supplier"))
+
+    # The Visible Accounts list decides which accounts are ledgers; recheck every candidate account.
+    if frappe.db.get_value("SSPL Billing Settings", None, "modified") > cutoff:
+        filters = {"is_group": 0}
+        companies = [c for c in (company, alternative_company) if c]
+        if companies:
+            filters["company"] = ["in", companies]
+        names.update(frappe.get_all("Account", filters=filters, pluck="name"))
+
+    names.discard(None)
+    names.discard("")
+    return sorted(names)
+
+
 def _build_ledgers(company=None, alternative_company=None, cost_center=None, names=None):
     """Ledger rows for the client cache; with `names`, only those ledgers (same rows, same scoping)."""
     ledgers = []

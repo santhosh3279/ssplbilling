@@ -1,6 +1,7 @@
-import { serverNow } from './serverTime'
+import { serverNow, serverToday } from './serverTime'
 import { ref, toRaw } from 'vue'
-import { frappeGet, frappePost } from '../api.js'
+import { frappePost } from '../api.js'
+import { readLedgerSnapshot, writeLedgerSnapshot } from './ledgerCacheStore'
 
 // Global reactive state for ledgers
 const ledgers = ref([])
@@ -9,6 +10,13 @@ const lastSync = ref(0)
 const syncLoading = ref(false)
 const cacheContext = ref(null)
 let pendingRefresh = null
+// Server timestamp of the last full/delta sync (sent back as `since`) and when it ran locally.
+let syncTs = null
+let syncedAt = 0
+
+// Socket events (ledger_update, ledger_balances) keep the cache current, so opening a search only
+// asks the server for changes once the last sync is older than this.
+const STALE_AFTER_MS = 15 * 60 * 1000
 
 function currentContext() {
   return JSON.stringify({
@@ -18,55 +26,84 @@ function currentContext() {
   })
 }
 
-const LEDGERS_CACHE_KEY = 'sspl-ledgers-cache-v2'
-const PARTY_LINKS_CACHE_KEY = 'sspl-partylinks-cache'
+// Pre-IndexedDB storage (localStorage), read once for an instant first paint, then removed.
+const LEGACY_LEDGERS_KEY = 'sspl-ledgers-cache-v2'
+const LEGACY_PARTY_LINKS_KEY = 'sspl-partylinks-cache'
 
-function loadFromStorage() {
+async function loadFromStorage() {
   try {
-    const cachedLedgers = localStorage.getItem(LEDGERS_CACHE_KEY)
-    if (cachedLedgers) {
-      const { data, ts, context } = JSON.parse(cachedLedgers)
-      if (context !== currentContext()) return
-      cacheContext.value = context
-      ledgers.value = data || []
-      lastSync.value = ts || 0
-    }
-    const cachedLinks = localStorage.getItem(PARTY_LINKS_CACHE_KEY)
-    if (cachedLinks) {
-      partyLinks.value = JSON.parse(cachedLinks)
+    const snap = await readLedgerSnapshot()
+    if (snap && snap.context === currentContext()) {
+      cacheContext.value = snap.context
+      ledgers.value = JSON.parse(snap.ledgers || '[]')
+      partyLinks.value = snap.partyLinks || {}
+      lastSync.value = snap.lastSync || 0
+      syncTs = snap.syncTs || null
+      syncedAt = snap.syncedAt || 0
     }
   } catch (e) {
-    console.warn('[ledgerCache] Load from storage failed:', e)
+    console.warn('[ledgerCache] Load from IndexedDB failed:', e)
   }
-}
-
-function saveToStorage(ledgerData, linkData) {
   try {
-    localStorage.setItem(LEDGERS_CACHE_KEY, JSON.stringify({
-      data: ledgerData,
-      ts: lastSync.value,
-      context: cacheContext.value
-    }))
-    localStorage.setItem(PARTY_LINKS_CACHE_KEY, JSON.stringify(linkData))
+    const legacy = localStorage.getItem(LEGACY_LEDGERS_KEY)
+    if (legacy && !cacheContext.value) {
+      const { data, ts, context } = JSON.parse(legacy)
+      // No sync point: the first refresh downloads the full list.
+      if (context === currentContext()) {
+        cacheContext.value = context
+        ledgers.value = data || []
+        lastSync.value = ts || 0
+        partyLinks.value = JSON.parse(localStorage.getItem(LEGACY_PARTY_LINKS_KEY) || '{}')
+      }
+    }
   } catch (e) {
-    console.warn('[ledgerCache] Save to storage failed:', e)
+    console.warn('[ledgerCache] Legacy cache unreadable:', e)
   }
+  localStorage.removeItem(LEGACY_LEDGERS_KEY)
+  localStorage.removeItem(LEGACY_PARTY_LINKS_KEY)
 }
 
-// Initial load
-loadFromStorage()
+function saveToStorage() {
+  // Serialise now: later in-place patches must not leak into a snapshot whose syncTs predates them.
+  writeLedgerSnapshot({
+    context: cacheContext.value,
+    syncTs,
+    syncedAt,
+    lastSync: lastSync.value,
+    ledgers: JSON.stringify(toRaw(ledgers.value)),
+    partyLinks: toRaw(partyLinks.value)
+  }).catch(e => console.warn('[ledgerCache] Save to IndexedDB failed:', e))
+}
+
+// IndexedDB is async: every refresh waits for the stored copy first, so a page load serves it
+// instead of downloading the full list.
+export const ledgerCacheReady = loadFromStorage()
 
 /**
- * Fetch all ledgers from the backend and update the global cache.
+ * Bring the ledger cache up to date.
+ * - force: download the full list (F5 / explicit refresh, company change).
+ * - otherwise: nothing if the last sync is under 15 minutes old; a delta (changes since the last
+ *   sync) if older; the full list when there is no usable copy or it is from an earlier day
+ *   (the 90-day activity ranking and last-invoice dates move with the date).
  */
 export async function refreshLedgerCache(force = false) {
+  return runRefresh(force ? 'full' : 'auto')
+}
+
+/** Catch up after a reconnect or on the periodic check: always a delta when a copy exists. */
+export async function catchUpLedgerCache() {
+  return runRefresh('delta')
+}
+
+async function runRefresh(mode) {
+  await ledgerCacheReady
   // A forced realtime refresh must start after any older request finishes:
   // that request may have read balances before the voucher was committed.
   while (pendingRefresh) {
     await pendingRefresh
-    if (!force && cacheContext.value === currentContext()) return ledgers.value
+    if (mode !== 'full' && cacheContext.value === currentContext()) return ledgers.value
   }
-  pendingRefresh = fetchLedgerCache(force)
+  pendingRefresh = fetchLedgerCache(mode)
   try {
     return await pendingRefresh
   } finally {
@@ -74,34 +111,46 @@ export async function refreshLedgerCache(force = false) {
   }
 }
 
-async function fetchLedgerCache(force) {
+function syncMode(mode, context) {
+  const usable = cacheContext.value === context && syncTs && ledgers.value.length > 0
+  if (mode === 'full' || !usable) return 'full'
+  if (mode === 'delta') return 'delta'
+  if (String(syncTs).slice(0, 10) !== serverToday()) return 'full'
+  return serverNow().getTime() - syncedAt < STALE_AFTER_MS ? 'none' : 'delta'
+}
+
+async function fetchLedgerCache(requested) {
   const context = currentContext()
-  
-  // Throttle background refreshes: skip if last sync was < 60s ago, unless forced
-  if (!force && cacheContext.value === context && lastSync.value > 0 && (serverNow().getTime() - lastSync.value) < 60000) {
-    return ledgers.value
-  }
+  const mode = syncMode(requested, context)
+  if (mode === 'none') return ledgers.value
 
   syncLoading.value = true
   const startedAt = serverNow().getTime() / 1000
   try {
     const { company, alternative_company, cost_center } = JSON.parse(context)
-    const data = await frappeGet('ssplbilling.api.customersearch_api.get_all_ledgers', {
+    const data = await frappePost('ssplbilling.api.customersearch_api.get_ledgers_sync', {
+      since: mode === 'delta' ? syncTs : null,
       company,
       alternative_company,
       cost_center
-    })
-    const { rows: cleanedLedgers, links: newPartyLinks } = splitPartyLinks(data || [])
+    }, { silent: mode === 'delta' })
 
-    cacheContext.value = context
-    ledgers.value = cleanedLedgers
+    if (data.full) {
+      const { rows, links } = splitPartyLinks(data.ledgers || [])
+      cacheContext.value = context
+      ledgers.value = rows
+      partyLinks.value = links
+    } else {
+      applyLedgerRows(data.ledgers || [], data.removed || [])
+    }
     // Balances pushed while this request ran may be newer than what it read.
     reapplyPushesSince(startedAt)
-    partyLinks.value = newPartyLinks
-    lastSync.value = serverNow().getTime()
-    
-    saveToStorage(cleanedLedgers, newPartyLinks)
-    return cleanedLedgers
+    syncTs = data.sync_ts
+    syncedAt = serverNow().getTime()
+    lastSync.value = syncedAt
+
+    saveToStorage()
+    return ledgers.value
   } catch (e) {
     console.error('[ledgerCache] Refresh failed:', e)
     throw e
@@ -180,12 +229,12 @@ function applyLedgerRows(rawRows, removed) {
   partyLinks.value = nextLinks
 }
 
-// Debounce the (full-array) localStorage write so a burst of realtime balance
+// Debounce the (full-array) IndexedDB write so a burst of realtime balance
 // patches doesn't stringify the whole ledger list on every event.
 let _persistTimer = null
 function _schedulePersist() {
   clearTimeout(_persistTimer)
-  _persistTimer = setTimeout(() => saveToStorage(ledgers.value, partyLinks.value), 1000)
+  _persistTimer = setTimeout(saveToStorage, 1000)
 }
 
 /**

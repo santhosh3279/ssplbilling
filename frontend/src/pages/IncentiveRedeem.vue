@@ -280,8 +280,9 @@ function adjustDate(days) {
 // ── Lifecycle ──────────────────────────────────────────────────────────────
 onMounted(async () => {
   try {
-    // Refresh ledger cache to ensure balance_incentive is synced
-    refreshLedgerCache(true).catch(e => console.error('Cache sync failed', e))
+    // Socket updates keep balance_incentive current; this only catches up a stale copy.
+    // pickEmployee still fetches the exact balance before a redemption.
+    refreshLedgerCache(false).catch(e => console.error('Cache sync failed', e))
 
     // Load rules
     const rule = await frappeGet('frappe.client.get', { doctype: 'Incentive Rule', name: 'Incentive Rule' })

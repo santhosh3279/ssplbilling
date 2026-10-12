@@ -1,8 +1,18 @@
 import { getFrappeSocket } from '../services/frappeSocket.js'
-import { refreshLedgerCache, applyLedgerBalancePush, patchLedgersFromServer } from '../services/ledgerCache.js'
+import {
+  refreshLedgerCache, catchUpLedgerCache, applyLedgerBalancePush, patchLedgersFromServer
+} from '../services/ledgerCache.js'
 
-// A server restart reconnects every tab at once; spread their full refreshes (~5 s of server work each).
+// A server restart reconnects every tab at once; spread their catch-up requests.
 const RECONNECT_SPREAD_MS = 30000
+// Safety net for changes no socket event announced (GL from other documents, SQL edits, a lost
+// message): every 15 minutes ask for the ledgers changed since the last sync. Delta only.
+const PERIODIC_CHECK_MS = 15 * 60 * 1000
+
+// 'full' reloads every ledger; 'delta' fetches changes since the last sync; 'auto' lets the cache
+// decide (nothing / delta / full, see refreshLedgerCache). A queued stronger mode wins.
+const MODE_RANK = { auto: 0, delta: 1, full: 2 }
+const RUN = { auto: () => refreshLedgerCache(false), delta: catchUpLedgerCache, full: () => refreshLedgerCache(true) }
 
 let _socket = null
 let _balanceHandler = null
@@ -13,12 +23,15 @@ let _connectHandler = null
 let _visibilityHandler = null
 let _refreshTimer = null
 let _refreshRunning = false
-let _refreshQueued = false
-let _reconcileOnVisible = false
+let _queuedMode = null
+let _visibleMode = null
+let _periodicTimer = null
 
-function scheduleLedgerRefresh(delay = 500) {
+const stronger = (a, b) => (!a || MODE_RANK[b] > MODE_RANK[a] ? b : a)
+
+function scheduleLedgerRefresh(delay = 500, mode = 'auto') {
   if (!_socket) return
-  _refreshQueued = true
+  _queuedMode = stronger(_queuedMode, mode)
   if (_refreshTimer !== null || _refreshRunning) return
   _refreshTimer = setTimeout(refreshLedgers, delay)
 }
@@ -27,10 +40,11 @@ async function refreshLedgers() {
   _refreshTimer = null
   if (!_socket) return
   const socket = _socket
-  _refreshQueued = false
+  const mode = _queuedMode || 'auto'
+  _queuedMode = null
   _refreshRunning = true
   try {
-    await refreshLedgerCache(true)
+    await RUN[mode]()
     if (_socket === socket) {
       window.dispatchEvent(new CustomEvent('wb-ledger-cache-updated'))
     }
@@ -38,17 +52,17 @@ async function refreshLedgers() {
     console.warn('[useLedgerSync] ledger refresh failed:', e)
   } finally {
     _refreshRunning = false
-    if (_refreshQueued) scheduleLedgerRefresh()
+    if (_queuedMode) scheduleLedgerRefresh(500, _queuedMode)
   }
 }
 
 // Hidden tabs wait until they are looked at; visible ones start at a random point in the window.
-function scheduleReconcile() {
+function scheduleReconcile(mode, spreadMs = RECONNECT_SPREAD_MS) {
   if (document.visibilityState !== 'visible') {
-    _reconcileOnVisible = true
+    _visibleMode = stronger(_visibleMode, mode)
     return
   }
-  scheduleLedgerRefresh(Math.random() * RECONNECT_SPREAD_MS)
+  scheduleLedgerRefresh(Math.random() * spreadMs, mode)
 }
 
 // Collect a burst of ledger_update events (several commits in quick succession) into one fetch.
@@ -84,7 +98,7 @@ export function initLedgerSync() {
   // Customer / Supplier / Employee / Account (or a linked Address, Contact, Party Link) changed.
   // `full` means no per-row patch fits (e.g. the Visible Accounts setting): reload everything.
   _ledgerHandler = (data) => {
-    if (data?.full) scheduleReconcile()
+    if (data?.full) scheduleReconcile('full')
     else if (data?.names?.length) queueLedgerPatch(data.names)
   }
   // The first connect is covered by the initial refresh below; later ones may have missed pushes.
@@ -94,12 +108,13 @@ export function initLedgerSync() {
       initialConnectPending = false
       return
     }
-    scheduleReconcile()
+    scheduleReconcile('delta')
   }
   _visibilityHandler = () => {
-    if (document.visibilityState !== 'visible' || !_reconcileOnVisible) return
-    _reconcileOnVisible = false
-    scheduleLedgerRefresh(Math.random() * 5000)
+    if (document.visibilityState !== 'visible' || !_visibleMode) return
+    const mode = _visibleMode
+    _visibleMode = null
+    scheduleLedgerRefresh(Math.random() * 5000, mode)
   }
 
   socket.on('ledger_balances', _balanceHandler)
@@ -109,7 +124,10 @@ export function initLedgerSync() {
   // Reconcile changes missed before subscription, including persisted balances. A browser that
   // has never synced settings has no company yet; the Dashboard loads ledgers once it does,
   // instead of fetching an all-company list here that is thrown away seconds later.
-  if (localStorage.getItem('wb-company')) scheduleLedgerRefresh(0)
+  // The stored copy (IndexedDB) is reused: fresh → nothing, older → delta, earlier day → full.
+  if (localStorage.getItem('wb-company')) scheduleLedgerRefresh(0, 'auto')
+  clearInterval(_periodicTimer)
+  _periodicTimer = setInterval(() => scheduleReconcile('delta', 5000), PERIODIC_CHECK_MS)
 }
 
 export function destroyLedgerSync() {
@@ -121,8 +139,10 @@ export function destroyLedgerSync() {
   if (_visibilityHandler) document.removeEventListener('visibilitychange', _visibilityHandler)
   clearTimeout(_refreshTimer)
   _refreshTimer = null
-  _refreshQueued = false
-  _reconcileOnVisible = false
+  clearInterval(_periodicTimer)
+  _periodicTimer = null
+  _queuedMode = null
+  _visibleMode = null
   _balanceHandler = null
   _ledgerHandler = null
   clearTimeout(_patchTimer)

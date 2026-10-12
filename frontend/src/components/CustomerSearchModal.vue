@@ -278,7 +278,7 @@ import { parseCalendarDate } from '../services/serverTime'
 import { ref, nextTick, watch, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSubwindowWatcher } from '../services/shortcutManager'
-import { useLedgerCache } from '../services/ledgerCache.js'
+import { useLedgerCache, patchLedgersFromServer } from '../services/ledgerCache.js'
 import DateFilter from './DateFilter.vue'
 import CustomerCreator from './CustomerCreator.vue'
 import SupplierCreator from './SupplierCreator.vue'
@@ -754,10 +754,20 @@ function closeSubForm() {
   focus()
 }
 
+// A party saved from this modal: fetch just its row instead of reloading every ledger.
+async function syncSavedLedger(name) {
+  try {
+    if (name && await patchLedgersFromServer([name])) return
+  } catch (e) {
+    console.warn('[CustomerSearchModal] Saved-party patch failed, reloading all:', e)
+  }
+  await preloadLedger(true)
+}
+
 // ─── Supplier saved callback ──────────────────────────────────────────────────
 async function onSupplierSaved(result) {
-  await preloadLedger(true)
   const savedName = result.name || result.supplier_name
+  await syncSavedLedger(savedName)
   const foundItem = allLedgers.value.find(c => c.name === savedName)
   if (showNewForm.value) {
     if (foundItem) {
@@ -782,8 +792,8 @@ async function onSupplierSaved(result) {
 }
 
 async function onEmployeeSaved(result) {
-  await preloadLedger(true)
   const savedName = result.name || result.employee_name
+  await syncSavedLedger(savedName)
   const foundItem = allLedgers.value.find(c => c.name === savedName)
   if (showNewForm.value) {
     if (foundItem) {
@@ -809,8 +819,8 @@ async function onEmployeeSaved(result) {
 
 // ─── Customer saved callback ──────────────────────────────────────────────────
 async function onCustomerSaved(result) {
-  await preloadLedger(true)
   const savedName = result.name || result.customer_name
+  await syncSavedLedger(savedName)
   const foundItem = allLedgers.value.find(c => c.name === savedName)
   if (showNewForm.value) {
     if (foundItem) {
