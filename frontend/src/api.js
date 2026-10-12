@@ -650,12 +650,13 @@ export async function searchEmployees(query = "") {
 /**
  * Fetch Purchase Invoices.
  */
-export async function fetchPurchaseInvoices(query = "", limit = 50, postingDate = "", draftOnly = false) {
+export async function fetchPurchaseInvoices(query = "", limit = 50, postingDate = "", draftOnly = false, company = "") {
   return frappeGet("ssplbilling.api.purchase_api.get_purchase_invoices", {
     query,
     limit,
     ...(postingDate && { posting_date: postingDate }),
     ...(draftOnly && { draft_only: true }),
+    ...(company && { company }),
   });
 }
 
@@ -674,6 +675,17 @@ export async function getPurchaseInvoiceDetails(invoiceName) {
 export async function submitPurchaseInvoice(invoiceName) {
   return frappePost("ssplbilling.api.purchase_api.submit_purchase_invoice", {
     invoice_name: invoiceName,
+  });
+}
+
+/**
+ * Purchase Desk submit: submits the bill, links its supplier to the items and
+ * reconciles the given debit notes / payments in one server transaction.
+ */
+export async function submitPurchaseDesk(invoiceName, allocations = []) {
+  return frappePost("ssplbilling.api.purchase_api.submit_purchase_desk", {
+    invoice_name: invoiceName,
+    allocations: JSON.stringify(allocations),
   });
 }
 

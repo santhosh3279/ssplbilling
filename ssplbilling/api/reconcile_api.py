@@ -567,7 +567,7 @@ def post_cross_reconciliation(party_type, party, allocations):
 
 
 @frappe.whitelist()
-def post_reconciliation(party_type, party, allocations):
+def post_reconciliation(party_type, party, allocations, company=None):
 	"""Reconcile unlinked payments / JEs against outstanding invoices / opposite entries.
 
 	Each item in `allocations`:
@@ -618,8 +618,11 @@ def post_reconciliation(party_type, party, allocations):
 			normalized_allocations.append(alloc)
 	allocations = normalized_allocations
 
-	company = _get_company()
-	account = _get_party_account(party_type, party)
+	# Callers that know the bill's company pass it; otherwise fall back to the default company.
+	from erpnext.accounts.party import get_party_account
+
+	company = company or _get_company()
+	account = get_party_account(party_type, party, company)
 
 	rec = frappe.new_doc("Payment Reconciliation")
 	rec.party_type = party_type

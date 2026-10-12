@@ -453,6 +453,14 @@ def get_purchase_invoices(query="", limit=20, posting_date=None, show_submitted=
     
     if naming_series:
         filters.append(["naming_series", "=", naming_series])
+    else:
+        # Only the purchase series this user may work with; an empty list means none.
+        from ssplbilling.api.dashboard_api import get_allowed_series
+        res = get_allowed_series(doctype="Purchase Invoice")
+        allowed = res.get("allowed_series") if isinstance(res, dict) else res
+        if not allowed:
+            return []
+        filters.append(["naming_series", "in", allowed])
 
     if query:
         import re
@@ -744,10 +752,51 @@ def delete_purchase_invoice(invoice_name):
 
 
 @frappe.whitelist()
+def submit_purchase_desk(invoice_name, allocations=None):
+	"""Purchase Desk submit: submit the bill, link its supplier to the items and reconcile the
+	chosen debit notes / payments against it, all in one request and one transaction.
+
+	If reconciliation fails the whole request rolls back and the bill stays a draft, so a bill
+	is never left submitted but unlinked. Supplier linking is best-effort and never blocks."""
+	if isinstance(allocations, str):
+		allocations = json.loads(allocations)
+
+	result = submit_purchase_invoice(invoice_name)
+	if result.get("status") != "Submitted":
+		frappe.throw(f"Invoice {invoice_name} is already submitted")
+
+	pi = frappe.get_doc("Purchase Invoice", invoice_name)
+
+	item_codes = list({item.item_code for item in pi.items if item.item_code})
+	if item_codes and pi.supplier:
+		sp = "sp_" + frappe.generate_hash(length=10)
+		frappe.db.savepoint(sp)
+		try:
+			link_supplier_to_items(pi.supplier, item_codes)
+			frappe.db.release_savepoint(sp)
+		except Exception:
+			frappe.db.rollback(save_point=sp)
+			frappe.log_error(title="Purchase Desk: link supplier to items failed", message=frappe.get_traceback())
+
+	if allocations:
+		from ssplbilling.api.reconcile_api import post_reconciliation
+
+		for alloc in allocations:
+			alloc["invoice_type"] = "Purchase Invoice"
+			alloc["invoice_name"] = pi.name
+		post_reconciliation("Supplier", pi.supplier, allocations, company=pi.company)
+
+	return result
+
+
+@frappe.whitelist()
 def link_supplier_to_items(supplier, items):
     """
     Link a supplier to multiple items in the Item Master (Item Supplier table).
     `items` can be a JSON string or list of item codes.
+
+    Adds only the missing Item Supplier rows directly; a full Item save per item ran every
+    Item validation and hook and took about a second for a 30-item bill.
     """
     if isinstance(items, str):
         items = json.loads(items)
@@ -758,64 +807,72 @@ def link_supplier_to_items(supplier, items):
     if not frappe.db.exists("Supplier", supplier):
         return {"status": "error", "message": f"Supplier {supplier} not found"}
 
-    linked_count = 0
-    for item_code in items:
-        if not frappe.db.exists("Item", item_code):
-            continue
+    item_codes = set(frappe.get_all("Item", filters={"name": ["in", list(set(items))]}, pluck="name"))
+    if not item_codes:
+        return {"status": "success", "linked_count": 0}
 
-        item = frappe.get_doc("Item", item_code)
-        
-        # Check if supplier is already linked
-        already_linked = False
-        for s_item in item.get("supplier_items", []):
-            if s_item.supplier == supplier:
-                already_linked = True
-                break
+    already_linked = set(
+        frappe.get_all(
+            "Item Supplier",
+            filters={"parenttype": "Item", "parent": ["in", list(item_codes)], "supplier": supplier},
+            pluck="parent",
+        )
+    )
+    missing = sorted(item_codes - already_linked)
+    if not missing:
+        return {"status": "success", "linked_count": 0}
 
-        if not already_linked:
-            item.append("supplier_items", {
+    max_idx = dict(
+        frappe.get_all(
+            "Item Supplier",
+            filters={"parenttype": "Item", "parent": ["in", missing]},
+            fields=["parent", {"MAX": "idx", "as": "idx"}],
+            group_by="parent",
+            as_list=True,
+        )
+    )
+    for item_code in missing:
+        frappe.get_doc(
+            {
+                "doctype": "Item Supplier",
+                "parent": item_code,
+                "parenttype": "Item",
+                "parentfield": "supplier_items",
+                "idx": (max_idx.get(item_code) or 0) + 1,
                 "supplier": supplier,
                 "supplier_part_no": "",
-            })
-            item.flags.ignore_permissions = True
-            item.save()
-            linked_count += 1
+            }
+        ).db_insert()
+        frappe.clear_document_cache("Item", item_code)
 
-    return {"status": "success", "linked_count": linked_count}
+    return {"status": "success", "linked_count": len(missing)}
 
 
 @frappe.whitelist()
 def map_items_as_gst_item(items):
-	"""Enable custom_is_gst_item (GST Item checkbox) in the Item Master for multiple items."""
+	"""Enable custom_is_gst_item (GST Item checkbox) in the Item Master for multiple items.
+
+	One update for the unmarked items instead of a full Item save per item."""
 	if isinstance(items, str):
 		items = json.loads(items)
 
 	if not items:
 		return {"status": "error", "message": "Items are required"}
 
-	updated_count = 0
-	already_marked = 0
-	for item_code in items:
-		if not frappe.db.exists("Item", item_code):
-			continue
-
-		item = frappe.get_doc("Item", item_code)
-		if not item.get("custom_is_gst_item"):
-			item.custom_is_gst_item = 1
-			item.flags.ignore_permissions = True
-			try:
-				item.save()
-			except Exception:
-				frappe.db.set_value("Item", item_code, "custom_is_gst_item", 1)
-				frappe.clear_document_cache("Item", item_code)
-			updated_count += 1
-		else:
-			already_marked += 1
+	rows = frappe.get_all(
+		"Item", filters={"name": ["in", list(set(items))]}, fields=["name", "custom_is_gst_item"]
+	)
+	to_mark = [r.name for r in rows if not r.custom_is_gst_item]
+	if to_mark:
+		# modified is bumped so the item delta sync picks up the new flag
+		frappe.db.set_value("Item", {"name": ["in", to_mark]}, "custom_is_gst_item", 1)
+		for item_code in to_mark:
+			frappe.clear_document_cache("Item", item_code)
 
 	return {
 		"status": "success",
-		"updated_count": updated_count,
-		"already_marked": already_marked,
+		"updated_count": len(to_mark),
+		"already_marked": len(rows) - len(to_mark),
 		"total": len(items),
 	}
 

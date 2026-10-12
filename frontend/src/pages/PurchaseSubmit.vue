@@ -384,7 +384,7 @@ import { serverCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
-import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseInvoice, frappeGet, frappePost, linkSupplierToItems, mapItemsAsGstItem, checkPurchaseMirrorSeries } from '../api.js'
+import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseDesk, frappeGet } from '../api.js'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import BarcodePrintPage from './BarcodePrintPage.vue'
@@ -493,7 +493,7 @@ function formatDate(dateStr) {
 async function loadInvoices() {
   loadingList.value = true
   try {
-    const all = await fetchPurchaseInvoices(searchQuery.value, 500, '', true)
+    const all = await fetchPurchaseInvoices(searchQuery.value, 500, '', true, deskCompany())
     invoices.value = all.filter(i => i.docstatus === 0).sort((a, b) => {
       const dateA = new Date(a.posting_date || 0)
       const dateB = new Date(b.posting_date || 0)
@@ -507,6 +507,31 @@ async function loadInvoices() {
   } finally {
     loadingList.value = false
   }
+}
+
+function deskCompany() {
+  return localStorage.getItem('wb-company') || ''
+}
+
+// Realtime: a bill submitted, cancelled or deleted anywhere leaves the draft list,
+// and an edited draft already listed is patched in place. Only a draft this desk
+// hasn't seen yet needs a refetch (its series may not be allowed here).
+function applyBillPanelRow(data) {
+  const company = deskCompany()
+  if (company && data.row?.company && data.row.company !== company) return true
+  const idx = invoices.value.findIndex(i => i.name === data.name)
+  if (data.docstatus !== 0 || data.event === 'on_trash') {
+    if (idx !== -1) invoices.value.splice(idx, 1)
+    if (selectedInvoice.value?.name === data.name && !isSubmitting.value) {
+      selectedInvoice.value = null
+      previewItems.value = []
+      unlinkedEntries.value = []
+    }
+    return true
+  }
+  if (idx === -1) return false
+  invoices.value[idx] = { ...invoices.value[idx], ...data.row }
+  return true
 }
 
 let searchTimeout = null
@@ -526,6 +551,8 @@ async function selectInvoice(inv) {
 
   try {
     const details = await getPurchaseInvoiceDetails(inv.name)
+    // Ignore a slow response once the user has moved on to another bill
+    if (selectedInvoice.value?.name !== inv.name) return
     selectedInvoice.value = details
     previewItems.value = details.items || []
     loadUnlinkedEntries(details.supplier, inv.name)
@@ -649,56 +676,12 @@ async function confirmSubmission() {
         payment_type: e.doctype,
         payment_name: e.name,
         reference_row: e.reference_row,
-        invoice_type: 'Purchase Invoice',
-        invoice_name: invName,
         amount: Number(e.alloc),
         unreconciled_amount: e.available
       }))
 
-    const submitRes = await submitPurchaseInvoice(invName)
-
-    const itemCodes = (previewItems.value || [])
-      .filter(i => i.item_code)
-      .map(i => i.item_code)
-    const uniqueItemCodes = [...new Set(itemCodes)]
-
-    if (uniqueItemCodes.length > 0) {
-      try {
-        await linkSupplierToItems(supplier, uniqueItemCodes)
-      } catch (err) {
-        console.error('Failed to link supplier to items:', err)
-      }
-
-      let isMirrorSeries = submitRes?.is_mirror_series || false
-      if (!isMirrorSeries && (selectedInvoice.value?.naming_series || selectedInvoice.value?.name)) {
-        try {
-          const check = await checkPurchaseMirrorSeries(selectedInvoice.value.naming_series || selectedInvoice.value.name)
-          isMirrorSeries = check?.is_mirror_series || false
-        } catch (err) {
-          console.warn('Could not check mirror series:', err)
-        }
-      }
-
-      if (isMirrorSeries) {
-        try {
-          await mapItemsAsGstItem(uniqueItemCodes)
-        } catch (err) {
-          console.error('Failed to enable GST item for mirrored purchase series:', err)
-        }
-      }
-    }
-
-    if (allocations.length > 0) {
-      try {
-        await frappePost('ssplbilling.api.reconcile_api.post_reconciliation', {
-          party_type: 'Supplier',
-          party: supplier,
-          allocations: JSON.stringify(allocations)
-        })
-      } catch (err) {
-        errorMsg.value = 'Bill submitted, but linking payments failed: ' + (err.message || err)
-      }
-    }
+    // One request: submit, supplier link and reconciliation succeed or fail together
+    await submitPurchaseDesk(invName, allocations)
 
     const nameToRemove = selectedInvoice.value.name
     lastSubmittedInvoice.value = {
@@ -714,7 +697,6 @@ async function confirmSubmission() {
     unlinkedEntries.value = []
     successMsg.value = ''
 
-    loadInvoices()
     showLcvWarningModal.value = true
 
   } catch (e) {
@@ -743,7 +725,7 @@ function handleLcvClose() {
 onMounted(() => {
   loadInvoices()
   // No series filter on this desk — refresh on any Purchase Invoice change.
-  _billPanelCleanup = onBillPanelUpdate('Purchase Invoice', null, loadInvoices)
+  _billPanelCleanup = onBillPanelUpdate('Purchase Invoice', null, loadInvoices, applyBillPanelRow)
 })
 
 let _billPanelCleanup = null
