@@ -40,7 +40,7 @@ def get_user_mop_ledgers():
 	]
 
 
-def _get_search_accounts(company=None, alternative_company=None):
+def _get_search_accounts(company=None, alternative_company=None, names=None):
     """Return accounts listed in Visible Accounts OR checked for ledger search."""
     settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
     visible_accounts = [row.account for row in (settings.visible_accounts or []) if row.account]
@@ -61,6 +61,8 @@ def _get_search_accounts(company=None, alternative_company=None):
     companies = list(dict.fromkeys(value for value in (company, alternative_company) if value))
     if companies:
         filters["company"] = ["in", companies]
+    if names is not None:
+        filters["name"] = ["in", names]
 
     return frappe.get_all(
         "Account",
@@ -73,13 +75,31 @@ def _get_search_accounts(company=None, alternative_company=None):
 
 @frappe.whitelist()
 def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
-    """Fetch all Customers, Suppliers, and Accounts in a unified format for local preloading."""
+    """Fetch all Customers, Suppliers, Employees and Accounts in a unified format for local preloading."""
+    return _build_ledgers(company, alternative_company, cost_center)
+
+
+@frappe.whitelist()
+def get_ledgers_by_name(names, company=None, alternative_company=None, cost_center=None):
+    """Rebuild only the named ledgers, exactly as get_all_ledgers would. Names that no longer
+    qualify (deleted, renamed, disabled, inactive, hidden account) come back in `removed`."""
+    names = [n for n in dict.fromkeys(frappe.parse_json(names) or []) if n]
+    ledgers = _build_ledgers(company, alternative_company, cost_center, names=names) if names else []
+    returned = {l["name"] for l in ledgers}
+    return {"ledgers": ledgers, "removed": [n for n in names if n not in returned]}
+
+
+def _build_ledgers(company=None, alternative_company=None, cost_center=None, names=None):
+    """Ledger rows for the client cache; with `names`, only those ledgers (same rows, same scoping)."""
     ledgers = []
+    # Every query below is restricted to `names` when given; the SQL fragments use %(names)s.
+    names = list(names) if names is not None else None
+    name_filter = {"name": ["in", names]} if names is not None else {}
 
     # 1. Customers
     customers = frappe.get_all(
         "Customer",
-        filters={"disabled": 0},
+        filters={"disabled": 0, **name_filter},
         fields=["name", "customer_name as label", "mobile_no", "email_id as email", "gstin", "customer_group as group", "pricelist_multiplication_factor"],
         limit=0
     )
@@ -90,7 +110,7 @@ def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
     # 2. Suppliers
     suppliers = frappe.get_all(
         "Supplier",
-        filters={"disabled": 0},
+        filters={"disabled": 0, **name_filter},
         fields=["name", "supplier_name as label", "mobile_no", "email_id as email", "gstin", "supplier_group as group"],
         limit=0
     )
@@ -101,8 +121,8 @@ def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
     # 3. Employees
     employees = frappe.get_all(
         "Employee",
-        filters={"status": "Active"},
-        fields=["name", "employee_name as label", "cell_number as mobile_no", "balance_incentive", "personal_email as email", "department as group"],
+        filters={"status": "Active", **name_filter},
+        fields=["name", "employee_name as label", "cell_number as mobile_no", "balance_incentive", "personal_email as email", "department as group", "designation"],
         limit=0,
     )
     for e in employees:
@@ -112,7 +132,7 @@ def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
     ledgers.extend(employees)
 
     # Fetch accounts enabled by either billing settings or the Account checkbox.
-    accounts = _get_search_accounts(company, alternative_company)
+    accounts = _get_search_accounts(company, alternative_company, names=names)
     for a in accounts:
         a["type"] = "Account"
         a["ledger_search_visible"] = True
@@ -123,15 +143,25 @@ def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
 
     # Map for fast lookup
     ledger_map = {l.name: l for l in ledgers}
+    if names is not None and not ledger_map:
+        return []
+    sql_params = {"names": tuple(ledger_map)} if names is not None else {}
+    link_cond = " AND dl.link_name IN %(names)s" if names is not None else ""
+    # Two index-friendly passes (party, then party-less account) instead of one OR, which scans.
+    gl_conds = (
+        [" AND party IN %(names)s", " AND (party IS NULL OR party = '') AND account IN %(names)s"]
+        if names is not None
+        else [""]
+    )
 
     # 4. Batch fetch primary addresses (Customers & Suppliers)
-    addresses = frappe.db.sql("""
+    addresses = frappe.db.sql(f"""
         SELECT dl.link_name AS name, addr.name as address_name, addr.address_line1, addr.city, addr.state
         FROM `tabDynamic Link` dl
         JOIN `tabAddress` addr ON addr.name = dl.parent
-        WHERE dl.link_doctype IN ('Customer', 'Supplier') AND dl.parenttype = 'Address'
+        WHERE dl.link_doctype IN ('Customer', 'Supplier') AND dl.parenttype = 'Address'{link_cond}
         ORDER BY addr.modified DESC
-    """, as_dict=True)
+    """, sql_params, as_dict=True)
     for a in addresses:
         if a.name in ledger_map:
             l = ledger_map[a.name]
@@ -142,12 +172,12 @@ def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
                 l["state"] = a.state or ""
 
     # 5. Batch fetch WhatsApp (Customers & Suppliers)
-    wa_rows = frappe.db.sql("""
+    wa_rows = frappe.db.sql(f"""
         SELECT dl.link_name AS name, cp.phone AS whatsapp
         FROM `tabDynamic Link` dl
         JOIN `tabContact Phone` cp ON cp.parent = dl.parent
-        WHERE dl.link_doctype IN ('Customer', 'Supplier') AND dl.parenttype = 'Contact' AND cp.is_primary_mobile_no = 0
-    """, as_dict=True)
+        WHERE dl.link_doctype IN ('Customer', 'Supplier') AND dl.parenttype = 'Contact' AND cp.is_primary_mobile_no = 0{link_cond}
+    """, sql_params, as_dict=True)
     for w in wa_rows:
         if w.name in ledger_map:
             ledger_map[w.name]["whatsapp"] = w.whatsapp
@@ -155,18 +185,20 @@ def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
     # 6. Batch fetch Balances (Unified) — one GL pass grouped by company serves both the active
     # and the alternative company. Party rows sum by party; rows without a party sum by account.
     company_cond = ""
-    balance_params = {}
+    balance_params = dict(sql_params)
     if company:
         company_cond = " AND company IN %(companies)s"
         balance_params["companies"] = tuple(c for c in (company, alternative_company) if c)
-    balance_rows = frappe.db.sql(f"""
-        SELECT (party IS NOT NULL AND party != '') AS is_party,
-            IF(party IS NOT NULL AND party != '', party, account) AS ledger,
-            company, SUM(debit) - SUM(credit) AS balance
-        FROM `tabGL Entry`
-        WHERE is_cancelled = 0 {company_cond}
-        GROUP BY is_party, ledger, company
-    """, balance_params, as_dict=True)
+    balance_rows = []
+    for gl_cond in gl_conds:
+        balance_rows += frappe.db.sql(f"""
+            SELECT (party IS NOT NULL AND party != '') AS is_party,
+                IF(party IS NOT NULL AND party != '', party, account) AS ledger,
+                company, SUM(debit) - SUM(credit) AS balance
+            FROM `tabGL Entry`
+            WHERE is_cancelled = 0 {company_cond}{gl_cond}
+            GROUP BY is_party, ledger, company
+        """, balance_params, as_dict=True)
 
     # (is_party, ledger) -> {company: balance}. Party totals are applied before account totals so
     # that, as before, an account wins when a party and an account share a name.
@@ -188,45 +220,52 @@ def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
     # 6b. Batch fetch activity counts (GL postings in the last 90 days) —
     # the front-end ledger search ranks busier ledgers first.
     activity_cutoff = frappe.utils.add_days(frappe.utils.today(), -90)
-    activity_rows = frappe.db.sql("""
-        SELECT (party IS NOT NULL AND party != '') AS is_party,
-            IF(party IS NOT NULL AND party != '', party, account) AS ledger, COUNT(*) AS activity
-        FROM `tabGL Entry`
-        WHERE is_cancelled = 0 AND posting_date >= %(cutoff)s
-        GROUP BY is_party, ledger
-        ORDER BY is_party DESC
-    """, {"cutoff": activity_cutoff}, as_dict=True)
+    activity_rows = []
+    for gl_cond in gl_conds:
+        activity_rows += frappe.db.sql(f"""
+            SELECT (party IS NOT NULL AND party != '') AS is_party,
+                IF(party IS NOT NULL AND party != '', party, account) AS ledger, COUNT(*) AS activity
+            FROM `tabGL Entry`
+            WHERE is_cancelled = 0 AND posting_date >= %(cutoff)s{gl_cond}
+            GROUP BY is_party, ledger
+        """, {"cutoff": activity_cutoff, **sql_params}, as_dict=True)
+    # Party rows first, as the single query's ORDER BY is_party DESC did: an account sharing a
+    # party's name is applied last and wins.
+    activity_rows.sort(key=lambda a: -a.is_party)
     for a in activity_rows:
         if a.ledger in ledger_map:
             ledger_map[a.ledger]["activity"] = int(a.activity or 0)
 
     # Keep global activity for other searches; scope modal suggestions separately.
     if cost_center:
-        scoped_activity = frappe.db.sql("""
+        party_cond = " AND party IN %(names)s" if names is not None else ""
+        account_cond = " AND account IN %(names)s" if names is not None else ""
+        scoped_activity = frappe.db.sql(f"""
             SELECT party as name, COUNT(*) as activity
             FROM `tabGL Entry`
             WHERE is_cancelled = 0 AND posting_date >= %(cutoff)s
                 AND cost_center = %(cost_center)s
-                AND party IS NOT NULL AND party != ''
+                AND party IS NOT NULL AND party != ''{party_cond}
             GROUP BY party
             UNION ALL
             SELECT account as name, COUNT(*) as activity
             FROM `tabGL Entry`
             WHERE is_cancelled = 0 AND posting_date >= %(cutoff)s
-                AND cost_center = %(cost_center)s AND (party IS NULL OR party = '')
+                AND cost_center = %(cost_center)s AND (party IS NULL OR party = ''){account_cond}
             GROUP BY account
-        """, {"cutoff": activity_cutoff, "cost_center": cost_center}, as_dict=True)
+        """, {"cutoff": activity_cutoff, "cost_center": cost_center, **sql_params}, as_dict=True)
         for row in scoped_activity:
             if row.name in ledger_map:
                 ledger_map[row.name]["cost_center_activity"] = int(row.activity or 0)
 
     # 7. Batch fetch Last Invoice Dates (Customers only)
-    last_invoices = frappe.db.sql("""
+    customer_cond = " AND customer IN %(names)s" if names is not None else ""
+    last_invoices = frappe.db.sql(f"""
         SELECT customer, MAX(posting_date) as last_date
         FROM `tabSales Invoice`
-        WHERE docstatus = 1
+        WHERE docstatus = 1{customer_cond}
         GROUP BY customer
-    """, as_dict=True)
+    """, sql_params, as_dict=True)
     for i in last_invoices:
         if i.customer in ledger_map:
             ledger_map[i.customer]["last_invoice_date"] = str(i.last_date)
@@ -234,7 +273,10 @@ def get_all_ledgers(company=None, alternative_company=None, cost_center=None):
     # 8. Batch fetch Party Links
     party_links = frappe.get_all(
         "Party Link",
-        fields=["primary_party", "primary_role", "secondary_party", "secondary_role"]
+        fields=["primary_party", "primary_role", "secondary_party", "secondary_role"],
+        or_filters=(
+            [["primary_party", "in", names], ["secondary_party", "in", names]] if names is not None else None
+        ),
     )
     for pl in party_links:
         # Link primary to secondary

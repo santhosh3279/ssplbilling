@@ -265,9 +265,45 @@ doc_events = {
 		"on_trash": "ssplbilling.api.offer_sync.publish_item_offer_update",
 	},
 	"Customer": {
-		"after_insert": "ssplbilling.api.customersearch_api.publish_customer_update",
-		"on_update": "ssplbilling.api.customersearch_api.publish_customer_update",
-		"on_trash": "ssplbilling.api.customersearch_api.publish_customer_update",
+		# customer_update is kept for tabs still running the pre-ledger_update build.
+		"after_insert": ["ssplbilling.api.customersearch_api.publish_customer_update", "ssplbilling.api.ledger_sync.on_ledger_change"],
+		"on_update": ["ssplbilling.api.customersearch_api.publish_customer_update", "ssplbilling.api.ledger_sync.on_ledger_change"],
+		"on_trash": ["ssplbilling.api.customersearch_api.publish_customer_update", "ssplbilling.api.ledger_sync.on_ledger_change"],
+		"after_rename": "ssplbilling.api.ledger_sync.on_ledger_rename",
+	},
+	"Supplier": {
+		"after_insert": "ssplbilling.api.ledger_sync.on_ledger_change",
+		"on_update": "ssplbilling.api.ledger_sync.on_ledger_change",
+		"on_trash": "ssplbilling.api.ledger_sync.on_ledger_change",
+		"after_rename": "ssplbilling.api.ledger_sync.on_ledger_rename",
+	},
+	"Employee": {
+		"after_insert": "ssplbilling.api.ledger_sync.on_ledger_change",
+		"on_update": "ssplbilling.api.ledger_sync.on_ledger_change",
+		"on_trash": "ssplbilling.api.ledger_sync.on_ledger_change",
+		"after_rename": "ssplbilling.api.ledger_sync.on_ledger_rename",
+	},
+	"Account": {
+		"after_insert": "ssplbilling.api.ledger_sync.on_ledger_change",
+		"on_update": "ssplbilling.api.ledger_sync.on_ledger_change",
+		"on_trash": "ssplbilling.api.ledger_sync.on_ledger_change",
+		"after_rename": "ssplbilling.api.ledger_sync.on_ledger_rename",
+	},
+	"Address": {
+		"on_update": "ssplbilling.api.ledger_sync.on_linked_party_change",
+		"on_trash": "ssplbilling.api.ledger_sync.on_linked_party_change",
+	},
+	"Contact": {
+		"on_update": "ssplbilling.api.ledger_sync.on_linked_party_change",
+		"on_trash": "ssplbilling.api.ledger_sync.on_linked_party_change",
+	},
+	"Party Link": {
+		"after_insert": "ssplbilling.api.ledger_sync.on_party_link_change",
+		"on_update": "ssplbilling.api.ledger_sync.on_party_link_change",
+		"on_trash": "ssplbilling.api.ledger_sync.on_party_link_change",
+	},
+	"SSPL Billing Settings": {
+		"on_update": "ssplbilling.api.ledger_sync.on_billing_settings_change",
 	},
 	"Discount Rule": {
 		"after_insert": "ssplbilling.api.discount_rule_api.publish_discount_rule_update",

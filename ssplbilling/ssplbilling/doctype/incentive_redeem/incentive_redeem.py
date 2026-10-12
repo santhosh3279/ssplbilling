@@ -7,6 +7,8 @@ from frappe.model.document import Document
 from frappe.utils import flt, nowdate
 from erpnext.accounts.party import get_party_account
 
+from ssplbilling.api.ledger_sync import queue_ledger_update
+
 
 class IncentiveRedeem(Document):
 	def before_insert(self):
@@ -88,3 +90,5 @@ class IncentiveRedeem(Document):
 				"balance_incentive": flt(new_balance, 2),
 			},
 		)
+		# set_value skips Employee hooks; refresh the cached ledger row (balance_incentive).
+		queue_ledger_update([self.employee])

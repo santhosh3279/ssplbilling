@@ -1,6 +1,8 @@
 import frappe
 from frappe.utils import flt
 
+from ssplbilling.api.ledger_sync import queue_ledger_update
+
 
 def calculate_incentive_points(doc, method=None):
 	"""Calculate and persist points in Incentive System child table on submit."""
@@ -107,6 +109,8 @@ def _update_employee_totals(doc, multiplier):
 			row.employee,
 			{"total_incentive": flt(new_total, 2), "balance_incentive": flt(new_balance, 2)},
 		)
+		# set_value skips Employee hooks; refresh the cached ledger row (balance_incentive).
+		queue_ledger_update([row.employee])
 
 
 def _get_percentage(doc, rule):

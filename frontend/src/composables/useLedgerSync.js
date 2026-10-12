@@ -1,13 +1,14 @@
 import { getFrappeSocket } from '../services/frappeSocket.js'
-import { refreshLedgerCache, applyLedgerBalancePush, patchLedgerInCache } from '../services/ledgerCache.js'
-import { frappeGet } from '../api.js'
+import { refreshLedgerCache, applyLedgerBalancePush, patchLedgersFromServer } from '../services/ledgerCache.js'
 
 // A server restart reconnects every tab at once; spread their full refreshes (~5 s of server work each).
 const RECONNECT_SPREAD_MS = 30000
 
 let _socket = null
 let _balanceHandler = null
-let _customerHandler = null
+let _ledgerHandler = null
+let _patchTimer = null
+const _pendingNames = new Set()
 let _connectHandler = null
 let _visibilityHandler = null
 let _refreshTimer = null
@@ -50,23 +51,23 @@ function scheduleReconcile() {
   scheduleLedgerRefresh(Math.random() * RECONNECT_SPREAD_MS)
 }
 
-async function patchCustomer(name) {
+// Collect a burst of ledger_update events (several commits in quick succession) into one fetch.
+function queueLedgerPatch(names) {
+  for (const name of names) _pendingNames.add(name)
+  if (_patchTimer === null) _patchTimer = setTimeout(patchPendingLedgers, 300)
+}
+
+async function patchPendingLedgers() {
+  _patchTimer = null
   const socket = _socket
+  const names = [..._pendingNames]
+  _pendingNames.clear()
+  if (!socket || !names.length) return
   try {
-    const ledger = await frappeGet('ssplbilling.api.customersearch_api.get_single_ledger', {
-      party_name: name,
-      party_type: 'Customer',
-    })
-    if (_socket !== socket) return
-    if (ledger) {
-      // Its balance/activity are not company-scoped; keep the cached (pushed) figures instead.
-      delete ledger.balance
-      delete ledger.activity
-    }
-    patchLedgerInCache(name, ledger || null)
-    window.dispatchEvent(new CustomEvent('wb-ledger-cache-updated'))
+    const patched = await patchLedgersFromServer(names)
+    if (patched && _socket === socket) window.dispatchEvent(new CustomEvent('wb-ledger-cache-updated'))
   } catch (e) {
-    console.warn('[useLedgerSync] customer patch failed:', e)
+    console.warn('[useLedgerSync] ledger patch failed:', e)
   }
 }
 
@@ -80,8 +81,11 @@ export function initLedgerSync() {
   _balanceHandler = (data) => {
     if (applyLedgerBalancePush(data)) window.dispatchEvent(new CustomEvent('wb-ledger-cache-updated'))
   }
-  _customerHandler = (data) => {
-    if (data?.name) patchCustomer(data.name)
+  // Customer / Supplier / Employee / Account (or a linked Address, Contact, Party Link) changed.
+  // `full` means no per-row patch fits (e.g. the Visible Accounts setting): reload everything.
+  _ledgerHandler = (data) => {
+    if (data?.full) scheduleReconcile()
+    else if (data?.names?.length) queueLedgerPatch(data.names)
   }
   // The first connect is covered by the initial refresh below; later ones may have missed pushes.
   let initialConnectPending = !socket.connected
@@ -99,7 +103,7 @@ export function initLedgerSync() {
   }
 
   socket.on('ledger_balances', _balanceHandler)
-  socket.on('customer_update', _customerHandler)
+  socket.on('ledger_update', _ledgerHandler)
   socket.on('connect', _connectHandler)
   document.addEventListener('visibilitychange', _visibilityHandler)
   // Reconcile changes missed before subscription, including persisted balances. A browser that
@@ -111,7 +115,7 @@ export function initLedgerSync() {
 export function destroyLedgerSync() {
   if (_socket) {
     _socket.off('ledger_balances', _balanceHandler)
-    _socket.off('customer_update', _customerHandler)
+    _socket.off('ledger_update', _ledgerHandler)
     _socket.off('connect', _connectHandler)
   }
   if (_visibilityHandler) document.removeEventListener('visibilitychange', _visibilityHandler)
@@ -120,7 +124,10 @@ export function destroyLedgerSync() {
   _refreshQueued = false
   _reconcileOnVisible = false
   _balanceHandler = null
-  _customerHandler = null
+  _ledgerHandler = null
+  clearTimeout(_patchTimer)
+  _patchTimer = null
+  _pendingNames.clear()
   _connectHandler = null
   _visibilityHandler = null
   _socket = null

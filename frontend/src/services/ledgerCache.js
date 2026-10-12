@@ -1,6 +1,6 @@
 import { serverNow } from './serverTime'
-import { ref } from 'vue'
-import { frappeGet } from '../api.js'
+import { ref, toRaw } from 'vue'
+import { frappeGet, frappePost } from '../api.js'
 
 // Global reactive state for ledgers
 const ledgers = ref([])
@@ -91,23 +91,7 @@ async function fetchLedgerCache(force) {
       alternative_company,
       cost_center
     })
-    const rawList = data || []
-    
-    const newPartyLinks = {}
-    const cleanedLedgers = rawList.map(l => {
-      // Extract link data
-      if (l.is_primary || l.is_secondary || l.party_links?.length) {
-        newPartyLinks[l.name] = {
-          is_primary: !!l.is_primary,
-          is_secondary: !!l.is_secondary,
-          links: l.party_links || []
-        }
-      }
-      
-      // Return a copy without link data
-      const { is_primary, is_secondary, party_links, ...rest } = l
-      return rest
-    })
+    const { rows: cleanedLedgers, links: newPartyLinks } = splitPartyLinks(data || [])
 
     cacheContext.value = context
     ledgers.value = cleanedLedgers
@@ -124,6 +108,76 @@ async function fetchLedgerCache(force) {
   } finally {
     syncLoading.value = false
   }
+}
+
+// Server rows carry their Party Link data inline; the cache keeps it in partyLinks instead.
+function splitPartyLinks(rawList) {
+  const links = {}
+  const rows = rawList.map(l => {
+    if (l.is_primary || l.is_secondary || l.party_links?.length) {
+      links[l.name] = {
+        is_primary: !!l.is_primary,
+        is_secondary: !!l.is_secondary,
+        links: l.party_links || []
+      }
+    }
+    const { is_primary, is_secondary, party_links, ...rest } = l
+    return rest
+  })
+  return { rows, links }
+}
+
+const labelKey = l => (l.label || '').toLowerCase()
+
+/**
+ * Refetch the named ledgers (a `ledger_update` socket event) and patch them into the cache in one
+ * reactive change. Rows come from the same builder as the full list, so they are company-scoped
+ * like it; names the server no longer returns (deleted, renamed, disabled, hidden) are dropped.
+ */
+export async function patchLedgersFromServer(names) {
+  const context = currentContext()
+  // Nothing loaded for this company yet: the next full refresh will include these rows.
+  if (!names?.length || cacheContext.value !== context) return false
+  const { company, alternative_company, cost_center } = JSON.parse(context)
+  const startedAt = serverNow().getTime() / 1000
+  const res = await frappePost('ssplbilling.api.customersearch_api.get_ledgers_by_name', {
+    names: JSON.stringify(names), company, alternative_company, cost_center
+  }, { silent: true })
+  // A full refresh or company switch that landed meanwhile already holds newer data.
+  if (cacheContext.value !== context || pendingRefresh) return false
+  applyLedgerRows(res?.ledgers || [], res?.removed || [])
+  reapplyPushesSince(startedAt)
+  lastSync.value = serverNow().getTime()
+  _schedulePersist()
+  return true
+}
+
+function applyLedgerRows(rawRows, removed) {
+  const { rows, links } = splitPartyLinks(rawRows)
+  const touched = new Set([...rows.map(r => r.name), ...removed])
+  // A party and an account may share a name, so a name can map to more than one row.
+  const fresh = new Map()
+  for (const r of rows) {
+    if (!fresh.has(r.name)) fresh.set(r.name, [])
+    fresh.get(r.name).push(r)
+  }
+  const next = []
+  for (const l of toRaw(ledgers.value)) {
+    if (!touched.has(l.name)) next.push(l)
+    else if (fresh.has(l.name)) {
+      next.push(...fresh.get(l.name))
+      fresh.delete(l.name)
+    }
+  }
+  if (fresh.size) {
+    for (const group of fresh.values()) next.push(...group)
+    next.sort((a, b) => (labelKey(a) < labelKey(b) ? -1 : labelKey(a) > labelKey(b) ? 1 : 0))
+  }
+  const nextLinks = { ...partyLinks.value }
+  for (const name of touched) delete nextLinks[name]
+  Object.assign(nextLinks, links)
+  ledgers.value = next
+  partyLinks.value = nextLinks
 }
 
 // Debounce the (full-array) localStorage write so a burst of realtime balance
