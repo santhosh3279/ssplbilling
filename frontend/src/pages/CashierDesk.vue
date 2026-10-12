@@ -786,14 +786,6 @@
       @confirm="handleGstConfirm"
     />
 
-    <!-- CASHIER ENTRY MODAL -->
-    <CashierEntry
-      v-if="showCashierEntry"
-      title="Cashier Opening"
-      :date="getTodayIST()"
-      @close="showCashierEntry = false"
-      @saved="handleCashierEntrySaved"
-    />
 
     <!-- MODIFY BILL SUBWINDOW -->
     <div v-if="showModifyModal" class="fixed inset-0 z-[100] bg-[var(--color-bg)]">
@@ -837,7 +829,6 @@ import { useLedgerCache } from '../services/ledgerCache'
 import { getSeriesForDoctype } from '../services/seriesCache.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Unallocated from '../components/Unallocated.vue'
-import CashierEntry from '../components/CashierEntry.vue'
 import SalesInvoice from './SalesInvoice.vue'
 import BillMirrorCreator from '../components/BillMirrorCreator.vue'
 import Warning from '../components/Warning.vue'
@@ -900,7 +891,6 @@ const showBillMirrorCreator = ref(false)
 const showGstWarning = ref(false)
 const cardRefNo = ref('')
 const processedInvoiceName = ref('')
-const showCashierEntry = ref(false)
 const mirrorQueued = ref(false)
 
 // Block page shortcuts while any inline subwindow is open
@@ -908,7 +898,6 @@ useSubwindowWatcher(showCardRefModal)
 useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showModifyModal)
 useSubwindowWatcher(showReconcileModal)
-useSubwindowWatcher(showCashierEntry)
 useSubwindowWatcher(showBillMirrorCreator)
 useSubwindowWatcher(showGstWarning)
 
@@ -1104,40 +1093,6 @@ const previewDiscount = computed(() => {
 })
 
 // ==================== FUNCTIONS ====================
-
-async function checkDayOpening() {
-  if (!session.user.value) return
-  const today = getTodayIST()
-  // Only block access if looking at Today or posting for Today
-  if (filterDate.value !== today && postingDate.value !== today) {
-    showCashierEntry.value = false
-    return
-  }
-
-  try {
-    const hasOpening = await frappeGet('ssplbilling.api.cahierlog_api.check_cashier_opening', {
-      date: today,
-      user: session.user.value
-    })
-    const boxCash = Number(localStorage.getItem('wb-opening-box-cash') || 0)
-    
-    if (!hasOpening || !boxCash) {
-      showCashierEntry.value = true
-    } else {
-      showCashierEntry.value = false
-    }
-  } catch (e) {
-    console.error('[CashierDesk] Opening check failed:', e)
-  }
-}
-
-function handleCashierEntrySaved(data) {
-  if (data && data.total !== undefined) {
-    localStorage.setItem('wb-opening-box-cash', String(data.total))
-  }
-  showCashierEntry.value = false
-  loadInvoices()
-}
 
 async function loadInvoices() {
   loadingList.value = true
@@ -1962,11 +1917,6 @@ onMounted(() => {
   getBillingSettingsCached().catch(() => {})
   fetchSeriesList()
   loadInvoices()
-  // Immediately block if no opening recorded (fast path via localStorage)
-  if (!Number(localStorage.getItem('wb-opening-box-cash') || 0)) {
-    showCashierEntry.value = true
-  }
-  checkDayOpening()
   window.addEventListener('keydown', handleKeydown)
 
   _billPanelCleanup = onBillPanelUpdate('Sales Invoice', sidebarSeries, loadInvoices)
