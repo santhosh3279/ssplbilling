@@ -98,12 +98,37 @@ def publish_ledger_balance_updates(doc, method=None):
 		accounts &= {a.name for a in _get_search_accounts()}
 	if not parties and not accounts:
 		return
+	_queue_ledger_balances(parties, accounts)
 
-	def _emit():
-		frappe.publish_realtime(
-			"ledger_balances",
-			{"ts": time.time(), "ledgers": get_ledger_balance_snapshots(parties, accounts)},
-			after_commit=False,
-		)
 
-	frappe.db.after_commit.add(_emit)
+def _queue_ledger_balances(parties, accounts):
+	"""Collect the parties/accounts touched in this transaction; one ledger_balances message
+	covering all of them goes out after commit.
+
+	A cashier submit posts the invoice, one Payment Entry per mode and a discount Journal Entry
+	in one request; each used to send its own message with the same customer recomputed. Nothing
+	is sent on rollback."""
+	state = getattr(frappe.local, "_sspl_ledger_pending", None)
+	if state is None:
+		state = frappe.local._sspl_ledger_pending = {"parties": set(), "accounts": set()}
+		frappe.db.after_commit.add(_flush_ledger_balances)
+		frappe.db.after_rollback.add(_discard_ledger_balances)
+	state["parties"].update(parties)
+	state["accounts"].update(accounts)
+
+
+def _flush_ledger_balances():
+	# Balances are computed here so the SUM reads the final committed state for submit and cancel.
+	state = getattr(frappe.local, "_sspl_ledger_pending", None)
+	frappe.local._sspl_ledger_pending = None
+	if not state or not (state["parties"] or state["accounts"]):
+		return
+	frappe.publish_realtime(
+		"ledger_balances",
+		{"ts": time.time(), "ledgers": get_ledger_balance_snapshots(state["parties"], state["accounts"])},
+		after_commit=False,
+	)
+
+
+def _discard_ledger_balances():
+	frappe.local._sspl_ledger_pending = None
