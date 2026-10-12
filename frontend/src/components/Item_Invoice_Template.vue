@@ -1034,15 +1034,18 @@ async function refreshSelectedParty() {
 
 <style scoped>
 /* Keep the trailing discount and tax columns sized to their displayed values.
-   Counting from the end also covers Purchase Order's extra stock columns. */
-.compact-discount-columns :deep(td:nth-last-child(5)),
-.compact-discount-columns :deep(td:nth-last-child(4)),
-.compact-discount-columns :deep(td:nth-last-child(3)) {
+   Counting from the end also covers Purchase Order's extra stock columns.
+   Rows with a colspan cell (the pending-qty and barcode rows) are skipped: counted from
+   their end, these positions land on Item Name / Qty / UOM, and the nowrap + 1% width
+   there reshuffled every column while a qty was being typed. */
+.compact-discount-columns :deep(tr:not(:has(> td[colspan])) > td:nth-last-child(5)),
+.compact-discount-columns :deep(tr:not(:has(> td[colspan])) > td:nth-last-child(4)),
+.compact-discount-columns :deep(tr:not(:has(> td[colspan])) > td:nth-last-child(3)) {
   width: 1%;
   white-space: nowrap;
 }
 
-.compact-discount-columns :deep(td:nth-last-child(5) input) {
+.compact-discount-columns :deep(tr:not(:has(> td[colspan])) > td:nth-last-child(5) input) {
   width: calc(6ch + 1rem);
   min-width: 0;
 }
