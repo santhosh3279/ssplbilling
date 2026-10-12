@@ -176,48 +176,59 @@ def _item_qtys_by_warehouse(qtys_raw, item_code):
 			by_warehouse[parts[1]] = by_warehouse.get(parts[1], 0.0) + float(qty)
 	return by_warehouse
 
-def publish_stock_update(item_code, warehouse, draft_qtys=None, purchase_qtys=None):
-	"""Broadcast the live stock/redis-stock figures for an item+warehouse to all clients."""
-	if not item_code or not warehouse:
-		return
-	frappe.publish_realtime(
-		"stock_update",
-		get_item_available_stock(item_code, warehouse, draft_qtys, purchase_qtys),
-		after_commit=True,
-	)
-	# Public catalogues receive an invalidation, never private draft bill details.
-	from ssplbilling.api.offer_sync import queue_catalogue_stock_invalidation
-	queue_catalogue_stock_invalidation([item_code])
+def publish_stock_update(item_code, warehouse):
+	"""Broadcast the live stock/redis-stock figures for an item+warehouse to all clients after commit."""
+	if item_code and warehouse:
+		_queue_stock_pairs([(item_code, warehouse)])
+
 
 def publish_stock_ledger_update(doc, method=None):
-	"""Doc event (Stock Ledger Entry after_insert): queue a stock_update for the entry's item+warehouse.
+	"""Doc event (Stock Ledger Entry after_insert): queue a stock update for the entry's item+warehouse.
 
 	Covers every stock movement (Stock Entry, Delivery Note, Purchase Receipt, Stock Reconciliation,
 	repack, invoice submit/cancel), so client item caches can rely on realtime updates instead of
-	refetching. Pairs are de-duplicated per transaction and computed after commit, when the Bin holds
-	the final quantity."""
+	refetching."""
 	if not doc or not doc.item_code or not doc.warehouse:
 		return
-	pending = getattr(frappe.local, "_sspl_stock_pairs", None)
-	if pending is None:
-		pending = frappe.local._sspl_stock_pairs = set()
-		frappe.db.after_commit.add(_flush_stock_ledger_updates)
-		frappe.db.after_rollback.add(_discard_stock_ledger_updates)
-	pending.add((doc.item_code, doc.warehouse))
+	_queue_stock_pairs([(doc.item_code, doc.warehouse)])
 
 
-def _flush_stock_ledger_updates():
-	pending = getattr(frappe.local, "_sspl_stock_pairs", None) or set()
-	frappe.local._sspl_stock_pairs = None
-	if not pending:
+def _queue_stock_pairs(pairs, stale_cache_key=None):
+	"""Collect (item_code, warehouse) pairs touched in this transaction; one stock_update_batch
+	covering all of them goes out after commit, when the Bin holds the final quantity.
+
+	A submit used to send three batches (on_update, on_submit and the Stock Ledger Entries);
+	every hook and ledger entry of the transaction now lands in the same message. Nothing is
+	sent on rollback. `stale_cache_key` names a draft-qty cache to drop again before the
+	figures are computed (and on rollback), in case it was rebuilt from uncommitted rows."""
+	state = getattr(frappe.local, "_sspl_stock_pending", None)
+	if state is None:
+		state = frappe.local._sspl_stock_pending = {"pairs": {}, "caches": set()}
+		frappe.db.after_commit.add(_flush_stock_updates)
+		frappe.db.after_rollback.add(_discard_stock_updates)
+	state["pairs"].update(dict.fromkeys(pairs))
+	if stale_cache_key:
+		state["caches"].add(stale_cache_key)
+
+
+def _flush_stock_updates():
+	state = getattr(frappe.local, "_sspl_stock_pending", None)
+	frappe.local._sspl_stock_pending = None
+	if not state:
 		return
-	frappe.publish_realtime(
-		"stock_update_batch", {"updates": _stock_payloads(pending)}, after_commit=False
-	)
+	for key in state["caches"]:
+		frappe.cache().delete_value(key)
+	if state["pairs"]:
+		frappe.publish_realtime(
+			"stock_update_batch", {"updates": _stock_payloads(state["pairs"])}, after_commit=False
+		)
 
 
-def _discard_stock_ledger_updates():
-	frappe.local._sspl_stock_pairs = None
+def _discard_stock_updates():
+	state = getattr(frappe.local, "_sspl_stock_pending", None)
+	frappe.local._sspl_stock_pending = None
+	for key in (state or {}).get("caches", ()):
+		frappe.cache().delete_value(key)
 
 
 def _iter_item_warehouse_pairs(doc):
@@ -234,15 +245,15 @@ def _iter_item_warehouse_pairs(doc):
 			if row.item_code and row.warehouse:
 				yield row.item_code, row.warehouse
 
-def _publish_stock_updates_for_doc(doc):
-	"""Broadcast stock updates for every distinct item+warehouse touched by a document,
+def _publish_stock_updates_for_doc(doc, stale_cache_key=None):
+	"""Queue stock updates for every distinct item+warehouse touched by a document,
 	spanning both its current and pre-save line items."""
 	if doc is None:
 		return
 	pairs = list(dict.fromkeys(_iter_item_warehouse_pairs(doc)))
 	if not pairs:
 		return
-	frappe.publish_realtime("stock_update_batch", {"updates": _stock_payloads(pairs)}, after_commit=True)
+	_queue_stock_pairs(pairs, stale_cache_key)
 	# Public catalogues receive an invalidation, never private draft bill details.
 	from ssplbilling.api.offer_sync import queue_catalogue_stock_invalidation
 	queue_catalogue_stock_invalidation([item_code for item_code, _ in pairs])
@@ -261,22 +272,18 @@ def publish_stock_updates(doc, method=None):
 	_publish_stock_updates_for_doc(doc)
 
 def clear_draft_invoice_qtys_cache(doc=None, method=None):
-	"""Invalidate the draft invoice quantities cache in Redis and broadcast the resulting
-	live stock/redis-stock figures for every item on the invoice to all clients."""
+	"""Invalidate the draft invoice quantities cache in Redis and, after commit, broadcast the
+	resulting live stock/redis-stock figures for every item on the invoice to all clients."""
 	frappe.cache().delete_value("ssplbilling:draft_invoice_qtys")
-	_publish_stock_updates_for_doc(doc)
-	# The broadcast above rebuilt the cache from the current (possibly uncommitted)
-	# transaction state, so clear it again — a rollback must not leave a stale cache
-	# behind; the next read will rebuild it fresh from committed data.
-	frappe.cache().delete_value("ssplbilling:draft_invoice_qtys")
+	# Reads later in this transaction may rebuild the cache from uncommitted rows; the
+	# queued flush (or rollback) drops it again so the next read uses committed data.
+	_publish_stock_updates_for_doc(doc, "ssplbilling:draft_invoice_qtys")
 
 def clear_draft_purchase_qtys_cache(doc=None, method=None):
-	"""Invalidate the draft purchase quantities cache in Redis and broadcast the resulting
-	live stock/redis-stock figures for every item on the purchase invoice to all clients."""
+	"""Invalidate the draft purchase quantities cache in Redis and, after commit, broadcast the
+	resulting live stock/redis-stock figures for every item on the purchase invoice to all clients."""
 	frappe.cache().delete_value("ssplbilling:draft_purchase_qtys")
-	_publish_stock_updates_for_doc(doc)
-	# The broadcast above rebuilt the cache from the current (possibly uncommitted)
-	# transaction state, so clear it again — a rollback must not leave a stale cache
-	# behind; the next read will rebuild it fresh from committed data.
-	frappe.cache().delete_value("ssplbilling:draft_purchase_qtys")
+	# Reads later in this transaction may rebuild the cache from uncommitted rows; the
+	# queued flush (or rollback) drops it again so the next read uses committed data.
+	_publish_stock_updates_for_doc(doc, "ssplbilling:draft_purchase_qtys")
 
