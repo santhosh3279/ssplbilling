@@ -197,13 +197,25 @@ def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None
             order_by="name desc",
         )
 
+    # One grouped count for the whole page instead of a count query per invoice
+    item_counts = {}
+    if invoices:
+        item_counts = dict(
+            frappe.get_all(
+                "Sales Invoice Item",
+                filters={"parent": ["in", [inv["name"] for inv in invoices]], "parenttype": "Sales Invoice"},
+                fields=["parent", {"COUNT": "*", "as": "n"}],
+                group_by="parent",
+                as_list=True,
+            )
+        )
+
     result = []
     for inv in invoices:
         inv["grand_total"] = float(inv["grand_total"] or 0)
         inv["rounded_total"] = float(inv.get("rounded_total") or inv["grand_total"] or 0)
         inv["outstanding_amount"] = float(inv["outstanding_amount"] or 0)
-        # Add item count
-        inv["items_count"] = frappe.db.count("Sales Invoice Item", {"parent": inv["name"]})
+        inv["items_count"] = item_counts.get(inv["name"], 0)
         result.append(inv)
 
     return result

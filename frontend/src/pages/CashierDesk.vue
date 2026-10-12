@@ -1283,20 +1283,22 @@ async function selectInvoice(inv) {
   payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: '' }
   
   try {
-    const details = await getInvoiceDetails(inv.name)
+    // The list row already carries the customer, so the unallocated-cash lookup
+    // runs alongside the details fetch instead of after it
+    const [details, unallocated] = await Promise.all([
+      getInvoiceDetails(inv.name),
+      frappeGet('ssplbilling.api.cashier_api.get_customer_unallocated_cash', {
+        customer: inv.customer,
+        invoice_name: inv.name,
+        company: localStorage.getItem('wb-company') || undefined
+      }),
+    ])
     selectedInvoice.value = details
     previewItems.value = details.items || []
     // Carry the entry-time remark in: submit writes the box back to custom_remarks,
     // so starting blank would silently wipe whatever Sales Entry saved
     payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: details.custom_remarks || '' }
     await loadSeriesSettings(details.naming_series)
-
-    // Check for Unallocated Cash
-    const unallocated = await frappeGet('ssplbilling.api.cashier_api.get_customer_unallocated_cash', {
-      customer: details.customer,
-      invoice_name: details.name,
-      company: localStorage.getItem('wb-company') || undefined
-    })
     
     let remaining = details.outstanding_amount || details.rounded_total || details.grand_total
     const filteredUnallocated = (unallocated || []).filter(pe => pe.mode_of_payment === 'Credit Note')
@@ -1331,13 +1333,26 @@ function focusNextAllocation(index) {
   }
 }
 
+// Billing settings depend on the user, not the bill: fetch once per page visit
+// and reuse for every invoice selected.
+let billingSettingsPromise = null
+function getBillingSettingsCached() {
+  if (!billingSettingsPromise) {
+    const targetUser = localStorage.getItem('wb-inherited-user') || null
+    billingSettingsPromise = fetchDashboardSettings(targetUser).catch(e => {
+      billingSettingsPromise = null
+      throw e
+    })
+  }
+  return billingSettingsPromise
+}
+
 async function loadSeriesSettings(series) {
   try {
-    const targetUser = localStorage.getItem('wb-inherited-user') || null
     const lsCash = localStorage.getItem('wb-cash')
     const lsUpi  = localStorage.getItem('wb-upi')
     const lsCard = localStorage.getItem('wb-card')
-    const settings = await fetchDashboardSettings(targetUser)
+    const settings = await getBillingSettingsCached()
     // Server resolves discount_account against wb-company; never hardcode a
     // company-tagged account here or discounts post to the wrong company's GL.
     const discountAccount = settings.discount_account || ''
@@ -1465,20 +1480,6 @@ async function processPayment() {
   successMsg.value = ''
 
   try {
-    if (postingDate.value === getTodayIST()) {
-      try {
-        const hasOpening = await frappeGet('ssplbilling.api.cahierlog_api.check_cashier_opening', {
-          date: getTodayIST(),
-          user: session.user.value
-        })
-        if (!hasOpening) {
-          showCashierEntry.value = true
-          isSubmitting.value = false
-          return
-        }
-      } catch (e) { console.error(e) }
-    }
-
     if (Number(payments.value.card) > 0.01 && !cardRefNo.value) {
       showCardRefModal.value = true
       nextTick(() => cardRefInput.value?.focus())
@@ -1958,6 +1959,7 @@ onMounted(() => {
   window.addEventListener('click', handleSeriesClickAway)
   
   initAccountsFromLocalStorage()
+  getBillingSettingsCached().catch(() => {})
   fetchSeriesList()
   loadInvoices()
   // Immediately block if no opening recorded (fast path via localStorage)

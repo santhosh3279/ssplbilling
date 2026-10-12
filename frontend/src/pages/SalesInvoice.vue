@@ -2881,7 +2881,7 @@ function onItemSearchSelectMultiple(entries) {
     if (isReturn.value && discount != null) {
       newItem._rule_discount = discount
     }
-    items.value.push(newItem)
+    addOrMergeItem(newItem)
   }
 
   newItemCode.value = ''
@@ -3178,6 +3178,22 @@ function onPendingUomChange() {
   }
 }
 
+// A repeat scan of an item already on the bill adds to that row's qty instead of
+// adding a second row. Repeated item rows make ERPNext queue a stock revaluation
+// for the whole bill on submit, which slows the cashier and loads the server.
+function addOrMergeItem(newItem) {
+  const idx = items.value.findIndex(i =>
+    !i.deleted && !i._is_free && i.item_code === newItem.item_code && (i.uom || 'Nos') === (newItem.uom || 'Nos')
+  )
+  if (idx === -1) {
+    items.value.push(newItem)
+    return
+  }
+  const row = items.value[idx]
+  row.qty = parseFloat(((Number(row.qty) || 0) + (Number(newItem.qty) || 0)).toFixed(precision))
+  recalcAmount(idx)
+}
+
 function setPendingItem(item) {
   const history = isReturn.value ? getHistoryRateAndDiscount(item.item_code, item.uom || 'Nos') : null
   if (history) {
@@ -3214,7 +3230,7 @@ function confirmPendingItem() {
   if (isReturn.value && p.discount != null) {
     newItem._rule_discount = p.discount // Fake it so rule engine might think it's its own, or at least we have it set
   }
-  items.value.push(newItem)
+  addOrMergeItem(newItem)
   pendingItem.value = null; newItemCode.value = ''; quickSearchResults.value = []
   nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
 }
