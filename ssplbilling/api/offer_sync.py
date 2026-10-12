@@ -38,4 +38,34 @@ def publish_offer_items_update(doc, method=None):
 def publish_catalogue_stock_update(doc, method=None):
 	"""Invalidate public stock after a committed stock ledger movement."""
 	if doc and doc.item_code:
-		_broadcast_offer_update({"type": "stock", "item_code": doc.item_code})
+		queue_catalogue_stock_invalidation([doc.item_code])
+
+
+def queue_catalogue_stock_invalidation(item_codes):
+	"""Collect item codes whose public stock changed in this transaction; one
+	offer_page_update {"type": "stock", "item_codes": [...]} goes out after commit.
+
+	A 70-line bill used to send 70 messages (plus one per Stock Ledger Entry on submit)
+	to every socket in the website room. Nothing is sent if the transaction rolls back."""
+	pending = getattr(frappe.local, "_sspl_offer_stock_codes", None)
+	if pending is None:
+		pending = frappe.local._sspl_offer_stock_codes = {}
+		frappe.db.after_commit.add(_flush_catalogue_stock_invalidation)
+		frappe.db.after_rollback.add(_discard_catalogue_stock_invalidation)
+	pending.update(dict.fromkeys(code for code in item_codes if code))
+
+
+def _flush_catalogue_stock_invalidation():
+	codes = list(getattr(frappe.local, "_sspl_offer_stock_codes", None) or {})
+	frappe.local._sspl_offer_stock_codes = None
+	if not codes:
+		return
+	payload = {"type": "stock", "item_codes": codes}
+	if len(codes) == 1:
+		payload["item_code"] = codes[0]  # pages loaded before item_codes existed read this
+	# Already committed, so publish now rather than queueing for a commit that won't come.
+	frappe.publish_realtime("offer_page_update", payload, room=get_website_room(), after_commit=False)
+
+
+def _discard_catalogue_stock_invalidation():
+	frappe.local._sspl_offer_stock_codes = None

@@ -1280,7 +1280,9 @@ function setupOfferSocket() {
     _offerHandler = (data) => {
       if (!data) return
       if (data.type === 'stock') {
-        if (offer.value?.items?.some(item => item.itemcode === data.item_code)) scheduleStockRefresh()
+        // One message per saved document lists every changed item; older servers sent item_code.
+        const changed = new Set(data.item_codes || (data.item_code ? [data.item_code] : []))
+        if (offer.value?.items?.some(item => changed.has(item.itemcode))) scheduleStockRefresh()
         return
       }
       const affectsThisPage =

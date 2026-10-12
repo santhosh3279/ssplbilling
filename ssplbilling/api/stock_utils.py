@@ -186,8 +186,8 @@ def publish_stock_update(item_code, warehouse, draft_qtys=None, purchase_qtys=No
 		after_commit=True,
 	)
 	# Public catalogues receive an invalidation, never private draft bill details.
-	from ssplbilling.api.offer_sync import _broadcast_offer_update
-	_broadcast_offer_update({"type": "stock", "item_code": item_code})
+	from ssplbilling.api.offer_sync import queue_catalogue_stock_invalidation
+	queue_catalogue_stock_invalidation([item_code])
 
 def publish_stock_ledger_update(doc, method=None):
 	"""Doc event (Stock Ledger Entry after_insert): queue a stock_update for the entry's item+warehouse.
@@ -244,9 +244,8 @@ def _publish_stock_updates_for_doc(doc):
 		return
 	frappe.publish_realtime("stock_update_batch", {"updates": _stock_payloads(pairs)}, after_commit=True)
 	# Public catalogues receive an invalidation, never private draft bill details.
-	from ssplbilling.api.offer_sync import _broadcast_offer_update
-	for item_code in dict.fromkeys(item_code for item_code, _ in pairs):
-		_broadcast_offer_update({"type": "stock", "item_code": item_code})
+	from ssplbilling.api.offer_sync import queue_catalogue_stock_invalidation
+	queue_catalogue_stock_invalidation([item_code for item_code, _ in pairs])
 
 
 def _stock_payloads(pairs):
