@@ -260,6 +260,8 @@ def mirror_purchase_bill(pi):
 
 	sp = "sp_" + frappe.generate_hash(length=10)
 	frappe.db.savepoint(sp)
+	from ssplbilling.api.mirror_error_log import resolve_mirror_errors
+
 	try:
 		mpi = create_mirror_purchase_invoice(pi, ae)
 		frappe.db.release_savepoint(sp)
@@ -271,8 +273,12 @@ def mirror_purchase_bill(pi):
 				frappe.db.set_value("Purchase Invoice", mpi.name, "custom_mirrored", pi.name)
 				mpi.custom_mirrored = pi.name
 				frappe.clear_document_cache("Purchase Invoice", mpi.name)
+		resolve_mirror_errors("Purchase Mirror Bill", "Purchase Invoice", pi.name)
 		return mpi
 	except Exception:
 		frappe.db.rollback(save_point=sp)
 		frappe.log_error(frappe.get_traceback(), "Automatic Entries: mirror purchase bill failed")
+		from ssplbilling.api.mirror_error_log import log_mirror_error
+
+		log_mirror_error("Purchase Mirror Bill", "Purchase Invoice", pi.name, None, ae.alternative_company)
 		return None

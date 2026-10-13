@@ -1,6 +1,8 @@
 import frappe
 from frappe.utils import getdate, nowdate, nowtime
 
+from ssplbilling.api.mirror_error_log import log_mirror_error, resolve_mirror_errors
+
 
 def get_automatic_entries():
 	"""Return the Automatic Entries singleton, freshly loaded (not cached) since a
@@ -558,10 +560,12 @@ def mirror_bill(si):
 	try:
 		msi = create_mirror_sales_invoice(si, ae)
 		frappe.db.release_savepoint(sp)
+		resolve_mirror_errors("Mirror Bill", "Sales Invoice", si.name)
 		return msi
 	except Exception:
 		frappe.db.rollback(save_point=sp)
 		frappe.log_error(frappe.get_traceback(), "Automatic Entries: mirror bill failed")
+		log_mirror_error("Mirror Bill", "Sales Invoice", si.name, mirror_name_for(si.name), ae.alternative_company)
 		return None
 
 
@@ -594,6 +598,7 @@ def retry_mirror_bill(sales_invoice_name):
 		return {"status": "exists", "invoice_name": mirror_name, "company": ae.alternative_company}
 
 	msi = create_mirror_sales_invoice(si, ae)
+	resolve_mirror_errors("Mirror Bill", "Sales Invoice", si.name)
 
 	# A mirror that was just created has no payments yet, so this cannot double-post.
 	# The helpers are the same ones the GST-conversion mirror uses and derive the
@@ -606,9 +611,11 @@ def retry_mirror_bill(sales_invoice_name):
 
 		mirror_payments_for_gst_conversion(si, msi, ae)
 		frappe.db.release_savepoint(sp)
+		resolve_mirror_errors("Mirror Payments", "Sales Invoice", si.name)
 	except Exception as e:
 		frappe.db.rollback(save_point=sp)
 		frappe.log_error(frappe.get_traceback(), "Automatic Entries: manual mirror payments failed")
+		log_mirror_error("Mirror Payments", "Sales Invoice", si.name, msi.name, msi.company)
 		payments_error = str(e)
 
 	return {

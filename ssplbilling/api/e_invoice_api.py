@@ -62,11 +62,39 @@ def on_submit(doc, method=None):
 		return
 
 	frappe.enqueue(
-		"india_compliance.gst_india.utils.e_invoice.generate_e_invoices",
+		"ssplbilling.api.e_invoice_api.run_e_invoice",
 		queue="short",
 		timeout=240,
 		enqueue_after_commit=True,
 		job_id=f"sspl-e-invoice:{doc.name}",
 		deduplicate=True,
-		docnames=[doc.name],
+		docname=doc.name,
 	)
+
+
+def run_e_invoice(docname):
+	"""Worker: generate the e-Invoice and record any failure as a Mirror Invoice Error."""
+	from india_compliance.gst_india.utils.e_invoice import generate_e_invoice
+
+	from ssplbilling.api.mirror_error_log import log_mirror_error, resolve_mirror_errors
+
+	company = frappe.db.get_value("Sales Invoice", docname, "company")
+	try:
+		generate_e_invoice(docname, throw=True)
+	except Exception:
+		frappe.db.rollback()
+		log_mirror_error("e-Invoice", "Sales Invoice", docname, docname, company)
+		frappe.db.commit()  # nosemgrep -- worker job; keep the error row
+		return
+
+	# GSP server errors are handled inside India Compliance without raising: the
+	# invoice is left without an IRN, marked Failed or queued for Auto-Retry.
+	irn, status = frappe.db.get_value("Sales Invoice", docname, ["irn", "einvoice_status"])
+	if irn:
+		resolve_mirror_errors("e-Invoice", "Sales Invoice", docname)
+	else:
+		try:
+			raise frappe.ValidationError(f"e-Invoice not generated (status: {status or 'unknown'}); see Error Log")
+		except frappe.ValidationError:
+			log_mirror_error("e-Invoice", "Sales Invoice", docname, docname, company)
+	frappe.db.commit()  # nosemgrep -- worker job

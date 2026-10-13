@@ -5,8 +5,10 @@ from ssplbilling.api.automatic_entries_api import (
 	_allowed_accounts,
 	resolve_target_account,
 	ensure_cost_center_in_company,
-	_mop_for_account
+	_mop_for_account,
+	mirror_name_for,
 )
+from ssplbilling.api.mirror_error_log import log_mirror_error, resolve_mirror_errors
 
 
 def _create_mirror_payment_entry(msi, amount, original_account, allowed_accounts, ref_no=None, original_pe_name=None, bypass_whitelist=False):
@@ -215,10 +217,12 @@ def mirror_payments(msi, cash_amount=0, upi_amount=0, card_amount=0, discount_am
 						entries.append(je.name)
 
 		frappe.db.release_savepoint(sp)
+		resolve_mirror_errors("Mirror Payments", "Sales Invoice", mirror_name_for(msi.name))
 		return entries
 	except Exception:
 		frappe.db.rollback(save_point=sp)
 		frappe.log_error(frappe.get_traceback(), "Automatic Entries: mirror payments failed")
+		log_mirror_error("Mirror Payments", "Sales Invoice", mirror_name_for(msi.name), msi.name, msi.company)
 		return []
 
 
