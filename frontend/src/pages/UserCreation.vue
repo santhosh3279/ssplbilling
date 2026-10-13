@@ -11,14 +11,12 @@
       <form class="space-y-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6" @submit.prevent="createUser">
         <div>
           <label for="username" class="mb-1 block text-sm font-semibold">Username (login email)</label>
-          <input id="username" v-model.trim="username" type="email" autocomplete="off" required :disabled="isSaving || !!createdUser"
-            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 focus:border-[var(--color-info)] focus:outline-none" />
-        </div>
-        <div v-if="!createdUser">
-          <label for="password" class="mb-1 block text-sm font-semibold">Password</label>
-          <input id="password" v-model="password" type="password" autocomplete="new-password" required :disabled="isSaving"
-            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 focus:border-[var(--color-info)] focus:outline-none" />
-          <p class="mt-1 text-xs text-[var(--color-text-muted)]">The site's password policy applies.</p>
+          <div class="flex rounded border border-[var(--color-border)] bg-[var(--color-bg)] focus-within:border-[var(--color-info)]">
+            <input id="username" v-model.trim="username" type="text" autocomplete="off" required :disabled="isSaving || !!createdUser"
+              class="min-w-0 flex-1 rounded-l bg-transparent px-3 py-2 focus:outline-none" @input="stripEmailDomain" />
+            <span class="flex items-center border-l border-[var(--color-border)] px-3 text-sm text-[var(--color-text-muted)]">{{ LOGIN_DOMAIN }}</span>
+          </div>
+          <p v-if="username" class="mt-1 text-xs text-[var(--color-text-muted)]">Login: {{ loginEmail }}</p>
         </div>
         <div ref="customerBox" class="relative">
           <label for="customer" class="mb-1 block text-sm font-semibold">Linked Customer</label>
@@ -53,6 +51,8 @@
             <div>
               <label for="customer-mobile" class="mb-1 block text-sm font-semibold text-[var(--color-text-muted)]">Mobile Number</label>
               <input id="customer-mobile" v-model.trim="pricing.mobile_no" type="tel" inputmode="numeric" maxlength="10" autocomplete="off"
+                title="Click to use this mobile number as the password"
+                @click="useMobileAsPassword" @input="syncMobilePassword"
                 class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:border-[var(--color-info)] focus:outline-none" />
             </div>
             <p v-if="pricingError" role="alert" class="text-sm text-[var(--color-danger)]">{{ pricingError }}</p>
@@ -63,6 +63,14 @@
               {{ isSavingPricing ? 'Saving...' : 'Save Price List & Mobile' }}
             </button>
           </template>
+        </div>
+
+        <div v-if="!createdUser">
+          <label for="password" class="mb-1 block text-sm font-semibold">Password</label>
+          <input id="password" v-model="password" type="password" autocomplete="new-password" required :disabled="isSaving"
+            @input="passwordFromMobile = false"
+            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 focus:border-[var(--color-info)] focus:outline-none" />
+          <p class="mt-1 text-xs text-[var(--color-text-muted)]">The site's password policy applies.</p>
         </div>
 
         <p v-if="error" role="alert" class="rounded border border-[var(--color-danger)] p-3 text-sm text-[var(--color-danger)]">{{ error }}</p>
@@ -95,6 +103,30 @@ const isLoadingCustomers = ref(false)
 const isSaving = ref(false)
 const error = ref('')
 const success = ref('')
+
+// Logins are always on this domain; the field takes only the part before @.
+const LOGIN_DOMAIN = '@ctr.com'
+const loginEmail = computed(() => username.value ? `${username.value}${LOGIN_DOMAIN}` : '')
+
+function stripEmailDomain() {
+  // A pasted full address keeps only its local part.
+  const at = username.value.indexOf('@')
+  if (at !== -1) username.value = username.value.slice(0, at)
+}
+
+// Clicking the customer's mobile number copies it into the password; while the
+// password is that copy, editing the mobile keeps them in step.
+const passwordFromMobile = ref(false)
+
+function useMobileAsPassword() {
+  if (createdUser.value || !pricing.value.mobile_no) return
+  password.value = pricing.value.mobile_no
+  passwordFromMobile.value = true
+}
+
+function syncMobilePassword() {
+  if (passwordFromMobile.value && !createdUser.value) password.value = pricing.value.mobile_no
+}
 
 // ── Searchable customer box ──
 const customerBox = ref(null)
@@ -174,6 +206,11 @@ const pricingDirty = computed(() =>
 )
 
 function resetPricing() {
+  // A password copied from the previous customer's mobile doesn't carry over.
+  if (passwordFromMobile.value) {
+    password.value = ''
+    passwordFromMobile.value = false
+  }
   pricing.value = { price_list: '', mobile_no: '' }
   loadedPricing.value = { price_list: '', mobile_no: '' }
   pricingError.value = ''
@@ -268,7 +305,7 @@ async function createUser() {
   isSaving.value = true
   try {
     if (!createdUser.value) {
-      const login = username.value.trim()
+      const login = loginEmail.value
       if (!login || !password.value || !customer.value) {
         throw new Error('Enter a username, password, and linked customer.')
       }
@@ -311,6 +348,7 @@ function resetForm() {
   password.value = ''
   customer.value = ''
   customerQuery.value = ''
+  passwordFromMobile.value = false
   resetPricing()
   createdUser.value = ''
   error.value = ''
