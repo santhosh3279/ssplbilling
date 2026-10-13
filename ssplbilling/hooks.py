@@ -193,10 +193,12 @@ doc_events = {
 			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
 			"ssplbilling.api.panel_sync.publish_bill_panel_update",
 		],
+		"before_submit": "ssplbilling.api.e_invoice_api.before_submit",
 		"on_submit": [
 			"ssplbilling.api.stock_utils.clear_draft_invoice_qtys_cache",
 			"ssplbilling.api.ledger_utils.publish_ledger_balance_updates",
 			"ssplbilling.api.panel_sync.publish_bill_panel_update",
+			"ssplbilling.api.e_invoice_api.on_submit",
 		],
 		"on_cancel": [
 			"ssplbilling.incentive_utils.cancel_linked_invoice_incentives",
