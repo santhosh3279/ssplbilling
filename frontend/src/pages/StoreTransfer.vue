@@ -685,18 +685,14 @@ async function handleItemSelectMultiple(entries) {
     const rate = details.rate || details.valuation_rate || 0
     const uom = details.uom || entry.uom
 
-    const existing = items.value.find(i => i.item_code === entry.item_code)
-    if (existing) {
-      existing.qty += entry.qty
-    } else {
-      items.value.push({
-        item_code: entry.item_code,
-        item_name: entry.item_name,
-        qty: entry.qty,
-        uom,
-        rate
-      })
-    }
+    // Every entry is its own row, even when the item is already on the transfer.
+    items.value.push({
+      item_code: entry.item_code,
+      item_name: entry.item_name,
+      qty: entry.qty,
+      uom,
+      rate
+    })
   }
 
   barcodeQuery.value = ''
@@ -722,18 +718,14 @@ function confirmPendingItem() {
   if (!pendingItem.value || pendingItem.value.qty <= 0) return
   const p = pendingItem.value
   
-  const existing = items.value.find(i => i.item_code === p.item_code)
-  if (existing) {
-    existing.qty += p.qty
-  } else {
-    items.value.push({
-      item_code: p.item_code,
-      item_name: p.item_name,
-      qty: p.qty,
-      uom: p.uom,
-      rate: p.rate || 0
-    })
-  }
+  // Every entry is its own row, even when the item is already on the transfer.
+  items.value.push({
+    item_code: p.item_code,
+    item_name: p.item_name,
+    qty: p.qty,
+    uom: p.uom,
+    rate: p.rate || 0
+  })
   
   pendingItem.value = null
   focusBarcodeInput()
