@@ -20,13 +20,49 @@
             class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 focus:border-[var(--color-info)] focus:outline-none" />
           <p class="mt-1 text-xs text-[var(--color-text-muted)]">The site's password policy applies.</p>
         </div>
-        <div>
+        <div ref="customerBox" class="relative">
           <label for="customer" class="mb-1 block text-sm font-semibold">Linked Customer</label>
-          <select id="customer" v-model="customer" required :disabled="isLoadingCustomers || isSaving || !!createdUser"
-            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 focus:border-[var(--color-info)] focus:outline-none">
-            <option value="">{{ isLoadingCustomers ? 'Loading customers...' : 'Select a customer' }}</option>
-            <option v-for="item in customers" :key="item.name" :value="item.name">{{ item.customer_name || item.name }} ({{ item.name }})</option>
-          </select>
+          <input id="customer" v-model="customerQuery" type="text" autocomplete="off"
+            :placeholder="isLoadingCustomers ? 'Loading customers...' : 'Search customer by name or ID'"
+            :disabled="isLoadingCustomers || isSaving || !!createdUser"
+            class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 focus:border-[var(--color-info)] focus:outline-none"
+            @focus="showCustomerList = true" @input="onCustomerInput" @keydown="onCustomerKeydown" />
+          <ul v-if="showCustomerList && filteredCustomers.length"
+            class="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+            <li v-for="(item, i) in filteredCustomers" :key="item.name"
+              class="cursor-pointer px-3 py-1.5 text-sm"
+              :class="i === activeCustomerIdx ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'hover:bg-[var(--color-surface-raised)]'"
+              @mousedown.prevent="selectCustomer(item)" @mouseenter="activeCustomerIdx = i">
+              {{ item.customer_name || item.name }} <span class="opacity-70">({{ item.name }})</span>
+            </li>
+          </ul>
+          <p v-if="showCustomerList && customerQuery && !filteredCustomers.length && !isLoadingCustomers"
+            class="mt-1 text-xs text-[var(--color-text-muted)]">No matching customer.</p>
+        </div>
+
+        <!-- Price list + mobile for the selected customer (catalogue orders price from this list) -->
+        <!-- Enter inside this panel must not submit the Create User form -->
+        <div v-if="customer" class="space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-4" @keydown.enter.prevent>
+          <div class="flex items-center justify-between">
+            <h2 class="text-sm font-bold">Customer Pricing</h2>
+            <span class="text-xs text-[var(--color-text-muted)]">{{ customer }}</span>
+          </div>
+          <p v-if="isLoadingPricing" class="text-sm text-[var(--color-text-muted)]">Loading...</p>
+          <template v-else>
+            <DropdownField v-model="pricing.price_list" :options="priceLists" label="Price List" placeholder="Select a price list" />
+            <div>
+              <label for="customer-mobile" class="mb-1 block text-sm font-semibold text-[var(--color-text-muted)]">Mobile Number</label>
+              <input id="customer-mobile" v-model.trim="pricing.mobile_no" type="tel" inputmode="numeric" maxlength="10" autocomplete="off"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:border-[var(--color-info)] focus:outline-none" />
+            </div>
+            <p v-if="pricingError" role="alert" class="text-sm text-[var(--color-danger)]">{{ pricingError }}</p>
+            <p v-if="pricingSaved" role="status" class="text-sm text-[var(--color-success)]">{{ pricingSaved }}</p>
+            <button type="button" :disabled="isSavingPricing || !pricingDirty"
+              class="rounded border border-[var(--color-info)] px-4 py-1.5 text-sm font-semibold text-[var(--color-info)] disabled:opacity-50"
+              @click="savePricing">
+              {{ isSavingPricing ? 'Saving...' : 'Save Price List & Mobile' }}
+            </button>
+          </template>
         </div>
 
         <p v-if="error" role="alert" class="rounded border border-[var(--color-danger)] p-3 text-sm text-[var(--color-danger)]">{{ error }}</p>
@@ -43,9 +79,11 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import { getCachedList } from '../services/masterCache.js'
+import DropdownField from '../components/DropdownField.vue'
 
 const router = useRouter()
 const username = ref('')
@@ -57,6 +95,156 @@ const isLoadingCustomers = ref(false)
 const isSaving = ref(false)
 const error = ref('')
 const success = ref('')
+
+// ── Searchable customer box ──
+const customerBox = ref(null)
+const customerQuery = ref('')
+const showCustomerList = ref(false)
+const activeCustomerIdx = ref(0)
+const CUSTOMER_LIST_LIMIT = 50
+
+const filteredCustomers = computed(() => {
+  const terms = customerQuery.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const rows = terms.length
+    ? customers.value.filter((c) => {
+      const hay = `${c.customer_name || ''} ${c.name}`.toLowerCase()
+      return terms.every(t => hay.includes(t))
+    })
+    : customers.value
+  return rows.slice(0, CUSTOMER_LIST_LIMIT)
+})
+
+function customerLabel(c) {
+  return c.customer_name && c.customer_name !== c.name ? `${c.customer_name} (${c.name})` : c.name
+}
+
+function onCustomerInput() {
+  showCustomerList.value = true
+  activeCustomerIdx.value = 0
+  // Typing again un-picks the customer until one is chosen from the list.
+  if (customer.value) {
+    customer.value = ''
+    resetPricing()
+  }
+}
+
+function onCustomerKeydown(e) {
+  const n = filteredCustomers.value.length
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    showCustomerList.value = true
+    if (n) activeCustomerIdx.value = (activeCustomerIdx.value + 1) % n
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (n) activeCustomerIdx.value = (activeCustomerIdx.value - 1 + n) % n
+  } else if (e.key === 'Enter') {
+    if (showCustomerList.value && n) {
+      e.preventDefault()
+      selectCustomer(filteredCustomers.value[activeCustomerIdx.value])
+    }
+  } else if (e.key === 'Escape') {
+    showCustomerList.value = false
+  }
+}
+
+function selectCustomer(c) {
+  if (!c) return
+  customer.value = c.name
+  customerQuery.value = customerLabel(c)
+  showCustomerList.value = false
+  loadPricing(c.name)
+}
+
+function onClickOutside(e) {
+  if (customerBox.value && !customerBox.value.contains(e.target)) showCustomerList.value = false
+}
+
+// ── Customer price list + mobile ──
+const priceLists = ref([])
+const pricing = ref({ price_list: '', mobile_no: '' })
+const loadedPricing = ref({ price_list: '', mobile_no: '' })
+const isLoadingPricing = ref(false)
+const isSavingPricing = ref(false)
+const pricingError = ref('')
+const pricingSaved = ref('')
+
+const pricingDirty = computed(() =>
+  pricing.value.price_list !== loadedPricing.value.price_list ||
+  pricing.value.mobile_no !== loadedPricing.value.mobile_no
+)
+
+function resetPricing() {
+  pricing.value = { price_list: '', mobile_no: '' }
+  loadedPricing.value = { price_list: '', mobile_no: '' }
+  pricingError.value = ''
+  pricingSaved.value = ''
+}
+
+function applyPricing(res) {
+  const next = { price_list: res?.default_price_list || '', mobile_no: res?.mobile_no || '' }
+  pricing.value = { ...next }
+  loadedPricing.value = { ...next }
+}
+
+async function loadPriceLists() {
+  try {
+    const rows = await getCachedList({
+      doctype: 'Price List',
+      fields: ['name'],
+      filters: { enabled: 1, selling: 1 },
+      order_by: 'name asc',
+      limit_page_length: 0,
+    })
+    priceLists.value = (rows || []).map(r => r.name)
+  } catch (e) {
+    pricingError.value = 'Could not load price lists: ' + e.message
+  }
+}
+
+async function loadPricing(name) {
+  resetPricing()
+  isLoadingPricing.value = true
+  try {
+    const res = await frappeGet('ssplbilling.api.customersearch_api.get_customer_price_setting', { customer: name })
+    if (customer.value === name) applyPricing(res)
+  } catch (e) {
+    if (customer.value === name) pricingError.value = 'Could not load customer pricing: ' + e.message
+  } finally {
+    if (customer.value === name) isLoadingPricing.value = false
+  }
+}
+
+async function savePricing() {
+  pricingError.value = ''
+  pricingSaved.value = ''
+  const priceList = (pricing.value.price_list || '').trim()
+  const mobile = (pricing.value.mobile_no || '').trim()
+  if (priceList && !priceLists.value.includes(priceList)) {
+    pricingError.value = 'Pick a price list from the list.'
+    return
+  }
+  if (mobile && !/^\d{10}$/.test(mobile)) {
+    pricingError.value = 'Mobile number must be 10 digits.'
+    return
+  }
+  const name = customer.value
+  isSavingPricing.value = true
+  try {
+    const res = await frappePost('ssplbilling.api.customersearch_api.set_customer_price_setting', {
+      customer: name,
+      price_list: priceList,
+      mobile_no: mobile,
+    }, { silent: true })
+    if (customer.value === name) {
+      applyPricing(res)
+      pricingSaved.value = 'Price list and mobile saved.'
+    }
+  } catch (e) {
+    pricingError.value = 'Could not save: ' + e.message
+  } finally {
+    isSavingPricing.value = false
+  }
+}
 
 async function loadCustomers() {
   isLoadingCustomers.value = true
@@ -122,10 +310,17 @@ function resetForm() {
   username.value = ''
   password.value = ''
   customer.value = ''
+  customerQuery.value = ''
+  resetPricing()
   createdUser.value = ''
   error.value = ''
   success.value = ''
 }
 
-onMounted(loadCustomers)
+onMounted(() => {
+  loadCustomers()
+  loadPriceLists()
+  document.addEventListener('mousedown', onClickOutside)
+})
+onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
 </script>

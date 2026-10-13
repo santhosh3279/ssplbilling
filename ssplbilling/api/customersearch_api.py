@@ -1299,3 +1299,58 @@ def get_single_ledger(party_name, party_type="Customer"):
 	return None
 
 
+
+
+@frappe.whitelist()
+def get_customer_price_setting(customer):
+	"""Price list + mobile shown in Create User's customer panel."""
+	frappe.has_permission("Customer", "read", customer, throw=True)
+	row = frappe.db.get_value("Customer", customer, ["name", "customer_name", "default_price_list", "mobile_no"], as_dict=True)
+	if not row:
+		frappe.throw(f"Customer {customer} not found")
+	return {
+		"name": row.name,
+		"customer_name": row.customer_name or row.name,
+		"default_price_list": row.default_price_list or "",
+		"mobile_no": row.mobile_no or "",
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def set_customer_price_setting(customer, price_list=None, mobile_no=None):
+	"""Save the customer's default price list (used by catalogue orders for the linked
+	website user) and mobile number. The mobile also goes to the linked contact's primary
+	phone, since Customer.mobile_no is refreshed from the primary contact."""
+	frappe.has_permission("Customer", "write", customer, throw=True)
+	price_list = (price_list or "").strip()
+	mobile_no = (mobile_no or "").strip()
+	if price_list and not frappe.db.exists("Price List", {"name": price_list, "enabled": 1, "selling": 1}):
+		frappe.throw(f"Price List {price_list} is not an enabled selling price list")
+
+	cust = frappe.get_doc("Customer", customer)
+	# Contact first: saving the Customer re-fetches mobile_no from its primary contact.
+	contact_name = cust.customer_primary_contact or frappe.db.get_value(
+		"Dynamic Link",
+		{"link_doctype": "Customer", "link_name": customer, "parenttype": "Contact"},
+		"parent",
+	)
+	if contact_name and mobile_no:
+		contact = frappe.get_doc("Contact", contact_name)
+		primary = next((p for p in contact.phone_nos if p.is_primary_mobile_no), None)
+		if primary:
+			primary.phone = mobile_no
+		elif contact.phone_nos:
+			contact.phone_nos[0].phone = mobile_no
+			contact.phone_nos[0].is_primary_mobile_no = 1
+		else:
+			contact.append("phone_nos", {"phone": mobile_no, "is_primary_mobile_no": 1})
+		contact.save(ignore_permissions=True)
+
+	cust.default_price_list = price_list
+	cust.mobile_no = mobile_no
+	cust.save()
+	# Fetch-from may still hold the old contact value; the saved number wins.
+	if mobile_no and frappe.db.get_value("Customer", customer, "mobile_no") != mobile_no:
+		frappe.db.set_value("Customer", customer, "mobile_no", mobile_no)
+
+	return get_customer_price_setting(customer)
