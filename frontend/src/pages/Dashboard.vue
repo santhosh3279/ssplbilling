@@ -151,7 +151,7 @@
           <span>{{ isClearingRedis ? 'Clearing Cache...' : 'Clear Redis Cache' }}</span>
         </button>
         <button
-          v-if="userRole === 'admin'"
+          v-if="userRole === 'admin' || isActualAdmin"
           class="mb-1 flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-base text-[var(--color-text)] hover:bg-[var(--color-midlight)]"
           @click="router.push('/ssplbillingsettings')"
         >

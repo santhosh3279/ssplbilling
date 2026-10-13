@@ -23,6 +23,8 @@
  *   biller   → SalesInvoice, PurchaseInvoice, Quotation, SalesOrderEntry, ParcelAddress, BarcodePrintPage, LoadingReceipt
  */
 
+import { session } from '../session'
+
 // Route names accessible by biller
 export const BILLER_ROUTES = new Set([
   'SalesInvoice',
@@ -283,6 +285,10 @@ export function canAccessRoute(routeName) {
 
   const role = getUserRole()
   if (role === 'admin') return true
+
+  // The real Administrator keeps SSPL Settings even while inheriting another
+  // user's settings, so they can always switch back or fix the configuration.
+  if (routeName === 'SSPLBillingSettings' && ['Administrator', 'admin'].includes(session.user.value)) return true
 
   // Tile access configured → the tile list is the sole authority; the role
   // matrix (and its always-allowed extras) is fully suppressed.
