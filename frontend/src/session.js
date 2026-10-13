@@ -5,6 +5,7 @@ import { serverNow } from './services/serverTime'
 import { clearItemSnapshots } from './services/itemCacheStore'
 import { clearLedgerSnapshot } from './services/ledgerCacheStore'
 import { clearAttendanceSync } from './services/attendanceStore'
+import { invalidateMasterCache } from './services/masterCache'
 import { frappeGet, fetchAllowedTiles } from './api.js'
 
 const isLoggedIn = ref(false)
@@ -180,6 +181,8 @@ async function logout() {
   // The ledger snapshot carries every party's balance.
   await clearLedgerSnapshot().catch((e) => console.warn('[session] Could not clear ledger cache:', e))
   await clearAttendanceSync().catch((e) => console.warn('[session] Could not clear attendance cache:', e))
+  // Permission-filtered master lists must not carry over to the next user on this tab.
+  invalidateMasterCache()
 
   isLoggedIn.value = false
   user.value = null

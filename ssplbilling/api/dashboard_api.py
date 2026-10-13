@@ -941,14 +941,18 @@ def get_server_time():
 def get_draft_counts(queries):
 	"""Dashboard draft badges in one request: {key: {"doctype", "filters"}} -> {key: count}.
 
-	Each count goes through frappe.client.get_count, so permissions match the per-tile
-	calls this replaces; a doctype the user cannot read is left out instead of failing all."""
-	from frappe.client import get_count
-
+	frappe.get_list applies the user's permissions like the per-tile get_count calls this
+	replaces; a doctype the user cannot read is left out instead of failing all."""
 	counts = {}
 	for key, query in (frappe.parse_json(queries) or {}).items():
 		try:
-			counts[key] = get_count(query.get("doctype"), filters=query.get("filters"))
+			rows = frappe.get_list(
+				query.get("doctype"),
+				filters=query.get("filters") or {},
+				fields=[{"COUNT": "*", "as": "n"}],
+				as_list=True,
+			)
+			counts[key] = rows[0][0] if rows else 0
 		except frappe.PermissionError:
 			frappe.clear_last_message()
 		except Exception:

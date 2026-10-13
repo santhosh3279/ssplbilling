@@ -1148,7 +1148,9 @@ function applySidebarPanelEvent(data) {
   if (sidebarSearch.value) return false // search results — let the refetch handle it
   const currentCompany = localStorage.getItem('wb-company') || ''
   if (currentCompany && data?.row?.company && data.row.company !== currentCompany) {
-    return false
+    // Another company's bill (e.g. a mirror bill) never belongs in this list.
+    recentInvoices.value = recentInvoices.value.filter(inv => inv.name !== data.row.name)
+    return true
   }
   recentInvoices.value = sortSidebarInvoices(applyPanelEvent(recentInvoices.value, data, {
     date: sidebarDate.value,

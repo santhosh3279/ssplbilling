@@ -1134,7 +1134,9 @@ function applyCashierPanelEvent(data) {
   if (!sidebarSeries.value.length) return false
   const currentCompany = localStorage.getItem('wb-company') || ''
   if (currentCompany && data?.row?.company && data.row.company !== currentCompany) {
-    return false
+    // Another company's bill (e.g. a mirror bill) never belongs in this list.
+    invoices.value = invoices.value.filter(i => i.name !== data.row.name)
+    return true
   }
   setInvoiceList(applyPanelEvent(invoices.value, data, { draftOnly: true }))
   return true
