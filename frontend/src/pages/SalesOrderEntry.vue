@@ -684,6 +684,7 @@ import * as XLSX from 'xlsx'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, serverNow, toLocalISO, parseCalendarDate } from '../services/serverTime'
+import { getCachedList } from '../services/masterCache.js'
 const router = useRouter()
 
 const inheritedUser = computed(() => {
@@ -789,13 +790,13 @@ const isExempted = computed(() => taxTemplate.value.toLowerCase().includes('exem
 async function fetchDropdownOptions() {
   try {
     const [priceLists, templates] = await Promise.all([
-      frappeGet('frappe.client.get_list', {
+      getCachedList({
         doctype: 'Price List',
         fields: ['name'],
         filters: [['enabled', '=', 1], ['selling', '=', 1]],
         limit_page_length: 100,
       }),
-      frappeGet('frappe.client.get_list', {
+      getCachedList({
         doctype: 'Sales Taxes and Charges Template',
         fields: ['name'],
         filters: [['disabled', '=', 0]],

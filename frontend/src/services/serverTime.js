@@ -6,6 +6,14 @@ let anchorTick = 0
 let timezone = null
 let pendingSync = null
 let lastSyncError = null
+// Wall-clock time of the last good sync: unlike performance.now(), it advances while the
+// machine sleeps, so a resumed tab is seen as stale.
+let lastSyncWall = 0
+
+// A logged-in tab's heartbeat also carries the server clock (see tabSession), so the
+// dedicated request only fires when nothing else has synced recently.
+const PERIODIC_STALE_MS = 60000
+const FOCUS_STALE_MS = 5 * 60000
 
 /** Serialize a calendar Date's local fields, without converting to UTC. */
 export function toLocalISO(date) {
@@ -36,17 +44,7 @@ export function primeServerTime() {
       })
       if (!res.ok) throw new Error(`Server time: HTTP ${res.status}`)
       const json = await res.json()
-      const data = json.message || json
-      const epoch = Number(data?.epoch_ms)
-      if (!Number.isFinite(epoch) || epoch <= 0 || !data?.timezone) {
-        throw new Error('Server time response is missing a valid epoch or timezone')
-      }
-      // Validate before replacing an existing good anchor.
-      new Intl.DateTimeFormat('en', { timeZone: data.timezone }).format(new Date(epoch))
-      const received = performance.now()
-      anchorEpoch = epoch + (received - started) / 2
-      anchorTick = received
-      timezone = data.timezone
+      applyServerTime(json.message || json, started, performance.now())
       return true
     } catch (error) {
       lastSyncError = error?.message || 'Server time synchronization failed'
@@ -56,6 +54,25 @@ export function primeServerTime() {
     }
   })().finally(() => { pendingSync = null })
   return pendingSync
+}
+
+/**
+ * Anchor the clock from any response carrying { epoch_ms, timezone }.
+ * `started`/`received` are performance.now() readings around the request.
+ * Throws on invalid data without replacing a good anchor.
+ */
+export function applyServerTime(data, started, received) {
+  const epoch = Number(data?.epoch_ms)
+  if (!Number.isFinite(epoch) || epoch <= 0 || !data?.timezone) {
+    throw new Error('Server time response is missing a valid epoch or timezone')
+  }
+  // Validate before replacing an existing good anchor.
+  new Intl.DateTimeFormat('en', { timeZone: data.timezone }).format(new Date(epoch))
+  anchorEpoch = epoch + (received - started) / 2
+  anchorTick = received
+  timezone = data.timezone
+  lastSyncWall = Date.now()
+  lastSyncError = null
 }
 
 export function isServerTimePrimed() {
@@ -111,13 +128,18 @@ export function startServerTimeSync() {
     // Keep the last server anchor, or continue the computer fallback until synced.
     console.warn('[serverTime] Could not refresh server clock:', error)
   })
-  const onVisible = () => { if (document.visibilityState === 'visible') refresh() }
-  const timer = setInterval(refresh, 60000)
-  window.addEventListener('focus', refresh)
+  const refreshIfStale = (maxAge) => {
+    if (Date.now() - lastSyncWall >= maxAge) refresh()
+  }
+  // A till alt-tabs constantly to print: only resync on focus once the anchor is old.
+  const onFocus = () => refreshIfStale(FOCUS_STALE_MS)
+  const onVisible = () => { if (document.visibilityState === 'visible') onFocus() }
+  const timer = setInterval(() => refreshIfStale(PERIODIC_STALE_MS), PERIODIC_STALE_MS)
+  window.addEventListener('focus', onFocus)
   document.addEventListener('visibilitychange', onVisible)
   return () => {
     clearInterval(timer)
-    window.removeEventListener('focus', refresh)
+    window.removeEventListener('focus', onFocus)
     document.removeEventListener('visibilitychange', onVisible)
   }
 }

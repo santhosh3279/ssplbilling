@@ -623,6 +623,7 @@ import PriceListUpdate from './PriceListUpdate.vue'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, serverNow, toLocalISO, parseCalendarDate } from '../services/serverTime'
+import { getSeriesDefaults } from '../services/masterCache.js'
 const router = useRouter()
 
 // --- Data Fetching & State Management ---
@@ -1076,7 +1077,7 @@ async function clearBill() {
 
   if (selectedSeries.value) {
     try {
-      const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Purchase Order' })
+      const res = await getSeriesDefaults(selectedSeries.value, 'Purchase Order')
       orderNo.value = res.order_no || 'NEW'
       defaultTemplate.value = res.print_format || ''
     } catch {
@@ -1915,7 +1916,7 @@ async function fetchSupplierItems() {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
-    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series, doctype: 'Purchase Order' })
+    const res = await getSeriesDefaults(series, 'Purchase Order')
     orderNo.value = res.order_no || 'NEW'
     priceList.value = res.price_list
     taxTemplate.value = res.tax_template

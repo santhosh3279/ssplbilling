@@ -1,8 +1,10 @@
-import { serverNow } from './serverTime'
+import { serverNow, applyServerTime } from './serverTime'
 import { ref } from 'vue'
 import { registerTab, releaseTab } from '../api'
 
-const HEARTBEAT_MS = 20000
+// Server keeps a tab alive for 120s (TAB_TTL_SECONDS), so this leaves room for
+// background-tab timer throttling while halving idle traffic.
+const HEARTBEAT_MS = 45000
 
 export const tabLimitBlocked = ref(false)
 export const tabLimitInfo = ref({ active_tabs: 0, max_tabs: null })
@@ -73,7 +75,10 @@ function resolveTabId() {
 
 async function heartbeat() {
   try {
+    const started = performance.now()
     const res = await registerTab(getTabId())
+    // The heartbeat doubles as the clock sync, replacing a separate get_server_time call.
+    try { applyServerTime(res, started, performance.now()) } catch { /* older server: no clock */ }
     tabLimitInfo.value = { active_tabs: res.active_tabs, max_tabs: res.max_tabs }
     tabLimitBlocked.value = res.status === 'limit_reached'
   } catch (e) {

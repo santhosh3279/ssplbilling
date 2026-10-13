@@ -622,6 +622,7 @@ import { canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, serverNow, toLocalISO, parseCalendarDate } from '../services/serverTime'
+import { getSeriesDefaults } from '../services/masterCache.js'
 const props = defineProps({
   isSubwindow: Boolean,
   quotationName: String
@@ -817,7 +818,8 @@ async function loadQuotationData(data, forceHalfTaxFalse = false) {
 
   if (data.customer) {
     try {
-      const custDetails = await frappeGet('ssplbilling.api.customersearch_api.get_customer_billing_details', { customer: data.customer })
+      const custDetails = data.customer_billing_details
+        || await frappeGet('ssplbilling.api.customersearch_api.get_customer_billing_details', { customer: data.customer })
       customerMobile.value = custDetails.mobile_no || ''
       customerDetails.value = custDetails.mobile_no || ''
       customerBalance.value = custDetails.gst_balance ?? 0
@@ -895,7 +897,7 @@ async function handleSelectSidebarItem(item) {
   await releaseLock()
   try {
     isLoadingBill.value = true
-    const data = await frappeGet('ssplbilling.api.quotation_api.get_quotation', { quotation_name: item.name })
+    const data = await frappeGet('ssplbilling.api.quotation_api.get_quotation', { quotation_name: item.name, include_customer_details: 1 })
     await loadQuotationData(data, false)
 
     selectedRowIdx.value = -1
@@ -1154,7 +1156,7 @@ async function clearBill() {
 
   if (selectedSeries.value) {
     try {
-      const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Quotation' })
+      const res = await getSeriesDefaults(selectedSeries.value, 'Quotation')
       invoiceNo.value = res.quotation_no || 'NEW'
       defaultTemplate.value = res.print_format || ''
     } catch {
@@ -1372,7 +1374,7 @@ async function handleModify() {
 
   try {
     isLoadingBill.value = true
-    const data = await frappeGet('ssplbilling.api.quotation_api.get_quotation', { quotation_name: invoiceNo.value })
+    const data = await frappeGet('ssplbilling.api.quotation_api.get_quotation', { quotation_name: invoiceNo.value, include_customer_details: 1 })
     await loadQuotationData(data, true)
   } catch (e) {
     console.error('Failed to load quotation details for modification:', e)
@@ -2516,7 +2518,7 @@ function handleCustomerSelected(cust, opts = {}) {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
-    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series, doctype: 'Quotation' })
+    const res = await getSeriesDefaults(series, 'Quotation')
     invoiceNo.value = res.quotation_no || 'NEW'
     priceList.value = res.price_list
     taxTemplate.value = res.tax_template

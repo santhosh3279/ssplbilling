@@ -2,6 +2,7 @@ import json
 import re
 
 import frappe
+from ssplbilling.api.customersearch_api import attach_customer_billing_details
 from frappe.model.naming import parse_naming_series
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
 from ssplbilling.api.party_address import set_party_address
@@ -296,7 +297,7 @@ def get_quotations(query="", limit=50, transaction_date=None, show_submitted=Fal
 
 
 @frappe.whitelist()
-def get_quotation(quotation_name):
+def get_quotation(quotation_name, include_customer_details=0):
 	"""Return a single Quotation with its items."""
 	if not frappe.db.exists("Quotation", quotation_name):
 		frappe.throw(f"Quotation {quotation_name} not found")
@@ -334,7 +335,7 @@ def get_quotation(quotation_name):
 	if qt.customer_address:
 		party_state = frappe.db.get_value("Address", qt.customer_address, "state") or ""
 
-	return {
+	result = {
 		"name": qt.name,
 		"customer": qt.party_name,
 		"customer_address": qt.customer_address or "",
@@ -365,6 +366,8 @@ def get_quotation(quotation_name):
 		"e_waybill_status": qt.get("e_waybill_status") or "",
 		"items": items,
 	}
+	# Bill-open fetches the party panel in the same round trip when asked to.
+	return attach_customer_billing_details(result, include_customer_details)
 
 
 # ──────────────────────────────────────────────────────────────────────────────

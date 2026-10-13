@@ -1069,19 +1069,23 @@ const draftTileFilters = {
 async function refreshDraftCounts() {
   const company = localStorage.getItem('wb-company')
   const draftTiles = tiles.value.filter(tile => draftTileFilters[tile.id])
-  await Promise.all(draftTiles.map(async (tile) => {
+  if (!draftTiles.length) return
+  // One request for every draft badge instead of one get_count per tile.
+  const queries = {}
+  for (const tile of draftTiles) {
     const { doctype, ...extraFilters } = draftTileFilters[tile.id]
     const filters = { docstatus: 0, ...extraFilters }
     if (company && ['Sales Invoice', 'Sales Order', 'Purchase Invoice'].includes(doctype)) {
       filters.company = company
     }
-    try {
-      const count = await frappeGet('frappe.client.get_count', { doctype, filters })
-      draftCounts.value = { ...draftCounts.value, [tile.id]: count }
-    } catch (error) {
-      console.warn(`[Dashboard] Failed to load draft count for ${doctype}:`, error)
-    }
-  }))
+    queries[tile.id] = { doctype, filters }
+  }
+  try {
+    const counts = await frappeGet('ssplbilling.api.dashboard_api.get_draft_counts', { queries: JSON.stringify(queries) })
+    draftCounts.value = { ...draftCounts.value, ...(counts || {}) }
+  } catch (error) {
+    console.warn('[Dashboard] Failed to load draft counts:', error)
+  }
 }
 
 // ── Column tile table + ↑/↓/Enter navigation (only when tiles are doctype-configured) ──

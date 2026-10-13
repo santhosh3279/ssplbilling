@@ -246,6 +246,7 @@ import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
+import { getCachedList } from '../services/masterCache.js'
 const router = useRouter()
 const API = 'ssplbilling.api.stock_reconciliation_api'
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
@@ -365,7 +366,7 @@ function onRowKeydown(e, idx) {
 // ==================== DATA FETCHING ====================
 async function fetchConfig() {
   try {
-    const whs = await frappeGet('frappe.client.get_list', {
+    const whs = await getCachedList({
       doctype: 'Warehouse',
       filters: { is_group: 0, disabled: 0 },
       fields: ['name'],

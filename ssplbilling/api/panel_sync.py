@@ -24,6 +24,7 @@ BILL_ROW_FIELDS = [
 	"supplier",
 	"supplier_name",
 	"posting_date",
+	"posting_time",
 	"transaction_date",
 	"grand_total",
 	"rounded_total",
@@ -44,12 +45,15 @@ def _bill_row(doc):
 		value = getattr(doc, field, None)
 		if value is None:
 			continue
-		if isinstance(value, (datetime.date, datetime.datetime)):
+		if isinstance(value, (datetime.date, datetime.datetime, datetime.timedelta, datetime.time)):
 			value = str(value)
 		row[field] = value
 	for field in ("grand_total", "rounded_total", "outstanding_amount"):
 		if field in row:
 			row[field] = float(row[field] or 0)
+	# Cashier's draft list shows the line count; carrying it lets that list patch in place.
+	if doc.meta.has_field("items"):
+		row["items_count"] = len(doc.get("items") or [])
 	return row
 
 

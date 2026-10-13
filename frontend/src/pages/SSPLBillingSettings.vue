@@ -273,6 +273,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { isValidCipherMap } from '../encryption.js'
+import { invalidateMasterCache } from '../services/masterCache.js'
 import DropdownField from '../components/DropdownField.vue'
 import { hasWhatsAppBridge } from '../services/whatsappBridge'
 import licenseFeatures from '../../../license_features.json'
@@ -379,6 +380,8 @@ async function saveSettings() {
   isSaving.value = true
   try {
     await frappePost('frappe.client.save', { doc: settings.value })
+    // Series defaults (price list, tax, warehouse per series) are cached per tab.
+    invalidateMasterCache('series-defaults:')
     // Apply the cipher now instead of waiting for the next Dashboard visit.
     if (rawCipher) {
       localStorage.setItem('wb-cipher', rawCipher)

@@ -1,5 +1,6 @@
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { frappeGet } from '../api.js'
+import { invalidateMasterCache } from '../services/masterCache.js'
 import {
   patchItemInCache, updateItemPriceInCache, updateItemStockInCache, updateItemStocksInCache, refreshDiscountRuleCache,
   getLoadedItemScopes, reconcileItemDatasets, removePriceListFromCache, updatePriceListFlagsInCache,
@@ -168,6 +169,8 @@ export function initItemSync() {
   // Price List enabled / disabled / re-flagged / renamed / deleted: patch cached items in place.
   _priceListHandler = (data) => {
     if (!data?.name) return
+    // Price-list dropdowns read the shared master cache; refetch them on next use.
+    invalidateMasterCache('list:Price List:')
     console.log('[useItemSync] received price_list_update:', data)
     if (data.old_name) {
       if (data.merge) {

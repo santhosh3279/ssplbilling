@@ -955,6 +955,7 @@ import BarcodePrintPage from './BarcodePrintPage.vue'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, serverNow, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
+import { getSeriesDefaults } from '../services/masterCache.js'
 const router = useRouter()
 
 const props = defineProps({
@@ -1669,7 +1670,7 @@ async function clearBill() {
   warehouse.value = localStorage.getItem('wb-warehouse') || localWarehouses.value[0] || 'None'
   if (selectedSeries.value) {
     try {
-      const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: selectedSeries.value, doctype: 'Purchase Invoice' })
+      const res = await getSeriesDefaults(selectedSeries.value, 'Purchase Invoice')
       invoiceNo.value = res.invoice_no || 'NEW'
       defaultTemplate.value = res.print_format || ''
     } catch {
@@ -2766,7 +2767,7 @@ function handleSupplierSelected(party) {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
-    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series, doctype: 'Purchase Invoice' })
+    const res = await getSeriesDefaults(series, 'Purchase Invoice')
     invoiceNo.value = res.invoice_no
     priceList.value = res.price_list
     taxTemplate.value = res.tax_template

@@ -935,3 +935,22 @@ def get_server_time():
 		"epoch_ms": int(time.time() * 1000),
 		"timezone": frappe.db.get_single_value("System Settings", "time_zone") or "Asia/Kolkata",
 	}
+
+
+@frappe.whitelist()
+def get_draft_counts(queries):
+	"""Dashboard draft badges in one request: {key: {"doctype", "filters"}} -> {key: count}.
+
+	Each count goes through frappe.client.get_count, so permissions match the per-tile
+	calls this replaces; a doctype the user cannot read is left out instead of failing all."""
+	from frappe.client import get_count
+
+	counts = {}
+	for key, query in (frappe.parse_json(queries) or {}).items():
+		try:
+			counts[key] = get_count(query.get("doctype"), filters=query.get("filters"))
+		except frappe.PermissionError:
+			frappe.clear_last_message()
+		except Exception:
+			frappe.log_error(title=f"Dashboard draft count failed: {query.get('doctype')}")
+	return counts

@@ -655,6 +655,7 @@ import { canAccessTile, canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, serverNow, toLocalISO, parseCalendarDate } from '../services/serverTime'
+import { getSeriesDefaults } from '../services/masterCache.js'
 const props = defineProps({
   isSubwindow: Boolean,
   invoiceName: String
@@ -876,7 +877,7 @@ async function handleSelectSidebarItem(item) {
   try {
     pauseDiscountRules.value = true
     isLoadingBill.value = true
-    const data = await frappeGet('ssplbilling.api.sales_order_api.get_sales_order', { order_name: item.name })
+    const data = await frappeGet('ssplbilling.api.sales_order_api.get_sales_order', { order_name: item.name, include_customer_details: 1 })
 
     // Header
     invoiceNo.value = data.name
@@ -892,7 +893,8 @@ async function handleSelectSidebarItem(item) {
 
     if (data.customer) {
       try {
-        const custDetails = await frappeGet('ssplbilling.api.customersearch_api.get_customer_billing_details', { customer: data.customer })
+        const custDetails = data.customer_billing_details
+          || await frappeGet('ssplbilling.api.customersearch_api.get_customer_billing_details', { customer: data.customer })
         customerMobile.value = custDetails.mobile_no || ''
         customerDetails.value = custDetails.mobile_no || ''
         customerBalance.value = custDetails.gst_balance ?? 0
@@ -2803,7 +2805,7 @@ function handleCustomerSelected(cust, opts = {}) {
 async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
-    const res = await frappeGet('ssplbilling.api.salesinvoice_api.get_series_defaults', { naming_series: series, doctype: 'Sales Order' })
+    const res = await getSeriesDefaults(series, 'Sales Order')
     invoiceNo.value = res.order_no || 'NEW'
     priceList.value = res.price_list
     taxTemplate.value = res.tax_template

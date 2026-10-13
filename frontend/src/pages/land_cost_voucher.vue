@@ -450,6 +450,7 @@ import { useSubwindow } from '../services/shortcutManager'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
+import { getCachedList } from '../services/masterCache.js'
 const props = defineProps({
   isSubwindow: Boolean,
   prelinkDocType: { type: String, default: 'Purchase Invoice' },
@@ -599,7 +600,7 @@ function goBack() {
 // --- INITIALIZATION ---
 async function loadCompanies() {
   try {
-    const list = await frappeGet('frappe.client.get_list', {
+    const list = await getCachedList({
       doctype: 'Company',
       fields: ['name']
     })

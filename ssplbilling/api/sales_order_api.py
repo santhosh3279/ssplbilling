@@ -2,6 +2,7 @@ import json
 from functools import wraps
 
 import frappe
+from ssplbilling.api.customersearch_api import attach_customer_billing_details
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
 from ssplbilling.api.party_address import set_party_address
 from ssplbilling.api.stock_utils import get_draft_invoice_qty
@@ -241,7 +242,7 @@ def get_sales_orders(query="", limit=50, transaction_date=None, naming_series=No
 
 @frappe.whitelist()
 @_system_user_only
-def get_sales_order(order_name):
+def get_sales_order(order_name, include_customer_details=0):
 	"""Return a single Sales Order with its items and taxes."""
 	if not frappe.db.exists("Sales Order", order_name):
 		frappe.throw(f"Sales Order {order_name} not found")
@@ -276,7 +277,7 @@ def get_sales_order(order_name):
 		if any(t.included_in_print_rate for t in so.taxes):
 			is_inclusive = 1
 
-	return {
+	result = {
 		"name": so.name,
 		"company": so.company,
 		"warehouse": warehouse,
@@ -300,6 +301,8 @@ def get_sales_order(order_name):
 		"docstatus": so.docstatus,
 		"items": items,
 	}
+	# Bill-open fetches the party panel in the same round trip when asked to.
+	return attach_customer_billing_details(result, include_customer_details)
 
 
 # ──────────────────────────────────────────────────────────────────────────────

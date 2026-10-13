@@ -821,6 +821,7 @@
 import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
+import { applyPanelEvent } from '../services/billPanelCache.js'
 import { session } from '../session'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
@@ -883,6 +884,17 @@ function toggleAllSeries() {
 }
 
 const showCardRefModal = ref(false)
+
+let mqttSettingsPromise = null
+function getMqttSettings(force = false) {
+  if (force || !mqttSettingsPromise) {
+    mqttSettingsPromise = frappeGet('frappe.client.get', {
+      doctype: 'MQTT Settings',
+      name: 'MQTT Settings'
+    }).catch((e) => { mqttSettingsPromise = null; throw e })
+  }
+  return mqttSettingsPromise
+}
 const showPrintModal = ref(false)
 const showModifyModal = ref(false)
 const showReconcileModal = ref(false)
@@ -1094,27 +1106,45 @@ const previewDiscount = computed(() => {
 
 // ==================== FUNCTIONS ====================
 
+function setInvoiceList(rows) {
+  invoices.value = [...rows].sort((a, b) => {
+    const dateA = a.posting_date || ''
+    const dateB = b.posting_date || ''
+    if (dateA !== dateB) {
+      return dateB.localeCompare(dateA)
+    }
+    return b.name.localeCompare(a.name)
+  })
+  // Keep the current highlight when it survived the refresh; otherwise fall back
+  // to the top of the list (or clear it when nothing is left).
+  const stillListed = highlightedInvoiceName.value
+    && invoices.value.some(i => i.name === highlightedInvoiceName.value)
+  if (!stillListed) {
+    highlightedInvoiceName.value = invoices.value.length > 0 ? invoices.value[0].name : ''
+  }
+  scrollHighlightedIntoView()
+}
+
+// Patch the draft list in place from a bill_panel_update socket payload, so a bill
+// saved by any biller doesn't make every cashier tab refetch up to 500 drafts.
+// Returns true when handled; onBillPanelUpdate then skips the refetch.
+function applyCashierPanelEvent(data) {
+  if (searchQuery.value) return false // search results — let the refetch handle it
+  // No series picked means "all allowed series", which only the server can resolve.
+  if (!sidebarSeries.value.length) return false
+  const currentCompany = localStorage.getItem('wb-company') || ''
+  if (currentCompany && data?.row?.company && data.row.company !== currentCompany) {
+    return false
+  }
+  setInvoiceList(applyPanelEvent(invoices.value, data, { draftOnly: true }))
+  return true
+}
+
 async function loadInvoices() {
   loadingList.value = true
   try {
     const res = await fetchDraftInvoices(searchQuery.value, 500, '', sidebarSeries.value.join(','))
-    res.sort((a, b) => {
-      const dateA = a.posting_date || ''
-      const dateB = b.posting_date || ''
-      if (dateA !== dateB) {
-        return dateB.localeCompare(dateA)
-      }
-      return b.name.localeCompare(a.name)
-    })
-    invoices.value = res
-    // Keep the current highlight when it survived the refresh; otherwise fall back
-    // to the top of the list (or clear it when nothing is left).
-    const stillListed = highlightedInvoiceName.value
-      && invoices.value.some(i => i.name === highlightedInvoiceName.value)
-    if (!stillListed) {
-      highlightedInvoiceName.value = invoices.value.length > 0 ? invoices.value[0].name : ''
-    }
-    scrollHighlightedIntoView()
+    setInvoiceList(res)
   } catch (e) {
     errorMsg.value = "Failed to load invoices: " + e.message
   } finally {
@@ -1154,7 +1184,6 @@ async function fetchSeriesList() {
     availableSeries.value = finalSeries
     if (sidebarSeries.value.length === 0 && availableSeries.value.length > 0) {
       sidebarSeries.value = [...availableSeries.value]
-      loadInvoices()
     }
   } catch (e) {
     console.warn('[CashierDesk] Could not fetch series list:', e)
@@ -1190,7 +1219,6 @@ function adjustDate(days) {
   const d = parseCalendarDate(filterDate.value)
   d.setDate(d.getDate() + days)
   filterDate.value = toLocalISO(d)
-  loadInvoices()
 }
 
 function adjustPostingDate(days) {
@@ -1379,20 +1407,22 @@ async function sendUpiMqtt() {
   }
 
   try {
-    // 1. Fetch MQTT Settings
-    const settings = await frappeGet('frappe.client.get', {
-      doctype: 'MQTT Settings',
-      name: 'MQTT Settings'
-    })
-    
+    // 1. MQTT Settings (cached for the page; refetched once when the account isn't in it,
+    //    so a topic added in MQTT Settings is still picked up without a reload)
+    const activeUpiAccount = seriesAccounts.value.upi || localStorage.getItem('wb-upi') || 'UPI'
+    let settings = await getMqttSettings()
+    let row = settings?.topics?.find(r => r.upi_account === activeUpiAccount)
+    if (!row) {
+      settings = await getMqttSettings(true)
+      row = settings?.topics?.find(r => r.upi_account === activeUpiAccount)
+    }
+
     if (!settings || !settings.topics || !settings.topics.length) {
       errorMsg.value = 'MQTT Settings or Topics child table is empty.'
       return
     }
 
-    // 2. Find row with upi_account matching the selected UPI account
-    const activeUpiAccount = seriesAccounts.value.upi || localStorage.getItem('wb-upi') || 'UPI'
-    const row = settings.topics.find(r => r.upi_account === activeUpiAccount)
+    // 2. Row with upi_account matching the selected UPI account
     if (!row) {
       errorMsg.value = `No MQTT configuration found for UPI account "${activeUpiAccount}".`
       return
@@ -1915,11 +1945,12 @@ onMounted(() => {
   
   initAccountsFromLocalStorage()
   getBillingSettingsCached().catch(() => {})
-  fetchSeriesList()
-  loadInvoices()
+  // Resolve the series first, then load once: loading alongside it fetched an
+  // unfiltered list that was thrown away as soon as the series arrived.
+  fetchSeriesList().then(() => loadInvoices())
   window.addEventListener('keydown', handleKeydown)
 
-  _billPanelCleanup = onBillPanelUpdate('Sales Invoice', sidebarSeries, loadInvoices)
+  _billPanelCleanup = onBillPanelUpdate('Sales Invoice', sidebarSeries, loadInvoices, applyCashierPanelEvent)
 })
 
 let _billPanelCleanup = null

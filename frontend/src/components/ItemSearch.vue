@@ -307,6 +307,7 @@ import {
   saveQuickQtyOrder as persistQuickQtyOrder,
   clearQuickQtyMap as clearStoredQuickQty
 } from '../services/quickQty.js'
+import { getCachedList } from '../services/masterCache.js'
 
 // Price update sub-window loads on first open so its page graph stays out of the boot bundle.
 const PriceListUpdate = defineAsyncComponent(() => import('../pages/PriceListUpdate.vue'))
@@ -489,7 +490,7 @@ const canViewBuying = computed(() => {
 
 async function fetchEnabledPriceLists() {
   try {
-    const list = await frappeGet('frappe.client.get_list', {
+    const list = await getCachedList({
       doctype: 'Price List',
       filters: { enabled: 1 },
       fields: ['name', 'buying', 'selling'],

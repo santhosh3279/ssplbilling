@@ -1096,6 +1096,17 @@ def get_customer_billing_details(customer):
 	}
 
 
+def attach_customer_billing_details(result, include_customer_details=0):
+	"""Add the party panel (get_customer_billing_details) to a bill-load response so
+	opening a bill costs one request instead of two. Never fails the bill load."""
+	if frappe.utils.cint(include_customer_details) and result.get("customer"):
+		try:
+			result["customer_billing_details"] = get_customer_billing_details(result["customer"])
+		except Exception:
+			frappe.log_error(title="Bill load: customer billing details failed")
+	return result
+
+
 def publish_customer_update(doc, method=None):
 	"""Publish a realtime update event when a Customer is created, updated or deleted."""
 	if not doc or not doc.name:

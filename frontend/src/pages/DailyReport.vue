@@ -237,6 +237,7 @@ import VoucherDetail from '../components/VoucherDetail.vue'
 
 import { formatDMY } from '../utils/date'
 import { serverCalendarDate, toLocalISO } from '../services/serverTime'
+import { getCachedList } from '../services/masterCache.js'
 const router = useRouter()
 const showDetail = ref(false)
 const selectedDoc = ref('')
@@ -588,7 +589,7 @@ watch(activeTab, () => {
 })
 
 onMounted(() => {
-  frappeGet('frappe.client.get_list', {
+  getCachedList({
     doctype: 'Cost Center',
     fields: ['name'],
     filters: localStorage.getItem('wb-company') ? { company: localStorage.getItem('wb-company') } : {},

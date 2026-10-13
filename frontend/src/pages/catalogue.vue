@@ -515,6 +515,7 @@ import { useRouter } from 'vue-router'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { frappeGet, frappePost, uploadFile } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
+import { getCachedList } from '../services/masterCache.js'
 
 const router = useRouter()
 const {
@@ -1337,7 +1338,7 @@ function removePriceListRow(idx) {
 
 async function fetchPriceLists() {
   try {
-    const data = await frappeGet('frappe.client.get_list', {
+    const data = await getCachedList({
       doctype: 'Price List',
       fields: ['name'],
       order_by: 'name asc',

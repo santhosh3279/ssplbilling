@@ -1181,7 +1181,7 @@ async function handleSelectSidebarItem(item) {
 async function loadInvoice(invoiceName) {
   try {
     isLoadingBill.value = true
-    const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: invoiceName })
+    const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: invoiceName, include_customer_details: 1 })
 
     // Header
     customInvoiceNo.value = ''
@@ -1205,7 +1205,8 @@ async function loadInvoice(invoiceName) {
 
     if (data.customer) {
       try {
-        const custDetails = await frappeGet('ssplbilling.api.customersearch_api.get_customer_billing_details', { customer: data.customer })
+        const custDetails = data.customer_billing_details
+          || await frappeGet('ssplbilling.api.customersearch_api.get_customer_billing_details', { customer: data.customer })
         customerMobile.value = custDetails.mobile_no || ''
         customerDetails.value = custDetails.mobile_no || ''
         customerBalance.value = custDetails.gst_balance ?? 0

@@ -1,5 +1,6 @@
 import json
 import frappe
+from ssplbilling.api.customersearch_api import attach_customer_billing_details
 
 
 def _queue_cashier_mirror(si, payment_details=None):
@@ -221,7 +222,7 @@ def get_sales_invoices(query="", limit=20, posting_date=None, naming_series=None
     return result
 
 @frappe.whitelist()
-def get_sales_invoice(invoice_name):
+def get_sales_invoice(invoice_name, include_customer_details=0):
     """Fetch a Sales Invoice with its items."""
     si = frappe.get_doc("Sales Invoice", invoice_name)
     from ssplbilling.api.automatic_entries_api import mirror_name_for
@@ -395,7 +396,7 @@ def get_sales_invoice(invoice_name):
     if si.customer_address:
         party_state = frappe.db.get_value("Address", si.customer_address, "state") or ""
 
-    return {
+    result = {
         "name": si.name,
         "mirrored_invoice": mirrored_invoice,
         "customer": si.customer,
@@ -474,6 +475,8 @@ def get_sales_invoice(invoice_name):
         "custom_remarks": si.get("custom_remarks") or "",
         "payments": payments,
     }
+    # Bill-open fetches the party panel in the same round trip when asked to.
+    return attach_customer_billing_details(result, include_customer_details)
 
 @frappe.whitelist()
 def submit_invoice_with_payment(data=None, **kwargs):
