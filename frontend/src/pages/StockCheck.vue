@@ -148,13 +148,13 @@
       @enter="runSearch()"
     />
 
-    <BarcodeScanner v-if="showScanner" :verify="codeExists" @detected="onScanned" @close="showScanner = false" />
+    <BarcodeScanner v-if="showScanner" :verify="codeExists" @detected="onScanned" @close="closeScanner" />
 
     <!-- Full-size photo -->
     <div
       v-if="previewImage"
       class="fixed inset-0 z-30 flex items-center justify-center bg-black/85 p-4"
-      @click="previewImage = ''"
+      @click="closePreview"
     >
       <img :src="previewImage" alt="" class="max-h-full max-w-full rounded-lg bg-white object-contain" />
     </div>
@@ -294,7 +294,42 @@ function onScanned(code) {
   showScanner.value = false
   query.value = code
   // Search now instead of waiting out the typing debounce the query watcher just armed
-  nextTick(() => runSearch())
+  nextTick(() => {
+    runSearch()
+    focusSearch()
+  })
+}
+
+// Keep the search box focused so a Bluetooth / USB barcode scanner (which types
+// like a keyboard) always lands its code there
+function focusSearch() {
+  nextTick(() => searchRef.value?.focus())
+}
+
+function closeScanner() {
+  showScanner.value = false
+  focusSearch()
+}
+
+function closePreview() {
+  previewImage.value = ''
+  focusSearch()
+}
+
+// Keys typed while focus is elsewhere on the page (e.g. after tapping a result)
+// go into the search box instead of being lost
+function onPageKeydown(e) {
+  if (showScanner.value || previewImage.value || e.ctrlKey || e.metaKey || e.altKey) return
+  const el = document.activeElement
+  if (el === searchRef.value || el?.matches?.('input, textarea, select, [contenteditable="true"]')) return
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    focusSearch()
+    runSearch()
+  } else if (e.key.length === 1) {
+    e.preventDefault()
+    typeKey(e.key)
+  }
 }
 
 // OCR readings are guesses: accept one only when it is an exact item code or barcode.
@@ -373,6 +408,7 @@ onMounted(() => {
   fitViewport()
   window.visualViewport?.addEventListener('resize', fitViewport)
   window.addEventListener('resize', fitViewport)
+  window.addEventListener('keydown', onPageKeydown)
   searchRef.value?.focus()
   clockTimer = setInterval(() => { now.value = Date.now() }, 15000)
 })
@@ -381,5 +417,6 @@ onBeforeUnmount(() => {
   clearInterval(clockTimer)
   window.visualViewport?.removeEventListener('resize', fitViewport)
   window.removeEventListener('resize', fitViewport)
+  window.removeEventListener('keydown', onPageKeydown)
 })
 </script>

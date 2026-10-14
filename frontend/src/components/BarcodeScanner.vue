@@ -4,6 +4,20 @@
       <span class="text-base font-semibold">Scan Barcode</span>
       <div class="flex gap-2">
         <button
+          v-if="zoomLevels.length > 1"
+          type="button"
+          class="rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold tabular-nums hover:bg-white/25"
+          title="Zoom: hold the phone further back and zoom in so the camera can focus"
+          @click="cycleZoom"
+        >{{ zoomLabel }}</button>
+        <button
+          v-if="lenses.length > 1"
+          type="button"
+          class="rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold hover:bg-white/25"
+          title="Switch to another back camera"
+          @click="switchLens"
+        >Lens {{ lensIndex + 1 }}/{{ lenses.length }}</button>
+        <button
           v-if="torchAvailable"
           type="button"
           class="rounded-full px-4 py-1.5 text-sm font-semibold"
@@ -18,22 +32,44 @@
       </div>
     </div>
 
-    <div ref="viewRef" class="relative flex-1 overflow-hidden">
+    <div ref="viewRef" class="relative flex-1 overflow-hidden" @pointerdown="tapToFocus">
       <video ref="videoRef" class="h-full w-full object-cover" playsinline muted autoplay></video>
 
-      <!-- Aiming guide: only this area is decoded -->
+      <!-- Aiming guide: only this area is decoded. Border colour shows scan state. -->
       <div v-if="!error" class="pointer-events-none absolute inset-0 flex items-center justify-center">
-        <div ref="boxRef" class="relative h-44 w-[85%] max-w-md rounded-2xl border-2 border-white/80 shadow-[0_0_0_9999px_rgba(0,0,0,0.45)]">
-          <div class="scan-line absolute inset-x-3 h-0.5 bg-red-500/90"></div>
+        <div
+          ref="boxRef"
+          class="relative h-44 w-[85%] max-w-md rounded-2xl border-[3px] shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] transition-colors duration-200"
+          :class="boxClass"
+        >
+          <div v-if="!foundCode" class="scan-line absolute inset-x-3 h-0.5 bg-red-500/90"></div>
+          <div v-else class="absolute inset-0 flex items-center justify-center rounded-xl bg-emerald-500/25">
+            <span class="break-all px-3 text-center font-mono text-2xl font-black text-white drop-shadow">{{ foundCode }}</span>
+          </div>
         </div>
       </div>
+
+      <!-- Tap-to-focus ring -->
+      <div
+        v-if="focusRing"
+        :key="focusRing.key"
+        class="focus-ring pointer-events-none absolute h-16 w-16 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-yellow-300"
+        :style="{ left: focusRing.x + 'px', top: focusRing.y + 'px' }"
+      ></div>
 
       <div v-if="error" class="absolute inset-0 flex items-center justify-center p-6">
         <div class="max-w-sm rounded-xl bg-white/10 p-4 text-center text-sm text-white">{{ error }}</div>
       </div>
-      <div v-else class="absolute inset-x-0 bottom-4 space-y-1 px-4 text-center text-white/80">
-        <div class="text-sm">{{ starting ? 'Starting camera…' : 'Fit the barcode or its printed number inside the box' }}</div>
-        <div v-if="status" class="font-mono text-[11px] text-white/50">{{ status }}</div>
+      <div v-else class="pointer-events-none absolute inset-x-0 bottom-3 space-y-1.5 px-4 text-center text-white">
+        <div class="text-base font-semibold" :class="hintWarn ? 'text-amber-300' : foundCode ? 'text-emerald-300' : 'text-white'">
+          {{ starting ? 'Starting camera…' : foundCode ? 'Found!' : hint }}
+        </div>
+        <div v-if="!starting && !foundCode" class="text-xs text-white/75">Hold 15–20 cm away · tap the screen to focus</div>
+        <div v-if="ocrNote && !foundCode" class="font-mono text-xs text-sky-200">{{ ocrNote }}</div>
+        <div v-if="status" class="mx-auto inline-flex items-center gap-1.5 rounded-lg bg-black/55 px-2 py-1 font-mono text-[11px] text-white/85">
+          <span class="h-2 w-2 rounded-full" :class="alive ? 'bg-emerald-400' : 'bg-red-500'"></span>
+          {{ status }}
+        </div>
       </div>
     </div>
   </div>
@@ -47,8 +83,12 @@
  * silently returns nothing still scans. The printed code under the bars is read by
  * OCR as a fallback; OCR candidates are only accepted once `verify(text)` confirms
  * the code exists. Emits `detected` once with the decoded text.
+ *
+ * Feedback: a live frame rate (red dot = scan loop stalled), brightness/sharpness
+ * hints, OCR progress, and a green box with the code before closing. Zoom, lens
+ * switching and tap-to-focus help phones whose camera cannot focus up close.
  */
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   // async (text) => boolean — confirms an OCR reading before it is accepted
@@ -64,10 +104,25 @@ const starting = ref(true)
 const status = ref('')
 const torchAvailable = ref(false)
 const torchOn = ref(false)
+const hint = ref('Fit the barcode or its printed number inside the box')
+const hintWarn = ref(false)
+const ocrNote = ref('')
+const foundCode = ref('')
+const alive = ref(true)
+const zoomLevels = ref([])
+const zoom = ref(1)
+const lenses = ref([])
+const lensIndex = ref(0)
+const focusRing = ref(null)
 
 const NATIVE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'code_93', 'codabar', 'itf', 'qr_code']
 const SCAN_INTERVAL = 150
 const OCR_INTERVAL = 1200
+const FOUND_DELAY = 400
+const DEFAULT_ZOOM = 2
+// Rough guide values for the hints only; decoding always runs regardless
+const DARK_BELOW = 45
+const BLURRY_BELOW = 6
 
 let stream = null
 let track = null
@@ -79,10 +134,26 @@ let lastOcrAt = 0
 let lastOcrTokens = []
 const rejectedOcr = new Set()
 let scanTimer = null
+let foundTimer = null
+let focusTimer = null
 let tickCount = 0
+let lastTickAt = 0
+let fpsWindowStart = 0
+let fpsFrames = 0
+let fps = 0
+let brightness = null
+let sharpness = null
 let done = false
 const scanCanvas = document.createElement('canvas')
 const ocrCanvas = document.createElement('canvas')
+const qualityCanvas = document.createElement('canvas')
+
+const boxClass = computed(() => {
+  if (foundCode.value) return 'border-emerald-400'
+  if (hintWarn.value) return 'border-amber-400'
+  return 'border-white/80'
+})
+const zoomLabel = computed(() => `${Number(zoom.value.toFixed(1))}×`)
 
 function cameraErrorMessage(e) {
   if (!window.isSecureContext) {
@@ -96,9 +167,17 @@ function cameraErrorMessage(e) {
 function found(text) {
   if (done || !text) return
   done = true
+  clearTimeout(scanTimer)
+  const code = String(text).trim()
+  foundCode.value = code
   try { navigator.vibrate?.(80) } catch (e) { /* not supported */ }
-  stop()
-  emit('detected', String(text).trim())
+  // Freeze the frame so the code is shown over what was scanned; stopping the
+  // tracks right away blanks the video on some browsers
+  try { videoRef.value?.pause() } catch (e) { /* ignore */ }
+  foundTimer = setTimeout(() => {
+    stop()
+    emit('detected', code)
+  }, FOUND_DELAY)
 }
 
 /** Aiming box in video pixels, accounting for object-cover scaling. `extraBelow` grows it downwards. */
@@ -124,6 +203,38 @@ function drawCrop(canvas, r, maxWidth, minWidth = 0) {
   const ctx = canvas.getContext('2d', { willReadFrequently: true })
   ctx.drawImage(videoRef.value, r.x, r.y, r.w, r.h, 0, 0, canvas.width, canvas.height)
   return canvas
+}
+
+/** Mean brightness and horizontal edge strength (barcode bars are vertical) of a small copy of the crop. */
+function measureQuality(source) {
+  const w = 160
+  const h = Math.max(8, Math.round((source.height / source.width) * w))
+  qualityCanvas.width = w
+  qualityCanvas.height = h
+  const ctx = qualityCanvas.getContext('2d', { willReadFrequently: true })
+  ctx.drawImage(source, 0, 0, w, h)
+  const px = ctx.getImageData(0, 0, w, h).data
+  let lum = 0, edge = 0, prev = 0
+  for (let i = 0, n = 0; i < px.length; i += 4, n++) {
+    const y = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]
+    lum += y
+    if (n % w) edge += Math.abs(y - prev)
+    prev = y
+  }
+  brightness = Math.round(lum / (w * h))
+  sharpness = Math.round(edge / ((w - 1) * h))
+  if (brightness < DARK_BELOW) {
+    setHint(torchAvailable.value && !torchOn.value ? 'Too dark — tap Light' : 'Too dark — add more light', true)
+  } else if (sharpness < BLURRY_BELOW) {
+    setHint('Blurry or no barcode — move back a little, tap to focus', true)
+  } else {
+    setHint('Reading… hold steady', false)
+  }
+}
+
+function setHint(text, warn) {
+  hint.value = text
+  hintWarn.value = warn
 }
 
 async function initNative() {
@@ -169,12 +280,21 @@ async function initOcr() {
 function updateStatus() {
   const bars = [nativeDetector && 'native', zxingReader && 'zxing'].filter(Boolean).join('+') || 'loading'
   const video = videoRef.value
-  const res = video?.videoWidth ? `${video.videoWidth}×${video.videoHeight}` : ''
-  status.value = `bars: ${bars} · text: ${ocrWorker ? 'on' : 'loading'}${res ? ' · ' + res : ''}`
+  const settings = track?.getSettings?.() || {}
+  const parts = [
+    `${fps} fps`,
+    `bars: ${bars}`,
+    `text: ${ocrWorker ? 'on' : 'loading'}`,
+    video?.videoWidth ? `${video.videoWidth}×${video.videoHeight}` : '',
+    settings.zoom ? `zoom ${Number(settings.zoom.toFixed(1))}×` : '',
+    settings.focusMode ? `focus ${settings.focusMode}` : '',
+    brightness !== null ? `light ${brightness}` : '',
+    sharpness !== null ? `sharp ${sharpness}` : '',
+  ]
+  status.value = parts.filter(Boolean).join(' · ')
 }
 
-async function decodeBars() {
-  const canvas = drawCrop(scanCanvas, boxInVideo(), 1280)
+async function decodeBars(canvas) {
   if (nativeDetector) {
     try {
       const codes = await nativeDetector.detect(canvas)
@@ -207,14 +327,17 @@ async function readText() {
     const { data } = await ocrWorker.recognize(canvas)
     if (done) return
     const tokens = ocrTokens(data?.text)
+    ocrNote.value = tokens.length ? `Text seen: ${tokens.slice(0, 4).join(' ')}` : 'Text: nothing readable yet'
     // Accept only a token seen in two reads in a row, then confirm it with the server
     const stable = tokens.filter(t => lastOcrTokens.includes(t) && !rejectedOcr.has(t))
     lastOcrTokens = tokens
     for (const t of stable) {
+      ocrNote.value = `Checking ${t}…`
       const ok = props.verify ? await props.verify(t) : true
       if (done) return
       if (ok) return found(t)
       rejectedOcr.add(t)
+      ocrNote.value = `${t} is not an item code`
     }
   } catch (e) {
     console.warn('[BarcodeScanner] OCR', e)
@@ -223,35 +346,145 @@ async function readText() {
   }
 }
 
-async function tick() {
-  if (done) return
-  const video = videoRef.value
-  if (video && video.readyState >= 2 && video.videoWidth) {
-    tickCount++
-    const code = await decodeBars()
-    if (code) return found(code)
-    if (ocrWorker && !ocrBusy && Date.now() - lastOcrAt > OCR_INTERVAL) readText()
-    if (tickCount % 10 === 0) updateStatus()
+function countFrame() {
+  const now = Date.now()
+  lastTickAt = now
+  fpsFrames++
+  if (now - fpsWindowStart >= 1000) {
+    fps = Math.round((fpsFrames * 1000) / (now - fpsWindowStart))
+    fpsFrames = 0
+    fpsWindowStart = now
+    updateStatus()
   }
-  if (!done) scanTimer = setTimeout(tick, SCAN_INTERVAL)
 }
 
-async function startCamera() {
-  stream = await navigator.mediaDevices.getUserMedia({
-    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-    audio: false,
-  })
-  if (done) return stop()
-  track = stream.getVideoTracks()[0]
+async function tick() {
+  if (done) return
+  try {
+    const video = videoRef.value
+    if (video && video.readyState >= 2 && video.videoWidth) {
+      tickCount++
+      countFrame()
+      const canvas = drawCrop(scanCanvas, boxInVideo(), 1280)
+      if (tickCount % 4 === 0) measureQuality(canvas)
+      const code = await decodeBars(canvas)
+      if (code) return found(code)
+      if (ocrWorker && !ocrBusy && Date.now() - lastOcrAt > OCR_INTERVAL) readText()
+    }
+  } catch (e) {
+    // Never let one bad frame end the scan loop
+    console.warn('[BarcodeScanner] frame', e)
+  } finally {
+    if (!done) scanTimer = setTimeout(tick, SCAN_INTERVAL)
+  }
+}
+
+// Red status dot when no frame has been scanned for a while (camera frozen or loop stalled)
+let aliveTimer = null
+function watchAlive() {
+  aliveTimer = setInterval(() => {
+    alive.value = !lastTickAt || Date.now() - lastTickAt < 1500
+  }, 500)
+}
+
+async function setZoom(value) {
+  try {
+    await track.applyConstraints({ advanced: [{ zoom: value }] })
+    zoom.value = track.getSettings?.().zoom || value
+  } catch (e) { /* zoom not applied */ }
+  updateStatus()
+}
+
+function cycleZoom() {
+  const levels = zoomLevels.value
+  const i = levels.findIndex(z => Math.abs(z - zoom.value) < 0.05)
+  setZoom(levels[(i + 1) % levels.length])
+}
+
+async function setupTrack() {
   const caps = track.getCapabilities?.() || {}
   // Close-up barcodes stay blurry without continuous autofocus
   if (caps.focusMode?.includes('continuous')) {
     try { await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }) } catch (e) { /* ignore */ }
   }
   torchAvailable.value = !!caps.torch
+  torchOn.value = false
+  // Zooming in lets the phone be held far enough back for the lens to focus
+  zoomLevels.value = []
+  zoom.value = 1
+  if (caps.zoom && caps.zoom.max > 1) {
+    const levels = [1, 2, 3].filter(z => z >= caps.zoom.min && z <= caps.zoom.max)
+    if (levels.length > 1) {
+      zoomLevels.value = levels
+      await setZoom(Math.min(DEFAULT_ZOOM, caps.zoom.max))
+    }
+  }
+}
+
+async function startCamera(deviceId = null) {
+  const video = deviceId
+    ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+    : { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+  stream = await navigator.mediaDevices.getUserMedia({ video, audio: false })
+  if (done) return stop()
+  track = stream.getVideoTracks()[0]
+  await setupTrack()
   videoRef.value.srcObject = stream
   await videoRef.value.play()
   starting.value = false
+}
+
+/** Back cameras (labels are only filled in after camera permission is granted). */
+async function listLenses() {
+  try {
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput')
+    const back = cams.filter(d => /back|rear|environment/i.test(d.label))
+    lenses.value = back.length ? back : cams
+    const current = track?.getSettings?.().deviceId
+    lensIndex.value = Math.max(0, lenses.value.findIndex(d => d.deviceId === current))
+  } catch (e) { lenses.value = [] }
+}
+
+async function switchLens() {
+  if (lenses.value.length < 2 || done) return
+  const next = (lensIndex.value + 1) % lenses.value.length
+  stopStream()
+  starting.value = true
+  try {
+    await startCamera(lenses.value[next].deviceId)
+    lensIndex.value = next
+  } catch (e) {
+    console.error('[BarcodeScanner] lens', e)
+    // Fall back to whatever the browser picks
+    try { await startCamera() } catch (err) { error.value = cameraErrorMessage(err) }
+  }
+  updateStatus()
+}
+
+/** Best effort: browsers that ignore points of interest still refocus on single-shot. */
+async function tapToFocus(e) {
+  if (!track || done) return
+  const view = viewRef.value.getBoundingClientRect()
+  const x = e.clientX - view.left
+  const y = e.clientY - view.top
+  focusRing.value = { x, y, key: Date.now() }
+  clearTimeout(focusTimer)
+  const caps = track.getCapabilities?.() || {}
+  const advanced = {}
+  if (caps.pointsOfInterest || 'pointsOfInterest' in (track.getSettings?.() || {})) {
+    advanced.pointsOfInterest = [{ x: x / view.width, y: y / view.height }]
+  }
+  if (caps.focusMode?.includes('single-shot')) advanced.focusMode = 'single-shot'
+  if (Object.keys(advanced).length) {
+    try { await track.applyConstraints({ advanced: [advanced] }) } catch (err) { /* ignore */ }
+  }
+  focusTimer = setTimeout(async () => {
+    focusRing.value = null
+    if (track && caps.focusMode?.includes('continuous')) {
+      try { await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }) } catch (err) { /* ignore */ }
+    }
+    updateStatus()
+  }, 1500)
 }
 
 async function toggleTorch() {
@@ -274,24 +507,34 @@ async function start() {
     stop()
     return
   }
+  listLenses()
+  fpsWindowStart = Date.now()
   updateStatus()
+  watchAlive()
   tick()
   initZxing().then(updateStatus).catch(e => console.error('[BarcodeScanner] ZXing', e))
   initOcr().then(updateStatus).catch(e => console.error('[BarcodeScanner] OCR', e))
 }
 
-function stop() {
-  clearTimeout(scanTimer)
-  scanTimer = null
+function stopStream() {
   stream?.getTracks().forEach(t => t.stop())
   stream = null
   track = null
+}
+
+function stop() {
+  clearTimeout(scanTimer)
+  scanTimer = null
+  clearTimeout(focusTimer)
+  clearInterval(aliveTimer)
+  stopStream()
   ocrWorker?.terminate()
   ocrWorker = null
 }
 
 function close() {
   done = true
+  clearTimeout(foundTimer)
   stop()
   emit('close')
 }
@@ -308,6 +551,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
   done = true
+  clearTimeout(foundTimer)
   stop()
 })
 </script>
@@ -319,5 +563,12 @@ onBeforeUnmount(() => {
 @keyframes scan {
   from { top: 12%; }
   to { top: 88%; }
+}
+.focus-ring {
+  animation: focus-ring 0.6s ease-out forwards;
+}
+@keyframes focus-ring {
+  from { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 </style>
