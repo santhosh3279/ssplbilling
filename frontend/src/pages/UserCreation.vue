@@ -338,6 +338,8 @@ const isLoadingUsers = ref(false)
 const usersError = ref('')
 // Login of the user open for editing; '' means the form creates a new user.
 const editingUser = ref('')
+// Customer the edited user was loaded with; the link is rewritten only when this changes.
+const editingCustomer = ref('')
 
 const filteredUsers = computed(() => {
   const terms = userQuery.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
@@ -369,6 +371,7 @@ function selectUser(u) {
   if (isSaving.value) return
   resetForm()
   editingUser.value = u.user
+  editingCustomer.value = u.customer
   ;[username.value, loginDomain.value] = splitLogin(u.user)
   selectCustomer(customers.value.find(c => c.name === u.customer) || { name: u.customer, customer_name: u.customer_name })
 }
@@ -390,10 +393,11 @@ async function saveUser() {
     const res = await frappePost('ssplbilling.api.customersearch_api.update_customer_user', {
       user: editingUser.value,
       new_user: loginEmail.value,
-      customer: customer.value,
+      customer: customer.value !== editingCustomer.value ? customer.value : '',
       password: password.value || '',
     }, { silent: true })
     editingUser.value = res.user
+    editingCustomer.value = res.customer || customer.value
     ;[username.value, loginDomain.value] = splitLogin(res.user)
     password.value = ''
     passwordFromMobile.value = false
@@ -460,6 +464,7 @@ function resetForm() {
   resetPricing()
   createdUser.value = ''
   editingUser.value = ''
+  editingCustomer.value = ''
   loginDomain.value = LOGIN_DOMAIN
   error.value = ''
   success.value = ''

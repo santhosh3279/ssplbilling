@@ -1418,9 +1418,12 @@ def update_customer_user(user, new_user=None, customer=None, password=None):
 			frappe.throw(f"User {new_user} already exists.")
 		old_local = user.split("@")[0]
 		user = frappe.rename_doc("User", user, new_user, show_alert=False)
-		# The first name was set from the login on creation; keep it matching.
+		# First name and username were derived from the old login; keep them matching.
+		new_local = user.split("@")[0]
 		if doc.first_name == old_local:
-			frappe.db.set_value("User", user, "first_name", user.split("@")[0])
+			frappe.db.set_value("User", user, "first_name", new_local)
+		if doc.username == old_local and not frappe.db.exists("User", {"username": new_local}):
+			frappe.db.set_value("User", user, "username", new_local)
 
 	if customer:
 		links = frappe.get_all(
