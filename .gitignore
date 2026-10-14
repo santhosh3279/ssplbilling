@@ -62,3 +62,7 @@ ssplbilling/public/frontend/*
 
 # OCR engine assets, copied from node_modules by vite.config.js
 frontend/public/ocr/
+
+# Product website (VitePress) build output
+website/.vitepress/dist/
+website/.vitepress/cache/
