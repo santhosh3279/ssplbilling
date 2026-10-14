@@ -6,8 +6,29 @@
           <RouterLink to="/catalogueviewer" class="text-sm text-indigo-500 hover:underline">← Catalogues</RouterLink>
           <h1 class="text-3xl font-bold">Your cart</h1>
         </div>
-        <div v-if="isLoggedIn" class="flex items-center gap-3">
+        <div v-if="isLoggedIn" class="flex flex-wrap items-center gap-3">
           <span class="text-sm font-semibold">{{ session.fullName.value || session.user.value }}</span>
+          <button
+            v-if="session.isSystemUser.value && orderContext.customer"
+            type="button"
+            @click="toggleCustomerSection"
+            class="flex items-center gap-1.5 rounded-lg border border-indigo-400/40 bg-indigo-500/10 px-2.5 py-1 text-xs text-indigo-600 transition hover:bg-indigo-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500 cursor-pointer"
+            title="Click to modify customer and price list"
+          >
+            <span class="max-w-[180px] truncate font-bold">{{ orderContext.customer_name || orderContext.customer }}</span>
+            <span class="max-w-[120px] truncate text-[11px]">({{ orderContext.price_list }})</span>
+            <span class="ml-0.5 text-[11px]">✏️</span>
+          </button>
+          <button
+            v-else-if="session.isSystemUser.value"
+            type="button"
+            @click="toggleCustomerSection"
+            class="flex items-center gap-1.5 rounded-lg border border-amber-400/40 bg-amber-500/10 px-2.5 py-1 text-xs text-amber-600 transition hover:bg-amber-500/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-500 cursor-pointer"
+            title="Click to select customer and price list"
+          >
+            <span class="font-bold">Select Customer</span>
+            <span class="text-[11px]">🔍</span>
+          </button>
           <button
             type="button"
             @click="handleLogout"
@@ -18,7 +39,7 @@
         </div>
       </header>
 
-      <CatalogueOrderParty />
+      <CatalogueOrderParty v-if="showCustomerSection" @applied="showCustomerSection = false" @close="showCustomerSection = false" />
       <p v-if="loading">Loading cart…</p>
       <div v-else-if="error && !preview" role="alert" class="space-y-3 rounded-xl bg-red-100 p-4 text-red-800">
         <p>{{ error }}</p>
@@ -91,6 +112,15 @@ async function handleLogout() {
   setCartUser(null)
   router.replace('/catalogueviewer')
 }
+const showCustomerSection = ref(!orderContext.value.customer)
+watch(() => orderContext.value.customer, (newCust, oldCust) => {
+  if (!oldCust && newCust) showCustomerSection.value = false
+  else if (!newCust) showCustomerSection.value = true
+})
+function toggleCustomerSection() {
+  showCustomerSection.value = !showCustomerSection.value
+}
+
 const loading = ref(true)
 const error = ref('')
 const preview = ref(null)
