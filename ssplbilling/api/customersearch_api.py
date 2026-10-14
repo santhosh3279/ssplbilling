@@ -1354,3 +1354,92 @@ def set_customer_price_setting(customer, price_list=None, mobile_no=None):
 		frappe.db.set_value("Customer", customer, "mobile_no", mobile_no)
 
 	return get_customer_price_setting(customer)
+
+
+@frappe.whitelist()
+def get_customer_users():
+	"""Website users linked to a customer through a Customer User Permission."""
+	frappe.has_permission("User", "read", throw=True)
+	perms = frappe.get_all(
+		"User Permission",
+		filters={"allow": "Customer"},
+		fields=["user", "for_value"],
+		order_by="creation asc",
+	)
+	customer_of = {}
+	for p in perms:
+		customer_of.setdefault(p.user, p.for_value)
+	if not customer_of:
+		return []
+
+	users = frappe.get_all(
+		"User",
+		filters={"name": ["in", list(customer_of)], "user_type": "Website User"},
+		fields=["name", "enabled"],
+		order_by="name asc",
+	)
+	customer_names = dict(
+		frappe.get_all(
+			"Customer",
+			filters={"name": ["in", list(set(customer_of.values()))]},
+			fields=["name", "customer_name"],
+			as_list=True,
+		)
+	)
+	return [
+		{
+			"user": u.name,
+			"enabled": u.enabled,
+			"customer": customer_of[u.name],
+			"customer_name": customer_names.get(customer_of[u.name], ""),
+		}
+		for u in users
+	]
+
+
+@frappe.whitelist(methods=["POST"])
+def update_customer_user(user, new_user=None, customer=None, password=None):
+	"""Change a customer website user's login, linked customer and/or password.
+	Empty values leave that part unchanged."""
+	doc = frappe.get_doc("User", user)
+	doc.check_permission("write")
+	if doc.user_type != "Website User":
+		frappe.throw("Only website users can be edited here.")
+	if customer and not frappe.db.exists("Customer", customer):
+		frappe.throw(f"Customer {customer} not found.")
+
+	if password:
+		doc.new_password = password
+		doc.save()
+
+	new_user = (new_user or "").strip().lower()
+	if new_user and new_user != user:
+		if frappe.db.exists("User", new_user):
+			frappe.throw(f"User {new_user} already exists.")
+		old_local = user.split("@")[0]
+		user = frappe.rename_doc("User", user, new_user, show_alert=False)
+		# The first name was set from the login on creation; keep it matching.
+		if doc.first_name == old_local:
+			frappe.db.set_value("User", user, "first_name", user.split("@")[0])
+
+	if customer:
+		links = frappe.get_all(
+			"User Permission",
+			filters={"user": user, "allow": "Customer"},
+			fields=["name", "for_value"],
+		)
+		if [link.for_value for link in links] != [customer]:
+			for link in links:
+				frappe.delete_doc("User Permission", link.name)
+			frappe.get_doc(
+				{
+					"doctype": "User Permission",
+					"user": user,
+					"allow": "Customer",
+					"for_value": customer,
+					"apply_to_all_doctypes": 1,
+				}
+			).insert()
+
+	linked = frappe.db.get_value("User Permission", {"user": user, "allow": "Customer"}, "for_value")
+	return {"user": user, "customer": linked}

@@ -3,18 +3,46 @@
     <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
       <div class="flex items-center gap-4">
         <button type="button" class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]" @click="router.push('/')">← Dashboard</button>
-        <h1 class="text-lg font-bold">Create Customer User</h1>
+        <h1 class="text-lg font-bold">Customer Users</h1>
       </div>
     </header>
 
-    <main class="mx-auto max-w-xl p-6">
-      <form class="space-y-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6" @submit.prevent="createUser">
+    <main class="mx-auto flex max-w-5xl flex-col gap-6 p-6 md:flex-row md:items-start">
+      <!-- Existing customer users; picking one opens it in the form for editing -->
+      <aside class="w-full shrink-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:w-72">
+        <div class="mb-3 flex items-center justify-between">
+          <h2 class="text-sm font-bold">Existing Users</h2>
+          <button type="button" class="rounded border border-[var(--color-info)] px-2 py-0.5 text-xs font-semibold text-[var(--color-info)] disabled:opacity-50"
+            :disabled="isSaving" @click="resetForm">+ New User</button>
+        </div>
+        <input v-model="userQuery" type="text" autocomplete="off" placeholder="Search login or customer"
+          class="mb-2 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-sm focus:border-[var(--color-info)] focus:outline-none" />
+        <p v-if="isLoadingUsers" class="text-sm text-[var(--color-text-muted)]">Loading...</p>
+        <p v-else-if="usersError" role="alert" class="text-sm text-[var(--color-danger)]">{{ usersError }}</p>
+        <p v-else-if="!filteredUsers.length" class="text-sm text-[var(--color-text-muted)]">No users.</p>
+        <ul v-else class="max-h-[70vh] space-y-1 overflow-y-auto">
+          <li v-for="u in filteredUsers" :key="u.user">
+            <button type="button" :disabled="isSaving"
+              class="w-full rounded px-2 py-1.5 text-left text-sm"
+              :class="u.user === editingUser ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'hover:bg-[var(--color-surface-raised)]'"
+              @click="selectUser(u)">
+              <span class="block truncate font-semibold">{{ u.user }}</span>
+              <span class="block truncate text-xs opacity-75">
+                {{ u.customer_name || u.customer }}<span v-if="!u.enabled"> · Disabled</span>
+              </span>
+            </button>
+          </li>
+        </ul>
+      </aside>
+
+      <form class="min-w-0 flex-1 space-y-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6" @submit.prevent="submitForm">
+        <h2 class="text-base font-bold">{{ editingUser ? `Edit ${editingUser}` : 'Create Customer User' }}</h2>
         <div>
           <label for="username" class="mb-1 block text-sm font-semibold">Username (login email)</label>
           <div class="flex rounded border border-[var(--color-border)] bg-[var(--color-bg)] focus-within:border-[var(--color-info)]">
             <input id="username" v-model.trim="username" type="text" autocomplete="off" required :disabled="isSaving || !!createdUser"
               class="min-w-0 flex-1 rounded-l bg-transparent px-3 py-2 focus:outline-none" @input="stripEmailDomain" />
-            <span class="flex items-center border-l border-[var(--color-border)] px-3 text-sm text-[var(--color-text-muted)]">{{ LOGIN_DOMAIN }}</span>
+            <span class="flex items-center border-l border-[var(--color-border)] px-3 text-sm text-[var(--color-text-muted)]">{{ loginDomain }}</span>
           </div>
           <p v-if="username" class="mt-1 text-xs text-[var(--color-text-muted)]">Login: {{ loginEmail }}</p>
         </div>
@@ -67,20 +95,22 @@
 
         <div v-if="!createdUser">
           <label for="password" class="mb-1 block text-sm font-semibold">Password</label>
-          <input id="password" v-model="password" type="password" autocomplete="new-password" required :disabled="isSaving"
+          <input id="password" v-model="password" type="password" autocomplete="new-password" :required="!editingUser" :disabled="isSaving"
             @input="passwordFromMobile = false"
             class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 focus:border-[var(--color-info)] focus:outline-none" />
-          <p class="mt-1 text-xs text-[var(--color-text-muted)]">The site's password policy applies.</p>
+          <p class="mt-1 text-xs text-[var(--color-text-muted)]">
+            {{ editingUser ? 'Leave blank to keep the current password. ' : '' }}The site's password policy applies.
+          </p>
         </div>
 
         <p v-if="error" role="alert" class="rounded border border-[var(--color-danger)] p-3 text-sm text-[var(--color-danger)]">{{ error }}</p>
         <p v-if="success" role="status" class="rounded border border-[var(--color-success)] p-3 text-sm text-[var(--color-success)]">{{ success }}</p>
 
-        <button type="submit" :disabled="isSaving || isLoadingCustomers || !!success"
+        <button type="submit" :disabled="isSaving || isLoadingCustomers || (!!success && !editingUser)"
           class="rounded bg-[var(--color-info)] px-4 py-2 font-semibold text-[var(--color-text-on-highlight)] disabled:opacity-50">
-          {{ isSaving ? 'Saving...' : createdUser ? 'Retry Customer Link' : 'Create User' }}
+          {{ isSaving ? 'Saving...' : editingUser ? 'Save Changes' : createdUser ? 'Retry Customer Link' : 'Create User' }}
         </button>
-        <button v-if="success" type="button" class="ml-3 rounded border border-[var(--color-border)] px-4 py-2" @click="resetForm">Create Another</button>
+        <button v-if="success && !editingUser" type="button" class="ml-3 rounded border border-[var(--color-border)] px-4 py-2" @click="resetForm">Create Another</button>
       </form>
     </main>
   </div>
@@ -106,7 +136,9 @@ const success = ref('')
 
 // Logins are always on this domain; the field takes only the part before @.
 const LOGIN_DOMAIN = '@ctr.com'
-const loginEmail = computed(() => username.value ? `${username.value}${LOGIN_DOMAIN}` : '')
+// An edited user keeps its own domain; new users get LOGIN_DOMAIN.
+const loginDomain = ref(LOGIN_DOMAIN)
+const loginEmail = computed(() => username.value ? `${username.value}${loginDomain.value}` : '')
 
 function stripEmailDomain() {
   // A pasted full address keeps only its local part.
@@ -299,6 +331,81 @@ async function loadCustomers() {
   }
 }
 
+// ── Existing users (left panel) ──
+const users = ref([])
+const userQuery = ref('')
+const isLoadingUsers = ref(false)
+const usersError = ref('')
+// Login of the user open for editing; '' means the form creates a new user.
+const editingUser = ref('')
+
+const filteredUsers = computed(() => {
+  const terms = userQuery.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  if (!terms.length) return users.value
+  return users.value.filter((u) => {
+    const hay = `${u.user} ${u.customer} ${u.customer_name || ''}`.toLowerCase()
+    return terms.every(t => hay.includes(t))
+  })
+})
+
+async function loadUsers() {
+  isLoadingUsers.value = true
+  usersError.value = ''
+  try {
+    users.value = await frappeGet('ssplbilling.api.customersearch_api.get_customer_users') || []
+  } catch (e) {
+    usersError.value = 'Could not load users: ' + e.message
+  } finally {
+    isLoadingUsers.value = false
+  }
+}
+
+function splitLogin(login) {
+  const at = login.indexOf('@')
+  return at === -1 ? [login, ''] : [login.slice(0, at), login.slice(at)]
+}
+
+function selectUser(u) {
+  if (isSaving.value) return
+  resetForm()
+  editingUser.value = u.user
+  ;[username.value, loginDomain.value] = splitLogin(u.user)
+  selectCustomer(customers.value.find(c => c.name === u.customer) || { name: u.customer, customer_name: u.customer_name })
+}
+
+function submitForm() {
+  return editingUser.value ? saveUser() : createUser()
+}
+
+async function saveUser() {
+  if (isSaving.value) return
+  error.value = ''
+  success.value = ''
+  if (!username.value || !customer.value) {
+    error.value = 'Enter a username and linked customer.'
+    return
+  }
+  isSaving.value = true
+  try {
+    const res = await frappePost('ssplbilling.api.customersearch_api.update_customer_user', {
+      user: editingUser.value,
+      new_user: loginEmail.value,
+      customer: customer.value,
+      password: password.value || '',
+    }, { silent: true })
+    editingUser.value = res.user
+    ;[username.value, loginDomain.value] = splitLogin(res.user)
+    password.value = ''
+    passwordFromMobile.value = false
+    success.value = `User ${res.user} saved.`
+    loadUsers()
+  } catch (e) {
+    error.value = 'Could not save user: ' + e.message
+  } finally {
+    isSaving.value = false
+  }
+}
+
 async function createUser() {
   if (isSaving.value || success.value) return
   error.value = ''
@@ -334,6 +441,7 @@ async function createUser() {
       },
     }, { silent: true })
     success.value = `User ${createdUser.value} created and linked to customer ${customer.value}.`
+    loadUsers()
   } catch (e) {
     error.value = createdUser.value
       ? `User ${createdUser.value} was created, but the customer link failed: ${e.message}. Retry the customer link.`
@@ -351,6 +459,8 @@ function resetForm() {
   passwordFromMobile.value = false
   resetPricing()
   createdUser.value = ''
+  editingUser.value = ''
+  loginDomain.value = LOGIN_DOMAIN
   error.value = ''
   success.value = ''
 }
@@ -358,6 +468,7 @@ function resetForm() {
 onMounted(() => {
   loadCustomers()
   loadPriceLists()
+  loadUsers()
   document.addEventListener('mousedown', onClickOutside)
 })
 onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
