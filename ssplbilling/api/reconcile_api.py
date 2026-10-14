@@ -308,6 +308,7 @@ def get_unlinked_entries(party_type, party):
 			paid_amount, unallocated_amount,
 			mode_of_payment,
 			IFNULL(remarks, '') AS remarks,
+			IFNULL(reference_no, '') AS reference_no,
 			CASE WHEN payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END AS direction
 		FROM `tabPayment Entry`
 		WHERE docstatus = 1
@@ -440,7 +441,7 @@ def get_outstanding_docs(party_type, party):
 		si_docs = frappe.db.sql(
 			"""
 			SELECT name, posting_date, grand_total, outstanding_amount,
-			       customer_name AS party_name, is_return, 'Sales Invoice' as doctype
+			       customer_name AS party_name, is_return, return_against, 'Sales Invoice' as doctype
 			FROM `tabSales Invoice`
 			WHERE docstatus = 1 AND customer = %s
 			      AND ABS(outstanding_amount) > 0.005 AND company = %s
@@ -458,7 +459,7 @@ def get_outstanding_docs(party_type, party):
 		pi_docs = frappe.db.sql(
 			"""
 			SELECT name, posting_date, grand_total, outstanding_amount,
-			       supplier_name AS party_name, is_return, 'Purchase Invoice' as doctype
+			       supplier_name AS party_name, is_return, return_against, 'Purchase Invoice' as doctype
 			FROM `tabPurchase Invoice`
 			WHERE docstatus = 1 AND supplier = %s
 			      AND ABS(outstanding_amount) > 0.005 AND company = %s
@@ -664,6 +665,11 @@ def post_reconciliation(party_type, party, allocations, company=None):
 			})
 
 	# 2. Build allocation rows.
+	# ERPNext rewrites a JE row to (unadjusted - allocated) once per allocation, on
+	# the same in-memory document, so a row split across several bills must pass
+	# what is left of it each time, not the raw amount again.
+	je_row_used = {}
+	je_row_available = {}
 	for alloc in allocations:
 		allocated = float(alloc["amount"])
 		unreconciled = float(alloc.get("unreconciled_amount") or alloc["amount"])
@@ -672,8 +678,12 @@ def post_reconciliation(party_type, party, allocations, company=None):
 		if alloc["payment_type"] == "Journal Entry" and ref_row:
 			# unadjusted_amount must be the JE row's raw amount, not its unallocated
 			# balance, or ERPNext rewrites the row short and unbalances the entry.
-			unadjusted = _get_je_row_unadjusted_amount(ref_row, party_type)
-			available = _get_je_row_available_amount(party_type, party, ref_row)
+			used = je_row_used.get(ref_row, 0.0)
+			unadjusted = _get_je_row_unadjusted_amount(ref_row, party_type) - used
+			if ref_row not in je_row_available:
+				je_row_available[ref_row] = _get_je_row_available_amount(party_type, party, ref_row)
+			available = je_row_available[ref_row] - used
+			je_row_used[ref_row] = used + allocated
 			if allocated - available > 0.009:
 				frappe.throw(
 					f"Allocated amount {allocated} exceeds the unreconciled balance {available} "
@@ -702,11 +712,18 @@ def post_reconciliation(party_type, party, allocations, company=None):
 
 
 # ── Auto reconciliation ───────────────────────────────────────────────────────
-# Equal individual amounts are matched by default. A zero-balance ledger may
-# also allocate oldest-first across entries when both eligible sides balance.
-# The preview is what the Proceed button posts back.
+# Each ledger is matched in stages, most certain first, and every stage only
+# uses what the earlier stages left over:
+#   return       – credit / debit note against the invoice it was returned against
+#   exact        – one payment and one outstanding entry of the same amount
+#   reference    – the invoice number appears in the payment's remarks / reference no
+#   combo        – one payment equal to the sum of two or three outstanding entries
+#   oldest_first – whatever is left, oldest payment to oldest bill, partial allowed
+# The preview is what the Proceed / Apply buttons post back.
 
 AUTO_MATCH_TOLERANCE = 0.01
+COMBO_POOL = 20  # outstanding entries considered per payment for combo matches
+MATCH_ORDER = ("return", "exact", "reference", "combo", "oldest_first")
 
 
 def _build_reconcile_sides(party_type, party):
@@ -736,6 +753,8 @@ def _build_reconcile_sides(party_type, party):
 			"reference_row": row.get("reference_row") or None,
 			"posting_date": str(row.get("posting_date") or ""),
 			"amount": amount,
+			"remarks": row.get("remarks") or "",
+			"reference_no": row.get("reference_no") or "",
 		}
 		if (row.get("direction") or pay_dir) == pay_dir:
 			payments.append(entry)
@@ -753,99 +772,112 @@ def _build_reconcile_sides(party_type, party):
 			"posting_date": str(doc.get("posting_date") or ""),
 			"amount": abs(amount),
 		}
-		# Return invoices (credit / debit notes) are credits waiting to be linked.
-		# They are left out of auto matching: Payment Reconciliation wants a PE or
-		# JE on the payment side, so those stay a manual decision.
 		if amount > 0:
 			invoices.append(entry)
+		else:
+			# Return invoices (credit / debit notes) are credits waiting to be linked;
+			# Payment Reconciliation posts them through a Credit / Debit Note JE.
+			entry["return_against"] = doc.get("return_against") or ""
+			payments.append(entry)
 
 	return payments, invoices
 
 
-def _match_equal_amounts(payments, invoices):
-	"""Pair each payment with one outstanding entry of the same amount.
-
-	Oldest entries first on both sides, one row used at most once, and only exact
-	amounts (within a paisa) pair up — no partial allocation.
-	"""
-	pairs = []
-	available = sorted(invoices, key=lambda r: (r["posting_date"], r["name"]))
-	used = set()
-
-	for pay in sorted(payments, key=lambda r: (r["posting_date"], r["name"])):
-		for idx, inv in enumerate(available):
-			if idx in used:
-				continue
-			if abs(pay["amount"] - inv["amount"]) > AUTO_MATCH_TOLERANCE:
-				continue
-			used.add(idx)
-			pairs.append((pay, inv))
-			break
-
-	return pairs
-
-
-def _ledger_is_zero(party_type, party):
-	"""Require one party account, matching the account used for reconciliation."""
-	rows = frappe.db.sql(
-		"""SELECT account, SUM(debit_in_account_currency - credit_in_account_currency) AS balance
-		FROM `tabGL Entry`
-		WHERE company = %s AND party_type = %s AND party = %s AND is_cancelled = 0
-		GROUP BY account""",
-		(_get_company(), party_type, party), as_dict=True,
-	)
-	return (
-		len(rows) == 1
-		and rows[0].account == _get_party_account(party_type, party)
-		and abs(float(rows[0].balance or 0)) < 0.005
-	)
-
-
-def _match_balanced_ledger(payments, invoices):
-	"""Fully allocate balanced sides oldest-first using integer paise.
-
-	Return no matches when eligible entries do not balance, even if the GL is
-	zero (for example, a return invoice may need separate manual treatment).
-	"""
+def _paise(amount):
 	from decimal import Decimal, ROUND_HALF_UP
 
-	def paise(amount):
-		return int((Decimal(str(amount)) * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+	return int((Decimal(str(amount)) * 100).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
+def _mentions(text, name):
+	"""True when `name` appears in `text` as a whole token (SINV-1 does not match SINV-12)."""
+	import re
+
+	if len(name) < 5 or not text:
+		return False
+	return re.search(r"(?<![A-Z0-9])" + re.escape(name.upper()) + r"(?![A-Z0-9])", text) is not None
+
+
+def _plan_allocations(payments, invoices):
+	"""Allocate payments to outstanding entries in stages; returns (pay, inv, amount, match_type).
+
+	Works in integer paise so partial allocations never drift. Input rows are not
+	modified, and a document is never allocated against itself.
+	"""
+	from itertools import combinations
 
 	order = lambda row: (row["posting_date"], row["name"], row.get("reference_row") or "")
-	pays = [(row, paise(row["amount"])) for row in sorted(payments, key=order)]
-	invs = [(row, paise(row["amount"])) for row in sorted(invoices, key=order)]
-	if not pays or not invs or any(amount <= 0 for _, amount in pays + invs):
-		return []
-	if sum(amount for _, amount in pays) != sum(amount for _, amount in invs):
-		return []
+	pays = [{"row": r, "left": _paise(r["amount"])} for r in sorted(payments, key=order)]
+	invs = [{"row": r, "left": _paise(r["amount"])} for r in sorted(invoices, key=order)]
+	pays = [p for p in pays if p["left"] > 0]
+	invs = [i for i in invs if i["left"] > 0]
+	plan = []
 
-	pairs = []
-	p = i = 0
-	pay_left, inv_left = pays[0][1], invs[0][1]
-	while p < len(pays) and i < len(invs):
-		pay, inv = pays[p][0], invs[i][0]
-		# A document cannot be reconciled against itself.
-		if (pay["doctype"], pay["name"]) == (inv["doctype"], inv["name"]):
-			return []
-		amount = min(pay_left, inv_left)
-		pairs.append((pay, inv, amount / 100))
-		pay_left -= amount
-		inv_left -= amount
-		if not pay_left:
-			p += 1
-			if p < len(pays):
-				pay_left = pays[p][1]
-		if not inv_left:
-			i += 1
-			if i < len(invs):
-				inv_left = invs[i][1]
-	return pairs
+	def same_doc(p, i):
+		return (p["row"]["doctype"], p["row"]["name"]) == (i["row"]["doctype"], i["row"]["name"])
+
+	def take(p, i, amount, kind):
+		plan.append((p["row"], i["row"], amount / 100, kind))
+		p["left"] -= amount
+		i["left"] -= amount
+
+	# 1. Credit / debit note against the invoice it returns
+	for p in pays:
+		against = p["row"].get("return_against")
+		if not against:
+			continue
+		for i in invs:
+			if i["left"] and i["row"]["doctype"] == p["row"]["doctype"] and i["row"]["name"] == against:
+				take(p, i, min(p["left"], i["left"]), "return")
+				break
+
+	# 2. Equal amounts, oldest first, one to one
+	for p in pays:
+		if not p["left"]:
+			continue
+		for i in invs:
+			if i["left"] == p["left"] and not same_doc(p, i):
+				take(p, i, p["left"], "exact")
+				break
+
+	# 3. Invoice number written on the payment
+	for p in pays:
+		text = f"{p['row'].get('remarks') or ''} {p['row'].get('reference_no') or ''}".upper()
+		if not p["left"] or not text.strip():
+			continue
+		for i in invs:
+			if not p["left"]:
+				break
+			if i["left"] and not same_doc(p, i) and _mentions(text, i["row"]["name"]):
+				take(p, i, min(p["left"], i["left"]), "reference")
+
+	# 4. One payment covering two or three whole bills
+	for p in pays:
+		if not p["left"]:
+			continue
+		pool = [i for i in invs if 0 < i["left"] < p["left"] and not same_doc(p, i)][:COMBO_POOL]
+		match = next(
+			(combo for size in (2, 3) for combo in combinations(pool, size)
+			 if sum(i["left"] for i in combo) == p["left"]),
+			None,
+		)
+		for i in match or ():
+			take(p, i, i["left"], "combo")
+
+	# 5. Everything left, oldest payment to oldest bill
+	for p in pays:
+		for i in invs:
+			if not p["left"]:
+				break
+			if i["left"] and not same_doc(p, i):
+				take(p, i, min(p["left"], i["left"]), "oldest_first")
+
+	return plan
 
 
 @frappe.whitelist()
 def preview_auto_reconcile(party_type=None, party=None):
-	"""Equal-amount and zero-balance allocations for the confirmation dialog."""
+	"""Staged allocations for the confirmation dialog (every ledger, or just one)."""
 	if party_type and party:
 		parties = [{"party_type": party_type, "party": party, "label": party}]
 	else:
@@ -856,16 +888,13 @@ def preview_auto_reconcile(party_type=None, party=None):
 	for row in parties:
 		try:
 			payments, invoices = _build_reconcile_sides(row["party_type"], row["party"])
-			matches = _match_balanced_ledger(payments, invoices)
-			zero_balance = bool(matches) and _ledger_is_zero(row["party_type"], row["party"])
-			if not zero_balance:
-				matches = [(pay, inv, pay["amount"]) for pay, inv in _match_equal_amounts(payments, invoices)]
+			plan = _plan_allocations(payments, invoices)
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "Auto reconcile preview failed")
 			skipped.append({"party": row.get("label") or row["party"], "reason": "Could not read entries"})
 			continue
 
-		for pay, inv, amount in matches:
+		for pay, inv, amount, kind in plan:
 			proposals.append(
 				{
 					"party_type": row["party_type"],
@@ -879,18 +908,45 @@ def preview_auto_reconcile(party_type=None, party=None):
 					"invoice_name": inv["name"],
 					"invoice_date": inv["posting_date"],
 					"amount": round(amount, 2),
-					"match_type": "zero_balance" if zero_balance else "equal_amount",
+					"match_type": kind,
 					"unreconciled_amount": pay["amount"],
 				}
 			)
 
-	proposals.sort(key=lambda p: (p["label"], p["payment_name"]))
+	# Ledgers stay together; inside one, the most certain matches come first
+	rank = {kind: n for n, kind in enumerate(MATCH_ORDER)}
+	proposals.sort(key=lambda p: (p["label"], p["party"], rank[p["match_type"]]))
 	return {
 		"proposals": proposals,
 		"total_amount": round(sum(p["amount"] for p in proposals), 2),
 		"party_count": len({(p["party_type"], p["party"]) for p in proposals}),
 		"skipped": skipped,
 	}
+
+
+def _check_plan_still_valid(party_type, party, rows):
+	"""Throw if the ledger changed since the preview so any row would over-allocate."""
+	payments, invoices = _build_reconcile_sides(party_type, party)
+	available = {}
+	for r in payments:
+		available[("pay", r["doctype"], r["name"], r.get("reference_row") or None)] = _paise(r["amount"])
+	for r in invoices:
+		key = ("inv", r["doctype"], r["name"])
+		available[key] = available.get(key, 0) + _paise(r["amount"])
+
+	wanted = {}
+	for r in rows:
+		for key in (
+			("pay", r["payment_type"], r["payment_name"], r.get("reference_row") or None),
+			("inv", r["invoice_type"], r["invoice_name"]),
+		):
+			wanted[key] = wanted.get(key, 0) + _paise(r["amount"])
+
+	for key, amount in wanted.items():
+		if amount - available.get(key, 0) > 1:
+			frappe.throw(
+				f"{key[2]} changed since the preview. Refresh the auto reconcile preview and try again."
+			)
 
 
 @frappe.whitelist()
@@ -927,8 +983,7 @@ def run_auto_reconcile(allocations):
 		savepoint = "auto_reconcile"
 		frappe.db.savepoint(savepoint)
 		try:
-			if any(r.get("match_type") == "zero_balance" for r in rows) and not _ledger_is_zero(p_type, p_name):
-				frappe.throw("Ledger balance changed since preview. Refresh the auto reconcile preview and try again.")
+			_check_plan_still_valid(p_type, p_name, rows)
 			post_reconciliation(p_type, p_name, payload)
 			reconciled += len(payload)
 		except Exception as e:

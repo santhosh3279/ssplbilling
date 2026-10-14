@@ -49,6 +49,17 @@
           </template>
         </button>
 
+        <!-- Auto Allocate (ledger view): fills the queue for review -->
+        <button
+          v-if="party"
+          @click="autoAllocateLedger"
+          :disabled="ledgerAutoLoading || isLoading || isSubmitting"
+          title="Match this ledger automatically: returns, exact amounts, invoice numbers in remarks, bill combinations, then oldest-first"
+          class="h-11 cursor-pointer rounded-xl bg-[var(--color-highlight)] px-5 text-xs font-black uppercase tracking-widest text-[var(--color-text-on-highlight)] hover:brightness-105 active:scale-95 disabled:opacity-40 transition-all shadow-md flex items-center justify-center gap-2"
+        >
+          {{ ledgerAutoLoading ? 'Matching…' : '⚡ Auto Allocate' }}
+        </button>
+
         <!-- Apply Reconcile Button -->
         <button
           v-if="party"
@@ -362,6 +373,7 @@
                 <span class="font-black text-[var(--color-warning)]">{{ alloc.payment_name }}</span>
                 <span class="text-[var(--color-text-muted)]">&rarr;</span>
                 <span class="font-black text-[var(--color-danger)]">{{ alloc.invoice_name }}</span>
+                <span v-if="alloc.match_type" class="rounded px-1.5 py-0.5 text-[11px] font-black uppercase tracking-wider" :class="matchClass(alloc.match_type)">{{ matchLabel(alloc.match_type) }}</span>
               </div>
               <div class="flex items-center gap-4">
                 <span class="font-mono font-black text-[var(--color-success)]">₹{{ fmt(alloc.amount) }}</span>
@@ -384,7 +396,7 @@
           <div>
             <h3 class="text-lg font-black uppercase tracking-widest text-[var(--color-text)]">Auto Reconcile Preview</h3>
             <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mt-0.5">
-              Equal amounts, plus oldest-first allocations for zero-balance ledgers
+              Returns → exact amounts → invoice no. in remarks → bill combinations → oldest-first
             </p>
           </div>
           <button
@@ -421,7 +433,7 @@
           <div v-else-if="!autoPreview.length" class="py-16 text-center space-y-2">
             <div class="text-5xl">🤷</div>
             <p class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">No automatic matches</p>
-            <p class="text-xs text-[var(--color-text-muted)]">No equal-amount matches or fully allocatable zero-balance ledgers were found.</p>
+            <p class="text-xs text-[var(--color-text-muted)]">No ledger has both an unlinked payment and an outstanding bill that can be paired.</p>
           </div>
 
           <div v-else class="space-y-5">
@@ -447,7 +459,7 @@
                   <span class="text-[var(--color-text-muted)]">&rarr;</span>
                   <span class="font-black text-[var(--color-danger)] truncate">{{ row.invoice_name }}</span>
                   <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">{{ shortType(row.invoice_type) }}</span>
-                  <span v-if="row.match_type === 'zero_balance'" class="text-[10px] font-bold text-[var(--color-info)]">Zero balance</span>
+                  <span class="rounded px-1.5 py-0.5 text-[10px] font-black uppercase tracking-wider" :class="matchClass(row.match_type)">{{ matchLabel(row.match_type) }}</span>
                 </div>
                 <span class="font-mono font-black text-[var(--color-success)] shrink-0">₹{{ fmt(row.amount) }}</span>
               </div>
@@ -805,7 +817,77 @@ async function submitReconciliation() {
   }
 }
 
-// ── Auto reconcile: equal amounts and zero-balance ledgers ──
+// ── Auto allocate (one ledger): server plans, the queue holds it for review ──
+const ledgerAutoLoading = ref(false)
+
+const MATCH_LABELS = {
+  return: 'Return',
+  exact: 'Exact',
+  reference: 'Ref',
+  combo: 'Combo',
+  oldest_first: 'Oldest-first',
+}
+function matchLabel(kind) {
+  return MATCH_LABELS[kind] || kind
+}
+// Oldest-first is the only guess: it gets the warning colour so it is checked first
+function matchClass(kind) {
+  return kind === 'oldest_first'
+    ? 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]'
+    : 'bg-[var(--color-success)]/15 text-[var(--color-success)]'
+}
+
+async function autoAllocateLedger() {
+  if (!party.value || ledgerAutoLoading.value) return
+  ledgerAutoLoading.value = true
+  try {
+    await fetchData() // plan against fresh balances, not ones already edited locally
+    queuedAllocations.value = []
+    selectedPaymentKey.value = ''
+    selectedInvoiceName.value = ''
+    allocAmount.value = 0
+    const res = await frappeGet('ssplbilling.api.reconcile_api.preview_auto_reconcile', {
+      party_type: partyType.value,
+      party: party.value,
+    })
+    let missed = 0
+    for (const row of res.proposals || []) {
+      const pay = payments.value.find(p =>
+        p.type === row.payment_type && p.name === row.payment_name &&
+        (p.reference_row || null) === (row.reference_row || null)
+      )
+      const inv = invoices.value.find(i => i.doctype === row.invoice_type && i.name === row.invoice_name)
+      const amt = Number(row.amount)
+      if (!pay || !inv || amt > pay.unallocated_amount + 0.01 || amt > inv.outstanding_amount + 0.01) {
+        missed++
+        continue
+      }
+      queuedAllocations.value.push({
+        payment_type: pay.type,
+        payment_name: pay.name,
+        reference_row: pay.reference_row || null,
+        invoice_type: inv.doctype,
+        invoice_name: inv.name,
+        amount: amt,
+        unreconciled_amount: pay.unallocated_amount,
+        match_type: row.match_type,
+      })
+      pay.unallocated_amount -= amt
+      inv.outstanding_amount -= amt
+    }
+    if (!queuedAllocations.value.length) {
+      alert('Nothing to allocate automatically for this ledger.')
+    } else if (missed) {
+      alert(`${missed} suggested allocation(s) no longer fit the current balances and were left out.`)
+    }
+  } catch (e) {
+    alert('Auto allocate failed: ' + e.message)
+  } finally {
+    ledgerAutoLoading.value = false
+  }
+}
+
+// ── Auto reconcile: every ledger, staged matching ──
 const showAutoModal = ref(false)
 const autoLoading = ref(false)
 const autoRunning = ref(false)
