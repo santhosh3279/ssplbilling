@@ -115,10 +115,18 @@ const lenses = ref([])
 const lensIndex = ref(0)
 const focusRing = ref(null)
 
-const NATIVE_FORMATS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'code_93', 'codabar', 'itf', 'qr_code']
+// 1D formats only: item labels carry linear barcodes, and each extra format costs decode time
+const NATIVE_FORMATS = ['code_128', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_39', 'code_93', 'codabar', 'itf']
 const SCAN_INTERVAL = 150
 const OCR_INTERVAL = 1200
-const FOUND_DELAY = 400
+// OCR (Tesseract WASM + language data) starts only if the bars have not read by then,
+// so it doesn't compete with the camera start-up and the bar decoders
+const OCR_START_DELAY = 2500
+const FOUND_DELAY = 150
+// Decoding a smaller copy of the aiming box is several times faster and still
+// leaves enough pixels per bar for labels filling the box
+const DECODE_WIDTH = 800
+const LENS_KEY = 'bs-last-lens'
 const DEFAULT_ZOOM = 2
 // Rough guide values for the hints only; decoding always runs regardless
 const DARK_BELOW = 45
@@ -136,6 +144,7 @@ const rejectedOcr = new Set()
 let scanTimer = null
 let foundTimer = null
 let focusTimer = null
+let ocrStartTimer = null
 let tickCount = 0
 let lastTickAt = 0
 let fpsWindowStart = 0
@@ -170,6 +179,7 @@ function found(text) {
   clearTimeout(scanTimer)
   const code = String(text).trim()
   foundCode.value = code
+  try { localStorage.setItem(LENS_KEY, track?.getSettings?.().deviceId || '') } catch (e) { /* storage blocked */ }
   try { navigator.vibrate?.(80) } catch (e) { /* not supported */ }
   // Freeze the frame so the code is shown over what was scanned; stopping the
   // tracks right away blanks the video on some browsers
@@ -251,12 +261,13 @@ async function initZxing() {
     import('@zxing/browser'),
     import('@zxing/library'),
   ])
+  // No TRY_HARDER: it multiplies the decode time on the main thread, and the next
+  // frame (150 ms later) is a cheaper retry than a slow, exhaustive pass on this one
   const hints = new Map()
-  hints.set(DecodeHintType.TRY_HARDER, true)
   hints.set(DecodeHintType.POSSIBLE_FORMATS, [
     BarcodeFormat.CODE_128, BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A,
     BarcodeFormat.UPC_E, BarcodeFormat.CODE_39, BarcodeFormat.CODE_93, BarcodeFormat.ITF,
-    BarcodeFormat.CODABAR, BarcodeFormat.QR_CODE,
+    BarcodeFormat.CODABAR,
   ])
   zxingReader = new BrowserMultiFormatReader(hints)
 }
@@ -365,7 +376,7 @@ async function tick() {
     if (video && video.readyState >= 2 && video.videoWidth) {
       tickCount++
       countFrame()
-      const canvas = drawCrop(scanCanvas, boxInVideo(), 1280)
+      const canvas = drawCrop(scanCanvas, boxInVideo(), DECODE_WIDTH)
       if (tickCount % 4 === 0) measureQuality(canvas)
       const code = await decodeBars(canvas)
       if (code) return found(code)
@@ -387,9 +398,16 @@ function watchAlive() {
   }, 500)
 }
 
+/** Continuous autofocus, re-sent with every constraint change so a zoom or tap-to-focus
+ * call can't leave the camera on a fixed focus. */
+function focusConstraint() {
+  const caps = track?.getCapabilities?.() || {}
+  return caps.focusMode?.includes('continuous') ? { focusMode: 'continuous' } : {}
+}
+
 async function setZoom(value) {
   try {
-    await track.applyConstraints({ advanced: [{ zoom: value }] })
+    await track.applyConstraints({ advanced: [{ zoom: value, ...focusConstraint() }] })
     zoom.value = track.getSettings?.().zoom || value
   } catch (e) { /* zoom not applied */ }
   updateStatus()
@@ -453,6 +471,8 @@ async function switchLens() {
   try {
     await startCamera(lenses.value[next].deviceId)
     lensIndex.value = next
+    // The operator picked this lens because it focuses: open it straight away next time
+    try { localStorage.setItem(LENS_KEY, lenses.value[next].deviceId) } catch (e) { /* storage blocked */ }
   } catch (e) {
     console.error('[BarcodeScanner] lens', e)
     // Fall back to whatever the browser picks
@@ -470,18 +490,20 @@ async function tapToFocus(e) {
   focusRing.value = { x, y, key: Date.now() }
   clearTimeout(focusTimer)
   const caps = track.getCapabilities?.() || {}
-  const advanced = {}
+  const advanced = { zoom: zoom.value }
   if (caps.pointsOfInterest || 'pointsOfInterest' in (track.getSettings?.() || {})) {
     advanced.pointsOfInterest = [{ x: x / view.width, y: y / view.height }]
   }
   if (caps.focusMode?.includes('single-shot')) advanced.focusMode = 'single-shot'
+  if (!caps.zoom) delete advanced.zoom
   if (Object.keys(advanced).length) {
     try { await track.applyConstraints({ advanced: [advanced] }) } catch (err) { /* ignore */ }
   }
   focusTimer = setTimeout(async () => {
     focusRing.value = null
     if (track && caps.focusMode?.includes('continuous')) {
-      try { await track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }) } catch (err) { /* ignore */ }
+      const keep = caps.zoom ? { zoom: zoom.value } : {}
+      try { await track.applyConstraints({ advanced: [{ ...keep, focusMode: 'continuous' }] }) } catch (err) { /* ignore */ }
     }
     updateStatus()
   }, 1500)
@@ -499,8 +521,15 @@ async function start() {
     error.value = cameraErrorMessage(null)
     return
   }
+  // Reopen the lens that last read a code: on multi-camera phones the browser's default
+  // back camera is often the ultra-wide one, which cannot focus at barcode distance
+  let lastLens = ''
+  try { lastLens = localStorage.getItem(LENS_KEY) || '' } catch (e) { /* storage blocked */ }
   try {
-    await Promise.all([startCamera(), initNative()])
+    await Promise.all([
+      (lastLens ? startCamera(lastLens).catch(() => startCamera()) : startCamera()),
+      initNative(),
+    ])
   } catch (e) {
     console.error('[BarcodeScanner]', e)
     error.value = cameraErrorMessage(e)
@@ -513,7 +542,9 @@ async function start() {
   watchAlive()
   tick()
   initZxing().then(updateStatus).catch(e => console.error('[BarcodeScanner] ZXing', e))
-  initOcr().then(updateStatus).catch(e => console.error('[BarcodeScanner] OCR', e))
+  ocrStartTimer = setTimeout(() => {
+    if (!done) initOcr().then(updateStatus).catch(e => console.error('[BarcodeScanner] OCR', e))
+  }, OCR_START_DELAY)
 }
 
 function stopStream() {
@@ -526,6 +557,7 @@ function stop() {
   clearTimeout(scanTimer)
   scanTimer = null
   clearTimeout(focusTimer)
+  clearTimeout(ocrStartTimer)
   clearInterval(aliveTimer)
   stopStream()
   ocrWorker?.terminate()

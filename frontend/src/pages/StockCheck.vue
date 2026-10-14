@@ -410,6 +410,10 @@ onMounted(() => {
   window.addEventListener('resize', fitViewport)
   window.addEventListener('keydown', onPageKeydown)
   searchRef.value?.focus()
+  // Fetch the ZXing decoder now so the camera scanner can read bars from its first
+  // frame on phones without a native BarcodeDetector (iOS Safari)
+  import('@zxing/browser').catch(() => { /* loaded again when the scanner opens */ })
+  import('@zxing/library').catch(() => {})
   clockTimer = setInterval(() => { now.value = Date.now() }, 15000)
 })
 
