@@ -238,6 +238,15 @@ export const PUBLIC_HRMS_ROUTES = []
 // Tiles that are never gated by the license `features` list (free with every license)
 const LICENSE_FREE_TILES = new Set(['stock-check'])
 
+// Tiles licensed under another tile's feature instead of their own id.
+// Customer users exist to log in to the catalogue, so they ride on the Catalogue Editor licence.
+const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display' }
+
+function isLicensedFeature(features, tileId) {
+  const feature = LICENSE_FEATURE_ALIAS[tileId] || tileId
+  return features.includes(feature) || features.includes('*')
+}
+
 function getTileIdForRoute(routeName) {
   const hrmsRoutes = [
     'Hrms',
@@ -276,7 +285,7 @@ export function canAccessRoute(routeName) {
     }
     if (Array.isArray(license.features)) {
       const tileId = getTileIdForRoute(routeName)
-      if (tileId && !LICENSE_FREE_TILES.has(tileId) && !license.features.includes(tileId) && !license.features.includes('*')) {
+      if (tileId && !LICENSE_FREE_TILES.has(tileId) && !isLicensedFeature(license.features, tileId)) {
         return false
       }
     }
@@ -412,7 +421,7 @@ export function canAccessTile(tileId) {
     if (!license.valid || license.days_remaining < 0) {
       return false
     }
-    if (Array.isArray(license.features) && !license.features.includes(tileId) && !license.features.includes('*')) {
+    if (Array.isArray(license.features) && !isLicensedFeature(license.features, tileId)) {
       return false
     }
   }
