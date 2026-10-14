@@ -1,42 +1,74 @@
 <template>
-  <div class="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
-    <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
-      <div class="flex items-center gap-4">
-        <button type="button" class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]" @click="router.push('/')">← Dashboard</button>
-        <h1 class="text-lg font-bold">Customer Users</h1>
-      </div>
-    </header>
-
-    <main class="mx-auto flex max-w-5xl flex-col gap-6 p-6 md:flex-row md:items-start">
-      <!-- Existing customer users; picking one opens it in the form for editing -->
-      <aside class="w-full shrink-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 md:w-72">
-        <div class="mb-3 flex items-center justify-between">
-          <h2 class="text-sm font-bold">Existing Users</h2>
-          <button type="button" class="rounded border border-[var(--color-info)] px-2 py-0.5 text-xs font-semibold text-[var(--color-info)] disabled:opacity-50"
-            :disabled="isSaving" @click="resetForm">+ New User</button>
+  <div class="flex h-screen overflow-hidden bg-[var(--color-bg)] font-sans text-[var(--color-text)]">
+    <!-- Existing customer users (styled like the Item_Invoice_Template sidebar); picking one opens it for editing -->
+    <aside
+      class="flex shrink-0 flex-col overflow-hidden border-r border-[var(--color-border)] bg-[var(--color-bg)] transition-all duration-300 ease-in-out"
+      :class="isSidebarCollapsed ? 'w-0 border-r-0' : 'w-[20%] min-w-[16rem] xl:w-[15%]'"
+    >
+      <div :class="isSidebarCollapsed ? 'invisible opacity-0' : 'visible opacity-100'" class="flex h-full flex-col transition-opacity duration-200">
+        <div class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)] p-2 text-center">
+          <div class="text-xl font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Users</div>
         </div>
-        <input v-model="userQuery" type="text" autocomplete="off" placeholder="Search login or customer"
-          class="mb-2 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-sm focus:border-[var(--color-info)] focus:outline-none" />
-        <p v-if="isLoadingUsers" class="text-sm text-[var(--color-text-muted)]">Loading...</p>
-        <p v-else-if="usersError" role="alert" class="text-sm text-[var(--color-danger)]">{{ usersError }}</p>
-        <p v-else-if="!filteredUsers.length" class="text-sm text-[var(--color-text-muted)]">No users.</p>
-        <ul v-else class="max-h-[70vh] space-y-1 overflow-y-auto">
-          <li v-for="u in filteredUsers" :key="u.user">
-            <button type="button" :disabled="isSaving"
-              class="w-full rounded px-2 py-1.5 text-left text-sm"
-              :class="u.user === editingUser ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'hover:bg-[var(--color-surface-raised)]'"
-              @click="selectUser(u)">
-              <span class="block truncate font-semibold">{{ u.user }}</span>
-              <span class="block truncate text-xs opacity-75">
-                {{ u.customer_name || u.customer }}<span v-if="!u.enabled"> · Disabled</span>
-              </span>
-            </button>
-          </li>
-        </ul>
-      </aside>
 
-      <form class="min-w-0 flex-1 space-y-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6" @submit.prevent="submitForm">
-        <h2 class="text-base font-bold">{{ editingUser ? `Edit ${editingUser}` : 'Create Customer User' }}</h2>
+        <div class="flex flex-col gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]/20 p-3">
+          <div class="group relative">
+            <input v-model="userQuery" type="text" autocomplete="off" placeholder="Search users..."
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-2 pl-10 pr-3 text-[15px] font-bold text-[var(--color-text)] placeholder-[var(--color-text-muted)] outline-none transition-all focus:border-[var(--color-focus)] focus:ring-4 focus:ring-[var(--color-focus)]/10"
+              @keydown.down.prevent="focusUserRow(0)" />
+            <svg class="absolute left-3.5 top-2.5 text-[var(--color-text-muted)] transition-colors group-focus-within:text-[var(--color-info)]" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+          <button type="button" :disabled="isSaving" @click="resetForm"
+            class="w-full rounded-xl border py-1.5 text-[15px] font-bold uppercase transition-all disabled:opacity-50"
+            :class="editingUser ? 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)]' : 'border-[var(--color-info)] bg-[var(--color-info)]/20 text-[var(--color-info)] shadow-sm'">
+            + New User
+          </button>
+        </div>
+
+        <div class="scrollbar-none flex-1 overflow-y-auto">
+          <div v-if="isLoadingUsers" class="p-4 text-center text-lg text-[var(--color-text-muted)]">Loading...</div>
+          <div v-else-if="usersError" role="alert" class="p-4 text-center text-lg text-[var(--color-danger)]">{{ usersError }}</div>
+          <div v-else-if="!filteredUsers.length" class="p-4 text-center text-lg italic text-[var(--color-text-muted)]">No users found</div>
+          <template v-else>
+          <div v-for="(u, idx) in filteredUsers" :key="u.user"
+            :ref="el => { userRowRefs[idx] = el }"
+            tabindex="0"
+            class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 outline-none transition-colors focus:border-l-2 focus:border-l-[var(--color-focus)] focus:bg-[var(--color-focus)]"
+            :class="{ 'border-l-2 border-l-[var(--color-focus)] bg-[var(--color-focus)]': editingUser === u.user }"
+            @click="selectUser(u)"
+            @keydown.enter="selectUser(u)"
+            @keydown.up.prevent="focusUserRow(idx - 1)"
+            @keydown.down.prevent="focusUserRow(idx + 1)"
+          >
+            <div class="flex min-w-0 items-center gap-1.5">
+              <span class="h-2 w-2 shrink-0 rounded-full" :class="u.enabled ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'"
+                :title="u.enabled ? 'Enabled' : 'Disabled'"></span>
+              <span class="truncate font-mono text-xl group-focus:font-bold group-focus:text-[var(--color-text-on-focus)]"
+                :class="editingUser === u.user ? 'font-bold text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">{{ u.user }}</span>
+            </div>
+            <div class="truncate text-lg group-focus:text-[var(--color-text-on-focus)]"
+              :class="editingUser === u.user ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+              {{ u.customer_name || u.customer }}
+            </div>
+          </div>
+          </template>
+        </div>
+      </div>
+    </aside>
+
+    <div class="flex flex-1 flex-col overflow-hidden">
+      <div class="flex items-center gap-3 border-b border-[var(--color-border)]/60 bg-[var(--color-surface-raised)]/60 px-4 py-2">
+        <button type="button" class="mr-1 flex items-center justify-center rounded p-1.5 text-[var(--color-text-muted)] transition-colors hover:bg-[var(--color-surface-raised)]"
+          :title="isSidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'" @click="isSidebarCollapsed = !isSidebarCollapsed">
+          <svg v-if="isSidebarCollapsed" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"></polyline><polyline points="18 17 13 12 18 7"></polyline></svg>
+        </button>
+        <button type="button" class="rounded px-2 py-1 text-2xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]" @click="router.push('/')">&larr; Back</button>
+        <span class="text-2xl text-[var(--color-border)]">|</span>
+        <span class="text-2xl font-semibold text-[var(--color-text)]">{{ editingUser ? `Edit ${editingUser}` : 'Create Customer User' }}</span>
+      </div>
+
+    <main class="flex-1 overflow-y-auto p-6">
+      <form class="mx-auto max-w-xl space-y-5 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6" @submit.prevent="submitForm">
         <div>
           <label for="username" class="mb-1 block text-sm font-semibold">Username (login email)</label>
           <div class="flex rounded border border-[var(--color-border)] bg-[var(--color-bg)] focus-within:border-[var(--color-info)]">
@@ -113,6 +145,7 @@
         <button v-if="success && !editingUser" type="button" class="ml-3 rounded border border-[var(--color-border)] px-4 py-2" @click="resetForm">Create Another</button>
       </form>
     </main>
+    </div>
   </div>
 </template>
 
@@ -340,6 +373,13 @@ const usersError = ref('')
 const editingUser = ref('')
 // Customer the edited user was loaded with; the link is rewritten only when this changes.
 const editingCustomer = ref('')
+const isSidebarCollapsed = ref(false)
+const userRowRefs = ref([])
+
+function focusUserRow(idx) {
+  if (idx < 0 || idx >= filteredUsers.value.length) return
+  userRowRefs.value[idx]?.focus()
+}
 
 const filteredUsers = computed(() => {
   const terms = userQuery.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
