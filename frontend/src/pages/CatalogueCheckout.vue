@@ -1,5 +1,5 @@
 <template>
-  <main class="min-h-screen bg-[var(--color-bg)] p-6 text-[var(--color-text)]">
+  <main class="h-full overflow-y-auto bg-[var(--color-bg)] p-6 pb-[calc(6rem+env(safe-area-inset-bottom))] text-[var(--color-text)] sm:pb-6">
     <div class="mx-auto max-w-3xl space-y-6">
       <header>
         <RouterLink to="/catalogue-cart" class="text-sm text-indigo-500 hover:underline">← Cart</RouterLink>

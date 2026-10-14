@@ -1,5 +1,5 @@
 <template>
-  <main class="h-[100dvh] overflow-y-auto bg-[var(--color-bg)] p-6 pb-[calc(6rem+env(safe-area-inset-bottom))] text-[var(--color-text)] sm:pb-6">
+  <main class="h-full overflow-y-auto bg-[var(--color-bg)] p-6 pb-[calc(6rem+env(safe-area-inset-bottom))] text-[var(--color-text)] sm:pb-6">
     <div class="mx-auto max-w-4xl space-y-6">
       <header class="flex flex-wrap items-center justify-between gap-3">
         <div>

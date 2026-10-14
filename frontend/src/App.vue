@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-[var(--color-bg)] flex overflow-hidden">
     <!-- Main App Content -->
-    <div class="relative h-screen w-full overflow-hidden transform-gpu flex flex-col bg-[var(--color-bg)]">
+    <div class="relative h-[100dvh] w-full overflow-hidden transform-gpu flex flex-col bg-[var(--color-bg)]">
       <!-- Company Indicator Top Bar -->
       <div 
         v-if="showCompanyBar" 
