@@ -121,6 +121,7 @@ export const ADMIN_ROUTES = new Set([
   'Reports',
   'DailyReport',
   'SSPLBillingSettings',
+  'UserCreation',
   'StoreSalesReport',
   'CostCenterSalesReport',
   'StockStatusReport',
@@ -261,9 +262,7 @@ function getTileIdForRoute(routeName) {
 
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'Login'].includes(routeName)) return true
-  // Customer user creation shares the Settings license and route permission.
   if (routeName === 'CatalougePage') return canAccessRoute('CatalogueViewer')
-  if (routeName === 'UserCreation') return canAccessRoute('SSPLBillingSettings')
   if (PUBLIC_HRMS_ROUTES.includes(routeName)) return true
 
   if (routeName === 'PriceListUpdate') {
@@ -400,6 +399,7 @@ const TILE_ROUTE_MAP = {
   'land-cost-voucher': 'LandCostVoucher',
   'account-tree':      'AccountTree',
   'batch-reports':     'BatchReports',
+  'create-user':       'UserCreation',
 }
 
 export function canAccessTile(tileId) {

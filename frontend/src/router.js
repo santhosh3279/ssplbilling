@@ -219,11 +219,12 @@ const routes = [
     meta: { title: 'Settings' },
   },
   {
-    path: '/ssplbillingsettings/create-user',
+    path: '/create-user',
     name: 'UserCreation',
     component: UserCreation,
     meta: { title: 'Create Customer User' },
   },
+  { path: '/ssplbillingsettings/create-user', redirect: '/create-user' },
   {
     path: '/',
     name: 'Dashboard',

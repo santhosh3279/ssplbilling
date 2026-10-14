@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
     <header class="flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
       <div class="flex items-center gap-4">
-        <button type="button" class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]" @click="router.push('/ssplbillingsettings')">← Settings</button>
+        <button type="button" class="text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)]" @click="router.push('/')">← Dashboard</button>
         <h1 class="text-lg font-bold">Create Customer User</h1>
       </div>
     </header>
