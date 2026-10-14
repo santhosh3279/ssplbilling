@@ -11,13 +11,6 @@
           @click="cycleZoom"
         >{{ zoomLabel }}</button>
         <button
-          v-if="lenses.length > 1"
-          type="button"
-          class="rounded-full bg-white/15 px-3 py-1.5 text-sm font-semibold hover:bg-white/25"
-          title="Switch to another back camera"
-          @click="switchLens"
-        >Lens {{ lensIndex + 1 }}/{{ lenses.length }}</button>
-        <button
           v-if="torchAvailable"
           type="button"
           class="rounded-full px-4 py-1.5 text-sm font-semibold"
@@ -85,8 +78,9 @@
  * the code exists. Emits `detected` once with the decoded text.
  *
  * Feedback: a live frame rate (red dot = scan loop stalled), brightness/sharpness
- * hints, OCR progress, and a green box with the code before closing. Zoom, lens
- * switching and tap-to-focus help phones whose camera cannot focus up close.
+ * hints, OCR progress, and a green box with the code before closing. The main back
+ * camera is always used (see pickPrimaryCamera); zoom and tap-to-focus help phones
+ * whose camera cannot focus up close.
  */
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 
@@ -111,8 +105,6 @@ const foundCode = ref('')
 const alive = ref(true)
 const zoomLevels = ref([])
 const zoom = ref(1)
-const lenses = ref([])
-const lensIndex = ref(0)
 const focusRing = ref(null)
 
 // 1D formats only: item labels carry linear barcodes, and each extra format costs decode time
@@ -126,7 +118,8 @@ const FOUND_DELAY = 150
 // Decoding a smaller copy of the aiming box is several times faster and still
 // leaves enough pixels per bar for labels filling the box
 const DECODE_WIDTH = 800
-const LENS_KEY = 'bs-last-lens'
+// deviceId of the main back camera, so later scans open it without a second camera start
+const LENS_KEY = 'bs-primary-lens'
 const DEFAULT_ZOOM = 2
 // Rough guide values for the hints only; decoding always runs regardless
 const DARK_BELOW = 45
@@ -179,7 +172,6 @@ function found(text) {
   clearTimeout(scanTimer)
   const code = String(text).trim()
   foundCode.value = code
-  try { localStorage.setItem(LENS_KEY, track?.getSettings?.().deviceId || '') } catch (e) { /* storage blocked */ }
   try { navigator.vibrate?.(80) } catch (e) { /* not supported */ }
   // Freeze the frame so the code is shown over what was scanned; stopping the
   // tracks right away blanks the video on some browsers
@@ -293,6 +285,7 @@ function updateStatus() {
   const video = videoRef.value
   const settings = track?.getSettings?.() || {}
   const parts = [
+    track?.label ? track.label.replace(/,?\s*facing back/i, '') : '',
     `${fps} fps`,
     `bars: ${bars}`,
     `text: ${ocrWorker ? 'on' : 'loading'}`,
@@ -452,33 +445,67 @@ async function startCamera(deviceId = null) {
   starting.value = false
 }
 
-/** Back cameras (labels are only filled in after camera permission is granted). */
-async function listLenses() {
-  try {
-    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput')
-    const back = cams.filter(d => /back|rear|environment/i.test(d.label))
-    lenses.value = back.length ? back : cams
-    const current = track?.getSettings?.().deviceId
-    lensIndex.value = Math.max(0, lenses.value.findIndex(d => d.deviceId === current))
-  } catch (e) { lenses.value = [] }
+/**
+ * The phone's main (wide) back camera. The browser's default back camera is often the
+ * ultra-wide or a fixed-focus lens, which cannot focus at barcode distance.
+ * Labels are only filled in after camera permission is granted.
+ *   Android: "camera2 0, facing back" — the lowest camera2 number is the main sensor
+ *   iPhone:  "Back Camera" is the main lens; the others are named Ultra Wide, Telephoto, …
+ */
+function pickPrimaryCamera(cams) {
+  const back = cams.filter(d => /back|rear|environment/i.test(d.label))
+  if (!back.length) return null
+  const numbered = back
+    .map(d => ({ d, n: /camera2? (\d+)/i.exec(d.label) }))
+    .filter(x => x.n)
+    .sort((a, b) => Number(a.n[1]) - Number(b.n[1]))
+  if (numbered.length) return numbered[0].d
+  return back.find(d => /^back camera$/i.test(d.label.trim()))
+    || back.find(d => !/ultra|tele|depth|macro|dual|triple/i.test(d.label))
+    || back[0]
 }
 
-async function switchLens() {
-  if (lenses.value.length < 2 || done) return
-  const next = (lensIndex.value + 1) % lenses.value.length
+const hasAutofocus = () => !!track?.getCapabilities?.().focusMode?.includes('continuous')
+
+/**
+ * Switch to the main back camera if the browser opened another one. A name is only a
+ * guess, so the camera must also report continuous autofocus; when it doesn't, the
+ * other back cameras are tried in turn and the first that does is kept.
+ */
+async function usePrimaryCamera() {
+  let cams = []
+  try {
+    cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput')
+  } catch (e) { return }
+  const primary = pickPrimaryCamera(cams)
+  if (!primary || done) return
+  const back = cams.filter(d => /back|rear|environment/i.test(d.label))
+  const candidates = [primary, ...back.filter(d => d.deviceId !== primary.deviceId)]
+  const current = () => track?.getSettings?.().deviceId
+
+  for (const cam of candidates) {
+    if (done) return
+    if (current() !== cam.deviceId) {
+      stopStream()
+      starting.value = true
+      try { await startCamera(cam.deviceId) } catch (e) { continue }
+    }
+    if (hasAutofocus()) {
+      try { localStorage.setItem(LENS_KEY, cam.deviceId) } catch (e) { /* storage blocked */ }
+      return
+    }
+  }
+  // No camera reports autofocus (some browsers hide it): settle on the main one by name
+  if (done || current() === primary.deviceId) return
   stopStream()
   starting.value = true
   try {
-    await startCamera(lenses.value[next].deviceId)
-    lensIndex.value = next
-    // The operator picked this lens because it focuses: open it straight away next time
-    try { localStorage.setItem(LENS_KEY, lenses.value[next].deviceId) } catch (e) { /* storage blocked */ }
+    await startCamera(primary.deviceId)
+    try { localStorage.setItem(LENS_KEY, primary.deviceId) } catch (e) { /* storage blocked */ }
   } catch (e) {
-    console.error('[BarcodeScanner] lens', e)
-    // Fall back to whatever the browser picks
+    console.error('[BarcodeScanner] main camera', e)
     try { await startCamera() } catch (err) { error.value = cameraErrorMessage(err) }
   }
-  updateStatus()
 }
 
 /** Best effort: browsers that ignore points of interest still refocus on single-shot. */
@@ -521,13 +548,12 @@ async function start() {
     error.value = cameraErrorMessage(null)
     return
   }
-  // Reopen the lens that last read a code: on multi-camera phones the browser's default
-  // back camera is often the ultra-wide one, which cannot focus at barcode distance
-  let lastLens = ''
-  try { lastLens = localStorage.getItem(LENS_KEY) || '' } catch (e) { /* storage blocked */ }
+  // Open the main back camera found on an earlier scan straight away
+  let savedLens = ''
+  try { savedLens = localStorage.getItem(LENS_KEY) || '' } catch (e) { /* storage blocked */ }
   try {
     await Promise.all([
-      (lastLens ? startCamera(lastLens).catch(() => startCamera()) : startCamera()),
+      (savedLens ? startCamera(savedLens).catch(() => startCamera()) : startCamera()),
       initNative(),
     ])
   } catch (e) {
@@ -536,7 +562,8 @@ async function start() {
     stop()
     return
   }
-  listLenses()
+  await usePrimaryCamera()
+  if (done || error.value) return
   fpsWindowStart = Date.now()
   updateStatus()
   watchAlive()
