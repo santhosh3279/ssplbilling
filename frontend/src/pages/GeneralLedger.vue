@@ -710,7 +710,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import DateFilter from '../components/DateFilter.vue'
 import Warning from '../components/Warning.vue'
-import { getUserRole, canAccessTile } from '../composables/usePermission.js'
+import { canAccessTile } from '../composables/usePermission.js'
 import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
 import PurchaseInvoice from './PurchaseInvoice.vue'
@@ -1010,9 +1010,8 @@ async function fetchAndCache(from, to) {
     from_date: from,
     to_date: to,
     company: localStorage.getItem('wb-company') || '',
-    // Employee redaction follows the inherited user, matching the role flags
-    // usePermission reads (an admin working as a biller is treated as a biller).
-    user: localStorage.getItem('wb-inherited-user') || '',
+    // Employee ledgers and names follow the logged-in user's own admin flag,
+    // checked server-side; inherited settings do not change it.
   })
   // Round-trip of the fetch that built this cache (network + server), shown in the
   // header next to the entry count. Window/filter changes are served from the cache
@@ -1338,12 +1337,6 @@ function clearSelection() {
 // ── Open/refresh ledger: (re)builds the wide-range cache, then applies the current filter ──
 async function loadLedger({ forceRefresh = false } = {}) {
   if (!selectedParty.value || loading.value) return
-  if (partyType.value === 'Employee' && getUserRole() !== 'admin') {
-    error.value = 'General ledger of employees is accessible only to administrators.'
-    selectedParty.value = null
-    ledgerData.value = null
-    return
-  }
   loading.value = true
   error.value = ''
   revealedAgainst.value.clear()
@@ -1361,6 +1354,11 @@ async function loadLedger({ forceRefresh = false } = {}) {
   } catch (e) {
     console.error('Failed to load GL ledger:', e)
     error.value = e?.message || 'Failed to refresh ledger. Check console for details.'
+    // Server refuses employee ledgers to non-admins: drop the selection like before
+    if (partyType.value === 'Employee') {
+      selectedParty.value = null
+      ledgerData.value = null
+    }
   } finally {
     loading.value = false
   }

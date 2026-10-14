@@ -315,19 +315,13 @@ def _user_is_admin(user):
 	return bool(row and row.admin)
 
 
-def _is_ledger_admin(user=None):
-	"""True when the caller may see employee identities in the ledger.
+def _is_ledger_admin():
+	"""True when the logged-in user may see employee ledgers and identities.
 
-	`user` is the inherited user (frontend `wb-inherited-user`): an admin working
-	as someone else is governed by THAT user's admin flag, so an admin inheriting a
-	biller is treated as a biller. Only a genuine admin may resolve the flag for
-	another user — for everyone else the parameter is ignored and their own session
-	flag applies, so the override can never be used to escalate.
+	Always the session user's own admin flag: inheriting another user's settings
+	(frontend `wb-inherited-user`) neither grants nor removes this right.
 	"""
-	session_admin = _user_is_admin(frappe.session.user)
-	if user and user != frappe.session.user and session_admin:
-		return _user_is_admin(user)
-	return session_admin
+	return _user_is_admin(frappe.session.user)
 
 
 def _resolve_employee_ids_in_against(entries, is_admin):
@@ -398,7 +392,8 @@ def _resolve_employee_ids_in_against(entries, is_admin):
 @frappe.whitelist()
 def get_general_ledger(party_type, party, from_date=None, to_date=None, company=None, user=None, include_details=0):
     """Return GL entries using ERPNext's built-in General Ledger report engine."""
-    is_admin = _is_ledger_admin(user)
+    # `user` (the inherited user) is accepted for older clients but ignored here
+    is_admin = _is_ledger_admin()
 
     if party_type == "Employee" and not is_admin:
         frappe.throw("General ledger of employees is accessible only to administrators.")
