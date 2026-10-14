@@ -719,6 +719,8 @@ def post_reconciliation(party_type, party, allocations, company=None):
 #   reference    – the invoice number appears in the payment's remarks / reference no
 #   combo        – one payment equal to the sum of two or three outstanding entries
 #   oldest_first – whatever is left, oldest payment to oldest bill, partial allowed
+# Oldest-first is a guess, so the all-ledgers run keeps it only for ledgers whose
+# GL balance is zero; the per-ledger Auto Allocate shows it in the queue for review.
 # The preview is what the Proceed / Apply buttons post back.
 
 AUTO_MATCH_TOLERANCE = 0.01
@@ -781,6 +783,22 @@ def _build_reconcile_sides(party_type, party):
 			payments.append(entry)
 
 	return payments, invoices
+
+
+def _ledger_is_zero(party_type, party):
+	"""Require one party account, matching the account used for reconciliation."""
+	rows = frappe.db.sql(
+		"""SELECT account, SUM(debit_in_account_currency - credit_in_account_currency) AS balance
+		FROM `tabGL Entry`
+		WHERE company = %s AND party_type = %s AND party = %s AND is_cancelled = 0
+		GROUP BY account""",
+		(_get_company(), party_type, party), as_dict=True,
+	)
+	return (
+		len(rows) == 1
+		and rows[0].account == _get_party_account(party_type, party)
+		and abs(float(rows[0].balance or 0)) < 0.005
+	)
 
 
 def _paise(amount):
@@ -877,8 +895,13 @@ def _plan_allocations(payments, invoices):
 
 @frappe.whitelist()
 def preview_auto_reconcile(party_type=None, party=None):
-	"""Staged allocations for the confirmation dialog (every ledger, or just one)."""
-	if party_type and party:
+	"""Staged allocations for the confirmation dialog (every ledger, or just one).
+
+	With no party given (the all-ledgers run, posted without row-by-row review),
+	oldest-first rows are kept only for ledgers whose GL balance is zero.
+	"""
+	single = bool(party_type and party)
+	if single:
 		parties = [{"party_type": party_type, "party": party, "label": party}]
 	else:
 		parties = get_parties_with_unlinked_entries()
@@ -889,6 +912,9 @@ def preview_auto_reconcile(party_type=None, party=None):
 		try:
 			payments, invoices = _build_reconcile_sides(row["party_type"], row["party"])
 			plan = _plan_allocations(payments, invoices)
+			guesses = any(kind == "oldest_first" for *_, kind in plan)
+			if not single and guesses and not _ledger_is_zero(row["party_type"], row["party"]):
+				plan = [step for step in plan if step[3] != "oldest_first"]
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "Auto reconcile preview failed")
 			skipped.append({"party": row.get("label") or row["party"], "reason": "Could not read entries"})
@@ -983,6 +1009,9 @@ def run_auto_reconcile(allocations):
 		savepoint = "auto_reconcile"
 		frappe.db.savepoint(savepoint)
 		try:
+			guesses = any(r.get("match_type") == "oldest_first" for r in rows)
+			if guesses and not _ledger_is_zero(p_type, p_name):
+				frappe.throw("Ledger balance changed since preview. Refresh the auto reconcile preview and try again.")
 			_check_plan_still_valid(p_type, p_name, rows)
 			post_reconciliation(p_type, p_name, payload)
 			reconciled += len(payload)

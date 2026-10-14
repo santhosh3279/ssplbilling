@@ -396,7 +396,7 @@
           <div>
             <h3 class="text-lg font-black uppercase tracking-widest text-[var(--color-text)]">Auto Reconcile Preview</h3>
             <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mt-0.5">
-              Returns → exact amounts → invoice no. in remarks → bill combinations → oldest-first
+              Returns → exact amounts → invoice no. in remarks → bill combinations · oldest-first only for zero-balance ledgers
             </p>
           </div>
           <button
@@ -830,9 +830,9 @@ const MATCH_LABELS = {
 function matchLabel(kind) {
   return MATCH_LABELS[kind] || kind
 }
-// Oldest-first is the only guess: it gets the warning colour so it is checked first
+// Guesses (oldest-first, and combos, whose sums can be coincidence) get the warning colour
 function matchClass(kind) {
-  return kind === 'oldest_first'
+  return kind === 'oldest_first' || kind === 'combo'
     ? 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]'
     : 'bg-[var(--color-success)]/15 text-[var(--color-success)]'
 }

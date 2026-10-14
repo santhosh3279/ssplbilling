@@ -61,14 +61,42 @@ class TestStagedAutoReconcile(unittest.TestCase):
         self.assertEqual(kinds, ['exact', 'oldest_first'])
         self.assertEqual(result['total_amount'], 800)
 
+    def test_all_ledgers_run_keeps_guesses_only_for_zero_ledgers(self):
+        payments = [entry('P1', 200), entry('P2', 1000)]
+        invoices = [entry('I1', 600, 'Sales Invoice'), entry('I2', 200, 'Sales Invoice')]
+        parties = [{'party_type': 'Customer', 'party': 'C', 'label': 'C'}]
+        common = dict(return_value=(payments, invoices))
+        with patch.object(api, 'get_parties_with_unlinked_entries', return_value=parties), \
+                patch.object(api, '_build_reconcile_sides', **common), \
+                patch.object(api, '_ledger_is_zero', return_value=False):
+            kinds = [r['match_type'] for r in api.preview_auto_reconcile()['proposals']]
+        self.assertEqual(kinds, ['exact'])
+        with patch.object(api, 'get_parties_with_unlinked_entries', return_value=parties), \
+                patch.object(api, '_build_reconcile_sides', **common), \
+                patch.object(api, '_ledger_is_zero', return_value=True):
+            kinds = [r['match_type'] for r in api.preview_auto_reconcile()['proposals']]
+        self.assertEqual(kinds, ['exact', 'oldest_first'])
+
     def test_changed_ledger_blocks_posting(self):
         fake = Mock()
         fake.throw.side_effect = ValueError('changed')
         row = dict(party_type='Customer', party='C', payment_type='Payment Entry', payment_name='P', invoice_type='Sales Invoice', invoice_name='I', amount=100, match_type='exact')
         sides = ([entry('P', 50)], [entry('I', 100, 'Sales Invoice')])
-        with patch.object(api, 'frappe', fake), patch.object(api, '_build_reconcile_sides', return_value=sides), patch.object(api, 'post_reconciliation') as post:
+        with patch.object(api, 'frappe', fake), patch.object(api, '_build_reconcile_sides', return_value=sides), \
+                patch.object(api, '_ledger_is_zero', return_value=True), patch.object(api, 'post_reconciliation') as post:
             result = api.run_auto_reconcile([row])
         post.assert_not_called()
         fake.db.rollback.assert_called_once_with(save_point='auto_reconcile')
         self.assertEqual(result['reconciled'], 0)
         self.assertEqual(len(result['failures']), 1)
+
+    def test_zero_check_rejects_multiple_accounts(self):
+        from types import SimpleNamespace
+        fake = Mock()
+        with patch.object(api, 'frappe', fake), patch.object(api, '_get_company', return_value='Company'), patch.object(api, '_get_party_account', return_value='Debtors'):
+            fake.db.sql.return_value = [SimpleNamespace(account='Debtors', balance=0)]
+            self.assertTrue(api._ledger_is_zero('Customer', 'C'))
+            fake.db.sql.return_value = [SimpleNamespace(account='Debtors', balance=100), SimpleNamespace(account='Other', balance=-100)]
+            self.assertFalse(api._ledger_is_zero('Customer', 'C'))
+            fake.db.sql.return_value = [SimpleNamespace(account='Debtors', balance=0.01)]
+            self.assertFalse(api._ledger_is_zero('Customer', 'C'))
