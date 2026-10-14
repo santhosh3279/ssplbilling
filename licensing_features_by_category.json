@@ -47,8 +47,6 @@
     { "id": "parcel-address", "name": "Parcel Address" }
   ],
   "Tax & Reporting": [
-    { "id": "gst-dummy-ledger", "name": "WGB Payments (GST Dummy Ledger)" },
-    { "id": "gst-ledger", "name": "GST Ledger" },
     { "id": "daily-report", "name": "Daily Report" },
     { "id": "reports", "name": "Reports" },
     { "id": "store-sale-report", "name": "Store Sale Report" },

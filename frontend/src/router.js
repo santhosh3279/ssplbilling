@@ -41,8 +41,6 @@ const ParcelAddress = () => import('./pages/ParcelAddress.vue')
 const StockReconciliation = () => import('./pages/StockReconciliation.vue')
 const SSPLBillingSettings = () => import('./pages/SSPLBillingSettings.vue')
 const UserCreation = () => import('./pages/UserCreation.vue')
-const GstDummyLedger = () => import('./pages/GstDummyLedger.vue')
-const GstLedger = () => import('./pages/GstLedger.vue')
 const DailyReport = () => import('./pages/DailyReport.vue')
 const StoreTransfer = () => import('./pages/StoreTransfer.vue')
 const SingleEntry = () => import('./pages/SingleEntry.vue')
@@ -432,18 +430,6 @@ const routes = [
     name: 'ParcelAddress',
     component: ParcelAddress,
     meta: { title: 'Parcel Address' },
-  },
-  {
-    path: '/gst-dummy-ledger',
-    name: 'GstDummyLedger',
-    component: GstDummyLedger,
-    meta: { title: 'GST Dummy' },
-  },
-  {
-    path: '/gst-ledger',
-    name: 'GstLedger',
-    component: GstLedger,
-    meta: { title: 'GST Ledger' },
   },
   {
     path: '/catalogue/:pageaddress',

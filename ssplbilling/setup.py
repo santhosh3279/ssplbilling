@@ -186,14 +186,12 @@ DASHBOARD_TILES = [
 	# Ledger View
 	("stock-ledger", "Stock", "Ledger View"),
 	("ledger", "Customer Ledger", "Ledger View"),
-	("gst-ledger", "GST Ledger", "Ledger View"),
 	("incentive-ledger", "Incentive Ledger", "Ledger View"),
 	("general-ledger", "General Ledger", "Ledger View"),
 	# SSPL Special
 	("loading-receipt", "Loading Receipt", "SSPL Special"),
 	("customer-enquiry", "Customer Enquiry", "SSPL Special"),
 	("parcel-address", "Parcel Address", "SSPL Special"),
-	("gst-dummy-ledger", "WGB Payments", "SSPL Special"),
 	("pricing-rules", "Discount Rules", "SSPL Special"),
 	("naming-settings", "Naming Settings", "SSPL Special"),
 	("barcode-print", "Print Barcodes", "SSPL Special"),

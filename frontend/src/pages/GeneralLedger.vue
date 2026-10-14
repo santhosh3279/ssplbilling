@@ -1296,7 +1296,7 @@ function openLedgerPrint() {
   ].join('||')
   // The ledger print formats (Customer Ledger / Customer Ledger Thermal) are stored with
   // an empty document_type, so 'General Ledger' matched no templates at all and the dialog
-  // opened with an empty dropdown. GstLedger already passes '' for the same reason.
+  // opened with an empty dropdown.
   printModalDoctype.value = ''
   printModalVisible.value = true
 }

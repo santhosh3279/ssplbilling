@@ -10,8 +10,8 @@
     "features_by_category groups the same ids in \"features\" for licence picking; \"features\" itself stays a flat sorted array because the signature is computed over it."
   ],
   "wildcard": "*",
-  "page_count": 66,
-  "feature_count": 53,
+  "page_count": 64,
+  "feature_count": 51,
   "category_count": 8,
   "features": [
     "Cashier-Management",
@@ -30,8 +30,6 @@
     "expense",
     "fast-moving-items",
     "general-ledger",
-    "gst-dummy-ledger",
-    "gst-ledger",
     "hrms",
     "incentive-entry",
     "incentive-ledger",
@@ -320,20 +318,6 @@
       }
     ],
     "Tax & Reporting": [
-      {
-        "id": "gst-dummy-ledger",
-        "name": "WGB Payments (GST Dummy Ledger)",
-        "pages": [
-          "GstDummyLedger"
-        ]
-      },
-      {
-        "id": "gst-ledger",
-        "name": "GST Ledger",
-        "pages": [
-          "GstLedger"
-        ]
-      },
       {
         "id": "daily-report",
         "name": "Daily Report",
@@ -1025,26 +1009,6 @@
       "category": "Inventory & Stock"
     },
     {
-      "page": "GstDummyLedger",
-      "path": "/gst-dummy-ledger",
-      "title": "GST Dummy",
-      "feature": "gst-dummy-ledger",
-      "feature_label": "WGB Payments",
-      "bucket": "SSPL Special",
-      "has_dashboard_tile": true,
-      "category": "Tax & Reporting"
-    },
-    {
-      "page": "GstLedger",
-      "path": "/gst-ledger",
-      "title": "GST Ledger",
-      "feature": "gst-ledger",
-      "feature_label": "GST Ledger",
-      "bucket": "Ledger View",
-      "has_dashboard_tile": true,
-      "category": "Tax & Reporting"
-    },
-    {
       "page": "OfferPage",
       "path": "/offer/:pageaddress",
       "title": "Offers",
@@ -1182,12 +1146,6 @@
     ],
     "general-ledger": [
       "GeneralLedger"
-    ],
-    "gst-dummy-ledger": [
-      "GstDummyLedger"
-    ],
-    "gst-ledger": [
-      "GstLedger"
     ],
     "incentive-entry": [
       "IncentiveEntry"

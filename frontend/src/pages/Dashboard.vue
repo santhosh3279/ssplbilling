@@ -968,7 +968,6 @@ const allTiles = [
   // ── Ledger View ──
   { id: 'stock-ledger',       bucket: 'ledger',   name: 'Stock',                 desc: 'View stock movement by item',              icon: '📦', shortcut: ''    },
   { id: 'ledger',             bucket: 'ledger',   name: 'Customer Ledger',       desc: 'View customer account history',            icon: '📋', shortcut: 'Shift+F6'  },
-  { id: 'gst-ledger',         bucket: 'ledger',   name: 'GST Ledger',            desc: 'View GST Quotation ledger',                icon: '📜', shortcut: ''    },
   { id: 'incentive-ledger',   bucket: 'ledger',   name: 'Incentive Ledger',      desc: 'View employee incentives',                 icon: '🏆', shortcut: ''    },
   { id: 'incentive-redeem',   bucket: 'accounts', name: 'Incentive Redeem',      desc: 'Redeem points for cash',                   icon: '🎁', shortcut: ''    },
   { id: 'incentive-entry',    bucket: 'accounts', name: 'Incentive Entry',       desc: 'Create invoice incentive entries',         icon: '🏆', shortcut: ''    },
@@ -977,7 +976,6 @@ const allTiles = [
   { id: 'loading-receipt',    bucket: 'sspl',     name: 'Loading Receipt',       desc: 'Generate loading receipts',                icon: '🚚', shortcut: ''    },
   { id: 'customer-enquiry',   bucket: 'sspl',     name: 'Customer Enquiry',      desc: 'Track customer item enquiries',            icon: '📞', shortcut: ''    },
   { id: 'parcel-address',     bucket: 'sspl',     name: 'Parcel Address',        desc: 'Manage parcel addresses',                  icon: '📦', shortcut: ''    },
-  { id: 'gst-dummy-ledger',   bucket: 'sspl',     name: 'WGB PAYMENTS',          desc: 'Manage WGB payment entries',               icon: '📖', shortcut: ''    },
   { id: 'pricing-rules',      bucket: 'sspl',     name: 'Discount Rules',        desc: 'Manage discount rules and tiers',          icon: '🏷️', shortcut: ''    },
   { id: 'naming-settings',    bucket: 'sspl',   name: 'Naming Settings',       desc: 'Configure document series',                icon: '🔢', shortcut: ''    },
   { id: 'barcode-print',      bucket: 'sspl',   name: 'Print Barcodes',        desc: 'Print item barcodes',                      icon: '🔖', shortcut: ''    },
@@ -1277,7 +1275,7 @@ function tilesInBucket(bucketId) {
   return filteredTiles.value.filter(t => t.bucket === bucketId)
 }
 
-const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'gst-dummy-ledger', 'gst-ledger', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user']
+const readyModules = ['sales', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
@@ -1293,8 +1291,6 @@ const routeAliases = {
   'sales-order': '/sales-order',
   'journal-contra': '/journal-contra',
   'stock-reconciliation': '/stock-reconciliation',
-  'gst-dummy-ledger': '/gst-dummy-ledger',
-  'gst-ledger': '/gst-ledger',
   'Cashier-Management': '/Cashier-Management',
   'pricing-rules': '/discount-rules',
   'barcode-print': '/barcode-print',
@@ -1606,7 +1602,7 @@ async function syncBillingSettings(targetUser, force) {
 
     // Warm the Print Template / Printer lists so PrintOptionsModal opens with no round
     // trip. One bucket per doctype the print dialogs actually ask for:
-    //   ''                 → GstLedger and GeneralLedger's ledger print (the Customer
+    //   ''                 → GeneralLedger's ledger print (the Customer
     //                        Ledger templates are stored with an empty document_type)
     //   'Sales Invoice' / 'Purchase Invoice' → the invoice pages and GeneralLedger's
     //                        voucher print

@@ -1056,7 +1056,7 @@ def get_customer_billing_details(customer):
 		as_dict=True
 	)
 
-	# Calculate closing GST balance (from Quotations and GST Dummy Ledger)
+	# Closing GST balance (from Quotations)
 	q_total = frappe.db.sql(
 		"""
 		SELECT SUM(grand_total) FROM `tabQuotation`
@@ -1065,15 +1065,7 @@ def get_customer_billing_details(customer):
 		(customer,)
 	)[0][0] or 0.0
 
-	d_total = frappe.db.sql(
-		"""
-		SELECT SUM(debit - credit) FROM `tabGst Dummy Ledger`
-		WHERE customer = %s
-		""",
-		(customer,)
-	)[0][0] or 0.0
-	
-	gst_balance = float(q_total) + float(d_total)
+	gst_balance = float(q_total)
 
 	last_inv = frappe.db.sql(
 		"""

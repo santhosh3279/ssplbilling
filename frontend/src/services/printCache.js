@@ -39,7 +39,7 @@ function readCache(key, bucket) {
   try {
     const raw = JSON.parse(localStorage.getItem(key) || 'null')
     // bucket === null means the whole key is one entry (printers). An empty-string
-    // bucket is a legitimate bucket — GstLedger passes doctype="" — so this must be a
+    // bucket is a legitimate bucket — the ledger print passes doctype="" — so this must be a
     // null check, not a truthiness check, or that call would read and then overwrite
     // the entire bucketed object.
     const entry = bucket === null ? raw : raw?.[bucket]
