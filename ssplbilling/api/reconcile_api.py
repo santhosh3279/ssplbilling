@@ -53,6 +53,29 @@ def _get_je_row_unadjusted_amount(reference_row, party_type):
 	return amount
 
 
+def _get_je_outstanding(je_name, party_type, party, account):
+	"""Open balance of a Journal Entry for one party, straight from the Payment Ledger.
+
+	The same figure ERPNext keeps: the JE's own entries plus every entry made against it.
+	A JE can move either way, so the total is read in the direction of the JE's own
+	entries; zero or less means nothing is left to reconcile.
+	"""
+	own, total = frappe.db.sql(
+		"""
+		SELECT
+			SUM(CASE WHEN voucher_no = %(je)s THEN amount_in_account_currency ELSE 0 END),
+			SUM(amount_in_account_currency)
+		FROM `tabPayment Ledger Entry`
+		WHERE against_voucher_type = 'Journal Entry' AND against_voucher_no = %(je)s
+			AND party_type = %(party_type)s AND party = %(party)s AND account = %(account)s
+			AND delinked = 0 AND docstatus = 1
+		""",
+		{"je": je_name, "party_type": party_type, "party": party, "account": account},
+	)[0]
+	own, total = float(own or 0), float(total or 0)
+	return max(0.0, total if own >= 0 else -total)
+
+
 def _get_je_row_available_amount(party_type, party, reference_row):
 	"""Authoritative unallocated balance of a JE row, net of existing Payment Ledger links.
 
@@ -148,7 +171,10 @@ def get_parties_with_unlinked_entries(show_all=False):
 		pl_links = frappe.db.sql(
 			"""
 			SELECT 
-				CASE WHEN voucher_no IN %s THEN voucher_no ELSE against_voucher_no END as name,
+				-- A link consumes the document it is made AGAINST. Check that side first: a
+				-- reconciliation JE is itself one of these JEs, and attributing its link to it
+				-- (instead of the JE it adjusts) left that JE looking unreconciled forever.
+				CASE WHEN against_voucher_no IN %s THEN against_voucher_no ELSE voucher_no END as name,
 				account,
 				party,
 				voucher_no,
@@ -381,7 +407,10 @@ def get_unlinked_entries(party_type, party):
 		pl_links = frappe.db.sql(
 			"""
 			SELECT 
-				CASE WHEN voucher_no IN %s THEN voucher_no ELSE against_voucher_no END as name,
+				-- A link consumes the document it is made AGAINST. Check that side first: a
+				-- reconciliation JE is itself one of these JEs, and attributing its link to it
+				-- (instead of the JE it adjusts) left that JE looking unreconciled forever.
+				CASE WHEN against_voucher_no IN %s THEN against_voucher_no ELSE voucher_no END as name,
 				account,
 				party,
 				voucher_no,
@@ -656,6 +685,15 @@ def post_reconciliation(party_type, party, allocations, company=None):
 				# Find unallocated amount for THIS document (sum of all unallocated rows in it)
 				doc_rows = [x for x in opposite_entries["payment_entries"] + opposite_entries["journal_entries"] if x["name"] == inv_name]
 				outstanding = sum([float(x["unallocated_amount"]) for x in doc_rows]) if doc_rows else alloc["amount"]
+				if inv_type == "Journal Entry":
+					# The opposite-entries query ignores links already made against the JE, so
+					# a JE reconciled before still looked fully open and every click posted
+					# another reconciliation JE for the same amount. Cap by the Payment Ledger.
+					outstanding = min(outstanding, _get_je_outstanding(inv_name, party_type, party, account))
+					if outstanding <= 0.005:
+						frappe.throw(
+							f"Journal Entry {inv_name} is already fully reconciled for {party}. Refresh and try again."
+						)
 
 			seen_invoices[inv_name] = float(outstanding)
 			rec.append("invoices", {
@@ -663,6 +701,15 @@ def post_reconciliation(party_type, party, allocations, company=None):
 				"invoice_number": inv_name,
 				"outstanding_amount": float(outstanding),
 			})
+
+	# The bill side may not take more than it has open, summed over every allocation to it
+	allocated_to = {}
+	for alloc in allocations:
+		allocated_to[alloc["invoice_name"]] = allocated_to.get(alloc["invoice_name"], 0.0) + float(alloc["amount"])
+	for inv_name, total in allocated_to.items():
+		open_amount = abs(seen_invoices.get(inv_name, 0.0))
+		if total - open_amount > 0.009:
+			frappe.throw(f"Allocated amount {total} exceeds the open balance {open_amount} of {inv_name}.")
 
 	# 2. Build allocation rows.
 	# ERPNext rewrites a JE row to (unadjusted - allocated) once per allocation, on

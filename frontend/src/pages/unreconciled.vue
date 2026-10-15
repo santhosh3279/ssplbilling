@@ -791,7 +791,8 @@ function clearQueue() {
 }
 
 async function submitReconciliation() {
-  if (queuedAllocations.value.length === 0) return
+  // A second click or Enter while the first post is in flight would post it twice
+  if (queuedAllocations.value.length === 0 || isSubmitting.value) return
   
   isSubmitting.value = true
   try {
