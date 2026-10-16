@@ -13,6 +13,15 @@
           </h1>
           <div class="truncate text-[11px] text-[var(--color-text-muted)]">{{ priceList || 'No price list' }} · {{ warehouse || 'No warehouse' }}</div>
         </div>
+        <button
+          v-if="!isReadOnly"
+          type="button"
+          :aria-pressed="scanMode"
+          title="Scan mode: the camera opens again after each Add"
+          class="rounded-lg border px-2.5 py-1.5 text-xs font-bold"
+          :class="scanMode ? 'border-[var(--color-info)] bg-[var(--color-info)] text-white' : 'border-[var(--color-border)]'"
+          @click="toggleScanMode"
+        >Scan {{ scanMode ? 'ON' : 'OFF' }}</button>
         <button type="button" class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold" @click="openPastBills">Past Bills</button>
         <button type="button" class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold" @click="newBill()">New</button>
       </div>
@@ -226,7 +235,7 @@
           <button type="button" class="keypad-key" @click="keypadPress('.')">.</button>
           <button type="button" class="keypad-key" @click="keypadPress('0')">0</button>
           <button type="button" class="keypad-key text-sm" @click="keypadPress('clear')">C</button>
-          <button type="button" class="keypad-key keypad-key--ok" @click="commitPending">{{ pending.target === 'new' ? 'Add' : 'OK' }}</button>
+          <button type="button" class="keypad-key keypad-key--ok" @click="keypadAdd">{{ pending.target !== 'new' ? 'OK' : scanMode ? 'Add & Scan' : 'Add' }}</button>
         </div>
       </template>
 
@@ -764,6 +773,22 @@ function onScanned(code) {
     query.value = code
     flash(`No item for ${code}`)
   }
+}
+
+// ── Scan mode: each Add reopens the camera for the next item ────────────────
+const SCAN_MODE_KEY = 'mb-scan-mode'
+const scanMode = ref((() => { try { return localStorage.getItem(SCAN_MODE_KEY) === '1' } catch { return false } })())
+
+function toggleScanMode() {
+  scanMode.value = !scanMode.value
+  try { localStorage.setItem(SCAN_MODE_KEY, scanMode.value ? '1' : '0') } catch { /* storage blocked */ }
+  if (scanMode.value && !pending.value && canEdit()) showScanner.value = true
+}
+
+function keypadAdd() {
+  const wasNew = pending.value?.target === 'new'
+  commitPending()
+  if (scanMode.value && wasNew && !isReadOnly.value) showScanner.value = true
 }
 
 function closeScanner() {

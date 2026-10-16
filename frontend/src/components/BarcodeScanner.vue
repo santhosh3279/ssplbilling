@@ -1,7 +1,14 @@
 <template>
   <div class="fixed inset-0 z-40 flex flex-col bg-black">
-    <div class="flex items-center justify-between gap-2 px-4 py-3 text-white">
-      <span class="text-base font-semibold">Scan Barcode</span>
+    <div class="flex items-center justify-between gap-2 px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] text-white">
+      <button
+        type="button"
+        aria-label="Back to previous screen"
+        class="flex items-center gap-1 rounded-full bg-white/15 py-1.5 pl-2.5 pr-4 text-sm font-semibold hover:bg-white/25"
+        @click="close"
+      >
+        <span class="text-lg leading-none">←</span> Back
+      </button>
       <div class="flex gap-2">
         <button
           v-if="zoomLevels.length > 1"
@@ -17,11 +24,6 @@
           :class="torchOn ? 'bg-yellow-400 text-black' : 'bg-white/15 hover:bg-white/25'"
           @click="toggleTorch"
         >Light</button>
-        <button
-          type="button"
-          class="rounded-full bg-white/15 px-4 py-1.5 text-sm font-semibold hover:bg-white/25"
-          @click="close"
-        >Close</button>
       </div>
     </div>
 
