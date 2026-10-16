@@ -155,6 +155,7 @@ CUSTOM_FIELDS = {
 DASHBOARD_TILES = [
 	# Sale
 	("sales", "Sales Invoice", "Sale"),
+	("mobile-bill", "Mobile Bill", "Sale"),
 	("quotation", "Quotation", "Sale"),
 	("cashier", "Cashier Desk", "Sale"),
 	("sales-order", "Sales Order", "Sale"),

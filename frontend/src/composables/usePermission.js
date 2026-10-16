@@ -28,6 +28,7 @@ import { session } from '../session'
 // Route names accessible by biller
 export const BILLER_ROUTES = new Set([
   'SalesInvoice',
+  'MobileBill',
   'PurchaseInvoice',
   'Quotation',
   'SalesOrderEntry',
@@ -238,7 +239,8 @@ const LICENSE_FREE_TILES = new Set(['stock-check'])
 
 // Tiles licensed under another tile's feature instead of their own id.
 // Customer users exist to log in to the catalogue, so they ride on the Catalogue Editor licence.
-const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display' }
+// Mobile Bill is another front end for Sales Invoice, so it rides on the Sales licence.
+const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display', 'mobile-bill': 'sales' }
 
 function isLicensedFeature(features, tileId) {
   const feature = LICENSE_FEATURE_ALIAS[tileId] || tileId
@@ -346,6 +348,7 @@ export function canAccessRoute(routeName) {
 const TILE_ROUTE_MAP = {
   'stock-check':       'StockCheck',
   'sales':             'SalesInvoice',
+  'mobile-bill':       'MobileBill',
   'purchase-invoice':  'PurchaseInvoice',
   'quotation':         'Quotation',
   'hrms':              'Hrms',

@@ -9,6 +9,7 @@ const Quotation = () => import('./pages/Quotation.vue')
 const PurchaseInvoice = () => import('./pages/PurchaseInvoice.vue')
 const PriceListUpdate = () => import('./pages/PriceListUpdate.vue')
 const StockCheck = () => import('./pages/StockCheck.vue')
+const MobileBill = () => import('./pages/mobilebill.vue')
 const BarcodePrintPage = () => import('./pages/BarcodePrintPage.vue')
 const CashierDesk = () => import('./pages/CashierDesk.vue')
 const PurchaseSubmit = () => import('./pages/PurchaseSubmit.vue')
@@ -234,6 +235,12 @@ const routes = [
     name: 'SalesInvoice',
     component: SalesInvoice,
     meta: { title: 'Sales Invoice' },
+  },
+  {
+    path: '/mobile-bill',
+    name: 'MobileBill',
+    component: MobileBill,
+    meta: { title: 'Mobile Bill' },
   },
   {
     path: '/quotation',

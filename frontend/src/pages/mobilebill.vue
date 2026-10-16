@@ -1,0 +1,906 @@
+<template>
+  <div class="fixed inset-x-0 top-0 flex h-[100dvh] flex-col bg-[var(--color-bg)] text-[var(--color-text)]" :style="viewportStyle">
+    <!-- Header: bill no · series · customer · item search + camera scan -->
+    <header class="z-20 shrink-0 space-y-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] shadow-sm">
+      <div class="flex items-center gap-2">
+        <button type="button" aria-label="Back to dashboard" class="rounded-lg px-2 py-1 text-lg" @click="router.push('/')">←</button>
+        <div class="min-w-0 flex-1">
+          <h1 class="truncate text-base font-bold leading-tight">
+            {{ invoiceName || 'New Bill' }}
+            <span v-if="isSubmitted" class="ml-1 rounded bg-[var(--color-success)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-success)]">Submitted</span>
+            <span v-else-if="invoiceName" class="ml-1 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Draft</span>
+            <span v-if="isReturn" class="ml-1 rounded bg-[var(--color-danger)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-danger)]">Return</span>
+          </h1>
+          <div class="truncate text-[11px] text-[var(--color-text-muted)]">{{ priceList || 'No price list' }} · {{ warehouse || 'No warehouse' }}</div>
+        </div>
+        <button type="button" class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold" @click="openPastBills">Past Bills</button>
+        <button type="button" class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold" @click="newBill()">New</button>
+      </div>
+
+      <div class="flex gap-2">
+        <select
+          v-model="selectedSeries"
+          :disabled="!!invoiceName"
+          aria-label="Series"
+          class="w-2/5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-2.5 text-sm outline-none disabled:opacity-60"
+        >
+          <option value="" disabled>Series…</option>
+          <option v-for="s in seriesOptions" :key="s" :value="s">{{ s }}</option>
+        </select>
+        <button
+          type="button"
+          :disabled="isReadOnly"
+          class="min-w-0 flex-1 truncate rounded-xl border px-3 py-2.5 text-left text-sm font-semibold disabled:opacity-60"
+          :class="customerId ? 'border-[var(--color-border)] bg-[var(--color-bg)]' : 'border-[var(--color-warning)] bg-[var(--color-warning)]/10 text-[var(--color-warning)]'"
+          @click="openCustomerPicker"
+        >{{ customerName || 'Select customer' }}</button>
+      </div>
+
+      <div v-if="!isReadOnly" class="flex gap-2">
+        <div class="relative flex-1">
+          <input
+            ref="searchRef"
+            v-model="query"
+            type="search"
+            enterkeyhint="go"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="Item name, code or barcode"
+            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-4 pr-10 text-base outline-none focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/30"
+            @keydown.enter.prevent="addFromQuery"
+          />
+          <button
+            v-if="query"
+            type="button"
+            aria-label="Clear search"
+            class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2.5 py-1 text-lg text-[var(--color-text-muted)]"
+            @click="clearSearch"
+          >&times;</button>
+        </div>
+        <button
+          type="button"
+          aria-label="Scan barcode with camera"
+          title="Scan barcode"
+          class="flex w-14 shrink-0 items-center justify-center rounded-xl bg-[var(--color-info)] text-white shadow-sm active:scale-95"
+          @click="showScanner = true"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8"/><path d="M11 8v8"/><path d="M15 8v8"/><path d="M18 8v8"/></svg>
+        </button>
+      </div>
+      <button
+        v-else-if="invoiceName && !isSubmitted"
+        type="button"
+        :disabled="busy"
+        class="w-full rounded-xl bg-[var(--color-warning)] py-2.5 text-sm font-bold text-black disabled:opacity-50"
+        @click="startModify"
+      >Modify this bill</button>
+    </header>
+
+    <main class="relative min-h-0 flex-1 overflow-y-auto">
+      <!-- Item search results overlay the bill while typing -->
+      <div v-if="query.trim().length >= 2" class="absolute inset-0 z-10 overflow-y-auto bg-[var(--color-bg)]">
+        <div v-if="!searchResults.length" class="py-12 text-center text-sm text-[var(--color-text-muted)]">
+          No items match “{{ query.trim() }}”.
+        </div>
+        <button
+          v-for="item in searchResults"
+          :key="item.item_code"
+          type="button"
+          class="flex w-full items-center gap-3 border-b border-[var(--color-border)] px-4 py-3 text-left active:bg-[var(--color-surface-raised)]"
+          @click="addItem(item)"
+        >
+          <div class="min-w-0 flex-1">
+            <MarqueeText :text="item.item_name || item.item_code" class="text-base font-semibold" />
+            <div class="truncate font-mono text-xs text-[var(--color-text-muted)]">{{ item.item_code }} · {{ item.uom || 'Nos' }}</div>
+          </div>
+          <div class="shrink-0 text-right font-mono text-base font-bold tabular-nums">{{ money(rateFor(item, item.uom)) }}</div>
+        </button>
+      </div>
+
+      <div v-if="loadingBill" class="py-16 text-center text-sm text-[var(--color-text-muted)] animate-pulse">Loading bill…</div>
+      <div v-else-if="!activeRows.length" class="px-6 py-16 text-center text-sm text-[var(--color-text-muted)]">
+        <template v-if="!selectedSeries">Pick a series to start.</template>
+        <template v-else>Scan a barcode or search an item to add it.</template>
+      </div>
+
+      <ul v-else class="divide-y divide-[var(--color-border)]">
+        <li v-for="(row, idx) in activeRows" :key="row._rowKey" class="px-3 py-2.5" :class="row._is_free ? 'bg-[var(--color-success)]/5' : ''">
+          <div class="flex items-start gap-2">
+            <span class="w-6 shrink-0 pt-0.5 text-right font-mono text-xs text-[var(--color-text-muted)]">{{ idx + 1 }}</span>
+            <div class="min-w-0 flex-1">
+              <MarqueeText :text="row.item_name || row.item_code" class="text-base font-semibold" />
+              <div class="flex flex-wrap items-center gap-x-2 text-xs text-[var(--color-text-muted)]">
+                <span class="font-mono">{{ row.item_code }}</span>
+                <span v-if="row._is_free" class="font-bold text-[var(--color-success)]">FREE</span>
+                <span v-else-if="row.discount" class="font-bold text-[var(--color-warning)]">{{ row.discount }}% off</span>
+              </div>
+            </div>
+            <button
+              v-if="!isReadOnly && !row._is_free"
+              type="button"
+              aria-label="Remove item"
+              class="shrink-0 rounded-lg px-2 py-1 text-lg text-[var(--color-danger)]"
+              @click="removeRow(row)"
+            >&times;</button>
+          </div>
+          <div class="mt-1.5 flex items-center gap-2 pl-8">
+            <div class="flex items-center rounded-xl border border-[var(--color-border)]">
+              <button type="button" :disabled="isReadOnly || row._is_free" aria-label="Decrease quantity" class="px-3 py-1.5 text-lg font-bold disabled:opacity-30" @click="stepQty(row, -1)">−</button>
+              <input
+                :value="row.qty"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                :readonly="isReadOnly || row._is_free"
+                :aria-label="`Quantity of ${row.item_name}`"
+                class="w-16 bg-transparent py-1.5 text-center font-mono text-base font-bold tabular-nums outline-none"
+                @focus="$event.target.select()"
+                @change="setQty(row, $event)"
+              />
+              <button type="button" :disabled="isReadOnly || row._is_free" aria-label="Increase quantity" class="px-3 py-1.5 text-lg font-bold disabled:opacity-30" @click="stepQty(row, 1)">+</button>
+            </div>
+            <span class="text-xs text-[var(--color-text-muted)]">{{ row.uom }} ×</span>
+            <input
+              :value="row.rate"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              :readonly="isReadOnly || row._is_free"
+              :aria-label="`Rate of ${row.item_name}`"
+              class="w-20 rounded-lg border border-[var(--color-border)] bg-transparent px-1.5 py-1.5 text-right font-mono text-sm tabular-nums outline-none"
+              @focus="$event.target.select()"
+              @change="setRate(row, $event)"
+            />
+            <span class="ml-auto font-mono text-base font-bold tabular-nums">{{ money(rowAmount(row)) }}</span>
+          </div>
+        </li>
+      </ul>
+    </main>
+
+    <!-- Totals + save -->
+    <footer class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+      <div class="mb-2 flex items-baseline justify-between">
+        <span class="text-xs text-[var(--color-text-muted)]">
+          {{ activeRows.length }} {{ activeRows.length === 1 ? 'item' : 'items' }} · Qty {{ fmtQty(totalQty) }}
+          <template v-if="taxTemplate && !isInclusive"> · tax extra</template>
+        </span>
+        <span class="font-mono text-2xl font-black tabular-nums">{{ money(isReadOnly && loadedTotal != null ? loadedTotal : subTotal) }}</span>
+      </div>
+      <div class="flex gap-2">
+        <select v-model="mop" :disabled="isReadOnly" aria-label="Mode of payment" class="w-28 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm font-semibold outline-none disabled:opacity-60">
+          <option v-for="m in MOP_OPTIONS" :key="m" :value="m">{{ m }}</option>
+        </select>
+        <button
+          v-if="!isReadOnly"
+          type="button"
+          :disabled="busy || !activeRows.length"
+          class="flex-1 rounded-xl bg-[var(--color-success)] py-3 text-base font-bold text-white shadow active:scale-[0.98] disabled:opacity-50"
+          @click="saveBill"
+        >{{ busy ? 'Saving…' : invoiceName ? 'Update Bill' : 'Save Bill' }}</button>
+        <button
+          v-else-if="invoiceName"
+          type="button"
+          class="flex-1 rounded-xl bg-[var(--color-info)] py-3 text-base font-bold text-white shadow"
+          @click="showPrintModal = true"
+        >Print</button>
+      </div>
+    </footer>
+
+    <BarcodeScanner v-if="showScanner" :verify="codeExists" @detected="onScanned" @close="closeScanner" />
+
+    <!-- Customer picker -->
+    <div v-if="showCustomerPicker" class="fixed inset-0 z-40 flex flex-col bg-[var(--color-bg)]">
+      <div class="flex shrink-0 items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <input
+          ref="customerSearchRef"
+          v-model="customerQuery"
+          type="search"
+          autocomplete="off"
+          placeholder="Customer name, code or mobile"
+          class="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-base outline-none focus:border-[var(--color-info)]"
+        />
+        <button type="button" class="px-2 text-sm font-bold text-[var(--color-info)]" @click="showCustomerPicker = false">Close</button>
+      </div>
+      <div class="min-h-0 flex-1 overflow-y-auto">
+        <div v-if="ledgerSyncing && !allLedgers.length" class="py-12 text-center text-sm text-[var(--color-text-muted)] animate-pulse">Loading customers…</div>
+        <div v-else-if="!customerResults.length" class="py-12 text-center text-sm text-[var(--color-text-muted)]">
+          {{ customerQuery.trim() ? 'No customers found.' : 'Type to search customers.' }}
+        </div>
+        <button
+          v-for="c in customerResults"
+          :key="c.name"
+          type="button"
+          class="block w-full border-b border-[var(--color-border)] px-4 py-3 text-left active:bg-[var(--color-surface-raised)]"
+          @click="pickCustomer(c)"
+        >
+          <MarqueeText :text="c.label || c.name" class="text-base font-semibold" />
+          <div class="truncate text-xs text-[var(--color-text-muted)]">{{ c.name }}<template v-if="c.mobile_no"> · {{ c.mobile_no }}</template></div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Past bills -->
+    <div v-if="showPastBills" class="fixed inset-0 z-40 flex flex-col bg-[var(--color-bg)]">
+      <div class="shrink-0 space-y-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div class="flex items-center justify-between">
+          <h2 class="text-base font-bold">Past Bills</h2>
+          <button type="button" class="px-2 text-sm font-bold text-[var(--color-info)]" @click="showPastBills = false">Close</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <button type="button" aria-label="Previous day" :disabled="!!pastQuery.trim()" class="rounded-lg border border-[var(--color-border)] px-3 py-2 disabled:opacity-40" @click="shiftPastDate(-1)">‹</button>
+          <input v-model="pastDate" type="date" :disabled="!!pastQuery.trim()" class="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-2 text-sm disabled:opacity-40" />
+          <button type="button" aria-label="Next day" :disabled="!!pastQuery.trim()" class="rounded-lg border border-[var(--color-border)] px-3 py-2 disabled:opacity-40" @click="shiftPastDate(1)">›</button>
+        </div>
+        <div class="flex items-center gap-2">
+          <input
+            v-model="pastQuery"
+            type="search"
+            autocomplete="off"
+            placeholder="Search bill no or customer (all dates)"
+            class="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-info)]"
+          />
+          <label class="flex shrink-0 items-center gap-1 text-xs font-semibold">
+            <input v-model="pastDraftOnly" type="checkbox" class="h-4 w-4" /> Drafts
+          </label>
+        </div>
+      </div>
+      <div class="min-h-0 flex-1 overflow-y-auto">
+        <div v-if="pastLoading" class="py-12 text-center text-sm text-[var(--color-text-muted)] animate-pulse">Loading bills…</div>
+        <div v-else-if="!pastBills.length" class="py-12 text-center text-sm text-[var(--color-text-muted)]">No bills found.</div>
+        <button
+          v-for="b in pastBills"
+          :key="b.name"
+          type="button"
+          class="flex w-full items-center gap-3 border-b border-[var(--color-border)] px-4 py-3 text-left active:bg-[var(--color-surface-raised)]"
+          @click="openPastBill(b.name)"
+        >
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="font-mono text-sm font-bold">{{ b.name }}</span>
+              <span
+                class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase"
+                :class="b.docstatus === 1 ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]'"
+              >{{ b.docstatus === 1 ? 'Submitted' : 'Draft' }}</span>
+            </div>
+            <MarqueeText :text="b.custom_customer_name || b.customer_name || b.customer" class="text-sm" />
+            <div class="text-[11px] text-[var(--color-text-muted)]">{{ formatDMY(parseCalendarDate(b.posting_date), '') }} · {{ b.mop || '—' }}</div>
+          </div>
+          <div class="shrink-0 font-mono text-base font-bold tabular-nums">{{ money(b.rounded_total) }}</div>
+        </button>
+      </div>
+    </div>
+
+    <PrintOptionsModal
+      v-if="showPrintModal && invoiceName"
+      :invoice-name="invoiceName"
+      :series="selectedSeries"
+      doctype="Sales Invoice"
+      :initial-template="printTemplate"
+      @close="closePrintModal"
+    />
+
+    <div v-if="toast" role="status" class="fixed left-1/2 top-20 z-50 -translate-x-1/2 rounded-xl bg-slate-900/90 px-4 py-2 text-sm font-semibold text-white shadow-lg">{{ toast }}</div>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
+import { frappeGet, frappePost } from '../api'
+import BarcodeScanner from '../components/BarcodeScanner.vue'
+import MarqueeText from '../components/MarqueeText.vue'
+import PrintOptionsModal from '../components/PrintOptionsModal.vue'
+import { useItemCache, lookupItemInCache, refreshItemCache } from '../services/itemCache.js'
+import { useLedgerCache, ledgerCacheReady } from '../services/ledgerCache.js'
+import { useAllowedSeries } from '../composables/useAllowedSeries.js'
+import { useDiscountRules } from '../composables/useDiscountRules.js'
+import { getFloatPrecision } from '../encryption.js'
+import { formatDMY } from '../utils/date'
+import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
+
+const router = useRouter()
+const precision = getFloatPrecision()
+const MOP_OPTIONS = ['Cash', 'Credit', 'UPI', 'Card', 'Bank']
+const SERIES_KEY = 'mb-series'
+
+// ── Current user's billing settings (cached at login / dashboard load) ──────
+function readSettings() {
+  try { return JSON.parse(localStorage.getItem('wb-settings-v2') || 'null')?.data || {} } catch { return {} }
+}
+const settings = readSettings()
+const userDefaults = settings.user_defaults || {}
+const company = localStorage.getItem('wb-company') || userDefaults.company || ''
+
+const { allowedSeries: seriesOptions, fetchAllowedSeries } = useAllowedSeries()
+const selectedSeries = ref('')
+const priceList = ref('')
+const taxTemplate = ref('')
+const isInclusive = ref(false)
+const isReturn = ref(false)
+const printTemplate = ref('')
+const warehouse = ref(userDefaults.warehouse || localStorage.getItem('wb-warehouse') || '')
+const costCenter = ref(userDefaults.cost_center || localStorage.getItem('wb-cost-center') || '')
+const incomeAccount = ref(userDefaults.income_account || localStorage.getItem('wb-income-account') || '')
+
+// Same rules as SalesInvoice.handleSeriesSelected: the series row decides price list,
+// tax and return; the user's row decides warehouse, cost center and income account.
+function applySeriesDefaults(series) {
+  const entry = (settings.billing_series || []).find(bs => bs.series === series)
+  priceList.value = entry?.price_list || 'Standard Selling'
+  taxTemplate.value = entry?.tax_template || ''
+  isInclusive.value = !!entry?.tax_type_incl
+  isReturn.value = !!entry?.is_return
+  printTemplate.value = entry?.print_format || ''
+}
+
+watch(selectedSeries, (series) => {
+  if (!series) return
+  try { localStorage.setItem(SERIES_KEY, series) } catch { /* storage blocked */ }
+  if (invoiceName.value) return // a loaded bill keeps its own saved settings
+  const before = priceList.value
+  applySeriesDefaults(series)
+  if (priceList.value !== before) {
+    refreshItemCache('Sales', priceList.value, warehouse.value)
+    repriceRows()
+  }
+})
+
+// ── Bill state ───────────────────────────────────────────────────────────────
+const rows = ref([])
+const invoiceName = ref('')
+const docstatus = ref(0)
+const loadedTotal = ref(null)
+const isReadOnly = ref(false)
+const customerId = ref('')
+const customerName = ref('')
+const customerAddress = ref('')
+const customerState = ref('')
+const customerModifier = ref(null)
+const ignoreModifier = ref(false)
+const customerPricing = ref({})
+const mop = ref('Cash')
+const busy = ref(false)
+const loadingBill = ref(false)
+const showPrintModal = ref(false)
+const toast = ref('')
+
+const isSubmitted = computed(() => docstatus.value === 1)
+const activeRows = computed(() => rows.value.filter(r => !r.deleted))
+
+const { makeRowKey } = useDiscountRules({ items: rows, priceList, lookupItemInCache })
+
+const round = v => parseFloat((Number(v) || 0).toFixed(precision))
+const netRate = row => round((row.rate || 0) * (1 - (Number(row.discount) || 0) / 100))
+const rowAmount = row => round((Number(row.qty) || 0) * netRate(row))
+const subTotal = computed(() => round(activeRows.value.reduce((s, r) => s + rowAmount(r), 0)))
+const totalQty = computed(() => activeRows.value.reduce((s, r) => s + (Number(r.qty) || 0), 0))
+
+function money(v) {
+  return (Number(v) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+function fmtQty(n) {
+  const v = Number(n) || 0
+  return Number.isInteger(v) ? String(v) : v.toFixed(2)
+}
+
+let toastTimer = null
+function flash(msg) {
+  toast.value = msg
+  clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => { toast.value = '' }, 2000)
+}
+
+// ── Pricing (price list rate × customer modifier × customer item pricing) ────
+function baseRateFor(cached, uom) {
+  if (!cached) return 0
+  const pl = priceList.value
+  const targetUom = uom || cached.uom || 'Nos'
+  if (cached.uom_price_lists?.[pl]?.[targetUom] != null) return cached.uom_price_lists[pl][targetUom]
+  const entry = (cached.price_lists || []).find(p => p.name === pl)
+  if (entry) return entry.rate
+  return parseFloat(cached.price || 0)
+}
+
+function combinedFactor(itemCode) {
+  let mod = (!ignoreModifier.value && customerModifier.value != null) ? customerModifier.value : 1
+  if (mod === 0) mod = 1
+  let cp = customerPricing.value[itemCode]
+  if (cp === 0) cp = 1
+  const factor = cp != null ? mod * cp : mod
+  return factor === 0 ? 1 : factor
+}
+
+function rateFor(cached, uom) {
+  return round(baseRateFor(cached, uom) * combinedFactor(cached.item_code))
+}
+
+function repriceRows() {
+  if (isReturn.value) return
+  for (const row of rows.value) {
+    if (row.deleted || row._is_free || row._rate_overridden) continue
+    const cached = lookupItemInCache(row.item_code)
+    if (!cached) continue
+    row._base_rate = baseRateFor(cached, row.uom)
+    row.rate = round(row._base_rate * combinedFactor(row.item_code))
+  }
+}
+
+// ── Item entry ───────────────────────────────────────────────────────────────
+const { searchItemsInCache } = useItemCache()
+const query = ref('')
+const searchRef = ref(null)
+const showScanner = ref(false)
+const searchResults = computed(() => {
+  const q = query.value.trim()
+  return q.length >= 2 ? searchItemsInCache(q, 30) : []
+})
+
+function canEdit() {
+  if (isReadOnly.value) return false
+  if (!selectedSeries.value) { alert('Please select a series first.'); return false }
+  return true
+}
+
+function addItem(cached, uom = null) {
+  if (!canEdit()) return
+  const rowUom = uom || cached.uom || 'Nos'
+  // The same item in the same UOM adds to its existing line
+  const existing = rows.value.find(r => !r.deleted && !r._is_free && r.item_code === cached.item_code && r.uom === rowUom)
+  if (existing) {
+    existing.qty = (Number(existing.qty) || 0) + 1
+    flash(`${cached.item_name || cached.item_code} × ${fmtQty(existing.qty)}`)
+  } else {
+    const base = baseRateFor(cached, rowUom)
+    rows.value.push({
+      item_code: cached.item_code,
+      item_name: cached.item_name || cached.item_code,
+      qty: 1,
+      uom: rowUom,
+      rate: round(base * combinedFactor(cached.item_code)),
+      _base_rate: base,
+      price_list_rate: base,
+      discount: 0,
+      tax_rate: cached.tax_rate || 0,
+      warehouse: warehouse.value,
+      deleted: false,
+      _rowKey: makeRowKey(),
+    })
+    flash(`Added ${cached.item_name || cached.item_code}`)
+  }
+  query.value = ''
+}
+
+// Enter (or a keyboard-wedge barcode scanner) adds an exact code/barcode match directly
+function addFromQuery() {
+  const q = query.value.trim()
+  if (!q) return
+  const match = lookupItemInCache(q)
+  if (match) addItem(match, match.uom)
+  else if (searchResults.value.length === 1) addItem(searchResults.value[0])
+}
+
+function clearSearch() {
+  query.value = ''
+  searchRef.value?.focus()
+}
+
+// OCR readings are guesses: accept one only when it is a cached item code or barcode
+function codeExists(code) {
+  return !!lookupItemInCache(code)
+}
+
+function onScanned(code) {
+  showScanner.value = false
+  const match = lookupItemInCache(code)
+  if (match) addItem(match, match.uom)
+  else {
+    query.value = code
+    flash(`No item for ${code}`)
+  }
+}
+
+function closeScanner() {
+  showScanner.value = false
+}
+
+function stepQty(row, delta) {
+  const next = round((Number(row.qty) || 0) + delta)
+  if (next <= 0) removeRow(row)
+  else row.qty = next
+}
+
+function setQty(row, event) {
+  const v = parseFloat(event.target.value)
+  if (!Number.isFinite(v) || v < 0) { event.target.value = row.qty; return }
+  if (v === 0) removeRow(row)
+  else row.qty = round(v)
+}
+
+function setRate(row, event) {
+  const v = parseFloat(event.target.value)
+  if (!Number.isFinite(v) || v < 0) { event.target.value = row.rate; return }
+  row.rate = round(v)
+  row._rate_overridden = true
+}
+
+function removeRow(row) {
+  const idx = rows.value.indexOf(row)
+  if (idx >= 0) rows.value.splice(idx, 1)
+}
+
+// ── Customer ─────────────────────────────────────────────────────────────────
+const { ledgers: allLedgers, syncLoading: ledgerSyncing, refreshLedgerCache, searchLedgersInCache } = useLedgerCache()
+const showCustomerPicker = ref(false)
+const customerQuery = ref('')
+const customerSearchRef = ref(null)
+const customerResults = computed(() => {
+  const q = customerQuery.value.trim()
+  return q ? searchLedgersInCache(q, 'Customer').slice(0, 30) : []
+})
+
+async function openCustomerPicker() {
+  if (isReadOnly.value) return
+  customerQuery.value = ''
+  showCustomerPicker.value = true
+  nextTick(() => customerSearchRef.value?.focus())
+  await ledgerCacheReady
+  if (!allLedgers.value.length) refreshLedgerCache()
+}
+
+async function pickCustomer(c) {
+  showCustomerPicker.value = false
+  await setCustomer(c.name, c.label || c.name)
+  repriceRows()
+}
+
+async function setCustomer(id, name) {
+  customerId.value = id
+  customerName.value = name
+  customerModifier.value = null
+  customerPricing.value = {}
+  customerAddress.value = ''
+  customerState.value = ''
+  if (!id) return
+  const [details, pricing] = await Promise.allSettled([
+    frappeGet('ssplbilling.api.salesinvoice_api.get_customer_details', { customer: id }),
+    frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: id }),
+  ])
+  if (customerId.value !== id) return // picked another customer meanwhile
+  if (details.status === 'fulfilled' && details.value) {
+    const d = details.value
+    customerModifier.value = d.pricelist_multiplication_factor ?? null
+    customerAddress.value = d.address_name || ''
+    customerState.value = d.state || ''
+  }
+  if (pricing.status === 'fulfilled') customerPricing.value = pricing.value || {}
+}
+
+// ── Edit lock (same Redis lock the desktop Sales screen takes) ──────────────
+let tabId = sessionStorage.getItem('wb_tab_id')
+if (!tabId) {
+  tabId = Math.random().toString(36).substring(2, 15)
+  sessionStorage.setItem('wb_tab_id', tabId)
+}
+const hasLock = ref(false)
+
+async function releaseLock() {
+  if (!hasLock.value || !invoiceName.value) return
+  try {
+    await frappePost('ssplbilling.api.salesinvoice_api.release_bill_edit', { bill_no: invoiceName.value, tab_id: tabId })
+  } catch (e) {
+    console.error('[MobileBill] release lock failed:', e)
+  } finally {
+    hasLock.value = false
+  }
+}
+
+async function startModify() {
+  if (!invoiceName.value || isSubmitted.value || busy.value) return
+  busy.value = true
+  try {
+    const res = await frappePost('ssplbilling.api.salesinvoice_api.record_bill_edit', { bill_no: invoiceName.value, tab_id: tabId })
+    if (res?.status === 'conflict') {
+      alert(res.reason === 'same_user_other_tab'
+        ? 'This bill is already being edited by you in another tab.'
+        : `This bill is being edited by ${res.user}.`)
+      return
+    }
+    hasLock.value = true
+    // Reload so the edit starts from the latest saved version
+    await loadBill(invoiceName.value)
+    if (isSubmitted.value) {
+      await releaseLock()
+      alert('Bill is submitted. Modify is denied.')
+      return
+    }
+    isReadOnly.value = false
+    // Lines added while modifying take this customer's item pricing, as on the desktop
+    if (customerId.value) {
+      const id = customerId.value
+      frappeGet('ssplbilling.api.customer_pricing_api.get_customer_pricing', { customer: id })
+        .then(data => { if (customerId.value === id) customerPricing.value = data || {} })
+        .catch(() => {})
+    }
+  } catch (e) {
+    alert(e.message || 'Failed to start editing.')
+    if (hasLock.value) await releaseLock()
+  } finally {
+    busy.value = false
+  }
+}
+
+// ── Load / new / save ───────────────────────────────────────────────────────
+async function loadBill(name) {
+  loadingBill.value = true
+  try {
+    const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: name, include_customer_details: 1 })
+    invoiceName.value = data.name
+    docstatus.value = data.docstatus ?? 0
+    loadedTotal.value = data.rounded_total ?? data.grand_total ?? null
+    selectedSeries.value = data.naming_series || selectedSeries.value
+    priceList.value = data.price_list || priceList.value
+    taxTemplate.value = data.tax_template || ''
+    isInclusive.value = data.is_inclusive === 1
+    isReturn.value = data.is_return === 1
+    warehouse.value = data.warehouse || warehouse.value
+    costCenter.value = data.cost_center || costCenter.value
+    incomeAccount.value = data.income_account || incomeAccount.value
+    mop.value = data.mop || 'Cash'
+    ignoreModifier.value = data.customer_rate_multiplier === 0
+    customerId.value = data.customer || ''
+    customerName.value = data.customer_name || data.customer || ''
+    customerAddress.value = data.customer_address || ''
+    customerState.value = data.state || ''
+    customerModifier.value = data.customer_billing_details?.pricelist_multiplication_factor ?? null
+    customerPricing.value = {}
+    _loadedExtras = data
+    rows.value = (data.items || []).map(i => {
+      const discount = Number(i.discount) || 0
+      const effective = i.rate || 0
+      const gross = i.gross_rate ?? (discount > 0 && discount < 100 ? round(effective / (1 - discount / 100)) : effective)
+      return {
+        item_code: i.item_code,
+        item_name: i.item_name,
+        qty: i.qty,
+        uom: i.uom || 'Nos',
+        rate: gross,
+        _base_rate: i.price_list_rate || gross,
+        price_list_rate: i.price_list_rate || gross,
+        // Keep billed rates as they are; only newly added lines take today's price
+        _rate_overridden: true,
+        discount,
+        tax_rate: i.tax_rate || 0,
+        deleted: false,
+        _is_free: i.is_free_item === 1 || (effective === 0 && discount === 0),
+        _rowKey: makeRowKey(),
+      }
+    })
+    isReadOnly.value = true
+    return true
+  } catch (e) {
+    alert(e.message || 'Failed to load bill')
+    return false
+  } finally {
+    loadingBill.value = false
+  }
+}
+
+// Header fields the mobile screen does not edit, carried over unchanged on update
+let _loadedExtras = null
+
+async function newBill(confirmDiscard = true) {
+  if (confirmDiscard && !isReadOnly.value && activeRows.value.length && !confirm('Discard this bill?')) return
+  await releaseLock()
+  invoiceName.value = ''
+  docstatus.value = 0
+  loadedTotal.value = null
+  isReadOnly.value = false
+  rows.value = []
+  mop.value = 'Cash'
+  ignoreModifier.value = false
+  _loadedExtras = null
+  await setCustomer('', '')
+  warehouse.value = userDefaults.warehouse || localStorage.getItem('wb-warehouse') || ''
+  costCenter.value = userDefaults.cost_center || localStorage.getItem('wb-cost-center') || ''
+  incomeAccount.value = userDefaults.income_account || localStorage.getItem('wb-income-account') || ''
+  if (selectedSeries.value) applySeriesDefaults(selectedSeries.value)
+}
+
+function chargeRows(extra) {
+  // Freight / packing / loading / other charges set on the desktop are kept on update
+  if (!extra) return []
+  const out = []
+  const add = (amount, key, description) => {
+    const v = parseFloat(amount) || 0
+    const acct = localStorage.getItem(key)
+    if (v !== 0 && acct) out.push({ charge_type: 'Actual', account_head: acct, tax_amount: v, description })
+  }
+  add(extra.freight_amount, 'wb_freight', 'Freight')
+  add(extra.loading_amount, 'wb-tax-paid-on-purchase', 'Tax Collected')
+  add(extra.packing_amount, 'wb-packing', 'Packing')
+  add(extra.other_charges_amount, 'wb-other-charges', 'Other Charges')
+  return out
+}
+
+async function saveBill() {
+  if (busy.value || isReadOnly.value) return
+  if (!selectedSeries.value) { alert('Please select a series first.'); return }
+  if (!customerId.value) { alert('Please select a customer first.'); openCustomerPicker(); return }
+  const lines = activeRows.value.filter(r => Number(r.qty) > 0)
+  if (!lines.length) { alert('No items to save'); return }
+
+  const extra = _loadedExtras
+  const payload = {
+    company,
+    series: selectedSeries.value,
+    custom_invoice_no: '',
+    customer: customerId.value,
+    customer_address: customerAddress.value,
+    mop: mop.value,
+    posting_date: extra?.posting_date || serverToday(),
+    update_stock: 1,
+    price_list: priceList.value,
+    discount_pct: extra?.discount_percentage || '',
+    discount_amt: extra?.additional_discount_amount || '',
+    tax_template: taxTemplate.value,
+    cost_center: costCenter.value,
+    warehouse: warehouse.value,
+    income_account: incomeAccount.value,
+    is_inclusive_tax: isInclusive.value ? 1 : 0,
+    is_return: isReturn.value ? 1 : 0,
+    customer_rate_multiplier: ignoreModifier.value ? 0 : 1,
+    additional_charges: chargeRows(extra),
+    place_of_supply: customerState.value || '',
+    custom_customer_name: extra?.custom_customer_name || '',
+    custom_address_line1: extra?.custom_address_line1 || '',
+    custom_address_line2: extra?.custom_address_line2 || '',
+    custom_mobile_number: extra?.custom_mobile_number || '',
+    custom_remarks: extra?.custom_remarks || '',
+    items: lines.map(r => ({
+      item_code: r.item_code,
+      qty: r.qty,
+      uom: r.uom || 'Nos',
+      rate: netRate(r),
+      gross_rate: r.rate || 0,
+      price_list_rate: r._base_rate || r.price_list_rate || r.rate,
+      discount: Number(r.discount) || 0,
+      is_free_item: r._is_free ? 1 : 0,
+    })),
+  }
+
+  busy.value = true
+  const isUpdate = !!invoiceName.value
+  try {
+    const res = isUpdate
+      ? await frappePost('ssplbilling.api.sales.update_sales_invoice', { invoice_name: invoiceName.value, payload: JSON.stringify(payload) })
+      : await frappePost('ssplbilling.api.sales.post_sales_invoice', { payload: JSON.stringify(payload) })
+    if (res?.status !== 'success') throw new Error(res?.message || 'Failed to save bill.')
+    const name = res.name || invoiceName.value
+    await releaseLock()
+    await loadBill(name)
+    showPrintModal.value = true
+  } catch (e) {
+    alert(e?.message || (isUpdate ? 'Failed to update bill.' : 'Failed to save bill.'))
+  } finally {
+    busy.value = false
+  }
+}
+
+function closePrintModal() {
+  showPrintModal.value = false
+}
+
+// ── Past bills ───────────────────────────────────────────────────────────────
+const showPastBills = ref(false)
+const pastBills = ref([])
+const pastLoading = ref(false)
+const pastDate = ref(serverToday())
+const pastQuery = ref('')
+const pastDraftOnly = ref(false)
+let pastSeq = 0
+let pastTimer = null
+
+async function fetchPastBills() {
+  const seq = ++pastSeq
+  pastLoading.value = true
+  try {
+    const list = await frappeGet('ssplbilling.api.sales.get_sales_invoices', {
+      query: pastQuery.value.trim(),
+      limit: 100,
+      posting_date: pastDate.value,
+      naming_series: seriesOptions.value.join(','),
+      draft_only: pastDraftOnly.value,
+      company,
+    })
+    if (seq !== pastSeq) return
+    pastBills.value = (list || []).filter(b => b.docstatus !== 2)
+  } catch (e) {
+    if (seq === pastSeq) pastBills.value = []
+  } finally {
+    if (seq === pastSeq) pastLoading.value = false
+  }
+}
+
+function openPastBills() {
+  showPastBills.value = true
+  fetchPastBills()
+}
+
+function shiftPastDate(days) {
+  const d = parseCalendarDate(pastDate.value)
+  d.setDate(d.getDate() + days)
+  pastDate.value = toLocalISO(d)
+}
+
+watch([pastDate, pastDraftOnly], () => { if (showPastBills.value) fetchPastBills() })
+watch(pastQuery, () => {
+  clearTimeout(pastTimer)
+  pastTimer = setTimeout(fetchPastBills, 300)
+})
+
+async function openPastBill(name) {
+  if (!isReadOnly.value && activeRows.value.length && !confirm('Discard the current bill and open ' + name + '?')) return
+  showPastBills.value = false
+  await releaseLock()
+  await loadBill(name)
+}
+
+// ── Layout / lifecycle ───────────────────────────────────────────────────────
+// Fit the page to the area the browser actually shows (address bar / toolbar slide in and out)
+const viewportHeight = ref(0)
+const viewportStyle = computed(() => (viewportHeight.value ? { height: viewportHeight.value + 'px' } : null))
+function fitViewport() {
+  viewportHeight.value = Math.round(window.visualViewport?.height || window.innerHeight)
+}
+
+// Keys typed while nothing is focused (e.g. a Bluetooth barcode scanner) go into the item search
+function onPageKeydown(e) {
+  if (showScanner.value || showCustomerPicker.value || showPastBills.value || showPrintModal.value) return
+  if (isReadOnly.value || e.ctrlKey || e.metaKey || e.altKey) return
+  const el = document.activeElement
+  if (el?.matches?.('input, textarea, select, [contenteditable="true"]')) return
+  if (e.key.length === 1) {
+    e.preventDefault()
+    query.value += e.key
+    searchRef.value?.focus()
+  }
+}
+
+function onPageHide() {
+  if (hasLock.value && invoiceName.value) {
+    // Best effort: free the edit lock when the tab is closed mid-edit
+    frappePost('ssplbilling.api.salesinvoice_api.release_bill_edit', { bill_no: invoiceName.value, tab_id: tabId }).catch(() => {})
+  }
+}
+
+onMounted(async () => {
+  fitViewport()
+  window.visualViewport?.addEventListener('resize', fitViewport)
+  window.addEventListener('resize', fitViewport)
+  window.addEventListener('keydown', onPageKeydown)
+  window.addEventListener('pagehide', onPageHide)
+  // Fetch the ZXing decoder now so the camera scanner reads bars from its first frame
+  // on phones without a native BarcodeDetector (iOS Safari)
+  import('@zxing/browser').catch(() => {})
+  import('@zxing/library').catch(() => {})
+
+  const series = await fetchAllowedSeries('Sales Invoice')
+  const saved = localStorage.getItem(SERIES_KEY)
+  selectedSeries.value = (series || []).includes(saved) ? saved : (series?.[0] || '')
+  if (selectedSeries.value) applySeriesDefaults(selectedSeries.value)
+  refreshItemCache('Sales', priceList.value, warehouse.value)
+  ledgerCacheReady.then(() => { if (!allLedgers.value.length) refreshLedgerCache() })
+})
+
+onBeforeUnmount(() => {
+  clearTimeout(toastTimer)
+  clearTimeout(pastTimer)
+  releaseLock()
+  window.visualViewport?.removeEventListener('resize', fitViewport)
+  window.removeEventListener('resize', fitViewport)
+  window.removeEventListener('keydown', onPageKeydown)
+  window.removeEventListener('pagehide', onPageHide)
+})
+
+</script>
