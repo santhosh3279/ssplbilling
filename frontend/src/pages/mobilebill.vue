@@ -75,6 +75,43 @@
         class="w-full rounded-xl bg-[var(--color-warning)] py-2.5 text-sm font-bold text-black disabled:opacity-50"
         @click="startModify"
       >Modify this bill</button>
+
+      <!-- Selected item: qty and rate are entered here with the keypad below -->
+      <div v-if="pending && !isReadOnly" class="rounded-xl border border-[var(--color-info)] bg-[var(--color-info)]/5 p-2">
+        <div class="flex items-center gap-2">
+          <MarqueeText :text="pending.item_name" class="min-w-0 flex-1 text-sm font-semibold" />
+          <span v-if="pending.target !== 'new'" class="shrink-0 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Edit</span>
+          <button type="button" aria-label="Cancel item" class="shrink-0 rounded-lg px-2 text-lg leading-none text-[var(--color-text-muted)]" @click="cancelPending">&times;</button>
+        </div>
+        <div class="mt-1.5 flex items-center gap-2">
+          <button
+            type="button"
+            class="w-20 rounded-lg border-2 bg-[var(--color-bg)] px-2 py-1.5 text-left"
+            :class="pending.field === 'qty' ? 'border-[var(--color-info)]' : 'border-[var(--color-border)]'"
+            @click="focusPendingField('qty')"
+          >
+            <div class="text-[10px] uppercase text-[var(--color-text-muted)]">Qty · {{ pending.uom }}</div>
+            <div class="font-mono text-base font-bold tabular-nums">{{ pending.qty || '0' }}</div>
+          </button>
+          <button
+            type="button"
+            class="w-24 rounded-lg border-2 bg-[var(--color-bg)] px-2 py-1.5 text-left"
+            :class="pending.field === 'rate' ? 'border-[var(--color-info)]' : 'border-[var(--color-border)]'"
+            @click="focusPendingField('rate')"
+          >
+            <div class="text-[10px] uppercase text-[var(--color-text-muted)]">Rate</div>
+            <div class="font-mono text-base font-bold tabular-nums">{{ pending.rate || '0' }}</div>
+          </button>
+          <span class="ml-auto font-mono text-base font-bold tabular-nums">{{ money(pendingAmount) }}</span>
+          <button
+            v-if="!showKeypad"
+            type="button"
+            aria-label="Show keypad"
+            class="shrink-0 rounded-lg border border-[var(--color-border)] px-2 py-1.5 text-lg leading-none"
+            @click="showKeypad = true"
+          >⌨</button>
+        </div>
+      </div>
     </header>
 
     <main class="relative min-h-0 flex-1 overflow-y-auto">
@@ -127,47 +164,64 @@
           <div class="mt-1.5 flex items-center gap-2 pl-8">
             <div class="flex items-center rounded-xl border border-[var(--color-border)]">
               <button type="button" :disabled="isReadOnly || row._is_free" aria-label="Decrease quantity" class="px-3 py-1.5 text-lg font-bold disabled:opacity-30" @click="stepQty(row, -1)">−</button>
-              <input
-                :value="row.qty"
-                type="number"
-                inputmode="decimal"
-                min="0"
-                :readonly="isReadOnly || row._is_free"
+              <button
+                type="button"
+                :disabled="isReadOnly || row._is_free"
                 :aria-label="`Quantity of ${row.item_name}`"
-                class="w-16 bg-transparent py-1.5 text-center font-mono text-base font-bold tabular-nums outline-none"
-                @focus="$event.target.select()"
-                @change="setQty(row, $event)"
-              />
+                class="w-16 py-1.5 text-center font-mono text-base font-bold tabular-nums disabled:opacity-100"
+                :class="pending?.target === row && pending.field === 'qty' ? 'rounded bg-[var(--color-info)]/15' : ''"
+                @click="editRow(row, 'qty')"
+              >{{ fmtQty(row.qty) }}</button>
               <button type="button" :disabled="isReadOnly || row._is_free" aria-label="Increase quantity" class="px-3 py-1.5 text-lg font-bold disabled:opacity-30" @click="stepQty(row, 1)">+</button>
             </div>
             <span class="text-xs text-[var(--color-text-muted)]">{{ row.uom }} ×</span>
-            <input
-              :value="row.rate"
-              type="number"
-              inputmode="decimal"
-              min="0"
-              :readonly="isReadOnly || row._is_free"
+            <button
+              type="button"
+              :disabled="isReadOnly || row._is_free"
               :aria-label="`Rate of ${row.item_name}`"
-              class="w-20 rounded-lg border border-[var(--color-border)] bg-transparent px-1.5 py-1.5 text-right font-mono text-sm tabular-nums outline-none"
-              @focus="$event.target.select()"
-              @change="setRate(row, $event)"
-            />
+              class="w-20 rounded-lg border px-1.5 py-1.5 text-right font-mono text-sm tabular-nums disabled:opacity-100"
+              :class="pending?.target === row && pending.field === 'rate' ? 'border-[var(--color-info)] bg-[var(--color-info)]/10' : 'border-[var(--color-border)]'"
+              @click="editRow(row, 'rate')"
+            >{{ row.rate }}</button>
             <span class="ml-auto font-mono text-base font-bold tabular-nums">{{ money(rowAmount(row)) }}</span>
           </div>
         </li>
       </ul>
     </main>
 
+    <!-- On-screen number pad for the selected item (no system keyboard) -->
+    <section v-if="keypadVisible" class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 pb-2 pt-1.5">
+      <div class="mb-1.5 flex items-center gap-2">
+        <div class="flex overflow-hidden rounded-lg border border-[var(--color-border)] text-xs font-bold">
+          <button type="button" class="px-3 py-1.5" :class="pending.field === 'qty' ? 'bg-[var(--color-info)] text-white' : ''" @click="focusPendingField('qty')">Qty</button>
+          <button type="button" class="px-3 py-1.5 disabled:opacity-40" :class="pending.field === 'rate' ? 'bg-[var(--color-info)] text-white' : ''" @click="focusPendingField('rate')">Rate</button>
+        </div>
+        <button type="button" class="ml-auto rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold" @click="showKeypad = false">Hide ▾</button>
+      </div>
+      <div class="grid grid-cols-4 gap-1.5">
+        <button v-for="k in ['7', '8', '9']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
+        <button type="button" aria-label="Backspace" class="keypad-key" @click="keypadPress('back')">⌫</button>
+        <button v-for="k in ['4', '5', '6']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
+        <button type="button" aria-label="Decrease quantity" class="keypad-key text-[var(--color-danger)]" @click="pendingStepQty(-1)">Qty −</button>
+        <button v-for="k in ['1', '2', '3']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
+        <button type="button" aria-label="Increase quantity" class="keypad-key text-[var(--color-success)]" @click="pendingStepQty(1)">Qty +</button>
+        <button type="button" class="keypad-key" @click="keypadPress('.')">.</button>
+        <button type="button" class="keypad-key" @click="keypadPress('0')">0</button>
+        <button type="button" class="keypad-key text-sm" @click="keypadPress('clear')">C</button>
+        <button type="button" class="keypad-key keypad-key--ok" @click="commitPending">{{ pending.target === 'new' ? 'Add' : 'OK' }}</button>
+      </div>
+    </section>
+
     <!-- Totals + save -->
     <footer class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
-      <div class="mb-2 flex items-baseline justify-between">
+      <div class="flex items-baseline justify-between" :class="keypadVisible ? '' : 'mb-2'">
         <span class="text-xs text-[var(--color-text-muted)]">
           {{ activeRows.length }} {{ activeRows.length === 1 ? 'item' : 'items' }} · Qty {{ fmtQty(totalQty) }}
           <template v-if="taxTemplate && !isInclusive"> · tax extra</template>
         </span>
         <span class="font-mono text-2xl font-black tabular-nums">{{ money(isReadOnly && loadedTotal != null ? loadedTotal : subTotal) }}</span>
       </div>
-      <div class="flex gap-2">
+      <div v-if="!keypadVisible" class="flex gap-2">
         <select v-model="mop" :disabled="isReadOnly" aria-label="Mode of payment" class="w-28 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm font-semibold outline-none disabled:opacity-60">
           <option v-for="m in MOP_OPTIONS" :key="m" :value="m">{{ m }}</option>
         </select>
@@ -446,33 +500,147 @@ function canEdit() {
   return true
 }
 
+// ── Selected item entry (qty / rate via the on-screen keypad) ───────────────
+// A picked item is staged in `pending` under the search box; Add moves it into the bill.
+// `pending.target` is 'new' for a picked item, or the bill row being re-edited.
+const pending = ref(null)
+const showKeypad = ref(true)
+const keypadVisible = computed(() =>
+  !!pending.value && showKeypad.value && !isReadOnly.value &&
+  !showScanner.value && !showCustomerPicker.value && !showPastBills.value && !showPrintModal.value)
+const pendingAmount = computed(() =>
+  pending.value ? round((parseFloat(pending.value.qty) || 0) * (parseFloat(pending.value.rate) || 0)) : 0)
+
+function openPending(entry) {
+  // Keep the system keyboard closed so the keypad is not covered
+  document.activeElement?.blur?.()
+  pending.value = { fresh: true, ...entry }
+  showKeypad.value = true
+}
+
 function addItem(cached, uom = null) {
   if (!canEdit()) return
   const rowUom = uom || cached.uom || 'Nos'
-  // The same item in the same UOM adds to its existing line
-  const existing = rows.value.find(r => !r.deleted && !r._is_free && r.item_code === cached.item_code && r.uom === rowUom)
-  if (existing) {
-    existing.qty = (Number(existing.qty) || 0) + 1
-    flash(`${cached.item_name || cached.item_code} × ${fmtQty(existing.qty)}`)
-  } else {
-    const base = baseRateFor(cached, rowUom)
-    rows.value.push({
-      item_code: cached.item_code,
-      item_name: cached.item_name || cached.item_code,
-      qty: 1,
-      uom: rowUom,
-      rate: round(base * combinedFactor(cached.item_code)),
-      _base_rate: base,
-      price_list_rate: base,
-      discount: 0,
-      tax_rate: cached.tax_rate || 0,
-      warehouse: warehouse.value,
-      deleted: false,
-      _rowKey: makeRowKey(),
-    })
-    flash(`Added ${cached.item_name || cached.item_code}`)
-  }
   query.value = ''
+  const p = pending.value
+  // Picking the staged item again (e.g. repeat scans) bumps its qty
+  if (p && p.target === 'new' && p.item_code === cached.item_code && p.uom === rowUom) {
+    p.qty = String(round((parseFloat(p.qty) || 0) + 1))
+    p.field = 'qty'
+    p.fresh = true
+    document.activeElement?.blur?.()
+    showKeypad.value = true
+    return
+  }
+  if (p) commitPending()
+  const base = baseRateFor(cached, rowUom)
+  const rate = round(base * combinedFactor(cached.item_code))
+  openPending({
+    target: 'new',
+    item_code: cached.item_code,
+    item_name: cached.item_name || cached.item_code,
+    uom: rowUom,
+    qty: '1',
+    rate: String(rate),
+    computedRate: rate,
+    baseRate: base,
+    tax_rate: cached.tax_rate || 0,
+    field: 'qty',
+  })
+}
+
+function editRow(row, field) {
+  if (isReadOnly.value || row._is_free) return
+  if (pending.value?.target === row) { focusPendingField(field); return }
+  if (pending.value) commitPending()
+  openPending({
+    target: row,
+    item_code: row.item_code,
+    item_name: row.item_name || row.item_code,
+    uom: row.uom,
+    qty: String(row.qty),
+    rate: String(row.rate),
+    field,
+  })
+}
+
+function focusPendingField(field) {
+  if (!pending.value) return
+  pending.value.field = field
+  pending.value.fresh = true
+  showKeypad.value = true
+}
+
+function keypadPress(key) {
+  const p = pending.value
+  if (!p) return
+  let s = p.fresh && key !== 'back' ? '' : String(p[p.field] ?? '')
+  p.fresh = false
+  if (key === 'back') s = s.slice(0, -1)
+  else if (key === 'clear') s = ''
+  else if (key === '.') {
+    if (s.includes('.')) return
+    s = (s || '0') + '.'
+  } else if (s.length < 10) s = s === '0' ? key : s + key
+  p[p.field] = s
+}
+
+function pendingStepQty(delta) {
+  const p = pending.value
+  if (!p) return
+  p.qty = String(Math.max(0, round((parseFloat(p.qty) || 0) + delta)))
+  p.field = 'qty'
+  p.fresh = true
+}
+
+function cancelPending() {
+  pending.value = null
+}
+
+function commitPending() {
+  const p = pending.value
+  if (!p) return
+  pending.value = null
+  const qty = round(parseFloat(p.qty) || 0)
+  const rate = round(parseFloat(p.rate) || 0)
+
+  if (p.target !== 'new') {
+    const row = p.target
+    if (!rows.value.includes(row)) return // removed meanwhile
+    if (qty <= 0) { removeRow(row); return }
+    row.qty = qty
+    if (rate !== round(row.rate)) {
+      row.rate = rate
+      row._rate_overridden = true
+    }
+    return
+  }
+
+  if (qty <= 0) return
+  // Same item, UOM and rate adds to its existing line; a different rate gets its own line
+  const existing = rows.value.find(r => !r.deleted && !r._is_free && r.item_code === p.item_code && r.uom === p.uom && round(r.rate) === rate)
+  if (existing) {
+    existing.qty = round((Number(existing.qty) || 0) + qty)
+    flash(`${p.item_name} × ${fmtQty(existing.qty)}`)
+    return
+  }
+  rows.value.push({
+    item_code: p.item_code,
+    item_name: p.item_name,
+    qty,
+    uom: p.uom,
+    rate,
+    _base_rate: p.baseRate,
+    price_list_rate: p.baseRate,
+    // A rate typed on the keypad survives repricing
+    _rate_overridden: rate !== p.computedRate,
+    discount: 0,
+    tax_rate: p.tax_rate,
+    warehouse: warehouse.value,
+    deleted: false,
+    _rowKey: makeRowKey(),
+  })
+  flash(`Added ${p.item_name}`)
 }
 
 // Enter (or a keyboard-wedge barcode scanner) adds an exact code/barcode match directly
@@ -511,24 +679,14 @@ function closeScanner() {
 function stepQty(row, delta) {
   const next = round((Number(row.qty) || 0) + delta)
   if (next <= 0) removeRow(row)
-  else row.qty = next
-}
-
-function setQty(row, event) {
-  const v = parseFloat(event.target.value)
-  if (!Number.isFinite(v) || v < 0) { event.target.value = row.qty; return }
-  if (v === 0) removeRow(row)
-  else row.qty = round(v)
-}
-
-function setRate(row, event) {
-  const v = parseFloat(event.target.value)
-  if (!Number.isFinite(v) || v < 0) { event.target.value = row.rate; return }
-  row.rate = round(v)
-  row._rate_overridden = true
+  else {
+    row.qty = next
+    if (pending.value?.target === row) pending.value.qty = String(next)
+  }
 }
 
 function removeRow(row) {
+  if (pending.value?.target === row) pending.value = null
   const idx = rows.value.indexOf(row)
   if (idx >= 0) rows.value.splice(idx, 1)
 }
@@ -639,6 +797,7 @@ async function loadBill(name) {
   loadingBill.value = true
   try {
     const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: name, include_customer_details: 1 })
+    pending.value = null
     invoiceName.value = data.name
     docstatus.value = data.docstatus ?? 0
     loadedTotal.value = data.rounded_total ?? data.grand_total ?? null
@@ -696,6 +855,7 @@ let _loadedExtras = null
 async function newBill(confirmDiscard = true) {
   if (confirmDiscard && !isReadOnly.value && activeRows.value.length && !confirm('Discard this bill?')) return
   await releaseLock()
+  pending.value = null
   invoiceName.value = ''
   docstatus.value = 0
   loadedTotal.value = null
@@ -730,6 +890,7 @@ function chargeRows(extra) {
 async function saveBill() {
   if (busy.value || isReadOnly.value) return
   if (!selectedSeries.value) { alert('Please select a series first.'); return }
+  commitPending()
   if (!customerId.value) { alert('Please select a customer first.'); openCustomerPicker(); return }
   const lines = activeRows.value.filter(r => Number(r.qty) > 0)
   if (!lines.length) { alert('No items to save'); return }
@@ -910,3 +1071,30 @@ onBeforeUnmount(() => {
 })
 
 </script>
+
+<style scoped>
+.keypad-key {
+  display: flex;
+  height: 3rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-bg);
+  font-family: ui-monospace, monospace;
+  font-size: 1.25rem;
+  font-weight: 700;
+  user-select: none;
+  touch-action: manipulation;
+}
+.keypad-key--ok {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: #fff;
+  font-family: inherit;
+  font-size: 1rem;
+}
+.keypad-key:active {
+  transform: scale(0.95);
+}
+</style>
