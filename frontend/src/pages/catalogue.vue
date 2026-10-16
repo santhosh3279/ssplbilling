@@ -217,6 +217,18 @@
                   <p class="text-[9px] text-[var(--color-text-muted)] mt-0.5">Lower numbers appear first in the catalogue viewer.</p>
                 </div>
 
+                <!-- Show in Catalogue -->
+                <div class="flex flex-col gap-1.5 md:col-span-1">
+                  <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">Visibility</label>
+                  <label class="flex items-center gap-2 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs cursor-pointer">
+                    <input v-model="form.show_in_catalogue" type="checkbox" class="h-3.5 w-3.5" />
+                    Show in Catalogue
+                  </label>
+                  <p class="text-[9px] text-[var(--color-text-muted)] mt-0.5">
+                    Unchecked: hidden from the catalogue list, shown only as a sub folder where linked.
+                  </p>
+                </div>
+
                 <!-- Tile Grid -->
                 <div class="flex flex-col gap-1.5 md:col-span-1">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">
@@ -751,6 +763,7 @@ const emptyForm = () => ({
   heading: '',
   pageaddress: '',
   priority: 0,
+  show_in_catalogue: true,
   tile_grid: '4',
   timer: 0,
   price_lists: [],
@@ -819,6 +832,7 @@ async function selectCatalogue(name) {
       heading: doc.heading || '',
       pageaddress: doc.pageaddress || '',
       priority: doc.priority ?? 0,
+      show_in_catalogue: doc.show_in_catalogue !== 0,
       tile_grid: doc.tile_grid || '4',
       timer: doc.timer || 0,
       price_lists: (doc.price_lists || []).map(p => ({
@@ -1337,6 +1351,7 @@ async function handleSave() {
       heading: form.value.heading.trim(),
       pageaddress: form.value.pageaddress.trim(),
       priority: Number(form.value.priority),
+      show_in_catalogue: form.value.show_in_catalogue ? 1 : 0,
       tile_grid: form.value.tile_grid,
       timer: parseInt(form.value.timer) || 0,
       ...(form.value.modified && { modified: form.value.modified }),

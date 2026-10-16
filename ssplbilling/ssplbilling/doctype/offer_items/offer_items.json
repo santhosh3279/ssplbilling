@@ -8,6 +8,7 @@
   "heading",
   "pageaddress",
   "priority",
+  "show_in_catalogue",
   "tile_grid",
   "timer",
   "price_lists",
@@ -35,6 +36,13 @@
    "fieldname": "priority",
    "fieldtype": "Int",
    "label": "Priority"
+  },
+  {
+   "default": "1",
+   "description": "Uncheck to hide this catalogue from the catalogue list. It still shows as a sub folder inside any catalogue that links it.",
+   "fieldname": "show_in_catalogue",
+   "fieldtype": "Check",
+   "label": "Show in Catalogue"
   },
   {
    "default": "4",
@@ -71,7 +79,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-16 00:00:00.000000",
+ "modified": "2026-10-16 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "Offer-Items",

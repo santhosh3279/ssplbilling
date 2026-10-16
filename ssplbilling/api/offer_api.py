@@ -406,8 +406,11 @@ def _sub_catalogues(doc):
 def get_offer_list():
 	# A site may serve requests before its DocType schema migration completes.
 	has_priority = frappe.db.has_column("Offer-Items", "priority")
+	# Hidden catalogues are reachable only as sub folders of a catalogue that links them.
+	has_visibility = frappe.db.has_column("Offer-Items", "show_in_catalogue")
 	catalogues = frappe.get_all(
 		"Offer-Items",
+		filters={"show_in_catalogue": 1} if has_visibility else None,
 		fields=["name", "heading", "pageaddress", "timer", "creation"] + (["priority"] if has_priority else []),
 		order_by="priority asc, creation desc" if has_priority else "creation desc"
 	)
