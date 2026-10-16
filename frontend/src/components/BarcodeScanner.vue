@@ -604,13 +604,28 @@ function onKeydown(e) {
   if (e.key === 'Escape') close()
 }
 
+// Phone back button: the scanner adds its own history entry, so Back pops that entry
+// and closes the scanner instead of leaving the page. Router fields in history.state
+// are kept so Vue Router sees the same route when the entry is popped.
+const historyToken = `bs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+const ownsHistoryEntry = () => history.state?.bsScanner === historyToken
+
+function onPopState() {
+  if (!ownsHistoryEntry()) close()
+}
+
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
+  history.pushState({ ...history.state, bsScanner: historyToken }, '')
+  window.addEventListener('popstate', onPopState)
   start()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('popstate', onPopState)
+  // Closed by Back / Escape / a scan: drop the entry so the next Back leaves the page
+  if (ownsHistoryEntry()) history.back()
   done = true
   clearTimeout(foundTimer)
   stop()
