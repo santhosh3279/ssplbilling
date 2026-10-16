@@ -285,11 +285,25 @@ export function patchItemInCache(itemCode, newData, key = activeKey) {
   lastSync.value = serverNow().getTime()
 }
 
+// Scanners can send an AIM symbology identifier before the data: "]C1" marks a GS1-128
+// code, "]E0" an EAN-13 and so on. Some scanners / keyboard layouts send the "]" as "J".
+// GS (0x1D) separates GS1 fields and is never part of a stored barcode.
+const SYMBOLOGY_PREFIX = /^[\]J][A-Za-z][0-9A-Za-z]/
+
 /**
  * Look up an item by code or barcode in the local cache.
  * If found via barcode, returns the item with the barcode's specific UOM.
  */
 export function lookupItemInCache(code) {
+  if (!code) return null
+  const raw = String(code).replace(/\x1d/g, '').trim()
+  const exact = lookupExact(raw)
+  if (exact || !SYMBOLOGY_PREFIX.test(raw)) return exact
+  // Only when the code as read matches nothing: retry without the identifier
+  return lookupExact(raw.slice(3))
+}
+
+function lookupExact(code) {
   if (!code) return null
   const cleanCode = code.trim().toLowerCase()
   
