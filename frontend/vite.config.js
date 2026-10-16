@@ -47,6 +47,13 @@ export default defineConfig(({ command }) => ({
     // `VITE_HTTPS=1 yarn dev` serves https with Vite's self-signed cert. Phones only
     // allow live camera video (Stock Check barcode scanner) on https pages.
     https: process.env.VITE_HTTPS === '1',
+    // Public access goes through the TLS proxy at dev.chettiyarkada.in:443, so the
+    // HMR websocket must connect there instead of <hostname>:8080 (else reload loop).
+    hmr: {
+      protocol: 'wss',
+      host: 'dev.chettiyarkada.in',
+      clientPort: 443,
+    },
     proxy: {
       // Frappe backend
       ...getProxyOptions({ port: webserver_port }),
