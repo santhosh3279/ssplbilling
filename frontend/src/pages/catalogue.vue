@@ -612,7 +612,6 @@ const {
 
 // State
 const catalogues = ref([])
-const subCatalogueLinks = ref([]) // saved { parent, offer } sub folder links
 const loading = ref(false)
 const searchQuery = ref('')
 const selectedName = ref(null)
@@ -794,12 +793,6 @@ async function fetchCatalogues() {
       limit_page_length: 0
     })
     catalogues.value = data || []
-    subCatalogueLinks.value = await frappeGet('frappe.client.get_list', {
-      doctype: 'Offer-Sub Catalogue',
-      parent: 'Offer-Items',
-      fields: ['parent', 'offer'],
-      limit_page_length: 0
-    }) || []
   } catch (e) {
     alert(e.message || 'Failed to fetch catalogue lists')
   } finally {
@@ -1456,30 +1449,10 @@ function moveSubCatalogue(idx, delta) {
   ;[rows[idx], rows[target]] = [rows[target], rows[idx]]
 }
 
-// This catalogue plus every catalogue that already contains it through sub folder
-// links. Picking any of them as a sub folder would create a loop.
-const parentCatalogues = computed(() => {
-  const found = new Set()
-  if (!form.value.name) return found
-  const frontier = [form.value.name]
-  while (frontier.length) {
-    const child = frontier.pop()
-    if (found.has(child)) continue
-    found.add(child)
-    for (const link of subCatalogueLinks.value) {
-      if (link.offer === child) frontier.push(link.parent)
-    }
-  }
-  return found
-})
-
-// Every catalogue except this one, its parents and those already picked in other rows.
-// A row's current value always stays listed so the select never blanks out.
+// Every catalogue except this one and those already picked in other rows.
 function subCatalogueOptions(row) {
   const taken = new Set(form.value.sub_catalogues.filter(c => c !== row).map(c => c.offer))
-  return catalogues.value.filter(cat =>
-    cat.name === row.offer || (!parentCatalogues.value.has(cat.name) && !taken.has(cat.name))
-  )
+  return catalogues.value.filter(cat => cat.name !== form.value.name && !taken.has(cat.name))
 }
 
 async function fetchPriceLists() {
