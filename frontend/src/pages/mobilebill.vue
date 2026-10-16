@@ -43,11 +43,14 @@
             v-model="query"
             type="search"
             enterkeyhint="go"
+            :inputmode="showKeypad ? 'none' : 'search'"
             autocomplete="off"
             autocapitalize="off"
             spellcheck="false"
             placeholder="Item name, code or barcode"
-            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-4 pr-10 text-base outline-none focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/30"
+            class="w-full rounded-xl border bg-[var(--color-bg)] py-3 pl-4 pr-10 text-base outline-none focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/30"
+            :class="showKeypad && kbTarget === 'search' ? 'border-[var(--color-info)]' : 'border-[var(--color-border)]'"
+            @focus="kbTarget = 'search'"
             @keydown.enter.prevent="addFromQuery"
           />
           <button
@@ -67,6 +70,13 @@
         >
           <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8"/><path d="M11 8v8"/><path d="M15 8v8"/><path d="M18 8v8"/></svg>
         </button>
+        <button
+          v-if="!showKeypad"
+          type="button"
+          aria-label="Show keyboard"
+          class="w-12 shrink-0 rounded-xl border border-[var(--color-border)] text-xl"
+          @click="setKeypad(true)"
+        >⌨</button>
       </div>
       <button
         v-else-if="invoiceName && !isSubmitted"
@@ -83,33 +93,19 @@
           <span v-if="pending.target !== 'new'" class="shrink-0 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Edit</span>
           <button type="button" aria-label="Cancel item" class="shrink-0 rounded-lg px-2 text-lg leading-none text-[var(--color-text-muted)]" @click="cancelPending">&times;</button>
         </div>
-        <div class="mt-1.5 flex items-center gap-2">
+        <div class="mt-1.5 flex items-center gap-1.5">
           <button
+            v-for="f in PENDING_FIELDS"
+            :key="f.key"
             type="button"
-            class="w-20 rounded-lg border-2 bg-[var(--color-bg)] px-2 py-1.5 text-left"
-            :class="pending.field === 'qty' ? 'border-[var(--color-info)]' : 'border-[var(--color-border)]'"
-            @click="focusPendingField('qty')"
+            class="rounded-lg border-2 bg-[var(--color-bg)] px-2 py-1 text-left"
+            :class="[f.width, kbTarget === 'pending' && pending.field === f.key ? 'border-[var(--color-info)]' : 'border-[var(--color-border)]']"
+            @click="focusPendingField(f.key)"
           >
-            <div class="text-[10px] uppercase text-[var(--color-text-muted)]">Qty · {{ pending.uom }}</div>
-            <div class="font-mono text-base font-bold tabular-nums">{{ pending.qty || '0' }}</div>
-          </button>
-          <button
-            type="button"
-            class="w-24 rounded-lg border-2 bg-[var(--color-bg)] px-2 py-1.5 text-left"
-            :class="pending.field === 'rate' ? 'border-[var(--color-info)]' : 'border-[var(--color-border)]'"
-            @click="focusPendingField('rate')"
-          >
-            <div class="text-[10px] uppercase text-[var(--color-text-muted)]">Rate</div>
-            <div class="font-mono text-base font-bold tabular-nums">{{ pending.rate || '0' }}</div>
+            <div class="truncate text-[10px] uppercase text-[var(--color-text-muted)]">{{ f.key === 'qty' ? `Qty · ${pending.uom}` : f.label }}</div>
+            <div class="font-mono text-base font-bold tabular-nums">{{ pending[f.key] || '0' }}</div>
           </button>
           <span class="ml-auto font-mono text-base font-bold tabular-nums">{{ money(pendingAmount) }}</span>
-          <button
-            v-if="!showKeypad"
-            type="button"
-            aria-label="Show keypad"
-            class="shrink-0 rounded-lg border border-[var(--color-border)] px-2 py-1.5 text-lg leading-none"
-            @click="showKeypad = true"
-          >⌨</button>
         </div>
       </div>
     </header>
@@ -189,49 +185,88 @@
       </ul>
     </main>
 
-    <!-- On-screen number pad for the selected item (no system keyboard) -->
-    <section v-if="keypadVisible" class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-2 pb-2 pt-1.5">
-      <div class="mb-1.5 flex items-center gap-2">
-        <div class="flex overflow-hidden rounded-lg border border-[var(--color-border)] text-xs font-bold">
-          <button type="button" class="px-3 py-1.5" :class="pending.field === 'qty' ? 'bg-[var(--color-info)] text-white' : ''" @click="focusPendingField('qty')">Qty</button>
-          <button type="button" class="px-3 py-1.5 disabled:opacity-40" :class="pending.field === 'rate' ? 'bg-[var(--color-info)] text-white' : ''" @click="focusPendingField('rate')">Rate</button>
+    <!-- Constant on-screen keyboard (no system keyboard): letters for the item search,
+         number pad with qty ± and discount buttons for the selected item -->
+    <section v-if="keypadVisible" class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 pb-1.5 pt-1">
+      <div class="mb-1 flex items-center gap-1.5">
+        <div v-if="kbMode === 'num'" class="flex overflow-hidden rounded-lg border border-[var(--color-border)] text-xs font-bold">
+          <button
+            v-for="f in PENDING_FIELDS"
+            :key="f.key"
+            type="button"
+            class="px-2.5 py-1.5"
+            :class="pending.field === f.key ? 'bg-[var(--color-info)] text-white' : ''"
+            @click="focusPendingField(f.key)"
+          >{{ f.label }}</button>
         </div>
-        <button type="button" class="ml-auto rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold" @click="showKeypad = false">Hide ▾</button>
+        <span v-else class="px-1 text-xs font-bold text-[var(--color-text-muted)]">Item search</span>
+        <button v-if="kbMode === 'num'" type="button" class="rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-bold" @click="kbTarget = 'search'">ABC</button>
+        <button v-else-if="pending" type="button" class="rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-bold" @click="kbTarget = 'pending'">123</button>
+        <button type="button" class="ml-auto rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-bold" @click="setKeypad(false)">Hide ▾</button>
       </div>
-      <div class="grid grid-cols-4 gap-1.5">
-        <button v-for="k in ['7', '8', '9']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
-        <button type="button" aria-label="Backspace" class="keypad-key" @click="keypadPress('back')">⌫</button>
-        <button v-for="k in ['4', '5', '6']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
-        <button type="button" aria-label="Decrease quantity" class="keypad-key text-[var(--color-danger)]" @click="pendingStepQty(-1)">Qty −</button>
-        <button v-for="k in ['1', '2', '3']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
-        <button type="button" aria-label="Increase quantity" class="keypad-key text-[var(--color-success)]" @click="pendingStepQty(1)">Qty +</button>
-        <button type="button" class="keypad-key" @click="keypadPress('.')">.</button>
-        <button type="button" class="keypad-key" @click="keypadPress('0')">0</button>
-        <button type="button" class="keypad-key text-sm" @click="keypadPress('clear')">C</button>
-        <button type="button" class="keypad-key keypad-key--ok" @click="commitPending">{{ pending.target === 'new' ? 'Add' : 'OK' }}</button>
-      </div>
+
+      <template v-if="kbMode === 'num'">
+        <div class="mb-1 grid grid-cols-6 gap-1">
+          <button
+            v-for="d in DISCOUNT_PRESETS"
+            :key="d"
+            type="button"
+            class="keypad-key keypad-key--sm"
+            :class="Number(pending.discount) === d ? 'keypad-key--on' : ''"
+            @click="setPendingDiscount(d)"
+          >{{ d ? `${d}%` : 'No disc' }}</button>
+        </div>
+        <div class="grid grid-cols-4 gap-1">
+          <button v-for="k in ['7', '8', '9']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
+          <button type="button" aria-label="Backspace" class="keypad-key" @click="keypadPress('back')">⌫</button>
+          <button v-for="k in ['4', '5', '6']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
+          <button type="button" aria-label="Decrease quantity" class="keypad-key text-[var(--color-danger)]" @click="pendingStepQty(-1)">Qty −</button>
+          <button v-for="k in ['1', '2', '3']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
+          <button type="button" aria-label="Increase quantity" class="keypad-key text-[var(--color-success)]" @click="pendingStepQty(1)">Qty +</button>
+          <button type="button" class="keypad-key" @click="keypadPress('.')">.</button>
+          <button type="button" class="keypad-key" @click="keypadPress('0')">0</button>
+          <button type="button" class="keypad-key text-sm" @click="keypadPress('clear')">C</button>
+          <button type="button" class="keypad-key keypad-key--ok" @click="commitPending">{{ pending.target === 'new' ? 'Add' : 'OK' }}</button>
+        </div>
+      </template>
+
+      <template v-else>
+        <div v-for="(line, i) in ALPHA_ROWS" :key="i" class="mb-1 flex gap-1">
+          <button v-for="k in line" :key="k" type="button" class="keypad-key keypad-key--alpha flex-1" @click="alphaPress(k)">{{ k }}</button>
+          <button v-if="i === 2" type="button" aria-label="Backspace" class="keypad-key keypad-key--alpha flex-[1.5]" @click="alphaPress('back')">⌫</button>
+        </div>
+        <div class="flex gap-1">
+          <button type="button" class="keypad-key keypad-key--alpha keypad-key--sm flex-[1.5]" @click="alphaPress('clear')">Clear</button>
+          <button type="button" aria-label="Space" class="keypad-key keypad-key--alpha flex-[4]" @click="alphaPress(' ')">space</button>
+          <button type="button" class="keypad-key keypad-key--alpha keypad-key--ok flex-[2]" @click="addFromQuery">Go</button>
+        </div>
+      </template>
     </section>
 
-    <!-- Totals + save -->
-    <footer class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
-      <div class="flex items-baseline justify-between" :class="keypadVisible ? '' : 'mb-2'">
-        <span class="text-xs text-[var(--color-text-muted)]">
+    <!-- Totals + save (one compact row while the keyboard is open) -->
+    <footer
+      class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]"
+      :class="keypadVisible ? 'flex items-center gap-2 pb-[max(0.5rem,env(safe-area-inset-bottom))] pt-1.5' : 'pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5'"
+    >
+      <div class="flex items-baseline justify-between" :class="keypadVisible ? 'min-w-0 flex-1' : 'mb-2'">
+        <span v-if="!keypadVisible" class="text-xs text-[var(--color-text-muted)]">
           {{ activeRows.length }} {{ activeRows.length === 1 ? 'item' : 'items' }} · Qty {{ fmtQty(totalQty) }}
           <template v-if="taxTemplate && !isInclusive"> · tax extra</template>
         </span>
-        <span class="font-mono text-2xl font-black tabular-nums">{{ money(isReadOnly && loadedTotal != null ? loadedTotal : subTotal) }}</span>
+        <span class="font-mono font-black tabular-nums" :class="keypadVisible ? 'truncate text-lg' : 'text-2xl'">{{ money(isReadOnly && loadedTotal != null ? loadedTotal : subTotal) }}</span>
       </div>
-      <div v-if="!keypadVisible" class="flex gap-2">
-        <select v-model="mop" :disabled="isReadOnly" aria-label="Mode of payment" class="w-28 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm font-semibold outline-none disabled:opacity-60">
+      <div class="flex gap-2" :class="keypadVisible ? 'shrink-0' : ''">
+        <select v-model="mop" :disabled="isReadOnly" aria-label="Mode of payment" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm font-semibold outline-none disabled:opacity-60" :class="keypadVisible ? 'w-20 py-2' : 'w-28'">
           <option v-for="m in MOP_OPTIONS" :key="m" :value="m">{{ m }}</option>
         </select>
         <button
           v-if="!isReadOnly"
           type="button"
           :disabled="busy || !activeRows.length"
-          class="flex-1 rounded-xl bg-[var(--color-success)] py-3 text-base font-bold text-white shadow active:scale-[0.98] disabled:opacity-50"
+          class="rounded-xl bg-[var(--color-success)] font-bold text-white shadow active:scale-[0.98] disabled:opacity-50"
+          :class="keypadVisible ? 'px-4 py-2 text-sm' : 'flex-1 py-3 text-base'"
           @click="saveBill"
-        >{{ busy ? 'Saving…' : invoiceName ? 'Update Bill' : 'Save Bill' }}</button>
+        >{{ busy ? 'Saving…' : invoiceName ? 'Update' : 'Save' }}<template v-if="!keypadVisible"> Bill</template></button>
         <button
           v-else-if="invoiceName"
           type="button"
@@ -500,21 +535,51 @@ function canEdit() {
   return true
 }
 
-// ── Selected item entry (qty / rate via the on-screen keypad) ───────────────
+// ── On-screen keyboard + selected item entry ─────────────────────────────────
+// The keyboard stays on screen (Hide closes it, remembered per device). It types letters
+// into the item search, or numbers into the staged item's qty / rate / discount.
 // A picked item is staged in `pending` under the search box; Add moves it into the bill.
 // `pending.target` is 'new' for a picked item, or the bill row being re-edited.
+const KEYPAD_KEY = 'mb-keypad'
+const PENDING_FIELDS = [
+  { key: 'qty', label: 'Qty', width: 'w-[4.5rem]' },
+  { key: 'rate', label: 'Rate', width: 'w-[5.5rem]' },
+  { key: 'discount', label: 'Disc %', width: 'w-16' },
+]
+const DISCOUNT_PRESETS = [0, 5, 10, 15, 20, 25]
+const ALPHA_ROWS = [
+  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
+  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
+  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
+  ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '/', '.'],
+]
+
 const pending = ref(null)
-const showKeypad = ref(true)
+const showKeypad = ref((() => { try { return localStorage.getItem(KEYPAD_KEY) !== '0' } catch { return true } })())
+const kbTarget = ref('search') // 'search' | 'pending'
+const kbMode = computed(() => (pending.value && kbTarget.value === 'pending' ? 'num' : 'alpha'))
 const keypadVisible = computed(() =>
-  !!pending.value && showKeypad.value && !isReadOnly.value &&
+  showKeypad.value && !isReadOnly.value &&
   !showScanner.value && !showCustomerPicker.value && !showPastBills.value && !showPrintModal.value)
-const pendingAmount = computed(() =>
-  pending.value ? round((parseFloat(pending.value.qty) || 0) * (parseFloat(pending.value.rate) || 0)) : 0)
+const pendingAmount = computed(() => {
+  const p = pending.value
+  if (!p) return 0
+  const disc = Math.min(100, parseFloat(p.discount) || 0)
+  return round((parseFloat(p.qty) || 0) * (parseFloat(p.rate) || 0) * (1 - disc / 100))
+})
+
+function setKeypad(on) {
+  showKeypad.value = on
+  try { localStorage.setItem(KEYPAD_KEY, on ? '1' : '0') } catch { /* storage blocked */ }
+  // The search box only takes the system keyboard while ours is hidden
+  if (!on && !pending.value) nextTick(() => searchRef.value?.focus())
+}
 
 function openPending(entry) {
   // Keep the system keyboard closed so the keypad is not covered
   document.activeElement?.blur?.()
   pending.value = { fresh: true, ...entry }
+  kbTarget.value = 'pending'
   showKeypad.value = true
 }
 
@@ -529,6 +594,7 @@ function addItem(cached, uom = null) {
     p.field = 'qty'
     p.fresh = true
     document.activeElement?.blur?.()
+    kbTarget.value = 'pending'
     showKeypad.value = true
     return
   }
@@ -542,6 +608,7 @@ function addItem(cached, uom = null) {
     uom: rowUom,
     qty: '1',
     rate: String(rate),
+    discount: '0',
     computedRate: rate,
     baseRate: base,
     tax_rate: cached.tax_rate || 0,
@@ -560,6 +627,7 @@ function editRow(row, field) {
     uom: row.uom,
     qty: String(row.qty),
     rate: String(row.rate),
+    discount: String(Number(row.discount) || 0),
     field,
   })
 }
@@ -568,6 +636,7 @@ function focusPendingField(field) {
   if (!pending.value) return
   pending.value.field = field
   pending.value.fresh = true
+  kbTarget.value = 'pending'
   showKeypad.value = true
 }
 
@@ -575,14 +644,23 @@ function keypadPress(key) {
   const p = pending.value
   if (!p) return
   let s = p.fresh && key !== 'back' ? '' : String(p[p.field] ?? '')
-  p.fresh = false
   if (key === 'back') s = s.slice(0, -1)
   else if (key === 'clear') s = ''
   else if (key === '.') {
     if (s.includes('.')) return
     s = (s || '0') + '.'
   } else if (s.length < 10) s = s === '0' ? key : s + key
+  if (p.field === 'discount' && (parseFloat(s) || 0) > 100) return
+  p.fresh = false
   p[p.field] = s
+}
+
+function setPendingDiscount(pct) {
+  const p = pending.value
+  if (!p) return
+  p.discount = String(pct)
+  p.field = 'discount'
+  p.fresh = true
 }
 
 function pendingStepQty(delta) {
@@ -593,16 +671,26 @@ function pendingStepQty(delta) {
   p.fresh = true
 }
 
+// Letters / digits on the on-screen keyboard type into the item search
+function alphaPress(key) {
+  if (key === 'back') query.value = query.value.slice(0, -1)
+  else if (key === 'clear') query.value = ''
+  else query.value += key
+}
+
 function cancelPending() {
   pending.value = null
+  kbTarget.value = 'search'
 }
 
 function commitPending() {
   const p = pending.value
   if (!p) return
   pending.value = null
+  kbTarget.value = 'search'
   const qty = round(parseFloat(p.qty) || 0)
   const rate = round(parseFloat(p.rate) || 0)
+  const discount = round(Math.min(100, Math.max(0, parseFloat(p.discount) || 0)))
 
   if (p.target !== 'new') {
     const row = p.target
@@ -613,12 +701,18 @@ function commitPending() {
       row.rate = rate
       row._rate_overridden = true
     }
+    if (discount !== round(Number(row.discount) || 0)) {
+      row.discount = discount
+      row._rule_discount = null // typed by hand, not set by a discount rule
+    }
     return
   }
 
   if (qty <= 0) return
-  // Same item, UOM and rate adds to its existing line; a different rate gets its own line
-  const existing = rows.value.find(r => !r.deleted && !r._is_free && r.item_code === p.item_code && r.uom === p.uom && round(r.rate) === rate)
+  // Same item, UOM, rate and discount adds to its existing line; otherwise it gets its own line
+  const existing = rows.value.find(r =>
+    !r.deleted && !r._is_free && r.item_code === p.item_code && r.uom === p.uom &&
+    round(r.rate) === rate && round(Number(r.discount) || 0) === discount)
   if (existing) {
     existing.qty = round((Number(existing.qty) || 0) + qty)
     flash(`${p.item_name} × ${fmtQty(existing.qty)}`)
@@ -634,7 +728,7 @@ function commitPending() {
     price_list_rate: p.baseRate,
     // A rate typed on the keypad survives repricing
     _rate_overridden: rate !== p.computedRate,
-    discount: 0,
+    discount,
     tax_rate: p.tax_rate,
     warehouse: warehouse.value,
     deleted: false,
@@ -686,7 +780,7 @@ function stepQty(row, delta) {
 }
 
 function removeRow(row) {
-  if (pending.value?.target === row) pending.value = null
+  if (pending.value?.target === row) cancelPending()
   const idx = rows.value.indexOf(row)
   if (idx >= 0) rows.value.splice(idx, 1)
 }
@@ -797,7 +891,7 @@ async function loadBill(name) {
   loadingBill.value = true
   try {
     const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: name, include_customer_details: 1 })
-    pending.value = null
+    cancelPending()
     invoiceName.value = data.name
     docstatus.value = data.docstatus ?? 0
     loadedTotal.value = data.rounded_total ?? data.grand_total ?? null
@@ -855,7 +949,7 @@ let _loadedExtras = null
 async function newBill(confirmDiscard = true) {
   if (confirmDiscard && !isReadOnly.value && (activeRows.value.length || pending.value) && !confirm('Discard this bill?')) return
   await releaseLock()
-  pending.value = null
+  cancelPending()
   invoiceName.value = ''
   docstatus.value = 0
   loadedTotal.value = null
@@ -1075,7 +1169,9 @@ onBeforeUnmount(() => {
 <style scoped>
 .keypad-key {
   display: flex;
-  height: 3rem;
+  height: 2.75rem;
+  min-width: 0;
+  padding: 0;
   align-items: center;
   justify-content: center;
   border-radius: 0.75rem;
@@ -1093,6 +1189,22 @@ onBeforeUnmount(() => {
   color: #fff;
   font-family: inherit;
   font-size: 1rem;
+}
+.keypad-key--alpha {
+  height: 2.6rem;
+  border-radius: 0.5rem;
+  font-family: inherit;
+  font-size: 1rem;
+}
+.keypad-key--sm {
+  height: 2.25rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+}
+.keypad-key--on {
+  border-color: var(--color-info);
+  background: var(--color-info);
+  color: #fff;
 }
 .keypad-key:active {
   transform: scale(0.95);
