@@ -10,11 +10,11 @@
         🏢 {{ alternativeCompany }}
       </div>
 
-      <!-- CatalougePage links to its sub-folder catalogues; key it so each folder mounts fresh. -->
+      <!-- Catalogue pages link to their sub-folder catalogues; key them so each folder mounts fresh. -->
       <router-view v-slot="{ Component, route: viewRoute }">
         <component
           :is="Component"
-          :key="viewRoute.name === 'CatalougePage' ? `catalogue:${viewRoute.params.pageaddress}` : undefined"
+          :key="catalogueRoutes.has(viewRoute.name) ? `${viewRoute.name}:${viewRoute.params.pageaddress}` : undefined"
           class="flex-1 overflow-hidden"
         />
       </router-view>
@@ -86,6 +86,9 @@ import { initLedgerSync, destroyLedgerSync } from './composables/useLedgerSync';
 import { initBillPanelSync, destroyBillPanelSync } from './composables/useBillPanelSync';
 import { initFrappeSocket } from './services/frappeSocket';
 import { tabLimitBlocked, tabLimitInfo } from './services/tabSession';
+
+// Routes whose pageaddress param must remount the page (sub-folder navigation).
+const catalogueRoutes = new Set(['CatalougePage', 'OfferPage']);
 
 const showCalculator = ref(false);
 const showCommandLine = ref(false);

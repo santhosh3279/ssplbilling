@@ -325,26 +325,7 @@
 
         <!-- Items Grid Section -->
         <main class="flex-1 w-full px-6 py-10 transition-all duration-300" :class="showCart && cartCount ? 'lg:pr-[21rem]' : ''">
-          <!-- Sub-folder catalogues linked to this one -->
-          <section v-if="offer.sub_catalogues?.length" class="mb-8" aria-label="Sub folders">
-            <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              <button
-                v-for="folder in offer.sub_catalogues"
-                :key="folder.name"
-                type="button"
-                @click="openSubCatalogue(folder.pageaddress)"
-                class="group flex items-center gap-3 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 text-left shadow-md hover:shadow-xl hover:border-[var(--color-info)]/60 transition-all duration-300 hover:-translate-y-0.5"
-              >
-                <span class="text-3xl shrink-0">📁</span>
-                <span class="min-w-0">
-                  <span class="block font-black text-[var(--color-text)] group-hover:text-[var(--color-info)] truncate">{{ folder.heading }}</span>
-                  <span class="block text-[10px] font-bold text-[var(--color-text-muted)]">
-                    {{ folder.item_count }} active {{ folder.item_count === 1 ? 'item' : 'items' }}
-                  </span>
-                </span>
-              </button>
-            </div>
-          </section>
+          <CatalogueSubFolders :folders="offer.sub_catalogues || []" @open="openSubCatalogue" />
           <div class="grid gap-6 w-full transition-all duration-300" :class="[gridClass, containerClass, showCart && cartCount ? 'lg:ml-0 lg:mr-auto' : 'mx-auto']">
             <div
               v-for="(item, itemIndex) in offer.items"
@@ -576,6 +557,7 @@
 import { serverCalendarDate } from '../services/serverTime'
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter, RouterLink } from 'vue-router'
+import CatalogueSubFolders from '../components/CatalogueSubFolders.vue'
 import { frappeGet, frappePost } from '../api.js'
 import { handleCatalogueRemote } from '../services/catalogueRemote.js'
 import { encryptPrice, getCipherMap } from '../encryption.js'

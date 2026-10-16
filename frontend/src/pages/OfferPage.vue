@@ -213,7 +213,7 @@
             @click="goBackToCatalogue"
             class="absolute top-4 left-4 z-20 flex items-center gap-2 rounded-xl bg-slate-950/60 hover:bg-slate-900/80 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white border border-slate-800/50 transition active:scale-95 focus:outline-none"
           >
-            ← Back to Catalogue
+            {{ cameFromCatalogue ? '← Back' : '← Back to Catalogue' }}
           </button>
           
           <!-- Refresh Button -->
@@ -244,6 +244,8 @@
 
         <!-- Items Grid Section -->
         <main class="flex-1 w-full mx-auto px-6 py-10" :class="containerClass">
+          <CatalogueSubFolders :folders="offer.sub_catalogues || []" @open="openSubCatalogue" />
+
           <div class="grid gap-6" :class="gridClass">
             <div
               v-for="(item, itemIndex) in offer.items"
@@ -456,6 +458,7 @@
 import { serverCalendarDate } from '../services/serverTime'
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import CatalogueSubFolders from '../components/CatalogueSubFolders.vue'
 import { frappeGet } from '../api.js'
 import { handleCatalogueRemote } from '../services/catalogueRemote.js'
 import { encryptPrice } from '../encryption.js'
@@ -810,8 +813,17 @@ function goHome() {
   }
 }
 
+// Opened from a parent folder: step back; otherwise return to the catalogue display list.
+const cameFromCatalogue = typeof window.history.state?.back === 'string'
+  && window.history.state.back.startsWith('/catalogue/')
+
 function goBackToCatalogue() {
-  router.push('/displaycatalogue')
+  if (cameFromCatalogue) router.back()
+  else router.push('/displaycatalogue')
+}
+
+function openSubCatalogue(address) {
+  if (address) router.push({ name: 'OfferPage', params: { pageaddress: address } })
 }
 
 const showExportModal = ref(false)
