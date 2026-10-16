@@ -853,7 +853,7 @@ async function loadBill(name) {
 let _loadedExtras = null
 
 async function newBill(confirmDiscard = true) {
-  if (confirmDiscard && !isReadOnly.value && activeRows.value.length && !confirm('Discard this bill?')) return
+  if (confirmDiscard && !isReadOnly.value && (activeRows.value.length || pending.value) && !confirm('Discard this bill?')) return
   await releaseLock()
   pending.value = null
   invoiceName.value = ''
@@ -1005,7 +1005,7 @@ watch(pastQuery, () => {
 })
 
 async function openPastBill(name) {
-  if (!isReadOnly.value && activeRows.value.length && !confirm('Discard the current bill and open ' + name + '?')) return
+  if (!isReadOnly.value && (activeRows.value.length || pending.value) && !confirm('Discard the current bill and open ' + name + '?')) return
   showPastBills.value = false
   await releaseLock()
   await loadBill(name)
