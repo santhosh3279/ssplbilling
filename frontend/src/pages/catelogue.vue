@@ -94,7 +94,7 @@
                 {{ cat.heading }}
               </h3>
               <p class="text-xs font-semibold text-[var(--color-text-muted)]">
-                {{ cat.item_count ?? 0 }} active {{ cat.item_count === 1 ? 'item' : 'items' }}
+                <template v-if="cat.folder_count">📁 {{ cat.folder_count }} {{ cat.folder_count === 1 ? 'folder' : 'folders' }} · </template>{{ cat.item_count ?? 0 }} active {{ cat.item_count === 1 ? 'item' : 'items' }}
               </p>
             </div>
           </div>
