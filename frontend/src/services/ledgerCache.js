@@ -1,6 +1,7 @@
 import { serverNow, serverToday } from './serverTime'
 import { ref, toRaw } from 'vue'
 import { frappePost } from '../api.js'
+import { session } from '../session.js'
 import { readLedgerSnapshot, writeLedgerSnapshot } from './ledgerCacheStore'
 
 // Global reactive state for ledgers
@@ -95,8 +96,21 @@ export async function catchUpLedgerCache() {
   return runRefresh('delta')
 }
 
+// Ledger endpoints are for System Users. App.vue starts the sync on every page, including the
+// public catalogue, where a guest or website user (with a company left in localStorage from an
+// earlier staff login) would otherwise get 403s.
+async function canSyncLedgers() {
+  try {
+    await session.checkWebsiteUser()
+  } catch {
+    return false
+  }
+  return session.isSystemUser.value
+}
+
 async function runRefresh(mode) {
   await ledgerCacheReady
+  if (!(await canSyncLedgers())) return ledgers.value
   // A forced realtime refresh must start after any older request finishes:
   // that request may have read balances before the voucher was committed.
   while (pendingRefresh) {
@@ -187,6 +201,7 @@ export async function patchLedgersFromServer(names) {
   const context = currentContext()
   // Nothing loaded for this company yet: the next full refresh will include these rows.
   if (!names?.length || cacheContext.value !== context) return false
+  if (!(await canSyncLedgers())) return false
   const { company, alternative_company, cost_center } = JSON.parse(context)
   const startedAt = serverNow().getTime() / 1000
   const res = await frappePost('ssplbilling.api.customersearch_api.get_ledgers_by_name', {
