@@ -11,6 +11,7 @@
   "tile_grid",
   "timer",
   "price_lists",
+  "sub_catalogues",
   "items"
  ],
  "fields": [
@@ -54,6 +55,13 @@
    "options": "Offer-Pricelist"
   },
   {
+   "description": "Other catalogues shown as sub-folders inside this one. They stay listed on their own as well.",
+   "fieldname": "sub_catalogues",
+   "fieldtype": "Table",
+   "label": "Sub Folders",
+   "options": "Offer-Sub Catalogue"
+  },
+  {
    "fieldname": "items",
    "fieldtype": "Table",
    "label": "Items",
@@ -63,7 +71,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-18 00:00:00.000000",
+ "modified": "2026-10-16 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "Offer-Items",

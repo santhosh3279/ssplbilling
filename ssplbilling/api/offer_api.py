@@ -353,8 +353,54 @@ def get_offer_details(pageaddress):
 		"timer": doc.timer or 0,
 		"price_lists": [{"price_list": pl.price_list} for pl in doc.get("price_lists") if pl.price_list],
 		"items": items,
+		"sub_catalogues": _sub_catalogues(doc),
 		"cipher_map": cipher_map
 	}
+
+
+def _active_item_counts(names):
+	if not names:
+		return {}
+	counts = frappe.get_all(
+		"Offer-Item",
+		filters={
+			"parent": ["in", list(names)],
+			"parenttype": "Offer-Items",
+			"parentfield": "items",
+			"disabled": 0,
+		},
+		fields=["parent", {"COUNT": "name", "as": "item_count"}],
+		group_by="parent",
+		ignore_permissions=True,
+	)
+	return {row.parent: row.item_count for row in counts}
+
+
+def _sub_catalogues(doc):
+	"""Linked child catalogues, in table order, rendered as folders on the public page."""
+	names = [row.offer for row in doc.get("sub_catalogues") or [] if row.offer]
+	if not names:
+		return []
+	details = {
+		row.name: row
+		for row in frappe.get_all(
+			"Offer-Items",
+			filters={"name": ["in", names]},
+			fields=["name", "heading", "pageaddress"],
+			ignore_permissions=True,
+		)
+	}
+	counts = _active_item_counts(names)
+	return [
+		{
+			"name": name,
+			"heading": details[name].heading,
+			"pageaddress": details[name].pageaddress,
+			"item_count": counts.get(name, 0),
+		}
+		for name in names
+		if name in details
+	]
 
 @frappe.whitelist(allow_guest=True)
 def get_offer_list():
@@ -368,20 +414,21 @@ def get_offer_list():
 	if not catalogues:
 		return catalogues
 
-	counts = frappe.get_all(
-		"Offer-Item",
-		filters={
-			"parent": ["in", [catalogue.name for catalogue in catalogues]],
-			"parenttype": "Offer-Items",
-			"parentfield": "items",
-			"disabled": 0,
-		},
-		fields=["parent", {"COUNT": "name", "as": "item_count"}],
-		group_by="parent",
-	)
-	counts_by_parent = {row.parent: row.item_count for row in counts}
+	names = [catalogue.name for catalogue in catalogues]
+	counts_by_parent = _active_item_counts(names)
+	folders_by_parent = {}
+	if frappe.db.table_exists("Offer-Sub Catalogue"):
+		folders = frappe.get_all(
+			"Offer-Sub Catalogue",
+			filters={"parent": ["in", names], "parenttype": "Offer-Items"},
+			fields=["parent", {"COUNT": "name", "as": "folder_count"}],
+			group_by="parent",
+			ignore_permissions=True,
+		)
+		folders_by_parent = {row.parent: row.folder_count for row in folders}
 	for catalogue in catalogues:
 		catalogue.item_count = counts_by_parent.get(catalogue.name, 0)
+		catalogue.folder_count = folders_by_parent.get(catalogue.name, 0)
 	return catalogues
 
 

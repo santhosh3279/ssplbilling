@@ -233,7 +233,7 @@
             <div class="flex items-center justify-between">
               <span class="card-icon text-3xl">📖</span>
               <span class="card-item-count text-[10px] font-bold text-[var(--color-text-muted)]">
-                {{ cat.item_count ?? 0 }} active {{ cat.item_count === 1 ? 'item' : 'items' }}
+                <template v-if="cat.folder_count">📁 {{ cat.folder_count }} · </template>{{ cat.item_count ?? 0 }} active {{ cat.item_count === 1 ? 'item' : 'items' }}
               </span>
             </div>
 

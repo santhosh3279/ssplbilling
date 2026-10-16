@@ -308,6 +308,78 @@
               </div>
             </div>
 
+            <!-- Sub Folders Card -->
+            <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
+              <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-1.5">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                  Sub Folders ({{ form.sub_catalogues?.length || 0 }})
+                </h3>
+                <button
+                  @click="addSubCatalogueRow"
+                  type="button"
+                  class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-[10px] font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]/80 transition"
+                >
+                  + Add Sub Folder
+                </button>
+              </div>
+
+              <div v-if="form.sub_catalogues && form.sub_catalogues.length" class="space-y-2">
+                <div
+                  v-for="(sub, idx) in form.sub_catalogues"
+                  :key="sub._rowId"
+                  class="flex items-center gap-3"
+                >
+                  <span class="text-xs text-[var(--color-text-muted)] font-mono w-6 text-center">
+                    {{ idx + 1 }}
+                  </span>
+
+                  <select
+                    v-model="sub.offer"
+                    class="flex-1 rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-1.5 text-xs outline-none focus:border-[var(--color-info)] transition"
+                  >
+                    <option value="" disabled>Select Catalogue...</option>
+                    <option
+                      v-for="cat in subCatalogueOptions(sub)"
+                      :key="cat.name"
+                      :value="cat.name"
+                    >
+                      {{ cat.heading }} ({{ cat.pageaddress }})
+                    </option>
+                  </select>
+
+                  <button
+                    @click="moveSubCatalogue(idx, -1)"
+                    :disabled="idx === 0"
+                    type="button"
+                    class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-30 px-1 text-sm transition"
+                    title="Move up"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    @click="moveSubCatalogue(idx, 1)"
+                    :disabled="idx === form.sub_catalogues.length - 1"
+                    type="button"
+                    class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-30 px-1 text-sm transition"
+                    title="Move down"
+                  >
+                    ▼
+                  </button>
+                  <button
+                    @click="removeSubCatalogueRow(idx)"
+                    type="button"
+                    class="text-red-500 hover:text-red-700 font-bold px-2 py-1 text-sm transition"
+                    title="Remove sub folder"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+              <div v-else class="text-xs text-[var(--color-text-muted)] italic text-center py-2">
+                No sub folders. Link other catalogues here to show them as folders inside this one.
+              </div>
+            </div>
+
             <!-- Items Table Card -->
             <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm space-y-4">
               <div class="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--color-border)]/50 pb-2">
@@ -682,6 +754,7 @@ const emptyForm = () => ({
   tile_grid: '4',
   timer: 0,
   price_lists: [],
+  sub_catalogues: [],
   items: [{ _rowId: getRowId(), itemcode: '', itemname: '', barcode: '', disabled: 0 }]
 })
 
@@ -704,7 +777,7 @@ async function fetchCatalogues() {
       doctype: 'Offer-Items',
       fields: ['name', 'heading', 'pageaddress', 'modified'],
       order_by: 'modified desc',
-      limit_page_length: 100
+      limit_page_length: 0
     })
     catalogues.value = data || []
   } catch (e) {
@@ -751,6 +824,11 @@ async function selectCatalogue(name) {
       price_lists: (doc.price_lists || []).map(p => ({
         name: p.name,
         price_list: p.price_list || ''
+      })),
+      sub_catalogues: (doc.sub_catalogues || []).map(c => ({
+        _rowId: getRowId(),
+        name: c.name,
+        offer: c.offer || ''
       })),
       items: (doc.items || []).map(i => ({
         _rowId: getRowId(),
@@ -1269,6 +1347,11 @@ async function handleSave() {
         doctype: 'Offer-Pricelist',
         price_list: p.price_list.trim()
       })),
+      sub_catalogues: (form.value.sub_catalogues || []).filter(c => c.offer).map(c => ({
+        ...(c.name && { name: c.name }),
+        doctype: 'Offer-Sub Catalogue',
+        offer: c.offer
+      })),
       items: itemRows.map(({ item: i }) => ({
         ...(i.name && { name: i.name }),
         doctype: 'Offer-Item',
@@ -1334,6 +1417,27 @@ function addPriceListRow() {
 
 function removePriceListRow(idx) {
   form.value.price_lists.splice(idx, 1)
+}
+
+function addSubCatalogueRow() {
+  form.value.sub_catalogues.push({ _rowId: getRowId(), offer: '' })
+}
+
+function removeSubCatalogueRow(idx) {
+  form.value.sub_catalogues.splice(idx, 1)
+}
+
+function moveSubCatalogue(idx, delta) {
+  const rows = form.value.sub_catalogues
+  const target = idx + delta
+  if (target < 0 || target >= rows.length) return
+  ;[rows[idx], rows[target]] = [rows[target], rows[idx]]
+}
+
+// Every catalogue except this one and those already picked in other rows.
+function subCatalogueOptions(row) {
+  const taken = new Set(form.value.sub_catalogues.filter(c => c !== row).map(c => c.offer))
+  return catalogues.value.filter(cat => cat.name !== form.value.name && !taken.has(cat.name))
 }
 
 async function fetchPriceLists() {

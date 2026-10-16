@@ -10,7 +10,14 @@
         🏢 {{ alternativeCompany }}
       </div>
 
-      <router-view class="flex-1 overflow-hidden" />
+      <!-- CatalougePage links to its sub-folder catalogues; key it so each folder mounts fresh. -->
+      <router-view v-slot="{ Component, route: viewRoute }">
+        <component
+          :is="Component"
+          :key="viewRoute.name === 'CatalougePage' ? `catalogue:${viewRoute.params.pageaddress}` : undefined"
+          class="flex-1 overflow-hidden"
+        />
+      </router-view>
       
       <!-- Global Components (Contained within this div's boundaries on tablet) -->
       <Calculator :show="showCalculator" @close="showCalculator = false" />
