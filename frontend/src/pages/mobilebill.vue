@@ -105,7 +105,7 @@
       </div>
 
       <ul v-else class="divide-y divide-[var(--color-border)]">
-        <li v-for="(row, idx) in activeRows" :key="row._rowKey" class="px-3 py-2.5" :class="row._is_free ? 'bg-[var(--color-success)]/5' : ''">
+        <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="px-3 py-2.5" :class="row._is_free ? 'bg-[var(--color-success)]/5' : ''">
           <div class="flex items-start gap-2">
             <span class="w-6 shrink-0 pt-0.5 text-right font-mono text-xs text-[var(--color-text-muted)]">{{ idx + 1 }}</span>
             <div class="min-w-0 flex-1">
@@ -291,7 +291,7 @@ import { frappeGet, frappePost } from '../api'
 import BarcodeScanner from '../components/BarcodeScanner.vue'
 import MarqueeText from '../components/MarqueeText.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
-import { useItemCache, lookupItemInCache, refreshItemCache } from '../services/itemCache.js'
+import { useItemCache, lookupItemInCache, refreshItemCache, refreshDiscountRuleCache } from '../services/itemCache.js'
 import { useLedgerCache, ledgerCacheReady } from '../services/ledgerCache.js'
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
@@ -301,7 +301,7 @@ import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTi
 
 const router = useRouter()
 const precision = getFloatPrecision()
-const MOP_OPTIONS = ['Cash', 'Credit', 'UPI', 'Card', 'Bank']
+const MOP_OPTIONS = ['Cash', 'Credit'] // Sales Invoice.mop Select options
 const SERIES_KEY = 'mb-series'
 
 // ── Current user's billing settings (cached at login / dashboard load) ──────
@@ -338,12 +338,15 @@ watch(selectedSeries, (series) => {
   if (!series) return
   try { localStorage.setItem(SERIES_KEY, series) } catch { /* storage blocked */ }
   if (invoiceName.value) return // a loaded bill keeps its own saved settings
-  const before = priceList.value
   applySeriesDefaults(series)
-  if (priceList.value !== before) {
-    refreshItemCache('Sales', priceList.value, warehouse.value)
-    repriceRows()
-  }
+})
+
+// Load the item dataset for the price list in use, then re-rate lines being edited
+watch(priceList, (pl) => {
+  if (!pl) return
+  refreshItemCache('Sales', pl, warehouse.value)
+    .then(() => { if (!isReadOnly.value) repriceRows() })
+    .catch(e => console.warn('[MobileBill] item cache refresh failed:', e))
 })
 
 // ── Bill state ───────────────────────────────────────────────────────────────
@@ -368,7 +371,8 @@ const toast = ref('')
 const isSubmitted = computed(() => docstatus.value === 1)
 const activeRows = computed(() => rows.value.filter(r => !r.deleted))
 
-const { makeRowKey } = useDiscountRules({ items: rows, priceList, lookupItemInCache })
+// Rules stay frozen while a saved bill is only being viewed, so it shows what was billed
+const { makeRowKey } = useDiscountRules({ items: rows, priceList, lookupItemInCache, pauseRules: isReadOnly })
 
 const round = v => parseFloat((Number(v) || 0).toFixed(precision))
 const netRate = row => round((row.rate || 0) * (1 - (Number(row.discount) || 0) / 100))
@@ -888,8 +892,10 @@ onMounted(async () => {
   const series = await fetchAllowedSeries('Sales Invoice')
   const saved = localStorage.getItem(SERIES_KEY)
   selectedSeries.value = (series || []).includes(saved) ? saved : (series?.[0] || '')
-  if (selectedSeries.value) applySeriesDefaults(selectedSeries.value)
-  refreshItemCache('Sales', priceList.value, warehouse.value)
+  // Setting the series fills the price list, whose watcher loads the item dataset
+  if (!selectedSeries.value) refreshItemCache('Sales', priceList.value || null, warehouse.value)
+  // Discount rules are otherwise only loaded by the Dashboard; a phone may open this page directly
+  refreshDiscountRuleCache().catch(() => {})
   ledgerCacheReady.then(() => { if (!allLedgers.value.length) refreshLedgerCache() })
 })
 
