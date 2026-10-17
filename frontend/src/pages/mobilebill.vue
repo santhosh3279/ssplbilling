@@ -141,10 +141,27 @@
             <span class="line-no mt-0.5 shrink-0">{{ idx + 1 }}</span>
             <div class="min-w-0 flex-1">
               <MarqueeText :text="row.item_name || row.item_code" class="text-base font-semibold" />
-              <div class="flex flex-wrap items-center gap-x-2 text-xs text-[var(--color-text-muted)]">
-                <span class="font-mono">{{ row.item_code }}</span>
-                <span v-if="row._is_free" class="font-bold text-[var(--color-success)]">FREE</span>
-                <span v-else-if="row.discount" class="font-bold text-[var(--color-warning)]">{{ row.discount }}% off</span>
+              <!-- Code · qty · rate · amount on one line; tap qty / rate to edit on the keypad -->
+              <div class="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                <span class="min-w-0 flex-1 truncate font-mono">{{ row.item_code }}<template v-if="row._is_free"> · <b class="text-[var(--color-success)]">FREE</b></template><template v-else-if="row.discount"> · <b class="text-[var(--color-warning)]">{{ row.discount }}% off</b></template></span>
+                <button
+                  type="button"
+                  :disabled="isReadOnly || row._is_free"
+                  :aria-label="`Quantity of ${row.item_name}`"
+                  class="shrink-0 rounded-lg border px-1.5 py-1 font-mono text-sm font-bold tabular-nums text-[var(--color-text)] disabled:opacity-100"
+                  :class="isEditing(row) && pending.field === 'qty' ? 'edit-focus' : 'border-[var(--color-border)]'"
+                  @click.stop="editRow(row, 'qty')"
+                >{{ fmtQty(row.qty) }} <span class="text-[10px] font-normal">{{ row.uom }}</span></button>
+                <span class="shrink-0">×</span>
+                <button
+                  type="button"
+                  :disabled="isReadOnly || row._is_free"
+                  :aria-label="`Rate of ${row.item_name}`"
+                  class="shrink-0 rounded-lg border px-1.5 py-1 font-mono text-sm tabular-nums text-[var(--color-text)] disabled:opacity-100"
+                  :class="isEditing(row) && pending.field === 'rate' ? 'edit-focus' : 'border-[var(--color-border)]'"
+                  @click.stop="editRow(row, 'rate')"
+                >{{ row.rate }}</button>
+                <span class="shrink-0 font-mono text-base font-bold tabular-nums text-[var(--color-text)]">{{ money(rowAmount(row)) }}</span>
               </div>
             </div>
             <button
@@ -154,30 +171,6 @@
               class="shrink-0 rounded-lg px-2 py-1 text-lg text-[var(--color-danger)]"
               @click.stop="removeRow(row)"
             >&times;</button>
-          </div>
-          <div class="mt-1.5 flex items-center gap-2 pl-8">
-            <div class="flex items-center rounded-xl border border-[var(--color-border)]">
-              <button type="button" :disabled="isReadOnly || row._is_free" aria-label="Decrease quantity" class="px-3 py-1.5 text-lg font-bold disabled:opacity-30" @click.stop="stepQty(row, -1)">−</button>
-              <button
-                type="button"
-                :disabled="isReadOnly || row._is_free"
-                :aria-label="`Quantity of ${row.item_name}`"
-                class="w-16 py-1.5 text-center font-mono text-base font-bold tabular-nums disabled:opacity-100"
-                :class="isEditing(row) && pending.field === 'qty' ? 'edit-focus rounded' : ''"
-                @click.stop="editRow(row, 'qty')"
-              >{{ fmtQty(row.qty) }}</button>
-              <button type="button" :disabled="isReadOnly || row._is_free" aria-label="Increase quantity" class="px-3 py-1.5 text-lg font-bold disabled:opacity-30" @click.stop="stepQty(row, 1)">+</button>
-            </div>
-            <span class="text-xs text-[var(--color-text-muted)]">{{ row.uom }} ×</span>
-            <button
-              type="button"
-              :disabled="isReadOnly || row._is_free"
-              :aria-label="`Rate of ${row.item_name}`"
-              class="w-20 rounded-lg border px-1.5 py-1.5 text-right font-mono text-sm tabular-nums disabled:opacity-100"
-              :class="isEditing(row) && pending.field === 'rate' ? 'edit-focus' : 'border-[var(--color-border)]'"
-              @click.stop="editRow(row, 'rate')"
-            >{{ row.rate }}</button>
-            <span class="ml-auto font-mono text-base font-bold tabular-nums">{{ money(rowAmount(row)) }}</span>
           </div>
         </li>
       </ul>
@@ -808,15 +801,6 @@ function keypadAdd() {
 
 function closeScanner() {
   showScanner.value = false
-}
-
-function stepQty(row, delta) {
-  const next = round((Number(row.qty) || 0) + delta)
-  if (next <= 0) removeRow(row)
-  else {
-    row.qty = next
-    if (pending.value?.target === row) pending.value.qty = String(next)
-  }
 }
 
 function removeRow(row) {
