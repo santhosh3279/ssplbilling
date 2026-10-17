@@ -284,7 +284,10 @@
           ref="customerSearchRef"
           v-model="customerQuery"
           type="search"
+          inputmode="none"
           autocomplete="off"
+          autocapitalize="off"
+          spellcheck="false"
           placeholder="Customer name, code or mobile"
           class="hl-input min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-base outline-none"
         />
@@ -306,6 +309,14 @@
           <div class="truncate text-xs text-[var(--color-text-muted)]">{{ c.name }}<template v-if="c.mobile_no"> · {{ c.mobile_no }}</template></div>
         </button>
       </div>
+      <!-- On-screen keyboard instead of the phone's, so it never covers the list -->
+      <MobileSearchKeyboard
+        class="shrink-0"
+        @key="k => { customerQuery += k }"
+        @backspace="customerQuery = customerQuery.slice(0, -1)"
+        @clear="customerQuery = ''"
+        @enter="pickOnlyCustomer"
+      />
     </div>
 
     <!-- Past bills -->
@@ -378,6 +389,7 @@ import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import BarcodeScanner from '../components/BarcodeScanner.vue'
 import MarqueeText from '../components/MarqueeText.vue'
+import MobileSearchKeyboard from '../components/MobileSearchKeyboard.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import { useItemCache, lookupItemInCache, refreshItemCache, refreshDiscountRuleCache } from '../services/itemCache.js'
 import { useLedgerCache, ledgerCacheReady } from '../services/ledgerCache.js'
@@ -826,6 +838,11 @@ async function openCustomerPicker() {
   nextTick(() => customerSearchRef.value?.focus())
   await ledgerCacheReady
   if (!allLedgers.value.length) refreshLedgerCache()
+}
+
+// Keyboard "Search" key: a single match is picked straight away
+function pickOnlyCustomer() {
+  if (customerResults.value.length === 1) pickCustomer(customerResults.value[0])
 }
 
 async function pickCustomer(c) {
