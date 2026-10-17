@@ -98,7 +98,7 @@
             autocapitalize="off"
             spellcheck="false"
             placeholder="Item name, code or barcode"
-            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2.5 pl-3 pr-9 text-base outline-none focus:border-[var(--color-info)]"
+            class="manual-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2.5 pl-3 pr-9 text-base outline-none"
             @keydown.enter.prevent="submitTyped"
           />
           <button
@@ -723,6 +723,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* Focus shown as a fill, not a border */
+.manual-input:focus {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--color-info) 22%, var(--color-bg));
+}
 .scan-line {
   animation: scan 1.8s ease-in-out infinite alternate;
 }

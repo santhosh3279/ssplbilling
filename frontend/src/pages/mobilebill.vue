@@ -29,7 +29,7 @@
           type="button"
           :disabled="isReadOnly"
           class="min-w-0 flex-1 truncate rounded-xl border px-3 py-2.5 text-left text-sm font-semibold disabled:opacity-60"
-          :class="customerId ? 'border-[var(--color-border)] bg-[var(--color-bg)]' : 'border-[var(--color-warning)] bg-[var(--color-warning)]/10 text-[var(--color-warning)]'"
+          :class="customerId ? 'border-[var(--color-border)] bg-[var(--color-bg)]' : 'need-fill'"
           @click="openCustomerPicker"
         >{{ customerName || 'Select customer' }}</button>
       </div>
@@ -46,8 +46,8 @@
             autocapitalize="off"
             spellcheck="false"
             placeholder="Item name, code or barcode"
-            class="w-full rounded-xl border bg-[var(--color-bg)] py-3 pl-4 pr-10 text-base outline-none focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/30"
-            :class="showKeypad && kbTarget === 'search' ? 'border-[var(--color-info)]' : 'border-[var(--color-border)]'"
+            class="hl-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-4 pr-10 text-base outline-none"
+            :class="showKeypad && kbTarget === 'search' ? 'is-active' : ''"
             @focus="kbTarget = 'search'"
             @keydown.enter.prevent="addFromQuery"
           />
@@ -85,7 +85,7 @@
       >Modify this bill</button>
 
       <!-- Selected item: qty and rate are entered here with the keypad below -->
-      <div v-if="pending && !isReadOnly" class="pending-panel rounded-xl border-2 p-2">
+      <div v-if="pending && !isReadOnly" class="pending-panel rounded-xl p-2">
         <div class="flex items-center gap-2">
           <MarqueeText :text="pending.item_name" class="min-w-0 flex-1 text-sm font-semibold" />
           <span v-if="pending.target !== 'new'" class="shrink-0 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Edit</span>
@@ -293,7 +293,7 @@
           type="search"
           autocomplete="off"
           placeholder="Customer name, code or mobile"
-          class="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-base outline-none focus:border-[var(--color-info)]"
+          class="hl-input min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-4 py-3 text-base outline-none"
         />
         <button type="button" class="px-2 text-sm font-bold text-[var(--color-info)]" @click="showCustomerPicker = false">Close</button>
       </div>
@@ -333,7 +333,7 @@
             type="search"
             autocomplete="off"
             placeholder="Search bill no or customer (all dates)"
-            class="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-info)]"
+            class="hl-input min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-sm outline-none"
           />
           <label class="flex shrink-0 items-center gap-1 text-xs font-semibold">
             <input v-model="pastDraftOnly" type="checkbox" class="h-4 w-4" /> Drafts
@@ -1236,15 +1236,25 @@ onBeforeUnmount(() => {
 }
 /* Bill line whose qty / rate / discount is open on the keypad.
    Plain CSS: Tailwind 3 drops opacity modifiers on var() colours (bg-[var(--x)]/15). */
+/* Highlights are fills, not borders (user preference) */
 .bill-line.row-editing {
-  border-color: var(--color-success);
-  background: color-mix(in srgb, var(--color-success) 28%, var(--color-bg));
-  box-shadow: inset 5px 0 0 var(--color-success);
+  border-color: transparent;
+  background: color-mix(in srgb, var(--color-success) 35%, var(--color-bg));
 }
 /* Item picked from the search (or a line being modified), staged above the keypad */
 .pending-panel {
-  border-color: var(--color-success);
-  background: color-mix(in srgb, var(--color-success) 28%, var(--color-bg));
+  background: color-mix(in srgb, var(--color-success) 35%, var(--color-bg));
+}
+/* Input being typed into (focused, or fed by the on-screen keyboard) */
+.hl-input:focus,
+.hl-input.is-active {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--color-info) 22%, var(--color-bg));
+}
+/* Customer not chosen yet */
+.need-fill {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--color-warning) 35%, var(--color-bg));
 }
 /* The value being typed into: solid focus colour instead of just a border */
 .edit-focus {
