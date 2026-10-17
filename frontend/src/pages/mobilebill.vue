@@ -374,7 +374,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, onBeforeRouteLeave } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import BarcodeScanner from '../components/BarcodeScanner.vue'
 import MarqueeText from '../components/MarqueeText.vue'
@@ -1129,6 +1129,26 @@ async function openPastBill(name) {
   await loadBill(name)
 }
 
+// ── Leave guard: a new bill being entered or a bill in Modify mode is unsaved ──
+const hasUnsavedWork = computed(() => !isReadOnly.value && (activeRows.value.length > 0 || !!pending.value))
+
+function confirmLeave() {
+  if (!hasUnsavedWork.value) return true
+  return confirm(invoiceName.value
+    ? `You are modifying ${invoiceName.value}. Leave without saving? Your changes will be lost.`
+    : 'This bill is not saved. Leave and discard it?')
+}
+
+// ← button and the phone's Back button (both are router navigations)
+onBeforeRouteLeave(() => confirmLeave())
+
+// Refresh / closing the tab: the browser shows its own "Leave site?" prompt
+function onBeforeUnload(e) {
+  if (!hasUnsavedWork.value) return
+  e.preventDefault()
+  e.returnValue = ''
+}
+
 // ── Layout / lifecycle ───────────────────────────────────────────────────────
 // Fit the page to the area the browser actually shows (address bar / toolbar slide in and out)
 const viewportHeight = ref(0)
@@ -1163,6 +1183,7 @@ onMounted(async () => {
   window.addEventListener('resize', fitViewport)
   window.addEventListener('keydown', onPageKeydown)
   window.addEventListener('pagehide', onPageHide)
+  window.addEventListener('beforeunload', onBeforeUnload)
   // Fetch the ZXing decoder now so the camera scanner reads bars from its first frame
   // on phones without a native BarcodeDetector (iOS Safari)
   import('@zxing/browser').catch(() => {})
@@ -1186,6 +1207,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', fitViewport)
   window.removeEventListener('keydown', onPageKeydown)
   window.removeEventListener('pagehide', onPageHide)
+  window.removeEventListener('beforeunload', onBeforeUnload)
 })
 
 </script>
