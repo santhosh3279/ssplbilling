@@ -136,7 +136,7 @@
       </div>
 
       <ul v-else class="divide-y divide-[var(--color-border)]">
-        <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="px-3 py-2.5" :class="row._is_free ? 'bg-[var(--color-success)]/5' : ''">
+        <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="px-3 py-2.5 transition-colors" :class="pending?.target === row ? 'row-editing' : row._is_free ? 'bg-[var(--color-success)]/5' : ''">
           <div class="flex items-start gap-2">
             <span class="w-6 shrink-0 pt-0.5 text-right font-mono text-xs text-[var(--color-text-muted)]">{{ idx + 1 }}</span>
             <div class="min-w-0 flex-1">
@@ -1197,6 +1197,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* Bill line whose qty / rate / discount is open on the keypad */
+.row-editing {
+  background: color-mix(in srgb, var(--color-highlight) 22%, transparent);
+  box-shadow: inset 4px 0 0 var(--color-highlight);
+}
 .keypad-key {
   display: flex;
   height: 2.75rem;
