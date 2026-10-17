@@ -135,10 +135,10 @@
         <template v-else>Scan a barcode or search an item to add it.</template>
       </div>
 
-      <ul v-else class="divide-y divide-[var(--color-border)]">
-        <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="px-3 py-2.5 transition-colors" :class="isEditing(row) ? 'row-editing' : row._is_free ? 'bg-[var(--color-success)]/5' : ''" @click="selectRow(row)">
+      <ul v-else class="space-y-2 px-2 py-2">
+        <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="bill-line px-3 py-2.5 transition-colors" :class="isEditing(row) ? 'row-editing' : row._is_free ? 'bill-line--free' : ''" @click="selectRow(row)">
           <div class="flex items-start gap-2">
-            <span class="w-6 shrink-0 pt-0.5 text-right font-mono text-xs text-[var(--color-text-muted)]">{{ idx + 1 }}</span>
+            <span class="line-no mt-0.5 shrink-0">{{ idx + 1 }}</span>
             <div class="min-w-0 flex-1">
               <MarqueeText :text="row.item_name || row.item_code" class="text-base font-semibold" />
               <div class="flex flex-wrap items-center gap-x-2 text-xs text-[var(--color-text-muted)]">
@@ -1207,9 +1207,37 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+/* Each bill line is its own card, alternate lines shaded, so lines are easy to tell apart */
+.bill-line {
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.bill-line:nth-child(even) {
+  background: var(--color-surface-raised);
+}
+.bill-line.bill-line--free {
+  background: color-mix(in srgb, var(--color-success) 10%, var(--color-bg));
+}
+.line-no {
+  display: flex;
+  height: 1.5rem;
+  min-width: 1.5rem;
+  padding: 0 0.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--color-text);
+  color: var(--color-bg);
+  font-family: ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
 /* Bill line whose qty / rate / discount is open on the keypad.
    Plain CSS: Tailwind 3 drops opacity modifiers on var() colours (bg-[var(--x)]/15). */
-.row-editing {
+.bill-line.row-editing {
+  border-color: var(--color-success);
   background: color-mix(in srgb, var(--color-success) 28%, var(--color-bg));
   box-shadow: inset 5px 0 0 var(--color-success);
 }
