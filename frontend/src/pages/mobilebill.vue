@@ -13,17 +13,6 @@
           </h1>
           <div class="truncate text-[11px] text-[var(--color-text-muted)]">{{ priceList || 'No price list' }} · {{ warehouse || 'No warehouse' }}</div>
         </div>
-        <button
-          v-if="!isReadOnly"
-          type="button"
-          :aria-pressed="scanMode"
-          title="Scan mode: the camera opens again after each Add"
-          class="rounded-lg border px-2.5 py-1.5 text-xs font-bold"
-          :class="scanMode ? 'border-[var(--color-info)] bg-[var(--color-info)] text-white' : 'border-[var(--color-border)]'"
-          @click="toggleScanMode"
-        >Scan {{ scanMode ? 'ON' : 'OFF' }}</button>
-        <button type="button" class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold" @click="openPastBills">Past Bills</button>
-        <button type="button" class="rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-xs font-bold" @click="newBill()">New</button>
       </div>
 
       <div class="flex gap-2">
@@ -264,16 +253,24 @@
         </span>
         <span class="font-mono font-black tabular-nums" :class="keypadVisible ? 'truncate text-lg' : 'text-2xl'">{{ money(isReadOnly && loadedTotal != null ? loadedTotal : subTotal) }}</span>
       </div>
-      <div class="flex gap-2" :class="keypadVisible ? 'shrink-0' : ''">
-        <select v-model="mop" :disabled="isReadOnly" aria-label="Mode of payment" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm font-semibold outline-none disabled:opacity-60" :class="keypadVisible ? 'w-20 py-2' : 'w-28'">
-          <option v-for="m in MOP_OPTIONS" :key="m" :value="m">{{ m }}</option>
-        </select>
+      <div class="flex gap-1.5" :class="keypadVisible ? 'shrink-0' : ''">
+        <button
+          v-if="!isReadOnly"
+          type="button"
+          :aria-pressed="scanMode"
+          title="Scan mode: the camera opens again after each Add"
+          class="rounded-xl border px-2 text-xs font-bold"
+          :class="scanMode ? 'border-[var(--color-info)] bg-[var(--color-info)] text-white' : 'border-[var(--color-border)]'"
+          @click="toggleScanMode"
+        >Scan {{ scanMode ? 'ON' : 'OFF' }}</button>
+        <button type="button" class="rounded-xl border border-[var(--color-border)] px-2 text-xs font-bold" @click="openPastBills">{{ keypadVisible ? 'Past' : 'Past Bills' }}</button>
+        <button type="button" class="rounded-xl border border-[var(--color-border)] px-2 text-xs font-bold" @click="newBill()">New</button>
         <button
           v-if="!isReadOnly"
           type="button"
           :disabled="busy || !activeRows.length"
           class="rounded-xl bg-[var(--color-success)] font-bold text-white shadow active:scale-[0.98] disabled:opacity-50"
-          :class="keypadVisible ? 'px-4 py-2 text-sm' : 'flex-1 py-3 text-base'"
+          :class="keypadVisible ? 'px-3 py-2 text-sm' : 'flex-1 py-3 text-base'"
           @click="saveBill"
         >{{ busy ? 'Saving…' : invoiceName ? 'Update' : 'Save' }}<template v-if="!keypadVisible"> Bill</template></button>
         <button
@@ -399,7 +396,6 @@ import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTi
 
 const router = useRouter()
 const precision = getFloatPrecision()
-const MOP_OPTIONS = ['Cash', 'Credit'] // Sales Invoice.mop Select options
 const SERIES_KEY = 'mb-series'
 
 // ── Current user's billing settings (cached at login / dashboard load) ──────
