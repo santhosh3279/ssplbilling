@@ -67,6 +67,69 @@
         </div>
       </div>
     </div>
+
+    <!-- Manual entry: type an item name, code or barcode when the label will not scan -->
+    <div class="relative shrink-0 bg-[var(--color-surface)] text-[var(--color-text)]">
+      <div
+        v-if="manualResults.length"
+        class="absolute inset-x-0 bottom-full max-h-[45vh] overflow-y-auto border-t border-[var(--color-border)] bg-[var(--color-bg)] shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
+      >
+        <button
+          v-for="m in manualResults"
+          :key="m.code"
+          type="button"
+          class="flex w-full items-center gap-3 border-b border-[var(--color-border)] px-4 py-2.5 text-left active:bg-[var(--color-surface-raised)]"
+          @click="found(m.code)"
+        >
+          <div class="min-w-0 flex-1">
+            <div class="truncate text-sm font-semibold">{{ m.name }}</div>
+            <div v-if="m.sub" class="truncate font-mono text-xs text-[var(--color-text-muted)]">{{ m.sub }}</div>
+          </div>
+        </button>
+      </div>
+      <div class="flex gap-2 px-2 py-2" :class="showKeys ? '' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'">
+        <div class="relative min-w-0 flex-1">
+          <input
+            v-model="typed"
+            type="search"
+            enterkeyhint="go"
+            :inputmode="showKeys ? 'none' : 'search'"
+            autocomplete="off"
+            autocapitalize="off"
+            spellcheck="false"
+            placeholder="Item name, code or barcode"
+            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2.5 pl-3 pr-9 text-base outline-none focus:border-[var(--color-info)]"
+            @keydown.enter.prevent="submitTyped"
+          />
+          <button
+            v-if="typed"
+            type="button"
+            aria-label="Clear"
+            class="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full px-2 py-0.5 text-lg text-[var(--color-text-muted)]"
+            @click="typed = ''"
+          >&times;</button>
+        </div>
+        <button
+          type="button"
+          :aria-label="showKeys ? 'Hide keyboard' : 'Show keyboard'"
+          class="w-11 shrink-0 rounded-xl border border-[var(--color-border)] text-lg"
+          @click="toggleKeys"
+        >{{ showKeys ? '▾' : '⌨' }}</button>
+        <button
+          type="button"
+          :disabled="!typed.trim()"
+          class="shrink-0 rounded-xl bg-[var(--color-info)] px-4 text-sm font-bold text-white disabled:opacity-40"
+          @click="submitTyped"
+        >Go</button>
+      </div>
+      <MobileSearchKeyboard
+        v-if="showKeys"
+        @key="k => { typed += k }"
+        @backspace="typed = typed.slice(0, -1)"
+        @clear="typed = ''"
+        @enter="submitTyped"
+      />
+    </div>
   </div>
 </template>
 
@@ -83,12 +146,18 @@
  * hints, OCR progress, and a green box with the code before closing. The main back
  * camera is always used (see pickPrimaryCamera); zoom and tap-to-focus help phones
  * whose camera cannot focus up close.
+ *
+ * A manual entry box with an on-screen keyboard sits under the camera: Go emits the
+ * typed text as `detected`; with a `search` prop, matching items are listed to pick.
  */
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import MobileSearchKeyboard from './MobileSearchKeyboard.vue'
 
 const props = defineProps({
   // async (text) => boolean — confirms an OCR reading before it is accepted
   verify: { type: Function, default: null },
+  // (text) => [{ code, name, sub }] — items matching the typed text; `code` is emitted on pick
+  search: { type: Function, default: null },
 })
 const emit = defineEmits(['detected', 'close'])
 
@@ -108,6 +177,27 @@ const alive = ref(true)
 const zoomLevels = ref([])
 const zoom = ref(1)
 const focusRing = ref(null)
+
+// ── Manual entry ──
+const KEYS_KEY = 'bs-keyboard'
+const typed = ref('')
+const showKeys = ref((() => { try { return localStorage.getItem(KEYS_KEY) !== '0' } catch { return true } })())
+const manualResults = computed(() => {
+  const q = typed.value.trim()
+  return props.search && q.length >= 2 ? (props.search(q) || []).slice(0, 30) : []
+})
+
+function toggleKeys() {
+  showKeys.value = !showKeys.value
+  try { localStorage.setItem(KEYS_KEY, showKeys.value ? '1' : '0') } catch { /* storage blocked */ }
+}
+
+function submitTyped() {
+  const q = typed.value.trim()
+  if (!q) return
+  // A single match is unambiguous; otherwise hand the text to the page as a code / search
+  found(manualResults.value.length === 1 ? manualResults.value[0].code : q)
+}
 
 // 1D formats only: item labels carry linear barcodes, and each extra format costs decode time
 const NATIVE_FORMATS = ['code_128', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_39', 'code_93', 'codabar', 'itf']

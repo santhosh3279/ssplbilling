@@ -282,7 +282,7 @@
       </div>
     </footer>
 
-    <BarcodeScanner v-if="showScanner" :verify="codeExists" @detected="onScanned" @close="closeScanner" />
+    <BarcodeScanner v-if="showScanner" :verify="codeExists" :search="scannerSearch" @detected="onScanned" @close="closeScanner" />
 
     <!-- Customer picker -->
     <div v-if="showCustomerPicker" class="fixed inset-0 z-40 flex flex-col bg-[var(--color-bg)]">
@@ -759,6 +759,15 @@ function clearSearch() {
 // OCR readings are guesses: accept one only when it is a cached item code or barcode
 function codeExists(code) {
   return !!lookupItemInCache(code)
+}
+
+// Typed-entry matches inside the scanner screen
+function scannerSearch(q) {
+  return searchItemsInCache(q, 30).map(i => ({
+    code: i.item_code,
+    name: i.item_name || i.item_code,
+    sub: `${i.item_code} · ${money(rateFor(i, i.uom))}`,
+  }))
 }
 
 function onScanned(code) {
