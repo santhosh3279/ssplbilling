@@ -96,11 +96,11 @@
             v-for="f in PENDING_FIELDS"
             :key="f.key"
             type="button"
-            class="rounded-lg border-2 bg-[var(--color-bg)] px-2 py-1 text-left"
-            :class="[f.width, kbTarget === 'pending' && pending.field === f.key ? 'border-[var(--color-info)]' : 'border-[var(--color-border)]']"
+            class="rounded-lg border-2 px-2 py-1 text-left"
+            :class="[f.width, kbTarget === 'pending' && pending.field === f.key ? 'edit-focus' : 'border-[var(--color-border)] bg-[var(--color-bg)]']"
             @click="focusPendingField(f.key)"
           >
-            <div class="truncate text-[10px] uppercase text-[var(--color-text-muted)]">{{ f.key === 'qty' ? `Qty · ${pending.uom}` : f.label }}</div>
+            <div class="field-label truncate text-[10px] uppercase text-[var(--color-text-muted)]">{{ f.key === 'qty' ? `Qty · ${pending.uom}` : f.label }}</div>
             <div class="font-mono text-base font-bold tabular-nums">{{ pending[f.key] || '0' }}</div>
           </button>
           <span class="ml-auto font-mono text-base font-bold tabular-nums">{{ money(pendingAmount) }}</span>
@@ -136,7 +136,7 @@
       </div>
 
       <ul v-else class="divide-y divide-[var(--color-border)]">
-        <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="px-3 py-2.5 transition-colors" :class="pending?.target === row ? 'row-editing' : row._is_free ? 'bg-[var(--color-success)]/5' : ''">
+        <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="px-3 py-2.5 transition-colors" :class="isEditing(row) ? 'row-editing' : row._is_free ? 'bg-[var(--color-success)]/5' : ''" @click="selectRow(row)">
           <div class="flex items-start gap-2">
             <span class="w-6 shrink-0 pt-0.5 text-right font-mono text-xs text-[var(--color-text-muted)]">{{ idx + 1 }}</span>
             <div class="min-w-0 flex-1">
@@ -152,21 +152,21 @@
               type="button"
               aria-label="Remove item"
               class="shrink-0 rounded-lg px-2 py-1 text-lg text-[var(--color-danger)]"
-              @click="removeRow(row)"
+              @click.stop="removeRow(row)"
             >&times;</button>
           </div>
           <div class="mt-1.5 flex items-center gap-2 pl-8">
             <div class="flex items-center rounded-xl border border-[var(--color-border)]">
-              <button type="button" :disabled="isReadOnly || row._is_free" aria-label="Decrease quantity" class="px-3 py-1.5 text-lg font-bold disabled:opacity-30" @click="stepQty(row, -1)">−</button>
+              <button type="button" :disabled="isReadOnly || row._is_free" aria-label="Decrease quantity" class="px-3 py-1.5 text-lg font-bold disabled:opacity-30" @click.stop="stepQty(row, -1)">−</button>
               <button
                 type="button"
                 :disabled="isReadOnly || row._is_free"
                 :aria-label="`Quantity of ${row.item_name}`"
                 class="w-16 py-1.5 text-center font-mono text-base font-bold tabular-nums disabled:opacity-100"
-                :class="pending?.target === row && pending.field === 'qty' ? 'rounded bg-[var(--color-info)]/15' : ''"
-                @click="editRow(row, 'qty')"
+                :class="isEditing(row) && pending.field === 'qty' ? 'edit-focus rounded' : ''"
+                @click.stop="editRow(row, 'qty')"
               >{{ fmtQty(row.qty) }}</button>
-              <button type="button" :disabled="isReadOnly || row._is_free" aria-label="Increase quantity" class="px-3 py-1.5 text-lg font-bold disabled:opacity-30" @click="stepQty(row, 1)">+</button>
+              <button type="button" :disabled="isReadOnly || row._is_free" aria-label="Increase quantity" class="px-3 py-1.5 text-lg font-bold disabled:opacity-30" @click.stop="stepQty(row, 1)">+</button>
             </div>
             <span class="text-xs text-[var(--color-text-muted)]">{{ row.uom }} ×</span>
             <button
@@ -174,8 +174,8 @@
               :disabled="isReadOnly || row._is_free"
               :aria-label="`Rate of ${row.item_name}`"
               class="w-20 rounded-lg border px-1.5 py-1.5 text-right font-mono text-sm tabular-nums disabled:opacity-100"
-              :class="pending?.target === row && pending.field === 'rate' ? 'border-[var(--color-info)] bg-[var(--color-info)]/10' : 'border-[var(--color-border)]'"
-              @click="editRow(row, 'rate')"
+              :class="isEditing(row) && pending.field === 'rate' ? 'edit-focus' : 'border-[var(--color-border)]'"
+              @click.stop="editRow(row, 'rate')"
             >{{ row.rate }}</button>
             <span class="ml-auto font-mono text-base font-bold tabular-nums">{{ money(rowAmount(row)) }}</span>
           </div>
@@ -635,6 +635,16 @@ function editRow(row, field) {
     discount: String(Number(row.discount) || 0),
     field,
   })
+}
+
+// The bill line currently open on the keypad
+function isEditing(row) {
+  return !!pending.value && pending.value.target === row
+}
+
+// Tapping anywhere on a line opens it on the keypad (qty first)
+function selectRow(row) {
+  if (!isEditing(row)) editRow(row, 'qty')
 }
 
 function focusPendingField(field) {
@@ -1197,10 +1207,20 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-/* Bill line whose qty / rate / discount is open on the keypad */
+/* Bill line whose qty / rate / discount is open on the keypad.
+   Plain CSS: Tailwind 3 drops opacity modifiers on var() colours (bg-[var(--x)]/15). */
 .row-editing {
-  background: color-mix(in srgb, var(--color-highlight) 22%, transparent);
-  box-shadow: inset 4px 0 0 var(--color-highlight);
+  background: color-mix(in srgb, var(--color-success) 28%, var(--color-bg));
+  box-shadow: inset 5px 0 0 var(--color-success);
+}
+/* The value being typed into: solid focus colour instead of just a border */
+.edit-focus {
+  border-color: var(--color-info);
+  background: var(--color-info);
+  color: #fff;
+}
+.edit-focus .field-label {
+  color: rgba(255, 255, 255, 0.85);
 }
 .keypad-key {
   display: flex;
