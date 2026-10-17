@@ -205,7 +205,7 @@ function getConfiguredTileIds() {
 
 /**
  * Returns true if the current user may navigate to the given route name.
- * Dashboard and Login are always accessible.
+ * Dashboard, MobileDashboard and Login are always accessible.
  *
  * When tiles are configured via SSPL Dashboard Tile Access, only the routes of
  * the visible tiles are allowed and the role-based sets below are bypassed.
@@ -270,7 +270,7 @@ function getTileIdForRoute(routeName) {
 }
 
 export function canAccessRoute(routeName) {
-  if (!routeName || ['Dashboard', 'Login'].includes(routeName)) return true
+  if (!routeName || ['Dashboard', 'MobileDashboard', 'Login'].includes(routeName)) return true
   if (routeName === 'CatalougePage') return canAccessRoute('CatalogueViewer')
   if (PUBLIC_HRMS_ROUTES.includes(routeName)) return true
 

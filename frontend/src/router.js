@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { session } from './session'
 import { canAccessRoute } from './composables/usePermission'
 import { initTabSession } from './services/tabSession'
+import { isMobileDevice, DESKTOP_VIEW_KEY } from './utils/device'
 import Login from './pages/Login.vue'
 import Dashboard from './pages/Dashboard.vue'
 const SalesInvoice = () => import('./pages/SalesInvoice.vue')
@@ -10,6 +11,7 @@ const PurchaseInvoice = () => import('./pages/PurchaseInvoice.vue')
 const PriceListUpdate = () => import('./pages/PriceListUpdate.vue')
 const StockCheck = () => import('./pages/StockCheck.vue')
 const MobileBill = () => import('./pages/mobilebill.vue')
+const MobileDashboard = () => import('./pages/mobiledashboard.vue')
 const BarcodePrintPage = () => import('./pages/BarcodePrintPage.vue')
 const CashierDesk = () => import('./pages/CashierDesk.vue')
 const PurchaseSubmit = () => import('./pages/PurchaseSubmit.vue')
@@ -235,6 +237,12 @@ const routes = [
     name: 'SalesInvoice',
     component: SalesInvoice,
     meta: { title: 'Sales Invoice' },
+  },
+  {
+    path: '/mobile-dashboard',
+    name: 'MobileDashboard',
+    component: MobileDashboard,
+    meta: { title: 'Dashboard' },
   },
   {
     path: '/mobile-bill',
@@ -533,6 +541,12 @@ router.beforeEach(async (to, from, next) => {
     await initTabSession()
     if (!canAccessRoute(to.name)) {
       next({ name: 'Dashboard' })
+      return
+    }
+    // Phones get the mobile dashboard instead of the desktop tile grid (covers login, back buttons and
+    // access-denied redirects); "Desktop view" on the mobile dashboard opts out for this browser session.
+    if (to.name === 'Dashboard' && isMobileDevice() && !sessionStorage.getItem(DESKTOP_VIEW_KEY)) {
+      next({ name: 'MobileDashboard' })
       return
     }
     next()

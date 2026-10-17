@@ -3,7 +3,11 @@
     <!-- Search bar (top) · scrolling results · on-screen keyboard (bottom) -->
     <header class="z-20 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] shadow-sm">
       <div class="mb-2 flex items-center justify-between">
-        <h1 class="text-lg font-bold">Stock Check</h1>
+        <div class="flex items-center gap-1">
+          <!-- Public page: only offer "back" when it was opened from inside the app (e.g. mobile dashboard) -->
+          <button v-if="canGoBack" type="button" aria-label="Back" class="rounded-lg px-2 py-1 text-lg" @click="router.back()">←</button>
+          <h1 class="text-lg font-bold">Stock Check</h1>
+        </div>
         <span v-if="loading" class="text-xs font-semibold text-[var(--color-info)] animate-pulse">Searching…</span>
         <button
           v-else-if="searched"
@@ -163,9 +167,13 @@
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import BarcodeScanner from '../components/BarcodeScanner.vue'
 import MobileSearchKeyboard from '../components/MobileSearchKeyboard.vue'
+
+const router = useRouter()
+const canGoBack = Boolean(window.history.state?.back)
 
 const query = ref('')
 const lastQuery = ref('')
