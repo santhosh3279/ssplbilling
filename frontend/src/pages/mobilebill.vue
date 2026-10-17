@@ -1234,8 +1234,7 @@ onBeforeUnmount(() => {
   font-size: 0.75rem;
   font-weight: 700;
 }
-/* Bill line whose qty / rate / discount is open on the keypad.
-   Plain CSS: Tailwind 3 drops opacity modifiers on var() colours (bg-[var(--x)]/15). */
+/* Bill line whose qty / rate / discount is open on the keypad */
 /* Highlights are fills, not borders (user preference) */
 .bill-line.row-editing {
   border-color: transparent;
