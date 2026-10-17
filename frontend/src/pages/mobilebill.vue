@@ -85,7 +85,7 @@
       >Modify this bill</button>
 
       <!-- Selected item: qty and rate are entered here with the keypad below -->
-      <div v-if="pending && !isReadOnly" class="rounded-xl border border-[var(--color-info)] bg-[var(--color-info)]/5 p-2">
+      <div v-if="pending && !isReadOnly" class="pending-panel rounded-xl border-2 p-2">
         <div class="flex items-center gap-2">
           <MarqueeText :text="pending.item_name" class="min-w-0 flex-1 text-sm font-semibold" />
           <span v-if="pending.target !== 'new'" class="shrink-0 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Edit</span>
@@ -1212,6 +1212,11 @@ onBeforeUnmount(() => {
 .row-editing {
   background: color-mix(in srgb, var(--color-success) 28%, var(--color-bg));
   box-shadow: inset 5px 0 0 var(--color-success);
+}
+/* Item picked from the search (or a line being modified), staged above the keypad */
+.pending-panel {
+  border-color: var(--color-success);
+  background: color-mix(in srgb, var(--color-success) 28%, var(--color-bg));
 }
 /* The value being typed into: solid focus colour instead of just a border */
 .edit-focus {
