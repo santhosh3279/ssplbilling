@@ -101,3 +101,24 @@ class TestModifySubmittedAPI(IntegrationTestCase):
 			return
 		with self.assertRaises(frappe.ValidationError):
 			rename_submitted_bill(sub, "ZZ-NO-SERIES-1", doctype="Purchase Invoice")
+
+	def test_rename_treats_slash_as_distinct_number(self):
+		"""A plain number is free even when its slashed twin exists, and vice versa."""
+		pair = frappe.db.sql(
+			"""SELECT a.name AS slashed, b.name AS plain FROM `tabPurchase Invoice` a
+			   JOIN `tabPurchase Invoice` b ON b.name = a.custom_mirrored
+			   WHERE a.docstatus = 1 AND b.docstatus = 1 AND a.name LIKE %s LIMIT 1""",
+			("%/",),
+			as_dict=True,
+		)
+		if not pair:
+			return
+		slashed, plain = pair[0].slashed, pair[0].plain
+		twin_free = slashed[:-1]
+		if frappe.db.exists("Purchase Invoice", twin_free):
+			return
+		res = rename_submitted_bill(plain, twin_free, doctype="Purchase Invoice")
+		self.assertEqual(res["new_name"], twin_free)
+		self.assertTrue(frappe.db.exists("Purchase Invoice", slashed))
+		self.assertEqual(frappe.db.get_value("Purchase Invoice", slashed, "custom_mirrored"), twin_free)
+		frappe.db.rollback()

@@ -428,14 +428,15 @@ def _next_series_name(doctype, series):
 	prefix = NamingSeries(series).get_prefix()
 	m = re.search(r"#+", series)
 	digits = len(m.group(0)) if m else 5
-	current = frappe.db.sql("SELECT current FROM `tabSeries` WHERE name = %s", (prefix,))
-	highest = int(current[0][0] or 0) if current else 0
+	# Slashed names are a separate number space, and the shared tabSeries counter
+	# also counts them, so only plain names decide the next free number.
+	highest = 0
 	for name in frappe.get_all(doctype, filters={"name": ["like", f"{prefix}%"]}, pluck="name"):
-		number = name[len(prefix):].rstrip("/")
+		number = name[len(prefix):]
 		if number.isdigit():
 			highest = max(highest, int(number))
 	candidate = f"{prefix}{highest + 1:0{digits}d}"
-	while frappe.db.exists(doctype, candidate) or frappe.db.exists(doctype, f"{candidate}/"):
+	while frappe.db.exists(doctype, candidate):
 		highest += 1
 		candidate = f"{prefix}{highest + 1:0{digits}d}"
 	return candidate
@@ -488,10 +489,6 @@ def rename_submitted_bill(invoice_no, new_name, doctype="Purchase Invoice"):
 
 		if frappe.db.exists(doctype, mirror_name_for(invoice_no)):
 			frappe.throw(f"Bill '{invoice_no}' has a mirror bill linked by its number. Its number cannot be changed.")
-	# A slash twin of the new name would be picked up as this bill's mirror by name lookup.
-	twin = new_name[:-1] if new_name.endswith("/") else f"{new_name}/"
-	if twin != partner and frappe.db.exists(doctype, twin):
-		frappe.throw(f"'{twin}' already exists and would be treated as the mirror of '{new_name}'. Choose another number.")
 
 	match = _series_for_name(doctype, new_name)
 	if not match:
