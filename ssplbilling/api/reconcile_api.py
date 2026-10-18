@@ -94,6 +94,24 @@ def _get_je_row_available_amount(party_type, party, reference_row):
 	)
 
 
+# Free amount of a Payment Entry. ERPNext never lowers a PE's unallocated_amount
+# when another PE or a JE is reconciled against it, so a PE linked that way stays
+# "open" forever and every reconcile links it again. The Payment Ledger is right:
+# its open balance, signed by the PE's own row so the PE's direction is positive.
+_PE_OPEN_JOIN = """
+	LEFT JOIN (
+		SELECT against_voucher_no,
+			SUM(amount_in_account_currency)
+				* SIGN(SUM(CASE WHEN voucher_no = against_voucher_no
+					THEN amount_in_account_currency ELSE 0 END)) AS open_amount
+		FROM `tabPayment Ledger Entry`
+		WHERE delinked = 0 AND against_voucher_type = 'Payment Entry' AND company = %(company)s
+		GROUP BY against_voucher_no
+	) pe_open ON pe_open.against_voucher_no = pe.name
+"""
+_PE_FREE = "LEAST(pe.unallocated_amount, IFNULL(pe_open.open_amount, pe.unallocated_amount))"
+
+
 @frappe.whitelist()
 def get_parties_with_unlinked_entries(show_all=False):
 	"""Return Customer/Supplier parties that have unallocated Payment Entries or
@@ -105,20 +123,21 @@ def get_parties_with_unlinked_entries(show_all=False):
 	show_all = bool(show_all)
 
 	pe_rows = frappe.db.sql(
-		"""
-		SELECT party_type, party,
-			CASE WHEN payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END AS direction,
+		f"""
+		SELECT pe.party_type, pe.party,
+			CASE WHEN pe.payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END AS direction,
 			COUNT(*) AS cnt,
-			SUM(unallocated_amount) AS amount
-		FROM `tabPayment Entry`
-		WHERE docstatus = 1
-			AND party_type IN ('Customer', 'Supplier')
-			AND unallocated_amount > 0.005
-			AND company = %s
-		GROUP BY party_type, party,
-			(CASE WHEN payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END)
+			SUM({_PE_FREE}) AS amount
+		FROM `tabPayment Entry` pe
+		{_PE_OPEN_JOIN}
+		WHERE pe.docstatus = 1
+			AND pe.party_type IN ('Customer', 'Supplier')
+			AND {_PE_FREE} > 0.005
+			AND pe.company = %(company)s
+		GROUP BY pe.party_type, pe.party,
+			(CASE WHEN pe.payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END)
 		""",
-		(company,),
+		{"company": company},
 		as_dict=True,
 	)
 
@@ -328,22 +347,23 @@ def get_unlinked_entries(party_type, party):
 	
 
 	payment_entries = frappe.db.sql(
-		"""
+		f"""
 		SELECT
-			name, posting_date, payment_type,
-			paid_amount, unallocated_amount,
-			mode_of_payment,
-			IFNULL(remarks, '') AS remarks,
-			IFNULL(reference_no, '') AS reference_no,
-			CASE WHEN payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END AS direction
-		FROM `tabPayment Entry`
-		WHERE docstatus = 1
-			AND party_type = %s AND party = %s
-			AND unallocated_amount > 0.005
-			AND company = %s
-		ORDER BY posting_date DESC
+			pe.name, pe.posting_date, pe.payment_type,
+			pe.paid_amount, {_PE_FREE} AS unallocated_amount,
+			pe.mode_of_payment,
+			IFNULL(pe.remarks, '') AS remarks,
+			IFNULL(pe.reference_no, '') AS reference_no,
+			CASE WHEN pe.payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END AS direction
+		FROM `tabPayment Entry` pe
+		{_PE_OPEN_JOIN}
+		WHERE pe.docstatus = 1
+			AND pe.party_type = %(party_type)s AND pe.party = %(party)s
+			AND {_PE_FREE} > 0.005
+			AND pe.company = %(company)s
+		ORDER BY pe.posting_date DESC
 		""",
-		(party_type, party, company),
+		{"party_type": party_type, "party": party, "company": company},
 		as_dict=True,
 	)
 
@@ -517,19 +537,20 @@ def get_unlinked_opposite_entries(party_type, party):
 	opposite_payment_type = "Pay" if party_type == "Customer" else "Receive"
 
 	payment_entries = frappe.db.sql(
-		"""
-		SELECT name, posting_date, payment_type,
-		       paid_amount, unallocated_amount,
-		       mode_of_payment, IFNULL(remarks, '') AS remarks
-		FROM `tabPayment Entry`
-		WHERE docstatus = 1
-		      AND party_type = %s AND party = %s
-		      AND payment_type = %s
-		      AND unallocated_amount > 0.005
-		      AND company = %s
-		ORDER BY posting_date DESC
+		f"""
+		SELECT pe.name, pe.posting_date, pe.payment_type,
+		       pe.paid_amount, {_PE_FREE} AS unallocated_amount,
+		       pe.mode_of_payment, IFNULL(pe.remarks, '') AS remarks
+		FROM `tabPayment Entry` pe
+		{_PE_OPEN_JOIN}
+		WHERE pe.docstatus = 1
+		      AND pe.party_type = %(party_type)s AND pe.party = %(party)s
+		      AND pe.payment_type = %(payment_type)s
+		      AND {_PE_FREE} > 0.005
+		      AND pe.company = %(company)s
+		ORDER BY pe.posting_date DESC
 		""",
-		(party_type, party, opposite_payment_type, company),
+		{"party_type": party_type, "party": party, "payment_type": opposite_payment_type, "company": company},
 		as_dict=True,
 	)
 
@@ -647,6 +668,27 @@ def post_reconciliation(party_type, party, allocations, company=None):
 		else:
 			normalized_allocations.append(alloc)
 	allocations = normalized_allocations
+
+	# unreconciled_amount above must stay the PE's own unallocated_amount (ERPNext
+	# compares it), but the amount actually free is the Payment Ledger balance.
+	pe_names = {a["payment_name"] for a in allocations if a["payment_type"] == "Payment Entry"}
+	pe_names |= {a["invoice_name"] for a in allocations if a["invoice_type"] == "Payment Entry"}
+	pe_free = _payment_entry_open_amounts(party_type, party, list(pe_names))
+	pe_wanted = {}
+	for alloc in allocations:
+		for doctype, name in (
+			(alloc["payment_type"], alloc["payment_name"]),
+			(alloc["invoice_type"], alloc["invoice_name"]),
+		):
+			if doctype == "Payment Entry":
+				pe_wanted[name] = pe_wanted.get(name, 0.0) + float(alloc["amount"])
+	for name, wanted in pe_wanted.items():
+		free = pe_free.get(name)
+		if free is not None and wanted - free > 0.009:
+			frappe.throw(
+				f"Payment Entry {name} has only {max(free, 0):.2f} left to reconcile for {party}, "
+				f"not {wanted:.2f}. It is already linked elsewhere. Refresh and try again."
+			)
 
 	# Callers that know the bill's company pass it; otherwise fall back to the default company.
 	from erpnext.accounts.party import get_party_account
@@ -795,18 +837,10 @@ def _build_reconcile_sides(party_type, party):
 
 	rows = [dict(r, doctype="Payment Entry") for r in unlinked.get("payment_entries") or []]
 	rows += [dict(r, doctype="Journal Entry") for r in unlinked.get("journal_entries") or []]
-	pe_open = _payment_entry_open_amounts(
-		party_type, party, [r["name"] for r in rows if r["doctype"] == "Payment Entry"]
-	)
 
 	for row in rows:
-		unallocated = float(row.get("unallocated_amount") or 0)
-		amount = unallocated
-		if row["doctype"] == "Payment Entry" and row["name"] in pe_open:
-			# Credit Note JEs that point at a refund PE consume it in the Payment
-			# Ledger without touching unallocated_amount, so only the ledger's open
-			# balance is really free to allocate.
-			amount = min(amount, pe_open[row["name"]])
+		# Already capped at the Payment Ledger balance by get_unlinked_entries
+		amount = float(row.get("unallocated_amount") or 0)
 		if amount <= AUTO_MATCH_TOLERANCE:
 			continue
 		entry = {
@@ -815,8 +849,6 @@ def _build_reconcile_sides(party_type, party):
 			"reference_row": row.get("reference_row") or None,
 			"posting_date": str(row.get("posting_date") or ""),
 			"amount": amount,
-			# Payment Reconciliation checks this against the PE's own unallocated amount
-			"unreconciled_amount": unallocated,
 			"remarks": row.get("remarks") or "",
 			"reference_no": row.get("reference_no") or "",
 		}
@@ -848,28 +880,24 @@ def _build_reconcile_sides(party_type, party):
 
 
 def _payment_entry_open_amounts(party_type, party, names):
-	"""Open Payment Ledger balance of each Payment Entry, as a positive amount in its own direction.
+	"""Open Payment Ledger balance of each Payment Entry, positive in the PE's own direction.
 
-	A PE used up by more JEs than it covers comes out zero or negative here.
+	A PE used up by more links than it covers comes out zero or negative here.
 	"""
 	if not names:
 		return {}
 	rows = frappe.db.sql(
-		"""SELECT against_voucher_no AS name, SUM(amount_in_account_currency) AS open_amount
+		"""SELECT against_voucher_no AS name,
+			SUM(amount_in_account_currency)
+				* SIGN(SUM(CASE WHEN voucher_no = against_voucher_no
+					THEN amount_in_account_currency ELSE 0 END)) AS open_amount
 		FROM `tabPayment Ledger Entry`
 		WHERE company = %s AND party_type = %s AND party = %s AND delinked = 0
 			AND against_voucher_type = 'Payment Entry' AND against_voucher_no IN %s
 		GROUP BY against_voucher_no""",
 		(_get_company(), party_type, party, tuple(names)), as_dict=True,
 	)
-	types = dict(
-		frappe.db.get_all("Payment Entry", {"name": ["in", names]}, ["name", "payment_type"], as_list=True)
-	)
-	# Receive PEs post negative ledger amounts, Pay PEs positive
-	return {
-		r.name: float(r.open_amount or 0) * (-1 if types.get(r.name) == "Receive" else 1)
-		for r in rows
-	}
+	return {r.name: float(r.open_amount or 0) for r in rows}
 
 
 def _overused_payment_entries(party_type, party):
@@ -1071,7 +1099,7 @@ def preview_auto_reconcile(party_type=None, party=None):
 					"invoice_date": inv["posting_date"],
 					"amount": round(amount, 2),
 					"match_type": kind,
-					"unreconciled_amount": pay.get("unreconciled_amount", pay["amount"]),
+					"unreconciled_amount": pay["amount"],
 				}
 			)
 
