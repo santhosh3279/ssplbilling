@@ -395,3 +395,132 @@ def _modify_transaction_date(doc, new_date):
 	return {"status": "success", "name": doc.name, "doctype": doc.doctype,
 		"old_date": old_date, "new_date": new_date,
 		"message": f"Bill date for {doc.name} changed from {old_date} to {new_date} successfully."}
+
+
+def _naming_series_options(doctype):
+	field = frappe.get_meta(doctype).get_field("naming_series")
+	return [opt.strip() for opt in ((field.options if field else "") or "").split("\n") if opt.strip()]
+
+
+def _series_for_name(doctype, name):
+	"""Match `name` to the naming series option it belongs to: (series, prefix, number), or None.
+	The longest matching prefix wins so `PLVA00001` never resolves to a `PLV` series."""
+	from frappe.model.naming import NamingSeries
+
+	best = None
+	for series in _naming_series_options(doctype):
+		try:
+			prefix = NamingSeries(series).get_prefix()
+		except Exception:
+			continue
+		number = name[len(prefix):].rstrip("/")
+		if prefix and name.startswith(prefix) and number.isdigit():
+			if not best or len(prefix) > len(best[1]):
+				best = (series, prefix, int(number))
+	return best
+
+
+def _next_series_name(doctype, series):
+	"""Next free name in `series` without consuming the counter."""
+	import re
+	from frappe.model.naming import NamingSeries
+
+	prefix = NamingSeries(series).get_prefix()
+	m = re.search(r"#+", series)
+	digits = len(m.group(0)) if m else 5
+	current = frappe.db.sql("SELECT current FROM `tabSeries` WHERE name = %s", (prefix,))
+	highest = int(current[0][0] or 0) if current else 0
+	for name in frappe.get_all(doctype, filters={"name": ["like", f"{prefix}%"]}, pluck="name"):
+		number = name[len(prefix):].rstrip("/")
+		if number.isdigit():
+			highest = max(highest, int(number))
+	candidate = f"{prefix}{highest + 1:0{digits}d}"
+	while frappe.db.exists(doctype, candidate) or frappe.db.exists(doctype, f"{candidate}/"):
+		highest += 1
+		candidate = f"{prefix}{highest + 1:0{digits}d}"
+	return candidate
+
+
+@frappe.whitelist()
+def get_bill_number_series(doctype="Purchase Invoice"):
+	"""Naming series of `doctype` with the next free number in each, for the rename page."""
+	_check_authenticated()
+	_validate_doctype(doctype)
+	result = []
+	for series in _naming_series_options(doctype):
+		try:
+			result.append({"series": series, "next_name": _next_series_name(doctype, series)})
+		except Exception:
+			continue
+	return result
+
+
+@frappe.whitelist()
+def rename_submitted_bill(invoice_no, new_name, doctype="Purchase Invoice"):
+	"""Rename a submitted bill. Ledger links follow through rename_doc; the Data-typed
+	custom_mirrored pair, naming_series and the series counter are fixed up here."""
+	_check_authenticated()
+	_validate_doctype(doctype)
+	invoice_no = (invoice_no or "").strip()
+	new_name = (new_name or "").strip()
+	if not invoice_no:
+		frappe.throw("Please select a bill.")
+	if not new_name:
+		frappe.throw("Please enter the new bill number.")
+	if new_name == invoice_no:
+		frappe.throw("The new bill number is the same as the current one.")
+
+	doc = frappe.get_doc(doctype, invoice_no)
+	doc.check_permission("write")
+	if doc.docstatus != 1:
+		frappe.throw(f"Bill '{invoice_no}' must be submitted to change its number.")
+	if doc.get("irn") or doc.get("ewaybill"):
+		frappe.throw(f"Bill '{invoice_no}' has an e-invoice / e-way bill. Its number cannot be changed.")
+	if frappe.db.exists(doctype, new_name):
+		frappe.throw(f"{doctype} '{new_name}' already exists.")
+
+	has_mirror_field = doc.meta.has_field("custom_mirrored")
+	partner = doc.get("custom_mirrored") if has_mirror_field else None
+	if partner and not frappe.db.exists(doctype, partner):
+		partner = None
+	if doctype == "Sales Invoice":
+		from ssplbilling.api.automatic_entries_api import mirror_name_for
+
+		if frappe.db.exists(doctype, mirror_name_for(invoice_no)):
+			frappe.throw(f"Bill '{invoice_no}' has a mirror bill linked by its number. Its number cannot be changed.")
+	# A slash twin of the new name would be picked up as this bill's mirror by name lookup.
+	twin = new_name[:-1] if new_name.endswith("/") else f"{new_name}/"
+	if twin != partner and frappe.db.exists(doctype, twin):
+		frappe.throw(f"'{twin}' already exists and would be treated as the mirror of '{new_name}'. Choose another number.")
+
+	match = _series_for_name(doctype, new_name)
+	if not match:
+		frappe.throw(f"'{new_name}' does not match any {doctype} naming series. Use a number like the suggestions shown.")
+	series, prefix, number = match
+
+	frappe.rename_doc(doctype, invoice_no, new_name, force=True, show_alert=False)
+	frappe.db.set_value(doctype, new_name, "naming_series", series, update_modified=False)
+	frappe.db.sql(
+		"""INSERT INTO `tabSeries` (name, current) VALUES (%s, %s)
+		   ON DUPLICATE KEY UPDATE current = GREATEST(current, VALUES(current))""",
+		(prefix, number),
+	)
+	if has_mirror_field:
+		# custom_mirrored is a Data field, so rename_doc does not follow it.
+		frappe.db.sql(
+			f"UPDATE `tab{doctype}` SET custom_mirrored = %s WHERE custom_mirrored = %s",
+			(new_name, invoice_no),
+		)
+		if partner:
+			frappe.clear_document_cache(doctype, partner)
+	frappe.clear_document_cache(doctype, new_name)
+
+	return {
+		"status": "success",
+		"doctype": doctype,
+		"old_name": invoice_no,
+		"new_name": new_name,
+		"naming_series": series,
+		"mirror_invoice": partner,
+		"message": f"{doctype} {invoice_no} renamed to {new_name}.",
+	}

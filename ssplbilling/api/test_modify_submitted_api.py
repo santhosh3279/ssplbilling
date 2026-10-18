@@ -6,6 +6,7 @@ from frappe.tests import IntegrationTestCase
 from ssplbilling.api.modify_submitted_api import (
 	get_submitted_invoice,
 	modify_submitted_bill_date,
+	rename_submitted_bill,
 )
 
 
@@ -66,3 +67,37 @@ class TestModifySubmittedAPI(IntegrationTestCase):
 		self.assertEqual(res_restore["status"], "success")
 		restored_date = str(frappe.db.get_value("Sales Invoice", inv_no, "posting_date"))
 		self.assertEqual(restored_date, orig_date)
+
+	def test_rename_mirrored_purchase_invoice(self):
+		"""Renaming a mirrored bill moves its ledgers and keeps both custom_mirrored links."""
+		pair = frappe.db.sql(
+			"""SELECT a.name AS mirror, b.name AS source FROM `tabPurchase Invoice` a
+			   JOIN `tabPurchase Invoice` b ON b.name = a.custom_mirrored AND b.custom_mirrored = a.name
+			   WHERE a.docstatus = 1 AND b.docstatus = 1 AND a.name NOT LIKE %s LIMIT 1""",
+			("%/",),
+			as_dict=True,
+		)
+		if not pair:
+			return
+		old, source = pair[0].mirror, pair[0].source
+		series = frappe.db.get_value("Purchase Invoice", old, "naming_series")
+		from ssplbilling.api.modify_submitted_api import _next_series_name
+
+		new = _next_series_name("Purchase Invoice", series)
+		res = rename_submitted_bill(old, new, doctype="Purchase Invoice")
+		self.assertEqual(res["new_name"], new)
+		self.assertFalse(frappe.db.exists("Purchase Invoice", old))
+		self.assertEqual(frappe.db.get_value("Purchase Invoice", source, "custom_mirrored"), new)
+		self.assertEqual(frappe.db.get_value("Purchase Invoice", new, "custom_mirrored"), source)
+		self.assertEqual(frappe.db.get_value("Purchase Invoice", new, "naming_series"), series)
+		for ledger in ("GL Entry", "Payment Ledger Entry", "Stock Ledger Entry"):
+			self.assertFalse(frappe.db.exists(ledger, {"voucher_type": "Purchase Invoice", "voucher_no": old}))
+		self.assertTrue(frappe.db.exists("GL Entry", {"voucher_type": "Purchase Invoice", "voucher_no": new}))
+		frappe.db.rollback()
+
+	def test_rename_rejects_unknown_series(self):
+		sub = frappe.db.get_value("Purchase Invoice", {"docstatus": 1}, "name")
+		if not sub:
+			return
+		with self.assertRaises(frappe.ValidationError):
+			rename_submitted_bill(sub, "ZZ-NO-SERIES-1", doctype="Purchase Invoice")

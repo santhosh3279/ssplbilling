@@ -23,7 +23,7 @@
       </div>
 
       <div class="flex items-center gap-3">
-        <span v-if="activePage === 'bill-date'" class="text-xs font-mono text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] px-2.5 py-1 rounded-lg border border-[var(--color-border)]">
+        <span v-if="activePage === 'bill-date' || activePage === 'bill-number'" class="text-xs font-mono text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] px-2.5 py-1 rounded-lg border border-[var(--color-border)]">
           F8 to Save
         </span>
       </div>
@@ -38,7 +38,7 @@
             :key="page.id"
             type="button"
             @click="activePage = page.id"
-            :disabled="loadingDraft || loadingUpdate"
+            :disabled="loadingDraft || loadingUpdate || loadingRename"
             :aria-current="activePage === page.id ? 'page' : undefined"
             class="flex w-full min-w-max items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors md:min-w-0"
             :class="activePage === page.id
@@ -81,6 +81,16 @@
           </div>
         </div>
 
+        <div v-if="renameResult && activePage === 'bill-number'" class="rounded-2xl border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 p-6">
+          <h2 class="text-lg font-bold text-[var(--color-success)]">Bill number changed</h2>
+          <p class="mt-2 text-sm text-[var(--color-text)]">
+            <span class="font-mono">{{ renameResult.old_name }}</span> is now
+            <span class="font-mono font-bold text-[var(--color-info)]">{{ renameResult.new_name }}</span>
+            ({{ renameResult.naming_series }}). Ledger, stock and payment entries were moved to the new number.
+          </p>
+          <p v-if="renameResult.mirror_invoice" class="mt-1 text-sm text-[var(--color-text)]">Mirror bill {{ renameResult.mirror_invoice }} now points to {{ renameResult.new_name }}.</p>
+        </div>
+
         <div v-if="draftResult && activePage === 'draft-mode'" class="rounded-2xl border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 p-6">
           <h2 class="text-lg font-bold text-[var(--color-success)]">Draft created</h2>
           <p class="mt-2 text-sm text-[var(--color-text)]">
@@ -91,7 +101,7 @@
         </div>
 
         <div v-if="!invoice && !draftResult && !loadingFetch" class="rounded-2xl border border-dashed border-[var(--color-border)] p-8 text-center text-[var(--color-text-muted)]">
-          Select a submitted bill from the bill palette to {{ activePage === 'bill-date' ? 'change its date' : 'move it to draft mode' }}.
+          Select a submitted bill from the bill palette to {{ emptyHint }}.
         </div>
         <div v-if="loadingFetch" class="p-8 text-center text-[var(--color-text-muted)]">Fetching bill…</div>
 
@@ -324,6 +334,61 @@
             </button>
           </div>
 
+          <!-- BILL NUMBER ACTION -->
+          <div v-if="activePage === 'bill-number'" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+            <h2 class="text-base font-black uppercase tracking-wider text-[var(--color-text)]">Change Bill Number</h2>
+            <p class="mt-3 text-sm text-[var(--color-text-muted)]">Renames the submitted bill and moves its ledger, stock and payment entries to the new number.</p>
+
+            <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)]/60 p-5">
+                <span class="mb-1 block text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Current Number</span>
+                <div class="mt-1 text-2xl font-black font-mono text-[var(--color-text)]">{{ invoice.name }}</div>
+                <div v-if="invoice.mirror_invoice" class="mt-2 text-xs font-mono text-[var(--color-text-muted)]">Mirror: {{ invoice.mirror_invoice }}</div>
+              </div>
+
+              <div class="rounded-xl border-2 p-5 transition-colors" :class="isNumberChanged ? 'border-[var(--color-info)] bg-[var(--color-info)]/5' : 'border-[var(--color-border)] bg-[var(--color-bg)]/30'">
+                <label for="new-bill-number" class="mb-2 block text-xs font-bold uppercase tracking-widest text-[var(--color-info)]">New Number</label>
+                <input
+                  id="new-bill-number"
+                  ref="newNumberInputRef"
+                  v-model="newBillNumber"
+                  type="text"
+                  autocomplete="off"
+                  spellcheck="false"
+                  class="h-12 w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-lg font-mono font-bold text-[var(--color-text)] outline-none transition-all focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/20"
+                />
+                <p class="mt-3 mb-1 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Next free in series</p>
+                <p v-if="loadingSeries" class="text-xs text-[var(--color-text-muted)]">Loading series…</p>
+                <div v-else class="flex flex-wrap gap-2">
+                  <button
+                    v-for="row in seriesOptions"
+                    :key="row.series"
+                    type="button"
+                    @click="newBillNumber = row.next_name"
+                    :title="row.series"
+                    class="rounded-lg border px-2.5 py-1 text-xs font-mono font-semibold transition-all"
+                    :class="newBillNumber === row.next_name
+                      ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
+                      : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+                  >
+                    {{ row.next_name }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-8 flex justify-end border-t border-[var(--color-border)] pt-6">
+              <button
+                type="button"
+                @click="showRenameConfirm = true"
+                :disabled="!isNumberChanged || loadingRename"
+                class="w-full rounded-xl bg-[var(--color-success)] px-8 py-3.5 text-base font-black uppercase tracking-wider text-[var(--color-text-on-highlight)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto"
+              >
+                {{ loadingRename ? 'Renaming...' : 'Change Number' }}
+              </button>
+            </div>
+          </div>
+
           <!-- ITEMS PREVIEW (Confirmation Table) -->
           <div v-if="activePage === 'bill-date' && invoice.items?.length" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
             <div class="flex items-center justify-between mb-4">
@@ -363,11 +428,26 @@
       </main>
       <SubmittedBillPalette
         ref="billPaletteRef"
-        :busy="loadingFetch || loadingUpdate || loadingDraft"
+        :busy="loadingFetch || loadingUpdate || loadingDraft || loadingRename"
         :selected-name="invoice?.name || ''"
         :selected-doctype="invoice?.doctype || ''"
         @select="handlePaletteSelect"
       />
+    </div>
+
+    <div v-if="showRenameConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="rename-confirm-title">
+      <div class="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl">
+        <h2 id="rename-confirm-title" class="text-lg font-black text-[var(--color-text)]">Change Bill Number?</h2>
+        <p class="mt-4 text-sm text-[var(--color-text)]">
+          <span class="font-mono font-bold">{{ invoice?.name }}</span> will be renamed to
+          <span class="font-mono font-bold text-[var(--color-info)]">{{ newBillNumber.trim() }}</span>.
+        </p>
+        <p class="mt-2 text-xs text-[var(--color-text-muted)]">The old number becomes free. Printed copies will still show the old number.</p>
+        <div class="mt-6 flex justify-end gap-3">
+          <button type="button" @click="showRenameConfirm = false" class="rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]">Cancel</button>
+          <button type="button" @click="handleRename" class="rounded-xl bg-[var(--color-success)] px-4 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] hover:brightness-110">Rename</button>
+        </div>
+      </div>
     </div>
 
     <div v-if="showDraftConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="draft-confirm-title">
@@ -388,15 +468,16 @@
 
 <script setup>
 import { serverCalendarDate } from '../services/serverTime'
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import SubmittedBillPalette from '../components/SubmittedBillPalette.vue'
-import { fetchSubmittedInvoice, modifySubmittedBillDate, moveSubmittedToDraft } from '../api'
+import { fetchSubmittedInvoice, modifySubmittedBillDate, moveSubmittedToDraft, fetchBillNumberSeries, renameSubmittedBill } from '../api'
 
 const router = useRouter()
 const pages = [
   { id: 'bill-date', label: 'Modify Bill Date' },
   { id: 'draft-mode', label: 'Submit to Draft Mode' },
+  { id: 'bill-number', label: 'Change Bill Number' },
 ]
 const activePage = ref(pages[0].id)
 
@@ -415,6 +496,14 @@ const updateSuccessMessage = ref('')
 
 const invoice = ref(null)
 const newBillDate = ref('')
+
+const newNumberInputRef = ref(null)
+const newBillNumber = ref('')
+const seriesOptions = ref([])
+const loadingSeries = ref(false)
+const loadingRename = ref(false)
+const showRenameConfirm = ref(false)
+const renameResult = ref(null)
 
 // Helpers
 function pad(n) {
@@ -459,6 +548,17 @@ function formatTime(timeStr) {
 }
 
 // Computed
+const emptyHint = computed(() => ({
+  'bill-date': 'change its date',
+  'draft-mode': 'move it to draft mode',
+  'bill-number': 'change its number',
+}[activePage.value]))
+
+const isNumberChanged = computed(() => {
+  const next = newBillNumber.value.trim()
+  return !!invoice.value && !!next && next !== invoice.value.name
+})
+
 const isDateChanged = computed(() => {
   if (!invoice.value || !newBillDate.value) return false
   return invoice.value.posting_date !== newBillDate.value
@@ -490,14 +590,19 @@ async function handleFetch(doctype) {
   fetchError.value = ''
   updateSuccessMessage.value = ''
   draftResult.value = null
+  renameResult.value = null
   loadingFetch.value = true
 
   try {
     const res = await fetchSubmittedInvoice(query, doctype)
     invoice.value = res
     newBillDate.value = res.posting_date || ''
+    newBillNumber.value = res.name || ''
+    seriesOptions.value = []
+    if (activePage.value === 'bill-number') loadSeriesOptions()
     await nextTick()
     if (activePage.value === 'bill-date') newDateInputRef.value?.focus()
+    if (activePage.value === 'bill-number') newNumberInputRef.value?.focus()
   } catch (err) {
     invoice.value = null
     fetchError.value = err.message || 'Failed to fetch submitted invoice.'
@@ -538,6 +643,9 @@ function clearAll() {
   draftResult.value = null
   showDraftConfirm.value = false
   newBillDate.value = ''
+  newBillNumber.value = ''
+  renameResult.value = null
+  showRenameConfirm.value = false
   nextTick(() => {
     billPaletteRef.value?.focusSearch()
   })
@@ -588,11 +696,48 @@ async function handleMoveToDraft() {
   }
 }
 
+async function loadSeriesOptions() {
+  if (!invoice.value) return
+  loadingSeries.value = true
+  try {
+    seriesOptions.value = (await fetchBillNumberSeries(invoice.value.doctype)) || []
+  } catch {
+    seriesOptions.value = []
+  } finally {
+    loadingSeries.value = false
+  }
+}
+
+async function handleRename() {
+  if (!showRenameConfirm.value || !invoice.value || !isNumberChanged.value || loadingRename.value) return
+  showRenameConfirm.value = false
+  loadingRename.value = true
+  fetchError.value = ''
+  renameResult.value = null
+
+  try {
+    renameResult.value = await renameSubmittedBill(invoice.value.name, newBillNumber.value.trim(), invoice.value.doctype)
+    invoice.value.name = renameResult.value.new_name
+    billPaletteRef.value?.refresh()
+    loadSeriesOptions()
+  } catch (err) {
+    fetchError.value = err.message || 'Failed to change the bill number.'
+  } finally {
+    loadingRename.value = false
+  }
+}
+
+watch(activePage, page => {
+  if (page === 'bill-number' && invoice.value && !seriesOptions.value.length) loadSeriesOptions()
+})
+
 // Global Keyboard shortcuts
 function handleKeyDown(e) {
-  if (loadingDraft.value) return
+  if (loadingDraft.value || loadingRename.value) return
   if (e.key === 'Escape') {
-    if (showDraftConfirm.value) {
+    if (showRenameConfirm.value) {
+      showRenameConfirm.value = false
+    } else if (showDraftConfirm.value) {
       showDraftConfirm.value = false
     } else if (invoice.value) {
       clearAll()
@@ -604,6 +749,9 @@ function handleKeyDown(e) {
     if (isDateChanged.value && !loadingUpdate.value) {
       handleChangeDate()
     }
+  } else if (e.key === 'F8' && activePage.value === 'bill-number') {
+    e.preventDefault()
+    if (isNumberChanged.value) showRenameConfirm.value = true
   }
 }
 

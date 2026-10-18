@@ -1489,6 +1489,18 @@ export async function moveSubmittedToDraft(invoiceNo, doctype) {
   });
 }
 
+export async function fetchBillNumberSeries(doctype) {
+  return frappeGet("ssplbilling.api.modify_submitted_api.get_bill_number_series", { doctype });
+}
+
+export async function renameSubmittedBill(invoiceNo, newName, doctype) {
+  return frappePost("ssplbilling.api.modify_submitted_api.rename_submitted_bill", {
+    invoice_no: invoiceNo,
+    new_name: newName,
+    doctype,
+  });
+}
+
 /** Fetch one page of cash flow transaction particulars. */
 export async function getCashflowDetails(filters) {
   return frappeGet("ssplbilling.api.reports_api.get_cashflow_details", filters);
