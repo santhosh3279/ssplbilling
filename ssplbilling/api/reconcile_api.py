@@ -336,192 +336,169 @@ def get_parties_with_unlinked_entries(show_all=False):
 	return result
 
 
+def _fetch_reconciliation_entries(party_type, party):
+	"""Unreconciled entries for a party, as ERPNext's Payment Reconciliation tool finds them.
+
+	`payments` holds what moves in the payment direction (receipts, credit JE rows,
+	returns); `invoices` holds what is open against them (bills, refunds, debit JE
+	rows), with outstanding amounts read from the Payment Ledger.
+	"""
+	company = _get_company()
+	rec = frappe.new_doc("Payment Reconciliation")
+	rec.company = company
+	rec.party_type = party_type
+	rec.party = party
+	rec.receivable_payable_account = _get_party_account(party_type, party)
+	# The tool defaults to 50 of each; the page needs the whole ledger
+	rec.payment_limit = 0
+	rec.invoice_limit = 0
+	rec.get_unreconciled_entries()
+	return rec
+
+
+def _reconciliation_lists(party_type, party):
+	"""Both lists the page shows, built from one Payment Reconciliation fetch.
+
+	Returns (unlinked, outstanding) in the shapes of get_unlinked_entries and
+	get_outstanding_docs.
+	"""
+	rec = _fetch_reconciliation_entries(party_type, party)
+	pay_dir = "Cr" if party_type == "Customer" else "Dr"
+	opp_dir = "Dr" if pay_dir == "Cr" else "Cr"
+	invoice_doctype = "Sales Invoice" if party_type == "Customer" else "Purchase Invoice"
+
+	pe_names = {r.reference_name for r in rec.payments if r.reference_type == "Payment Entry"}
+	pe_names |= {r.invoice_number for r in rec.invoices if r.invoice_type == "Payment Entry"}
+	je_names = {r.reference_name for r in rec.payments if r.reference_type == "Journal Entry"}
+	je_names |= {r.invoice_number for r in rec.invoices if r.invoice_type == "Journal Entry"}
+	inv_names = {r.reference_name for r in rec.payments if r.reference_type == invoice_doctype}
+	inv_names |= {r.invoice_number for r in rec.invoices if r.invoice_type == invoice_doctype}
+
+	pe_info = {
+		d.name: d
+		for d in frappe.get_all(
+			"Payment Entry",
+			{"name": ["in", list(pe_names) or [""]]},
+			["name", "payment_type", "paid_amount", "mode_of_payment", "remarks", "reference_no"],
+		)
+	}
+	je_info = {
+		d.name: d
+		for d in frappe.get_all(
+			"Journal Entry", {"name": ["in", list(je_names) or [""]]}, ["name", "cheque_no", "user_remark"]
+		)
+	}
+	party_name_field = "customer_name" if party_type == "Customer" else "supplier_name"
+	inv_info = {
+		d.name: d
+		for d in frappe.get_all(
+			invoice_doctype,
+			{"name": ["in", list(inv_names) or [""]]},
+			["name", "grand_total", "is_return", "return_against", f"{party_name_field} AS party_name"],
+		)
+	}
+	# ERPNext reads a payment-side PE's unallocated_amount, which it never lowers
+	# when another PE or a JE is reconciled against it; the Payment Ledger is right.
+	pe_free = _payment_entry_open_amounts(party_type, party, list(pe_names))
+
+	def pe_row(name, posting_date, amount, direction):
+		info = pe_info.get(name) or frappe._dict()
+		return {
+			"name": name,
+			"posting_date": posting_date,
+			"payment_type": info.payment_type,
+			"paid_amount": info.paid_amount,
+			"unallocated_amount": amount,
+			"total_amount": info.paid_amount,
+			"mode_of_payment": info.mode_of_payment or "",
+			"remarks": info.remarks or "",
+			"reference_no": info.reference_no or "",
+			"direction": direction,
+		}
+
+	def je_row(name, posting_date, amount, direction, reference_row=None):
+		info = je_info.get(name) or frappe._dict()
+		return {
+			"name": name,
+			"reference_row": reference_row,
+			"posting_date": posting_date,
+			"unallocated_amount": amount,
+			"total_amount": amount,
+			"remarks": info.user_remark or "",
+			"reference_no": info.cheque_no or "",
+			"direction": direction,
+		}
+
+	def inv_doc(name, posting_date, outstanding):
+		info = inv_info.get(name) or frappe._dict()
+		return {
+			"name": name,
+			"doctype": invoice_doctype,
+			"posting_date": posting_date,
+			"grand_total": info.grand_total,
+			"outstanding_amount": outstanding,
+			"party_name": info.party_name,
+			"is_return": info.is_return,
+			"return_against": info.return_against or "",
+			"direction": opp_dir if outstanding > 0 else pay_dir,
+		}
+
+	payment_entries, journal_entries, docs = [], [], []
+	je_left = {}
+	for r in rec.payments:
+		amount = float(r.amount or 0)
+		if r.reference_type == "Payment Entry":
+			amount = min(amount, pe_free.get(r.reference_name, amount))
+			if amount > 0.005:
+				payment_entries.append(pe_row(r.reference_name, r.posting_date, amount, pay_dir))
+		elif r.reference_type == "Journal Entry":
+			# The row amount ignores PEs reconciled against the JE as a whole, so cap
+			# the JE's rows, in order, by its open Payment Ledger balance
+			if r.reference_name not in je_left:
+				je_left[r.reference_name] = _get_je_outstanding(
+					r.reference_name, party_type, party, rec.receivable_payable_account
+				)
+			amount = min(amount, je_left[r.reference_name])
+			je_left[r.reference_name] -= max(amount, 0)
+			if amount > 0.005:
+				journal_entries.append(
+					je_row(r.reference_name, r.posting_date, amount, pay_dir, r.reference_row)
+				)
+		elif r.reference_type == invoice_doctype and amount > 0.005:
+			# Return (credit / debit note): a credit waiting to be linked
+			docs.append(inv_doc(r.reference_name, r.posting_date, -amount))
+
+	for r in rec.invoices:
+		amount = float(r.outstanding_amount or 0)
+		if amount <= 0.005:
+			continue
+		if r.invoice_type == "Payment Entry":
+			payment_entries.append(pe_row(r.invoice_number, r.invoice_date, amount, opp_dir))
+		elif r.invoice_type == "Journal Entry":
+			journal_entries.append(je_row(r.invoice_number, r.invoice_date, amount, opp_dir))
+		elif r.invoice_type == invoice_doctype:
+			docs.append(inv_doc(r.invoice_number, r.invoice_date, amount))
+
+	newest_first = lambda row: str(row["posting_date"] or "")
+	payment_entries.sort(key=newest_first, reverse=True)
+	journal_entries.sort(key=newest_first, reverse=True)
+	docs.sort(key=newest_first)
+	return (
+		{"payment_entries": payment_entries, "journal_entries": journal_entries},
+		{"doc_type": "Invoice", "docs": docs},
+	)
+
+
 @frappe.whitelist()
 def get_unlinked_entries(party_type, party):
-	"""Return unallocated Payment Entries and Journal Entry rows for a party."""
-	company = _get_company()
-	
-	# Fetch from both Receivable and Payable if it's a Customer/Supplier
-	# as they might have both types of entries.
-	account_types = ["Receivable", "Payable"]
-	
-
-	payment_entries = frappe.db.sql(
-		f"""
-		SELECT
-			pe.name, pe.posting_date, pe.payment_type,
-			pe.paid_amount, {_PE_FREE} AS unallocated_amount,
-			pe.mode_of_payment,
-			IFNULL(pe.remarks, '') AS remarks,
-			IFNULL(pe.reference_no, '') AS reference_no,
-			CASE WHEN pe.payment_type = 'Receive' THEN 'Cr' ELSE 'Dr' END AS direction
-		FROM `tabPayment Entry` pe
-		{_PE_OPEN_JOIN}
-		WHERE pe.docstatus = 1
-			AND pe.party_type = %(party_type)s AND pe.party = %(party)s
-			AND {_PE_FREE} > 0.005
-			AND pe.company = %(company)s
-		ORDER BY pe.posting_date DESC
-		""",
-		{"party_type": party_type, "party": party, "company": company},
-		as_dict=True,
-	)
-
-	je_entries = frappe.db.sql(
-		"""
-		SELECT
-			jea.parent                                                        AS name,
-			jea.account                                                       AS account,
-			MAX(CASE WHEN (jea.reference_name IS NULL OR jea.reference_name = '')
-			         THEN jea.name ELSE NULL END)                             AS reference_row,
-			MAX(je.posting_date)                                              AS posting_date,
-			IFNULL(MAX(je.cheque_no), '')                                     AS reference_no,
-			IFNULL(MAX(je.user_remark), '')                                   AS remarks,
-			MAX(je.total_debit)                                               AS journal_total_debit,
-			SUM(ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)) AS total_amount,
-			SUM(CASE WHEN (jea.reference_name IS NULL OR jea.reference_name = '')
-			         THEN ABS(jea.credit_in_account_currency - jea.debit_in_account_currency)
-			         ELSE 0 END)                                              AS unallocated_amount_sql,
-			CASE WHEN SUM(jea.credit_in_account_currency) > SUM(jea.debit_in_account_currency)
-			     THEN 'Cr' ELSE 'Dr' END                                      AS direction
-		FROM `tabJournal Entry Account` jea
-		JOIN `tabJournal Entry`  je  ON je.name  = jea.parent
-		JOIN `tabAccount`        acc ON acc.name = jea.account
-		WHERE je.docstatus = 1
-			AND jea.party_type = %s AND jea.party = %s
-			AND acc.account_type IN %s
-			AND je.company = %s
-			AND je.is_opening != 'Yes'
-		GROUP BY jea.parent, jea.account, jea.party
-		ORDER BY posting_date DESC
-		""",
-		(party_type, party, tuple(account_types), company),
-		as_dict=True,
-	)
-
-	# Accurate unallocated_amount calculation via Payment Ledger
-	if je_entries:
-		je_names = list(set(r["name"] for r in je_entries))
-		
-		# Fetch referenced names set for each JE account row to prevent double-subtracting
-		# already-allocated rows' links from the unallocated rows.
-		je_rows_ref = frappe.db.sql(
-			"""
-			SELECT parent, account, party, reference_name
-			FROM `tabJournal Entry Account`
-			WHERE parent IN %s
-				AND reference_name IS NOT NULL
-				AND reference_name != ''
-			""",
-			(tuple(je_names),),
-			as_dict=True,
-		)
-		ref_map = {}
-		for r in je_rows_ref:
-			k = (r["parent"], r["account"], r["party"])
-			if k not in ref_map:
-				ref_map[k] = set()
-			ref_map[k].add(r["reference_name"])
-
-		# Sum of all reconciled amounts for these JEs, this party, and these specific accounts.
-		pl_links = frappe.db.sql(
-			"""
-			SELECT 
-				-- A link consumes the document it is made AGAINST. Check that side first: a
-				-- reconciliation JE is itself one of these JEs, and attributing its link to it
-				-- (instead of the JE it adjusts) left that JE looking unreconciled forever.
-				CASE WHEN against_voucher_no IN %s THEN against_voucher_no ELSE voucher_no END as name,
-				account,
-				party,
-				voucher_no,
-				against_voucher_no,
-				amount_in_account_currency
-			FROM `tabPayment Ledger Entry`
-			WHERE (voucher_no IN %s OR against_voucher_no IN %s)
-			  AND against_voucher_no != voucher_no
-			  AND party = %s AND delinked = 0
-			""",
-			(tuple(je_names), tuple(je_names), tuple(je_names), party),
-			as_dict=True,
-		)
-
-		links_map = {}
-		for r in pl_links:
-			je_name = r["name"]
-			acc = r["account"]
-			pty = r["party"]
-			k = (je_name, acc, pty)
-			linked_doc = r["against_voucher_no"] if r["voucher_no"] == je_name else r["voucher_no"]
-			if k in ref_map and linked_doc in ref_map[k]:
-				continue
-			links_map[(je_name, acc)] = links_map.get((je_name, acc), 0.0) + abs(float(r["amount_in_account_currency"] or 0.0))
-		
-		processed_jes = []
-		for je in je_entries:
-			linked = links_map.get((je["name"], je["account"]), 0)
-			# Re-calculate unallocated_amount: Total party-specific amount minus PL links
-			# We also respect the SQL-level unallocated (rows with reference_name are already allocated)
-			sql_unalloc = float(je.get("unallocated_amount_sql") or 0)
-			je["unallocated_amount"] = max(0, sql_unalloc - linked)
-			
-			if je["unallocated_amount"] > 0.005:
-				processed_jes.append(dict(je))
-		je_entries = processed_jes
-
-
-	return {
-		"payment_entries": [dict(r) for r in payment_entries],
-		"journal_entries": [dict(r) for r in je_entries],
-	}
+	"""Unallocated Payment Entries and Journal Entry rows for a party (both directions)."""
+	return _reconciliation_lists(party_type, party)[0]
 
 
 @frappe.whitelist()
 def get_outstanding_docs(party_type, party):
-	"""Return submitted invoices with outstanding balance for a party.
-
-	Filters strictly by party_type so Customer and Supplier ledgers for the
-	same name never bleed into each other's reference lists.
-	"""
-	company = _get_company()
-	all_docs = []
-
-	if party_type != "Supplier":
-		# Sales Invoices — Customer side
-		si_docs = frappe.db.sql(
-			"""
-			SELECT name, posting_date, grand_total, outstanding_amount,
-			       customer_name AS party_name, is_return, return_against, 'Sales Invoice' as doctype
-			FROM `tabSales Invoice`
-			WHERE docstatus = 1 AND customer = %s
-			      AND ABS(outstanding_amount) > 0.005 AND company = %s
-			ORDER BY posting_date ASC
-			""",
-			(party, company),
-			as_dict=True,
-		)
-		for d in si_docs:
-			d["direction"] = "Cr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Dr"
-			all_docs.append(dict(d))
-
-	if party_type != "Customer":
-		# Purchase Invoices — Supplier side
-		pi_docs = frappe.db.sql(
-			"""
-			SELECT name, posting_date, grand_total, outstanding_amount,
-			       supplier_name AS party_name, is_return, return_against, 'Purchase Invoice' as doctype
-			FROM `tabPurchase Invoice`
-			WHERE docstatus = 1 AND supplier = %s
-			      AND ABS(outstanding_amount) > 0.005 AND company = %s
-			ORDER BY posting_date ASC
-			""",
-			(party, company),
-			as_dict=True,
-		)
-		for d in pi_docs:
-			d["direction"] = "Dr" if d.get("is_return") or d.get("outstanding_amount", 0) < 0 else "Cr"
-			all_docs.append(dict(d))
-
-	return {"doc_type": "Invoice", "docs": all_docs}
+	"""Invoices with an open balance for a party; returns carry a negative outstanding."""
+	return _reconciliation_lists(party_type, party)[1]
 
 
 @frappe.whitelist()
@@ -671,17 +648,14 @@ def post_reconciliation(party_type, party, allocations, company=None):
 
 	# unreconciled_amount above must stay the PE's own unallocated_amount (ERPNext
 	# compares it), but the amount actually free is the Payment Ledger balance.
+	# (The bill side, PEs included, is checked against ERPNext's own outstanding below.)
 	pe_names = {a["payment_name"] for a in allocations if a["payment_type"] == "Payment Entry"}
-	pe_names |= {a["invoice_name"] for a in allocations if a["invoice_type"] == "Payment Entry"}
 	pe_free = _payment_entry_open_amounts(party_type, party, list(pe_names))
 	pe_wanted = {}
 	for alloc in allocations:
-		for doctype, name in (
-			(alloc["payment_type"], alloc["payment_name"]),
-			(alloc["invoice_type"], alloc["invoice_name"]),
-		):
-			if doctype == "Payment Entry":
-				pe_wanted[name] = pe_wanted.get(name, 0.0) + float(alloc["amount"])
+		if alloc["payment_type"] == "Payment Entry":
+			name = alloc["payment_name"]
+			pe_wanted[name] = pe_wanted.get(name, 0.0) + float(alloc["amount"])
 	for name, wanted in pe_wanted.items():
 		free = pe_free.get(name)
 		if free is not None and wanted - free > 0.009:
@@ -705,44 +679,33 @@ def post_reconciliation(party_type, party, allocations, company=None):
 	# 1. Populate the invoices child table. 
 	# Payment Reconciliation validation checks this table to ensure outstanding balance.
 	seen_invoices = {}
-	opposite_entries = None
+	open_on_bill_side = None
 	for alloc in allocations:
 		inv_name = alloc["invoice_name"]
 		inv_type = alloc["invoice_type"]
-		
-		# For "invoice" side, we identify unique docs but also need unique rows for JEs
-		# BUT standard Payment Reconciliation only tracks unique document names in 'invoices' table.
-		# However, if we have multiple rows from same JE, we must sum them up for the tool's validation?
-		# No, the tool validates 'outstanding_amount' per invoice name.
-		
-		if inv_name not in seen_invoices:
-			if inv_type in ["Sales Invoice", "Purchase Invoice"]:
-				outstanding = frappe.db.get_value(inv_type, inv_name, "outstanding_amount") or 0
-			else:
-				# It's a Payment Entry or Journal Entry (cross-reconciliation)
-				# Pull its unallocated amount from opposite entries API logic
-				if opposite_entries is None:
-					opposite_entries = get_unlinked_opposite_entries(party_type, party)
-				
-				# Find unallocated amount for THIS document (sum of all unallocated rows in it)
-				doc_rows = [x for x in opposite_entries["payment_entries"] + opposite_entries["journal_entries"] if x["name"] == inv_name]
-				outstanding = sum([float(x["unallocated_amount"]) for x in doc_rows]) if doc_rows else alloc["amount"]
-				if inv_type == "Journal Entry":
-					# The opposite-entries query ignores links already made against the JE, so
-					# a JE reconciled before still looked fully open and every click posted
-					# another reconciliation JE for the same amount. Cap by the Payment Ledger.
-					outstanding = min(outstanding, _get_je_outstanding(inv_name, party_type, party, account))
-					if outstanding <= 0.005:
-						frappe.throw(
-							f"Journal Entry {inv_name} is already fully reconciled for {party}. Refresh and try again."
-						)
+		if inv_name in seen_invoices:
+			continue
+		if inv_type in ["Sales Invoice", "Purchase Invoice"]:
+			outstanding = frappe.db.get_value(inv_type, inv_name, "outstanding_amount") or 0
+		else:
+			# A Payment Entry or Journal Entry on the bill side: take the open balance
+			# the Payment Reconciliation tool itself reports (Payment Ledger based)
+			if open_on_bill_side is None:
+				fetched = _fetch_reconciliation_entries(party_type, party)
+				open_on_bill_side = {}
+				for row in fetched.invoices:
+					key = (row.invoice_type, row.invoice_number)
+					open_on_bill_side[key] = open_on_bill_side.get(key, 0.0) + float(row.outstanding_amount or 0)
+			outstanding = open_on_bill_side.get((inv_type, inv_name), 0.0)
+			if outstanding <= 0.005:
+				frappe.throw(f"{inv_type} {inv_name} has nothing left to reconcile for {party}. Refresh and try again.")
 
-			seen_invoices[inv_name] = float(outstanding)
-			rec.append("invoices", {
-				"invoice_type": inv_type,
-				"invoice_number": inv_name,
-				"outstanding_amount": float(outstanding),
-			})
+		seen_invoices[inv_name] = float(outstanding)
+		rec.append("invoices", {
+			"invoice_type": inv_type,
+			"invoice_number": inv_name,
+			"outstanding_amount": float(outstanding),
+		})
 
 	# The bill side may not take more than it has open, summed over every allocation to it
 	allocated_to = {}
@@ -829,8 +792,7 @@ def _build_reconcile_sides(party_type, party):
 	opposite-direction PE/JE rows are outstanding, and return invoices carry a
 	negative outstanding so they sit on the payment side.
 	"""
-	unlinked = get_unlinked_entries(party_type, party)
-	outstanding = get_outstanding_docs(party_type, party)
+	unlinked, outstanding = _reconciliation_lists(party_type, party)
 
 	pay_dir = "Cr" if party_type == "Customer" else "Dr"
 	payments, invoices = [], []
@@ -839,7 +801,7 @@ def _build_reconcile_sides(party_type, party):
 	rows += [dict(r, doctype="Journal Entry") for r in unlinked.get("journal_entries") or []]
 
 	for row in rows:
-		# Already capped at the Payment Ledger balance by get_unlinked_entries
+		# Already capped at the Payment Ledger balance by _reconciliation_lists
 		amount = float(row.get("unallocated_amount") or 0)
 		if amount <= AUTO_MATCH_TOLERANCE:
 			continue
@@ -888,16 +850,25 @@ def _payment_entry_open_amounts(party_type, party, names):
 		return {}
 	rows = frappe.db.sql(
 		"""SELECT against_voucher_no AS name,
-			SUM(amount_in_account_currency)
-				* SIGN(SUM(CASE WHEN voucher_no = against_voucher_no
-					THEN amount_in_account_currency ELSE 0 END)) AS open_amount
+			SUM(amount_in_account_currency) AS total,
+			SUM(CASE WHEN voucher_no = against_voucher_no
+				THEN amount_in_account_currency ELSE 0 END) AS own
 		FROM `tabPayment Ledger Entry`
 		WHERE company = %s AND party_type = %s AND party = %s AND delinked = 0
 			AND against_voucher_type = 'Payment Entry' AND against_voucher_no IN %s
 		GROUP BY against_voucher_no""",
 		(_get_company(), party_type, party, tuple(names)), as_dict=True,
 	)
-	return {r.name: float(r.open_amount or 0) for r in rows}
+	types = dict(frappe.get_all("Payment Entry", {"name": ["in", names]}, ["name", "payment_type"], as_list=True))
+	# A PE fully allocated when submitted has no entry against itself to take the
+	# sign from: Receive lowers a receivable / raises a payable, Pay the reverse
+	moves_down = "Receive" if party_type == "Customer" else "Pay"
+	result = {}
+	for r in rows:
+		own = float(r.own or 0)
+		sign = (1 if own > 0 else -1) if own else (-1 if types.get(r.name) == moves_down else 1)
+		result[r.name] = float(r.total or 0) * sign
+	return result
 
 
 def _overused_payment_entries(party_type, party):
