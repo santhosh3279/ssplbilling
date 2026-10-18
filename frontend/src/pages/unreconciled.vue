@@ -54,7 +54,7 @@
           v-if="party"
           @click="autoAllocateLedger"
           :disabled="ledgerAutoLoading || isLoading || isSubmitting"
-          title="Match this ledger automatically: returns, exact amounts, invoice numbers in remarks, bill combinations, then oldest-first"
+          title="Match this ledger automatically: returns, bill numbers in remarks, exact amounts (same day first), bill combinations, then oldest-first"
           class="h-11 cursor-pointer rounded-xl bg-[var(--color-highlight)] px-5 text-xs font-black uppercase tracking-widest text-[var(--color-text-on-highlight)] hover:brightness-105 active:scale-95 disabled:opacity-40 transition-all shadow-md flex items-center justify-center gap-2"
         >
           {{ ledgerAutoLoading ? 'Matching…' : '⚡ Auto Allocate' }}
@@ -396,7 +396,7 @@
           <div>
             <h3 class="text-lg font-black uppercase tracking-widest text-[var(--color-text)]">Auto Reconcile Preview</h3>
             <p class="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-muted)] mt-0.5">
-              Returns → exact amounts → invoice no. in remarks → bill combinations · oldest-first only for zero-balance ledgers
+              Returns → bill no. in remarks → exact amounts → bill combinations · oldest-first only for zero-balance ledgers
             </p>
           </div>
           <button
@@ -430,7 +430,7 @@
             <p class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Matching entries…</p>
           </div>
 
-          <div v-else-if="!autoPreview.length" class="py-16 text-center space-y-2">
+          <div v-else-if="!autoPreview.length && !autoWarnings.length" class="py-16 text-center space-y-2">
             <div class="text-5xl">🤷</div>
             <p class="text-sm font-black uppercase tracking-widest text-[var(--color-text)]">No automatic matches</p>
             <p class="text-xs text-[var(--color-text-muted)]">No ledger has both an unlinked payment and an outstanding bill that can be paired.</p>
@@ -463,6 +463,11 @@
                 </div>
                 <span class="font-mono font-black text-[var(--color-success)] shrink-0">₹{{ fmt(row.amount) }}</span>
               </div>
+            </div>
+
+            <div v-if="autoWarnings.length" class="rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/5 px-4 py-3">
+              <p class="text-[11px] font-black uppercase tracking-widest text-[var(--color-danger)] mb-1">Payments used more than once — check manually</p>
+              <p v-for="w in autoWarnings" :key="w.party + '::' + w.name" class="text-xs text-[var(--color-text-muted)]">{{ w.party }} — {{ w.name }} linked ₹{{ fmt(w.excess) }} beyond its amount</p>
             </div>
 
             <div v-if="autoSkipped.length" class="rounded-xl border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/5 px-4 py-3">
@@ -876,11 +881,18 @@ async function autoAllocateLedger() {
       pay.unallocated_amount -= amt
       inv.outstanding_amount -= amt
     }
+    const notes = []
     if (!queuedAllocations.value.length) {
-      alert('Nothing to allocate automatically for this ledger.')
+      notes.push('Nothing to allocate automatically for this ledger.')
     } else if (missed) {
-      alert(`${missed} suggested allocation(s) no longer fit the current balances and were left out.`)
+      notes.push(`${missed} suggested allocation(s) no longer fit the current balances and were left out.`)
     }
+    const warnings = res.warnings || []
+    if (warnings.length) {
+      notes.push('Payments used more than once — check manually:\n' +
+        warnings.map(w => `• ${w.name}: linked ₹${fmt(w.excess)} beyond its amount`).join('\n'))
+    }
+    if (notes.length) alert(notes.join('\n\n'))
   } catch (e) {
     alert('Auto allocate failed: ' + e.message)
   } finally {
@@ -894,6 +906,7 @@ const autoLoading = ref(false)
 const autoRunning = ref(false)
 const autoPreview = ref([])
 const autoSkipped = ref([])
+const autoWarnings = ref([])
 const autoTotal = ref(0)
 const autoPartyCount = ref(0)
 const autoReconcileEverything = ref(false)
@@ -926,12 +939,14 @@ async function openAutoPreview() {
   autoReconcileEverything.value = false
   autoPreview.value = []
   autoSkipped.value = []
+  autoWarnings.value = []
   autoTotal.value = 0
   autoPartyCount.value = 0
   try {
     const res = await frappeGet('ssplbilling.api.reconcile_api.preview_auto_reconcile')
     autoPreview.value = res.proposals || []
     autoSkipped.value = res.skipped || []
+    autoWarnings.value = res.warnings || []
     autoTotal.value = res.total_amount || 0
     autoPartyCount.value = res.party_count || 0
   } catch (e) {

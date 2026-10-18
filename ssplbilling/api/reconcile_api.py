@@ -762,17 +762,21 @@ def post_reconciliation(party_type, party, allocations, company=None):
 # Each ledger is matched in stages, most certain first, and every stage only
 # uses what the earlier stages left over:
 #   return       – credit / debit note against the invoice it was returned against
-#   exact        – one payment and one outstanding entry of the same amount
-#   reference    – the invoice number appears in the payment's remarks / reference no
+#   reference    – a bill number in the remarks / reference no of either entry
+#                  (short forms like "ERE282" for ERE00282 count)
+#   exact        – one payment and one outstanding entry of the same amount,
+#                  same-day pairs first
 #   combo        – one payment equal to the sum of two or three outstanding entries
 #   oldest_first – whatever is left, oldest payment to oldest bill, partial allowed
 # Oldest-first is a guess, so the all-ledgers run keeps it only for ledgers whose
 # GL balance is zero; the per-ledger Auto Allocate shows it in the queue for review.
 # The preview is what the Proceed / Apply buttons post back.
+# Payment Entries count only what the Payment Ledger still has open: refunds that
+# Credit Note JEs already used are skipped, and over-used ones are listed as warnings.
 
 AUTO_MATCH_TOLERANCE = 0.01
 COMBO_POOL = 20  # outstanding entries considered per payment for combo matches
-MATCH_ORDER = ("return", "exact", "reference", "combo", "oldest_first")
+MATCH_ORDER = ("return", "reference", "exact", "combo", "oldest_first")
 
 
 def _build_reconcile_sides(party_type, party):
@@ -791,9 +795,18 @@ def _build_reconcile_sides(party_type, party):
 
 	rows = [dict(r, doctype="Payment Entry") for r in unlinked.get("payment_entries") or []]
 	rows += [dict(r, doctype="Journal Entry") for r in unlinked.get("journal_entries") or []]
+	pe_open = _payment_entry_open_amounts(
+		party_type, party, [r["name"] for r in rows if r["doctype"] == "Payment Entry"]
+	)
 
 	for row in rows:
-		amount = float(row.get("unallocated_amount") or 0)
+		unallocated = float(row.get("unallocated_amount") or 0)
+		amount = unallocated
+		if row["doctype"] == "Payment Entry" and row["name"] in pe_open:
+			# Credit Note JEs that point at a refund PE consume it in the Payment
+			# Ledger without touching unallocated_amount, so only the ledger's open
+			# balance is really free to allocate.
+			amount = min(amount, pe_open[row["name"]])
 		if amount <= AUTO_MATCH_TOLERANCE:
 			continue
 		entry = {
@@ -802,6 +815,8 @@ def _build_reconcile_sides(party_type, party):
 			"reference_row": row.get("reference_row") or None,
 			"posting_date": str(row.get("posting_date") or ""),
 			"amount": amount,
+			# Payment Reconciliation checks this against the PE's own unallocated amount
+			"unreconciled_amount": unallocated,
 			"remarks": row.get("remarks") or "",
 			"reference_no": row.get("reference_no") or "",
 		}
@@ -832,6 +847,45 @@ def _build_reconcile_sides(party_type, party):
 	return payments, invoices
 
 
+def _payment_entry_open_amounts(party_type, party, names):
+	"""Open Payment Ledger balance of each Payment Entry, as a positive amount in its own direction.
+
+	A PE used up by more JEs than it covers comes out zero or negative here.
+	"""
+	if not names:
+		return {}
+	rows = frappe.db.sql(
+		"""SELECT against_voucher_no AS name, SUM(amount_in_account_currency) AS open_amount
+		FROM `tabPayment Ledger Entry`
+		WHERE company = %s AND party_type = %s AND party = %s AND delinked = 0
+			AND against_voucher_type = 'Payment Entry' AND against_voucher_no IN %s
+		GROUP BY against_voucher_no""",
+		(_get_company(), party_type, party, tuple(names)), as_dict=True,
+	)
+	types = dict(
+		frappe.db.get_all("Payment Entry", {"name": ["in", names]}, ["name", "payment_type"], as_list=True)
+	)
+	# Receive PEs post negative ledger amounts, Pay PEs positive
+	return {
+		r.name: float(r.open_amount or 0) * (-1 if types.get(r.name) == "Receive" else 1)
+		for r in rows
+	}
+
+
+def _overused_payment_entries(party_type, party):
+	"""Payment Entries whose Payment Ledger links exceed the PE itself (one refund used twice)."""
+	names = frappe.db.get_all(
+		"Payment Entry",
+		{"company": _get_company(), "party_type": party_type, "party": party, "docstatus": 1},
+		pluck="name",
+	)
+	return [
+		{"name": name, "excess": round(-amount, 2)}
+		for name, amount in _payment_entry_open_amounts(party_type, party, names).items()
+		if amount < -AUTO_MATCH_TOLERANCE
+	]
+
+
 def _ledger_is_zero(party_type, party):
 	"""Require one party account, matching the account used for reconciliation."""
 	rows = frappe.db.sql(
@@ -855,12 +909,26 @@ def _paise(amount):
 
 
 def _mentions(text, name):
-	"""True when `name` appears in `text` as a whole token (SINV-1 does not match SINV-12)."""
+	"""True when `name` appears in `text` as a whole token (SINV-1 does not match SINV-12).
+
+	Counter staff write bill numbers short, so "ERE282" or "ER282" also matches
+	ERE00282, and "RTN7096" matches RTN07096/: same number, letters a prefix of the
+	series, leading zeros and a trailing "/" or "-1" ignored.
+	"""
 	import re
 
 	if len(name) < 5 or not text:
 		return False
-	return re.search(r"(?<![A-Z0-9])" + re.escape(name.upper()) + r"(?![A-Z0-9])", text) is not None
+	if re.search(r"(?<![A-Z0-9])" + re.escape(name.upper()) + r"(?![A-Z0-9])", text):
+		return True
+	bill = re.fullmatch(r"([A-Z]{2,})0*(\d+)(?:[/-].*)?", name.upper())
+	if not bill:
+		return False
+	series, number = bill.groups()
+	for letters, digits in re.findall(r"(?<![A-Z0-9])([A-Z]{2,})0*(\d+)(?![0-9])", text):
+		if digits == number and series.startswith(letters):
+			return True
+	return False
 
 
 def _plan_allocations(payments, invoices):
@@ -896,25 +964,37 @@ def _plan_allocations(payments, invoices):
 				take(p, i, min(p["left"], i["left"]), "return")
 				break
 
-	# 2. Equal amounts, oldest first, one to one
+	# 2. Bill number written on either side: the payment's remarks naming the bill,
+	#    or a refund's remarks naming the return it pays out ("ERE282")
+	def text_of(row):
+		return f"{row.get('remarks') or ''} {row.get('reference_no') or ''}".upper()
+
 	for p in pays:
 		if not p["left"]:
 			continue
-		for i in invs:
-			if i["left"] == p["left"] and not same_doc(p, i):
-				take(p, i, p["left"], "exact")
-				break
-
-	# 3. Invoice number written on the payment
-	for p in pays:
-		text = f"{p['row'].get('remarks') or ''} {p['row'].get('reference_no') or ''}".upper()
-		if not p["left"] or not text.strip():
-			continue
+		p_text = text_of(p["row"])
 		for i in invs:
 			if not p["left"]:
 				break
-			if i["left"] and not same_doc(p, i) and _mentions(text, i["row"]["name"]):
+			if not i["left"] or same_doc(p, i):
+				continue
+			if _mentions(p_text, i["row"]["name"]) or _mentions(text_of(i["row"]), p["row"]["name"]):
 				take(p, i, min(p["left"], i["left"]), "reference")
+
+	# 3. Equal amounts, one to one; same-day pairs first (a return and its refund
+	#    are posted together), then oldest first
+	for same_day in (True, False):
+		for p in pays:
+			if not p["left"]:
+				continue
+			for i in invs:
+				if (
+					i["left"] == p["left"]
+					and not same_doc(p, i)
+					and (not same_day or i["row"]["posting_date"] == p["row"]["posting_date"])
+				):
+					take(p, i, p["left"], "exact")
+					break
 
 	# 4. One payment covering two or three whole bills
 	for p in pays:
@@ -955,6 +1035,7 @@ def preview_auto_reconcile(party_type=None, party=None):
 
 	proposals = []
 	skipped = []
+	warnings = []
 	for row in parties:
 		try:
 			payments, invoices = _build_reconcile_sides(row["party_type"], row["party"])
@@ -962,6 +1043,14 @@ def preview_auto_reconcile(party_type=None, party=None):
 			guesses = any(kind == "oldest_first" for *_, kind in plan)
 			if not single and guesses and not _ledger_is_zero(row["party_type"], row["party"]):
 				plan = [step for step in plan if step[3] != "oldest_first"]
+			for pe in _overused_payment_entries(row["party_type"], row["party"]):
+				warnings.append(
+					{
+						"party": row.get("label") or row["party"],
+						"name": pe["name"],
+						"excess": pe["excess"],
+					}
+				)
 		except Exception:
 			frappe.log_error(frappe.get_traceback(), "Auto reconcile preview failed")
 			skipped.append({"party": row.get("label") or row["party"], "reason": "Could not read entries"})
@@ -982,7 +1071,7 @@ def preview_auto_reconcile(party_type=None, party=None):
 					"invoice_date": inv["posting_date"],
 					"amount": round(amount, 2),
 					"match_type": kind,
-					"unreconciled_amount": pay["amount"],
+					"unreconciled_amount": pay.get("unreconciled_amount", pay["amount"]),
 				}
 			)
 
@@ -994,6 +1083,7 @@ def preview_auto_reconcile(party_type=None, party=None):
 		"total_amount": round(sum(p["amount"] for p in proposals), 2),
 		"party_count": len({(p["party_type"], p["party"]) for p in proposals}),
 		"skipped": skipped,
+		"warnings": warnings,
 	}
 
 
