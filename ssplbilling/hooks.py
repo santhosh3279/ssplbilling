@@ -42,6 +42,7 @@ fixtures = [
 					"mop",
 					"custom_mirrored",
 					"custom_text",
+					"custom_discount_rule",
 				],
 			],
 		],

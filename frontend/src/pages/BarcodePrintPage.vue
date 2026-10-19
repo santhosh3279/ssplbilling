@@ -122,6 +122,7 @@
                   <th class="border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
                   <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Barcode</th>
                   <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Custom Text</th>
+                  <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Discount</th>
                   <th class="w-24 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">UOM</th>
                   <th v-for="pl in visiblePriceLists" :key="pl"
                     class="w-32 border-r border-[var(--color-border)] px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
@@ -189,6 +190,19 @@
                       @keydown.delete.stop
                     />
                     <span v-else class="text-xl text-[var(--color-text-muted)]">{{ item.custom_text || '—' }}</span>
+                  </td>
+                  <!-- Discount Rule (auto-filled from the item's discount rules) -->
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)]">
+                    <input
+                      v-if="selectedRow === idx"
+                      :ref="el => setRef(el, 'discount', idx)"
+                      v-model="item.custom_discount_rule"
+                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-2xl text-[var(--color-success)] outline-none focus:border-[var(--color-info)]"
+                      placeholder="—"
+                      @keydown.enter.prevent="selectQtyField(idx)"
+                      @keydown.delete.stop
+                    />
+                    <span v-else class="text-xl font-bold text-[var(--color-success)]">{{ item.custom_discount_rule || '—' }}</span>
                   </td>
                   <!-- UOM -->
                   <td class="p-0 border-r border-[var(--color-border)]" @click.stop="onUomCellClick(idx)">
@@ -278,6 +292,16 @@
                       @keydown.enter.prevent="focusNewQty"
                     />
                   </td>
+                  <!-- Pending Discount Rule -->
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)]">
+                    <input
+                      v-model="newPending.custom_discount_rule"
+                      :disabled="printing"
+                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-2xl text-[var(--color-success)] outline-none focus:border-[var(--color-info)] disabled:opacity-50"
+                      placeholder="—"
+                      @keydown.enter.prevent="focusNewQty"
+                    />
+                  </td>
                   <!-- Pending UOM -->
                   <td class="p-0 border-r border-[var(--color-border)]">
                     <select
@@ -338,7 +362,8 @@
 <script setup>
 import { ref, computed, watch, onMounted, nextTick, reactive } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useItemCache, searchItemsInCache } from '../services/itemCache.js'
+import { useItemCache, searchItemsInCache, refreshDiscountRuleCache } from '../services/itemCache.js'
+import { serverToday } from '../services/serverTime'
 import { frappeGet, frappePost, fetchItemPrice } from '../api.js'
 import {
   BARCODE_TEMPLATE_SPEC,
@@ -365,7 +390,28 @@ useShortcuts({
   'ESCAPE': handleBack
 }, props.isSubWindow ? 'subwindow' : 'local')
 
-const { items: allItems, lookupItemInCache, refreshItemCache } = useItemCache()
+const { items: allItems, lookupItemInCache, refreshItemCache, discountRules } = useItemCache()
+
+// Names of the enabled, in-date discount rules covering an item (same scope match as
+// SalesInvoice, minus the price list check — a label is not tied to one price list)
+function discountRuleText(itemCode) {
+  if (!itemCode || !discountRules.value?.length) return ''
+  const code = itemCode.toLowerCase()
+  const today = serverToday()
+  const group = (lookupItemInCache(itemCode)?.item_group || '').toLowerCase()
+  const hasCode = list => (list || []).some(i => (i.item_code || '').toLowerCase() === code)
+  return discountRules.value
+    .filter(rule => {
+      if (!rule.enabled) return false
+      if (rule.start_date && today < rule.start_date) return false
+      if (rule.end_date && today > rule.end_date) return false
+      if (rule.discount_type === 'X to Y product discount' && hasCode(rule.x_to_y_table)) return true
+      if (rule.applies_to === 'Item Code' && hasCode(rule.items)) return true
+      return rule.applies_to === 'Product Group' && !!group && group === (rule.product_group || '').toLowerCase()
+    })
+    .map(rule => rule.rule_name || rule.name)
+    .join(', ')
+}
 
 // ── Price Lists ──────────────────────────────────────────────────────────────
 const availablePriceLists = ref([])
@@ -614,7 +660,7 @@ const newUomSelect = ref(null)
 const newBarcodeInput = ref(null)
 const newItemCode = ref('')
 const newQty = ref(1)
-const newPending = reactive({ item_code: '', item_name: '', uom: '', barcode: '', custom_text: '', rates: {} })
+const newPending = reactive({ item_code: '', item_name: '', uom: '', barcode: '', custom_text: '', custom_discount_rule: '', rates: {} })
 
 function getItemUoms(itemCode) {
   const cached = lookupItemInCache(itemCode)
@@ -973,6 +1019,7 @@ async function onCodeEnter(idx) {
     row.item_code = r.item_code
     row.item_name = r.item_name
     row.uom = r.uom || 'Nos'
+    row.custom_discount_rule = discountRuleText(r.item_code)
     
     if (r._matched_barcode) {
       row.barcode = r._matched_barcode.toUpperCase()
@@ -999,6 +1046,7 @@ async function onNewCodeEnter() {
     newPending.item_code = r.item_code
     newPending.item_name = r.item_name
     newPending.uom = r.uom || 'Nos'
+    newPending.custom_discount_rule = discountRuleText(r.item_code)
     
     if (r._matched_barcode) {
       newPending.barcode = r._matched_barcode.toUpperCase()
@@ -1015,6 +1063,7 @@ async function onNewCodeEnter() {
     newPending.item_code = code
     newPending.item_name = ''
     newPending.uom = 'Nos'
+    newPending.custom_discount_rule = ''
     newPending.barcode = code.toUpperCase()
     newPending.rates = {}
     focusNewBarcode()
@@ -1032,6 +1081,7 @@ async function addNewItem() {
     qty: newQty.value,
     barcode: newPending.barcode || code,
     custom_text: newPending.custom_text || '',
+    custom_discount_rule: newPending.custom_discount_rule || '',
     rates: { ...newPending.rates }
   })
 
@@ -1042,6 +1092,7 @@ async function addNewItem() {
   newPending.uom = ''
   newPending.barcode = ''
   newPending.custom_text = ''
+  newPending.custom_discount_rule = ''
   newPending.rates = {}
   selectedRow.value = -1
   focusNewCode()
@@ -1116,6 +1167,7 @@ onMounted(async () => {
       console.warn('[BarcodePrintPage] Item cache refresh failed:', e)
     }
   }
+  if (!discountRules.value?.length) await refreshDiscountRuleCache()
   // no longer awaited: a cached hit is synchronous, and a cold fetch resolves in the
   // background rather than holding up the rest of the page setup
   loadResources()
@@ -1131,7 +1183,8 @@ onMounted(async () => {
         item_name: i.item_name,
         uom: i.uom || 'Nos',
         qty: i.qty || 1,
-        barcode: (bc || i.item_code).toUpperCase()
+        barcode: (bc || i.item_code).toUpperCase(),
+        custom_discount_rule: discountRuleText(i.item_code)
       }
       await fetchAllRates(itm)
       return itm
@@ -1148,7 +1201,8 @@ onMounted(async () => {
             item_name: i.item_name,
             uom: i.uom || 'Nos',
             qty: i.qty || 1,
-            barcode: (bc || i.item_code).toUpperCase()
+            barcode: (bc || i.item_code).toUpperCase(),
+            custom_discount_rule: discountRuleText(i.item_code)
           }
           await fetchAllRates(itm)
           return itm
