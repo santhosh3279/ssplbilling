@@ -15,7 +15,7 @@ fixtures = [
 	{
 		"dt": "Custom Field",
 		"filters": [
-			["dt", "in", ["Item", "Employee", "Sales Invoice", "Purchase Invoice", "Stock Entry", "Customer", "Supplier", "Quotation"]],
+			["dt", "in", ["Item", "Employee", "Sales Invoice", "Purchase Invoice", "Stock Entry", "Customer", "Supplier", "Quotation", "Barcode Items"]],
 			[
 				"fieldname",
 				"in",
@@ -41,6 +41,7 @@ fixtures = [
 					"custom_half_tax_discount",
 					"mop",
 					"custom_mirrored",
+					"custom_text",
 				],
 			],
 		],

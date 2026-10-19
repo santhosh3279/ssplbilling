@@ -121,6 +121,7 @@
                   <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Code</th>
                   <th class="border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Item Name</th>
                   <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Barcode</th>
+                  <th class="w-48 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Custom Text</th>
                   <th class="w-24 border-r border-[var(--color-border)] px-2 py-1.5 text-left text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">UOM</th>
                   <th v-for="pl in visiblePriceLists" :key="pl"
                     class="w-32 border-r border-[var(--color-border)] px-2 py-1.5 text-right text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
@@ -175,6 +176,19 @@
                       @keydown.tab.prevent="selectQtyField(idx)"
                     />
                     <span v-else class="font-mono text-[var(--color-text-muted)] uppercase">{{ item.barcode || '—' }}</span>
+                  </td>
+                  <!-- Custom Text -->
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)]">
+                    <input
+                      v-if="selectedRow === idx"
+                      :ref="el => setRef(el, 'custom', idx)"
+                      v-model="item.custom_text"
+                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-0.5 text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                      placeholder="Text…"
+                      @keydown.enter.prevent="selectQtyField(idx)"
+                      @keydown.delete.stop
+                    />
+                    <span v-else class="text-xl text-[var(--color-text-muted)]">{{ item.custom_text || '—' }}</span>
                   </td>
                   <!-- UOM -->
                   <td class="p-0 border-r border-[var(--color-border)]" @click.stop="onUomCellClick(idx)">
@@ -252,6 +266,16 @@
                       placeholder="Barcode…"
                       @keydown.enter.prevent="focusNewQty"
                       @keydown.tab.prevent="focusNewQty"
+                    />
+                  </td>
+                  <!-- Pending Custom Text -->
+                  <td class="px-2 py-1.5 border-r border-[var(--color-border)]">
+                    <input
+                      v-model="newPending.custom_text"
+                      :disabled="printing"
+                      class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-2xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] disabled:opacity-50"
+                      placeholder="Text…"
+                      @keydown.enter.prevent="focusNewQty"
                     />
                   </td>
                   <!-- Pending UOM -->
@@ -590,7 +614,7 @@ const newUomSelect = ref(null)
 const newBarcodeInput = ref(null)
 const newItemCode = ref('')
 const newQty = ref(1)
-const newPending = reactive({ item_code: '', item_name: '', uom: '', barcode: '', rates: {} })
+const newPending = reactive({ item_code: '', item_name: '', uom: '', barcode: '', custom_text: '', rates: {} })
 
 function getItemUoms(itemCode) {
   const cached = lookupItemInCache(itemCode)
@@ -1007,6 +1031,7 @@ async function addNewItem() {
     uom: newPending.uom || 'Nos',
     qty: newQty.value,
     barcode: newPending.barcode || code,
+    custom_text: newPending.custom_text || '',
     rates: { ...newPending.rates }
   })
 
@@ -1016,6 +1041,7 @@ async function addNewItem() {
   newPending.item_name = ''
   newPending.uom = ''
   newPending.barcode = ''
+  newPending.custom_text = ''
   newPending.rates = {}
   selectedRow.value = -1
   focusNewCode()
