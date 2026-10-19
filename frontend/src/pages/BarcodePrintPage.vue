@@ -1151,22 +1151,14 @@ async function triggerPrint() {
         return itm
       })
 
-    const docName = await frappePost('ssplbilling.api.barcode_api.create_barcode_print_entry', {
+    // Creates the Barcode_Printing entry, prints it and deletes it in one call
+    const res = await frappePost('ssplbilling.api.barcode_api.print_barcodes', {
       items: JSON.stringify(itemsWithRates),
+      printer: selectedPrinter.value,
+      print_template: selectedTemplate.value,
       bill_no: localBillNo.value || null,
       price_lists: JSON.stringify(availablePriceLists.value.slice(0, 10))
     })
-    if (!docName) { setStatus('Failed to create barcode entry.', true); return }
-    const res = await frappePost(
-      'printer_server_configuration.printer_server_configuration.api.print_document',
-      {
-        printer:        selectedPrinter.value,
-        print_template: selectedTemplate.value,
-        document_type:  'Barcode_Printing',
-        document_name:  docName,
-        title:          docName,
-      },
-    )
     setStatus(`✓ Sent to printer — Job ${res?.cups_job_id ?? ''}`)
     setTimeout(() => {
       handleBack()

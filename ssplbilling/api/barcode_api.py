@@ -58,3 +58,27 @@ def create_barcode_print_entry(items, bill_no=None, price_lists=None):
         frappe.db.commit()
 
         return doc.name
+
+
+@frappe.whitelist()
+def print_barcodes(items, printer, print_template, bill_no=None, price_lists=None):
+        """
+        Create a Barcode_Printing document, send it to the printer, then delete it.
+
+        The document is only scratch data for the print template, so it is removed
+        whether the print succeeds or fails; a failure is re-raised to the caller.
+        """
+        from printer_server_configuration.printer_server_configuration.api import print_document
+
+        doc_name = create_barcode_print_entry(items, bill_no=bill_no, price_lists=price_lists)
+        try:
+                return print_document(
+                        printer=printer,
+                        print_template=print_template,
+                        document_type="Barcode_Printing",
+                        document_name=doc_name,
+                        title=doc_name,
+                )
+        finally:
+                frappe.delete_doc("Barcode_Printing", doc_name, ignore_permissions=True, force=True)
+                frappe.db.commit()
