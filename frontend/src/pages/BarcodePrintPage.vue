@@ -401,21 +401,36 @@ const loadingResources = ref(false)
 
 const SETTINGS_CACHE_KEY = 'wb-settings-v2'
 
-async function fetchBarcodeForItem(itemCode) {
+async function fetchBarcodeForItem(itemCode, uom = '') {
   const cached = lookupItemInCache(itemCode)
+  const uomMatch = uom && cached?.barcodes_detailed?.find(b => b.uom === uom)
+  if (uomMatch?.barcode) return uomMatch.barcode.toUpperCase()
   if (cached && cached.barcode) return cached.barcode.toUpperCase()
 
   try {
     const res = await frappeGet('frappe.client.get_list', {
       doctype: 'Item Barcode',
-      fields: ['barcode'],
+      fields: ['barcode', 'uom'],
       filters: { parent: itemCode },
-      limit: 1
+      limit: 0
     })
-    return res.length ? res[0].barcode.toUpperCase() : itemCode.toUpperCase()
+    const row = (uom && res.find(b => b.uom === uom)) || res[0]
+    return row ? row.barcode.toUpperCase() : itemCode.toUpperCase()
   } catch (e) {
     return itemCode.toUpperCase()
   }
+}
+
+// Barcode for an incoming row (purchase / sales invoice): keep the barcode entered
+// there unless it belongs to a different UOM, else pick the barcode of the row's UOM.
+async function resolveIncomingBarcode(i) {
+  const uom = i.uom || 'Nos'
+  if (i.barcode) {
+    const detailed = lookupItemInCache(i.item_code)?.barcodes_detailed || []
+    const entry = detailed.find(b => (b.barcode || '').toLowerCase() === String(i.barcode).toLowerCase())
+    if (!entry?.uom || entry.uom === uom) return String(i.barcode).toUpperCase()
+  }
+  return fetchBarcodeForItem(i.item_code, uom)
 }
 
 function onlyBarcodePrinters(list) {
@@ -920,7 +935,7 @@ async function onCodeEnter(idx) {
       row.barcode = r._matched_barcode.toUpperCase()
     } else {
       row.barcode = (r.barcode || r.item_code).toUpperCase()
-      fetchBarcodeForItem(r.item_code).then(bc => {
+      fetchBarcodeForItem(r.item_code, row.uom).then(bc => {
         if (bc) row.barcode = bc.toUpperCase()
       })
     }
@@ -946,7 +961,7 @@ async function onNewCodeEnter() {
       newPending.barcode = r._matched_barcode.toUpperCase()
     } else {
       newPending.barcode = (r.barcode || r.item_code).toUpperCase()
-      fetchBarcodeForItem(r.item_code).then(bc => {
+      fetchBarcodeForItem(r.item_code, newPending.uom).then(bc => {
         if (bc) newPending.barcode = bc.toUpperCase()
       })
     }
@@ -1065,7 +1080,7 @@ onMounted(async () => {
   
   if (props.items && props.items.length > 0) {
     itemsToPrint.value = await Promise.all(props.items.map(async i => {
-      const bc = await fetchBarcodeForItem(i.item_code)
+      const bc = await resolveIncomingBarcode(i)
       const itm = {
         item_code: i.item_code,
         item_name: i.item_name,
@@ -1082,7 +1097,7 @@ onMounted(async () => {
       try {
         const parsed = JSON.parse(decodeURIComponent(rawItems))
         itemsToPrint.value = await Promise.all(parsed.map(async i => {
-          const bc = await fetchBarcodeForItem(i.item_code)
+          const bc = await resolveIncomingBarcode(i)
           const itm = {
             item_code: i.item_code,
             item_name: i.item_name,
