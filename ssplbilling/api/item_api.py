@@ -377,3 +377,116 @@ def print_barcodes(items, bill_no=None):
 		})
 	doc.insert(ignore_permissions=True)
 	return doc.name
+
+
+# ── Mobile Item Barcode page ──────────────────────────────────────────────────
+
+
+def _barcode_owner(barcode, exclude_item=None):
+	"""Item that already carries `barcode` (as a barcode row or as its item code)."""
+	filters = {"barcode": barcode, "parenttype": "Item"}
+	if exclude_item:
+		filters["parent"] = ["!=", exclude_item]
+	owner = frappe.db.get_value("Item Barcode", filters, "parent")
+	if not owner and barcode != exclude_item and frappe.db.exists("Item", barcode):
+		owner = barcode
+	return owner
+
+
+def _item_barcode_detail(item_code):
+	item = frappe.get_doc("Item", item_code)
+	return {
+		"item_code": item.item_code,
+		"item_name": item.item_name,
+		"stock_uom": item.stock_uom,
+		"image": item.image or "",
+		"uoms": [row.uom for row in item.uoms] or [item.stock_uom],
+		"barcodes": [
+			{"barcode": row.barcode, "uom": row.uom or item.stock_uom, "barcode_type": row.barcode_type or ""}
+			for row in item.barcodes
+		],
+	}
+
+
+@frappe.whitelist()
+def search_items_for_barcode(query=""):
+	"""Items where every word of `query` matches the item code, name or a barcode; exact hits first."""
+	from ssplbilling.api.stock_check_api import _like
+
+	tokens = [t for t in (query or "").split() if t][:6]
+	if not tokens:
+		return []
+
+	conditions = []
+	params = {"exact": query.strip()}
+	for n, token in enumerate(tokens):
+		key = f"t{n}"
+		params[key] = _like(token)
+		conditions.append(
+			f"""(item.name LIKE %({key})s OR item.item_name LIKE %({key})s
+				OR EXISTS (SELECT 1 FROM `tabItem Barcode` bc
+					WHERE bc.parent = item.name AND bc.barcode LIKE %({key})s))"""
+		)
+
+	return frappe.db.sql(
+		f"""SELECT item.name AS item_code, item.item_name, item.stock_uom,
+				(SELECT COUNT(*) FROM `tabItem Barcode` bc WHERE bc.parent = item.name) AS barcode_count,
+				(item.name = %(exact)s
+					OR EXISTS (SELECT 1 FROM `tabItem Barcode` bc
+						WHERE bc.parent = item.name AND bc.barcode = %(exact)s)) AS exact
+			FROM `tabItem` item
+			WHERE item.disabled = 0 AND {" AND ".join(conditions)}
+			ORDER BY exact DESC, item.item_name ASC
+			LIMIT 30""",
+		params,
+		as_dict=True,
+	)
+
+
+@frappe.whitelist()
+def get_item_barcodes(item_code):
+	if not item_code or not frappe.db.exists("Item", item_code):
+		frappe.throw(f"Item {item_code} not found")
+	return _item_barcode_detail(item_code)
+
+
+@frappe.whitelist()
+def add_item_barcode(item_code, barcode, uom=None):
+	"""Append one barcode row to an item; refuses a barcode already used by any item."""
+	barcode = (barcode or "").strip()
+	if not barcode:
+		frappe.throw("Barcode is required")
+	if not item_code or not frappe.db.exists("Item", item_code):
+		frappe.throw(f"Item {item_code} not found")
+
+	item = frappe.get_doc("Item", item_code)
+	if any(row.barcode == barcode for row in item.barcodes):
+		frappe.throw(f"Barcode {barcode} is already on this item")
+	owner = _barcode_owner(barcode, exclude_item=item_code)
+	if owner:
+		owner_name = frappe.db.get_value("Item", owner, "item_name") or owner
+		frappe.throw(f"Barcode {barcode} is already used by {owner} ({owner_name})")
+
+	valid_uoms = {row.uom for row in item.uoms} | {item.stock_uom}
+	item.append("barcodes", {"barcode": barcode, "uom": uom if uom in valid_uoms else item.stock_uom})
+	item.flags.ignore_permissions = True
+	item.save()
+	return _item_barcode_detail(item_code)
+
+
+@frappe.whitelist()
+def remove_item_barcode(item_code, barcode):
+	"""Delete one barcode row; the item's own code barcode stays."""
+	if not item_code or not frappe.db.exists("Item", item_code):
+		frappe.throw(f"Item {item_code} not found")
+	if barcode == item_code:
+		frappe.throw("The item code barcode cannot be removed")
+
+	item = frappe.get_doc("Item", item_code)
+	keep = [row for row in item.barcodes if row.barcode != barcode]
+	if len(keep) == len(item.barcodes):
+		frappe.throw(f"Barcode {barcode} is not on this item")
+	item.set("barcodes", keep)
+	item.flags.ignore_permissions = True
+	item.save()
+	return _item_barcode_detail(item_code)

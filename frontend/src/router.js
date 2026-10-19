@@ -12,6 +12,7 @@ const PriceListUpdate = () => import('./pages/PriceListUpdate.vue')
 const StockCheck = () => import('./pages/StockCheck.vue')
 const MobileBill = () => import('./pages/mobilebill.vue')
 const MobileDashboard = () => import('./pages/mobiledashboard.vue')
+const ItemBarcode = () => import('./pages/ItemBarcode.vue')
 const BarcodePrintPage = () => import('./pages/BarcodePrintPage.vue')
 const CashierDesk = () => import('./pages/CashierDesk.vue')
 const PurchaseSubmit = () => import('./pages/PurchaseSubmit.vue')
@@ -249,6 +250,12 @@ const routes = [
     name: 'MobileBill',
     component: MobileBill,
     meta: { title: 'Mobile Bill' },
+  },
+  {
+    path: '/item-barcode',
+    name: 'ItemBarcode',
+    component: ItemBarcode,
+    meta: { title: 'Item Barcodes' },
   },
   {
     path: '/quotation',

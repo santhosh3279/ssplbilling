@@ -196,6 +196,7 @@ DASHBOARD_TILES = [
 	("pricing-rules", "Discount Rules", "SSPL Special"),
 	("naming-settings", "Naming Settings", "SSPL Special"),
 	("barcode-print", "Print Barcodes", "SSPL Special"),
+	("item-barcode", "Item Barcodes", "SSPL Special"),
 	("catelogue", "Catalogues", "SSPL Special"),
 	("catalogueviewer", "Catalogue Viewer", "SSPL Special"),
 	("offer-display", "Offer Display", "SSPL Special"),

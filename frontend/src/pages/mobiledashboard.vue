@@ -82,6 +82,7 @@ const userInitials = computed(() => {
 // ==================== TILES ====================
 const MOBILE_TILES = [
   { id: 'mobile-bill', route: 'MobileBill', path: '/mobile-bill', name: 'Mobile Bill', desc: 'Phone billing with camera scan', icon: '📱' },
+  { id: 'item-barcode', route: 'ItemBarcode', path: '/item-barcode', name: 'Item Barcodes', desc: 'Scan & add barcodes to items', icon: '🏷️' },
   { id: 'stock-check', route: 'StockCheck', path: '/stock-check', name: 'Stock Check', desc: 'Stock & selling price lookup', icon: '🔍' },
 ]
 
