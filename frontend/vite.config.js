@@ -57,6 +57,11 @@ export default defineConfig(({ command }) => ({
     proxy: {
       // Frappe backend
       ...getProxyOptions({ port: webserver_port }),
+      // AI Chat page served by the sspl_ai app (dashboard tile links to it)
+      '^/ai-chat': {
+        target: `http://localhost:${webserver_port}`,
+        router: (req) => `http://${req.headers.host.split(':')[0]}:${webserver_port}`,
+      },
       // Socket.IO (dynamic from config)
       '^/socket.io': {
         target: `http://localhost:${socketio_port}`,
