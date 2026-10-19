@@ -179,8 +179,8 @@
                         type="number"
                         v-model.number="p.uom_rates[u.uom]"
                         step="0.01"
-                        :disabled="isLocked(idx)"
-                        :title="isLocked(idx) ? 'Buying price is locked for a submitted bill' : ''"
+                        :disabled="isCellLocked(idx, uidx)"
+                        :title="isLocked(idx) ? 'Buying price is locked for a submitted bill' : isDerived(idx, u.uom) ? `Derived from ${buyingUom} × factor` : ''"
                         class="disabled:opacity-50 disabled:cursor-not-allowed w-44 rounded border bg-[var(--color-surface)] px-1 py-1 text-right font-mono font-bold text-[var(--color-text)] text-[20px] outline-none focus:ring-1 transition-colors"
                         :class="u.uom === stockUom ? 'border-[var(--color-border)] focus:border-[var(--color-info)] focus:ring-[var(--color-info)]/20' : 'border-[var(--color-warning)]/40 focus:border-[var(--color-warning)] focus:ring-amber-500/20'"
                         @keydown.enter.prevent="onRateEnter(idx, uidx)"
@@ -206,7 +206,7 @@
                       p.price_list === selectedPriceList ? 'bg-[var(--color-info)]/5 border-x-2 border-[var(--color-info)]' : '',
                       idx !== 0 ? 'cursor-pointer hover:underline decoration-dotted' : ''
                     ]"
-                    @click="idx !== 0 && !isLocked(idx) && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2)))"
+                    @click="idx !== 0 && !isCellLocked(idx, uidx) && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2)))"
                     :title="idx !== 0 ? 'Click to apply to proposed' : ''"
                   >
                     {{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}
@@ -429,10 +429,35 @@ function isLocked(idx) {
   return props.lockBuying && !!prices.value[idx]?.buying
 }
 
-// Nearest editable price list column at or after idx, or -1 if none
-function editableFrom(idx) {
-  for (let i = idx; i < prices.value.length; i++) if (!isLocked(i)) return i
+// UOM whose buying price is typed in; other UOMs on buying lists follow it by factor
+const buyingUom = computed(() =>
+  uoms.value.some(u => u.uom === props.initialUom) ? props.initialUom : stockUom.value
+)
+
+function isDerived(idx, uom) {
+  return !!prices.value[idx]?.buying && uom !== buyingUom.value
+}
+
+function isCellLocked(idx, uidx) {
+  return isLocked(idx) || isDerived(idx, uoms.value[uidx]?.uom)
+}
+
+// Nearest editable price list column at or after idx for UOM row uidx, or -1 if none
+function editableFrom(idx, uidx = 0) {
+  for (let i = idx; i < prices.value.length; i++) if (!isCellLocked(i, uidx)) return i
   return -1
+}
+
+// Recompute non-entered UOM buying rates from the entered UOM rate × conversion factor
+function deriveBuyingRates(p) {
+  const entered = uoms.value.find(u => u.uom === buyingUom.value)
+  if (!entered || !entered.conversion_factor) return
+  const perStock = (Number(p.uom_rates[entered.uom]) || 0) / entered.conversion_factor
+  for (const u of uoms.value) {
+    if (u.uom === entered.uom) continue
+    const derived = Number((perStock * u.conversion_factor).toFixed(2))
+    if (p.uom_rates[u.uom] !== derived) p.uom_rates[u.uom] = derived
+  }
 }
 
 const calculatedRatesByUom = computed(() => {
@@ -487,7 +512,12 @@ watch(() => props.itemCode, (newVal) => {
 
 watch(() => prices.value, (newPrices) => {
   if (!newPrices || !stockUom.value) return
-  
+
+  // 0. Buying lists: only the entered UOM is typed, the rest follow by factor
+  newPrices.forEach((p, idx) => {
+    if (p.buying && !isLocked(idx)) deriveBuyingRates(p)
+  })
+
   // 1. Sync base rate with stock UOM proposed rate
   newPrices.forEach(p => {
     const stockRate = p.uom_rates[stockUom.value]
@@ -805,7 +835,7 @@ function onCalcEnter(idx) {
 function onRateEnter(idx, uidx) {
   activeRow.value = uidx
   // Move right across Price List columns first
-  const nextIdx = editableFrom(idx + 1)
+  const nextIdx = editableFrom(idx + 1, uidx)
   if (nextIdx !== -1) {
     focusInput(`rate-${nextIdx}-${uidx}`)
     return
@@ -815,19 +845,22 @@ function onRateEnter(idx, uidx) {
 }
 
 function goToNextRow(uidx) {
-  if (uidx < uoms.value.length - 1) {
-    activeRow.value = uidx + 1
-    focusInput(`rate-${Math.max(editableFrom(0), 0)}-${uidx + 1}`)
-  } else {
-    saveAll()
+  for (let next = uidx + 1; next < uoms.value.length; next++) {
+    const col = editableFrom(0, next)
+    if (col === -1) continue
+    activeRow.value = next
+    focusInput(`rate-${col}-${next}`)
+    return
   }
+  saveAll()
 }
 
 function moveVertical(uidx, dir, idx) {
-  const next = uidx + dir
-  if (next >= 0 && next < uoms.value.length) {
+  for (let next = uidx + dir; next >= 0 && next < uoms.value.length; next += dir) {
+    if (isCellLocked(idx, next)) continue
     activeRow.value = next
     focusInput(`rate-${idx}-${next}`)
+    return
   }
 }
 
