@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 ssplbilling.patches.v1_0.convert_cipher_map_to_plain_text
 ssplbilling.patches.v1_0.add_sales_invoice_last_date_index
+ssplbilling.patches.v1_0.migrate_discount_rule_price_list_to_table

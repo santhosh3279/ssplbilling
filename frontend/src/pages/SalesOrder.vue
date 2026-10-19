@@ -645,7 +645,7 @@ const precision = getFloatPrecision()
 function getDiscPrecision(val) {
   return parseFloat(Number(val || 0).toFixed(precision))
 }
-import { useDiscountRules } from '../composables/useDiscountRules.js'
+import { useDiscountRules, ruleMatchesPriceList } from '../composables/useDiscountRules.js'
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useShortcuts } from '../services/shortcutManager'
 import { session } from '../session'
@@ -1065,7 +1065,7 @@ function discountRulesForItem(itemCode) {
     if (rule.end_date   && today > rule.end_date)   return false
 
     // Check price list restriction if any
-    if (rule.price_list && rule.price_list !== priceList.value) return false
+    if (!ruleMatchesPriceList(rule, priceList.value)) return false
 
     // Check matches scope
     if (rule.discount_type === 'X to Y product discount') {

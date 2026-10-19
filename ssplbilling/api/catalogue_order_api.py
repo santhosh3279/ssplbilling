@@ -5,6 +5,7 @@ import json
 import frappe
 from frappe.utils import add_days, flt, today
 
+from ssplbilling.api.discount_rule_api import get_rule_price_lists
 from ssplbilling.api.offer_api import get_offer_details
 
 
@@ -244,8 +245,10 @@ def _catalogue_rules(price_list):
 	)
 	active = []
 	current = today()
+	rule_price_lists = get_rule_price_lists([r.name for r in rules])
 	for rule in rules:
-		if rule.price_list and rule.price_list != price_list:
+		rule["price_lists"] = rule_price_lists.get(rule.name) or ([rule.price_list] if rule.price_list else [])
+		if rule.price_lists and price_list not in rule.price_lists:
 			continue
 		if rule.start_date and str(rule.start_date) > current:
 			continue

@@ -9,6 +9,7 @@
   "rule_name",
   "enabled",
   "price_list",
+  "price_lists",
   "discount_type",
   "applies_to",
   "section_applies_to",
@@ -42,8 +43,16 @@
   {
    "fieldname": "price_list",
    "fieldtype": "Link",
-   "label": "Price List",
+   "label": "Price List (Legacy)",
    "options": "Price List",
+   "hidden": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "price_lists",
+   "fieldtype": "Table",
+   "label": "Price Lists",
+   "options": "Discount Rule Price List",
    "reqd": 1
   },
   {
@@ -145,7 +154,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-03-22 00:00:00.000000",
+ "modified": "2026-10-19 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "Discount Rule",

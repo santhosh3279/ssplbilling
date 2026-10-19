@@ -600,6 +600,7 @@ import QuickItemSearch from '../components/QuickItemSearch.vue'
 import { frappeGet, frappePost, uploadFile } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
 import { getCachedList } from '../services/masterCache.js'
+import { getRulePriceLists } from '../composables/useDiscountRules.js'
 
 const router = useRouter()
 const {
@@ -1087,12 +1088,9 @@ function discountRulesForItem(itemCode) {
     if (rule.start_date && today < rule.start_date) isActiveDate = false
     if (rule.end_date && today > rule.end_date) isActiveDate = false
 
-    let matchesPriceList = false
-    if (!cataloguePriceLists.length || !rule.price_list) {
-      matchesPriceList = true
-    } else if (cataloguePriceLists.includes(rule.price_list)) {
-      matchesPriceList = true
-    }
+    const rulePriceLists = getRulePriceLists(rule)
+    const matchesPriceList = !cataloguePriceLists.length || !rulePriceLists.length ||
+      rulePriceLists.some(pl => cataloguePriceLists.includes(pl))
 
     matches.push({
       ...rule,
@@ -1119,7 +1117,8 @@ function getRuleTooltip(rule) {
   if (rule.description) parts.push(`Offer: ${rule.description}`)
   const pct = getRuleDiscountPercentage(rule)
   if (pct > 0) parts.push(`Effective Discount: ${pct.toFixed(2).replace(/\.00$/, '')}%`)
-  if (rule.price_list) parts.push(`Price List: ${rule.price_list}`)
+  const rulePriceLists = getRulePriceLists(rule)
+  if (rulePriceLists.length) parts.push(`Price List: ${rulePriceLists.join(', ')}`)
   if (rule.start_date || rule.end_date) {
     parts.push(`Validity: ${rule.start_date || '—'} to ${rule.end_date || '—'}`)
   }

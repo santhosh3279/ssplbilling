@@ -2,6 +2,18 @@ import { serverToday } from '../services/serverTime'
 import { ref, computed, watch } from 'vue'
 import { useItemCache } from '../services/itemCache.js'
 
+// A rule lists its price lists in `price_lists`; older cached rules only carry `price_list`.
+export function getRulePriceLists(rule) {
+  if (Array.isArray(rule.price_lists) && rule.price_lists.length) return rule.price_lists
+  return rule.price_list ? [rule.price_list] : []
+}
+
+// A rule with no price lists applies to every price list.
+export function ruleMatchesPriceList(rule, priceList) {
+  const lists = getRulePriceLists(rule)
+  return !lists.length || lists.includes(priceList)
+}
+
 /**
  * Discount rule engine for SalesEntry.
  *
@@ -61,7 +73,7 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
     for (const rule of discountRules.value) {
       if (!rule.enabled) continue
       if (!_isRuleActive(rule)) continue
-      if (rule.price_list && rule.price_list !== priceList.value) continue
+      if (!ruleMatchesPriceList(rule, priceList.value)) continue
       if (!_itemMatchesScope(rule, itemCode)) continue
       return rule
     }

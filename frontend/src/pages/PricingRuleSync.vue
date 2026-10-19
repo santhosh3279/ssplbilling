@@ -74,7 +74,7 @@
               </td>
 
               <!-- Price List -->
-              <td class="px-3 py-2 text-xs text-[var(--color-text-muted)]">{{ rule.price_list || '—' }}</td>
+              <td class="px-3 py-2 text-xs text-[var(--color-text-muted)]">{{ (rule.price_lists?.length ? rule.price_lists : [rule.price_list].filter(Boolean)).join(', ') || '—' }}</td>
 
               <!-- Discount Type badge -->
               <td class="px-3 py-2 text-center">

@@ -94,7 +94,7 @@
 
               <!-- Scope & Info -->
               <div class="text-[11px] text-[var(--color-text-muted)] flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span>Price List: <strong class="text-[var(--color-text)]">{{ rule.price_list }}</strong></span>
+                <span>Price List: <strong class="text-[var(--color-text)]">{{ getRulePriceLists(rule).join(', ') }}</strong></span>
                 <span>•</span>
                 <span v-if="rule.applies_to === 'Product Group'">
                   Group: <strong class="text-[var(--color-text)]">{{ rule.product_group }}</strong>
@@ -219,15 +219,20 @@
                 <!-- Price List -->
                 <div class="flex flex-col gap-1.5">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">
-                    Price List <span class="text-[var(--color-danger)]">*</span>
+                    Price Lists <span class="text-[var(--color-danger)]">*</span>
                   </label>
-                  <select
-                    v-model="form.price_list"
-                    class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-xs outline-none focus:border-[var(--color-info)] transition"
-                  >
-                    <option value="" disabled>Select Price List</option>
-                    <option v-for="pl in priceLists" :key="pl" :value="pl">{{ pl }}</option>
-                  </select>
+                  <div class="max-h-32 overflow-y-auto rounded border border-[var(--color-border)] bg-[var(--color-bg)] p-1">
+                    <label
+                      v-for="pl in priceLists"
+                      :key="pl"
+                      class="flex items-center gap-2 rounded px-2 py-1 text-xs cursor-pointer transition"
+                      :class="form.price_lists.includes(pl) ? 'bg-[var(--color-info)]/15 text-[var(--color-text)] font-semibold' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-border)]/40'"
+                    >
+                      <input type="checkbox" :value="pl" v-model="form.price_lists" />
+                      {{ pl }}
+                    </label>
+                    <div v-if="!priceLists.length" class="px-2 py-1 text-xs text-[var(--color-text-muted)]">No price lists found</div>
+                  </div>
                 </div>
 
                 <!-- Discount Type -->
@@ -675,6 +680,7 @@ import { ref, computed, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { useItemCache } from '../services/itemCache.js'
+import { getRulePriceLists } from '../composables/useDiscountRules.js'
 
 const router = useRouter()
 const { searchItemsInCache } = useItemCache()
@@ -698,7 +704,7 @@ const emptyForm = () => ({
   name: null,
   rule_name: '',
   enabled: true,
-  price_list: '',
+  price_lists: [],
   discount_type: 'Product Discount',
   applies_to: 'Product Group',
   product_group: '',
@@ -743,8 +749,8 @@ async function fetchMetadata() {
     itemGroups.value = meta.item_groups || []
     
     // Set default price list to the first available if not empty
-    if (priceLists.value.length && !form.value.price_list) {
-      form.value.price_list = priceLists.value[0]
+    if (priceLists.value.length && !form.value.price_lists.length) {
+      form.value.price_lists = [priceLists.value[0]]
     }
   } catch (e) {
     console.warn('Metadata fetch failed:', e)
@@ -776,7 +782,7 @@ async function selectRule(name) {
       name: doc.name,
       rule_name: doc.rule_name || '',
       enabled: doc.enabled === 1,
-      price_list: doc.price_list || '',
+      price_lists: getRulePriceLists(doc),
       discount_type: doc.discount_type || 'Product Discount',
       applies_to: doc.applies_to || 'Product Group',
       product_group: doc.product_group || '',
@@ -808,7 +814,7 @@ function handleNewRule() {
   searchSuggestions.value = []
   
   if (priceLists.value.length) {
-    form.value.price_list = priceLists.value[0]
+    form.value.price_lists = [priceLists.value[0]]
   }
 }
 
@@ -949,8 +955,8 @@ async function handleSave() {
     alert('Please enter a Rule Name.')
     return
   }
-  if (!form.value.price_list) {
-    alert('Please select a Price List.')
+  if (!form.value.price_lists.length) {
+    alert('Please select at least one Price List.')
     return
   }
   if (form.value.discount_type === 'X to Y product discount') {

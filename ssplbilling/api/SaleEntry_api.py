@@ -3,6 +3,7 @@ import frappe
 from frappe import _
 from erpnext.controllers.accounts_controller import get_taxes_and_charges as _erpnext_tax_rows
 from ssplbilling.api.stock_utils import get_draft_invoice_qty
+from ssplbilling.api.discount_rule_api import get_rule_price_lists
 
 
 def _apply_tax_template(doc, template_name, doctype, cost_center="", is_inclusive=0):
@@ -553,7 +554,9 @@ def get_discount_rules():
         ],
         order_by="rule_name asc",
     )
+    price_lists = get_rule_price_lists([r["name"] for r in rules])
     for rule in rules:
+        rule["price_lists"] = price_lists.get(rule["name"], [])
         rule["items"] = frappe.get_all(
             "Discount Rule Item",
             filters={"parent": rule["name"]},
