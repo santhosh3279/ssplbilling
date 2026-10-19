@@ -141,7 +141,7 @@
                   :class="selectedRow === idx
                     ? 'bg-[var(--color-info)]/30 border-l-2 border-l-blue-500'
                     : 'hover:bg-[var(--color-surface-raised)]/30'"
-                  @click="selectRow(idx)"
+                  @click="onRowClick($event, idx)"
                   @keydown="onRowKeydown($event, idx)"
                 >
                   <!-- # -->
@@ -177,12 +177,12 @@
                     <span v-else class="font-mono text-[var(--color-text-muted)] uppercase">{{ item.barcode || '—' }}</span>
                   </td>
                   <!-- UOM -->
-                  <td class="p-0 border-r border-[var(--color-border)]">
+                  <td class="p-0 border-r border-[var(--color-border)]" @click.stop="onUomCellClick(idx)">
                     <select
                       v-if="selectedRow === idx && getItemUoms(item.item_code).length > 1"
                       :ref="el => setRef(el, 'uom', idx)"
                       v-model="item.uom"
-                      class="w-full h-full bg-transparent px-2 py-1.5 font-mono text-xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/20"
+                      class="w-full h-full cursor-pointer bg-[var(--color-highlight)]/20 px-2 py-1.5 font-mono text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                       @keydown.enter.prevent="selectQtyField(idx)"
                       @keydown.tab.prevent="selectQtyField(idx)"
                       @keydown.shift.tab.prevent="focusField('code', idx)"
@@ -190,7 +190,8 @@
                     >
                       <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ u }}</option>
                     </select>
-                    <span v-else class="block px-2 py-1.5 font-mono text-xl text-[var(--color-text-muted)]">{{ item.uom || 'Nos' }}</span>
+                    <span v-else class="block px-2 py-1.5 font-mono text-xl text-[var(--color-text-muted)]"
+                      :class="getItemUoms(item.item_code).length > 1 ? 'cursor-pointer underline decoration-dotted' : ''">{{ item.uom || 'Nos' }}</span>
                   </td>
                   <!-- Price List Rates -->
                   <td v-for="pl in visiblePriceLists" :key="pl"
@@ -259,7 +260,7 @@
                       v-if="newPending.item_code && getItemUoms(newPending.item_code).length > 1"
                       ref="newUomSelect"
                       v-model="newPending.uom"
-                      class="w-full h-full bg-transparent px-2 py-1.5 font-mono text-xl text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/20"
+                      class="w-full h-full cursor-pointer bg-[var(--color-highlight)]/20 px-2 py-1.5 font-mono text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                       @keydown.enter.prevent="focusNewQty"
                       @keydown.tab.prevent="focusNewQty"
                       @keydown.shift.tab.prevent="focusNewCode"
@@ -611,11 +612,17 @@ function focusNewQty() {
     }
   })
 }
+function openPicker(el) {
+  if (!el) return
+  el.focus({ preventScroll: true })
+  el.scrollIntoView({ block: 'nearest' })
+  try { el.showPicker?.() } catch (e) { /* needs a user gesture; focus alone is fine */ }
+}
 function focusNewUom() {
-  nextTick(() => {
-    newUomSelect.value?.focus({ preventScroll: true })
-    newUomSelect.value?.scrollIntoView({ block: 'nearest' })
-  })
+  nextTick(() => openPicker(newUomSelect.value))
+}
+function focusUom(idx) {
+  nextTick(() => openPicker(fieldRefs[idx]?.uom))
 }
 function focusNewBarcode() {
   nextTick(() => {
@@ -624,7 +631,7 @@ function focusNewBarcode() {
   })
 }
 function focusAfterCode(idx) {
-  if (getItemUoms(itemsToPrint.value[idx]?.item_code).length > 1) focusField('uom', idx)
+  if (getItemUoms(itemsToPrint.value[idx]?.item_code).length > 1) focusUom(idx)
   else selectQtyField(idx)
 }
 function focusNewAfterCode() {
@@ -684,7 +691,7 @@ function onQtyKeydown(e, idx) {
     if (e.key === 'Tab' && e.shiftKey) {
       e.preventDefault()
       if (getItemUoms(itemsToPrint.value[idx]?.item_code).length > 1) {
-        focusField('uom', idx)
+        focusUom(idx)
       } else {
         focusField('code', idx)
       }
@@ -755,6 +762,24 @@ function selectRow(idx) {
     rowRefs[idx]?.focus({ preventScroll: true })
     rowRefs[idx]?.scrollIntoView({ block: 'nearest' })
   })
+}
+function onRowClick(e, idx) {
+  // Clicking a field inside the row must keep focus there — refocusing the <tr>
+  // would close an open UOM dropdown and blur the code / qty inputs
+  if (e.target.closest('input, select, button')) {
+    selectedRow.value = idx
+    return
+  }
+  selectRow(idx)
+}
+function onUomCellClick(idx) {
+  if (getItemUoms(itemsToPrint.value[idx]?.item_code).length <= 1) {
+    onRowClick({ target: document.body }, idx)
+    return
+  }
+  if (selectedRow.value === idx && document.activeElement === fieldRefs[idx]?.uom) return
+  selectedRow.value = idx
+  focusUom(idx)
 }
 function moveRow(from, dir) {
   const next = from + dir
