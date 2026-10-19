@@ -501,6 +501,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	f_card_account = data.get("card_account")
 	f_discount_account = data.get("discount_account")
 	card_ref_no = data.get("card_ref_no")
+	upi_ref_no = data.get("upi_ref_no")
 
 	si = frappe.get_doc("Sales Invoice", invoice_name)
 	grand_total = float(si.rounded_total or si.grand_total or 0)
@@ -693,7 +694,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			original_cash_pe = pe_name
 
 	if upi_amount > 0.01:
-		pe_name = _create_pe(upi_amount, upi_account)
+		pe_name = _create_pe(upi_amount, upi_account, ref_no=upi_ref_no)
 		if pe_name:
 			payment_entries.append(pe_name)
 			original_upi_pe = pe_name

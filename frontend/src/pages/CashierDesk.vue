@@ -585,6 +585,15 @@
                     >
                       Send QR
                     </button>
+                    <button
+                      v-if="paytm.enabled"
+                      @click="openPaytmModal"
+                      type="button"
+                      title="Send amount to the Paytm card machine"
+                      class="px-2 py-1 rounded-lg bg-[var(--color-info)] text-white font-black text-[15px] uppercase tracking-wider hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-info)] active:scale-95 transition-all shadow-sm"
+                    >
+                      POS
+                    </button>
                   </div>
                   <input
                     ref="upiInput"
@@ -592,7 +601,8 @@
                     v-model="payments.upi"
                     @focus="$event.target.select()"
                     step="0.01"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-44 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
+                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
+                    :class="paytm.enabled ? 'pl-64' : 'pl-44'"
                   />
                 </div>
                 <div class="group relative">
@@ -752,6 +762,50 @@
       </div>
     </div>
 
+    <!-- PAYTM CARD MACHINE MODAL -->
+    <div v-if="paytm.show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--color-bg)]/80 backdrop-blur-sm">
+      <div class="w-full max-w-md bg-[var(--color-surface)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--color-border)] animate-in fade-in zoom-in duration-200">
+        <div class="p-5 border-b border-[var(--color-border)] flex justify-between items-center">
+          <h3 class="text-sm font-bold uppercase tracking-widest text-[var(--color-text)]">Paytm Card Machine</h3>
+          <button @click="closePaytmModal" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="p-6 space-y-5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Amount</span>
+            <span class="font-mono text-[24px] font-black text-[var(--color-text)]">₹{{ fmt(paytm.amount) }}</span>
+          </div>
+          <select
+            v-model="paytm.tid"
+            :disabled="!!paytm.orderId"
+            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 px-4 font-bold text-[var(--color-text)] focus:border-[var(--color-info)] outline-none disabled:opacity-60"
+          >
+            <option v-for="d in paytm.devices" :key="d.tid" :value="d.tid">{{ d.device_name }} ({{ d.tid }})</option>
+          </select>
+          <div
+            v-if="paytm.message"
+            class="rounded-lg border p-3 text-[12px] font-bold uppercase tracking-wider"
+            :class="paytm.status === 'Failed' ? 'bg-[var(--color-danger)]/20 border-[var(--color-danger)]/50 text-[var(--color-danger)]'
+              : paytm.status === 'Success' ? 'bg-[var(--color-success)]/20 border-[var(--color-success)]/50 text-[var(--color-success)]'
+              : 'bg-[var(--color-info)]/20 border-[var(--color-info)]/50 text-[var(--color-info)]'"
+          >{{ paytm.message }}</div>
+          <div class="flex gap-3">
+            <button
+              @click="closePaytmModal"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-all active:scale-95"
+            >{{ paytm.orderId && paytm.status === 'Pending' ? 'Stop Waiting' : 'Close' }}</button>
+            <button
+              v-if="!paytm.orderId || paytm.status === 'Failed'"
+              @click="sendToPaytm"
+              :disabled="!paytm.tid || paytm.sending"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+            >{{ paytm.sending ? 'Sending…' : paytm.status === 'Failed' ? 'Retry' : 'Send to Machine' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- RECONCILIATION MODAL -->
     <Unallocated
       :show="showReconcileModal"
@@ -823,6 +877,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { applyPanelEvent } from '../services/billPanelCache.js'
 import { session } from '../session'
+import { getFrappeSocket } from '../services/frappeSocket.js'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
 import { cashierpageShortcuts } from '../shortcuts/cashierpageShortcuts'
@@ -902,11 +957,18 @@ const showSuccessModal = ref(false)
 const showBillMirrorCreator = ref(false)
 const showGstWarning = ref(false)
 const cardRefNo = ref('')
+const upiRefNo = ref('')
+
+// Paytm EDC card machine: push the UPI box amount to the machine, wait for the result
+// (socket event from the webhook, with polling as fallback), then fill UPI or Card.
+const paytm = ref({ enabled: false, devices: [], show: false, tid: '', amount: 0, orderId: '', status: '', message: '', sending: false })
+let paytmPollTimer = null
 const processedInvoiceName = ref('')
 const mirrorQueued = ref(false)
 
 // Block page shortcuts while any inline subwindow is open
 useSubwindowWatcher(showCardRefModal)
+useSubwindowWatcher(computed(() => paytm.value.show))
 useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showModifyModal)
 useSubwindowWatcher(showReconcileModal)
@@ -1264,6 +1326,7 @@ async function selectInvoice(inv) {
   successMsg.value = ''
   isCredit.value = false
   cardRefNo.value = ''
+  upiRefNo.value = ''
   
   payments.value = { cash: 0, upi: 0, card: 0, discount: 0, credit: 0, remarks: '' }
   
@@ -1459,6 +1522,116 @@ async function sendUpiMqtt() {
   }
 }
 
+async function loadPaytmDevices() {
+  try {
+    const res = await frappeGet('ssplbilling.api.paytm_api.get_devices')
+    paytm.value.enabled = !!res?.enabled && (res.devices || []).length > 0
+    paytm.value.devices = res?.devices || []
+  } catch (e) {
+    paytm.value.enabled = false
+  }
+}
+
+function defaultPaytmTid() {
+  const devices = paytm.value.devices
+  let saved = ''
+  try { saved = localStorage.getItem('wb-paytm-tid') || '' } catch (e) { /* storage blocked */ }
+  return (devices.find(d => d.user === session.user.value) || devices.find(d => d.tid === saved) || devices[0])?.tid || ''
+}
+
+function openPaytmModal() {
+  errorMsg.value = ''
+  const amount = Number(payments.value.upi) || 0
+  if (!selectedInvoice.value) return
+  if (amount <= 0) {
+    errorMsg.value = 'Enter the amount in the UPI box before sending to the card machine.'
+    return
+  }
+  Object.assign(paytm.value, { show: true, tid: defaultPaytmTid(), amount, orderId: '', status: '', message: '', sending: false })
+}
+
+async function sendToPaytm() {
+  const p = paytm.value
+  p.sending = true
+  p.message = ''
+  try {
+    try { localStorage.setItem('wb-paytm-tid', p.tid) } catch (e) { /* storage blocked */ }
+    const res = await frappePost('ssplbilling.api.paytm_api.send_to_device', {
+      invoice_name: selectedInvoice.value.name,
+      amount: p.amount,
+      tid: p.tid,
+    }, { silent: true })
+    p.orderId = res.order_id
+    p.status = 'Pending'
+    p.message = `Waiting for payment on ${res.device_name}…`
+    startPaytmPolling()
+  } catch (e) {
+    p.status = 'Failed'
+    p.message = e.message || 'Could not send to the card machine.'
+  } finally {
+    p.sending = false
+  }
+}
+
+function startPaytmPolling() {
+  stopPaytmPolling()
+  paytmPollTimer = setInterval(async () => {
+    const orderId = paytm.value.orderId
+    if (!orderId) return stopPaytmPolling()
+    try {
+      applyPaytmResult(await frappeGet('ssplbilling.api.paytm_api.get_status', { order_id: orderId }))
+    } catch (e) { /* keep polling; the socket event may still arrive */ }
+  }, 3000)
+}
+
+function stopPaytmPolling() {
+  if (paytmPollTimer) clearInterval(paytmPollTimer)
+  paytmPollTimer = null
+}
+
+function applyPaytmResult(r) {
+  const p = paytm.value
+  if (!r || r.order_id !== p.orderId || p.status !== 'Pending' || r.status === 'Pending') return
+  stopPaytmPolling()
+  p.status = r.status
+  if (r.status !== 'Success') {
+    p.message = r.message || `Payment ${r.status.toLowerCase()}.`
+    return
+  }
+  if (r.mode === 'card') {
+    // Paid by card on the machine: move the amount out of UPI into the Card box
+    payments.value.upi = Math.max(0, (Number(payments.value.upi) || 0) - r.amount)
+    payments.value.card = (Number(payments.value.card) || 0) + r.amount
+    cardRefNo.value = r.reference_no
+  } else {
+    payments.value.upi = r.amount
+    upiRefNo.value = r.reference_no
+  }
+  p.message = `₹${fmt(r.amount)} received by ${r.mode === 'card' ? 'card' : 'UPI'} (Ref ${r.reference_no})`
+  setTimeout(() => {
+    if (paytm.value.orderId === r.order_id) closePaytmModal()
+    nextTick(() => postButton.value?.focus())
+  }, 1500)
+}
+
+function onPaytmSocket(r) { applyPaytmResult(r) }
+
+async function closePaytmModal() {
+  const p = paytm.value
+  stopPaytmPolling()
+  if (p.orderId && p.status === 'Pending') {
+    try {
+      const r = await frappePost('ssplbilling.api.paytm_api.cancel', { order_id: p.orderId }, { silent: true })
+      if (r?.status === 'Success') {
+        // Paid just before the cashier gave up waiting — keep the payment
+        applyPaytmResult(r)
+        return
+      }
+    } catch (e) { /* closing anyway */ }
+  }
+  Object.assign(p, { show: false, orderId: '', status: '', message: '' })
+}
+
 async function processPayment() {
   if (!canSubmit.value) return
 
@@ -1510,6 +1683,7 @@ async function processPayment() {
       due_date: finalDueDate,
       posting_date: canModifyDate() ? postingDate.value : getTodayIST(),
       card_ref_no: cardRefNo.value,
+      upi_ref_no: upiRefNo.value,
       cash_account: seriesAccounts.value.cash,
       upi_account: seriesAccounts.value.upi,
       card_account: seriesAccounts.value.card,
@@ -1953,6 +2127,8 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
 
   _billPanelCleanup = onBillPanelUpdate('Sales Invoice', sidebarSeries, loadInvoices, applyCashierPanelEvent)
+  loadPaytmDevices()
+  getFrappeSocket()?.on('paytm_payment_update', onPaytmSocket)
 })
 
 let _billPanelCleanup = null
@@ -1962,6 +2138,8 @@ onUnmounted(() => {
   window.removeEventListener('click', handleSeriesClickAway)
   window.removeEventListener('keydown', handleKeydown)
   _billPanelCleanup?.()
+  stopPaytmPolling()
+  getFrappeSocket()?.off('paytm_payment_update', onPaytmSocket)
 })
 
 // Register shortcuts

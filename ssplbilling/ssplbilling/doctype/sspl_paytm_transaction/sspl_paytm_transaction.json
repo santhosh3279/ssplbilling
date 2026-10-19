@@ -1,0 +1,166 @@
+{
+ "actions": [],
+ "creation": "2026-10-19 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "order_id",
+  "sales_invoice",
+  "amount",
+  "status",
+  "column_break_1",
+  "device_name",
+  "tid",
+  "transaction_datetime",
+  "result_section",
+  "pay_method",
+  "paytm_txn_id",
+  "rrn",
+  "column_break_2",
+  "auth_code",
+  "result_message",
+  "response_section",
+  "response"
+ ],
+ "fields": [
+  {
+   "fieldname": "order_id",
+   "fieldtype": "Data",
+   "label": "Order ID",
+   "unique": 1,
+   "reqd": 1,
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Pending\nSuccess\nFailed\nCancelled",
+   "default": "Pending",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "device_name",
+   "fieldtype": "Data",
+   "label": "Device",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tid",
+   "fieldtype": "Data",
+   "label": "TID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "transaction_datetime",
+   "fieldtype": "Data",
+   "label": "Transaction Date Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_section",
+   "fieldtype": "Section Break",
+   "label": "Result"
+  },
+  {
+   "fieldname": "pay_method",
+   "fieldtype": "Data",
+   "label": "Pay Method",
+   "read_only": 1
+  },
+  {
+   "fieldname": "paytm_txn_id",
+   "fieldtype": "Data",
+   "label": "Paytm Transaction ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rrn",
+   "fieldtype": "Data",
+   "label": "Bank RRN",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "auth_code",
+   "fieldtype": "Data",
+   "label": "Auth Code",
+   "read_only": 1
+  },
+  {
+   "fieldname": "result_message",
+   "fieldtype": "Small Text",
+   "label": "Result Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "response_section",
+   "fieldtype": "Section Break",
+   "label": "Raw Response",
+   "collapsible": 1
+  },
+  {
+   "fieldname": "response",
+   "fieldtype": "Code",
+   "label": "Response",
+   "options": "JSON",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-19 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL Paytm Transaction",
+ "owner": "Administrator",
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "autoname": "field:order_id",
+ "title_field": "sales_invoice",
+ "in_create": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  }
+ ]
+}

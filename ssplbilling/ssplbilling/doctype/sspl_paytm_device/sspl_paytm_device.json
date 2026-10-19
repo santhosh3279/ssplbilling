@@ -1,0 +1,57 @@
+{
+ "actions": [],
+ "creation": "2026-10-19 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "device_name",
+  "tid",
+  "user",
+  "enabled"
+ ],
+ "fields": [
+  {
+   "fieldname": "device_name",
+   "fieldtype": "Data",
+   "label": "Device Name",
+   "in_list_view": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "tid",
+   "fieldtype": "Data",
+   "label": "TID",
+   "in_list_view": 1,
+   "reqd": 1,
+   "description": "Terminal ID printed on the card machine"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "Cashier",
+   "options": "User",
+   "in_list_view": 1,
+   "description": "Machine used by default for this cashier"
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-19 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL Paytm Device",
+ "owner": "Administrator",
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "istable": 1,
+ "editable_grid": 1,
+ "permissions": []
+}

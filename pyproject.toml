@@ -14,7 +14,9 @@ dependencies = [
     # Driver for the eSSL/ZKTeco attendance devices (api/essl_machine_api.py).
     # Must be declared here so `bench get-app` installs it inside the Docker
     # image — otherwise every device row reports "No module named 'zk'".
-    "pyzk"
+    "pyzk",
+    # Request signing for the Paytm EDC card machines (api/paytm_api.py).
+    "paytmchecksum~=1.7.0"
 ]
 
 [build-system]

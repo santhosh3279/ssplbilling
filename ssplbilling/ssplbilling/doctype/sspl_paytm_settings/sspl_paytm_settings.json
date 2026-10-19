@@ -1,0 +1,170 @@
+{
+ "actions": [],
+ "creation": "2026-10-19 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "environment",
+  "column_break_env",
+  "upi_account",
+  "merchant_section",
+  "merchant_id",
+  "merchant_key",
+  "edc_merchant_key",
+  "column_break_merchant",
+  "industry_type",
+  "channel_section",
+  "channel_id_web",
+  "website_web",
+  "column_break_channel",
+  "channel_id_mobile",
+  "website_mobile",
+  "webhook_section",
+  "payment_notification_url",
+  "devices_section",
+  "devices"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "0"
+  },
+  {
+   "fieldname": "environment",
+   "fieldtype": "Select",
+   "label": "Environment",
+   "options": "Staging\nProduction",
+   "default": "Staging",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_env",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "upi_account",
+   "fieldtype": "Link",
+   "label": "UPI Account",
+   "options": "Account",
+   "description": "Fallback account for UPI receipts; the cashier's selected UPI account is used when set"
+  },
+  {
+   "fieldname": "merchant_section",
+   "fieldtype": "Section Break",
+   "label": "Merchant Details"
+  },
+  {
+   "fieldname": "merchant_id",
+   "fieldtype": "Data",
+   "label": "Merchant ID (MID)",
+   "depends_on": "enabled",
+   "mandatory_depends_on": "enabled"
+  },
+  {
+   "fieldname": "merchant_key",
+   "fieldtype": "Password",
+   "label": "Merchant Key",
+   "depends_on": "enabled",
+   "mandatory_depends_on": "enabled"
+  },
+  {
+   "fieldname": "edc_merchant_key",
+   "fieldtype": "Password",
+   "label": "EDC Merchant Key",
+   "depends_on": "enabled",
+   "description": "Only if Paytm issued a separate key for the card machines. Leave empty to use the Merchant Key."
+  },
+  {
+   "fieldname": "column_break_merchant",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "industry_type",
+   "fieldtype": "Data",
+   "label": "Industry Type",
+   "default": "Retail"
+  },
+  {
+   "fieldname": "channel_section",
+   "fieldtype": "Section Break",
+   "label": "Channel Details"
+  },
+  {
+   "fieldname": "channel_id_web",
+   "fieldtype": "Data",
+   "label": "Channel ID (Web)",
+   "default": "WEB"
+  },
+  {
+   "fieldname": "website_web",
+   "fieldtype": "Data",
+   "label": "Website (Web)",
+   "default": "WEBSTAGING"
+  },
+  {
+   "fieldname": "column_break_channel",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "channel_id_mobile",
+   "fieldtype": "Data",
+   "label": "Channel ID (Mobile)",
+   "default": "WAP"
+  },
+  {
+   "fieldname": "website_mobile",
+   "fieldtype": "Data",
+   "label": "Website (Mobile)",
+   "default": "WEBSTAGING"
+  },
+  {
+   "fieldname": "webhook_section",
+   "fieldtype": "Section Break",
+   "label": "Webhook"
+  },
+  {
+   "fieldname": "payment_notification_url",
+   "fieldtype": "Data",
+   "label": "Payment Notification URL",
+   "options": "URL",
+   "description": "Register this URL in the Paytm merchant dashboard. Defaults to this site's webhook endpoint."
+  },
+  {
+   "fieldname": "devices_section",
+   "fieldtype": "Section Break",
+   "label": "Card Machines (EDC)"
+  },
+  {
+   "fieldname": "devices",
+   "fieldtype": "Table",
+   "label": "Devices",
+   "options": "SSPL Paytm Device"
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-19 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL Paytm Settings",
+ "owner": "Administrator",
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "issingle": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ]
+}
