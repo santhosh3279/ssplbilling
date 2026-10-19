@@ -209,7 +209,10 @@
                     @click="idx !== 0 && !isCellLocked(idx, uidx) && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2)))"
                     :title="idx !== 0 ? 'Click to apply to proposed' : ''"
                   >
-                    {{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}
+                    <template v-if="idx === 0 && buyingNetByUom[u.uom] !== undefined">
+                      {{ buyingNetByUom[u.uom].toFixed(2) }} + {{ props.taxRate }}% = {{ ((calculatedRatesByUom[u.uom] || [])[0] || 0).toFixed(2) }}
+                    </template>
+                    <template v-else>{{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}</template>
                   </td>
                 </tr>
               </template>
@@ -495,6 +498,18 @@ const calculatedRatesByUom = computed(() => {
       rates.push(prev * (1 + markup / 100))
     }
     result[u.uom] = rates
+  }
+  return result
+})
+
+// Net (pre-tax) landing rate per UOM, only when tax is added on top of it
+const buyingNetByUom = computed(() => {
+  const result = {}
+  const initialUomData = uoms.value.find(u => u.uom === props.initialUom)
+  if (props.isInclusive || !props.taxRate || !initialUomData || !props.initialRate) return result
+  const stockPurchaseRate = props.initialRate / initialUomData.conversion_factor
+  for (const u of uoms.value) {
+    result[u.uom] = stockPurchaseRate * u.conversion_factor * (1 - props.initialDiscount / 100)
   }
   return result
 })
