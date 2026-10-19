@@ -103,6 +103,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'CashflowReport',
   'AccountTree',
   'GeneralLedger',
+  'AiChat',
   'Hrms',
   'Employee',
   'Employees',
@@ -408,6 +409,7 @@ const TILE_ROUTE_MAP = {
   'account-tree':      'AccountTree',
   'batch-reports':     'BatchReports',
   'create-user':       'UserCreation',
+  'ai-chat':           'AiChat',
 }
 
 export function canAccessTile(tileId) {

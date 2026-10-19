@@ -985,6 +985,7 @@ const allTiles = [
   { id: 'hrms',               bucket: 'sspl',   name: 'HRMS Dashboard',        desc: 'Human Resource Management',                icon: '👥', shortcut: ''    },
   { id: 'essl-machines',      bucket: 'sspl',   name: 'eSSL Machines',         desc: 'Attendance devices and their stores',      icon: '🖥️', shortcut: ''    },
   { id: 'create-user',        bucket: 'sspl',   name: 'Create User',           desc: 'Website login for a customer',             icon: '👤', shortcut: ''    },
+  { id: 'ai-chat',            bucket: 'sspl',   name: 'AI Chat',               desc: 'Ask ERPNext data via Claude, Gemini, Codex', icon: '🤖', shortcut: ''    },
 
   { id: 'daily-report',       bucket: 'report',   name: 'Daily Report',          desc: 'Daily operations summary',                 icon: '📊', shortcut: ''    },
   { id: 'reports',            bucket: 'report',   name: 'Reports',               desc: 'Business reports and analytics',           icon: '📈', shortcut: ''    },
@@ -1239,7 +1240,7 @@ function tilesInBucket(bucketId) {
   return filteredTiles.value.filter(t => t.bucket === bucketId)
 }
 
-const readyModules = ['sales', 'mobile-bill', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user']
+const readyModules = ['sales', 'mobile-bill', 'quotation', 'purchase-invoice', 'cashier', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user', 'ai-chat']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
@@ -1282,6 +1283,11 @@ const routeAliases = {
 
 function openModule(id) {
 
+  // AI Chat is its own SPA in the sspl_ai app, outside this router
+  if (id === 'ai-chat') {
+    window.location.href = '/ai-chat'
+    return
+  }
   if (id === 'payment-reconciliation') {
     window.open('/app/payment-reconciliation', '_blank')
     return
