@@ -648,6 +648,9 @@ async function loadPrices(code) {
         normalizedUoms.push(u)
       }
     }
+    // The UOM entered on the bill always leads, ahead of the stock UOM
+    const enteredIdx = normalizedUoms.findIndex(u => u.uom === props.initialUom)
+    if (enteredIdx > 0) normalizedUoms.unshift(...normalizedUoms.splice(enteredIdx, 1))
     uoms.value = normalizedUoms
 
     hasFetchedPercentages.value = !!(data.pricelist_percentages && data.pricelist_percentages.length > 0)
