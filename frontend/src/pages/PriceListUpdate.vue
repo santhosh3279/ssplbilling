@@ -31,9 +31,6 @@
           <div v-if="taxRate !== undefined && taxRate !== null" class="rounded-full bg-[var(--color-warning)]/20 px-3 py-1 text-3xl font-bold text-[var(--color-warning)]">
             Tax: {{ taxRate }}%
           </div>
-          <div v-if="props.initialQty" class="rounded-full bg-[var(--color-success)]/20 px-3 py-1 text-3xl font-bold text-[var(--color-success)]">
-            Qty: {{ props.initialQty }} {{ props.initialUom }}
-          </div>
         </div>
         <div class="flex items-center gap-3">
           <span class="text-xs text-[var(--color-text-muted)]">
@@ -298,6 +295,9 @@
         <div class="flex items-center justify-between">
           <div class="text-sm text-[var(--color-text-muted)]">
             Total Price Lists: <span class="font-bold text-[var(--color-text)]">{{ prices.length }}</span>
+            <span v-if="props.initialQty" class="ml-4">
+              Qty: <span class="font-bold text-[var(--color-text)]">{{ props.initialQty }} {{ props.initialUom }}</span>
+            </span>
           </div>
           <div class="flex gap-3">
             <button
