@@ -148,7 +148,7 @@ def send_to_device(invoice_name, amount, tid):
 	return {"order_id": order_id, "device_name": device.device_name, "status": "Pending"}
 
 
-@frappe.whitelist()
+@frappe.whitelist(methods=["POST"])
 def get_status(order_id):
 	"""Ask Paytm for the payment status and return the result for the cashier page."""
 	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
@@ -191,15 +191,26 @@ def payment_webhook():
 	if checksum:
 		from paytmchecksum import verifySignature
 
-		signed = json.dumps(body, separators=(",", ":")) if "head" in data else {
-			k: v for k, v in body.items() if k != "CHECKSUMHASH"
-		}
+		# JSON payloads are signed over the raw "body" text exactly as Paytm sent it
+		if "head" in data and '"body":' in raw:
+			signed = raw[raw.index('"body":') + 7 : raw.rindex("}")].strip()
+		else:
+			signed = {k: v for k, v in body.items() if k != "CHECKSUMHASH"}
 		if not verifySignature(signed, _signing_key(settings), checksum):
 			frappe.log_error(title="Paytm webhook checksum mismatch", message=raw[:5000])
 
 	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
-	if txn.status == "Pending":
+	# Cancelled rows are re-checked too: the customer can still pay on the machine after
+	# the cashier stopped waiting, and that payment must not be silently dropped.
+	if txn.status in ("Pending", "Cancelled"):
+		was_cancelled = txn.status == "Cancelled"
 		_refresh_from_paytm(txn)
+		if was_cancelled and txn.status == "Success":
+			frappe.log_error(
+				title="Paytm late payment on cancelled order",
+				message=f"{txn.order_id} ({txn.sales_invoice}): Rs {txn.amount} paid after the cashier "
+				"stopped waiting. Check the invoice is not paid twice.",
+			)
 	frappe.db.commit()
 	return {"status": "ok"}
 
@@ -215,7 +226,11 @@ def _refresh_from_paytm(txn):
 	try:
 		res = _post(settings, EDC_STATUS_PATH, body)
 	except Exception:
-		frappe.log_error(title="Paytm EDC status check failed", message=frappe.get_traceback())
+		# The page polls every few seconds; log only the first failure per order
+		cache_key = f"paytm_status_failed:{txn.order_id}"
+		if not frappe.cache.get_value(cache_key):
+			frappe.cache.set_value(cache_key, 1, expires_in_sec=3600)
+			frappe.log_error(title="Paytm EDC status check failed", message=frappe.get_traceback())
 		return
 
 	rb = res.get("body") or {}
@@ -226,7 +241,7 @@ def _refresh_from_paytm(txn):
 	elif status in ("FAIL", "F", "FAILURE", "TXN_FAILURE"):
 		new_status = "Failed"
 	else:
-		new_status = "Pending"
+		new_status = txn.status  # still waiting (Pending) or already Cancelled locally
 
 	txn.pay_method = rb.get("payMethod") or rb.get("paymentMode") or txn.pay_method
 	txn.paytm_txn_id = rb.get("acquirementId") or rb.get("txnId") or txn.paytm_txn_id
@@ -244,13 +259,13 @@ def _refresh_from_paytm(txn):
 
 
 def _update_txn(txn, status, response, message=None):
-	was_pending = txn.status == "Pending"
+	was_open = txn.status in ("Pending", "Cancelled")
 	txn.status = status
 	txn.response = json.dumps(response, indent=1, default=str)
 	if message:
 		txn.result_message = message
 	txn.save(ignore_permissions=True)
-	if was_pending and status != "Pending":
+	if was_open and status in ("Success", "Failed"):
 		frappe.publish_realtime(
 			"paytm_payment_update", _txn_result(txn), user=txn.owner, after_commit=True
 		)

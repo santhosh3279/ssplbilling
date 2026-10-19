@@ -1579,7 +1579,7 @@ function startPaytmPolling() {
     const orderId = paytm.value.orderId
     if (!orderId) return stopPaytmPolling()
     try {
-      applyPaytmResult(await frappeGet('ssplbilling.api.paytm_api.get_status', { order_id: orderId }))
+      applyPaytmResult(await frappePost('ssplbilling.api.paytm_api.get_status', { order_id: orderId }, { silent: true }))
     } catch (e) { /* keep polling; the socket event may still arrive */ }
   }, 3000)
 }
