@@ -2237,8 +2237,7 @@ function onQuickSearchSelect(item) {
   newItemCode.value = ''
   setPendingItem({
     item_code: finalItem.item_code, item_name: finalItem.item_name, qty: 0, rate: getItemRateForPriceList(finalItem, finalItem.uom),
-    uom: finalItem.uom || 'Nos', barcode: finalItem._scanned_barcode || '',
-    discount: 0, tax_rate: finalItem.tax_rate || 0, deleted: false
+    uom: finalItem.uom || 'Nos', discount: 0, tax_rate: finalItem.tax_rate || 0, deleted: false
   })
 }
 
@@ -2252,9 +2251,6 @@ function applyItemToRow(rowIdx, item) {
   if (!isSameItem || item._from_barcode) {
     row.uom = item.uom || 'Nos'
   }
-  // Remember the scanned barcode so barcode printing reuses it
-  if (item._scanned_barcode) row.barcode = item._scanned_barcode
-  else if (!isSameItem) row.barcode = ''
   row.tax_rate = item.tax_rate || 0
 
   if (!isSameItem) {
@@ -2316,8 +2312,7 @@ function onItemSearchSelect(item) {
   newItemCode.value = ''
   setPendingItem({
     item_code: finalItem.item_code, item_name: finalItem.item_name, qty: 0, rate: getItemRateForPriceList(finalItem, finalItem.uom),
-    uom: finalItem.uom || 'Nos', barcode: finalItem._scanned_barcode || '',
-    discount: 0, tax_rate: finalItem.tax_rate || 0, deleted: false
+    uom: finalItem.uom || 'Nos', discount: 0, tax_rate: finalItem.tax_rate || 0, deleted: false
   })
 }
 
@@ -2695,7 +2690,6 @@ function confirmPendingItem() {
   const netRate = parseFloat(((p.rate || 0) * (1 - getDiscPrecision(itemDiscount) / 100)).toFixed(precision))
   const newItem = {
     item_code: p.item_code, item_name: p.item_name, qty, uom: p.uom || 'Nos',
-    barcode: p.barcode || '',
     rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0,
     discount: itemDiscount, tax_rate: p.tax_rate || 0,
     amount: parseFloat((qty * netRate).toFixed(precision)),
@@ -2834,7 +2828,6 @@ function handleItemEntry() {
   setPendingItem({
     item_code: match.item_code, item_name: match.item_name, qty: 0,
     rate: getItemRateForPriceList(match, match.uom), uom: match.uom || 'Nos',
-    barcode: match._scanned_barcode || '',
     discount: 0, tax_rate: match.tax_rate || 0, deleted: false
   })
 }

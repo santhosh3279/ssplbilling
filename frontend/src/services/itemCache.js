@@ -323,7 +323,6 @@ function lookupExact(code) {
   if (found) {
     const item = { ...found }
     const match = item.barcodes_detailed.find(b => (b.barcode || '').toLowerCase() === cleanCode)
-    if (match) item._scanned_barcode = match.barcode
     if (match && match.uom) {
       item.uom = match.uom // Use the UOM linked to this specific barcode
       item._from_barcode = true

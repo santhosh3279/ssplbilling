@@ -421,16 +421,10 @@ async function fetchBarcodeForItem(itemCode, uom = '') {
   }
 }
 
-// Barcode for an incoming row (purchase / sales invoice): keep the barcode entered
-// there unless it belongs to a different UOM, else pick the barcode of the row's UOM.
-async function resolveIncomingBarcode(i) {
-  const uom = i.uom || 'Nos'
-  if (i.barcode) {
-    const detailed = lookupItemInCache(i.item_code)?.barcodes_detailed || []
-    const entry = detailed.find(b => (b.barcode || '').toLowerCase() === String(i.barcode).toLowerCase())
-    if (!entry?.uom || entry.uom === uom) return String(i.barcode).toUpperCase()
-  }
-  return fetchBarcodeForItem(i.item_code, uom)
+// Barcode for an incoming row (purchase / sales invoice) comes from the row's UOM,
+// not from whatever barcode was scanned on that invoice
+function resolveIncomingBarcode(i) {
+  return fetchBarcodeForItem(i.item_code, i.uom || 'Nos')
 }
 
 function onlyBarcodePrinters(list) {
