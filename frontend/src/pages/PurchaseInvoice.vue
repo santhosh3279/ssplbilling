@@ -842,6 +842,7 @@
       :selected-price-list="priceList"
       :initial-rate="priceListUpdateRate"
       :initial-uom="priceListUpdateUom"
+      :initial-qty="priceListUpdateQty"
       :initial-discount="priceListUpdateDiscount"
       :tax-rate="priceListUpdateTaxRate"
       :is-inclusive="isInclusiveTax"
@@ -1201,6 +1202,11 @@ const priceListUpdateRate = computed(() => {
 const priceListUpdateUom = computed(() => {
   if (editRowPriceUpdateIdx.value !== null) return items.value[editRowPriceUpdateIdx.value]?.uom || ''
   return pendingItem.value?.uom || ''
+})
+
+const priceListUpdateQty = computed(() => {
+  if (editRowPriceUpdateIdx.value !== null) return items.value[editRowPriceUpdateIdx.value]?.qty || 0
+  return pendingItem.value?.qty || 0
 })
 
 const priceListUpdateDiscount = computed(() => {
