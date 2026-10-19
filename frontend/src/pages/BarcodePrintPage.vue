@@ -411,26 +411,23 @@ function discountRuleText(itemCode) {
     })
     .map(describeRule)
     .filter(Boolean)
-    .join(' · ')
+    .join(', ')
     .slice(0, 140) // Data field length on Barcode Items
 }
 
-// The offer itself, worded like SalesInvoice's "Active Offer" panel
+// The offer in label short form: "10+1" for buy-10-get-1, "10:5%" for 5% off from qty 10
 function describeRule(rule) {
   const tiers = rule.custom_logic_rows || []
-  const pctTiers = () => tiers.map(t => `${t.min_quantity}+ → ${t.percentage || 0}% off`).join(' · ')
+  const pct = (min, p) => (Number(min) > 1 ? `${min}:${p || 0}%` : `${p || 0}%`)
+  const pctTiers = () => tiers.map(t => pct(t.min_quantity, t.percentage)).join(', ')
   switch (rule.discount_type) {
     case 'Percentage Discount':
-      return tiers.length ? pctTiers() : `${rule.percentage_discount || 0}% off (Min Qty: ${rule.min_quantity || 0})`
+      return tiers.length ? pctTiers() : pct(rule.min_quantity, rule.percentage_discount)
     case 'Product Discount':
-      return `Buy ${rule.min_quantity} Get ${rule.free_quantity} Free`
-    case 'X to Y product discount':
-      return 'X to Y Offer'
+      return `${rule.min_quantity}+${rule.free_quantity}`
     case 'Custom Logic':
-      if (rule.custom_logic_type === 'Product') {
-        return tiers.map(t => `Buy ${t.min_quantity} Get ${t.nos} Free`).join(' · ') || 'Tiered offer'
-      }
-      return pctTiers() || 'Tiered discount'
+      if (rule.custom_logic_type === 'Product') return tiers.map(t => `${t.min_quantity}+${t.nos}`).join(', ')
+      return pctTiers()
     default:
       return rule.rule_name || rule.name || ''
   }
