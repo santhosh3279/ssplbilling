@@ -513,7 +513,7 @@
                       </td>
                       <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
                       <td v-for="(column, columnIndex) in itemColumns" :key="column.key" class="sheet-cell" :class="'sheet-col-' + column.key">
-                        <span v-if="column.key === 'itemname'" class="sheet-item-name">{{ item.itemname }}</span>
+                        <span v-if="column.key === 'itemname'" class="sheet-item-name">{{ itemDisplayName(item) }}</span>
                         <input
                           v-else
                           :value="searchTargetRow === idx ? itemSearchQuery : item.itemcode"
@@ -942,7 +942,7 @@ async function selectSearchItem(item) {
   const row = searchTargetRow.value
   const values = {
     itemcode: item.item_code,
-    itemname: item.item_name || '',
+    itemname: item.item_print_name || item.item_name || '',
     barcode: item.barcodes_detailed?.[0]?.barcode || item.barcodes?.split(',')[0]?.trim() || '',
   }
   if (row !== null && form.value.items[row]) {
@@ -957,6 +957,12 @@ async function selectSearchItem(item) {
   const input = itemsGrid.value?.querySelector(`[data-cell="${nextRow}-0"]`)
   input?.focus()
   input?.select()
+}
+
+// Catalogue shows the item's print name, falling back to the item name.
+function itemDisplayName(item) {
+  const cached = item.itemcode ? lookupItemInCache(item.itemcode) : null
+  return cached?.item_print_name || cached?.item_name || item.itemname
 }
 
 const itemsGrid = ref(null)

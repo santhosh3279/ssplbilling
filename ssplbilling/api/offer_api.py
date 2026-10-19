@@ -132,16 +132,18 @@ def get_offer_details(pageaddress):
 	item_codes = [item.itemcode for item in active_items]
 	live_stock = _catalogue_stock(item_codes)
 	item_group_map = {}
+	item_display_name_map = {}
 	item_image_map = {}
 	item_stock_uom_map = {}
 	if item_codes:
 		item_details = frappe.get_all(
 			"Item",
 			filters={"item_code": ["in", item_codes]},
-			fields=["item_code", "item_group", "image", "stock_uom"],
+			fields=["item_code", "item_group", "image", "stock_uom", "item_name", "item_print_name"],
 			ignore_permissions=True
 		)
 		item_group_map = {i.item_code: i.item_group for i in item_details}
+		item_display_name_map = {i.item_code: i.item_print_name or i.item_name for i in item_details}
 		item_image_map = {i.item_code: i.image for i in item_details}
 		item_stock_uom_map = {i.item_code: i.stock_uom for i in item_details}
 
@@ -173,6 +175,17 @@ def get_offer_details(pageaddress):
 					"barcode": row.barcode,
 					"uom": row.uom
 				})
+
+	# UOM conversion factors per item, so barcodes can be grouped one per factor
+	uom_factor_map = {}
+	if item_codes:
+		for row in frappe.get_all(
+			"UOM Conversion Detail",
+			filters={"parent": ["in", item_codes], "parenttype": "Item"},
+			fields=["parent", "uom", "conversion_factor"],
+			ignore_permissions=True
+		):
+			uom_factor_map.setdefault(row.parent, {})[row.uom] = row.conversion_factor
 
 	# Pre-fetch price list rates for these items and UOMs
 	price_lists = [pl.price_list for pl in doc.get("price_lists") if pl.price_list]
@@ -288,33 +301,29 @@ def get_offer_details(pageaddress):
 				else:
 					discount_desc = "Offer"
 
-		# Compile all unique barcodes and their rates for each price list
+		# One barcode per conversion factor. For factor 1 only the default barcode is shown:
+		# the barcode picked on the catalogue row, else the first stock-UOM barcode.
+		candidates = []
+		if item.barcode:
+			candidates.append({"barcode": item.barcode, "uom": barcode_uom_map.get(item.barcode) or stock_uom})
+		candidates += all_item_barcodes.get(item_code, [])
+		factors = uom_factor_map.get(item_code, {})
+		barcode_by_factor = {}
+		for b_info in candidates:
+			b_uom = b_info["uom"] or stock_uom
+			factor = 1.0 if b_uom == stock_uom else float(factors.get(b_uom) or 1)
+			if b_info["barcode"] and factor not in barcode_by_factor:
+				barcode_by_factor[factor] = {"barcode": b_info["barcode"], "uom": b_uom}
 		barcodes_with_prices = []
-		seen_barcodes = set()
-		for b_info in all_item_barcodes.get(item_code, []):
-			bc = b_info["barcode"]
-			b_uom = b_info["uom"]
-			if bc and bc not in seen_barcodes:
-				seen_barcodes.add(bc)
-				rates = {}
-				for plist in price_lists:
-					uom_rates = price_map.get(item_code, {}).get(plist)
-					rates[plist] = resolve_rate(uom_rates, b_uom, stock_uom)
-				barcodes_with_prices.append({
-					"barcode": bc,
-					"uom": b_uom,
-					"prices": rates
-				})
-		if item.barcode and item.barcode not in seen_barcodes:
-			seen_barcodes.add(item.barcode)
-			b_uom = barcode_uom_map.get(item.barcode) or stock_uom
+		for factor in sorted(barcode_by_factor):
+			b_info = barcode_by_factor[factor]
 			rates = {}
 			for plist in price_lists:
 				uom_rates = price_map.get(item_code, {}).get(plist)
-				rates[plist] = resolve_rate(uom_rates, b_uom, stock_uom)
+				rates[plist] = resolve_rate(uom_rates, b_info["uom"], stock_uom)
 			barcodes_with_prices.append({
-				"barcode": item.barcode,
-				"uom": b_uom,
+				"barcode": b_info["barcode"],
+				"uom": b_info["uom"],
 				"prices": rates
 			})
 		if not barcodes_with_prices:
@@ -332,7 +341,7 @@ def get_offer_details(pageaddress):
 			"itemcode": item_code,
 			"available_stock": live_stock.get(item_code),
 			"stock_uom": stock_uom,
-			"itemname": item.itemname,
+			"itemname": item_display_name_map.get(item_code) or item.itemname,
 			"barcode": item.barcode,
 			"barcodes": [b["barcode"] for b in barcodes_with_prices if b["barcode"]],
 			"barcode_prices": barcodes_with_prices,
