@@ -392,7 +392,7 @@ useShortcuts({
 
 const { items: allItems, lookupItemInCache, refreshItemCache, discountRules } = useItemCache()
 
-// Names of the enabled, in-date discount rules covering an item (same scope match as
+// Offers of the enabled, in-date discount rules covering an item (same scope match as
 // SalesInvoice, minus the price list check — a label is not tied to one price list)
 function discountRuleText(itemCode) {
   if (!itemCode || !discountRules.value?.length) return ''
@@ -409,8 +409,31 @@ function discountRuleText(itemCode) {
       if (rule.applies_to === 'Item Code' && hasCode(rule.items)) return true
       return rule.applies_to === 'Product Group' && !!group && group === (rule.product_group || '').toLowerCase()
     })
-    .map(rule => rule.rule_name || rule.name)
-    .join(', ')
+    .map(describeRule)
+    .filter(Boolean)
+    .join(' · ')
+    .slice(0, 140) // Data field length on Barcode Items
+}
+
+// The offer itself, worded like SalesInvoice's "Active Offer" panel
+function describeRule(rule) {
+  const tiers = rule.custom_logic_rows || []
+  const pctTiers = () => tiers.map(t => `${t.min_quantity}+ → ${t.percentage || 0}% off`).join(' · ')
+  switch (rule.discount_type) {
+    case 'Percentage Discount':
+      return tiers.length ? pctTiers() : `${rule.percentage_discount || 0}% off (Min Qty: ${rule.min_quantity || 0})`
+    case 'Product Discount':
+      return `Buy ${rule.min_quantity} Get ${rule.free_quantity} Free`
+    case 'X to Y product discount':
+      return 'X to Y Offer'
+    case 'Custom Logic':
+      if (rule.custom_logic_type === 'Product') {
+        return tiers.map(t => `Buy ${t.min_quantity} Get ${t.nos} Free`).join(' · ') || 'Tiered offer'
+      }
+      return pctTiers() || 'Tiered discount'
+    default:
+      return rule.rule_name || rule.name || ''
+  }
 }
 
 // ── Price Lists ──────────────────────────────────────────────────────────────
