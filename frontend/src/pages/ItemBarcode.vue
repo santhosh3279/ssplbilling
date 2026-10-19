@@ -102,8 +102,17 @@
         >
           <div class="min-w-0 flex-1">
             <div class="break-all font-mono text-base font-semibold">{{ b.barcode }}</div>
-            <div class="text-xs text-[var(--color-text-muted)]">{{ b.uom }}<span v-if="b.barcode_type"> · {{ b.barcode_type }}</span></div>
+            <div v-if="b.barcode_type" class="text-xs text-[var(--color-text-muted)]">{{ b.barcode_type }}</div>
           </div>
+          <select
+            :value="b.uom"
+            :aria-label="`UOM for barcode ${b.barcode}`"
+            :disabled="saving"
+            class="max-w-[8rem] shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1.5 text-sm outline-none focus:border-[var(--color-info)] disabled:opacity-50"
+            @change="changeBarcodeUom(b, $event)"
+          >
+            <option v-for="u in item.uoms" :key="u.uom" :value="u.uom">{{ uomLabel(u) }}</option>
+          </select>
           <span v-if="b.barcode === item.item_code" class="shrink-0 text-xs text-[var(--color-text-muted)]">Item code</span>
           <button
             v-else
@@ -113,6 +122,75 @@
             class="shrink-0 rounded-lg border border-[var(--color-danger)] px-3 py-1.5 text-sm font-semibold text-[var(--color-danger)] active:bg-[var(--color-danger)]/10 disabled:opacity-50"
             @click="removeBarcode(b.barcode)"
           >Remove</button>
+        </div>
+
+        <!-- UOM conversions -->
+        <div class="mb-2 mt-5 text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+          Units ({{ item.uoms.length }})
+        </div>
+        <div
+          v-for="u in item.uoms"
+          :key="u.uom"
+          class="mb-2 flex items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3"
+        >
+          <div class="min-w-0 flex-1">
+            <div class="truncate text-base font-semibold">{{ u.uom }}</div>
+            <div class="text-xs text-[var(--color-text-muted)]">1 {{ u.uom }} = {{ fmtFactor(u.conversion_factor) }} {{ item.stock_uom }}</div>
+          </div>
+          <span v-if="u.uom === item.stock_uom" class="shrink-0 text-xs text-[var(--color-text-muted)]">Stock UOM</span>
+          <template v-else>
+            <button
+              type="button"
+              :disabled="saving"
+              class="shrink-0 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm active:bg-[var(--color-surface-raised)] disabled:opacity-50"
+              @click="editUom(u)"
+            >Edit</button>
+            <button
+              type="button"
+              :aria-label="`Remove UOM ${u.uom}`"
+              :disabled="saving"
+              class="shrink-0 rounded-lg border border-[var(--color-danger)] px-3 py-1.5 text-sm font-semibold text-[var(--color-danger)] active:bg-[var(--color-danger)]/10 disabled:opacity-50"
+              @click="removeUom(u.uom)"
+            >Remove</button>
+          </template>
+        </div>
+        <div class="mb-4 rounded-xl border border-dashed border-[var(--color-border)] p-3">
+          <div class="mb-2 flex gap-2">
+            <input
+              v-model="uomQuery"
+              list="ib-uom-list"
+              type="text"
+              autocomplete="off"
+              autocapitalize="off"
+              spellcheck="false"
+              placeholder="UOM (e.g. Box)"
+              aria-label="UOM"
+              class="min-w-0 flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-3 text-base outline-none focus:border-[var(--color-info)]"
+            />
+            <datalist id="ib-uom-list">
+              <option v-for="u in uomOptions" :key="u" :value="u" />
+            </datalist>
+            <input
+              v-model="uomFactor"
+              type="number"
+              inputmode="decimal"
+              min="0"
+              step="any"
+              placeholder="Factor"
+              aria-label="Conversion factor"
+              class="w-24 shrink-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-3 text-base outline-none focus:border-[var(--color-info)]"
+              @keydown.enter.prevent="saveUom"
+            />
+          </div>
+          <div class="mb-2 text-xs text-[var(--color-text-muted)]">
+            1 {{ uomQuery.trim() || 'UOM' }} = {{ uomFactor || '?' }} {{ item.stock_uom }}
+          </div>
+          <button
+            type="button"
+            :disabled="saving || !uomQuery.trim() || !(Number(uomFactor) > 0)"
+            class="w-full rounded-xl border border-[var(--color-info)] py-2.5 text-base font-semibold text-[var(--color-info)] active:bg-[var(--color-info)]/10 disabled:opacity-50"
+            @click="saveUom"
+          >{{ isExistingUom ? 'Update Factor' : 'Add UOM' }}</button>
         </div>
       </template>
     </main>
@@ -145,12 +223,11 @@
       </div>
       <div class="flex gap-2">
         <select
-          v-if="item.uoms.length > 1"
           v-model="newUom"
           aria-label="Barcode UOM"
-          class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-3 text-base outline-none focus:border-[var(--color-info)]"
+          class="max-w-[45%] rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-3 text-base outline-none focus:border-[var(--color-info)]"
         >
-          <option v-for="u in item.uoms" :key="u" :value="u">{{ u }}</option>
+          <option v-for="u in item.uoms" :key="u.uom" :value="u.uom">{{ uomLabel(u) }}</option>
         </select>
         <button
           type="button"
@@ -173,8 +250,9 @@
 <script setup>
 /**
  * ItemBarcode.vue — phone page to attach extra barcodes to an Item.
- * Pick the item (search or camera scan), then scan / type barcodes to add; each add
- * or remove saves the Item at once. The server refuses a barcode another item uses.
+ * Pick the item (search or camera scan), then scan / type barcodes to add, each tied to
+ * one of the item's UOMs; UOM conversions (UOM + factor) are added / edited here too.
+ * Every change saves the Item at once. The server refuses a barcode another item uses.
  */
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
@@ -193,6 +271,9 @@ const error = ref('')
 const item = ref(null)
 const newBarcode = ref('')
 const newUom = ref('')
+const uomOptions = ref([])
+const uomQuery = ref('')
+const uomFactor = ref('')
 const lastAdded = ref('')
 const toast = ref('')
 const scanFor = ref('') // '' | 'find' | 'add'
@@ -267,12 +348,14 @@ async function openItem(code) {
 
 function setItem(detail) {
   item.value = detail
-  if (!detail.uoms.includes(newUom.value)) newUom.value = detail.stock_uom
+  if (!detail.uoms.some(u => u.uom === newUom.value)) newUom.value = detail.stock_uom
 }
 
 function changeItem() {
   item.value = null
   newBarcode.value = ''
+  uomQuery.value = ''
+  uomFactor.value = ''
   error.value = ''
   nextTick(() => searchRef.value?.focus())
 }
@@ -342,6 +425,97 @@ async function removeBarcode(code) {
   }
 }
 
+// ── UOM conversions ──
+function fmtFactor(v) {
+  return Number(v || 0).toLocaleString('en-IN', { maximumFractionDigits: 6 })
+}
+
+function uomLabel(u) {
+  return u.uom === item.value?.stock_uom ? u.uom : `${u.uom} (${fmtFactor(u.conversion_factor)})`
+}
+
+// Typed text matched to a master UOM ignoring case, so "box" saves as "Box"
+const resolvedUom = computed(() => {
+  const q = uomQuery.value.trim().toLowerCase()
+  return uomOptions.value.find(u => u.toLowerCase() === q) || uomQuery.value.trim()
+})
+const isExistingUom = computed(() => !!item.value?.uoms.some(u => u.uom === resolvedUom.value))
+
+async function loadUomOptions() {
+  try {
+    uomOptions.value = (await frappeGet(`${API}.get_uom_list`)) || []
+  } catch (e) {
+    console.warn('[ItemBarcode] get_uom_list failed:', e)
+  }
+}
+
+function editUom(u) {
+  uomQuery.value = u.uom
+  uomFactor.value = String(u.conversion_factor)
+}
+
+async function saveUom() {
+  const uom = resolvedUom.value
+  const factor = Number(uomFactor.value)
+  if (!item.value || saving.value || !uom || !(factor > 0)) return
+  if (uomOptions.value.length && !uomOptions.value.includes(uom)) {
+    error.value = `UOM "${uom}" does not exist. Pick one from the list.`
+    return
+  }
+  saving.value = true
+  error.value = ''
+  try {
+    setItem(await frappePost(`${API}.set_item_uom`, {
+      item_code: item.value.item_code,
+      uom,
+      conversion_factor: factor,
+    }, { silent: true }))
+    newUom.value = uom // the usual next step is a barcode for this pack
+    uomQuery.value = ''
+    uomFactor.value = ''
+    flash(`Saved 1 ${uom} = ${fmtFactor(factor)} ${item.value.stock_uom}`)
+  } catch (e) {
+    error.value = errText(e)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function removeUom(uom) {
+  if (!item.value || saving.value) return
+  if (!confirm(`Remove UOM ${uom} from ${item.value.item_name}?`)) return
+  saving.value = true
+  error.value = ''
+  try {
+    setItem(await frappePost(`${API}.remove_item_uom`, { item_code: item.value.item_code, uom }, { silent: true }))
+    flash(`Removed ${uom}`)
+  } catch (e) {
+    error.value = errText(e)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function changeBarcodeUom(b, event) {
+  const uom = event.target.value
+  if (!item.value || uom === b.uom) return
+  saving.value = true
+  error.value = ''
+  try {
+    setItem(await frappePost(`${API}.set_barcode_uom`, {
+      item_code: item.value.item_code,
+      barcode: b.barcode,
+      uom,
+    }, { silent: true }))
+    flash(`${b.barcode} → ${uom}`)
+  } catch (e) {
+    event.target.value = b.uom
+    error.value = errText(e)
+  } finally {
+    saving.value = false
+  }
+}
+
 // ── Keep the layout above the on-screen keyboard ──
 const viewportHeight = ref(0)
 const viewportStyle = computed(() => (viewportHeight.value ? { height: viewportHeight.value + 'px' } : null))
@@ -357,6 +531,7 @@ onMounted(() => {
   // Fetch the ZXing decoder now so the camera reads bars from its first frame on iOS Safari
   import('@zxing/browser').catch(() => {})
   import('@zxing/library').catch(() => {})
+  loadUomOptions()
   const code = router.currentRoute.value.query.item
   if (code) openItem(String(code))
   else searchRef.value?.focus()

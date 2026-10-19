@@ -393,6 +393,17 @@ def _barcode_owner(barcode, exclude_item=None):
 	return owner
 
 
+def _item_uoms(item):
+	"""Stock UOM first (factor 1), then the item's other conversions."""
+	rows = [{"uom": item.stock_uom, "conversion_factor": 1.0}]
+	rows += [
+		{"uom": row.uom, "conversion_factor": float(row.conversion_factor or 1)}
+		for row in item.uoms
+		if row.uom != item.stock_uom
+	]
+	return rows
+
+
 def _item_barcode_detail(item_code):
 	item = frappe.get_doc("Item", item_code)
 	return {
@@ -400,7 +411,7 @@ def _item_barcode_detail(item_code):
 		"item_name": item.item_name,
 		"stock_uom": item.stock_uom,
 		"image": item.image or "",
-		"uoms": [row.uom for row in item.uoms] or [item.stock_uom],
+		"uoms": _item_uoms(item),
 		"barcodes": [
 			{"barcode": row.barcode, "uom": row.uom or item.stock_uom, "barcode_type": row.barcode_type or ""}
 			for row in item.barcodes
@@ -468,7 +479,9 @@ def add_item_barcode(item_code, barcode, uom=None):
 		frappe.throw(f"Barcode {barcode} is already used by {owner} ({owner_name})")
 
 	valid_uoms = {row.uom for row in item.uoms} | {item.stock_uom}
-	item.append("barcodes", {"barcode": barcode, "uom": uom if uom in valid_uoms else item.stock_uom})
+	if uom and uom not in valid_uoms:
+		frappe.throw(f"UOM {uom} is not set on this item. Add it with a conversion factor first.")
+	item.append("barcodes", {"barcode": barcode, "uom": uom or item.stock_uom})
 	item.flags.ignore_permissions = True
 	item.save()
 	return _item_barcode_detail(item_code)
@@ -487,6 +500,74 @@ def remove_item_barcode(item_code, barcode):
 	if len(keep) == len(item.barcodes):
 		frappe.throw(f"Barcode {barcode} is not on this item")
 	item.set("barcodes", keep)
+	item.flags.ignore_permissions = True
+	item.save()
+	return _item_barcode_detail(item_code)
+
+
+@frappe.whitelist()
+def get_uom_list():
+	return frappe.get_all("UOM", filters={"enabled": 1}, pluck="name", order_by="name asc")
+
+
+@frappe.whitelist()
+def set_item_uom(item_code, uom, conversion_factor):
+	"""Add a UOM conversion to an item, or change the factor of an existing one."""
+	if not item_code or not frappe.db.exists("Item", item_code):
+		frappe.throw(f"Item {item_code} not found")
+	if not uom or not frappe.db.exists("UOM", uom):
+		frappe.throw(f"UOM {uom} not found")
+	factor = frappe.utils.flt(conversion_factor)
+	if factor <= 0:
+		frappe.throw("Conversion factor must be greater than 0")
+
+	item = frappe.get_doc("Item", item_code)
+	if uom == item.stock_uom:
+		frappe.throw(f"{uom} is the stock UOM; its factor is always 1")
+	row = next((r for r in item.uoms if r.uom == uom), None)
+	if row:
+		row.conversion_factor = factor
+	else:
+		item.append("uoms", {"uom": uom, "conversion_factor": factor})
+	item.flags.ignore_permissions = True
+	item.save()
+	return _item_barcode_detail(item_code)
+
+
+@frappe.whitelist()
+def remove_item_uom(item_code, uom):
+	"""Delete a UOM conversion; refused for the stock UOM or while a barcode still uses it."""
+	if not item_code or not frappe.db.exists("Item", item_code):
+		frappe.throw(f"Item {item_code} not found")
+
+	item = frappe.get_doc("Item", item_code)
+	if uom == item.stock_uom:
+		frappe.throw("The stock UOM cannot be removed")
+	in_use = [r.barcode for r in item.barcodes if r.uom == uom]
+	if in_use:
+		frappe.throw(f"UOM {uom} is used by barcode {', '.join(in_use)}. Remove or change those first.")
+	keep = [r for r in item.uoms if r.uom != uom]
+	if len(keep) == len(item.uoms):
+		frappe.throw(f"UOM {uom} is not on this item")
+	item.set("uoms", keep)
+	item.flags.ignore_permissions = True
+	item.save()
+	return _item_barcode_detail(item_code)
+
+
+@frappe.whitelist()
+def set_barcode_uom(item_code, barcode, uom):
+	"""Point an existing barcode at another of the item's UOMs."""
+	if not item_code or not frappe.db.exists("Item", item_code):
+		frappe.throw(f"Item {item_code} not found")
+
+	item = frappe.get_doc("Item", item_code)
+	if uom not in ({r.uom for r in item.uoms} | {item.stock_uom}):
+		frappe.throw(f"UOM {uom} is not set on this item")
+	row = next((r for r in item.barcodes if r.barcode == barcode), None)
+	if not row:
+		frappe.throw(f"Barcode {barcode} is not on this item")
+	row.uom = uom
 	item.flags.ignore_permissions = True
 	item.save()
 	return _item_barcode_detail(item_code)
