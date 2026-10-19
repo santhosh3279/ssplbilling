@@ -1525,7 +1525,7 @@ async function sendUpiMqtt() {
 async function loadPaytmDevices() {
   try {
     const res = await frappeGet('ssplbilling.api.paytm_api.get_devices')
-    paytm.value.enabled = !!res?.enabled && (res.devices || []).length > 0
+    paytm.value.enabled = !!res?.enabled
     paytm.value.devices = res?.devices || []
   } catch (e) {
     paytm.value.enabled = false
@@ -1542,7 +1542,14 @@ function defaultPaytmTid() {
 function openPaytmModal() {
   errorMsg.value = ''
   const amount = Number(payments.value.upi) || 0
-  if (!selectedInvoice.value) return
+  if (!selectedInvoice.value) {
+    errorMsg.value = 'Select a bill before sending to the card machine.'
+    return
+  }
+  if (!paytm.value.devices.length) {
+    errorMsg.value = 'No card machine set up. Add the TID under Devices in SSPL Paytm Settings.'
+    return
+  }
   if (amount <= 0) {
     errorMsg.value = 'Enter the amount in the UPI box before sending to the card machine.'
     return
