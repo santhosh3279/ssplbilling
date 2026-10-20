@@ -195,7 +195,7 @@
                   <td class="px-2 py-1 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
                     <div class="flex items-center justify-between gap-2">
                       <span class="text-2xl font-black uppercase truncate">{{ u.uom }}</span>
-                      <span class="shrink-0 text-[8px] font-black px-1 rounded bg-[var(--color-info)]/20 uppercase">Calculated</span>
+                      <span class="shrink-0 text-[16px] font-black px-2 rounded bg-[var(--color-info)]/20 uppercase">Calculated</span>
                     </div>
                   </td>
                   <td
