@@ -1023,11 +1023,9 @@ const tiles = computed(() => {
 
 const draftCounts = ref({})
 const draftTileFilters = {
-  sales: { doctype: 'Sales Invoice' },
   cashier: { doctype: 'Sales Invoice', byWarehouse: true },
   quotation: { doctype: 'Quotation', quotation_to: 'Customer' },
   'sales-order': { doctype: 'Sales Order' },
-  'purchase-invoice': { doctype: 'Purchase Invoice' },
   'purchase-submit': { doctype: 'Purchase Invoice', byWarehouse: true },
   'purchase-order': { doctype: 'Purchase Order' },
   'store-transfer': { doctype: 'Stock Entry', purpose: 'Material Transfer' },
