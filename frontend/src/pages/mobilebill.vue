@@ -29,8 +29,7 @@
         <button
           type="button"
           :disabled="isReadOnly"
-          class="min-w-0 flex-1 truncate rounded-xl border px-3 py-2.5 text-left text-[1.09375rem] font-semibold disabled:opacity-60"
-          :class="customerId ? 'border-[var(--color-border)] bg-[var(--color-bg)]' : 'need-fill'"
+          class="min-w-0 flex-1 truncate rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2.5 text-left text-[1.09375rem] font-semibold disabled:opacity-60"
           @click="openCustomerPicker"
         >{{ customerName || 'Select customer' }}</button>
       </div>
@@ -47,8 +46,7 @@
             autocapitalize="off"
             spellcheck="false"
             placeholder="Item name, code or barcode"
-            class="hl-input w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-4 pr-10 text-base outline-none"
-            :class="showKeypad && kbTarget === 'search' ? 'is-active' : ''"
+            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-4 pr-10 text-base outline-none"
             @focus="kbTarget = 'search'"
             @keydown.enter.prevent="addFromQuery"
           />
@@ -1296,16 +1294,10 @@ onBeforeUnmount(() => {
 .pending-panel {
   background: color-mix(in srgb, var(--color-success) 35%, var(--color-bg));
 }
-/* Input being typed into (focused, or fed by the on-screen keyboard) */
-.hl-input:focus,
-.hl-input.is-active {
+/* Input being typed into */
+.hl-input:focus {
   border-color: transparent;
   background: color-mix(in srgb, var(--color-info) 22%, var(--color-bg));
-}
-/* Customer not chosen yet */
-.need-fill {
-  border-color: transparent;
-  background: color-mix(in srgb, var(--color-warning) 35%, var(--color-bg));
 }
 /* The value being typed into: solid focus colour instead of just a border */
 .edit-focus {
