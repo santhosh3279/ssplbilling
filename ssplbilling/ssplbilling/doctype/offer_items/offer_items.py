@@ -9,6 +9,8 @@ from frappe.model.document import Document
 
 class OfferItems(Document):
 	def validate(self):
+		if not self.get("items") and not self.get("sub_catalogues"):
+			frappe.throw(_("Add at least one Item or Sub Folder to the catalogue."))
 		self.validate_sub_catalogues()
 
 	def validate_sub_catalogues(self):

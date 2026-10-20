@@ -1333,8 +1333,9 @@ async function handleSave() {
     .map((item, index) => ({ item, rowNumber: index + 1 }))
     .filter(({ item }) => [item.itemcode, item.itemname, item.barcode].some(value => value.trim()))
 
-  if (!itemRows.length) {
-    alert('Please add at least one Item to the catalogue list.')
+  const hasSubFolders = (form.value.sub_catalogues || []).some(c => c.offer)
+  if (!itemRows.length && !hasSubFolders) {
+    alert('Please add at least one Item or Sub Folder to the catalogue list.')
     return
   }
 
