@@ -135,17 +135,19 @@ def get_offer_details(pageaddress):
 	item_display_name_map = {}
 	item_image_map = {}
 	item_stock_uom_map = {}
+	item_gst_map = {}
 	if item_codes:
 		item_details = frappe.get_all(
 			"Item",
 			filters={"item_code": ["in", item_codes]},
-			fields=["item_code", "item_group", "image", "stock_uom", "item_name", "item_print_name"],
+			fields=["item_code", "item_group", "image", "stock_uom", "item_name", "item_print_name", "custom_is_gst_item"],
 			ignore_permissions=True
 		)
 		item_group_map = {i.item_code: i.item_group for i in item_details}
 		item_display_name_map = {i.item_code: i.item_print_name or i.item_name for i in item_details}
 		item_image_map = {i.item_code: i.image for i in item_details}
 		item_stock_uom_map = {i.item_code: i.stock_uom for i in item_details}
+		item_gst_map = {i.item_code: frappe.utils.cint(i.custom_is_gst_item) for i in item_details}
 
 	# Map barcodes to UOMs
 	barcode_uom_map = {}
@@ -348,6 +350,7 @@ def get_offer_details(pageaddress):
 			"image": item_image,
 			"discount_type": discount_type,
 			"discount_desc": discount_desc,
+			"is_gst_item": item_gst_map.get(item_code, 0),
 			"prices": item_rates
 		})
 		
