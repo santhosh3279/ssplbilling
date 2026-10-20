@@ -156,7 +156,7 @@
                       <div class="font-bold text-2xl" :class="u.uom === stockUom ? 'text-[var(--color-info)]' : 'text-[var(--color-warning)]'">
                         {{ u.uom }}
                       </div>
-                      <span class="shrink-0 text-[8px] font-black px-1 rounded bg-[var(--color-info)] text-white uppercase">Price</span>
+                      <span class="shrink-0 text-[16px] font-black px-2 rounded bg-[var(--color-info)] text-white uppercase">Price</span>
                     </div>
                     <div v-if="u.conversion_factor !== 1" class="text-[10px] text-[var(--color-text-muted)] italic leading-none mt-1">
                       Factor: {{ u.conversion_factor }}
