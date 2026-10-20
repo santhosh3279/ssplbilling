@@ -178,7 +178,9 @@ def update_supplier_full(data):
 
 	new_supplier_name = (data.get("supplier_name") or data.get("new_supplier_name") or data.get("new_name") or "").strip()
 	if new_supplier_name and supplier_id != new_supplier_name:
-		if frappe.db.exists("Supplier", new_supplier_name):
+		# DB collation is case-insensitive: a case-only rename matches this same record.
+		existing = frappe.db.exists("Supplier", new_supplier_name)
+		if existing and existing != supplier_id:
 			frappe.throw(f"Supplier with name '{new_supplier_name}' already exists.")
 		from frappe.model.rename_doc import rename_doc as _rename_doc
 		_rename_doc("Supplier", supplier_id, new_supplier_name, ignore_permissions=True)
