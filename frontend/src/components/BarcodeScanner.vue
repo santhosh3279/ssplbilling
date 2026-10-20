@@ -79,11 +79,11 @@
           v-for="m in manualResults"
           :key="m.code"
           type="button"
-          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_5.5rem] items-center gap-3 border-b border-[var(--color-border)] px-4 py-2.5 text-left active:bg-[var(--color-surface-raised)]"
+          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_5.5rem] items-center gap-x-1.5 border-b border-[var(--color-border)] px-4 py-2.5 text-left active:bg-[var(--color-surface-raised)]"
           @click="found(m.code)"
         >
-          <div class="truncate text-sm font-semibold">{{ m.name }}</div>
-          <div class="truncate font-mono text-xs text-[var(--color-text-muted)]">{{ m.code }}</div>
+          <div class="mr-1.5 truncate text-sm font-semibold">{{ m.name }}</div>
+          <div class="break-all text-right font-mono text-xs leading-tight text-[var(--color-text-muted)]">{{ m.code }}</div>
           <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(m.price) }}</div>
         </button>
       </div>
