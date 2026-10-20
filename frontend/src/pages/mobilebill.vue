@@ -92,7 +92,8 @@
           <span v-if="pending.target !== 'new'" class="shrink-0 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Edit</span>
           <button type="button" aria-label="Cancel item" class="shrink-0 rounded-lg px-2 text-lg leading-none text-[var(--color-text-muted)]" @click="cancelPending">&times;</button>
         </div>
-        <div class="mt-1.5 flex items-center gap-1.5">
+        <!-- Qty · rate · disc at 1.25× size; the amount wraps below when the row runs out of room -->
+        <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
           <button
             v-for="f in PENDING_FIELDS"
             :key="f.key"
@@ -101,10 +102,10 @@
             :class="[f.width, kbTarget === 'pending' && pending.field === f.key ? 'edit-focus' : 'border-[var(--color-border)] bg-[var(--color-bg)]']"
             @click="focusPendingField(f.key)"
           >
-            <div class="field-label truncate text-[10px] uppercase text-[var(--color-text-muted)]">{{ f.key === 'qty' ? `Qty · ${pending.uom}` : f.label }}</div>
-            <div class="font-mono text-base font-bold tabular-nums">{{ pending[f.key] || '0' }}</div>
+            <div class="field-label truncate text-[12.5px] uppercase text-[var(--color-text-muted)]">{{ f.key === 'qty' ? `Qty · ${pending.uom}` : f.label }}</div>
+            <div class="font-mono text-[1.25rem] font-bold tabular-nums">{{ pending[f.key] || '0' }}</div>
           </button>
-          <span class="ml-auto font-mono text-base font-bold tabular-nums">{{ money(pendingAmount) }}</span>
+          <span class="ml-auto font-mono text-[1.25rem] font-bold tabular-nums">{{ money(pendingAmount) }}</span>
         </div>
       </div>
     </header>
@@ -555,9 +556,9 @@ function canEdit() {
 // `pending.target` is 'new' for a picked item, or the bill row being re-edited.
 const KEYPAD_KEY = 'mb-keypad'
 const PENDING_FIELDS = [
-  { key: 'qty', label: 'Qty', width: 'w-[4.5rem]' },
-  { key: 'rate', label: 'Rate', width: 'w-[5.5rem]' },
-  { key: 'discount', label: 'Disc %', width: 'w-16' },
+  { key: 'qty', label: 'Qty', width: 'w-[5.625rem]' },
+  { key: 'rate', label: 'Rate', width: 'w-[6.875rem]' },
+  { key: 'discount', label: 'Disc %', width: 'w-20' },
 ]
 const DISCOUNT_PRESETS = [0, 5, 10, 15, 20, 25]
 const ALPHA_ROWS = [
