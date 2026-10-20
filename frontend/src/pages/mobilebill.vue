@@ -111,7 +111,8 @@
     <main class="relative min-h-0 flex-1 overflow-y-auto">
       <!-- Item search results overlay the bill while typing -->
       <!-- Same cards as the scanner's typed search: name · code · price (cipher);
-           alternate cards shaded, exact code / barcode match blinks -->
+           alternate cards shaded, exact code / barcode match blinks. The name column is
+           at least 14rem (~20 characters at text-xl) before it scrolls; code and price share the rest -->
       <div v-if="query.trim().length >= 2" class="absolute inset-0 z-10 space-y-1.5 overflow-y-auto bg-[var(--color-bg)] p-2">
         <div v-if="!searchResults.length" class="py-12 text-center text-sm text-[var(--color-text-muted)]">
           No items match “{{ query.trim() }}”.
@@ -120,7 +121,7 @@
           v-for="(item, i) in searchResults"
           :key="item.item_code"
           type="button"
-          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_5.5rem] items-center gap-x-1.5 rounded-xl border-2 border-[var(--color-text-muted)] px-3 py-3 text-left active:bg-[var(--color-surface-raised)]"
+          class="grid w-full grid-cols-[minmax(14rem,1fr)_minmax(0,7rem)_auto] items-center gap-x-1.5 rounded-xl border-2 border-[var(--color-text-muted)] px-2.5 py-3 text-left active:bg-[var(--color-surface-raised)]"
           :class="[i % 2 ? 'bg-[var(--color-surface)]' : '', isExactMatch(item) && 'exact-match']"
           @click="addItem(item)"
         >
