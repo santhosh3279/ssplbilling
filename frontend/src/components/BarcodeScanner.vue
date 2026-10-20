@@ -74,15 +74,19 @@
         v-if="manualResults.length"
         class="absolute inset-x-0 bottom-full max-h-[45vh] overflow-y-auto border-t border-[var(--color-border)] bg-[var(--color-bg)] shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
       >
-        <!-- Item name · item code · price (cipher) -->
+        <!-- Item name · item code · price (cipher); alternate rows shaded, exact code match in the highlight colour -->
         <button
-          v-for="m in manualResults"
+          v-for="(m, i) in manualResults"
           :key="m.code"
           type="button"
-          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_5.5rem] items-center gap-x-1.5 border-b border-[var(--color-border)] px-4 py-2.5 text-left active:bg-[var(--color-surface-raised)]"
+          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_5.5rem] items-center gap-x-1.5 border-b border-[var(--color-border)] px-4 py-3 text-left active:bg-[var(--color-surface-raised)]"
+          :class="i % 2 ? 'bg-[var(--color-surface)]' : ''"
           @click="found(m.code)"
         >
-          <div class="mr-1.5 truncate text-sm font-semibold">{{ m.name }}</div>
+          <div
+            class="mr-1.5 truncate text-base font-semibold"
+            :class="isExactCode(m) ? 'font-bold text-[var(--color-highlight)]' : ''"
+          >{{ m.name }}</div>
           <div class="break-all text-right font-mono text-xs leading-tight text-[var(--color-text-muted)]">{{ m.code }}</div>
           <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(m.price) }}</div>
         </button>
@@ -196,6 +200,8 @@ function cipherPrice(price) {
   const cipher = getCipherMap()
   return cipher ? fixed.replace(/\d/g, d => cipher[d] || '?') : fixed
 }
+
+const isExactCode = m => String(m.code).toLowerCase() === typed.value.trim().toLowerCase()
 
 function toggleKeys() {
   showKeys.value = !showKeys.value
