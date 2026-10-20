@@ -92,7 +92,7 @@
                   :disabled="isReadOnly || row._is_free"
                   :aria-label="`Quantity of ${row.item_name}`"
                   class="shrink-0 rounded-lg border px-1.5 py-1 font-mono text-[1.09375rem] font-bold tabular-nums text-[var(--color-text)] disabled:opacity-100"
-                  :class="isEditing(row) && pending.field === 'qty' ? 'edit-focus' : 'border-[var(--color-border)]'"
+                  :class="isEditing(row) && pending.field === 'qty' ? 'edit-focus' : 'line-box'"
                   @click.stop="editRow(row, 'qty')"
                 >{{ fmtQty(row.qty) }} <span class="text-[12.5px] font-normal">{{ row.uom }}</span></button>
                 <span class="shrink-0">×</span>
@@ -101,7 +101,7 @@
                   :disabled="isReadOnly || row._is_free"
                   :aria-label="`Rate of ${row.item_name}`"
                   class="shrink-0 rounded-lg border px-1.5 py-1 font-mono text-[1.09375rem] tabular-nums text-[var(--color-text)] disabled:opacity-100"
-                  :class="isEditing(row) && pending.field === 'rate' ? 'edit-focus' : 'border-[var(--color-border)]'"
+                  :class="isEditing(row) && pending.field === 'rate' ? 'edit-focus' : 'line-box'"
                   @click.stop="editRow(row, 'rate')"
                 >{{ row.rate }}</button>
                 <span class="shrink-0 font-mono text-[1.25rem] font-bold tabular-nums text-[var(--color-text)]">{{ money(rowAmount(row)) }}</span>
@@ -1153,6 +1153,11 @@ onBeforeUnmount(() => {
 .hl-input:focus {
   border-color: transparent;
   background: color-mix(in srgb, var(--color-info) 22%, var(--color-bg));
+}
+/* Qty / rate box on a bill line: own fill and a strong border so it stands out on dark or shaded rows */
+.line-box {
+  border-color: var(--color-text-muted);
+  background: var(--color-bg);
 }
 /* The value being typed into: solid focus colour instead of just a border */
 .edit-focus {
