@@ -207,7 +207,7 @@
                 :false-value="0"
                 class="h-6 w-6 accent-[var(--color-info)]"
               />
-              <span>GST Item</span>
+              <span>GST Incl</span>
             </label>
 
             <div class="space-y-[4px] relative">
