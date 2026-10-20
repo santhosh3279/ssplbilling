@@ -83,28 +83,28 @@
           <div class="flex items-start gap-2">
             <span class="line-no mt-0.5 shrink-0">{{ idx + 1 }}</span>
             <div class="min-w-0 flex-1">
-              <MarqueeText manual :text="row.item_name || row.item_code" :class="isEditing(row) ? 'text-2xl font-bold leading-tight' : 'text-base font-semibold'" />
-              <!-- Code · qty · rate · amount on one line; tap qty / rate to edit on the keypad -->
-              <div class="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+              <MarqueeText manual :text="row.item_name || row.item_code" :class="isEditing(row) ? 'text-[1.875rem] font-bold leading-tight' : 'text-[1.25rem] font-semibold'" />
+              <!-- Code · qty · rate · amount on one line (1.25× size); tap qty / rate to edit on the keypad -->
+              <div class="mt-0.5 flex items-center gap-1.5 text-[0.9375rem] text-[var(--color-text-muted)]">
                 <span class="min-w-0 flex-1 truncate font-mono">{{ row.item_code }}<template v-if="row._is_free"> · <b class="text-[var(--color-success)]">FREE</b></template><template v-else-if="row.discount"> · <b class="text-[var(--color-warning)]">{{ row.discount }}% off</b></template></span>
                 <button
                   type="button"
                   :disabled="isReadOnly || row._is_free"
                   :aria-label="`Quantity of ${row.item_name}`"
-                  class="shrink-0 rounded-lg border px-1.5 py-1 font-mono text-sm font-bold tabular-nums text-[var(--color-text)] disabled:opacity-100"
+                  class="shrink-0 rounded-lg border px-1.5 py-1 font-mono text-[1.09375rem] font-bold tabular-nums text-[var(--color-text)] disabled:opacity-100"
                   :class="isEditing(row) && pending.field === 'qty' ? 'edit-focus' : 'border-[var(--color-border)]'"
                   @click.stop="editRow(row, 'qty')"
-                >{{ fmtQty(row.qty) }} <span class="text-[10px] font-normal">{{ row.uom }}</span></button>
+                >{{ fmtQty(row.qty) }} <span class="text-[12.5px] font-normal">{{ row.uom }}</span></button>
                 <span class="shrink-0">×</span>
                 <button
                   type="button"
                   :disabled="isReadOnly || row._is_free"
                   :aria-label="`Rate of ${row.item_name}`"
-                  class="shrink-0 rounded-lg border px-1.5 py-1 font-mono text-sm tabular-nums text-[var(--color-text)] disabled:opacity-100"
+                  class="shrink-0 rounded-lg border px-1.5 py-1 font-mono text-[1.09375rem] tabular-nums text-[var(--color-text)] disabled:opacity-100"
                   :class="isEditing(row) && pending.field === 'rate' ? 'edit-focus' : 'border-[var(--color-border)]'"
                   @click.stop="editRow(row, 'rate')"
                 >{{ row.rate }}</button>
-                <span class="shrink-0 font-mono text-base font-bold tabular-nums text-[var(--color-text)]">{{ money(rowAmount(row)) }}</span>
+                <span class="shrink-0 font-mono text-[1.25rem] font-bold tabular-nums text-[var(--color-text)]">{{ money(rowAmount(row)) }}</span>
               </div>
             </div>
             <button
