@@ -141,7 +141,7 @@
               <!-- Middle section for image (Normal size, no stretch) -->
               <div class="flex-1 flex flex-col min-h-0 py-2">
                 <div class="relative flex-1 min-h-0 flex items-center justify-center">
-                  <span class="absolute right-0 top-0 z-10 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide shadow" :class="item.is_gst_item ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-900'">{{ item.is_gst_item ? 'GST Incl' : 'GST Excl' }}</span>
+                  <span class="absolute right-0 top-0 z-10 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide shadow" :class="item.is_gst_item ? 'bg-green-500 text-white' : 'bg-amber-400 text-slate-900'">{{ item.is_gst_item ? 'GST Incl' : 'GST Excl' }}</span>
                   <img
                     v-if="item.image"
                     :src="item.image"
@@ -372,7 +372,7 @@
               <!-- Image / Placeholder Frame -->
               <div class="aspect-square w-full bg-white flex flex-col p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
                 <div class="relative flex-1 min-h-0 flex items-center justify-center">
-                  <span class="absolute right-0 top-0 z-10 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide shadow" :class="item.is_gst_item ? 'bg-emerald-600 text-white' : 'bg-amber-400 text-slate-900'">{{ item.is_gst_item ? 'GST Incl' : 'GST Excl' }}</span>
+                  <span class="absolute right-0 top-0 z-10 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide shadow" :class="item.is_gst_item ? 'bg-green-500 text-white' : 'bg-amber-400 text-slate-900'">{{ item.is_gst_item ? 'GST Incl' : 'GST Excl' }}</span>
                   <img
                     v-if="item.image"
                     :src="item.image"
