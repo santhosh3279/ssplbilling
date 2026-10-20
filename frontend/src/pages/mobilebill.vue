@@ -155,7 +155,7 @@
         <button type="button" class="keypad-key" @click="keypadPress('.')">.</button>
         <button type="button" class="keypad-key" @click="keypadPress('0')">0</button>
         <button type="button" class="keypad-key text-sm" @click="keypadPress('clear')">C</button>
-        <button type="button" class="keypad-key keypad-key--ok" @click="commitPending">{{ pending.target !== 'new' ? 'OK' : 'Add' }}</button>
+        <button type="button" class="keypad-key keypad-key--ok" @click="keypadAdd">{{ pending.target !== 'new' ? 'OK' : 'Add & Scan' }}</button>
       </div>
     </section>
 
@@ -184,11 +184,11 @@
         <button
           v-if="!isReadOnly"
           type="button"
-          :disabled="busy || !activeRows.length"
+          :disabled="busy || (!activeRows.length && pending?.target !== 'new')"
           class="rounded-xl bg-[var(--color-success)] font-bold text-white shadow active:scale-[0.98] disabled:opacity-50"
           :class="keypadVisible ? 'px-3 py-2 text-sm' : 'flex-1 py-3 text-base'"
           @click="saveBill"
-        >{{ busy ? 'Saving…' : invoiceName ? 'Update' : 'Save' }}<template v-if="!keypadVisible"> Bill</template></button>
+        >{{ busy ? 'Saving…' : pending?.target === 'new' ? 'Add & Save' : invoiceName ? 'Update' : 'Save' }}<template v-if="!keypadVisible"> Bill</template></button>
         <button
           v-else-if="invoiceName"
           type="button"
@@ -670,6 +670,13 @@ function addCode(code) {
 
 function openScanner() {
   if (canEdit()) showScanner.value = true
+}
+
+// Add & Scan: a new item goes into the bill and the camera opens for the next one
+function keypadAdd() {
+  const wasNew = pending.value?.target === 'new'
+  commitPending()
+  if (wasNew) openScanner()
 }
 
 function closeScanner() {
