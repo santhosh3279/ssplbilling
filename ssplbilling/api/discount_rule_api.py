@@ -150,7 +150,9 @@ def update_discount_rule(data):
 	new_rule_name = data.get("rule_name")
 
 	if original_name and new_rule_name and original_name != new_rule_name:
-		if frappe.db.exists("Discount Rule", new_rule_name):
+		# DB collation is case-insensitive: a case-only rename matches this same record.
+		existing = frappe.db.exists("Discount Rule", new_rule_name)
+		if existing and existing != original_name:
 			frappe.throw(f"Discount Rule with name '{new_rule_name}' already exists.")
 		from frappe.model.rename_doc import rename_doc as _rename_doc
 		_rename_doc("Discount Rule", original_name, new_rule_name, ignore_permissions=True)

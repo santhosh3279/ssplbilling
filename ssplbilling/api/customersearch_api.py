@@ -728,7 +728,9 @@ def update_customer_full(data):
 
 	new_customer_name = (data.get("customer_name") or data.get("new_customer_name") or data.get("new_name") or "").strip()
 	if new_customer_name and customer_id != new_customer_name:
-		if frappe.db.exists("Customer", new_customer_name):
+		# DB collation is case-insensitive: a case-only rename matches this same record.
+		existing = frappe.db.exists("Customer", new_customer_name)
+		if existing and existing != customer_id:
 			frappe.throw(f"Customer with name '{new_customer_name}' already exists.")
 		from frappe.model.rename_doc import rename_doc as _rename_doc
 		_rename_doc("Customer", customer_id, new_customer_name, ignore_permissions=True)
