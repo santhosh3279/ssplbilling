@@ -87,7 +87,7 @@
       <!-- Selected item: qty and rate are entered here with the keypad below -->
       <div v-if="pending && !isReadOnly" class="pending-panel rounded-xl p-2">
         <div class="flex items-center gap-2">
-          <MarqueeText :text="pending.item_name" class="min-w-0 flex-1 text-sm font-semibold" />
+          <MarqueeText :text="pending.item_name" class="min-w-0 flex-1 text-[1.3125rem] font-bold leading-tight" />
           <span v-if="pending.target !== 'new'" class="shrink-0 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Edit</span>
           <button type="button" aria-label="Cancel item" class="shrink-0 rounded-lg px-2 text-lg leading-none text-[var(--color-text-muted)]" @click="cancelPending">&times;</button>
         </div>
@@ -136,11 +136,11 @@
       </div>
 
       <ul v-else class="space-y-2 px-2 py-2">
-        <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="bill-line px-3 py-2.5 transition-colors" :class="isEditing(row) ? 'row-editing' : row._is_free ? 'bill-line--free' : ''" @click="selectRow(row)">
+        <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="bill-line px-3 py-2.5 transition-[background-color,opacity]" :class="[isEditing(row) ? 'row-editing' : row._is_free ? 'bill-line--free' : '', kbMode === 'num' && !isEditing(row) ? 'row-dimmed' : '']" @click="selectRow(row)">
           <div class="flex items-start gap-2">
             <span class="line-no mt-0.5 shrink-0">{{ idx + 1 }}</span>
             <div class="min-w-0 flex-1">
-              <MarqueeText :text="row.item_name || row.item_code" class="text-base font-semibold" />
+              <MarqueeText :text="row.item_name || row.item_code" :class="isEditing(row) ? 'text-2xl font-bold leading-tight' : 'text-base font-semibold'" />
               <!-- Code · qty · rate · amount on one line; tap qty / rate to edit on the keypad -->
               <div class="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
                 <span class="min-w-0 flex-1 truncate font-mono">{{ row.item_code }}<template v-if="row._is_free"> · <b class="text-[var(--color-success)]">FREE</b></template><template v-else-if="row.discount"> · <b class="text-[var(--color-warning)]">{{ row.discount }}% off</b></template></span>
@@ -1266,6 +1266,10 @@ onBeforeUnmount(() => {
 .bill-line.row-editing {
   border-color: transparent;
   background: color-mix(in srgb, var(--color-success) 35%, var(--color-bg));
+}
+/* Other lines fade back while a qty / rate / discount is being typed on the keypad */
+.bill-line.row-dimmed {
+  opacity: 0.35;
 }
 /* Item picked from the search (or a line being modified), staged above the keypad */
 .pending-panel {
