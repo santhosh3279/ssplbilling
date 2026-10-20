@@ -610,18 +610,8 @@ function addItem(cached, uom = null) {
   if (!canEdit()) return
   const rowUom = uom || cached.uom || 'Nos'
   query.value = ''
-  const p = pending.value
-  // Picking the staged item again (e.g. repeat scans) bumps its qty
-  if (p && p.target === 'new' && p.item_code === cached.item_code && p.uom === rowUom) {
-    p.qty = String(round((parseFloat(p.qty) || 0) + 1))
-    p.field = 'qty'
-    p.fresh = true
-    document.activeElement?.blur?.()
-    kbTarget.value = 'pending'
-    showKeypad.value = true
-    return
-  }
-  if (p) commitPending()
+  // Every pick is its own bill line, even when the same item is entered again
+  if (pending.value) commitPending()
   const base = baseRateFor(cached, rowUom)
   const rate = round(base * combinedFactor(cached.item_code))
   openPending({
@@ -742,15 +732,6 @@ function commitPending() {
   }
 
   if (qty <= 0) return
-  // Same item, UOM, rate and discount adds to its existing line; otherwise it gets its own line
-  const existing = rows.value.find(r =>
-    !r.deleted && !r._is_free && r.item_code === p.item_code && r.uom === p.uom &&
-    round(r.rate) === rate && round(Number(r.discount) || 0) === discount)
-  if (existing) {
-    existing.qty = round((Number(existing.qty) || 0) + qty)
-    flash(`${p.item_name} × ${fmtQty(existing.qty)}`)
-    return
-  }
   rows.value.push({
     item_code: p.item_code,
     item_name: p.item_name,
