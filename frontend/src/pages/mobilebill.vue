@@ -17,10 +17,11 @@
           v-model="selectedSeries"
           :disabled="!!invoiceName"
           aria-label="Series"
-          class="w-2/5 shrink-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-2 text-sm outline-none disabled:opacity-60"
+          class="w-2/5 shrink-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-2 text-[1.09375rem] outline-none disabled:opacity-60"
         >
           <option value="" disabled>Series…</option>
-          <option v-for="s in seriesOptions" :key="s" :value="s">{{ s }}</option>
+          <!-- Shown without the # digit placeholders of the naming series -->
+          <option v-for="s in seriesOptions" :key="s" :value="s">{{ s.replace(/#/g, '') }}</option>
         </select>
       </div>
 
