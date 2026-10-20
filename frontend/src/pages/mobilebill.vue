@@ -96,15 +96,16 @@
         <!-- Qty · rate · disc at 1.25× size; the amount wraps below when the row runs out of room -->
         <!-- Field names are headings above the boxes; the boxes hold only the values -->
         <div class="mt-1.5 flex flex-wrap items-end gap-1.5">
-          <div v-for="f in PENDING_FIELDS" :key="f.key" :class="f.width">
-            <div class="truncate px-0.5 text-[12.5px] font-bold uppercase text-[var(--color-text-muted)]">{{ f.label }}</div>
+          <div v-for="f in PENDING_FIELDS" :key="f.key">
+            <div class="whitespace-nowrap px-0.5 text-[12.5px] font-bold uppercase text-[var(--color-text-muted)]">{{ f.label }}</div>
             <button
               type="button"
               class="w-full rounded-lg border-2 px-2 py-1 text-left"
               :class="kbTarget === 'pending' && pending.field === f.key ? 'edit-focus' : 'border-[var(--color-border)] bg-[var(--color-bg)]'"
               @click="focusPendingField(f.key)"
             >
-              <div class="font-mono text-[1.25rem] font-bold tabular-nums">{{ pending[f.key] || '0' }}</div>
+              <!-- Sized to f.chars characters, growing when a longer value is typed -->
+              <div class="font-mono text-[1.25rem] font-bold tabular-nums" :style="{ minWidth: `${f.chars}ch` }">{{ pending[f.key] || '0' }}</div>
             </button>
           </div>
           <span class="ml-auto pb-1.5 font-mono text-[1.25rem] font-bold tabular-nums">{{ money(pendingAmount) }}</span>
@@ -558,9 +559,9 @@ function canEdit() {
 // `pending.target` is 'new' for a picked item, or the bill row being re-edited.
 const KEYPAD_KEY = 'mb-keypad'
 const PENDING_FIELDS = [
-  { key: 'qty', label: 'Qty', width: 'w-[5.625rem]' },
-  { key: 'rate', label: 'Rate', width: 'w-[6.875rem]' },
-  { key: 'discount', label: 'Disc %', width: 'w-20' },
+  { key: 'qty', label: 'Qty', chars: 3 },
+  { key: 'rate', label: 'Rate', chars: 6 },
+  { key: 'discount', label: 'Disc %', chars: 3 },
 ]
 const DISCOUNT_PRESETS = [0, 5, 10, 15, 20, 25]
 const ALPHA_ROWS = [
