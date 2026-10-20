@@ -74,19 +74,16 @@
         v-if="manualResults.length"
         class="absolute inset-x-0 bottom-full max-h-[45vh] space-y-1.5 overflow-y-auto border-t border-[var(--color-border)] bg-[var(--color-bg)] p-2 shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
       >
-        <!-- Item name · item code · price (cipher); alternate rows shaded, exact code match in the highlight colour -->
+        <!-- Item name · item code · price (cipher); alternate rows shaded, exact code match blinks -->
         <button
           v-for="(m, i) in manualResults"
           :key="m.code"
           type="button"
           class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_5.5rem] items-center gap-x-1.5 rounded-xl border-2 border-[var(--color-text-muted)] px-3 py-3 text-left active:bg-[var(--color-surface-raised)]"
-          :class="i % 2 ? 'bg-[var(--color-surface)]' : ''"
+          :class="[i % 2 ? 'bg-[var(--color-surface)]' : '', isExactCode(m) && 'exact-match']"
           @click="found(m.code)"
         >
-          <div
-            class="mr-1.5 truncate text-base font-semibold"
-            :class="isExactCode(m) ? 'font-bold text-[var(--color-highlight)]' : ''"
-          >{{ m.name }}</div>
+          <div class="mr-1.5 truncate text-base font-semibold">{{ m.name }}</div>
           <div class="break-all text-right font-mono text-xs leading-tight text-[var(--color-text-muted)]">{{ m.code }}</div>
           <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(m.price) }}</div>
         </button>
@@ -743,6 +740,21 @@ onBeforeUnmount(() => {
 .manual-input:focus {
   border-color: transparent;
   background: color-mix(in srgb, var(--color-info) 22%, var(--color-bg));
+}
+/* Exact item-code match: card blinks so it is spotted at a glance */
+.exact-match {
+  animation: exact-blink 0.8s ease-in-out infinite alternate;
+}
+@keyframes exact-blink {
+  from { background-color: var(--color-bg); border-color: var(--color-text-muted); }
+  to { background-color: color-mix(in srgb, var(--color-info) 35%, var(--color-bg)); border-color: var(--color-info); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .exact-match {
+    animation: none;
+    background-color: color-mix(in srgb, var(--color-info) 35%, var(--color-bg));
+    border-color: var(--color-info);
+  }
 }
 .scan-line {
   animation: scan 1.8s ease-in-out infinite alternate;
