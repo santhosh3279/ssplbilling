@@ -1024,28 +1024,31 @@ const tiles = computed(() => {
 const draftCounts = ref({})
 const draftTileFilters = {
   sales: { doctype: 'Sales Invoice' },
-  cashier: { doctype: 'Sales Invoice' },
+  cashier: { doctype: 'Sales Invoice', byWarehouse: true },
   quotation: { doctype: 'Quotation', quotation_to: 'Customer' },
   'sales-order': { doctype: 'Sales Order' },
   'purchase-invoice': { doctype: 'Purchase Invoice' },
-  'purchase-submit': { doctype: 'Purchase Invoice' },
+  'purchase-submit': { doctype: 'Purchase Invoice', byWarehouse: true },
   'purchase-order': { doctype: 'Purchase Order' },
   'store-transfer': { doctype: 'Stock Entry', purpose: 'Material Transfer' },
 }
 
 async function refreshDraftCounts() {
   const company = localStorage.getItem('wb-company')
+  const warehouse = localStorage.getItem('wb-warehouse')
   const draftTiles = tiles.value.filter(tile => draftTileFilters[tile.id])
   if (!draftTiles.length) return
   // One request for every draft badge instead of one get_count per tile.
   const queries = {}
   for (const tile of draftTiles) {
-    const { doctype, ...extraFilters } = draftTileFilters[tile.id]
+    const { doctype, byWarehouse, ...extraFilters } = draftTileFilters[tile.id]
     const filters = { docstatus: 0, ...extraFilters }
     if (company && ['Sales Invoice', 'Sales Order', 'Purchase Invoice'].includes(doctype)) {
       filters.company = company
     }
     queries[tile.id] = { doctype, filters }
+    // Desk badges count only the logged user's warehouse when one is set.
+    if (byWarehouse && warehouse) queries[tile.id].warehouse = warehouse
   }
   try {
     const counts = await frappeGet('ssplbilling.api.dashboard_api.get_draft_counts', { queries: JSON.stringify(queries) })

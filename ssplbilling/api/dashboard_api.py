@@ -939,16 +939,38 @@ def get_server_time():
 
 @frappe.whitelist()
 def get_draft_counts(queries):
-	"""Dashboard draft badges in one request: {key: {"doctype", "filters"}} -> {key: count}.
+	"""Dashboard draft badges in one request: {key: {"doctype", "filters", "warehouse"?}} -> {key: count}.
 
 	frappe.get_list applies the user's permissions like the per-tile get_count calls this
-	replaces; a doctype the user cannot read is left out instead of failing all."""
+	replaces; a doctype the user cannot read is left out instead of failing all.
+	An optional "warehouse" keeps documents whose header set_warehouse or any item row
+	uses that warehouse (header can be blank with only item warehouses set)."""
 	counts = {}
 	for key, query in (frappe.parse_json(queries) or {}).items():
 		try:
+			doctype = query.get("doctype")
+			filters = query.get("filters") or {}
+			warehouse = query.get("warehouse")
+			if warehouse:
+				base = [[doctype, field, "=", value] for field, value in filters.items()]
+				names = set(
+					frappe.get_list(
+						doctype, filters=[*base, [doctype, "set_warehouse", "=", warehouse]], pluck="name"
+					)
+				)
+				names.update(
+					frappe.get_list(
+						doctype,
+						filters=[*base, [f"{doctype} Item", "warehouse", "=", warehouse]],
+						pluck="name",
+						distinct=True,
+					)
+				)
+				counts[key] = len(names)
+				continue
 			rows = frappe.get_list(
-				query.get("doctype"),
-				filters=query.get("filters") or {},
+				doctype,
+				filters=filters,
 				fields=[{"COUNT": "*", "as": "n"}],
 				as_list=True,
 			)
