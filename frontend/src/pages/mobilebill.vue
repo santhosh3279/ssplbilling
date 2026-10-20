@@ -28,7 +28,7 @@
         <button
           type="button"
           :disabled="isReadOnly"
-          class="min-w-0 flex-1 truncate rounded-xl border px-3 py-2.5 text-left text-sm font-semibold disabled:opacity-60"
+          class="min-w-0 flex-1 truncate rounded-xl border px-3 py-2.5 text-left text-[1.09375rem] font-semibold disabled:opacity-60"
           :class="customerId ? 'border-[var(--color-border)] bg-[var(--color-bg)]' : 'need-fill'"
           @click="openCustomerPicker"
         >{{ customerName || 'Select customer' }}</button>
@@ -312,7 +312,7 @@
           class="block w-full border-b border-[var(--color-border)] px-4 py-3 text-left active:bg-[var(--color-surface-raised)]"
           @click="pickCustomer(c)"
         >
-          <MarqueeText :text="c.label || c.name" class="text-base font-semibold" />
+          <MarqueeText manual :text="c.label || c.name" class="text-[1.25rem] font-semibold" />
           <div class="truncate text-xs text-[var(--color-text-muted)]">{{ c.name }}<template v-if="c.mobile_no"> · {{ c.mobile_no }}</template></div>
         </button>
       </div>
@@ -369,7 +369,7 @@
                 :class="b.docstatus === 1 ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]' : 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]'"
               >{{ b.docstatus === 1 ? 'Submitted' : 'Draft' }}</span>
             </div>
-            <MarqueeText :text="b.custom_customer_name || b.customer_name || b.customer" class="text-sm" />
+            <MarqueeText manual :text="b.custom_customer_name || b.customer_name || b.customer" class="text-[1.09375rem]" />
             <div class="text-[11px] text-[var(--color-text-muted)]">{{ formatDMY(parseCalendarDate(b.posting_date), '') }} · {{ b.mop || '—' }}</div>
           </div>
           <div class="shrink-0 font-mono text-base font-bold tabular-nums">{{ money(b.rounded_total) }}</div>
