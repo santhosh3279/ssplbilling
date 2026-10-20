@@ -71,10 +71,20 @@
       <!-- Catalogues Grid -->
       <div v-else class="grid gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
         <div
-          v-for="cat in catalogues"
+          v-for="(cat, idx) in catalogues"
           :key="cat.name"
-          @click="openCatalogue(cat.pageaddress)"
-          class="catalogue-card group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-3.5 shadow-md hover:shadow-2xl hover:border-[var(--color-info)]/60 cursor-pointer transition-all duration-300 transform hover:-translate-y-1"
+          :ref="el => (cardRefs[idx] = el)"
+          tabindex="0"
+          role="button"
+          :aria-label="`Open ${cat.heading}`"
+          @click="openCatalogue(cat.pageaddress, idx)"
+          @focus="focusedIndex = idx"
+          :class="[
+            'catalogue-card group relative flex flex-col rounded-2xl border p-3.5 shadow-md hover:shadow-2xl hover:border-[var(--color-info)]/60 cursor-pointer transition-all duration-300 transform hover:-translate-y-1 focus:outline-none',
+            focusedIndex === idx
+              ? 'bg-[var(--color-info)]/25 border-[var(--color-info)] shadow-2xl scale-105 -translate-y-1'
+              : 'bg-[var(--color-surface)] border-[var(--color-border)]',
+          ]"
         >
           <!-- Accent Light Border Top Glow -->
           <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
@@ -120,7 +130,7 @@
 
 <script setup>
 import { serverCalendarDate } from '../services/serverTime'
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { session } from '../session'
@@ -133,6 +143,10 @@ const loading = ref(true)
 const error = ref(null)
 const catalogues = ref([])
 const isLoggedIn = ref(false)
+// TV remote (D-pad) navigation: arrows move between cards, OK/Enter opens the focused one.
+const cardRefs = ref([])
+const focusedIndex = ref(-1)
+const FOCUS_KEY = 'displaycatalogue-focus'
 
 const canCreateOffer = computed(() => {
   return isLoggedIn.value && canAccessRoute('OfferDisplay')
@@ -156,8 +170,69 @@ async function fetchCatalogues() {
   }
 }
 
-function openCatalogue(pageaddress) {
+function openCatalogue(pageaddress, idx) {
+  try {
+    sessionStorage.setItem(FOCUS_KEY, String(idx))
+  } catch (e) {}
   router.push(`/catalogue/${pageaddress}`)
+}
+
+function focusCard(idx) {
+  const el = cardRefs.value[idx]
+  if (!el) return
+  focusedIndex.value = idx
+  el.focus({ preventScroll: true })
+  el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+}
+
+// Cards per row, read from the rendered layout so it tracks the responsive grid.
+function gridColumns() {
+  const cards = cardRefs.value.filter(Boolean)
+  if (!cards.length) return 1
+  const top = cards[0].offsetTop
+  return cards.filter(c => c.offsetTop === top).length || 1
+}
+
+function handleKeyDown(event) {
+  const total = catalogues.value.length
+  if (!total || loading.value) return
+  const tag = event.target?.tagName
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+
+  const current = focusedIndex.value
+  if (current < 0 || !cardRefs.value[current]) {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].includes(event.key)) {
+      event.preventDefault()
+      focusCard(0)
+    }
+    return
+  }
+
+  const cols = gridColumns()
+  let next = current
+  switch (event.key) {
+    case 'ArrowRight':
+      next = Math.min(current + 1, total - 1)
+      break
+    case 'ArrowLeft':
+      next = Math.max(current - 1, 0)
+      break
+    case 'ArrowDown':
+      next = Math.min(current + cols, total - 1)
+      break
+    case 'ArrowUp':
+      next = current - cols >= 0 ? current - cols : current
+      break
+    case 'Enter':
+    case ' ':
+      event.preventDefault()
+      openCatalogue(catalogues.value[current].pageaddress, current)
+      return
+    default:
+      return
+  }
+  event.preventDefault()
+  focusCard(next)
 }
 
 function goDashboard() {
@@ -173,13 +248,26 @@ function formatDate(dateStr) {
 }
 
 onMounted(async () => {
+  window.addEventListener('keydown', handleKeyDown)
   await fetchCatalogues()
+  if (catalogues.value.length) {
+    let saved = 0
+    try {
+      saved = parseInt(sessionStorage.getItem(FOCUS_KEY)) || 0
+    } catch (e) {}
+    await nextTick()
+    focusCard(Math.min(saved, catalogues.value.length - 1))
+  }
   try {
     await session.init()
     isLoggedIn.value = session.isLoggedIn.value
   } catch (e) {
     isLoggedIn.value = false
   }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeyDown)
 })
 </script>
 
