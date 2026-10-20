@@ -79,12 +79,12 @@
           v-for="m in manualResults"
           :key="m.code"
           type="button"
-          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_4.5rem] items-center gap-3 border-b border-[var(--color-border)] px-4 py-2.5 text-left active:bg-[var(--color-surface-raised)]"
+          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_5.5rem] items-center gap-3 border-b border-[var(--color-border)] px-4 py-2.5 text-left active:bg-[var(--color-surface-raised)]"
           @click="found(m.code)"
         >
           <div class="truncate text-sm font-semibold">{{ m.name }}</div>
           <div class="truncate font-mono text-xs text-[var(--color-text-muted)]">{{ m.code }}</div>
-          <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ encryptPrice(m.price) }}</div>
+          <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(m.price) }}</div>
         </button>
       </div>
       <div class="flex gap-2 px-2 py-2" :class="showKeys ? '' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'">
@@ -152,7 +152,7 @@
  */
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import MobileSearchKeyboard from './MobileSearchKeyboard.vue'
-import { encryptPrice } from '../encryption.js'
+import { getCipherMap } from '../encryption.js'
 
 const props = defineProps({
   // async (text) => boolean — confirms an OCR reading before it is accepted
@@ -188,6 +188,14 @@ const manualResults = computed(() => {
   const q = typed.value.trim()
   return props.search && q.length >= 2 ? (props.search(q) || []).slice(0, 30) : []
 })
+
+/** Rate to 2 decimals with each digit ciphered (encryptPrice rounds to a whole number). */
+function cipherPrice(price) {
+  if (price == null || isNaN(price)) return '—'
+  const fixed = Number(price).toFixed(2)
+  const cipher = getCipherMap()
+  return cipher ? fixed.replace(/\d/g, d => cipher[d] || '?') : fixed
+}
 
 function toggleKeys() {
   showKeys.value = !showKeys.value
