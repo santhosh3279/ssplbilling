@@ -74,17 +74,17 @@
         v-if="manualResults.length"
         class="absolute inset-x-0 bottom-full max-h-[45vh] overflow-y-auto border-t border-[var(--color-border)] bg-[var(--color-bg)] shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
       >
+        <!-- Item name · item code · price (cipher) -->
         <button
           v-for="m in manualResults"
           :key="m.code"
           type="button"
-          class="flex w-full items-center gap-3 border-b border-[var(--color-border)] px-4 py-2.5 text-left active:bg-[var(--color-surface-raised)]"
+          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_4.5rem] items-center gap-3 border-b border-[var(--color-border)] px-4 py-2.5 text-left active:bg-[var(--color-surface-raised)]"
           @click="found(m.code)"
         >
-          <div class="min-w-0 flex-1">
-            <div class="truncate text-sm font-semibold">{{ m.name }}</div>
-            <div v-if="m.sub" class="truncate font-mono text-xs text-[var(--color-text-muted)]">{{ m.sub }}</div>
-          </div>
+          <div class="truncate text-sm font-semibold">{{ m.name }}</div>
+          <div class="truncate font-mono text-xs text-[var(--color-text-muted)]">{{ m.code }}</div>
+          <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ encryptPrice(m.price) }}</div>
         </button>
       </div>
       <div class="flex gap-2 px-2 py-2" :class="showKeys ? '' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'">
@@ -152,11 +152,13 @@
  */
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import MobileSearchKeyboard from './MobileSearchKeyboard.vue'
+import { encryptPrice } from '../encryption.js'
 
 const props = defineProps({
   // async (text) => boolean — confirms an OCR reading before it is accepted
   verify: { type: Function, default: null },
-  // (text) => [{ code, name, sub }] — items matching the typed text; `code` is emitted on pick
+  // (text) => [{ code, name, price }] — items matching the typed text, listed as
+  // name · code · price (cipher); `code` is emitted on pick
   search: { type: Function, default: null },
 })
 const emit = defineEmits(['detected', 'close'])

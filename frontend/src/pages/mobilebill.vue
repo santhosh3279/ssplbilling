@@ -781,7 +781,7 @@ function scannerSearch(q) {
   return searchItemsInCache(q, 30).map(i => ({
     code: i.item_code,
     name: i.item_name || i.item_code,
-    sub: `${i.item_code} · ${money(rateFor(i, i.uom))}`,
+    price: rateFor(i, i.uom),
   }))
 }
 
