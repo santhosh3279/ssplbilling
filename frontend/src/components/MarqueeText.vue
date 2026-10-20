@@ -1,11 +1,12 @@
 <template>
-  <!-- One-line text that scrolls sideways (back and forth) only when it is wider than its box -->
-  <div ref="boxRef" class="marquee-box" :title="text">
+  <!-- One-line text that scrolls sideways (back and forth) only when it is wider than its box.
+       With `manual` it never moves by itself; a long text is swiped / scrolled by hand instead -->
+  <div ref="boxRef" class="marquee-box" :class="{ 'is-manual': manual }" :title="text">
     <span
       ref="textRef"
       class="marquee-text"
-      :class="{ 'is-scrolling': overflow > 0 }"
-      :style="overflow > 0 ? { '--marquee-shift': `-${overflow}px`, '--marquee-duration': `${duration}s` } : null"
+      :class="{ 'is-scrolling': !manual && overflow > 0 }"
+      :style="!manual && overflow > 0 ? { '--marquee-shift': `-${overflow}px`, '--marquee-duration': `${duration}s` } : null"
     >{{ text }}</span>
   </div>
 </template>
@@ -17,6 +18,8 @@ const props = defineProps({
   text: { type: String, default: '' },
   // Scroll speed in pixels per second
   speed: { type: Number, default: 40 },
+  // Scroll only by hand (swipe), no automatic back-and-forth
+  manual: { type: Boolean, default: false },
 })
 
 const boxRef = ref(null)
@@ -44,7 +47,11 @@ onMounted(() => {
   }
 })
 
-watch(() => props.text, () => nextTick(measure))
+watch(() => props.text, () => nextTick(() => {
+  measure()
+  // A new text starts from its beginning
+  if (boxRef.value) boxRef.value.scrollLeft = 0
+}))
 
 onBeforeUnmount(() => observer?.disconnect())
 </script>
@@ -54,6 +61,15 @@ onBeforeUnmount(() => observer?.disconnect())
   overflow: hidden;
   white-space: nowrap;
   min-width: 0;
+}
+.marquee-box.is-manual {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.marquee-box.is-manual::-webkit-scrollbar {
+  display: none;
 }
 .marquee-text {
   display: inline-block;

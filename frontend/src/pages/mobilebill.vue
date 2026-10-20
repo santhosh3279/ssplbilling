@@ -88,7 +88,7 @@
       <div v-if="pending && !isReadOnly" class="pending-panel rounded-xl p-2">
         <div class="flex items-center gap-2">
           <span class="line-no shrink-0">{{ pendingLineNo }}</span>
-          <MarqueeText :text="pending.item_name" class="min-w-0 flex-1 text-[1.3125rem] font-bold leading-tight" />
+          <MarqueeText manual :text="pending.item_name" class="min-w-0 flex-1 text-[1.3125rem] font-bold leading-tight" />
           <span class="shrink-0 rounded bg-[var(--color-bg)] px-1.5 py-0.5 text-xs font-bold uppercase text-[var(--color-text-muted)]">{{ pending.uom }}</span>
           <span v-if="pending.target !== 'new'" class="shrink-0 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Edit</span>
           <button type="button" aria-label="Cancel item" class="shrink-0 rounded-lg px-2 text-lg leading-none text-[var(--color-text-muted)]" @click="cancelPending">&times;</button>
@@ -130,7 +130,7 @@
           :class="[i % 2 ? 'bg-[var(--color-surface)]' : '', isExactMatch(item) && 'exact-match']"
           @click="addItem(item)"
         >
-          <MarqueeText :text="item.item_name || item.item_code" class="mr-1.5 text-xl font-semibold" />
+          <MarqueeText manual :text="item.item_name || item.item_code" class="mr-1.5 text-xl font-semibold" />
           <div class="break-all text-right font-mono text-xs leading-tight text-[var(--color-text-muted)]">{{ item.item_code }}</div>
           <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(rateFor(item, item.uom)) }}</div>
         </button>
@@ -147,7 +147,7 @@
           <div class="flex items-start gap-2">
             <span class="line-no mt-0.5 shrink-0">{{ idx + 1 }}</span>
             <div class="min-w-0 flex-1">
-              <MarqueeText :text="row.item_name || row.item_code" :class="isEditing(row) ? 'text-2xl font-bold leading-tight' : 'text-base font-semibold'" />
+              <MarqueeText manual :text="row.item_name || row.item_code" :class="isEditing(row) ? 'text-2xl font-bold leading-tight' : 'text-base font-semibold'" />
               <!-- Code · qty · rate · amount on one line; tap qty / rate to edit on the keypad -->
               <div class="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
                 <span class="min-w-0 flex-1 truncate font-mono">{{ row.item_code }}<template v-if="row._is_free"> · <b class="text-[var(--color-success)]">FREE</b></template><template v-else-if="row.discount"> · <b class="text-[var(--color-warning)]">{{ row.discount }}% off</b></template></span>
