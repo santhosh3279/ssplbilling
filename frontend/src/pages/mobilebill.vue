@@ -13,18 +13,18 @@
           </h1>
           <div class="truncate text-[11px] text-[var(--color-text-muted)]">{{ priceList || 'No price list' }} · {{ warehouse || 'No warehouse' }}</div>
         </div>
-      </div>
-
-      <div class="flex gap-2">
         <select
           v-model="selectedSeries"
           :disabled="!!invoiceName"
           aria-label="Series"
-          class="w-2/5 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-2.5 text-sm outline-none disabled:opacity-60"
+          class="w-2/5 shrink-0 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-2 text-sm outline-none disabled:opacity-60"
         >
           <option value="" disabled>Series…</option>
           <option v-for="s in seriesOptions" :key="s" :value="s">{{ s }}</option>
         </select>
+      </div>
+
+      <div class="flex gap-2">
         <button
           type="button"
           :disabled="isReadOnly"
