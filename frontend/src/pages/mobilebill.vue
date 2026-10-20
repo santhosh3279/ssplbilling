@@ -110,22 +110,23 @@
 
     <main class="relative min-h-0 flex-1 overflow-y-auto">
       <!-- Item search results overlay the bill while typing -->
-      <div v-if="query.trim().length >= 2" class="absolute inset-0 z-10 overflow-y-auto bg-[var(--color-bg)]">
+      <!-- Same cards as the scanner's typed search: name · code · price (cipher);
+           alternate cards shaded, exact code / barcode match blinks -->
+      <div v-if="query.trim().length >= 2" class="absolute inset-0 z-10 space-y-1.5 overflow-y-auto bg-[var(--color-bg)] p-2">
         <div v-if="!searchResults.length" class="py-12 text-center text-sm text-[var(--color-text-muted)]">
           No items match “{{ query.trim() }}”.
         </div>
         <button
-          v-for="item in searchResults"
+          v-for="(item, i) in searchResults"
           :key="item.item_code"
           type="button"
-          class="flex w-full items-center gap-3 border-b border-[var(--color-border)] px-4 py-3 text-left active:bg-[var(--color-surface-raised)]"
+          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_5.5rem] items-center gap-x-1.5 rounded-xl border-2 border-[var(--color-text-muted)] px-3 py-3 text-left active:bg-[var(--color-surface-raised)]"
+          :class="[i % 2 ? 'bg-[var(--color-surface)]' : '', isExactMatch(item) && 'exact-match']"
           @click="addItem(item)"
         >
-          <div class="min-w-0 flex-1">
-            <MarqueeText :text="item.item_name || item.item_code" class="text-base font-semibold" />
-            <div class="truncate font-mono text-xs text-[var(--color-text-muted)]">{{ item.item_code }} · {{ item.uom || 'Nos' }}</div>
-          </div>
-          <div class="shrink-0 text-right font-mono text-base font-bold tabular-nums">{{ money(rateFor(item, item.uom)) }}</div>
+          <MarqueeText :text="item.item_name || item.item_code" class="mr-1.5 text-xl font-semibold" />
+          <div class="break-all text-right font-mono text-xs leading-tight text-[var(--color-text-muted)]">{{ item.item_code }}</div>
+          <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(rateFor(item, item.uom)) }}</div>
         </button>
       </div>
 
@@ -395,7 +396,7 @@ import { useItemCache, lookupItemInCache, refreshItemCache, refreshDiscountRuleC
 import { useLedgerCache, ledgerCacheReady } from '../services/ledgerCache.js'
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
-import { getFloatPrecision } from '../encryption.js'
+import { getFloatPrecision, cipherPrice } from '../encryption.js'
 import { formatDMY } from '../utils/date'
 import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 
@@ -771,6 +772,20 @@ function clearSearch() {
   searchRef.value?.focus()
 }
 
+// All barcodes of a cached item (comma list + detailed rows)
+function itemBarcodes(i) {
+  return [
+    ...(i.barcodes || '').split(','),
+    ...(i.barcodes_detailed || []).map(b => b.barcode || ''),
+  ].map(b => b.trim()).filter(Boolean)
+}
+
+// Search result whose item code or a barcode equals the typed text
+function isExactMatch(item) {
+  const q = query.value.trim().toLowerCase()
+  return String(item.item_code).toLowerCase() === q || itemBarcodes(item).some(b => b.toLowerCase() === q)
+}
+
 // OCR readings are guesses: accept one only when it is a cached item code or barcode
 function codeExists(code) {
   return !!lookupItemInCache(code)
@@ -782,10 +797,7 @@ function scannerSearch(q) {
     code: i.item_code,
     name: i.item_name || i.item_code,
     price: rateFor(i, i.uom),
-    barcodes: [
-      ...(i.barcodes || '').split(','),
-      ...(i.barcodes_detailed || []).map(b => b.barcode || ''),
-    ].map(b => b.trim()).filter(Boolean),
+    barcodes: itemBarcodes(i),
   }))
 }
 
@@ -1270,6 +1282,21 @@ onBeforeUnmount(() => {
 /* Other lines fade back while a qty / rate / discount is being typed on the keypad */
 .bill-line.row-dimmed {
   opacity: 0.35;
+}
+/* Exact item-code or barcode match in the search: card blinks so it is spotted at a glance */
+.exact-match {
+  animation: exact-blink 0.8s ease-in-out infinite alternate;
+}
+@keyframes exact-blink {
+  from { background-color: var(--color-bg); border-color: var(--color-text-muted); }
+  to { background-color: color-mix(in srgb, var(--color-info) 35%, var(--color-bg)); border-color: var(--color-info); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .exact-match {
+    animation: none;
+    background-color: color-mix(in srgb, var(--color-info) 35%, var(--color-bg));
+    border-color: var(--color-info);
+  }
 }
 /* Item picked from the search (or a line being modified), staged above the keypad */
 .pending-panel {

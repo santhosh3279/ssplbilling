@@ -153,7 +153,7 @@
  */
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import MobileSearchKeyboard from './MobileSearchKeyboard.vue'
-import { getCipherMap } from '../encryption.js'
+import { cipherPrice } from '../encryption.js'
 
 const props = defineProps({
   // async (text) => boolean — confirms an OCR reading before it is accepted
@@ -190,14 +190,6 @@ const manualResults = computed(() => {
   const q = typed.value.trim()
   return props.search && q.length >= 2 ? (props.search(q) || []).slice(0, 30) : []
 })
-
-/** Rate to 2 decimals with each digit ciphered (encryptPrice rounds to a whole number). */
-function cipherPrice(price) {
-  if (price == null || isNaN(price)) return '—'
-  const fixed = Number(price).toFixed(2)
-  const cipher = getCipherMap()
-  return cipher ? fixed.replace(/\d/g, d => cipher[d] || '?') : fixed
-}
 
 const isExactCode = m => {
   const q = typed.value.trim().toLowerCase()

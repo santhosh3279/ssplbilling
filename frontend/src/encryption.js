@@ -97,6 +97,14 @@ export function encryptPrice(price) {
     .join('')
 }
 
+/** Rate to 2 decimals with each digit ciphered (encryptPrice rounds to a whole number). */
+export function cipherPrice(price) {
+  if (price == null || isNaN(price)) return '—'
+  const fixed = Number(price).toFixed(2)
+  const cipher = getCipherMap()
+  return cipher ? fixed.replace(/\d/g, d => cipher[d] || '?') : fixed
+}
+
 export function getDefaultTaxRate() {
   try {
     return JSON.parse(localStorage.getItem('wb-tax-rate') || '18')
