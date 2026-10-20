@@ -34,49 +34,8 @@
         >{{ customerName || 'Select customer' }}</button>
       </div>
 
-      <div v-if="!isReadOnly" class="flex gap-2">
-        <div class="relative flex-1">
-          <input
-            ref="searchRef"
-            v-model="query"
-            type="search"
-            enterkeyhint="go"
-            :inputmode="showKeypad ? 'none' : 'search'"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            placeholder="Item name, code or barcode"
-            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-4 pr-10 text-base outline-none"
-            @focus="kbTarget = 'search'"
-            @keydown.enter.prevent="addFromQuery"
-          />
-          <button
-            v-if="query"
-            type="button"
-            aria-label="Clear search"
-            class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2.5 py-1 text-lg text-[var(--color-text-muted)]"
-            @click="clearSearch"
-          >&times;</button>
-        </div>
-        <button
-          type="button"
-          aria-label="Scan barcode with camera"
-          title="Scan barcode"
-          class="flex w-14 shrink-0 items-center justify-center rounded-xl bg-[var(--color-info)] text-white shadow-sm active:scale-95"
-          @click="showScanner = true"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8"/><path d="M11 8v8"/><path d="M15 8v8"/><path d="M18 8v8"/></svg>
-        </button>
-        <button
-          v-if="!showKeypad"
-          type="button"
-          aria-label="Show keyboard"
-          class="w-12 shrink-0 rounded-xl border border-[var(--color-border)] text-xl"
-          @click="setKeypad(true)"
-        >⌨</button>
-      </div>
       <button
-        v-else-if="invoiceName && !isSubmitted"
+        v-if="isReadOnly && invoiceName && !isSubmitted"
         type="button"
         :disabled="busy"
         class="w-full rounded-xl bg-[var(--color-warning)] py-2.5 text-sm font-bold text-black disabled:opacity-50"
@@ -100,7 +59,7 @@
             <button
               type="button"
               class="w-full rounded-lg border-2 px-2 py-1 text-left"
-              :class="kbTarget === 'pending' && pending.field === f.key ? 'edit-focus' : 'border-[var(--color-border)] bg-[var(--color-bg)]'"
+              :class="pending.field === f.key ? 'edit-focus' : 'border-[var(--color-border)] bg-[var(--color-bg)]'"
               @click="focusPendingField(f.key)"
             >
               <!-- Sized to f.chars characters, growing when a longer value is typed -->
@@ -113,36 +72,14 @@
     </header>
 
     <main class="relative min-h-0 flex-1 overflow-y-auto">
-      <!-- Item search results overlay the bill while typing -->
-      <!-- Same cards as the scanner's typed search: name · code · price (cipher);
-           alternate cards shaded, exact code / barcode match blinks. The name column is
-           at least 14rem (~20 characters at text-xl) before it scrolls; code and price share the rest -->
-      <div v-if="query.trim().length >= 2" class="absolute inset-0 z-10 space-y-1.5 overflow-y-auto bg-[var(--color-bg)] p-2">
-        <div v-if="!searchResults.length" class="py-12 text-center text-sm text-[var(--color-text-muted)]">
-          No items match “{{ query.trim() }}”.
-        </div>
-        <button
-          v-for="(item, i) in searchResults"
-          :key="item.item_code"
-          type="button"
-          class="grid w-full grid-cols-[minmax(14rem,1fr)_minmax(0,7rem)_auto] items-center gap-x-1.5 rounded-xl border-2 border-[var(--color-text-muted)] px-2.5 py-3 text-left active:bg-[var(--color-surface-raised)]"
-          :class="[i % 2 ? 'bg-[var(--color-surface)]' : '', isExactMatch(item) && 'exact-match']"
-          @click="addItem(item)"
-        >
-          <MarqueeText manual :text="item.item_name || item.item_code" class="mr-1.5 text-xl font-semibold" />
-          <div class="break-all text-right font-mono text-xs leading-tight text-[var(--color-text-muted)]">{{ item.item_code }}</div>
-          <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(rateFor(item, item.uom)) }}</div>
-        </button>
-      </div>
-
       <div v-if="loadingBill" class="py-16 text-center text-sm text-[var(--color-text-muted)] animate-pulse">Loading bill…</div>
       <div v-else-if="!activeRows.length" class="px-6 py-16 text-center text-sm text-[var(--color-text-muted)]">
         <template v-if="!selectedSeries">Pick a series to start.</template>
-        <template v-else>Scan a barcode or search an item to add it.</template>
+        <template v-else>Tap Scan to add an item.</template>
       </div>
 
       <ul v-else class="space-y-2 px-2 py-2">
-        <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="bill-line px-3 py-2.5 transition-[background-color,opacity]" :class="[isEditing(row) ? 'row-editing' : row._is_free ? 'bill-line--free' : '', kbMode === 'num' && !isEditing(row) ? 'row-dimmed' : '']" @click="selectRow(row)">
+        <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="bill-line px-3 py-2.5 transition-[background-color,opacity]" :class="[isEditing(row) ? 'row-editing' : row._is_free ? 'bill-line--free' : '', keypadVisible && !isEditing(row) ? 'row-dimmed' : '']" @click="selectRow(row)">
           <div class="flex items-start gap-2">
             <span class="line-no mt-0.5 shrink-0">{{ idx + 1 }}</span>
             <div class="min-w-0 flex-1">
@@ -182,11 +119,10 @@
       </ul>
     </main>
 
-    <!-- Constant on-screen keyboard (no system keyboard): letters for the item search,
-         number pad with qty ± and discount buttons for the selected item -->
+    <!-- On-screen number pad (no system keyboard) with qty ± and discount buttons for the selected item -->
     <section v-if="keypadVisible" class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 pb-1.5 pt-1">
       <div class="mb-1 flex items-center gap-1.5">
-        <div v-if="kbMode === 'num'" class="flex overflow-hidden rounded-lg border border-[var(--color-border)] text-xs font-bold">
+        <div class="flex overflow-hidden rounded-lg border border-[var(--color-border)] text-xs font-bold">
           <button
             v-for="f in PENDING_FIELDS"
             :key="f.key"
@@ -196,48 +132,31 @@
             @click="focusPendingField(f.key)"
           >{{ f.label }}</button>
         </div>
-        <span v-else class="px-1 text-xs font-bold text-[var(--color-text-muted)]">Item search</span>
-        <button v-if="kbMode === 'num'" type="button" class="rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-bold" @click="kbTarget = 'search'">ABC</button>
-        <button v-else-if="pending" type="button" class="rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-bold" @click="kbTarget = 'pending'">123</button>
-        <button type="button" class="ml-auto rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-bold" @click="setKeypad(false)">Hide ▾</button>
+        <button type="button" class="ml-auto rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-bold" @click="showKeypad = false">Hide ▾</button>
       </div>
 
-      <template v-if="kbMode === 'num'">
-        <div class="mb-1 grid grid-cols-6 gap-1">
-          <button
-            v-for="d in DISCOUNT_PRESETS"
-            :key="d"
-            type="button"
-            class="keypad-key keypad-key--sm"
-            :class="Number(pending.discount) === d ? 'keypad-key--on' : ''"
-            @click="setPendingDiscount(d)"
-          >{{ d ? `${d}%` : 'No disc' }}</button>
-        </div>
-        <div class="grid grid-cols-4 gap-1">
-          <button v-for="k in ['7', '8', '9']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
-          <button type="button" aria-label="Backspace" class="keypad-key" @click="keypadPress('back')">⌫</button>
-          <button v-for="k in ['4', '5', '6']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
-          <button type="button" aria-label="Decrease quantity" class="keypad-key text-[var(--color-danger)]" @click="pendingStepQty(-1)">Qty −</button>
-          <button v-for="k in ['1', '2', '3']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
-          <button type="button" aria-label="Increase quantity" class="keypad-key text-[var(--color-success)]" @click="pendingStepQty(1)">Qty +</button>
-          <button type="button" class="keypad-key" @click="keypadPress('.')">.</button>
-          <button type="button" class="keypad-key" @click="keypadPress('0')">0</button>
-          <button type="button" class="keypad-key text-sm" @click="keypadPress('clear')">C</button>
-          <button type="button" class="keypad-key keypad-key--ok" @click="keypadAdd">{{ pending.target !== 'new' ? 'OK' : scanMode ? 'Add & Scan' : 'Add' }}</button>
-        </div>
-      </template>
-
-      <template v-else>
-        <div v-for="(line, i) in ALPHA_ROWS" :key="i" class="mb-1 flex gap-1">
-          <button v-for="k in line" :key="k" type="button" class="keypad-key keypad-key--alpha flex-1" @click="alphaPress(k)">{{ k }}</button>
-          <button v-if="i === 2" type="button" aria-label="Backspace" class="keypad-key keypad-key--alpha flex-[1.5]" @click="alphaPress('back')">⌫</button>
-        </div>
-        <div class="flex gap-1">
-          <button type="button" class="keypad-key keypad-key--alpha keypad-key--sm flex-[1.5]" @click="alphaPress('clear')">Clear</button>
-          <button type="button" aria-label="Space" class="keypad-key keypad-key--alpha flex-[4]" @click="alphaPress(' ')">space</button>
-          <button type="button" class="keypad-key keypad-key--alpha keypad-key--ok flex-[2]" @click="addFromQuery">Go</button>
-        </div>
-      </template>
+      <div class="mb-1 grid grid-cols-6 gap-1">
+        <button
+          v-for="d in DISCOUNT_PRESETS"
+          :key="d"
+          type="button"
+          class="keypad-key keypad-key--sm"
+          :class="Number(pending.discount) === d ? 'keypad-key--on' : ''"
+          @click="setPendingDiscount(d)"
+        >{{ d ? `${d}%` : 'No disc' }}</button>
+      </div>
+      <div class="grid grid-cols-4 gap-1">
+        <button v-for="k in ['7', '8', '9']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
+        <button type="button" aria-label="Backspace" class="keypad-key" @click="keypadPress('back')">⌫</button>
+        <button v-for="k in ['4', '5', '6']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
+        <button type="button" aria-label="Decrease quantity" class="keypad-key text-[var(--color-danger)]" @click="pendingStepQty(-1)">Qty −</button>
+        <button v-for="k in ['1', '2', '3']" :key="k" type="button" class="keypad-key" @click="keypadPress(k)">{{ k }}</button>
+        <button type="button" aria-label="Increase quantity" class="keypad-key text-[var(--color-success)]" @click="pendingStepQty(1)">Qty +</button>
+        <button type="button" class="keypad-key" @click="keypadPress('.')">.</button>
+        <button type="button" class="keypad-key" @click="keypadPress('0')">0</button>
+        <button type="button" class="keypad-key text-sm" @click="keypadPress('clear')">C</button>
+        <button type="button" class="keypad-key keypad-key--ok" @click="commitPending">{{ pending.target !== 'new' ? 'OK' : 'Add' }}</button>
+      </div>
     </section>
 
     <!-- Totals + save (one compact row while the keyboard is open) -->
@@ -256,12 +175,10 @@
         <button
           v-if="!isReadOnly"
           type="button"
-          :aria-pressed="scanMode"
-          title="Scan mode: the camera opens again after each Add"
-          class="rounded-xl border px-2 text-xs font-bold"
-          :class="scanMode ? 'border-[var(--color-info)] bg-[var(--color-info)] text-white' : 'border-[var(--color-border)]'"
-          @click="toggleScanMode"
-        >Scan {{ scanMode ? 'ON' : 'OFF' }}</button>
+          aria-label="Scan or search item"
+          class="flex items-center gap-1 rounded-xl bg-[var(--color-info)] px-2 text-xs font-bold text-white shadow-sm active:scale-95"
+          @click="openScanner"
+        ><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8"/><path d="M11 8v8"/><path d="M15 8v8"/><path d="M18 8v8"/></svg>Scan</button>
         <button type="button" class="rounded-xl border border-[var(--color-border)] px-2 text-xs font-bold" @click="openPastBills">{{ keypadVisible ? 'Past' : 'Past Bills' }}</button>
         <button type="button" class="rounded-xl border border-[var(--color-border)] px-2 text-xs font-bold" @click="newBill()">New</button>
         <button
@@ -401,7 +318,7 @@ import { useItemCache, lookupItemInCache, refreshItemCache, refreshDiscountRuleC
 import { useLedgerCache, ledgerCacheReady } from '../services/ledgerCache.js'
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
-import { getFloatPrecision, cipherPrice } from '../encryption.js'
+import { getFloatPrecision } from '../encryption.js'
 import { formatDMY } from '../utils/date'
 import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 
@@ -537,13 +454,7 @@ function repriceRows() {
 
 // ── Item entry ───────────────────────────────────────────────────────────────
 const { searchItemsInCache } = useItemCache()
-const query = ref('')
-const searchRef = ref(null)
 const showScanner = ref(false)
-const searchResults = computed(() => {
-  const q = query.value.trim()
-  return q.length >= 2 ? searchItemsInCache(q, 30) : []
-})
 
 function canEdit() {
   if (isReadOnly.value) return false
@@ -552,30 +463,21 @@ function canEdit() {
 }
 
 // ── On-screen keyboard + selected item entry ─────────────────────────────────
-// The keyboard stays on screen (Hide closes it, remembered per device). It types letters
-// into the item search, or numbers into the staged item's qty / rate / discount.
-// A picked item is staged in `pending` under the search box; Add moves it into the bill.
-// `pending.target` is 'new' for a picked item, or the bill row being re-edited.
-const KEYPAD_KEY = 'mb-keypad'
+// Items are found only on the scanner screen (camera or typed search there). A picked item is
+// staged in `pending` and its qty / rate / discount typed on the number pad; Add moves it into
+// the bill. `pending.target` is 'new' for a picked item, or the bill row being re-edited.
 const PENDING_FIELDS = [
   { key: 'qty', label: 'Qty', chars: 3 },
   { key: 'rate', label: 'Rate', chars: 6 },
   { key: 'discount', label: 'Disc %', chars: 3 },
 ]
 const DISCOUNT_PRESETS = [0, 5, 10, 15, 20, 25]
-const ALPHA_ROWS = [
-  ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'],
-  ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-  ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-  ['Z', 'X', 'C', 'V', 'B', 'N', 'M', '-', '/', '.'],
-]
 
 const pending = ref(null)
-const showKeypad = ref((() => { try { return localStorage.getItem(KEYPAD_KEY) !== '0' } catch { return true } })())
-const kbTarget = ref('search') // 'search' | 'pending'
-const kbMode = computed(() => (pending.value && kbTarget.value === 'pending' ? 'num' : 'alpha'))
+// Hide closes the pad until a field is tapped again
+const showKeypad = ref(true)
 const keypadVisible = computed(() =>
-  showKeypad.value && !isReadOnly.value &&
+  showKeypad.value && !!pending.value && !isReadOnly.value &&
   !showScanner.value && !showCustomerPicker.value && !showPastBills.value && !showPrintModal.value)
 // Bill line number of the staged item: its own line when re-editing, else the next line
 const pendingLineNo = computed(() => {
@@ -590,25 +492,16 @@ const pendingAmount = computed(() => {
   return round((parseFloat(p.qty) || 0) * (parseFloat(p.rate) || 0) * (1 - disc / 100))
 })
 
-function setKeypad(on) {
-  showKeypad.value = on
-  try { localStorage.setItem(KEYPAD_KEY, on ? '1' : '0') } catch { /* storage blocked */ }
-  // The search box only takes the system keyboard while ours is hidden
-  if (!on && !pending.value) nextTick(() => searchRef.value?.focus())
-}
-
 function openPending(entry) {
   // Keep the system keyboard closed so the keypad is not covered
   document.activeElement?.blur?.()
   pending.value = { fresh: true, ...entry }
-  kbTarget.value = 'pending'
   showKeypad.value = true
 }
 
 function addItem(cached, uom = null) {
   if (!canEdit()) return
   const rowUom = uom || cached.uom || 'Nos'
-  query.value = ''
   // Every pick is its own bill line, even when the same item is entered again
   if (pending.value) commitPending()
   const base = baseRateFor(cached, rowUom)
@@ -658,7 +551,6 @@ function focusPendingField(field) {
   if (!pending.value) return
   pending.value.field = field
   pending.value.fresh = true
-  kbTarget.value = 'pending'
   showKeypad.value = true
 }
 
@@ -693,23 +585,14 @@ function pendingStepQty(delta) {
   p.fresh = true
 }
 
-// Letters / digits on the on-screen keyboard type into the item search
-function alphaPress(key) {
-  if (key === 'back') query.value = query.value.slice(0, -1)
-  else if (key === 'clear') query.value = ''
-  else query.value += key
-}
-
 function cancelPending() {
   pending.value = null
-  kbTarget.value = 'search'
 }
 
 function commitPending() {
   const p = pending.value
   if (!p) return
   pending.value = null
-  kbTarget.value = 'search'
   const qty = round(parseFloat(p.qty) || 0)
   const rate = round(parseFloat(p.rate) || 0)
   const discount = round(Math.min(100, Math.max(0, parseFloat(p.discount) || 0)))
@@ -750,32 +633,12 @@ function commitPending() {
   flash(`Added ${p.item_name}`)
 }
 
-// Enter (or a keyboard-wedge barcode scanner) adds an exact code/barcode match directly
-function addFromQuery() {
-  const q = query.value.trim()
-  if (!q) return
-  const match = lookupItemInCache(q)
-  if (match) addItem(match, match.uom)
-  else if (searchResults.value.length === 1) addItem(searchResults.value[0])
-}
-
-function clearSearch() {
-  query.value = ''
-  searchRef.value?.focus()
-}
-
 // All barcodes of a cached item (comma list + detailed rows)
 function itemBarcodes(i) {
   return [
     ...(i.barcodes || '').split(','),
     ...(i.barcodes_detailed || []).map(b => b.barcode || ''),
   ].map(b => b.trim()).filter(Boolean)
-}
-
-// Search result whose item code or a barcode equals the typed text
-function isExactMatch(item) {
-  const q = query.value.trim().toLowerCase()
-  return String(item.item_code).toLowerCase() === q || itemBarcodes(item).some(b => b.toLowerCase() === q)
 }
 
 // OCR readings are guesses: accept one only when it is a cached item code or barcode
@@ -795,28 +658,18 @@ function scannerSearch(q) {
 
 function onScanned(code) {
   showScanner.value = false
+  addCode(code)
+}
+
+// Exact item code / barcode from the camera or a keyboard-wedge scanner
+function addCode(code) {
   const match = lookupItemInCache(code)
   if (match) addItem(match, match.uom)
-  else {
-    query.value = code
-    flash(`No item for ${code}`)
-  }
+  else flash(`No item for ${code}`)
 }
 
-// ── Scan mode: each Add reopens the camera for the next item ────────────────
-const SCAN_MODE_KEY = 'mb-scan-mode'
-const scanMode = ref((() => { try { return localStorage.getItem(SCAN_MODE_KEY) === '1' } catch { return false } })())
-
-function toggleScanMode() {
-  scanMode.value = !scanMode.value
-  try { localStorage.setItem(SCAN_MODE_KEY, scanMode.value ? '1' : '0') } catch { /* storage blocked */ }
-  if (scanMode.value && !pending.value && canEdit()) showScanner.value = true
-}
-
-function keypadAdd() {
-  const wasNew = pending.value?.target === 'new'
-  commitPending()
-  if (scanMode.value && wasNew && !isReadOnly.value) showScanner.value = true
+function openScanner() {
+  if (canEdit()) showScanner.value = true
 }
 
 function closeScanner() {
@@ -1182,16 +1035,25 @@ function fitViewport() {
   viewportHeight.value = Math.round(window.visualViewport?.height || window.innerHeight)
 }
 
-// Keys typed while nothing is focused (e.g. a Bluetooth barcode scanner) go into the item search
+// Keys typed while nothing is focused (e.g. a Bluetooth barcode scanner) are collected
+// and looked up as an item code / barcode on Enter
+let wedgeBuffer = ''
+let wedgeTimer = null
 function onPageKeydown(e) {
   if (showScanner.value || showCustomerPicker.value || showPastBills.value || showPrintModal.value) return
   if (isReadOnly.value || e.ctrlKey || e.metaKey || e.altKey) return
   const el = document.activeElement
   if (el?.matches?.('input, textarea, select, [contenteditable="true"]')) return
-  if (e.key.length === 1) {
+  if (e.key === 'Enter') {
+    const code = wedgeBuffer.trim()
+    wedgeBuffer = ''
+    if (code) { e.preventDefault(); addCode(code) }
+  } else if (e.key.length === 1) {
     e.preventDefault()
-    query.value += e.key
-    searchRef.value?.focus()
+    wedgeBuffer += e.key
+    // A pause between keys means typing, not a scanner burst
+    clearTimeout(wedgeTimer)
+    wedgeTimer = setTimeout(() => { wedgeBuffer = '' }, 500)
   }
 }
 
@@ -1227,6 +1089,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   clearTimeout(toastTimer)
   clearTimeout(pastTimer)
+  clearTimeout(wedgeTimer)
   releaseLock()
   window.visualViewport?.removeEventListener('resize', fitViewport)
   window.removeEventListener('resize', fitViewport)
@@ -1275,22 +1138,7 @@ onBeforeUnmount(() => {
 .bill-line.row-dimmed {
   opacity: 0.35;
 }
-/* Exact item-code or barcode match in the search: card blinks so it is spotted at a glance */
-.exact-match {
-  animation: exact-blink 0.8s ease-in-out infinite alternate;
-}
-@keyframes exact-blink {
-  from { background-color: var(--color-bg); border-color: var(--color-text-muted); }
-  to { background-color: color-mix(in srgb, var(--color-info) 35%, var(--color-bg)); border-color: var(--color-info); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .exact-match {
-    animation: none;
-    background-color: color-mix(in srgb, var(--color-info) 35%, var(--color-bg));
-    border-color: var(--color-info);
-  }
-}
-/* Item picked from the search (or a line being modified), staged above the keypad */
+/* Item picked on the scanner screen (or a line being modified), staged above the keypad */
 .pending-panel {
   background: color-mix(in srgb, var(--color-success) 35%, var(--color-bg));
 }
@@ -1325,12 +1173,6 @@ onBeforeUnmount(() => {
   border-color: var(--color-success);
   background: var(--color-success);
   color: #fff;
-  font-family: inherit;
-  font-size: 1rem;
-}
-.keypad-key--alpha {
-  height: 2.6rem;
-  border-radius: 0.5rem;
   font-family: inherit;
   font-size: 1rem;
 }
