@@ -94,19 +94,20 @@
           <button type="button" aria-label="Cancel item" class="shrink-0 rounded-lg px-2 text-lg leading-none text-[var(--color-text-muted)]" @click="cancelPending">&times;</button>
         </div>
         <!-- Qty · rate · disc at 1.25× size; the amount wraps below when the row runs out of room -->
-        <div class="mt-1.5 flex flex-wrap items-center gap-1.5">
-          <button
-            v-for="f in PENDING_FIELDS"
-            :key="f.key"
-            type="button"
-            class="rounded-lg border-2 px-2 py-1 text-left"
-            :class="[f.width, kbTarget === 'pending' && pending.field === f.key ? 'edit-focus' : 'border-[var(--color-border)] bg-[var(--color-bg)]']"
-            @click="focusPendingField(f.key)"
-          >
-            <div class="field-label truncate text-[12.5px] uppercase text-[var(--color-text-muted)]">{{ f.label }}</div>
-            <div class="font-mono text-[1.25rem] font-bold tabular-nums">{{ pending[f.key] || '0' }}</div>
-          </button>
-          <span class="ml-auto font-mono text-[1.25rem] font-bold tabular-nums">{{ money(pendingAmount) }}</span>
+        <!-- Field names are headings above the boxes; the boxes hold only the values -->
+        <div class="mt-1.5 flex flex-wrap items-end gap-1.5">
+          <div v-for="f in PENDING_FIELDS" :key="f.key" :class="f.width">
+            <div class="truncate px-0.5 text-[12.5px] font-bold uppercase text-[var(--color-text-muted)]">{{ f.label }}</div>
+            <button
+              type="button"
+              class="w-full rounded-lg border-2 px-2 py-1 text-left"
+              :class="kbTarget === 'pending' && pending.field === f.key ? 'edit-focus' : 'border-[var(--color-border)] bg-[var(--color-bg)]'"
+              @click="focusPendingField(f.key)"
+            >
+              <div class="font-mono text-[1.25rem] font-bold tabular-nums">{{ pending[f.key] || '0' }}</div>
+            </button>
+          </div>
+          <span class="ml-auto pb-1.5 font-mono text-[1.25rem] font-bold tabular-nums">{{ money(pendingAmount) }}</span>
         </div>
       </div>
     </header>
@@ -1328,9 +1329,6 @@ onBeforeUnmount(() => {
   border-color: var(--color-info);
   background: var(--color-info);
   color: #fff;
-}
-.edit-focus .field-label {
-  color: rgba(255, 255, 255, 0.85);
 }
 .keypad-key {
   display: flex;
