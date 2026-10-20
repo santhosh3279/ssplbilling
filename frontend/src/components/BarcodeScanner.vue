@@ -74,7 +74,7 @@
         v-if="manualResults.length"
         class="absolute inset-x-0 bottom-full max-h-[45vh] space-y-1.5 overflow-y-auto border-t border-[var(--color-border)] bg-[var(--color-bg)] p-2 shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
       >
-        <!-- Item name · item code · price (cipher); alternate rows shaded, exact code match blinks -->
+        <!-- Item name · item code · price (cipher); alternate rows shaded, exact code / barcode match blinks -->
         <button
           v-for="(m, i) in manualResults"
           :key="m.code"
@@ -158,8 +158,9 @@ import { getCipherMap } from '../encryption.js'
 const props = defineProps({
   // async (text) => boolean — confirms an OCR reading before it is accepted
   verify: { type: Function, default: null },
-  // (text) => [{ code, name, price }] — items matching the typed text, listed as
-  // name · code · price (cipher); `code` is emitted on pick
+  // (text) => [{ code, name, price, barcodes }] — items matching the typed text, listed as
+  // name · code · price (cipher); `code` is emitted on pick. A card whose code or one of
+  // its `barcodes` equals the typed text blinks
   search: { type: Function, default: null },
 })
 const emit = defineEmits(['detected', 'close'])
@@ -198,7 +199,10 @@ function cipherPrice(price) {
   return cipher ? fixed.replace(/\d/g, d => cipher[d] || '?') : fixed
 }
 
-const isExactCode = m => String(m.code).toLowerCase() === typed.value.trim().toLowerCase()
+const isExactCode = m => {
+  const q = typed.value.trim().toLowerCase()
+  return String(m.code).toLowerCase() === q || (m.barcodes || []).some(b => String(b).toLowerCase() === q)
+}
 
 function toggleKeys() {
   showKeys.value = !showKeys.value
@@ -741,7 +745,7 @@ onBeforeUnmount(() => {
   border-color: transparent;
   background: color-mix(in srgb, var(--color-info) 22%, var(--color-bg));
 }
-/* Exact item-code match: card blinks so it is spotted at a glance */
+/* Exact item-code or barcode match: card blinks so it is spotted at a glance */
 .exact-match {
   animation: exact-blink 0.8s ease-in-out infinite alternate;
 }
