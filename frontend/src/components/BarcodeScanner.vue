@@ -83,7 +83,7 @@
           :class="[i % 2 ? 'bg-[var(--color-surface)]' : '', isExactCode(m) && 'exact-match']"
           @click="found(m.code)"
         >
-          <div class="mr-1.5 truncate text-base font-semibold">{{ m.name }}</div>
+          <div class="mr-1.5 truncate text-xl font-semibold">{{ m.name }}</div>
           <div class="break-all text-right font-mono text-xs leading-tight text-[var(--color-text-muted)]">{{ m.code }}</div>
           <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(m.price) }}</div>
         </button>
