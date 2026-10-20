@@ -79,7 +79,7 @@
           v-for="(m, i) in manualResults"
           :key="m.code"
           type="button"
-          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_5.5rem] items-center gap-x-1.5 rounded-xl border border-[var(--color-border)] px-3 py-3 text-left active:bg-[var(--color-surface-raised)]"
+          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_5.5rem] items-center gap-x-1.5 rounded-xl border-2 border-[var(--color-text-muted)] px-3 py-3 text-left active:bg-[var(--color-surface-raised)]"
           :class="i % 2 ? 'bg-[var(--color-surface)]' : ''"
           @click="found(m.code)"
         >
