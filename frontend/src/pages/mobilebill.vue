@@ -87,6 +87,7 @@
       <!-- Selected item: qty and rate are entered here with the keypad below -->
       <div v-if="pending && !isReadOnly" class="pending-panel rounded-xl p-2">
         <div class="flex items-center gap-2">
+          <span class="line-no shrink-0">{{ pendingLineNo }}</span>
           <MarqueeText :text="pending.item_name" class="min-w-0 flex-1 text-[1.3125rem] font-bold leading-tight" />
           <span v-if="pending.target !== 'new'" class="shrink-0 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Edit</span>
           <button type="button" aria-label="Cancel item" class="shrink-0 rounded-lg px-2 text-lg leading-none text-[var(--color-text-muted)]" @click="cancelPending">&times;</button>
@@ -573,6 +574,12 @@ const kbMode = computed(() => (pending.value && kbTarget.value === 'pending' ? '
 const keypadVisible = computed(() =>
   showKeypad.value && !isReadOnly.value &&
   !showScanner.value && !showCustomerPicker.value && !showPastBills.value && !showPrintModal.value)
+// Bill line number of the staged item: its own line when re-editing, else the next line
+const pendingLineNo = computed(() => {
+  const p = pending.value
+  if (!p) return 0
+  return p.target === 'new' ? activeRows.value.length + 1 : activeRows.value.indexOf(p.target) + 1
+})
 const pendingAmount = computed(() => {
   const p = pending.value
   if (!p) return 0
