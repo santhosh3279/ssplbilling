@@ -194,14 +194,14 @@
                 <tr class="bg-[var(--color-info)]/5 text-[var(--color-info)]/80">
                   <td class="px-2 py-1 sticky left-0 bg-[var(--color-surface)] z-10 border-r border-[var(--color-border)]">
                     <div class="flex items-center justify-between gap-2">
-                      <span class="text-xl font-black uppercase truncate">{{ u.uom }}</span>
+                      <span class="text-2xl font-black uppercase truncate">{{ u.uom }}</span>
                       <span class="shrink-0 text-[8px] font-black px-1 rounded bg-[var(--color-info)]/20 uppercase">Calculated</span>
                     </div>
                   </td>
                   <td
                     v-for="(p, idx) in prices"
                     :key="`calc-uom-${p.price_list}-${u.uom}`"
-                    class="px-2 py-1 text-right font-mono text-[14px] font-bold"
+                    class="px-2 py-1 text-right font-mono text-[20px] font-bold"
                     :class="[
                       p.price_list === selectedPriceList ? 'bg-[var(--color-info)]/5 border-x-2 border-[var(--color-info)]' : '',
                       idx !== 0 ? 'cursor-pointer hover:underline decoration-dotted' : ''
