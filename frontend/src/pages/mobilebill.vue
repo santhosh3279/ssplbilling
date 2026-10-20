@@ -89,6 +89,7 @@
         <div class="flex items-center gap-2">
           <span class="line-no shrink-0">{{ pendingLineNo }}</span>
           <MarqueeText :text="pending.item_name" class="min-w-0 flex-1 text-[1.3125rem] font-bold leading-tight" />
+          <span class="shrink-0 rounded bg-[var(--color-bg)] px-1.5 py-0.5 text-xs font-bold uppercase text-[var(--color-text-muted)]">{{ pending.uom }}</span>
           <span v-if="pending.target !== 'new'" class="shrink-0 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Edit</span>
           <button type="button" aria-label="Cancel item" class="shrink-0 rounded-lg px-2 text-lg leading-none text-[var(--color-text-muted)]" @click="cancelPending">&times;</button>
         </div>
@@ -102,7 +103,7 @@
             :class="[f.width, kbTarget === 'pending' && pending.field === f.key ? 'edit-focus' : 'border-[var(--color-border)] bg-[var(--color-bg)]']"
             @click="focusPendingField(f.key)"
           >
-            <div class="field-label truncate text-[12.5px] uppercase text-[var(--color-text-muted)]">{{ f.key === 'qty' ? `Qty · ${pending.uom}` : f.label }}</div>
+            <div class="field-label truncate text-[12.5px] uppercase text-[var(--color-text-muted)]">{{ f.label }}</div>
             <div class="font-mono text-[1.25rem] font-bold tabular-nums">{{ pending[f.key] || '0' }}</div>
           </button>
           <span class="ml-auto font-mono text-[1.25rem] font-bold tabular-nums">{{ money(pendingAmount) }}</span>
