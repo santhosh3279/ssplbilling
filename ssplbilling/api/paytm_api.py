@@ -21,8 +21,7 @@ import requests
 from frappe import _
 from frappe.utils import flt, now_datetime
 
-# Matches Paytm's ECR sample (head.version 3.1, merchantExtendedInfo.PaymentMode "All", amount
-# in paise). The production host is the older paytm.in one, which does answer ECR requests.
+# Matches Paytm's ECR sample (head.version 3.1, amount in paise). The production host is the older paytm.in one, which does answer ECR requests.
 EDC_BASE_URL = {
 	"Staging": "https://securestage.paytmpayments.com",
 	"Production": "https://securegw-edc.paytm.in",
@@ -31,7 +30,9 @@ EDC_SALE_PATH = "/ecr/payment/request"
 EDC_STATUS_PATH = "/ecr/V2/payment/status"
 EDC_CHANNEL_ID = "EDC"
 EDC_VERSION = "3.1"
-EDC_PAYMENT_MODE = "All"  # machine lets the customer choose UPI QR or card
+# autoAccept opens the payment on the machine without an accept/reject prompt;
+# paymentMode QR opens straight on the UPI QR (ALL would ask the customer to choose)
+EDC_EXTENDED_INFO = {"autoAccept": "True", "paymentMode": "QR"}
 REQUEST_TIMEOUT = 20
 
 # Paytm PG (online) APIs used by the dynamic UPI QR; signed with the PG Merchant Key
@@ -194,7 +195,7 @@ def send_to_device(invoice_name, amount, tid):
 		"merchantTransactionId": order_id,
 		"merchantReferenceNo": re.sub(r"[^A-Za-z0-9]", "", invoice_name),
 		"transactionAmount": str(int(round(amount * 100))),  # paise
-		"merchantExtendedInfo": {"PaymentMode": EDC_PAYMENT_MODE},
+		"merchantExtendedInfo": EDC_EXTENDED_INFO,
 	}
 	try:
 		res = _post(settings, EDC_SALE_PATH, body)
