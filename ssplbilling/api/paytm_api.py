@@ -21,16 +21,17 @@ import requests
 from frappe import _
 from frappe.utils import flt, now_datetime
 
-# TODO: verify against the Paytm EDC / ECR integration document issued to the merchant —
-# base URLs, paths, channelId and the amount unit (paise) are from Paytm's public EDC docs.
+# Matches Paytm's ECR sample (head.version 3.1, merchantExtendedInfo.PaymentMode "All", amount
+# in paise). The production host is the older paytm.in one, which does answer ECR requests.
 EDC_BASE_URL = {
-	"Staging": "https://securegw-stage.paytm.in",
+	"Staging": "https://securestage.paytmpayments.com",
 	"Production": "https://securegw-edc.paytm.in",
 }
 EDC_SALE_PATH = "/ecr/payment/request"
 EDC_STATUS_PATH = "/ecr/V2/payment/status"
 EDC_CHANNEL_ID = "EDC"
-EDC_PAYMENT_MODE = "ALL"  # machine lets the customer choose UPI QR or card
+EDC_VERSION = "3.1"
+EDC_PAYMENT_MODE = "All"  # machine lets the customer choose UPI QR or card
 REQUEST_TIMEOUT = 20
 
 # Paytm PG (online) APIs used by the dynamic UPI QR; signed with the PG Merchant Key
@@ -107,6 +108,7 @@ def _post(settings, path, body):
 		"requestTimeStamp": now_datetime().strftime("%Y-%m-%d %H:%M:%S"),
 		"channelId": EDC_CHANNEL_ID,
 		"checksum": generateSignature(body_str, _signing_key(settings)),
+		"version": EDC_VERSION,
 	}
 	payload = '{"head":' + json.dumps(head, separators=(",", ":")) + ',"body":' + body_str + "}"
 	res = requests.post(
@@ -155,7 +157,8 @@ def send_to_device(invoice_name, amount, tid):
 		frappe.throw(_("Sales Invoice {0} not found").format(invoice_name))
 
 	now = now_datetime()
-	order_id = f"{invoice_name}-{now.strftime('%H%M%S%f')[:9]}"
+	# ECR ids are plain alphanumeric in Paytm's sample; invoice series carry "-" and "/"
+	order_id = f"{re.sub(r'[^A-Za-z0-9]', '', invoice_name)[:30]}{now.strftime('%y%m%d%H%M%S%f')[:15]}"
 	txn_datetime = now.strftime("%Y-%m-%d %H:%M:%S")
 
 	txn = frappe.get_doc(
@@ -176,9 +179,9 @@ def send_to_device(invoice_name, amount, tid):
 		"paytmTid": tid,
 		"transactionDateTime": txn_datetime,
 		"merchantTransactionId": order_id,
-		"merchantReferenceNo": invoice_name,
+		"merchantReferenceNo": re.sub(r"[^A-Za-z0-9]", "", invoice_name),
 		"transactionAmount": str(int(round(amount * 100))),  # paise
-		"merchantExtendedInfo": {"paymentMode": EDC_PAYMENT_MODE},
+		"merchantExtendedInfo": {"PaymentMode": EDC_PAYMENT_MODE},
 	}
 	try:
 		res = _post(settings, EDC_SALE_PATH, body)
