@@ -78,13 +78,14 @@
         <template v-else>Tap Scan to add an item.</template>
       </div>
 
-      <ul v-else class="space-y-2 px-2 py-2">
+      <ul v-else class="space-y-2 px-2 py-2" :style="lineColumns">
         <li v-for="(row, idx) in activeRows" :key="row._rowKey ?? `free-${row._free_parent_key}-${row.item_code}`" class="bill-line px-3 py-2.5 transition-[background-color,opacity]" :class="[isEditing(row) ? 'row-editing' : row._is_free ? 'bill-line--free' : '', keypadVisible && !isEditing(row) ? 'row-dimmed' : '']" @click="selectRow(row)">
           <div class="flex items-start gap-2">
             <span class="line-no mt-0.5 shrink-0">{{ idx + 1 }}</span>
             <div class="min-w-0 flex-1">
               <MarqueeText manual :text="row.item_name || row.item_code" :class="isEditing(row) ? 'text-[1.875rem] font-bold leading-tight' : 'text-[1.25rem] font-semibold'" />
-              <!-- Code · qty · rate · amount on one line (1.25× size); tap qty / rate to edit on the keypad -->
+              <!-- Code · qty · rate · amount on one line (1.25× size); tap qty / rate to edit on the keypad.
+                   Qty, rate and amount are sized to the bill's longest value (lineColumns) so they line up on every row. -->
               <div class="mt-0.5 flex items-center gap-1.5 text-[0.9375rem] text-[var(--color-text-muted)]">
                 <span class="min-w-0 flex-1 truncate font-mono">{{ row.item_code }}<template v-if="row._is_free"> · <b class="text-[var(--color-success)]">FREE</b></template><template v-else-if="row.discount"> · <b class="text-[var(--color-warning)]">{{ row.discount }}% off</b></template></span>
                 <button
@@ -94,7 +95,7 @@
                   class="shrink-0 rounded-lg border px-1.5 py-1 font-mono text-[1.09375rem] font-bold tabular-nums text-[var(--color-text)] disabled:opacity-100"
                   :class="isEditing(row) && pending.field === 'qty' ? 'edit-focus' : 'line-box'"
                   @click.stop="editRow(row, 'qty')"
-                >{{ fmtQty(row.qty) }} <span class="text-[12.5px] font-normal">{{ row.uom }}</span></button>
+                ><span class="inline-block text-right" :style="{ minWidth: 'var(--qty-ch)' }">{{ fmtQty(row.qty) }}</span> <span class="inline-block text-left text-[12.5px] font-normal" :style="{ minWidth: 'var(--uom-ch)' }">{{ row.uom }}</span></button>
                 <span class="shrink-0">×</span>
                 <button
                   type="button"
@@ -103,8 +104,8 @@
                   class="shrink-0 rounded-lg border px-1.5 py-1 font-mono text-[1.09375rem] tabular-nums text-[var(--color-text)] disabled:opacity-100"
                   :class="isEditing(row) && pending.field === 'rate' ? 'edit-focus' : 'line-box'"
                   @click.stop="editRow(row, 'rate')"
-                >{{ row.rate }}</button>
-                <span class="shrink-0 font-mono text-[1.25rem] font-bold tabular-nums text-[var(--color-text)]">{{ money(rowAmount(row)) }}</span>
+                ><span class="inline-block text-right" :style="{ minWidth: 'var(--rate-ch)' }">{{ row.rate }}</span></button>
+                <span class="shrink-0 text-right font-mono text-[1.25rem] font-bold tabular-nums text-[var(--color-text)]" :style="{ minWidth: 'var(--amt-ch)' }">{{ money(rowAmount(row)) }}</span>
               </div>
             </div>
             <button
@@ -114,6 +115,8 @@
               class="shrink-0 rounded-lg px-2 py-1 text-lg text-[var(--color-danger)]"
               @click.stop="removeRow(row)"
             >&times;</button>
+            <!-- Free lines have no remove button; hold its space so their columns stay in line -->
+            <span v-else-if="!isReadOnly" aria-hidden="true" class="invisible shrink-0 px-2 py-1 text-lg">&times;</span>
           </div>
         </li>
       </ul>
@@ -409,6 +412,18 @@ function fmtQty(n) {
   const v = Number(n) || 0
   return Number.isInteger(v) ? String(v) : v.toFixed(2)
 }
+
+// Same qty / uom / rate / amount widths on every bill line: longest value in ch (all monospace),
+// each read against its own element's font size, so the columns line up down the list
+const lineColumns = computed(() => {
+  const longest = f => `${Math.max(1, ...activeRows.value.map(r => String(f(r)).length))}ch`
+  return {
+    '--qty-ch': longest(r => fmtQty(r.qty)),
+    '--uom-ch': longest(r => r.uom || ''),
+    '--rate-ch': longest(r => r.rate ?? ''),
+    '--amt-ch': longest(r => money(rowAmount(r))),
+  }
+})
 
 let toastTimer = null
 function flash(msg) {
