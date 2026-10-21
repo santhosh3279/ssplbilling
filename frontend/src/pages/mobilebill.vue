@@ -394,7 +394,7 @@ const isSubmitted = computed(() => docstatus.value === 1)
 const activeRows = computed(() => rows.value.filter(r => !r.deleted))
 
 // Rules stay frozen while a saved bill is only being viewed, so it shows what was billed
-const { makeRowKey } = useDiscountRules({ items: rows, priceList, lookupItemInCache, pauseRules: isReadOnly })
+const { makeRowKey, reapplyAllDiscountRules } = useDiscountRules({ items: rows, priceList, lookupItemInCache, pauseRules: isReadOnly })
 
 const round = v => parseFloat((Number(v) || 0).toFixed(precision))
 const netRate = row => round((row.rate || 0) * (1 - (Number(row.discount) || 0) / 100))
@@ -530,7 +530,8 @@ function editRow(row, field) {
     item_code: row.item_code,
     item_name: row.item_name || row.item_code,
     uom: row.uom,
-    qty: String(row.qty),
+    // An offer line (10 + 1 free) is edited as its total, the quantity the operator entered
+    qty: String(row._total_qty ?? row.qty),
     rate: String(row.rate),
     discount: String(Number(row.discount) || 0),
     field,
@@ -601,7 +602,16 @@ function commitPending() {
     const row = p.target
     if (!rows.value.includes(row)) return // removed meanwhile
     if (qty <= 0) { removeRow(row); return }
-    row.qty = qty
+    // The typed quantity is the total: the offer re-splits it into paid + free right away,
+    // also when it equals the old paid quantity (11 → 10 + 1 edited back to 10)
+    const qtyChanged = qty !== (row._total_qty ?? row.qty)
+    if (qtyChanged) {
+      row.qty = qty
+      delete row._paid_qty
+      delete row._total_qty
+      delete row._loaded_free_qty
+      delete row._loaded_paid_qty
+    }
     if (rate !== round(row.rate)) {
       row.rate = rate
       row._rate_overridden = true
@@ -610,6 +620,7 @@ function commitPending() {
       row.discount = discount
       row._rule_discount = null // typed by hand, not set by a discount rule
     }
+    if (qtyChanged) reapplyAllDiscountRules()
     return
   }
 
