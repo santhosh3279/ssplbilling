@@ -86,6 +86,14 @@ def _post_pg(settings, path, body, head=None):
 		headers={"Content-Type": "application/json"},
 		timeout=REQUEST_TIMEOUT,
 	)
+	if not res.ok:
+		# Paytm explains rejections (e.g. 403 "Unauthorized Access") in a JSON resultInfo
+		try:
+			msg = (res.json().get("resultInfo") or {}).get("resultMsg")
+		except ValueError:
+			msg = None
+		if msg:
+			raise Exception(f"HTTP {res.status_code}: {msg}")
 	res.raise_for_status()
 	return res.json()
 
