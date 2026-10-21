@@ -778,13 +778,10 @@
             <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Amount</span>
             <span class="font-mono text-[24px] font-black text-[var(--color-text)]">₹{{ fmt(paytm.amount) }}</span>
           </div>
-          <select
-            v-model="paytm.tid"
-            :disabled="!!paytm.orderId"
-            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 px-4 font-bold text-[var(--color-text)] focus:border-[var(--color-info)] outline-none disabled:opacity-60"
-          >
-            <option v-for="d in paytm.devices" :key="d.tid" :value="d.tid">{{ d.device_name }} ({{ d.tid }})</option>
-          </select>
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Machine</span>
+            <span class="font-bold text-[var(--color-text)]">{{ paytm.deviceName }} ({{ paytm.tid }})</span>
+          </div>
           <div
             v-if="paytm.message"
             class="rounded-lg border p-3 text-[12px] font-bold uppercase tracking-wider"
@@ -795,14 +792,15 @@
           <div class="flex gap-3">
             <button
               @click="closePaytmModal"
-              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-all active:scale-95"
+              :disabled="paytm.sending"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
             >{{ paytm.orderId && paytm.status === 'Pending' ? 'Stop Waiting' : 'Close' }}</button>
             <button
-              v-if="!paytm.orderId || paytm.status === 'Failed'"
+              v-if="paytm.status === 'Failed'"
               @click="sendToPaytm"
-              :disabled="!paytm.tid || paytm.sending"
+              :disabled="paytm.sending"
               class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-            >{{ paytm.sending ? 'Sending…' : paytm.status === 'Failed' ? 'Retry' : 'Send to Machine' }}</button>
+            >{{ paytm.sending ? 'Sending…' : 'Retry' }}</button>
           </div>
         </div>
       </div>
@@ -1005,7 +1003,7 @@ const upiRefNo = ref('')
 
 // Paytm EDC card machine: push the UPI box amount to the machine, wait for the result
 // (socket event from the webhook, with polling as fallback), then fill UPI or Card.
-const paytm = ref({ enabled: false, qrEnabled: false, devices: [], show: false, payMode: 'QR', tid: '', amount: 0, orderId: '', status: '', message: '', sending: false })
+const paytm = ref({ enabled: false, qrEnabled: false, devices: [], show: false, payMode: 'QR', tid: '', deviceName: '', amount: 0, orderId: '', status: '', message: '', sending: false })
 let paytmPollTimer = null
 // Paytm dynamic UPI QR: same wait-for-result flow, but the QR is shown on this screen
 const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', sending: false })
@@ -1609,13 +1607,6 @@ async function loadPaytmDevices() {
   }
 }
 
-function defaultPaytmTid() {
-  const devices = paytm.value.devices
-  let saved = ''
-  try { saved = localStorage.getItem('wb-paytm-tid') || '' } catch (e) { /* storage blocked */ }
-  return (devices.find(d => d.user === paytmMachineUser()) || devices.find(d => d.tid === saved) || devices[0])?.tid || ''
-}
-
 function openPaytmModal(payMode) {
   errorMsg.value = ''
   const amount = Number(payments.value.upi) || 0
@@ -1631,15 +1622,16 @@ function openPaytmModal(payMode) {
     errorMsg.value = 'Enter the amount in the UPI box before sending to the card machine.'
     return
   }
-  Object.assign(paytm.value, { show: true, payMode, tid: defaultPaytmTid(), amount, orderId: '', status: '', message: '', sending: false })
+  // The machine is fixed by SSPL Paytm Settings (the user's assigned row); no picking here
+  const device = paytm.value.devices[0]
+  Object.assign(paytm.value, { show: true, payMode, tid: device.tid, deviceName: device.device_name, amount, orderId: '', status: '', message: '', sending: false })
+  sendToPaytm()
 }
 
 async function sendToPaytm() {
   const p = paytm.value
-  p.sending = true
-  p.message = ''
+  Object.assign(p, { sending: true, orderId: '', status: '', message: 'Sending to the machine…' })
   try {
-    try { localStorage.setItem('wb-paytm-tid', p.tid) } catch (e) { /* storage blocked */ }
     const res = await frappePost('ssplbilling.api.paytm_api.send_to_device', {
       invoice_name: selectedInvoice.value.name,
       amount: p.amount,
