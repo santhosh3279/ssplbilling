@@ -576,7 +576,7 @@
                   />
                 </div>
                 <div class="group relative flex items-center">
-                  <div class="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2 whitespace-nowrap z-10">
+                  <div :ref="bindUpiOverlay" class="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2 whitespace-nowrap z-10">
                     <span class="text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-success)] transition-colors uppercase">{{ upiLabel }}</span>
                     <button
                       v-if="paytm.enabled"
@@ -604,7 +604,7 @@
                     @focus="$event.target.select()"
                     step="0.01"
                     class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
-                    :class="upiInputPad"
+                    :style="{ paddingLeft: `${upiInputPad}px` }"
                   />
                 </div>
                 <div class="group relative">
@@ -1014,8 +1014,20 @@ const paytmQrSrc = computed(() => {
   const img = paytmQr.value.image || ''
   return img.startsWith('data:') ? img : `data:image/png;base64,${img}`
 })
-// Room for the machine UPI / Card buttons inside the UPI box
-const upiInputPad = computed(() => (paytm.value.enabled ? 'pl-52' : 'pl-24'))
+// Left padding of the UPI box = measured width of its label + machine buttons; the label is the
+// UPI account name, so a fixed padding either overlaps the amount or wastes the box
+const upiInputPad = ref(96)
+let upiOverlayEl = null
+let upiPadObserver = null
+function bindUpiOverlay(el) {
+  if (el === upiOverlayEl) return
+  upiPadObserver?.disconnect()
+  upiOverlayEl = el
+  upiPadObserver = null
+  if (!el) return
+  upiPadObserver = new ResizeObserver(() => { upiInputPad.value = el.offsetWidth + 36 }) // left-5 + 16px gap
+  upiPadObserver.observe(el)
+}
 const processedInvoiceName = ref('')
 const mirrorQueued = ref(false)
 
@@ -2286,6 +2298,7 @@ onUnmounted(() => {
   _billPanelCleanup?.()
   stopPaytmPolling()
   stopPaytmQrPolling()
+  upiPadObserver?.disconnect()
   getFrappeSocket()?.off('paytm_payment_update', onPaytmSocket)
 })
 
