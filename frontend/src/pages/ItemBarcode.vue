@@ -238,7 +238,13 @@
       </div>
     </footer>
 
-    <BarcodeScanner v-if="scanFor" :verify="scanFor === 'find' ? itemExists : null" @detected="onScanned" @close="closeScanner" />
+    <BarcodeScanner
+      v-if="scanFor"
+      :verify="scanFor === 'find' ? itemExists : null"
+      :search="scanFor === 'find' ? scannerSearch : null"
+      @detected="onScanned"
+      @close="closeScanner"
+    />
 
     <div
       v-if="toast"
@@ -253,11 +259,14 @@
  * Pick the item (search or camera scan), then scan / type barcodes to add, each tied to
  * one of the item's UOMs; UOM conversions (UOM + factor) are added / edited here too.
  * Every change saves the Item at once. The server refuses a barcode another item uses.
+ * The scanner's typed search lists items from the local item cache, as on the billing screen.
  */
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import BarcodeScanner from '../components/BarcodeScanner.vue'
+import { lookupItemInCache, refreshItemCache, searchItemsInCache } from '../services/itemCache.js'
+import { getDefaultPriceList, getDefaultWarehouse } from '../encryption.js'
 
 const API = 'ssplbilling.api.item_api'
 const router = useRouter()
@@ -325,6 +334,7 @@ watch(query, () => {
 
 // OCR readings in "find" mode are accepted only when they are a real item code / barcode
 async function itemExists(code) {
+  if (lookupItemInCache(code)) return true
   try {
     const rows = await fetchResults(code)
     return rows.some(r => r.exact)
@@ -367,6 +377,29 @@ function goBack() {
 }
 
 // ── Scanner ──
+const priceList = getDefaultPriceList()
+
+// Price list rate of the item's default UOM, the same lookup as the billing screen
+function baseRate(cached) {
+  const uom = cached.uom || 'Nos'
+  if (cached.uom_price_lists?.[priceList]?.[uom] != null) return cached.uom_price_lists[priceList][uom]
+  const entry = (cached.price_lists || []).find(p => p.name === priceList)
+  return entry ? entry.rate : parseFloat(cached.price || 0)
+}
+
+// Typed-entry matches inside the scanner screen
+function scannerSearch(q) {
+  return searchItemsInCache(q, 30).map(i => ({
+    code: i.item_code,
+    name: i.item_name || i.item_code,
+    price: baseRate(i),
+    barcodes: [
+      ...(i.barcodes || '').split(','),
+      ...(i.barcodes_detailed || []).map(b => b.barcode || ''),
+    ].map(b => b.trim()).filter(Boolean),
+  }))
+}
+
 async function onScanned(code) {
   const mode = scanFor.value
   scanFor.value = ''
@@ -378,6 +411,9 @@ async function onScanned(code) {
     nextTick(() => newBarcodeRef.value?.focus())
     return
   }
+  // A picked search result or a cached code / barcode opens straight away
+  const cached = lookupItemInCache(code)
+  if (cached) return openItem(cached.item_code)
   query.value = code
   await runSearch()
   const exact = results.value.filter(r => r.exact)
@@ -532,6 +568,8 @@ onMounted(() => {
   import('@zxing/browser').catch(() => {})
   import('@zxing/library').catch(() => {})
   loadUomOptions()
+  refreshItemCache('Sales', priceList, getDefaultWarehouse())
+    .catch(e => console.warn('[ItemBarcode] item cache refresh failed:', e))
   const code = router.currentRoute.value.query.item
   if (code) openItem(String(code))
   else searchRef.value?.focus()
