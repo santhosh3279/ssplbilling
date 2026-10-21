@@ -74,19 +74,21 @@
         v-if="manualResults.length"
         class="results-scroll absolute inset-x-0 bottom-full max-h-[45vh] space-y-1.5 overflow-y-auto overscroll-contain border-t border-[var(--color-border)] bg-[var(--color-bg)] p-2 shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
       >
-        <!-- Item name (first 25 characters, up to two lines) · item code · price (cipher); alternate rows shaded,
-             exact code / barcode match blinks -->
+        <!-- Item name (first 25 characters) on its own full-width line, item code · price (cipher) below;
+             alternate rows shaded, exact code / barcode match blinks -->
         <button
           v-for="(m, i) in manualResults"
           :key="m.code"
           type="button"
-          class="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,7rem)_5.5rem] items-center gap-x-1.5 rounded-xl border-2 border-[var(--color-text-muted)] px-3 py-3 text-left active:bg-[var(--color-surface-raised)]"
+          class="block w-full rounded-xl border-2 border-[var(--color-text-muted)] px-3 py-2.5 text-left active:bg-[var(--color-surface-raised)]"
           :class="[i % 2 ? 'bg-[var(--color-surface)]' : '', isExactCode(m) && 'exact-match']"
           @click="found(m.code)"
         >
-          <div class="mr-1.5 line-clamp-2 break-words text-lg font-semibold leading-snug">{{ shortName(m.name) }}</div>
-          <div class="break-all text-right font-mono text-xs leading-tight text-[var(--color-text-muted)]">{{ m.code }}</div>
-          <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(m.price) }}</div>
+          <div class="break-words text-lg font-semibold leading-snug">{{ shortName(m.name) }}</div>
+          <div class="mt-0.5 flex items-baseline justify-between gap-2">
+            <span class="min-w-0 truncate font-mono text-xs text-[var(--color-text-muted)]">{{ m.code }}</span>
+            <span class="shrink-0 font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(m.price) }}</span>
+          </div>
         </button>
       </div>
       <div class="flex gap-2 px-2 py-2" :class="showKeys ? '' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'">
