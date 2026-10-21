@@ -8,6 +8,7 @@
   "sales_invoice",
   "amount",
   "status",
+  "channel",
   "column_break_1",
   "device_name",
   "tid",
@@ -57,6 +58,17 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "read_only": 1
+  },
+  {
+   "fieldname": "channel",
+   "fieldtype": "Select",
+   "label": "Channel",
+   "options": "EDC\nQR",
+   "default": "EDC",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1,
+   "description": "EDC = card machine, QR = Paytm dynamic UPI QR shown on the cashier screen"
   },
   {
    "fieldname": "column_break_1",
@@ -134,7 +146,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-19 00:00:00",
+ "modified": "2026-10-21 00:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Paytm Transaction",

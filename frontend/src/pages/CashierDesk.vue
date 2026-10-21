@@ -594,6 +594,15 @@
                     >
                       POS
                     </button>
+                    <button
+                      v-if="paytm.qrEnabled"
+                      @click="openPaytmQr"
+                      type="button"
+                      title="Show a Paytm UPI QR for this amount; payment is confirmed automatically"
+                      class="px-2 py-1 rounded-lg bg-[var(--color-info)] text-white font-black text-[15px] uppercase tracking-wider hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-info)] active:scale-95 transition-all shadow-sm"
+                    >
+                      Paytm QR
+                    </button>
                   </div>
                   <input
                     ref="upiInput"
@@ -602,7 +611,7 @@
                     @focus="$event.target.select()"
                     step="0.01"
                     class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
-                    :class="paytm.enabled ? 'pl-64' : 'pl-44'"
+                    :class="upiInputPad"
                   />
                 </div>
                 <div class="group relative">
@@ -806,6 +815,48 @@
       </div>
     </div>
 
+    <!-- PAYTM DYNAMIC QR MODAL -->
+    <div v-if="paytmQr.show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--color-bg)]/80 backdrop-blur-sm">
+      <div class="w-full max-w-md bg-[var(--color-surface)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--color-border)] animate-in fade-in zoom-in duration-200">
+        <div class="p-5 border-b border-[var(--color-border)] flex justify-between items-center">
+          <h3 class="text-sm font-bold uppercase tracking-widest text-[var(--color-text)]">Paytm UPI QR</h3>
+          <button @click="closePaytmQr" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+          </button>
+        </div>
+        <div class="p-6 space-y-5">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Amount</span>
+            <span class="font-mono text-[24px] font-black text-[var(--color-text)]">₹{{ fmt(paytmQr.amount) }}</span>
+          </div>
+          <div class="flex items-center justify-center">
+            <!-- white backing so the code scans in dark mode too -->
+            <img v-if="paytmQr.image && paytmQr.status !== 'Failed'" :src="paytmQrSrc" alt="Paytm UPI QR" class="w-64 h-64 rounded-xl bg-white p-2" :class="paytmQr.status === 'Success' ? 'opacity-30' : ''" />
+            <div v-else-if="paytmQr.sending" class="w-64 h-64 flex items-center justify-center text-[12px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Creating QR…</div>
+          </div>
+          <div
+            v-if="paytmQr.message"
+            class="rounded-lg border p-3 text-[12px] font-bold uppercase tracking-wider"
+            :class="paytmQr.status === 'Failed' ? 'bg-[var(--color-danger)]/20 border-[var(--color-danger)]/50 text-[var(--color-danger)]'
+              : paytmQr.status === 'Success' ? 'bg-[var(--color-success)]/20 border-[var(--color-success)]/50 text-[var(--color-success)]'
+              : 'bg-[var(--color-info)]/20 border-[var(--color-info)]/50 text-[var(--color-info)]'"
+          >{{ paytmQr.message }}</div>
+          <div class="flex gap-3">
+            <button
+              @click="closePaytmQr"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-all active:scale-95"
+            >{{ paytmQr.orderId && paytmQr.status === 'Pending' ? 'Stop Waiting' : 'Close' }}</button>
+            <button
+              v-if="paytmQr.status === 'Failed'"
+              @click="createPaytmQr"
+              :disabled="paytmQr.sending"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+            >{{ paytmQr.sending ? 'Creating…' : 'New QR' }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- RECONCILIATION MODAL -->
     <Unallocated
       :show="showReconcileModal"
@@ -961,14 +1012,27 @@ const upiRefNo = ref('')
 
 // Paytm EDC card machine: push the UPI box amount to the machine, wait for the result
 // (socket event from the webhook, with polling as fallback), then fill UPI or Card.
-const paytm = ref({ enabled: false, devices: [], show: false, tid: '', amount: 0, orderId: '', status: '', message: '', sending: false })
+const paytm = ref({ enabled: false, qrEnabled: false, devices: [], show: false, tid: '', amount: 0, orderId: '', status: '', message: '', sending: false })
 let paytmPollTimer = null
+// Paytm dynamic UPI QR: same wait-for-result flow, but the QR is shown on this screen
+const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', sending: false })
+let paytmQrPollTimer = null
+const paytmQrSrc = computed(() => {
+  const img = paytmQr.value.image || ''
+  return img.startsWith('data:') ? img : `data:image/png;base64,${img}`
+})
+// Room for the buttons inside the UPI box: Send QR always, POS and Paytm QR when enabled
+const upiInputPad = computed(() => {
+  const pos = paytm.value.enabled, qr = paytm.value.qrEnabled
+  return pos && qr ? 'pl-[23rem]' : qr ? 'pl-[18rem]' : pos ? 'pl-64' : 'pl-44'
+})
 const processedInvoiceName = ref('')
 const mirrorQueued = ref(false)
 
 // Block page shortcuts while any inline subwindow is open
 useSubwindowWatcher(showCardRefModal)
 useSubwindowWatcher(computed(() => paytm.value.show))
+useSubwindowWatcher(computed(() => paytmQr.value.show))
 useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showModifyModal)
 useSubwindowWatcher(showReconcileModal)
@@ -1526,9 +1590,11 @@ async function loadPaytmDevices() {
   try {
     const res = await frappeGet('ssplbilling.api.paytm_api.get_devices')
     paytm.value.enabled = !!res?.enabled
+    paytm.value.qrEnabled = !!res?.qr_enabled
     paytm.value.devices = res?.devices || []
   } catch (e) {
     paytm.value.enabled = false
+    paytm.value.qrEnabled = false
   }
 }
 
@@ -1621,7 +1687,10 @@ function applyPaytmResult(r) {
   }, 1500)
 }
 
-function onPaytmSocket(r) { applyPaytmResult(r) }
+function onPaytmSocket(r) {
+  applyPaytmResult(r)
+  applyPaytmQrResult(r)
+}
 
 async function closePaytmModal() {
   const p = paytm.value
@@ -1637,6 +1706,85 @@ async function closePaytmModal() {
     } catch (e) { /* closing anyway */ }
   }
   Object.assign(p, { show: false, orderId: '', status: '', message: '' })
+}
+
+function openPaytmQr() {
+  errorMsg.value = ''
+  const amount = Number(payments.value.upi) || 0
+  if (!selectedInvoice.value) {
+    errorMsg.value = 'Select a bill before creating the Paytm QR.'
+    return
+  }
+  if (amount <= 0) {
+    errorMsg.value = 'Enter the amount in the UPI box before creating the Paytm QR.'
+    return
+  }
+  Object.assign(paytmQr.value, { show: true, amount, orderId: '', status: '', message: '', image: '', sending: false })
+  createPaytmQr()
+}
+
+async function createPaytmQr() {
+  const q = paytmQr.value
+  Object.assign(q, { sending: true, orderId: '', status: '', message: '', image: '' })
+  try {
+    const res = await frappePost('ssplbilling.api.paytm_api.create_qr', {
+      invoice_name: selectedInvoice.value.name,
+      amount: q.amount,
+    }, { silent: true })
+    Object.assign(q, { orderId: res.order_id, image: res.qr_image, status: 'Pending', message: 'Waiting for the customer to scan and pay…' })
+    stopPaytmQrPolling()
+    paytmQrPollTimer = setInterval(async () => {
+      const orderId = paytmQr.value.orderId
+      if (!orderId) return stopPaytmQrPolling()
+      try {
+        applyPaytmQrResult(await frappePost('ssplbilling.api.paytm_api.get_status', { order_id: orderId }, { silent: true }))
+      } catch (e) { /* keep polling; the socket event may still arrive */ }
+    }, 3000)
+  } catch (e) {
+    q.status = 'Failed'
+    q.message = e.message || 'Could not create the Paytm QR.'
+  } finally {
+    q.sending = false
+  }
+}
+
+function stopPaytmQrPolling() {
+  if (paytmQrPollTimer) clearInterval(paytmQrPollTimer)
+  paytmQrPollTimer = null
+}
+
+function applyPaytmQrResult(r) {
+  const q = paytmQr.value
+  if (!r || r.order_id !== q.orderId || q.status !== 'Pending' || r.status === 'Pending') return
+  stopPaytmQrPolling()
+  q.status = r.status
+  if (r.status !== 'Success') {
+    q.message = r.message || `Payment ${r.status.toLowerCase()}.`
+    return
+  }
+  payments.value.upi = r.amount
+  upiRefNo.value = r.reference_no
+  q.message = `₹${fmt(r.amount)} received by UPI (Ref ${r.reference_no})`
+  setTimeout(() => {
+    if (paytmQr.value.orderId === r.order_id) closePaytmQr()
+    nextTick(() => postButton.value?.focus())
+  }, 1500)
+}
+
+async function closePaytmQr() {
+  const q = paytmQr.value
+  stopPaytmQrPolling()
+  if (q.orderId && q.status === 'Pending') {
+    try {
+      const r = await frappePost('ssplbilling.api.paytm_api.cancel', { order_id: q.orderId }, { silent: true })
+      if (r?.status === 'Success') {
+        // Paid just before the cashier gave up waiting — keep the payment
+        applyPaytmQrResult(r)
+        return
+      }
+    } catch (e) { /* closing anyway */ }
+  }
+  Object.assign(q, { show: false, orderId: '', status: '', message: '', image: '' })
 }
 
 async function processPayment() {
@@ -2146,6 +2294,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   _billPanelCleanup?.()
   stopPaytmPolling()
+  stopPaytmQrPolling()
   getFrappeSocket()?.off('paytm_payment_update', onPaytmSocket)
 })
 

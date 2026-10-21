@@ -20,6 +20,11 @@
   "column_break_channel",
   "channel_id_mobile",
   "website_mobile",
+  "qr_section",
+  "qr_enabled",
+  "qr_client_id",
+  "column_break_qr",
+  "qr_pos_id",
   "webhook_section",
   "payment_notification_url",
   "devices_section",
@@ -121,6 +126,36 @@
    "default": "WEBSTAGING"
   },
   {
+   "fieldname": "qr_section",
+   "fieldtype": "Section Break",
+   "label": "Dynamic UPI QR"
+  },
+  {
+   "fieldname": "qr_enabled",
+   "fieldtype": "Check",
+   "label": "Enable Dynamic QR",
+   "default": "0",
+   "description": "Shows a Paytm QR button on the cashier desk; the QR is signed with the Merchant Key"
+  },
+  {
+   "fieldname": "qr_client_id",
+   "fieldtype": "Data",
+   "label": "QR Client ID",
+   "default": "C11",
+   "depends_on": "qr_enabled"
+  },
+  {
+   "fieldname": "column_break_qr",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "qr_pos_id",
+   "fieldtype": "Data",
+   "label": "QR POS ID",
+   "depends_on": "qr_enabled",
+   "description": "Counter id sent as posId. Leave empty to use the cashier's user id."
+  },
+  {
    "fieldname": "webhook_section",
    "fieldtype": "Section Break",
    "label": "Webhook"
@@ -145,7 +180,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-19 00:00:00",
+ "modified": "2026-10-21 00:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Paytm Settings",

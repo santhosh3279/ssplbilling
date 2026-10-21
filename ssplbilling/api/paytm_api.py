@@ -4,10 +4,17 @@ Flow: cashier presses "POS" -> send_to_device() pushes the amount to the machine
 -> customer pays on the machine (UPI QR or card) -> Paytm calls payment_webhook() and/or
 the page polls get_status() -> the result fills the UPI or Card box; the cashier submits.
 
+Dynamic UPI QR (channel "QR"): create_qr() asks Paytm PG for a QR bound to an order id and
+amount, the cashier page shows it, and the same get_status()/webhook path confirms the payment
+through the PG v3 order status API.
+
 Nothing here creates a Payment Entry; submit_invoice_with_payment() still does that.
 """
 
+import base64
+import io
 import json
+import re
 
 import frappe
 import requests
@@ -25,6 +32,14 @@ EDC_STATUS_PATH = "/ecr/V2/payment/status"
 EDC_CHANNEL_ID = "EDC"
 EDC_PAYMENT_MODE = "ALL"  # machine lets the customer choose UPI QR or card
 REQUEST_TIMEOUT = 20
+
+# Paytm PG (online) APIs used by the dynamic UPI QR; signed with the PG Merchant Key
+PG_BASE_URL = {
+	"Staging": "https://securegw-stage.paytmpayments.in",
+	"Production": "https://securegw.paytmpayments.in",
+}
+PG_QR_CREATE_PATH = "/paymentservices/qr/create"
+PG_STATUS_PATH = "/v3/order/status"
 
 CARD_PAY_METHODS = ("CARD", "CREDIT_CARD", "DEBIT_CARD", "EMI", "CC", "DC")
 
@@ -45,6 +60,34 @@ def _signing_key(settings):
 	if not key:
 		frappe.throw(_("Merchant Key is missing in SSPL Paytm Settings"))
 	return key
+
+
+def _pg_key(settings):
+	key = settings.get_password("merchant_key", raise_exception=False)
+	if not key:
+		frappe.throw(_("Merchant Key is missing in SSPL Paytm Settings"))
+	return key
+
+
+def _key_for(settings, txn):
+	return _pg_key(settings) if txn.channel == "QR" else _signing_key(settings)
+
+
+def _post_pg(settings, path, body, head=None):
+	"""PG variant of _post(): head carries "signature" instead of the EDC checksum fields."""
+	from paytmchecksum import generateSignature
+
+	body_str = json.dumps(body, separators=(",", ":"))
+	head = {**(head or {}), "signature": generateSignature(body_str, _pg_key(settings))}
+	payload = '{"head":' + json.dumps(head, separators=(",", ":")) + ',"body":' + body_str + "}"
+	res = requests.post(
+		PG_BASE_URL[settings.environment] + path,
+		data=payload,
+		headers={"Content-Type": "application/json"},
+		timeout=REQUEST_TIMEOUT,
+	)
+	res.raise_for_status()
+	return res.json()
 
 
 def _post(settings, path, body):
@@ -80,9 +123,10 @@ def get_devices():
 	"""Enabled card machines for the cashier page; never returns any key."""
 	settings = frappe.get_cached_doc("SSPL Paytm Settings")
 	if not settings.enabled:
-		return {"enabled": False, "devices": []}
+		return {"enabled": False, "qr_enabled": False, "devices": []}
 	return {
 		"enabled": True,
+		"qr_enabled": bool(settings.qr_enabled),
 		"devices": [
 			{"device_name": d.device_name, "tid": d.tid, "user": d.user}
 			for d in settings.devices
@@ -148,6 +192,82 @@ def send_to_device(invoice_name, amount, tid):
 	return {"order_id": order_id, "device_name": device.device_name, "status": "Pending"}
 
 
+@frappe.whitelist()
+def create_qr(invoice_name, amount):
+	"""Create a Paytm dynamic UPI QR for the amount; returns the QR image and the order id to poll."""
+	settings = _settings()
+	if not settings.qr_enabled:
+		frappe.throw(_("Dynamic QR is disabled in SSPL Paytm Settings"))
+	amount = flt(amount, 2)
+	if amount <= 0:
+		frappe.throw(_("Amount must be greater than 0"))
+	if not frappe.db.exists("Sales Invoice", invoice_name):
+		frappe.throw(_("Sales Invoice {0} not found").format(invoice_name))
+
+	now = now_datetime()
+	# Paytm order ids allow only letters, digits, "_", "-" and "@" (max 50); series often contain "/"
+	order_id = f"{re.sub(r'[^A-Za-z0-9_@-]', '_', invoice_name)[:40]}-{now.strftime('%H%M%S%f')[:9]}"
+	pos_id = settings.qr_pos_id or re.sub(r"[^A-Za-z0-9_]", "_", frappe.session.user)[:20]
+
+	txn = frappe.get_doc(
+		{
+			"doctype": "SSPL Paytm Transaction",
+			"order_id": order_id,
+			"sales_invoice": invoice_name,
+			"amount": amount,
+			"status": "Pending",
+			"channel": "QR",
+			"device_name": pos_id,
+			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
+		}
+	).insert(ignore_permissions=True)
+
+	body = {
+		"mid": settings.merchant_id,
+		"orderId": order_id,
+		"amount": f"{amount:.2f}",  # rupees, unlike the EDC paise amount
+		"businessType": "UPI_QR_CODE",
+		"posId": pos_id,
+	}
+	try:
+		res = _post_pg(
+			settings, PG_QR_CREATE_PATH, body, {"clientId": settings.qr_client_id or "C11", "version": "v1"}
+		)
+	except Exception as e:
+		_update_txn(txn, "Failed", {"error": str(e)}, str(e))
+		frappe.db.commit()
+		frappe.log_error(title="Paytm QR create failed", message=frappe.get_traceback())
+		frappe.throw(_("Could not reach Paytm: {0}").format(e))
+
+	rb = res.get("body") or {}
+	info = rb.get("resultInfo") or {}
+	# The base64 image is large; keep it out of the stored response
+	stored = {**res, "body": {k: v for k, v in rb.items() if k != "image"}}
+	if (info.get("resultStatus") or "").upper() != "SUCCESS" or not (rb.get("image") or rb.get("qrData")):
+		_update_txn(txn, "Failed", stored, info.get("resultMsg"))
+		frappe.db.commit()
+		frappe.throw(
+			_("Paytm could not create the QR: {0}").format(info.get("resultMsg") or "no QR returned")
+		)
+
+	_update_txn(txn, "Pending", stored, info.get("resultMsg"))
+	return {
+		"order_id": order_id,
+		"status": "Pending",
+		"qr_image": rb.get("image") or _qr_png(rb.get("qrData")),
+		"qr_data": rb.get("qrData"),
+	}
+
+
+def _qr_png(data):
+	"""Base64 PNG of the UPI string, for when Paytm returns qrData without an image."""
+	from pyqrcode import create as qrcreate
+
+	buf = io.BytesIO()
+	qrcreate(data).png(buf, scale=8, quiet_zone=2)
+	return base64.b64encode(buf.getvalue()).decode()
+
+
 @frappe.whitelist(methods=["POST"])
 def get_status(order_id):
 	"""Ask Paytm for the payment status and return the result for the cashier page."""
@@ -187,7 +307,9 @@ def payment_webhook():
 		return {"status": "unknown order"}
 
 	settings = frappe.get_cached_doc("SSPL Paytm Settings")
-	checksum = (data.get("head") or {}).get("checksum") or body.get("CHECKSUMHASH")
+	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
+	head = data.get("head") or {}
+	checksum = head.get("checksum") or head.get("signature") or body.get("CHECKSUMHASH")
 	if checksum:
 		from paytmchecksum import verifySignature
 
@@ -196,10 +318,9 @@ def payment_webhook():
 			signed = raw[raw.index('"body":') + 7 : raw.rindex("}")].strip()
 		else:
 			signed = {k: v for k, v in body.items() if k != "CHECKSUMHASH"}
-		if not verifySignature(signed, _signing_key(settings), checksum):
+		if not verifySignature(signed, _key_for(settings, txn), checksum):
 			frappe.log_error(title="Paytm webhook checksum mismatch", message=raw[:5000])
 
-	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
 	# Cancelled rows are re-checked too: the customer can still pay on the machine after
 	# the cashier stopped waiting, and that payment must not be silently dropped.
 	if txn.status in ("Pending", "Cancelled"):
@@ -216,6 +337,8 @@ def payment_webhook():
 
 
 def _refresh_from_paytm(txn):
+	if txn.channel == "QR":
+		return _refresh_qr(txn)
 	settings = _settings()
 	body = {
 		"paytmMid": settings.merchant_id,
@@ -226,11 +349,7 @@ def _refresh_from_paytm(txn):
 	try:
 		res = _post(settings, EDC_STATUS_PATH, body)
 	except Exception:
-		# The page polls every few seconds; log only the first failure per order
-		cache_key = f"paytm_status_failed:{txn.order_id}"
-		if not frappe.cache.get_value(cache_key):
-			frappe.cache.set_value(cache_key, 1, expires_in_sec=3600)
-			frappe.log_error(title="Paytm EDC status check failed", message=frappe.get_traceback())
+		_log_status_failure(txn, "Paytm EDC status check failed")
 		return
 
 	rb = res.get("body") or {}
@@ -248,14 +367,53 @@ def _refresh_from_paytm(txn):
 	txn.rrn = rb.get("retrievalReferenceNo") or rb.get("rrn") or rb.get("bankTxnId") or txn.rrn
 	txn.auth_code = rb.get("authCode") or txn.auth_code
 	if new_status == "Success" and rb.get("transactionAmount"):
-		paid = flt(rb.get("transactionAmount")) / 100
-		if abs(paid - flt(txn.amount)) > 0.01:
-			frappe.log_error(
-				title="Paytm amount mismatch",
-				message=f"{txn.order_id}: requested {txn.amount}, Paytm reports {paid}",
-			)
-			txn.amount = paid
+		_check_amount(txn, flt(rb.get("transactionAmount")) / 100)
 	_update_txn(txn, new_status, res, info.get("resultMsg"))
+
+
+def _refresh_qr(txn):
+	settings = _settings()
+	try:
+		res = _post_pg(settings, PG_STATUS_PATH, {"mid": settings.merchant_id, "orderId": txn.order_id})
+	except Exception:
+		_log_status_failure(txn, "Paytm QR status check failed")
+		return
+
+	rb = res.get("body") or {}
+	info = rb.get("resultInfo") or {}
+	status = (info.get("resultStatus") or "").upper()
+	# Before the customer scans, Paytm can answer TXN_FAILURE ("Invalid Order Id") for an order
+	# with no payment attempt yet; only a failure that carries a txnId is a real failed payment.
+	if status == "TXN_SUCCESS":
+		new_status = "Success"
+	elif status == "TXN_FAILURE" and rb.get("txnId"):
+		new_status = "Failed"
+	else:
+		new_status = txn.status
+
+	txn.pay_method = rb.get("paymentMode") or txn.pay_method
+	txn.paytm_txn_id = rb.get("txnId") or txn.paytm_txn_id
+	txn.rrn = rb.get("bankTxnId") or txn.rrn
+	if new_status == "Success" and rb.get("txnAmount"):
+		_check_amount(txn, flt(rb.get("txnAmount")))  # rupees
+	_update_txn(txn, new_status, res, info.get("resultMsg"))
+
+
+def _log_status_failure(txn, title):
+	# The page polls every few seconds; log only the first failure per order
+	cache_key = f"paytm_status_failed:{txn.order_id}"
+	if not frappe.cache.get_value(cache_key):
+		frappe.cache.set_value(cache_key, 1, expires_in_sec=3600)
+		frappe.log_error(title=title, message=frappe.get_traceback())
+
+
+def _check_amount(txn, paid):
+	if abs(paid - flt(txn.amount)) > 0.01:
+		frappe.log_error(
+			title="Paytm amount mismatch",
+			message=f"{txn.order_id}: requested {txn.amount}, Paytm reports {paid}",
+		)
+		txn.amount = paid
 
 
 def _update_txn(txn, status, response, message=None):
@@ -275,10 +433,11 @@ def _txn_result(txn):
 	method = (txn.pay_method or "").upper()
 	return {
 		"order_id": txn.order_id,
+		"channel": txn.channel or "EDC",
 		"sales_invoice": txn.sales_invoice,
 		"status": txn.status,
 		"amount": flt(txn.amount),
-		"mode": "card" if method in CARD_PAY_METHODS else "upi",
+		"mode": "card" if txn.channel != "QR" and method in CARD_PAY_METHODS else "upi",
 		"pay_method": txn.pay_method,
 		"reference_no": txn.rrn or txn.paytm_txn_id or txn.auth_code or txn.order_id,
 		"message": txn.result_message,
