@@ -39,11 +39,11 @@
         <div
           v-for="b in item.barcodes"
           :key="b.barcode"
-          class="mb-2 flex items-center gap-3 rounded-xl border px-3 py-3"
-          :class="b.barcode === lastAdded ? 'border-[var(--color-success)] bg-[var(--color-success)]/10' : 'border-[var(--color-border)] bg-[var(--color-surface)]'"
+          class="mb-1.5 flex items-center gap-2 rounded-lg border-2 border-[var(--color-text)] px-2 py-1.5"
+          :class="b.barcode === lastAdded ? 'bg-[var(--color-success)]/15' : 'bg-[var(--color-surface)]'"
         >
           <div class="min-w-0 flex-1">
-            <div class="break-all font-mono text-base font-semibold">{{ b.barcode }}</div>
+            <div class="break-all font-mono text-xl font-bold leading-tight text-[var(--color-text)]">{{ b.barcode }}</div>
             <div v-if="b.barcode_type" class="text-xs text-[var(--color-text-muted)]">{{ b.barcode_type }}</div>
           </div>
           <select
