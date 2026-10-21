@@ -112,16 +112,11 @@
               <label for="customer-mobile" class="mb-1 block text-sm font-semibold text-[var(--color-text-muted)]">Mobile Number</label>
               <input id="customer-mobile" v-model.trim="pricing.mobile_no" type="tel" inputmode="numeric" maxlength="10" autocomplete="off"
                 title="Click to use this mobile number as the password"
-                @click="useMobileAsPassword" @input="syncMobilePassword"
+                :disabled="isSaving" @click="useMobileAsPassword" @input="syncMobilePassword"
                 class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm focus:border-[var(--color-info)] focus:outline-none" />
             </div>
             <p v-if="pricingError" role="alert" class="text-sm text-[var(--color-danger)]">{{ pricingError }}</p>
             <p v-if="pricingSaved" role="status" class="text-sm text-[var(--color-success)]">{{ pricingSaved }}</p>
-            <button type="button" :disabled="isSavingPricing || !pricingDirty"
-              class="rounded border border-[var(--color-info)] px-4 py-1.5 text-sm font-semibold text-[var(--color-info)] disabled:opacity-50"
-              @click="savePricing">
-              {{ isSavingPricing ? 'Saving...' : 'Save Price List & Mobile' }}
-            </button>
           </template>
         </div>
 
@@ -138,7 +133,7 @@
         <p v-if="error" role="alert" class="rounded border border-[var(--color-danger)] p-3 text-sm text-[var(--color-danger)]">{{ error }}</p>
         <p v-if="success" role="status" class="rounded border border-[var(--color-success)] p-3 text-sm text-[var(--color-success)]">{{ success }}</p>
 
-        <button type="submit" :disabled="isSaving || isLoadingCustomers || (!!success && !editingUser)"
+        <button type="submit" :disabled="isSaving || isLoadingCustomers || isLoadingPricing || (!!success && !editingUser)"
           class="rounded bg-[var(--color-info)] px-4 py-2 font-semibold text-[var(--color-text-on-highlight)] disabled:opacity-50">
           {{ isSaving ? 'Saving...' : editingUser ? 'Save Changes' : createdUser ? 'Retry Customer Link' : 'Create User' }}
         </button>
@@ -261,7 +256,6 @@ const priceLists = ref([])
 const pricing = ref({ price_list: '', mobile_no: '' })
 const loadedPricing = ref({ price_list: '', mobile_no: '' })
 const isLoadingPricing = ref(false)
-const isSavingPricing = ref(false)
 const pricingError = ref('')
 const pricingSaved = ref('')
 
@@ -316,21 +310,23 @@ async function loadPricing(name) {
   }
 }
 
+// Saved by the main Save button ahead of the user, so a pricing error stops the
+// save before anything is written. Returns false (with pricingError set) on failure.
 async function savePricing() {
   pricingError.value = ''
   pricingSaved.value = ''
+  if (!customer.value || !pricingDirty.value) return true
   const priceList = (pricing.value.price_list || '').trim()
   const mobile = (pricing.value.mobile_no || '').trim()
   if (priceList && !priceLists.value.includes(priceList)) {
     pricingError.value = 'Pick a price list from the list.'
-    return
+    return false
   }
   if (mobile && !/^\d{10}$/.test(mobile)) {
     pricingError.value = 'Mobile number must be 10 digits.'
-    return
+    return false
   }
   const name = customer.value
-  isSavingPricing.value = true
   try {
     const res = await frappePost('ssplbilling.api.customersearch_api.set_customer_price_setting', {
       customer: name,
@@ -341,10 +337,10 @@ async function savePricing() {
       applyPricing(res)
       pricingSaved.value = 'Price list and mobile saved.'
     }
+    return true
   } catch (e) {
-    pricingError.value = 'Could not save: ' + e.message
-  } finally {
-    isSavingPricing.value = false
+    pricingError.value = 'Could not save price list & mobile: ' + e.message
+    return false
   }
 }
 
@@ -430,6 +426,7 @@ async function saveUser() {
   }
   isSaving.value = true
   try {
+    if (!(await savePricing())) return
     const res = await frappePost('ssplbilling.api.customersearch_api.update_customer_user', {
       user: editingUser.value,
       new_user: loginEmail.value,
@@ -455,11 +452,13 @@ async function createUser() {
   error.value = ''
   isSaving.value = true
   try {
+    if (!createdUser.value && (!loginEmail.value || !password.value || !customer.value)) {
+      throw new Error('Enter a username, password, and linked customer.')
+    }
+    if (!(await savePricing())) return
+
     if (!createdUser.value) {
       const login = loginEmail.value
-      if (!login || !password.value || !customer.value) {
-        throw new Error('Enter a username, password, and linked customer.')
-      }
       const user = await frappePost('frappe.client.insert', {
         doc: {
           doctype: 'User',
