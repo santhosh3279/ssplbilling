@@ -63,6 +63,24 @@ def preview_print_template_pdf(print_template, document_name=None):
 
 
 @frappe.whitelist()
+def get_print_page_count(print_template, document_name=None):
+	"""Page count of the rendered PDF, for the print button. None for non-PDF templates."""
+	doc = frappe.get_doc("Print Template", print_template)
+	doc.check_permission("read")
+	if doc.format_type not in ("PDF", "Custom PDF"):
+		return None
+
+	from pypdf import PdfReader
+
+	try:
+		return len(PdfReader(io.BytesIO(base64.b64decode(doc.preview_pdf(document_name)))).pages)
+	except Exception:
+		# The count is a hint on the button; a failed render must not block printing.
+		frappe.log_error(frappe.get_traceback(), "Print page count failed")
+		return None
+
+
+@frappe.whitelist()
 def preview_print_template_file(print_template, document_name=None, doctype=None):
 	"""Serve the preview PDF as a file named "<party> - <bill number>.pdf".
 

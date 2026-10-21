@@ -94,6 +94,9 @@
               >
                 <span class="text-lg">🖨</span>
                 {{ printing ? 'Sending to printer…' : 'Print Now' }}
+                <span v-if="!printing && (pageCount || countingPages)" class="rounded-full bg-[var(--color-text-on-highlight)]/20 px-2 py-0.5 text-xs">
+                  {{ countingPages ? '… pages' : `${pageCount} page${pageCount === 1 ? '' : 's'}` }}
+                </span>
                 <kbd v-if="!printing" class="rounded border border-[var(--color-info)] bg-[var(--color-info)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-on-highlight)]">Enter</kbd>
               </button>
 
@@ -272,7 +275,39 @@ function syncPrinter() {
 watch(selectedTemplate, () => {
   filterPrintersForTemplate(selectedTemplate.value)
   syncPrinter()
+  loadPageCount()
 })
+
+// Page count of the rendered PDF, shown on the Print Now button. The server answers null
+// for non-PDF (thermal/barcode) templates, which hides the badge.
+const pageCount     = ref(null)
+const countingPages = ref(false)
+let pageCountSeq = 0
+
+async function loadPageCount() {
+  const template = selectedTemplate.value
+  const seq = ++pageCountSeq
+  pageCount.value = null
+  const format = templateFormatMap.value[template]
+  // Locked templates carry no format_type here; the server decides for them.
+  if (!template || (format && !['PDF', 'Custom PDF'].includes(format))) {
+    countingPages.value = false
+    return
+  }
+  countingPages.value = true
+  try {
+    const count = await frappeGet('ssplbilling.api.print_preview_api.get_print_page_count', {
+      print_template: template,
+      document_name: props.invoiceName,
+    })
+    // frappeGet hands back the whole response when message is null, so only a number counts.
+    if (seq === pageCountSeq) pageCount.value = Number.isInteger(count) && count > 0 ? count : null
+  } catch {
+    // A missing count only hides the badge.
+  } finally {
+    if (seq === pageCountSeq) countingPages.value = false
+  }
+}
 // Note: no watch on selectedPrinter — changing printer must not auto-change the template
 
 function handleKeydown(e) {
