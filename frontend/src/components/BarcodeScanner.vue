@@ -74,20 +74,22 @@
         v-if="manualResults.length"
         class="results-scroll absolute inset-x-0 bottom-full max-h-[45vh] space-y-1 overflow-y-auto overscroll-contain border-t border-[var(--color-border)] bg-[var(--color-bg)] p-2 shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
       >
-        <!-- Item name (first 25 characters) | item code | price (cipher), all one size; code and price take
-             only their own width, divider lines between, the name gets the rest and wraps.
+        <!-- Item name (first 25 characters) | item code | price (cipher), all one size; code and price columns
+             are as wide as the longest value in the list (monospace, so divider lines line up on every row),
+             the name gets the rest and wraps.
              Alternate rows shaded, exact code / barcode match blinks -->
         <button
           v-for="(m, i) in manualResults"
           :key="m.code"
           type="button"
-          class="grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-stretch rounded-lg border-2 border-[var(--color-text-muted)] text-left text-lg font-semibold leading-snug active:bg-[var(--color-surface-raised)]"
+          class="grid w-full items-stretch rounded-lg border-2 border-[var(--color-text-muted)] text-left text-lg font-semibold leading-snug active:bg-[var(--color-surface-raised)]"
           :class="[i % 2 ? 'bg-[var(--color-surface)]' : '', isExactCode(m) && 'exact-match']"
+          :style="{ gridTemplateColumns: resultColumns }"
           @click="found(m.code)"
         >
           <div class="min-w-0 self-center break-words px-2 py-1.5">{{ shortName(m.name) }}</div>
-          <div class="flex items-center whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-1.5 text-[var(--color-text-muted)]">{{ m.code }}</div>
-          <div class="flex items-center justify-end whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-1.5 tabular-nums">{{ cipherPrice(m.price) }}</div>
+          <div class="flex items-center whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-1.5 font-mono text-[var(--color-text-muted)]">{{ m.code }}</div>
+          <div class="flex items-center justify-end whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-1.5 font-mono">{{ cipherPrice(m.price) }}</div>
         </button>
       </div>
       <div class="flex gap-2 px-2 py-2" :class="showKeys ? '' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'">
@@ -198,6 +200,13 @@ const shortName = name => {
   const s = String(name || '')
   return s.length > NAME_CHARS ? s.slice(0, NAME_CHARS).trimEnd() + '…' : s
 }
+
+// Same code / price column widths on every row: longest value in ch (monospace) + px-1.5 padding + border
+const resultColumns = computed(() => {
+  const widest = f => Math.max(1, ...manualResults.value.map(m => String(f(m) ?? '').length))
+  const col = n => `calc(${n}ch + 0.75rem + 2px)`
+  return `minmax(0,1fr) ${col(widest(m => m.code))} ${col(widest(m => cipherPrice(m.price)))}`
+})
 
 const isExactCode = m => {
   const q = typed.value.trim().toLowerCase()
