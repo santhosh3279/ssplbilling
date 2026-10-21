@@ -21,7 +21,8 @@ import requests
 from frappe import _
 from frappe.utils import flt, now_datetime
 
-# Matches Paytm's ECR sample (head.version 3.1, amount in paise). The production host is the older paytm.in one, which does answer ECR requests.
+# Matches Paytm's ECR sample (head.version 3.1, amount in paise). The production host is the
+# older paytm.in one, which does answer ECR requests.
 EDC_BASE_URL = {
 	"Staging": "https://securestage.paytmpayments.com",
 	"Production": "https://securegw-edc.paytm.in",
@@ -135,16 +136,21 @@ def _post(settings, path, body):
 	return res.json()
 
 
+def _user_devices(settings):
+	"""Machines a cashier may use: only rows assigned to them in SSPL Paytm Settings."""
+	return [d for d in settings.devices if d.enabled and d.user == frappe.session.user]
+
+
 def _device_for(settings, tid):
-	for row in settings.devices:
-		if row.enabled and row.tid == tid:
+	for row in _user_devices(settings):
+		if row.tid == tid:
 			return row
-	frappe.throw(_("Card machine with TID {0} is not configured or disabled").format(tid))
+	frappe.throw(_("Card machine with TID {0} is not assigned to you or is disabled").format(tid))
 
 
 @frappe.whitelist()
 def get_devices():
-	"""Enabled card machines for the cashier page; never returns any key."""
+	"""Enabled card machines assigned to this user, for the cashier page; never returns any key."""
 	settings = frappe.get_cached_doc("SSPL Paytm Settings")
 	if not settings.enabled:
 		return {"enabled": False, "qr_enabled": False, "devices": []}
@@ -152,9 +158,7 @@ def get_devices():
 		"enabled": True,
 		"qr_enabled": bool(settings.qr_enabled),
 		"devices": [
-			{"device_name": d.device_name, "tid": d.tid, "user": d.user}
-			for d in settings.devices
-			if d.enabled
+			{"device_name": d.device_name, "tid": d.tid, "user": d.user} for d in _user_devices(settings)
 		],
 	}
 

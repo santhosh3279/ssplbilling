@@ -579,7 +579,7 @@
                   <div :ref="bindUpiOverlay" class="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2 whitespace-nowrap z-10">
                     <span class="text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-success)] transition-colors uppercase">{{ upiLabel }}</span>
                     <button
-                      v-if="paytm.enabled"
+                      v-if="hasPaytmMachine"
                       @click="openPaytmModal('QR')"
                       type="button"
                       title="Show the UPI QR for this amount on the Paytm machine"
@@ -588,7 +588,7 @@
                       UPI
                     </button>
                     <button
-                      v-if="paytm.enabled"
+                      v-if="hasPaytmMachine"
                       @click="openPaytmModal('CARD')"
                       type="button"
                       title="Take a card payment for this amount on the Paytm machine"
@@ -1017,6 +1017,8 @@ const paytmQrSrc = computed(() => {
 // Left padding of the UPI box = measured width of its label + machine buttons; the label is the
 // UPI account name, so a fixed padding either overlaps the amount or wastes the box
 const upiInputPad = ref(96)
+// UPI / Card buttons only for a cashier with a machine assigned in SSPL Paytm Settings
+const hasPaytmMachine = computed(() => paytm.value.enabled && paytm.value.devices.length > 0)
 let upiOverlayEl = null
 let upiPadObserver = null
 function bindUpiOverlay(el) {
@@ -1615,7 +1617,7 @@ function openPaytmModal(payMode) {
     return
   }
   if (!paytm.value.devices.length) {
-    errorMsg.value = 'No card machine set up. Add the TID under Devices in SSPL Paytm Settings.'
+    errorMsg.value = 'No card machine assigned to you. Set your user on a device in SSPL Paytm Settings.'
     return
   }
   if (amount <= 0) {
