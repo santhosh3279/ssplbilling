@@ -72,23 +72,22 @@
     <div class="relative shrink-0 bg-[var(--color-surface)] text-[var(--color-text)]">
       <div
         v-if="manualResults.length"
-        class="results-scroll absolute inset-x-0 bottom-full max-h-[45vh] space-y-1.5 overflow-y-auto overscroll-contain border-t border-[var(--color-border)] bg-[var(--color-bg)] p-2 shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
+        class="results-scroll absolute inset-x-0 bottom-full max-h-[45vh] space-y-1 overflow-y-auto overscroll-contain border-t border-[var(--color-border)] bg-[var(--color-bg)] p-2 shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
       >
-        <!-- Item name (first 25 characters) on its own full-width line, item code · price (cipher) below;
-             alternate rows shaded, exact code / barcode match blinks -->
+        <!-- Item name (first 25 characters) | item code | price (cipher), all one size; code and price take
+             only their own width, divider lines between, the name gets the rest and wraps.
+             Alternate rows shaded, exact code / barcode match blinks -->
         <button
           v-for="(m, i) in manualResults"
           :key="m.code"
           type="button"
-          class="block w-full rounded-xl border-2 border-[var(--color-text-muted)] px-3 py-2.5 text-left active:bg-[var(--color-surface-raised)]"
+          class="grid w-full grid-cols-[minmax(0,1fr)_auto_auto] items-stretch rounded-lg border-2 border-[var(--color-text-muted)] text-left text-lg font-semibold leading-snug active:bg-[var(--color-surface-raised)]"
           :class="[i % 2 ? 'bg-[var(--color-surface)]' : '', isExactCode(m) && 'exact-match']"
           @click="found(m.code)"
         >
-          <div class="break-words text-lg font-semibold leading-snug">{{ shortName(m.name) }}</div>
-          <div class="mt-0.5 flex items-baseline justify-between gap-2">
-            <span class="min-w-0 truncate font-mono text-xs text-[var(--color-text-muted)]">{{ m.code }}</span>
-            <span class="shrink-0 font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(m.price) }}</span>
-          </div>
+          <div class="min-w-0 self-center break-words px-2 py-1.5">{{ shortName(m.name) }}</div>
+          <div class="flex items-center whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-1.5 text-[var(--color-text-muted)]">{{ m.code }}</div>
+          <div class="flex items-center justify-end whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-1.5 tabular-nums">{{ cipherPrice(m.price) }}</div>
         </button>
       </div>
       <div class="flex gap-2 px-2 py-2" :class="showKeys ? '' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'">
