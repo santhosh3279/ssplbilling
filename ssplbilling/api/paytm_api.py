@@ -136,20 +136,30 @@ def _post(settings, path, body):
 	return res.json()
 
 
-def _user_devices(settings):
+def _machine_user(user=None):
+	"""The user whose machines apply: an inherited user (frontend `wb-inherited-user`) only for
+	Administrator/admin, as in get_allowed_tiles; everyone else always gets their own."""
+	current_user = frappe.session.user
+	if user and current_user in ("Administrator", "admin"):
+		return user
+	return current_user
+
+
+def _user_devices(settings, user=None):
 	"""Machines a cashier may use: only rows assigned to them in SSPL Paytm Settings."""
-	return [d for d in settings.devices if d.enabled and d.user == frappe.session.user]
+	target = _machine_user(user)
+	return [d for d in settings.devices if d.enabled and d.user == target]
 
 
-def _device_for(settings, tid):
-	for row in _user_devices(settings):
+def _device_for(settings, tid, user=None):
+	for row in _user_devices(settings, user):
 		if row.tid == tid:
 			return row
 	frappe.throw(_("Card machine with TID {0} is not assigned to you or is disabled").format(tid))
 
 
 @frappe.whitelist()
-def get_devices():
+def get_devices(user=None):
 	"""Enabled card machines assigned to this user, for the cashier page; never returns any key."""
 	settings = frappe.get_cached_doc("SSPL Paytm Settings")
 	if not settings.enabled:
@@ -158,19 +168,20 @@ def get_devices():
 		"enabled": True,
 		"qr_enabled": bool(settings.qr_enabled),
 		"devices": [
-			{"device_name": d.device_name, "tid": d.tid, "user": d.user} for d in _user_devices(settings)
+			{"device_name": d.device_name, "tid": d.tid, "user": d.user}
+			for d in _user_devices(settings, user)
 		],
 	}
 
 
 @frappe.whitelist()
-def send_to_device(invoice_name, amount, tid, pay_mode="QR"):
+def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None):
 	"""Push the amount to the card machine; returns the order id to poll.
 	pay_mode QR opens the machine on the UPI QR, CARD on card entry."""
 	settings = _settings()
 	if pay_mode not in ("QR", "CARD"):
 		frappe.throw(_("Payment mode must be QR or CARD"))
-	device = _device_for(settings, tid)
+	device = _device_for(settings, tid, user)
 	amount = flt(amount, 2)
 	if amount <= 0:
 		frappe.throw(_("Amount must be greater than 0"))

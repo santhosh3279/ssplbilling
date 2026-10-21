@@ -1590,9 +1590,16 @@ async function sendUpiMqtt() {
   }
 }
 
+// Machines follow the inherited user's settings (server honours it for admin only)
+function paytmMachineUser() {
+  let inherited = ''
+  try { inherited = localStorage.getItem('wb-inherited-user') || '' } catch (e) { /* storage blocked */ }
+  return inherited || session.user.value
+}
+
 async function loadPaytmDevices() {
   try {
-    const res = await frappeGet('ssplbilling.api.paytm_api.get_devices')
+    const res = await frappeGet('ssplbilling.api.paytm_api.get_devices', { user: paytmMachineUser() })
     paytm.value.enabled = !!res?.enabled
     paytm.value.qrEnabled = !!res?.qr_enabled
     paytm.value.devices = res?.devices || []
@@ -1606,7 +1613,7 @@ function defaultPaytmTid() {
   const devices = paytm.value.devices
   let saved = ''
   try { saved = localStorage.getItem('wb-paytm-tid') || '' } catch (e) { /* storage blocked */ }
-  return (devices.find(d => d.user === session.user.value) || devices.find(d => d.tid === saved) || devices[0])?.tid || ''
+  return (devices.find(d => d.user === paytmMachineUser()) || devices.find(d => d.tid === saved) || devices[0])?.tid || ''
 }
 
 function openPaytmModal(payMode) {
@@ -1638,6 +1645,7 @@ async function sendToPaytm() {
       amount: p.amount,
       tid: p.tid,
       pay_mode: p.payMode,
+      user: paytmMachineUser(),
     }, { silent: true })
     p.orderId = res.order_id
     p.status = 'Pending'
