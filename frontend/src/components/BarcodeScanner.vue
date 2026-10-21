@@ -72,9 +72,10 @@
     <div class="relative shrink-0 bg-[var(--color-surface)] text-[var(--color-text)]">
       <div
         v-if="manualResults.length"
-        class="absolute inset-x-0 bottom-full max-h-[45vh] space-y-1.5 overflow-y-auto border-t border-[var(--color-border)] bg-[var(--color-bg)] p-2 shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
+        class="results-scroll absolute inset-x-0 bottom-full max-h-[45vh] space-y-1.5 overflow-y-auto overscroll-contain border-t border-[var(--color-border)] bg-[var(--color-bg)] p-2 shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
       >
-        <!-- Item name · item code · price (cipher); alternate rows shaded, exact code / barcode match blinks -->
+        <!-- Item name (first 25 characters, up to two lines) · item code · price (cipher); alternate rows shaded,
+             exact code / barcode match blinks -->
         <button
           v-for="(m, i) in manualResults"
           :key="m.code"
@@ -83,7 +84,7 @@
           :class="[i % 2 ? 'bg-[var(--color-surface)]' : '', isExactCode(m) && 'exact-match']"
           @click="found(m.code)"
         >
-          <div class="mr-1.5 truncate text-xl font-semibold">{{ m.name }}</div>
+          <div class="mr-1.5 line-clamp-2 break-words text-lg font-semibold leading-snug">{{ shortName(m.name) }}</div>
           <div class="break-all text-right font-mono text-xs leading-tight text-[var(--color-text-muted)]">{{ m.code }}</div>
           <div class="truncate text-right font-mono text-sm font-semibold tabular-nums">{{ cipherPrice(m.price) }}</div>
         </button>
@@ -190,6 +191,12 @@ const manualResults = computed(() => {
   const q = typed.value.trim()
   return props.search && q.length >= 2 ? (props.search(q) || []).slice(0, 30) : []
 })
+
+const NAME_CHARS = 25
+const shortName = name => {
+  const s = String(name || '')
+  return s.length > NAME_CHARS ? s.slice(0, NAME_CHARS).trimEnd() + '…' : s
+}
 
 const isExactCode = m => {
   const q = typed.value.trim().toLowerCase()
@@ -736,6 +743,11 @@ onBeforeUnmount(() => {
 .manual-input:focus {
   border-color: transparent;
   background: color-mix(in srgb, var(--color-info) 22%, var(--color-bg));
+}
+/* Results list: vertical finger scroll, and the scroll never drags the page behind it */
+.results-scroll {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
 }
 /* Exact item-code or barcode match: card blinks so it is spotted at a glance */
 .exact-match {
