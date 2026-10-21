@@ -578,30 +578,23 @@
                 <div class="group relative flex items-center">
                   <div class="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2 whitespace-nowrap z-10">
                     <span class="text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-success)] transition-colors uppercase">{{ upiLabel }}</span>
-                    <button 
-                      @click="sendUpiMqtt"
+                    <button
+                      v-if="paytm.enabled"
+                      @click="openPaytmModal('QR')"
                       type="button"
-                      class="px-2 py-1 rounded-lg bg-[var(--color-success)] text-white font-black text-[15px] uppercase tracking-wider hover:bg-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-500 active:scale-95 transition-all shadow-sm"
+                      title="Show the UPI QR for this amount on the Paytm machine"
+                      class="px-2 py-1 rounded-lg bg-[var(--color-success)] text-white font-black text-[15px] uppercase tracking-wider hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-success)] active:scale-95 transition-all shadow-sm"
                     >
-                      Send QR
+                      UPI
                     </button>
                     <button
                       v-if="paytm.enabled"
-                      @click="openPaytmModal"
+                      @click="openPaytmModal('CARD')"
                       type="button"
-                      title="Send amount to the Paytm card machine"
+                      title="Take a card payment for this amount on the Paytm machine"
                       class="px-2 py-1 rounded-lg bg-[var(--color-info)] text-white font-black text-[15px] uppercase tracking-wider hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-info)] active:scale-95 transition-all shadow-sm"
                     >
-                      POS
-                    </button>
-                    <button
-                      v-if="paytm.qrEnabled"
-                      @click="openPaytmQr"
-                      type="button"
-                      title="Show a Paytm UPI QR for this amount; payment is confirmed automatically"
-                      class="px-2 py-1 rounded-lg bg-[var(--color-info)] text-white font-black text-[15px] uppercase tracking-wider hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-info)] active:scale-95 transition-all shadow-sm"
-                    >
-                      Paytm QR
+                      Card
                     </button>
                   </div>
                   <input
@@ -775,7 +768,7 @@
     <div v-if="paytm.show" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--color-bg)]/80 backdrop-blur-sm">
       <div class="w-full max-w-md bg-[var(--color-surface)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--color-border)] animate-in fade-in zoom-in duration-200">
         <div class="p-5 border-b border-[var(--color-border)] flex justify-between items-center">
-          <h3 class="text-sm font-bold uppercase tracking-widest text-[var(--color-text)]">Paytm Card Machine</h3>
+          <h3 class="text-sm font-bold uppercase tracking-widest text-[var(--color-text)]">Paytm Machine · {{ paytm.payMode === 'CARD' ? 'Card' : 'UPI' }}</h3>
           <button @click="closePaytmModal" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
@@ -1012,7 +1005,7 @@ const upiRefNo = ref('')
 
 // Paytm EDC card machine: push the UPI box amount to the machine, wait for the result
 // (socket event from the webhook, with polling as fallback), then fill UPI or Card.
-const paytm = ref({ enabled: false, qrEnabled: false, devices: [], show: false, tid: '', amount: 0, orderId: '', status: '', message: '', sending: false })
+const paytm = ref({ enabled: false, qrEnabled: false, devices: [], show: false, payMode: 'QR', tid: '', amount: 0, orderId: '', status: '', message: '', sending: false })
 let paytmPollTimer = null
 // Paytm dynamic UPI QR: same wait-for-result flow, but the QR is shown on this screen
 const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', sending: false })
@@ -1021,11 +1014,8 @@ const paytmQrSrc = computed(() => {
   const img = paytmQr.value.image || ''
   return img.startsWith('data:') ? img : `data:image/png;base64,${img}`
 })
-// Room for the buttons inside the UPI box: Send QR always, POS and Paytm QR when enabled
-const upiInputPad = computed(() => {
-  const pos = paytm.value.enabled, qr = paytm.value.qrEnabled
-  return pos && qr ? 'pl-[23rem]' : qr ? 'pl-[18rem]' : pos ? 'pl-64' : 'pl-44'
-})
+// Room for the machine UPI / Card buttons inside the UPI box
+const upiInputPad = computed(() => (paytm.value.enabled ? 'pl-52' : 'pl-24'))
 const processedInvoiceName = ref('')
 const mirrorQueued = ref(false)
 
@@ -1605,7 +1595,7 @@ function defaultPaytmTid() {
   return (devices.find(d => d.user === session.user.value) || devices.find(d => d.tid === saved) || devices[0])?.tid || ''
 }
 
-function openPaytmModal() {
+function openPaytmModal(payMode) {
   errorMsg.value = ''
   const amount = Number(payments.value.upi) || 0
   if (!selectedInvoice.value) {
@@ -1620,7 +1610,7 @@ function openPaytmModal() {
     errorMsg.value = 'Enter the amount in the UPI box before sending to the card machine.'
     return
   }
-  Object.assign(paytm.value, { show: true, tid: defaultPaytmTid(), amount, orderId: '', status: '', message: '', sending: false })
+  Object.assign(paytm.value, { show: true, payMode, tid: defaultPaytmTid(), amount, orderId: '', status: '', message: '', sending: false })
 }
 
 async function sendToPaytm() {
@@ -1633,6 +1623,7 @@ async function sendToPaytm() {
       invoice_name: selectedInvoice.value.name,
       amount: p.amount,
       tid: p.tid,
+      pay_mode: p.payMode,
     }, { silent: true })
     p.orderId = res.order_id
     p.status = 'Pending'

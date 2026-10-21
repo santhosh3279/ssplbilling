@@ -160,9 +160,12 @@ def get_devices():
 
 
 @frappe.whitelist()
-def send_to_device(invoice_name, amount, tid):
-	"""Push the amount to the card machine; returns the order id to poll."""
+def send_to_device(invoice_name, amount, tid, pay_mode="QR"):
+	"""Push the amount to the card machine; returns the order id to poll.
+	pay_mode QR opens the machine on the UPI QR, CARD on card entry."""
 	settings = _settings()
+	if pay_mode not in ("QR", "CARD"):
+		frappe.throw(_("Payment mode must be QR or CARD"))
 	device = _device_for(settings, tid)
 	amount = flt(amount, 2)
 	if amount <= 0:
@@ -195,7 +198,7 @@ def send_to_device(invoice_name, amount, tid):
 		"merchantTransactionId": order_id,
 		"merchantReferenceNo": re.sub(r"[^A-Za-z0-9]", "", invoice_name),
 		"transactionAmount": str(int(round(amount * 100))),  # paise
-		"merchantExtendedInfo": EDC_EXTENDED_INFO,
+		"merchantExtendedInfo": {**EDC_EXTENDED_INFO, "paymentMode": pay_mode},
 	}
 	try:
 		res = _post(settings, EDC_SALE_PATH, body)
