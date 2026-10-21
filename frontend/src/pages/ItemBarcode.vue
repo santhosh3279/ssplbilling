@@ -1,58 +1,12 @@
 <template>
   <div class="fixed inset-x-0 top-0 flex h-[100dvh] flex-col bg-[var(--color-bg)] text-[var(--color-text)]" :style="viewportStyle">
     <header class="z-20 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-3 pt-[max(1rem,env(safe-area-inset-top))] shadow-sm">
-      <div class="mb-2 flex items-center justify-between">
+      <div class="flex items-center justify-between">
         <div class="flex items-center gap-1">
           <button type="button" aria-label="Back" class="rounded-lg px-2 py-1 text-lg" @click="goBack">←</button>
           <h1 class="text-lg font-bold">{{ item ? 'Item Barcodes' : 'Find Item' }}</h1>
         </div>
         <span v-if="loading" class="text-xs font-semibold text-[var(--color-info)] animate-pulse">Loading…</span>
-      </div>
-
-      <!-- Step 1: find the item -->
-      <div v-if="!item" class="flex gap-2">
-        <div class="relative flex-1">
-          <input
-            ref="searchRef"
-            v-model="query"
-            type="search"
-            autocomplete="off"
-            autocapitalize="off"
-            spellcheck="false"
-            placeholder="Item name, code or barcode"
-            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-4 pr-11 text-base outline-none focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/30"
-            @keydown.enter.prevent="runSearch()"
-          />
-          <button
-            v-if="query"
-            type="button"
-            aria-label="Clear search"
-            class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-2.5 py-1 text-lg text-[var(--color-text-muted)]"
-            @click="query = ''; results = []"
-          >&times;</button>
-        </div>
-        <button
-          type="button"
-          aria-label="Scan item barcode"
-          class="flex w-14 shrink-0 items-center justify-center rounded-xl bg-[var(--color-info)] text-white shadow-sm active:scale-95"
-          @click="scanFor = 'find'"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8"/><path d="M11 8v8"/><path d="M15 8v8"/><path d="M18 8v8"/></svg>
-        </button>
-      </div>
-
-      <!-- Step 2: the item being edited -->
-      <div v-else class="flex items-center gap-3">
-        <img v-if="item.image" :src="item.image" alt="" class="h-12 w-12 shrink-0 rounded-lg object-cover" />
-        <div class="min-w-0 flex-1">
-          <div class="truncate text-base font-semibold">{{ item.item_name }}</div>
-          <div class="truncate font-mono text-xs text-[var(--color-text-muted)]">{{ item.item_code }} · {{ item.stock_uom }}</div>
-        </div>
-        <button
-          type="button"
-          class="shrink-0 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-muted)] active:bg-[var(--color-surface-raised)]"
-          @click="changeItem"
-        >Change</button>
       </div>
     </header>
 
@@ -61,30 +15,18 @@
         {{ error }}
       </div>
 
-      <!-- Search results -->
-      <template v-if="!item">
-        <div v-if="searched && !results.length && !loading" class="py-10 text-center text-sm text-[var(--color-text-muted)]">
-          No items found
-        </div>
+      <!-- No item yet: items are picked only in the scanner (camera, or its typed search) -->
+      <div v-if="!item" class="flex flex-col items-center py-12 text-center">
         <button
-          v-for="r in results"
-          :key="r.item_code"
           type="button"
-          class="mb-2 flex w-full items-center gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3 text-left active:bg-[var(--color-surface-raised)]"
-          @click="openItem(r.item_code)"
+          class="flex items-center gap-3 rounded-2xl bg-[var(--color-info)] px-8 py-5 text-lg font-bold text-white shadow-sm active:scale-95"
+          @click="scanFor = 'find'"
         >
-          <div class="min-w-0 flex-1">
-            <div class="truncate font-semibold">{{ r.item_name }}</div>
-            <div class="truncate font-mono text-xs text-[var(--color-text-muted)]">{{ r.item_code }}</div>
-          </div>
-          <span class="shrink-0 rounded-full bg-[var(--color-surface-raised)] px-2 py-0.5 text-xs text-[var(--color-text-muted)]">
-            {{ r.barcode_count }} barcode{{ r.barcode_count === 1 ? '' : 's' }}
-          </span>
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8"/><path d="M11 8v8"/><path d="M15 8v8"/><path d="M18 8v8"/></svg>
+          Scan Item
         </button>
-        <div v-if="!searched" class="py-10 text-center text-sm text-[var(--color-text-muted)]">
-          Search or scan to pick the item to edit
-        </div>
-      </template>
+        <div class="mt-3 text-sm text-[var(--color-text-muted)]">Scan the barcode, or type the item name or code in the scanner</div>
+      </div>
 
       <!-- Barcode list -->
       <template v-else>
@@ -200,6 +142,19 @@
       v-if="item"
       class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3"
     >
+      <!-- The item being edited, at the bottom with the add bar; Change reopens the scanner -->
+      <div class="mb-3 flex items-center gap-3 border-b border-[var(--color-border)] pb-3">
+        <img v-if="item.image" :src="item.image" alt="" class="h-12 w-12 shrink-0 rounded-lg object-cover" />
+        <div class="min-w-0 flex-1">
+          <div class="truncate text-base font-semibold">{{ item.item_name }}</div>
+          <div class="truncate font-mono text-xs text-[var(--color-text-muted)]">{{ item.item_code }} · {{ item.stock_uom }}</div>
+        </div>
+        <button
+          type="button"
+          class="shrink-0 rounded-lg border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-text-muted)] active:bg-[var(--color-surface-raised)]"
+          @click="changeItem"
+        >Change</button>
+      </div>
       <div class="mb-2 flex gap-2">
         <input
           ref="newBarcodeRef"
@@ -256,12 +211,12 @@
 <script setup>
 /**
  * ItemBarcode.vue — phone page to attach extra barcodes to an Item.
- * Pick the item (search or camera scan), then scan / type barcodes to add, each tied to
+ * Pick the item in the scanner (camera, or its typed search), then scan / type barcodes to add, each tied to
  * one of the item's UOMs; UOM conversions (UOM + factor) are added / edited here too.
  * Every change saves the Item at once. The server refuses a barcode another item uses.
  * The scanner's typed search lists items from the local item cache, as on the billing screen.
  */
-import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import BarcodeScanner from '../components/BarcodeScanner.vue'
@@ -271,9 +226,6 @@ import { getDefaultPriceList, getDefaultWarehouse } from '../encryption.js'
 const API = 'ssplbilling.api.item_api'
 const router = useRouter()
 
-const query = ref('')
-const results = ref([])
-const searched = ref(false)
 const loading = ref(false)
 const saving = ref(false)
 const error = ref('')
@@ -286,12 +238,9 @@ const uomFactor = ref('')
 const lastAdded = ref('')
 const toast = ref('')
 const scanFor = ref('') // '' | 'find' | 'add'
-const searchRef = ref(null)
 const newBarcodeRef = ref(null)
 
-let debounceTimer = null
 let toastTimer = null
-let requestSeq = 0
 
 function errText(e) {
   return e?.message || String(e || 'Request failed')
@@ -307,30 +256,6 @@ function flash(msg) {
 async function fetchResults(q) {
   return (await frappeGet(`${API}.search_items_for_barcode`, { query: q })) || []
 }
-
-async function runSearch() {
-  clearTimeout(debounceTimer)
-  const q = query.value.trim()
-  if (q.length < 2) { results.value = []; searched.value = false; return }
-  const seq = ++requestSeq
-  loading.value = true
-  error.value = ''
-  try {
-    const rows = await fetchResults(q)
-    if (seq !== requestSeq) return
-    results.value = rows
-    searched.value = true
-  } catch (e) {
-    if (seq === requestSeq) error.value = errText(e)
-  } finally {
-    if (seq === requestSeq) loading.value = false
-  }
-}
-
-watch(query, () => {
-  clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(runSearch, 300)
-})
 
 // OCR readings in "find" mode are accepted only when they are a real item code / barcode
 async function itemExists(code) {
@@ -367,7 +292,7 @@ function changeItem() {
   uomQuery.value = ''
   uomFactor.value = ''
   error.value = ''
-  nextTick(() => searchRef.value?.focus())
+  scanFor.value = 'find'
 }
 
 function goBack() {
@@ -414,10 +339,17 @@ async function onScanned(code) {
   // A picked search result or a cached code / barcode opens straight away
   const cached = lookupItemInCache(code)
   if (cached) return openItem(cached.item_code)
-  query.value = code
-  await runSearch()
-  const exact = results.value.filter(r => r.exact)
-  if (exact.length === 1) openItem(exact[0].item_code)
+  loading.value = true
+  error.value = ''
+  try {
+    const exact = (await fetchResults(code)).filter(r => r.exact)
+    if (exact.length === 1) return openItem(exact[0].item_code)
+    error.value = `No item found for "${code}". Tap Scan Item to try again.`
+  } catch (e) {
+    error.value = errText(e)
+  } finally {
+    loading.value = false
+  }
 }
 
 function closeScanner() {
@@ -572,11 +504,10 @@ onMounted(() => {
     .catch(e => console.warn('[ItemBarcode] item cache refresh failed:', e))
   const code = router.currentRoute.value.query.item
   if (code) openItem(String(code))
-  else searchRef.value?.focus()
+  else scanFor.value = 'find' // item entry is the scanner only
 })
 
 onBeforeUnmount(() => {
-  clearTimeout(debounceTimer)
   clearTimeout(toastTimer)
   window.visualViewport?.removeEventListener('resize', fitViewport)
   window.removeEventListener('resize', fitViewport)
