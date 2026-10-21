@@ -99,15 +99,21 @@ def _post_pg(settings, path, body, head=None):
 	return res.json()
 
 
+def _ecr_sign_fields(body):
+	# Nested objects such as merchantExtendedInfo are left out of the ECR checksum
+	return {k: str(v) for k, v in body.items() if not isinstance(v, dict | list)}
+
+
 def _post(settings, path, body):
-	"""Sign the exact body string and send those same bytes, so Paytm's checksum matches."""
+	"""ECR checksums cover the body's flat fields (sorted, "|"-joined by PaytmChecksum), not the
+	JSON text; verified against Paytm, which rejects a signature over the JSON string."""
 	from paytmchecksum import generateSignature
 
 	body_str = json.dumps(body, separators=(",", ":"))
 	head = {
 		"requestTimeStamp": now_datetime().strftime("%Y-%m-%d %H:%M:%S"),
 		"channelId": EDC_CHANNEL_ID,
-		"checksum": generateSignature(body_str, _signing_key(settings)),
+		"checksum": generateSignature(_ecr_sign_fields(body), _signing_key(settings)),
 		"version": EDC_VERSION,
 	}
 	payload = '{"head":' + json.dumps(head, separators=(",", ":")) + ',"body":' + body_str + "}"
@@ -324,8 +330,10 @@ def payment_webhook():
 	if checksum:
 		from paytmchecksum import verifySignature
 
-		# JSON payloads are signed over the raw "body" text exactly as Paytm sent it
-		if "head" in data and '"body":' in raw:
+		# PG JSON payloads are signed over the raw "body" text exactly as Paytm sent it
+		if txn.channel != "QR" and "head" in data:
+			signed = _ecr_sign_fields(body)
+		elif "head" in data and '"body":' in raw:
 			signed = raw[raw.index('"body":') + 7 : raw.rindex("}")].strip()
 		else:
 			signed = {k: v for k, v in body.items() if k != "CHECKSUMHASH"}
