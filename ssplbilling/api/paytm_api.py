@@ -29,6 +29,7 @@ EDC_BASE_URL = {
 }
 EDC_SALE_PATH = "/ecr/payment/request"
 EDC_STATUS_PATH = "/ecr/V2/payment/status"
+EDC_VOID_PATH = "/ecr/void"
 EDC_CHANNEL_ID = "EDC"
 EDC_VERSION = "3.1"
 # autoAccept opens the payment on the machine without an accept/reject prompt;
@@ -322,13 +323,34 @@ def get_status(order_id):
 
 @frappe.whitelist()
 def cancel(order_id):
-	"""Stop waiting on this order. Does not void a payment already made on the machine."""
+	"""Stop waiting on this order: clear the request off the card machine, then mark it Cancelled.
+	A payment that completed before the void is kept (status re-read after the void)."""
 	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
 	if txn.status == "Pending":
+		_refresh_from_paytm(txn)
+	if txn.status == "Pending" and txn.channel != "QR":
+		_void_on_machine(txn)
 		_refresh_from_paytm(txn)
 	if txn.status == "Pending":
 		txn.db_set("status", "Cancelled")
 	return _txn_result(txn)
+
+
+def _void_on_machine(txn):
+	settings = _settings()
+	body = {
+		"paytmMid": settings.merchant_id,
+		"paytmTid": txn.tid,
+		"merchantTransactionId": txn.order_id,
+		"transactionDateTime": txn.transaction_datetime,
+	}
+	try:
+		res = _post(settings, EDC_VOID_PATH, body)
+	except Exception:
+		frappe.log_error(title="Paytm EDC void failed", message=frappe.get_traceback())
+		return
+	info = (res.get("body") or {}).get("resultInfo") or {}
+	txn.db_set("result_message", f"Void: {info.get('resultMsg') or info.get('resultStatus') or 'no reply'}")
 
 
 @frappe.whitelist(allow_guest=True, methods=["POST"])
