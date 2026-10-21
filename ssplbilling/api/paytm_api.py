@@ -100,8 +100,15 @@ def _post_pg(settings, path, body, head=None):
 
 
 def _ecr_sign_fields(body):
-	# Nested objects such as merchantExtendedInfo are left out of the ECR checksum
-	return {k: str(v) for k, v in body.items() if not isinstance(v, dict | list)}
+	# Nested objects such as merchantExtendedInfo are signed as if their fields were top level
+	# (verified: Paytm accepts PaymentMode signed flat and rejects every JSON-string form)
+	fields = {}
+	for k, v in body.items():
+		if isinstance(v, dict):
+			fields.update({ik: str(iv) for ik, iv in v.items()})
+		else:
+			fields[k] = str(v)
+	return fields
 
 
 def _post(settings, path, body):
