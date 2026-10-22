@@ -242,7 +242,7 @@
               <option v-for="u in getItemUoms(item.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)] text-3xl">{{ uomLabel(item.item_code, u) }}</option>
               <option v-if="!getItemUoms(item.item_code).length" :value="item.uom" class="bg-[var(--color-bg)] text-3xl">{{ item.uom }}</option>
             </select>
-            <span v-else class="block px-2 py-1 text-3xl" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ uomLabel(item.item_code, item.uom || 'Nos') }}</span>
+            <span v-else class="block px-2 py-1 text-3xl whitespace-nowrap" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ uomLabel(item.item_code, item.uom || 'Nos') }}</span>
           </td>
 
           <!-- rate -->
@@ -552,7 +552,7 @@
               >
                 <option v-for="u in getItemUoms(pendingItem.item_code)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ uomLabel(pendingItem.item_code, u) }}</option>
               </select>
-              <span v-else class="block px-2 py-1 text-xl text-[var(--color-text-muted)]">{{ uomLabel(pendingItem.item_code, pendingItem.uom || 'Nos') }}</span>
+              <span v-else class="block px-2 py-1 text-xl whitespace-nowrap text-[var(--color-text-muted)]">{{ uomLabel(pendingItem.item_code, pendingItem.uom || 'Nos') }}</span>
             </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-3xl font-mono text-right">{{ pendingItem.rate }}</td>
             <td colspan="5" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter qty and press Enter</td>
@@ -2735,10 +2735,10 @@ function getUomConversionFactor(itemCode, uom) {
   return cf > 0 ? cf : null
 }
 
-// UOM with its conversion factor for display, e.g. "Box (12)"; factor 1 (or unknown) shows the bare UOM.
+// UOM with its conversion factor for display, e.g. "Box(12)"; factor 1 (or unknown) shows the bare UOM.
 function uomLabel(itemCode, uom) {
   const cf = getUomConversionFactor(itemCode, uom)
-  return cf && cf !== 1 ? `${uom} (${parseFloat(cf.toFixed(3))})` : uom
+  return cf && cf !== 1 ? `${uom}(${parseFloat(cf.toFixed(3))})` : uom
 }
 
 // Share of the original bill's additional (bill-level) discount carried by a history
