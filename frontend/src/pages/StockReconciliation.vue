@@ -177,14 +177,27 @@
             {{ newPending.current_qty }}
           </td>
           <td class="p-0 border-r border-[var(--color-border)] text-right">
-            <input ref="newQtyInput" v-model.number="newQty" type="number" step="any" class="w-full bg-[var(--color-surface)] px-2 py-1 text-right font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] text-6xl" @keydown.enter.prevent="addNewItem" @keydown.tab.prevent="addNewItem" />
+            <input ref="newQtyInput" v-model.number="newQty" type="number" step="any" class="w-full bg-[var(--color-surface)] px-2 py-1 text-right font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] text-6xl" @keydown.enter.prevent="onNewQtyEnter" @keydown.tab.prevent="onNewQtyEnter" />
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right text-[var(--color-text-muted)] font-mono text-4xl">
             {{ newPending.valuation_rate?.toFixed(2) }}
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-4xl">{{ newPending.uom || '--' }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono font-bold text-4xl" :class="(newQty - newPending.current_qty) > 0 ? 'text-[var(--color-success)]' : (newQty - newPending.current_qty) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
-            {{ (newQty - newPending.current_qty).toFixed(2) }}
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <select
+              v-if="newItemUoms.length > 1"
+              ref="newUomSelect"
+              v-model="newPending.uom"
+              class="w-full bg-[var(--color-surface)] px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @change="onNewUomChange"
+              @keydown.enter.prevent="addNewItem"
+              @keydown.tab.prevent="addNewItem"
+            >
+              <option v-for="u in newItemUoms" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ uomLabel(newItemCode, u) }}</option>
+            </select>
+            <span v-else class="block px-2 py-1 text-[var(--color-text-muted)] text-4xl">{{ newPending.uom || '--' }}</span>
+          </td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono font-bold text-4xl" :class="newDiff > 0 ? 'text-[var(--color-success)]' : newDiff < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
+            {{ newDiff.toFixed(2) }}
           </td>
           <td class="px-2 py-1"></td>
         </tr>
@@ -241,7 +254,7 @@ import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import ItemSearch from '../components/ItemSearch.vue'
 import Stock_Template from '../components/Stock_Template.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
-import { useItemCache } from '../services/itemCache.js'
+import { useItemCache, uomLabel } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
@@ -280,7 +293,7 @@ const isDraft = ref(false)
 const newItemCode = ref('')
 const newQty = ref(0)
 const newRate = ref(0)
-const newPending = ref({ item_name: '', uom: '', current_qty: 0, valuation_rate: 0 })
+const newPending = ref({ item_name: '', uom: '', stock_uom: '', current_qty: 0, valuation_rate: 0 })
 const showItemSearch = ref(false)
 
 const quickSearchResults = ref([])
@@ -299,6 +312,19 @@ const dynamicRowStyle = computed(() => ({
   fontSize: `${(14 * zoomPercent.value) / 100}px`
 }))
 
+// Entry UOMs for the pending item: stock UOM first, then its conversion UOMs.
+// Reconciliation rows are stored in stock UOM; the entered qty is converted on add.
+const newItemUoms = computed(() => {
+  const cached = newItemCode.value && lookupItemInCache(newItemCode.value)
+  const stockUom = newPending.value.stock_uom
+  if (!cached || !stockUom) return []
+  const others = (cached.uoms || []).map(u => u.uom).filter(u => u && u !== stockUom)
+  return [stockUom, ...new Set(others)]
+})
+
+const newFactor = computed(() => uomFactor(newItemCode.value, newPending.value.uom, newPending.value.stock_uom) || 1)
+const newDiff = computed(() => (newQty.value || 0) * newFactor.value - newPending.value.current_qty)
+
 const adjustedCount = computed(() => items.value.filter(i => Math.abs(i.qty - i.current_qty) > 0.0001).length)
 
 const saveButtonText = computed(() => {
@@ -313,6 +339,7 @@ const rowRefs = {}
 const warehouseSelect = ref(null)
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
+const newUomSelect = ref(null)
 
 function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
@@ -408,6 +435,40 @@ async function lookupItem(code) {
   } catch (e) { return null }
 }
 
+// Stock UOMs held by one `uom` of the item; null when the factor is unknown.
+function uomFactor(itemCode, uom, stockUom) {
+  if (!uom || uom === stockUom) return 1
+  const cached = lookupItemInCache(itemCode)
+  const cf = parseFloat((cached?.uoms || []).find(u => u.uom === uom)?.conversion_factor)
+  return cf > 0 ? cf : null
+}
+
+// The cached item's own uom is the stock UOM; a barcode match swaps in the barcode's UOM.
+function stockUomOf(itemCode, fallback) {
+  return lookupItemInCache(itemCode)?.uom || fallback || ''
+}
+
+// Pending row for an item: `uom` is the entry UOM (a scanned barcode's UOM), and the qty
+// box starts at the current stock expressed in that UOM so Diff reads 0 until changed.
+function setNewPending({ item_name, uom, stock_uom, current_qty, valuation_rate }) {
+  // A UOM without a known conversion factor would be counted as stock units; enter in stock UOM.
+  const entryUom = uom && uomFactor(newItemCode.value, uom, stock_uom) ? uom : stock_uom
+  newPending.value = { item_name, uom: entryUom, stock_uom, current_qty, valuation_rate }
+  newQty.value = roundQty(current_qty / newFactor.value)
+  newRate.value = valuation_rate
+}
+
+function roundQty(v) { return Math.round((v || 0) * 1000) / 1000 }
+
+function onNewUomChange() {
+  newQty.value = roundQty(newPending.value.current_qty / newFactor.value)
+}
+
+function onNewQtyEnter() {
+  if (newItemUoms.value.length > 1) newUomSelect.value?.focus()
+  else addNewItem()
+}
+
 async function onNewCodeEnter() {
   const code = newItemCode.value.trim()
   if (!code) return
@@ -417,9 +478,8 @@ async function onNewCodeEnter() {
   } else {
     const r = await lookupItem(code)
     if (r && r.found) {
-      newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.rate }
-      newQty.value = r.stock_qty
-      newRate.value = r.rate
+      newItemCode.value = r.item_code || code
+      setNewPending({ item_name: r.item_name, uom: r.uom, stock_uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.rate })
       quickSearchResults.value = []
       focusNewQty()
     } else {
@@ -455,15 +515,17 @@ function handleNewCodeKeydown(e) {
 }
 
 function onQuickSearchSelect(item) {
-  newItemCode.value = item.item_code
-  newPending.value = {
-    item_name: item.item_name,
-    uom: item.uom,
-    current_qty: item.stock || 0,
-    valuation_rate: item.valuation_rate || 0
-  }
-  newQty.value = item.stock || 0
-  newRate.value = item.valuation_rate || 0
+  // A scanned barcode resolves to the item with that barcode's UOM
+  const barcodeMatch = lookupItemInCache(newItemCode.value.trim())
+  const finalItem = (barcodeMatch && barcodeMatch.item_code === item.item_code) ? barcodeMatch : item
+  newItemCode.value = finalItem.item_code
+  setNewPending({
+    item_name: finalItem.item_name,
+    uom: finalItem.uom,
+    stock_uom: stockUomOf(finalItem.item_code, finalItem.uom),
+    current_qty: finalItem.stock || 0,
+    valuation_rate: finalItem.valuation_rate || 0
+  })
   quickSearchResults.value = []
   nextTick(() => focusNewQty())
 }
@@ -479,13 +541,10 @@ async function onItemSearchSelect(item) {
   newItemCode.value = item.item_code
   const r = await lookupItem(item.item_code)
   if (r && r.found) {
-    newPending.value = { item_name: r.item_name, uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.rate }
-    newQty.value = r.stock_qty
-    newRate.value = r.rate
+    setNewPending({ item_name: r.item_name, uom: r.uom, stock_uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.rate })
   } else {
-    newPending.value = { item_name: item.item_name, uom: item.uom || '', current_qty: 0, valuation_rate: 0 }
-    newQty.value = 0
-    newRate.value = 0
+    const stockUom = stockUomOf(item.item_code, item.uom)
+    setNewPending({ item_name: item.item_name, uom: stockUom, stock_uom: stockUom, current_qty: 0, valuation_rate: 0 })
   }
   nextTick(() => focusNewQty())
 }
@@ -503,9 +562,9 @@ function addNewItem() {
   items.value.push({
     item_code: newItemCode.value,
     item_name: newPending.value.item_name,
-    uom: newPending.value.uom,
+    uom: newPending.value.stock_uom || newPending.value.uom,
     current_qty: newPending.value.current_qty,
-    qty: newQty.value,
+    qty: roundQty((newQty.value || 0) * newFactor.value),
     valuation_rate: newRate.value || newPending.value.valuation_rate,
     current_valuation_rate: newPending.value.valuation_rate
   })
@@ -513,7 +572,7 @@ function addNewItem() {
   newItemCode.value = ''
   newQty.value = 0
   newRate.value = 0
-  newPending.value = { item_name: '', uom: '', current_qty: 0, valuation_rate: 0 }
+  newPending.value = { item_name: '', uom: '', stock_uom: '', current_qty: 0, valuation_rate: 0 }
   focusNewCode()
 }
 
