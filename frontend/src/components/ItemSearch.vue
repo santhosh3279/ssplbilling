@@ -213,7 +213,7 @@
             </thead>
             <tbody>
               <tr v-for="uom in insightData.uoms" :key="uom" class="hover:bg-[var(--color-midlight)]/30">
-                <td class="border border-[var(--color-border)] px-2 py-1 text-xl text-[var(--color-text-muted)] truncate">{{ uom }}</td>
+                <td class="border border-[var(--color-border)] px-2 py-1 text-xl text-[var(--color-text-muted)] whitespace-nowrap">{{ uomLabel(results[selectedIdx]?.item_code, uom) }}</td>
                 <td v-for="pl in insightData.priceLists" :key="pl.name" class="border border-[var(--color-border)] px-2 py-1 text-right font-mono text-[var(--color-warning)] text-3xl tracking-widest">
                   {{ pl.buying && !canViewBuying ? "" : (pl.rates[uom] != null ? encPrice(pl.rates[uom]) : encPrice(0)) }}
                 </td>
@@ -291,7 +291,7 @@
 <script setup>
 import { serverNow } from '../services/serverTime'
 import { ref, nextTick, watch, computed, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
-import { useItemCache } from '../services/itemCache.js'
+import { useItemCache, uomLabel } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { frappeGet } from '../api.js'
 import DateFilter from './DateFilter.vue'
