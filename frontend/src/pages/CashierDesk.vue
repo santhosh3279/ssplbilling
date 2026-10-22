@@ -579,7 +579,7 @@
                   <div :ref="bindUpiOverlay" class="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2 whitespace-nowrap z-10">
                     <span class="text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-success)] transition-colors uppercase">{{ upiLabel }}</span>
                     <button
-                      v-if="hasPaytmMachine"
+                      v-if="hasPaytmMachine && !upiLocked"
                       @click="openPaytmModal('QR')"
                       type="button"
                       title="Show the UPI QR for this amount on the Paytm machine"
@@ -588,7 +588,7 @@
                       UPI
                     </button>
                     <button
-                      v-if="hasPaytmMachine"
+                      v-if="hasPaytmMachine && !upiLocked"
                       @click="openPaytmModal('CARD')"
                       type="button"
                       title="Take a card payment for this amount on the Paytm machine"
@@ -601,9 +601,11 @@
                     ref="upiInput"
                     type="number"
                     v-model="payments.upi"
+                    :readonly="upiLocked"
+                    :title="upiLocked ? 'Received through Paytm — locked' : ''"
                     @focus="$event.target.select()"
                     step="0.01"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
+                    class="read-only:bg-[var(--color-success)]/10 read-only:border-[var(--color-success)]/50 read-only:cursor-not-allowed w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20 transition-all"
                     :style="{ paddingLeft: `${upiInputPad}px` }"
                   />
                 </div>
@@ -611,10 +613,11 @@
                 <input
                   v-if="Number(payments.upi) > 0"
                   v-model.trim="upiRefNo"
+                  :readonly="upiLocked"
                   type="text"
                   tabindex="-1"
                   placeholder="UPI Ref No (optional)"
-                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-1.5 px-4 text-right font-mono text-[14px] font-bold text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-success)] outline-none transition-all"
+                  class="read-only:bg-[var(--color-success)]/10 read-only:border-[var(--color-success)]/50 read-only:cursor-not-allowed w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-1.5 px-4 text-right font-mono text-[14px] font-bold text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-success)] outline-none transition-all"
                 />
                 <div class="group relative">
                   <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cardLabel }}</div>
@@ -622,9 +625,11 @@
                     ref="cardInput"
                     type="number"
                     v-model="payments.card"
+                    :readonly="cardLocked"
+                    :title="cardLocked ? 'Received through Paytm — locked' : ''"
                     @focus="$event.target.select()"
                     step="0.01"
-                    class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-info)] focus:ring-4 focus:ring-[var(--color-info)]/20 transition-all"
+                    class="read-only:bg-[var(--color-success)]/10 read-only:border-[var(--color-success)]/50 read-only:cursor-not-allowed w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-info)] focus:ring-4 focus:ring-[var(--color-info)]/20 transition-all"
                   />
                 </div>
                 <div class="group relative">
@@ -754,6 +759,7 @@
           <input
             ref="cardRefInput"
             v-model="cardRefNo"
+            :readonly="cardLocked"
             @keydown.enter="confirmCardRef"
             class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-4 px-5 font-mono font-black text-[var(--color-text)] placeholder-[var(--color-text-muted)] focus:border-[var(--color-info)] focus:ring-2 focus:ring-[var(--color-info)]/20 transition-all outline-none"
             placeholder="Enter card reference..."
@@ -1075,6 +1081,32 @@ const payments = ref({
   discount: 0,
   remarks: ''
 })
+
+// A UPI / Card amount received through Paytm is locked, with its reference, to what Paytm
+// confirmed for this bill; only the other payment fields stay editable
+const paytmLock = ref({ invoice: '', upi: null, upiRef: '', card: null, cardRef: '' })
+const upiLocked = computed(() => paytmLock.value.upi != null && paytmLock.value.invoice === selectedInvoice.value?.name)
+const cardLocked = computed(() => paytmLock.value.card != null && paytmLock.value.invoice === selectedInvoice.value?.name)
+function lockPaytmPayment(mode, amount, ref) {
+  const lock = paytmLock.value.invoice === selectedInvoice.value?.name
+    ? paytmLock.value
+    : { invoice: selectedInvoice.value?.name, upi: null, upiRef: '', card: null, cardRef: '' }
+  if (mode === 'card') Object.assign(lock, { card: Number(payments.value.card) || amount, cardRef: ref })
+  else Object.assign(lock, { upi: amount, upiRef: ref })
+  paytmLock.value = { ...lock }
+}
+// Every reset of the payment boxes (credit flip, advance allocation…) puts locked values back
+watch([payments, upiRefNo, cardRefNo], () => {
+  const lock = paytmLock.value
+  if (upiLocked.value) {
+    if (Number(payments.value.upi) !== lock.upi) payments.value.upi = lock.upi
+    if (upiRefNo.value !== lock.upiRef) upiRefNo.value = lock.upiRef
+  }
+  if (cardLocked.value) {
+    if (Number(payments.value.card) !== lock.card) payments.value.card = lock.card
+    if (cardRefNo.value !== lock.cardRef) cardRefNo.value = lock.cardRef
+  }
+}, { deep: true })
 
 const seriesAccounts = ref({
   cash: '',
@@ -1515,6 +1547,10 @@ function initAccountsFromLocalStorage() {
 function toggleCredit(val) {
   const targetVal = (val !== undefined && typeof val === 'boolean') ? val : !isCredit.value
   
+  if (targetVal && (upiLocked.value || cardLocked.value)) {
+    errorMsg.value = "A Paytm payment is already received on this bill; it can't be switched to Credit."
+    return
+  }
   if (!targetVal && isSecondaryParty.value) {
     errorMsg.value = "Secondary parties can only process Credit Sales."
     return
@@ -1690,9 +1726,11 @@ function applyPaytmResult(r) {
     payments.value.upi = Math.max(0, (Number(payments.value.upi) || 0) - r.amount)
     payments.value.card = (Number(payments.value.card) || 0) + r.amount
     cardRefNo.value = r.reference_no
+    lockPaytmPayment('card', r.amount, r.reference_no)
   } else {
     payments.value.upi = r.amount
     upiRefNo.value = r.reference_no
+    lockPaytmPayment('upi', r.amount, r.reference_no)
   }
   p.message = `₹${fmt(r.amount)} received by ${r.mode === 'card' ? 'card' : 'UPI'} (Ref ${r.reference_no})`
   setTimeout(() => {
@@ -1778,6 +1816,7 @@ function applyPaytmQrResult(r) {
   }
   payments.value.upi = r.amount
   upiRefNo.value = r.reference_no
+  lockPaytmPayment('upi', r.amount, r.reference_no)
   q.message = `₹${fmt(r.amount)} received by UPI (Ref ${r.reference_no})`
   setTimeout(() => {
     if (paytmQr.value.orderId === r.order_id) closePaytmQr()
