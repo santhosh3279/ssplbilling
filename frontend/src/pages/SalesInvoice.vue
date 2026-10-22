@@ -2735,10 +2735,10 @@ function getUomConversionFactor(itemCode, uom) {
   return cf > 0 ? cf : null
 }
 
-// UOM with its conversion factor for display, e.g. "Box ×12"; factor 1 (or unknown) shows the bare UOM.
+// UOM with its conversion factor for display, e.g. "Box (12)"; factor 1 (or unknown) shows the bare UOM.
 function uomLabel(itemCode, uom) {
   const cf = getUomConversionFactor(itemCode, uom)
-  return cf && cf !== 1 ? `${uom} ×${parseFloat(cf.toFixed(3))}` : uom
+  return cf && cf !== 1 ? `${uom} (${parseFloat(cf.toFixed(3))})` : uom
 }
 
 // Share of the original bill's additional (bill-level) discount carried by a history
