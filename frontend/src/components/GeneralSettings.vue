@@ -330,6 +330,7 @@ import { dashboardApi } from '../services/dashboard'
 import { session } from '../session.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { getUserRole } from '../composables/usePermission'
+import { seriesPrefix } from '../composables/useAllowedSeries.js'
 import { useItemCache } from '../services/itemCache'
 import { useLedgerCache } from '../services/ledgerCache'
 
@@ -486,12 +487,9 @@ function applyToLocalStorage(settings, targetUserArg) {
 
   let allowedSeries = allBillingSeries
   if (userRow?.allowed_series && userRow.allowed_series.trim().toUpperCase() !== 'ALL') {
-    const allowedList = userRow.allowed_series.split(',').map(s => s.trim()).filter(Boolean)
-    const getAlpha = s => (s || '').replace(/[^A-Za-z]/g, '')
-    const allowedPrefixes = allowedList.map(s => getAlpha(s).slice(0, 3))
-    allowedSeries = allBillingSeries.filter(bs =>
-      allowedPrefixes.some(p => getAlpha(bs.series).slice(0, 3).startsWith(p))
-    )
+    // Exact prefix match only: "PO" allows "PO.#####" but not "POR.#####"
+    const allowedPrefixes = userRow.allowed_series.split(',').map(seriesPrefix).filter(Boolean)
+    allowedSeries = allBillingSeries.filter(bs => allowedPrefixes.includes(seriesPrefix(bs.series)))
   }
 
   const seriesPrefixes = allowedSeries

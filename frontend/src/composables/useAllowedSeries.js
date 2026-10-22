@@ -2,6 +2,17 @@ import { ref } from 'vue'
 import { frappeGet } from '../api'
 import { getSeriesForDoctype, SERIES_DOCTYPES } from '../services/seriesCache.js'
 
+// A series is allowed only when its prefix (the part before the first '.') is exactly
+// one of the user's allowed prefixes: "PO" allows "PO.#####" but not "POR.#####".
+export function seriesPrefix(series) {
+  return (series || '').split('.')[0].trim().toUpperCase()
+}
+
+function isAllowedSeries(series, allowedPrefixes) {
+  const prefix = seriesPrefix(series)
+  return allowedPrefixes.some(p => seriesPrefix(p) === prefix)
+}
+
 export function useAllowedSeries() {
   const allowedSeries = ref([])
   const loading = ref(false)
@@ -29,7 +40,7 @@ export function useAllowedSeries() {
         const cached = await getSeriesForDoctype(doctype)
         const series = cached
           .map(s => (typeof s === 'string' ? s : s?.prefix || ''))
-          .filter(s => allowedPrefixes.some(prefix => s.startsWith(prefix)))
+          .filter(s => isAllowedSeries(s, allowedPrefixes))
         if (series.length > 0) {
           allowedSeries.value = series
           return series
@@ -43,10 +54,7 @@ export function useAllowedSeries() {
       let series = d.allowed_series || []
 
       if (allowedPrefixes) {
-        // Match DocType series if it starts with any allowed prefix
-        series = series.filter(s =>
-          allowedPrefixes.some(prefix => s.startsWith(prefix))
-        )
+        series = series.filter(s => isAllowedSeries(s, allowedPrefixes))
       }
 
       allowedSeries.value = series

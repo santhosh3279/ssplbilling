@@ -1,7 +1,6 @@
 import json
 import os
 import frappe
-import re
 from functools import wraps
 
 
@@ -144,8 +143,8 @@ def get_all_users():
 def get_allowed_series(doctype="Sales Invoice", user=None):
     """Return a list of naming series allowed for the current or specified user."""
 
-    def get_alpha(s):
-        return re.sub(r"[^A-Za-z]", "", s or "")
+    def series_prefix(s):
+        return (s or "").split(".")[0].strip().upper()
 
     def _fallback_series():
         """Read series from Property Setter or DocType meta as last resort."""
@@ -234,10 +233,9 @@ def get_allowed_series(doctype="Sales Invoice", user=None):
     if "ALL" in allowed_prefixes:
         return {"allowed_series": available, "user_allowed_string": ",".join(allowed_prefixes)}
 
-    allowed_alphas = [get_alpha(p)[:3] for p in allowed_prefixes]
-
-    # Filter available series by matching alpha parts (up to first 3 chars)
-    result = [s for s in available if any(get_alpha(s)[:3].startswith(a) for a in allowed_alphas)]
+    # Exact prefix match only (the part before the first "."): "PO" allows "PO.#####", not "POR.#####"
+    allowed_set = {series_prefix(p) for p in allowed_prefixes}
+    result = [s for s in available if series_prefix(s) in allowed_set]
 
     return {
         "allowed_series": result,
