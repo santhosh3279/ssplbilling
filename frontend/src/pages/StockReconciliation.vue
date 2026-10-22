@@ -71,6 +71,7 @@
                 <select
                   ref="warehouseSelect"
                   v-model="warehouse"
+                  @keydown.enter.prevent="focusNewCode"
                   :disabled="isReadOnly || items.length > 0"
                   class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] disabled:bg-[var(--color-bg)] disabled:text-[var(--color-text-muted)] min-w-[250px]"
                 >
@@ -110,74 +111,90 @@
       <template #row="{ item, index }">
         <tr
           :ref="el => setRowRef(el, index)"
-          tabindex="-1"
-          class="group border-b border-[var(--color-border)] last:border-0 outline-none transition-colors"
-          :class="{ 'bg-[var(--color-info)]/30': selectedRow === index, 'hover:bg-[var(--color-surface)]/40': selectedRow !== index }"
+          :tabindex="isReadOnly ? -1 : 0"
+          class="group border-b border-[var(--color-border)] last:border-0 outline-none cursor-pointer transition-colors"
+          :class="isActiveRow(index) ? 'bg-[var(--color-focus)] font-bold' : 'hover:bg-[var(--color-surface)]/40'"
           :style="{ fontSize: dynamicRowStyle.fontSize }"
           @click="selectRow(index)"
+          @dblclick="startRowEdit(index)"
+          @focus="selectedRow = index"
           @keydown="onRowKeydown($event, index)"
         >
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] font-mono text-3xl text-center">{{ index + 1 }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] font-mono text-3xl text-center" :class="tone(index, 'text-[var(--color-text-muted)]')">{{ index + 1 }}</td>
           <td class="px-2 py-1 border-r border-[var(--color-border)]">
-            <span class="font-mono font-semibold text-[var(--color-info)] text-4xl truncate block w-40" :title="item.item_code">{{ item.item_code }}</span>
+            <span class="font-mono font-semibold text-4xl truncate block w-40" :class="tone(index, 'text-[var(--color-info)]')" :title="item.item_code">{{ item.item_code }}</span>
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)]">
-            <div class="text-[var(--color-text)] text-4xl font-medium" :title="item.item_name">{{ item.item_name || '--' }}</div>
+            <div class="text-4xl font-medium" :class="tone(index, 'text-[var(--color-text)]')" :title="item.item_name">{{ item.item_name || '--' }}</div>
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-[var(--color-text-muted)] text-4xl">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl" :class="tone(index, 'text-[var(--color-text-muted)]')">
             {{ item.current_qty }}
           </td>
           <td class="p-0 border-r border-[var(--color-border)] text-right font-mono">
             <input
-              :ref="el => setRef(el, 'qty', index)"
+              v-if="editingRow === index"
+              ref="editQtyInput"
+              v-model.number="editQty"
               type="number"
-              v-model.number="item.qty"
-              :disabled="isReadOnly"
               step="any"
-              class="w-full bg-transparent px-2 py-1 text-right text-[var(--color-text)] font-bold outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] text-6xl"
-              @keydown.enter.prevent="moveRow(index, 1)"
-              @keydown.tab.prevent="moveRow(index, 1)"
-              @keydown.down.prevent="moveRow(index, 1)"
-              @keydown.up.prevent="moveRow(index, -1)"
+              class="w-full bg-white/10 px-2 py-1 text-right text-[var(--color-text)] font-bold outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] text-6xl [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @keydown="onEditQtyKeydown($event, index)"
             />
+            <template v-else>
+              <span class="block px-2 py-1 text-6xl font-bold tabular-nums" :class="tone(index, 'text-[var(--color-text)]')">{{ formatQty(item.qty / rowFactor(item)) }}</span>
+              <span v-if="rowEntryUom(item) !== item.uom" class="block px-2 pb-1 text-xl" :class="tone(index, 'text-[var(--color-text-muted)]')">= {{ formatQty(item.qty) }} {{ item.uom }}</span>
+            </template>
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-[var(--color-text-muted)] text-4xl">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl" :class="tone(index, 'text-[var(--color-text-muted)]')">
             {{ item.current_valuation_rate?.toFixed(2) }}
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-4xl">{{ item.uom || '--' }}</td>
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <select
+              v-if="editingRow === index && itemUoms(item.item_code, item.uom).length > 1"
+              ref="editUomSelect"
+              v-model="editUom"
+              class="w-full bg-white/10 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @change="onEditUomChange(index)"
+              @keydown="onEditUomKeydown($event, index)"
+            >
+              <option v-for="u in itemUoms(item.item_code, item.uom)" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ uomLabel(item.item_code, u) }}</option>
+            </select>
+            <span v-else class="block px-2 py-1 text-4xl whitespace-nowrap" :class="tone(index, 'text-[var(--color-text-muted)]')">{{ uomLabel(item.item_code, rowEntryUom(item)) || '--' }}</span>
+          </td>
           <td
             class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono font-bold text-4xl"
-            :class="(item.qty - item.current_qty) > 0 ? 'text-[var(--color-success)]' : (item.qty - item.current_qty) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'"
+            :class="tone(index, rowDiff(item, index) > 0 ? 'text-[var(--color-success)]' : rowDiff(item, index) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]')"
           >
-            {{ (item.qty - item.current_qty).toFixed(2) }}
+            {{ rowDiff(item, index).toFixed(2) }}
           </td>
           <td class="px-2 py-1 text-center">
-            <button v-if="!isReadOnly" class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] transition" @click.stop="removeItem(index)">&times;</button>
+            <button v-if="!isReadOnly" tabindex="-1" class="rounded px-1 py-0.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] transition" :class="tone(index, 'text-[var(--color-text-muted)]')" @click.stop="removeItem(index)">&times;</button>
           </td>
         </tr>
       </template>
 
       <template #table-extra-rows>
-        <tr v-if="!isReadOnly" class="border-b border-[var(--color-border)] bg-[var(--color-info)]/10" :class="{ 'bg-[var(--color-info)]/30 ring-2 ring-inset ring-[var(--color-info)]': selectedRow === -1 }" :style="{ fontSize: dynamicRowStyle.fontSize }">
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-info)] font-bold text-3xl text-center">+</td>
+        <!-- Pending row: qty (and UOM) for the scanned / picked item -->
+        <tr v-if="!isReadOnly && newPending.item_name" class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/10" :style="{ fontSize: dynamicRowStyle.fontSize }">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] font-bold text-3xl text-center">+</td>
           <td class="px-2 py-1 border-r border-[var(--color-border)]">
-            <input 
-              ref="newCodeInput" 
-              v-model="newItemCode" 
-              class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 font-mono text-[var(--color-text)] outline-none focus:border-[var(--color-info)] shadow-sm text-4xl" 
-              placeholder="Scan Barcode or Type Item Name..." 
-              @input="onNewCodeInput"
-              @keydown="handleNewCodeKeydown"
-            />
+            <span class="font-mono font-semibold text-[var(--color-highlight)] text-4xl truncate block w-40" :title="newItemCode">{{ newItemCode }}</span>
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)]">
-            <div class="text-[var(--color-text-muted)] italic text-4xl">{{ newPending.item_name || 'Search...' }}</div>
+            <div class="text-[var(--color-text)] text-4xl">{{ newPending.item_name }}</div>
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right text-[var(--color-text-muted)] font-mono text-4xl">
             {{ newPending.current_qty }}
           </td>
           <td class="p-0 border-r border-[var(--color-border)] text-right">
-            <input ref="newQtyInput" v-model.number="newQty" type="number" step="any" class="w-full bg-[var(--color-surface)] px-2 py-1 text-right font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] text-6xl" @keydown.enter.prevent="onNewQtyEnter" @keydown.tab.prevent="onNewQtyEnter" />
+            <input
+              ref="newQtyInput"
+              v-model.number="newQty"
+              type="number"
+              step="any"
+              class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-right font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] text-6xl [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              @keydown="onNewQtyKeydown"
+            />
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right text-[var(--color-text-muted)] font-mono text-4xl">
             {{ newPending.valuation_rate?.toFixed(2) }}
@@ -187,10 +204,9 @@
               v-if="newItemUoms.length > 1"
               ref="newUomSelect"
               v-model="newPending.uom"
-              class="w-full bg-[var(--color-surface)] px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-3xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               @change="onNewUomChange"
-              @keydown.enter.prevent="addNewItem"
-              @keydown.tab.prevent="addNewItem"
+              @keydown="onNewUomKeydown"
             >
               <option v-for="u in newItemUoms" :key="u" :value="u" class="bg-[var(--color-bg)]">{{ uomLabel(newItemCode, u) }}</option>
             </select>
@@ -199,18 +215,36 @@
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono font-bold text-4xl" :class="newDiff > 0 ? 'text-[var(--color-success)]' : newDiff < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
             {{ newDiff.toFixed(2) }}
           </td>
-          <td class="px-2 py-1"></td>
+          <td class="px-2 py-1 text-center">
+            <button tabindex="-1" class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] transition" @click.stop="cancelPending()">&times;</button>
+          </td>
+        </tr>
+
+        <!-- Barcode input row -->
+        <tr v-else-if="!isReadOnly" class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/5" :style="{ fontSize: dynamicRowStyle.fontSize }">
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] font-mono text-3xl text-center">*</td>
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <input
+              ref="newCodeInput"
+              v-model="newItemCode"
+              class="w-full bg-transparent px-2 py-1 font-mono text-[var(--color-highlight)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] placeholder:text-[var(--color-text-muted)]/40 text-4xl"
+              placeholder="Scan or Type Item..."
+              @input="onNewCodeInput"
+              @keydown="handleNewCodeKeydown"
+            />
+          </td>
+          <td colspan="7" class="px-2 text-[var(--color-text-muted)] italic text-2xl">Enter item code / barcode &nbsp;·&nbsp; &rarr; search &nbsp;·&nbsp; &uarr; rows</td>
         </tr>
       </template>
 
       <template #bottom-left>
         <div class="flex flex-col gap-2 p-4 h-[120px] overflow-y-auto">
-           <div class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Instructions</div>
+           <div class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)] mb-2">Keys</div>
            <ul class="text-xs text-[var(--color-text-muted)] list-disc list-inside space-y-1">
-             <li>Select warehouse and fetch items to see current stock.</li>
-             <li>Update the <span class="text-[var(--color-info)] font-bold">Target Qty</span> for items you want to reconcile.</li>
-             <li>Items with Difference = 0 will be ignored on submit.</li>
-             <li>Save as Draft first, then Submit to apply changes.</li>
+             <li><b>F2</b> warehouse, <b>F7</b> fetch all items of the warehouse, <b>F8 / Ctrl+S</b> save.</li>
+             <li>Scan / type item, <b>Enter</b>: type qty, <b>Enter</b> (choose UOM, <b>Enter</b>) adds it. A scanned item already in the list jumps to its row.</li>
+             <li>Rows: <b>&uarr;&darr; Home End</b> move, <b>Enter</b> or type a number to edit qty, <b>Delete</b> removes, <b>Esc</b> back to the scan box.</li>
+             <li>Editing qty: <b>Enter</b> saves and goes to next row, <b>&uarr;&darr;</b> save and edit the row above / below, <b>Esc</b> cancels.</li>
            </ul>
         </div>
       </template>
@@ -258,6 +292,7 @@ import { useItemCache, uomLabel } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
+import { scrollInvoiceRowIntoView } from '../utils/invoiceScroll.js'
 import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import { getCachedList } from '../services/masterCache.js'
 const router = useRouter()
@@ -314,18 +349,18 @@ const dynamicRowStyle = computed(() => ({
 
 // Entry UOMs for the pending item: stock UOM first, then its conversion UOMs.
 // Reconciliation rows are stored in stock UOM; the entered qty is converted on add.
-const newItemUoms = computed(() => {
-  const cached = newItemCode.value && lookupItemInCache(newItemCode.value)
-  const stockUom = newPending.value.stock_uom
-  if (!cached || !stockUom) return []
-  const others = (cached.uoms || []).map(u => u.uom).filter(u => u && u !== stockUom)
-  return [stockUom, ...new Set(others)]
-})
+const newItemUoms = computed(() => itemUoms(newItemCode.value, newPending.value.stock_uom))
 
 const newFactor = computed(() => uomFactor(newItemCode.value, newPending.value.uom, newPending.value.stock_uom) || 1)
 const newDiff = computed(() => (newQty.value || 0) * newFactor.value - newPending.value.current_qty)
 
 const adjustedCount = computed(() => items.value.filter(i => Math.abs(i.qty - i.current_qty) > 0.0001).length)
+
+// Row being edited: its qty is typed in `editUom` and stored back in stock UOM on commit.
+const editingRow = ref(-1)
+const editQty = ref(0)
+const editUom = ref('')
+let editPrevUom = ''
 
 const saveButtonText = computed(() => {
   if (isReadOnly.value && !isDraft.value) return 'New'
@@ -334,21 +369,33 @@ const saveButtonText = computed(() => {
 })
 
 // ==================== REFS & FOCUS ====================
-const inputRefs = {}
 const rowRefs = {}
 const warehouseSelect = ref(null)
 const newCodeInput = ref(null)
 const newQtyInput = ref(null)
 const newUomSelect = ref(null)
+const editQtyInput = ref(null)
+const editUomSelect = ref(null)
 
-function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
 function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
 function setSidebarEntryRef(el, idx) { if (el) sidebarEntryRefs.set(idx, el); else sidebarEntryRefs.delete(idx) }
 
-function focusField(f, idx) { nextTick(() => inputRefs[`${f}-${idx}`]?.focus()) }
-function focusRow(idx)    { nextTick(() => rowRefs[idx]?.focus()) }
+function focusRow(idx, direction = null) {
+  selectedRow.value = idx
+  nextTick(() => {
+    const el = rowRefs[idx]
+    if (!el) return
+    el.focus({ preventScroll: true })
+    scrollInvoiceRowIntoView(el, direction)
+  })
+}
 function focusWarehouse() { nextTick(() => warehouseSelect.value?.focus()) }
-function focusNewCode()   { nextTick(() => newCodeInput.value?.focus()) }
+function focusNewCode()   {
+  selectedRow.value = -1
+  nextTick(() => { newCodeInput.value?.focus(); newCodeInput.value?.scrollIntoView({ block: 'nearest' }) })
+}
+// Where typing starts: warehouse first when none is chosen, else the scan box.
+function focusEntryStart() { if (warehouse.value) focusNewCode(); else focusWarehouse() }
 function focusNewQty()    { nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() }) }
 
 function navigateSidebarEntry(idx, dir) {
@@ -374,20 +421,123 @@ function formatDate(dateString) {
 }
 
 // ==================== NAVIGATION ====================
-function moveRow(from, dir) { 
-  let n = from + dir
-  if (n >= 0 && n < items.value.length) { 
-    selectedRow.value = n; 
-    focusField('qty', n) 
-    rowRefs[n]?.scrollIntoView({ block: 'nearest' })
-  } 
-}
-function selectRow(idx) { selectedRow.value = idx; focusField('qty', idx) }
+function isActiveRow(idx) { return selectedRow.value === idx || editingRow.value === idx }
+// Text colour for a cell: on-focus text on the highlighted row, else the cell's own colour.
+function tone(idx, cls) { return isActiveRow(idx) ? 'text-[var(--color-text-on-focus)]' : cls }
+
+function selectRow(idx) { if (editingRow.value !== idx) focusRow(idx) }
 
 function onRowKeydown(e, idx) {
   if (e.target !== e.currentTarget) return
-  if (e.key === 'ArrowDown')  { e.preventDefault(); moveRow(idx, 1) }
-  else if (e.key === 'ArrowUp')   { e.preventDefault(); moveRow(idx, -1) }
+  const last = items.value.length - 1
+  if (e.key === 'ArrowDown') { e.preventDefault(); if (idx < last) focusRow(idx + 1, 'down'); else focusNewCode() }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); if (idx > 0) focusRow(idx - 1, 'up') }
+  else if (e.key === 'Home') { e.preventDefault(); focusRow(0, 'up') }
+  else if (e.key === 'End') { e.preventDefault(); if (idx === last) focusNewCode(); else focusRow(last, 'down') }
+  else if (e.key === 'PageDown') { e.preventDefault(); focusRow(Math.min(idx + 10, last), 'down') }
+  else if (e.key === 'PageUp') { e.preventDefault(); focusRow(Math.max(idx - 10, 0), 'up') }
+  else if (e.key === 'Enter') { e.preventDefault(); startRowEdit(idx) }
+  // Typing a number on a row starts editing its qty with that digit
+  else if (/^[0-9.]$/.test(e.key) && !e.ctrlKey && !e.altKey && !e.metaKey) { e.preventDefault(); startRowEdit(idx, e.key) }
+  // stopPropagation: the page-level Esc would ask to discard and leave the page
+  else if (e.key === 'Escape' && !isReadOnly.value) { e.preventDefault(); e.stopPropagation(); focusNewCode() }
+  else if (e.key === 'Delete') { e.preventDefault(); e.stopPropagation(); removeItem(idx) }
+}
+
+// ==================== ROW UOM / EDIT ====================
+// UOMs an item can be counted in: stock UOM first, then its conversion UOMs.
+function itemUoms(itemCode, stockUom) {
+  const cached = itemCode && lookupItemInCache(itemCode)
+  if (!cached || !stockUom) return []
+  const others = (cached.uoms || []).map(u => u.uom).filter(u => u && u !== stockUom)
+  return [stockUom, ...new Set(others)]
+}
+
+// Rows keep `qty` in stock UOM (`uom`); `entry_uom` is only how the qty is shown and typed.
+function rowEntryUom(item) {
+  return item.entry_uom && uomFactor(item.item_code, item.entry_uom, item.uom) ? item.entry_uom : item.uom
+}
+function rowFactor(item) { return uomFactor(item.item_code, rowEntryUom(item), item.uom) || 1 }
+function rowDiff(item, idx) {
+  const qty = editingRow.value === idx
+    ? (editQty.value || 0) * (uomFactor(item.item_code, editUom.value, item.uom) || 1)
+    : item.qty
+  return (qty || 0) - (item.current_qty || 0)
+}
+function formatQty(v) { return parseFloat(roundQty(v).toFixed(3)) }
+
+function startRowEdit(idx, firstKey = null, uom = null) {
+  if (isReadOnly.value) return
+  const item = items.value[idx]
+  if (!item) return
+  if (editingRow.value !== -1 && editingRow.value !== idx) commitRowEdit(editingRow.value)
+  editingRow.value = idx
+  selectedRow.value = idx
+  editUom.value = uom && uomFactor(item.item_code, uom, item.uom) ? uom : rowEntryUom(item)
+  editPrevUom = editUom.value
+  editQty.value = firstKey != null ? firstKey : roundQty(item.qty / (uomFactor(item.item_code, editUom.value, item.uom) || 1))
+  nextTick(() => {
+    const el = editQtyInput.value
+    if (!el) return
+    el.focus({ preventScroll: true })
+    if (firstKey == null) el.select()
+    scrollInvoiceRowIntoView(rowRefs[idx])
+  })
+}
+
+function commitRowEdit(idx) {
+  const item = items.value[idx]
+  if (item && editingRow.value === idx) {
+    const qty = parseFloat(editQty.value)
+    if (!isNaN(qty)) {
+      item.entry_uom = editUom.value
+      item.qty = roundQty(qty * (uomFactor(item.item_code, editUom.value, item.uom) || 1))
+    }
+  }
+  editingRow.value = -1
+}
+
+function cancelRowEdit(idx) {
+  editingRow.value = -1
+  focusRow(idx)
+}
+
+// Save this row's edit, then move: to the next row (Enter), or keep editing above / below (arrows).
+function commitAndMove(idx, dir, keepEditing) {
+  commitRowEdit(idx)
+  const next = idx + dir
+  if (next < 0) { focusRow(idx); return }
+  if (next >= items.value.length) { focusNewCode(); return }
+  if (keepEditing) startRowEdit(next)
+  else focusRow(next, dir > 0 ? 'down' : 'up')
+}
+
+function onEditQtyKeydown(e, idx) {
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    e.preventDefault()
+    if (itemUoms(items.value[idx]?.item_code, items.value[idx]?.uom).length > 1) editUomSelect.value?.focus()
+    else commitAndMove(idx, 1, false)
+  }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); commitAndMove(idx, 1, true) }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); commitAndMove(idx, -1, true) }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelRowEdit(idx) }
+  else if (e.key === 'Delete') e.stopPropagation()
+}
+
+function onEditUomChange(idx) {
+  const item = items.value[idx]
+  if (!item) return
+  const stock = (parseFloat(editQty.value) || 0) * (uomFactor(item.item_code, editPrevUom, item.uom) || 1)
+  editQty.value = roundQty(stock / (uomFactor(item.item_code, editUom.value, item.uom) || 1))
+  editPrevUom = editUom.value
+}
+
+function onEditUomKeydown(e, idx) {
+  if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); commitAndMove(idx, 1, false) }
+  else if (e.key === 'Escape' || e.key === 'ArrowLeft') {
+    e.preventDefault(); e.stopPropagation()
+    nextTick(() => { editQtyInput.value?.focus(); editQtyInput.value?.select() })
+  }
 }
 
 // ==================== DATA FETCHING ====================
@@ -422,10 +572,9 @@ async function fetchItems() {
   try {
     const res = await frappeGet(`${API}.get_items_for_reconciliation`, { warehouse: warehouse.value })
     items.value = res
-    if (items.value.length) {
-      selectedRow.value = 0
-      nextTick(() => focusField('qty', 0))
-    }
+    editingRow.value = -1
+    if (items.value.length) focusRow(0, 'up')
+    else focusNewCode()
   } catch (e) { alert(e.message || 'Fetch failed') }
 }
 
@@ -451,14 +600,47 @@ function stockUomOf(itemCode, fallback) {
 // Pending row for an item: `uom` is the entry UOM (a scanned barcode's UOM), and the qty
 // box starts at the current stock expressed in that UOM so Diff reads 0 until changed.
 function setNewPending({ item_name, uom, stock_uom, current_qty, valuation_rate }) {
+  // Stock Reconciliation can't hold an item twice: go to its row and edit the qty there,
+  // in the scanned barcode's UOM.
+  const existing = items.value.findIndex(i => i.item_code === newItemCode.value)
+  if (existing !== -1) {
+    clearPending()
+    startRowEdit(existing, null, uom)
+    return
+  }
   // A UOM without a known conversion factor would be counted as stock units; enter in stock UOM.
   const entryUom = uom && uomFactor(newItemCode.value, uom, stock_uom) ? uom : stock_uom
-  newPending.value = { item_name, uom: entryUom, stock_uom, current_qty, valuation_rate }
+  newPending.value = { item_name: item_name || newItemCode.value, uom: entryUom, stock_uom, current_qty, valuation_rate }
   newQty.value = roundQty(current_qty / newFactor.value)
   newRate.value = valuation_rate
 }
 
 function roundQty(v) { return Math.round((v || 0) * 1000) / 1000 }
+
+function clearPending() {
+  newItemCode.value = ''
+  newQty.value = 0
+  newRate.value = 0
+  newPending.value = { item_name: '', uom: '', stock_uom: '', current_qty: 0, valuation_rate: 0 }
+  quickSearchResults.value = []
+}
+
+function cancelPending() {
+  clearPending()
+  focusNewCode()
+}
+
+function onNewQtyKeydown(e) {
+  if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); onNewQtyEnter() }
+  else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelPending() }
+  else if (e.key === 'Backspace' && e.target.value === '') { e.preventDefault(); cancelPending() }
+  else if (e.key === 'Delete') e.stopPropagation()
+}
+
+function onNewUomKeydown(e) {
+  if (e.key === 'Enter' || e.key === 'Tab') { e.preventDefault(); addNewItem() }
+  else if (e.key === 'Escape' || e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); focusNewQty() }
+}
 
 function onNewUomChange() {
   newQty.value = roundQty(newPending.value.current_qty / newFactor.value)
@@ -501,17 +683,30 @@ function onNewCodeInput() {
   }
 }
 
+let lastEnterTime = 0
+
 function handleNewCodeKeydown(e) {
+  if (e.key === 'Enter') {
+    // Double Enter clears the scan box
+    const now = Date.now()
+    const isDouble = now - lastEnterTime < 400
+    lastEnterTime = now
+    if (isDouble) { e.preventDefault(); clearPending(); lastEnterTime = 0; return }
+  }
+
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === 'Escape') {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
+      e.preventDefault()
       quickSearchRef.value.handleQuickSearchKeydown(e)
       return
     }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); quickSearchResults.value = []; return }
   }
-  if (e.key === 'Enter') {
-    e.preventDefault()
-    onNewCodeEnter()
-  }
+
+  if (e.key === 'Enter') { e.preventDefault(); onNewCodeEnter() }
+  else if (e.key === 'ArrowRight' && e.target.selectionStart === newItemCode.value.length) { e.preventDefault(); showItemSearch.value = true }
+  else if (e.key === 'ArrowUp' && items.value.length) { e.preventDefault(); focusRow(items.value.length - 1, 'down') }
+  else if (e.key === 'Escape' && newItemCode.value) { e.preventDefault(); e.stopPropagation(); clearPending() }
 }
 
 function onQuickSearchSelect(item) {
@@ -551,28 +746,19 @@ async function onItemSearchSelect(item) {
 
 function addNewItem() {
   if (!newItemCode.value || !newPending.value.item_name) return
-  
-  const existing = items.value.find(i => i.item_code === newItemCode.value)
-  if (existing) {
-    alert('Item already in list')
-    newItemCode.value = ''
-    return
-  }
 
   items.value.push({
     item_code: newItemCode.value,
     item_name: newPending.value.item_name,
     uom: newPending.value.stock_uom || newPending.value.uom,
+    entry_uom: newPending.value.uom,
     current_qty: newPending.value.current_qty,
     qty: roundQty((newQty.value || 0) * newFactor.value),
     valuation_rate: newRate.value || newPending.value.valuation_rate,
     current_valuation_rate: newPending.value.valuation_rate
   })
 
-  newItemCode.value = ''
-  newQty.value = 0
-  newRate.value = 0
-  newPending.value = { item_name: '', uom: '', stock_uom: '', current_qty: 0, valuation_rate: 0 }
+  clearPending()
   focusNewCode()
 }
 
@@ -615,8 +801,12 @@ watch(warehouse, (newWarehouse) => {
 
 // ==================== ACTIONS ====================
 function removeItem(idx) {
+  if (isReadOnly.value) return
+  editingRow.value = -1
   items.value.splice(idx, 1)
-  if (selectedRow.value >= items.value.length) selectedRow.value = items.value.length - 1
+  if (idx < items.value.length) focusRow(idx)
+  else if (idx > 0) focusRow(idx - 1)
+  else focusNewCode()
 }
 
 async function handleSave() {
@@ -627,6 +817,7 @@ async function handleSave() {
   }
   if (isReadOnly.value && isDraft.value) {
     isReadOnly.value = false
+    focusNewCode()
     return
   }
   await saveEntry()
@@ -636,6 +827,7 @@ async function saveEntry() {
   if (submitting.value) return
   if (!warehouse.value) { alert('Select warehouse'); return }
   if (!items.value.length) { alert('No items to save'); return }
+  if (editingRow.value !== -1) commitRowEdit(editingRow.value)
 
   const payload = {
     company: localStorage.getItem('wb-company') || null,
@@ -690,7 +882,9 @@ function startNewEntry() {
   items.value = []; entryName.value = null; entryDocStatus.value = 0
   isReadOnly.value = false
   isDraft.value = false
-  selectedRow.value = -1
+  editingRow.value = -1
+  clearPending()
+  focusEntryStart()
 }
 
 // ==================== MODIFY HISTORY ====================
@@ -703,6 +897,9 @@ async function loadEntry(name) {
     warehouse.value = data.items.length ? (data.items[0].warehouse || '') : ''
     items.value = data.items
     entryDocStatus.value = data.docstatus
+    editingRow.value = -1
+    selectedRow.value = -1
+    clearPending()
     isReadOnly.value = true
     isDraft.value = data.docstatus === 0
   } catch (e) { 
@@ -728,11 +925,12 @@ useShortcuts(stockReconciliationShortcuts({
   }
 }), props.isSubWindow ? 'subwindow' : 'local')
 
-onMounted(() => {
+onMounted(async () => {
   fetchAllowedSeries('Stock Reconciliation')
-  fetchConfig()
+  const configLoaded = fetchConfig()
   fetchSidebarEntries()
   refreshItemCache('Sales')
   if (props.name) loadEntry(props.name)
+  else { await configLoaded; focusEntryStart() }
 })
 </script>
