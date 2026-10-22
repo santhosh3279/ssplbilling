@@ -607,6 +607,15 @@
                     :style="{ paddingLeft: `${upiInputPad}px` }"
                   />
                 </div>
+                <!-- Saved as the UPI Payment Entry's Reference No; Paytm fills it on a machine payment -->
+                <input
+                  v-if="Number(payments.upi) > 0"
+                  v-model.trim="upiRefNo"
+                  type="text"
+                  tabindex="-1"
+                  placeholder="UPI Ref No (optional)"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-1.5 px-4 text-right font-mono text-[14px] font-bold text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-success)] outline-none transition-all"
+                />
                 <div class="group relative">
                   <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cardLabel }}</div>
                   <input

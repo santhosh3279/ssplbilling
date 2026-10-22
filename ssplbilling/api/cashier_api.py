@@ -478,6 +478,27 @@ def get_sales_invoice(invoice_name, include_customer_details=0):
     # Bill-open fetches the party panel in the same round trip when asked to.
     return attach_customer_billing_details(result, include_customer_details)
 
+def _paytm_refs(invoice_name):
+	"""(upi_ref, card_ref) from this bill's latest successful Paytm payments, so the Payment Entry
+	keeps the Paytm reference even when the cashier page lost it (reload, re-selecting the bill)."""
+	from ssplbilling.api.paytm_api import CARD_PAY_METHODS
+
+	upi_ref = card_ref = None
+	for t in frappe.get_all(
+		"SSPL Paytm Transaction",
+		filters={"sales_invoice": invoice_name, "status": "Success"},
+		fields=["channel", "pay_method", "rrn", "paytm_txn_id", "auth_code", "order_id"],
+		order_by="modified desc",
+	):
+		ref = t.rrn or t.paytm_txn_id or t.auth_code or t.order_id
+		is_card = t.channel != "QR" and (t.pay_method or "").upper() in CARD_PAY_METHODS
+		if is_card:
+			card_ref = card_ref or ref
+		else:
+			upi_ref = upi_ref or ref
+	return upi_ref, card_ref
+
+
 @frappe.whitelist()
 def submit_invoice_with_payment(data=None, **kwargs):
 	"""Submit a Sales Invoice and create Payment Entries."""
@@ -502,6 +523,10 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	f_discount_account = data.get("discount_account")
 	card_ref_no = data.get("card_ref_no")
 	upi_ref_no = data.get("upi_ref_no")
+	if (upi_amount > 0.01 and not upi_ref_no) or (card_amount > 0.01 and not card_ref_no):
+		paytm_upi_ref, paytm_card_ref = _paytm_refs(invoice_name)
+		upi_ref_no = upi_ref_no or paytm_upi_ref
+		card_ref_no = card_ref_no or paytm_card_ref
 
 	si = frappe.get_doc("Sales Invoice", invoice_name)
 	grand_total = float(si.rounded_total or si.grand_total or 0)
