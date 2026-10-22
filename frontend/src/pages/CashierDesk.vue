@@ -797,6 +797,21 @@
             <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Machine</span>
             <span class="font-bold text-[var(--color-text)]">{{ paytm.deviceName }} ({{ paytm.tid }})</span>
           </div>
+          <div v-if="paytm.customerName" class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer</span>
+            <span class="font-bold text-[var(--color-text)]">{{ paytm.customerName }}<template v-if="paytm.phone && !paytm.askPhone"> · {{ paytm.phone }}</template></span>
+          </div>
+          <!-- The bill has no real number (e.g. 9999999999): the cashier may add one, or skip it -->
+          <input
+            v-if="paytm.askPhone && !paytm.orderId"
+            ref="paytmPhoneInput"
+            v-model.trim="paytm.phone"
+            @keydown.enter="sendToPaytm"
+            type="tel"
+            maxlength="13"
+            placeholder="Customer phone (optional)"
+            class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 px-4 font-mono font-bold text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-info)] outline-none"
+          />
           <div
             v-if="paytm.message"
             class="rounded-lg border p-3 text-[12px] font-bold uppercase tracking-wider"
@@ -811,11 +826,11 @@
               class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
             >{{ paytm.orderId && paytm.status === 'Pending' ? 'Stop Waiting' : 'Close' }}</button>
             <button
-              v-if="paytm.status === 'Failed'"
+              v-if="paytm.status === 'Failed' || (paytm.askPhone && !paytm.orderId)"
               @click="sendToPaytm"
               :disabled="paytm.sending"
               class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-            >{{ paytm.sending ? 'Sending…' : 'Retry' }}</button>
+            >{{ paytm.sending ? 'Sending…' : paytm.status === 'Failed' ? 'Retry' : 'Send to Machine' }}</button>
           </div>
         </div>
       </div>
@@ -1018,8 +1033,9 @@ const upiRefNo = ref('')
 
 // Paytm EDC card machine: push the UPI box amount to the machine, wait for the result
 // (socket event from the webhook, with polling as fallback), then fill UPI or Card.
-const paytm = ref({ enabled: false, qrEnabled: false, devices: [], show: false, payMode: 'QR', tid: '', deviceName: '', amount: 0, orderId: '', status: '', message: '', sending: false })
+const paytm = ref({ enabled: false, qrEnabled: false, devices: [], show: false, payMode: 'QR', tid: '', deviceName: '', customerName: '', phone: '', askPhone: false, amount: 0, orderId: '', status: '', message: '', sending: false })
 let paytmPollTimer = null
+const paytmPhoneInput = ref(null)
 // Paytm dynamic UPI QR: same wait-for-result flow, but the QR is shown on this screen
 const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', sending: false })
 let paytmQrPollTimer = null
@@ -1652,7 +1668,7 @@ async function loadPaytmDevices() {
   }
 }
 
-function openPaytmModal(payMode) {
+async function openPaytmModal(payMode) {
   errorMsg.value = ''
   const amount = Number(payments.value.upi) || 0
   if (!selectedInvoice.value) {
@@ -1669,7 +1685,17 @@ function openPaytmModal(payMode) {
   }
   // The machine is fixed by SSPL Paytm Settings (the user's assigned row); no picking here
   const device = paytm.value.devices[0]
-  Object.assign(paytm.value, { show: true, payMode, tid: device.tid, deviceName: device.device_name, amount, orderId: '', status: '', message: '', sending: false })
+  Object.assign(paytm.value, { show: true, payMode, tid: device.tid, deviceName: device.device_name, amount, orderId: '', status: '', message: '', sending: false, customerName: '', phone: '', askPhone: false })
+  // Customer name + phone ride along in extendInfo; a placeholder number makes us ask first
+  let contact = null
+  try {
+    contact = await frappeGet('ssplbilling.api.paytm_api.get_invoice_contact', { invoice_name: selectedInvoice.value.name })
+  } catch (e) { /* send without contact details */ }
+  Object.assign(paytm.value, { customerName: contact?.customer_name || '', phone: contact?.phone || '', askPhone: !!contact && !contact.phone })
+  if (paytm.value.askPhone) {
+    nextTick(() => paytmPhoneInput.value?.focus())
+    return
+  }
   sendToPaytm()
 }
 
@@ -1683,6 +1709,7 @@ async function sendToPaytm() {
       tid: p.tid,
       pay_mode: p.payMode,
       user: paytmMachineUser(),
+      phone: p.phone,
     }, { silent: true })
     p.orderId = res.order_id
     p.status = 'Pending'

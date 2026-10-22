@@ -103,13 +103,13 @@ def _post_pg(settings, path, body, head=None):
 
 
 def _ecr_sign_fields(body):
-	# Nested objects such as merchantExtendedInfo are signed as if their fields were top level
-	# (verified: Paytm accepts PaymentMode signed flat and rejects every JSON-string form)
+	# merchantExtendedInfo is signed as if its fields were top level; extendInfo is left out of
+	# the checksum (both verified against Paytm, which rejects the other forms)
 	fields = {}
 	for k, v in body.items():
-		if isinstance(v, dict):
+		if k == "merchantExtendedInfo":
 			fields.update({ik: str(iv) for ik, iv in v.items()})
-		else:
+		elif not isinstance(v, dict | list):
 			fields[k] = str(v)
 	return fields
 
@@ -191,10 +191,36 @@ def get_devices(user=None):
 	}
 
 
+def _valid_phone(phone):
+	"""Last 10 digits of a mobile number, or "" for a missing one or a placeholder such as
+	9999999999 (all one digit)."""
+	digits = re.sub(r"\D", "", phone or "")[-10:]
+	return digits if len(digits) == 10 and len(set(digits)) > 1 else ""
+
+
+def _invoice_contact(invoice_name):
+	si = frappe.db.get_value(
+		"Sales Invoice", invoice_name, ["customer", "customer_name", "contact_mobile"], as_dict=True
+	)
+	phone = _valid_phone(si.contact_mobile) or _valid_phone(
+		frappe.db.get_value("Customer", si.customer, "mobile_no")
+	)
+	return si.customer_name, phone
+
+
 @frappe.whitelist()
-def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None):
+def get_invoice_contact(invoice_name):
+	"""Customer name and a real phone number for the Paytm request; phone is "" when the bill only
+	has a placeholder, so the cashier page can ask for one."""
+	customer_name, phone = _invoice_contact(invoice_name)
+	return {"customer_name": customer_name, "phone": phone}
+
+
+@frappe.whitelist()
+def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None, phone=None):
 	"""Push the amount to the card machine; returns the order id to poll.
-	pay_mode QR opens the machine on the UPI QR, CARD on card entry."""
+	pay_mode QR opens the machine on the UPI QR, CARD on card entry. The customer's name and phone
+	(the cashier-entered phone wins over the bill's) go in extendInfo, echoed back by Paytm."""
 	settings = _settings()
 	if pay_mode not in ("QR", "CARD"):
 		frappe.throw(_("Payment mode must be QR or CARD"))
@@ -233,6 +259,11 @@ def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None):
 		"transactionAmount": str(int(round(amount * 100))),  # paise
 		"merchantExtendedInfo": {**EDC_EXTENDED_INFO, "paymentMode": pay_mode},
 	}
+	customer_name, bill_phone = _invoice_contact(invoice_name)
+	extend_info = {"customerName": customer_name, "phoneNumber": _valid_phone(phone) or bill_phone}
+	extend_info = {k: v for k, v in extend_info.items() if v}
+	if extend_info:
+		body["extendInfo"] = extend_info
 	try:
 		res = _post(settings, EDC_SALE_PATH, body)
 	except Exception as e:
