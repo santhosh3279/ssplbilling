@@ -368,6 +368,9 @@ def create_purchase_invoice(data=None, **kwargs):
     # Append extra charge rows from taxes key (freight, packing, loading, other)
     _append_extra_charges(pi, data.get("taxes"))
 
+    # Fill company_gstin before India Compliance's before_validate derives place_of_supply;
+    # otherwise it falls back to the supplier GSTIN and an inter-state bill reads as intra-state.
+    pi.set_missing_values()
     pi.insert()
 
     # Save incentive_system if the field exists
