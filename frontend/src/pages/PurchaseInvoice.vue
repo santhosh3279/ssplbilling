@@ -1677,11 +1677,9 @@ async function clearBill() {
   if (selectedSeries.value) {
     try {
       const res = await getSeriesDefaults(selectedSeries.value, 'Purchase Invoice')
-      invoiceNo.value = res.invoice_no || 'NEW'
       defaultTemplate.value = res.print_format || ''
-    } catch {
-      invoiceNo.value = 'NEW'
-    }
+    } catch {}
+    await refreshInvoiceNo()
   }
 
   nextTick(() => { newCodeInput.value?.focus() })
@@ -1948,14 +1946,21 @@ async function closePrintModal() {
 
   isSaved.value = false
   isReadOnly.value = false
+  await refreshInvoiceNo()
+
+  nextTick(() => { newCodeInput.value?.focus() })
+}
+
+// Read-only preview of the next number — never taken from the (10-min) series-defaults
+// cache, which would go stale after a save. The real number is assigned on save.
+async function refreshInvoiceNo() {
+  if (!selectedSeries.value) { invoiceNo.value = 'NEW'; return }
   try {
     const series = await frappeGet('ssplbilling.api.purchase_api.get_next_bill_no', { naming_series: selectedSeries.value })
     invoiceNo.value = series || 'NEW'
   } catch {
     invoiceNo.value = 'NEW'
   }
-
-  nextTick(() => { newCodeInput.value?.focus() })
 }
 
 function handleCancel() {
@@ -2774,7 +2779,7 @@ async function handleSeriesSelected(series) {
   try {
     selectedSeries.value = series
     const res = await getSeriesDefaults(series, 'Purchase Invoice')
-    invoiceNo.value = res.invoice_no
+    refreshInvoiceNo()
     priceList.value = res.price_list
     taxTemplate.value = res.tax_template
     defaultTemplate.value = res.print_format || ''

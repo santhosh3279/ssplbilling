@@ -8,6 +8,23 @@ def get_customer_details(customer):
     from ssplbilling.api.customersearch_api import get_customer_full
     return get_customer_full(customer)
 
+def peek_naming_series(naming_series):
+    """Preview the next name for a naming series without consuming a number.
+
+    frappe's parse_naming_series() increments tabSeries for the `#` part, so calling it
+    just to show the operator the upcoming number burns one and leaves gaps.
+    """
+    from frappe.model.naming import parse_naming_series
+    from frappe.query_builder import DocType
+
+    def read_only_counter(key, digits):
+        series = DocType("Series")
+        current = frappe.qb.from_(series).where(series.name == key).select("current").run()
+        current = frappe.utils.cint(current[0][0]) if current else 0
+        return ("%0" + str(digits) + "d") % (current + 1)
+
+    return parse_naming_series(naming_series, number_generator=read_only_counter)
+
 @frappe.whitelist()
 def get_next_invoice_no(naming_series):
     """Get next available invoice number."""
@@ -17,10 +34,8 @@ def get_next_invoice_no(naming_series):
 @frappe.whitelist()
 def get_series_defaults(naming_series, doctype="Sales Invoice"):
     """Return naming series defaults and the next available number."""
-    from frappe.model.naming import parse_naming_series
-    
-    # 1. Get next invoice number
-    next_no = parse_naming_series(naming_series)
+    # 1. Get next invoice number (preview only — the real one is assigned on save)
+    next_no = peek_naming_series(naming_series)
     
     # 2. Get series-specific defaults from SSPL Billing Settings
     settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")

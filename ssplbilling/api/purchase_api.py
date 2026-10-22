@@ -431,8 +431,8 @@ def get_naming_series():
 def get_next_bill_no(naming_series="PINV-.YY.-"):
     """Get the next number in the naming series."""
     try:
-        from frappe.model.naming import parse_naming_series
-        return parse_naming_series(naming_series)
+        from ssplbilling.api.salesinvoice_api import peek_naming_series
+        return peek_naming_series(naming_series)
     except Exception:
         return naming_series + "???"
 
