@@ -159,6 +159,22 @@ def _device_for(settings, tid, user=None):
 	frappe.throw(_("Card machine with TID {0} is not assigned to you or is disabled").format(tid))
 
 
+def _paytm_bill_no(invoice_name):
+	"""Bill number as Paytm sees it: a series set up for mirroring (Automatic Entries) keeps its
+	letters, any other series sends only its digits, e.g. EOW05855 -> 05855."""
+	from ssplbilling.api.automatic_entries_api import (
+		_conversion_mirror_series,
+		_sales_mirror_series,
+		get_automatic_entries,
+	)
+
+	entries = get_automatic_entries()
+	naming_series = frappe.db.get_value("Sales Invoice", invoice_name, "naming_series") or ""
+	if naming_series.split(".")[0] in _sales_mirror_series(entries) | _conversion_mirror_series(entries):
+		return re.sub(r"[^A-Za-z0-9]", "", invoice_name)
+	return re.sub(r"\D", "", invoice_name)
+
+
 @frappe.whitelist()
 def get_devices(user=None):
 	"""Enabled card machines assigned to this user, for the cashier page; never returns any key."""
@@ -191,7 +207,8 @@ def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None):
 
 	now = now_datetime()
 	# ECR ids are plain alphanumeric in Paytm's sample; invoice series carry "-" and "/"
-	order_id = f"{re.sub(r'[^A-Za-z0-9]', '', invoice_name)[:30]}{now.strftime('%y%m%d%H%M%S%f')[:15]}"
+	bill_no = _paytm_bill_no(invoice_name)
+	order_id = f"{bill_no[:30]}{now.strftime('%y%m%d%H%M%S%f')[:15]}"
 	txn_datetime = now.strftime("%Y-%m-%d %H:%M:%S")
 
 	txn = frappe.get_doc(
@@ -212,7 +229,7 @@ def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None):
 		"paytmTid": tid,
 		"transactionDateTime": txn_datetime,
 		"merchantTransactionId": order_id,
-		"merchantReferenceNo": re.sub(r"[^A-Za-z0-9]", "", invoice_name),
+		"merchantReferenceNo": bill_no,
 		"transactionAmount": str(int(round(amount * 100))),  # paise
 		"merchantExtendedInfo": {**EDC_EXTENDED_INFO, "paymentMode": pay_mode},
 	}
@@ -250,7 +267,7 @@ def create_qr(invoice_name, amount):
 
 	now = now_datetime()
 	# Paytm order ids allow only letters, digits, "_", "-" and "@" (max 50); series often contain "/"
-	order_id = f"{re.sub(r'[^A-Za-z0-9_@-]', '_', invoice_name)[:40]}-{now.strftime('%H%M%S%f')[:9]}"
+	order_id = f"{_paytm_bill_no(invoice_name)[:40]}-{now.strftime('%H%M%S%f')[:9]}"
 	pos_id = settings.qr_pos_id or re.sub(r"[^A-Za-z0-9_]", "_", frappe.session.user)[:20]
 
 	txn = frappe.get_doc(
