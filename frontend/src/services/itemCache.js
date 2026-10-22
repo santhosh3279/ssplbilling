@@ -303,6 +303,15 @@ export function lookupItemInCache(code) {
   return lookupExact(raw.slice(3))
 }
 
+// UOM with its conversion factor for display, e.g. "Box(12)"; the stock UOM (factor 1)
+// or an unknown factor shows the bare UOM. The cached item's own uom is the stock uom.
+export function uomLabel(itemCode, uom) {
+  const cached = lookupItemInCache(itemCode)
+  if (!uom || !cached || uom === cached.uom) return uom
+  const cf = parseFloat((cached.uoms || []).find(u => u.uom === uom)?.conversion_factor)
+  return cf > 0 && cf !== 1 ? `${uom}(${parseFloat(cf.toFixed(3))})` : uom
+}
+
 function lookupExact(code) {
   if (!code) return null
   const cleanCode = code.trim().toLowerCase()

@@ -115,7 +115,7 @@
                 @keydown="handlePendingQtyKeydown"
               />
             </td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ pendingItem.uom || 'Nos' }}</td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl whitespace-nowrap">{{ uomLabel(pendingItem.item_code, pendingItem.uom || 'Nos') }}</td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ format(pendingItem.rate) }}</td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ (pendingItem.qty * pendingItem.rate).toFixed(2) }}</td>
             <td class="px-2 py-1 text-center">
@@ -181,7 +181,7 @@
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatQty(item.qty) }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.uom || 'Nos' }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl whitespace-nowrap" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ uomLabel(item.item_code, item.uom || 'Nos') }}</td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.rate) }}</td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.qty * item.rate) }}</td>
           <td class="px-2 py-1 text-center">
@@ -322,7 +322,7 @@ import Warning from '../components/Warning.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import { frappePost } from '../api'
-import { useItemCache } from '../services/itemCache.js'
+import { useItemCache, uomLabel } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'

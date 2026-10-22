@@ -831,7 +831,7 @@ import CustomAddress from '../components/CustomAddress.vue'
 import Warning from '../components/Warning.vue'
 import EWayBillModal from '../components/EWayBillModal.vue'
 import EWayBillOptionsModal from '../components/EWayBillOptionsModal.vue'
-import { useItemCache, lookupItemInCache } from '../services/itemCache.js'
+import { useItemCache, lookupItemInCache, uomLabel } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice, getFloatPrecision } from '../encryption.js'
 
@@ -2733,12 +2733,6 @@ function getUomConversionFactor(itemCode, uom) {
   const match = (cached.uoms || []).find(u => u.uom === uom)
   const cf = parseFloat(match?.conversion_factor)
   return cf > 0 ? cf : null
-}
-
-// UOM with its conversion factor for display, e.g. "Box(12)"; factor 1 (or unknown) shows the bare UOM.
-function uomLabel(itemCode, uom) {
-  const cf = getUomConversionFactor(itemCode, uom)
-  return cf && cf !== 1 ? `${uom}(${parseFloat(cf.toFixed(3))})` : uom
 }
 
 // Share of the original bill's additional (bill-level) discount carried by a history
