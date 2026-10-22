@@ -210,11 +210,11 @@ def get_item_for_edit(item_code):
 	supplier = suppliers[0]["supplier"] if suppliers else ""
 	supplier_part_no = suppliers[0]["supplier_part_no"] if suppliers else ""
 
-	# Extra barcodes (all except the primary/item_code barcode)
+	# Extra barcodes (all except the primary barcode)
 	extra_barcodes = [
 		{"barcode": row.barcode, "uom": row.uom}
-		for row in item.barcodes
-		if row.barcode != item.item_code
+		for row in item.barcodes[1:]
+		if row.barcode != barcode
 	]
 
 	# UOM conversions (exclude the stock UOM base row)
@@ -285,8 +285,14 @@ def update_item(data):
 	if "image" in data:
 		item.image = data.get("image")
 
-	# Update barcodes (keep primary, replace extras)
-	primary_barcode = item.item_code
+	# Update barcodes (primary may be changed, extras replaced)
+	current_primary = (item.barcodes[0].barcode if item.barcodes else "") or item.item_code
+	primary_barcode = (data.get("barcode") or "").strip().lstrip("0") or current_primary
+	if primary_barcode != current_primary:
+		owner = _barcode_owner(primary_barcode, exclude_item=item_code)
+		if owner:
+			owner_name = frappe.db.get_value("Item", owner, "item_name") or owner
+			frappe.throw(f"Barcode {primary_barcode} is already used by {owner} ({owner_name})")
 	item.barcodes = []
 	item.append("barcodes", {"barcode": primary_barcode, "uom": item.stock_uom})
 	for row in (data.get("extra_barcodes") or []):

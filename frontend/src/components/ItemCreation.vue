@@ -101,7 +101,6 @@
                   ref="barcodeInput"
                   v-model="form.barcode"
                   type="text"
-                  :disabled="isEditMode"
                   class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-[20px] pr-[30px] py-[12px] font-mono text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="Barcode..."
                   @focus="e => e.target.select()"
