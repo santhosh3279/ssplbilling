@@ -758,6 +758,14 @@ export async function updateItem(data) {
   return frappePost("ssplbilling.api.item_api.update_item", { data });
 }
 
+export async function setItemDisabled(itemCode, disabled) {
+  return frappePost("ssplbilling.api.item_api.set_item_disabled", { item_code: itemCode, disabled: disabled ? 1 : 0 });
+}
+
+export async function getDisabledItems(params = {}) {
+  return frappeGet("ssplbilling.api.itemsearch_api.get_disabled_items_detailed", params);
+}
+
 /**
  * Upload a file using Frappe's standard /api/method/upload_file endpoint.
  * @param {File} file

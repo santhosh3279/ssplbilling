@@ -23,6 +23,20 @@
             <span>New Item</span>
           </button>
           <button
+            v-if="isEditMode"
+            type="button"
+            @click="toggleItemDisabled"
+            :disabled="isTogglingDisabled"
+            class="flex items-center gap-[10px] rounded-xl border px-[16px] py-[10px] text-2xl font-bold uppercase tracking-wider transition-all active:scale-95 disabled:opacity-50"
+            :class="itemDisabled
+              ? 'border-[var(--color-success)] text-[var(--color-success)] bg-[var(--color-success)]/10 hover:bg-[var(--color-success)]/20'
+              : 'border-[var(--color-danger)] text-[var(--color-danger)] bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20'"
+            :title="itemDisabled ? 'Item is disabled — click to enable it again' : 'Disable this item so it no longer appears in billing'"
+          >
+            <span v-if="isTogglingDisabled" class="h-6 w-6 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+            <span>{{ itemDisabled ? 'Enable Item' : 'Disable Item' }}</span>
+          </button>
+          <button
             type="button"
             @click="toggleRetainTaxFields"
             class="flex items-center gap-[10px] rounded-xl border px-[16px] py-[10px] text-2xl font-bold uppercase tracking-wider transition-all active:scale-95"
@@ -427,7 +441,7 @@
 
 <script setup>
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
-import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, frappeGet, uploadFile } from '../api.js'
+import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, setItemDisabled, frappeGet, uploadFile } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
@@ -435,7 +449,7 @@ const props = defineProps({
   editItemCode: { type: String, default: '' },  // when set → edit mode
 })
 
-const emit = defineEmits(['close', 'created'])
+const emit = defineEmits(['close', 'created', 'disabled-changed'])
 
 useSubwindowWatcher(computed(() => props.show), {
   ESCAPE: () => emit('close'),
@@ -513,8 +527,29 @@ function _applyItemData(data, itemCode) {
   })
   form.value.uom_conversions = data.uom_conversions || []
   form.value.extra_barcodes  = data.extra_barcodes  || []
+  itemDisabled.value = Number(data.disabled) === 1
   autoBarcode.value = ''
   isBarcodeManual.value = true
+}
+
+// Disabled state of the item being edited; saved straight away, not with Update Item.
+const itemDisabled = ref(false)
+const isTogglingDisabled = ref(false)
+
+async function toggleItemDisabled() {
+  if (!isEditMode.value || isTogglingDisabled.value) return
+  const disable = !itemDisabled.value
+  if (!confirm(`${disable ? 'Disable' : 'Enable'} item ${props.editItemCode}?`)) return
+  isTogglingDisabled.value = true
+  try {
+    const res = await setItemDisabled(props.editItemCode, disable)
+    itemDisabled.value = Number(res?.disabled) === 1
+    emit('disabled-changed', { item_code: props.editItemCode, disabled: itemDisabled.value })
+  } catch (e) {
+    alert(`Failed to ${disable ? 'disable' : 'enable'} item: ` + e.message)
+  } finally {
+    isTogglingDisabled.value = false
+  }
 }
 
 async function loadForEdit(itemCode) {
@@ -903,6 +938,7 @@ function startFreshBarcode() {
 // cleared too — they are unique per item, so a fresh one is generated instead.
 function startNewFromCurrent() {
   forceCreate.value = true
+  itemDisabled.value = false
   form.value.item_name = ''
   form.value.item_print_name = ''
   form.value.barcode = ''

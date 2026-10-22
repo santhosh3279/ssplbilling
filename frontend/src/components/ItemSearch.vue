@@ -8,7 +8,10 @@
       <!-- Header -->
       <div class="border-b border-[var(--color-border)] px-5 py-4 flex items-center gap-8 bg-[var(--color-surface-raised)]">
         <div class="shrink-0">
-          <div class="text-2xl text-[var(--color-text)] whitespace-nowrap">Detailed Item Search ({{ searchType }})</div>
+          <div class="text-2xl text-[var(--color-text)] whitespace-nowrap">
+            Detailed Item Search ({{ searchType }}) ({{ sourceItems.length }})
+            <span v-if="showDisabledOnly" class="ml-2 rounded bg-[var(--color-danger)]/15 px-2 py-0.5 text-lg font-bold uppercase text-[var(--color-danger)]">Disabled</span>
+          </div>
           <div class="text-sm text-[var(--color-text-muted)]">View stock info and select item</div>
         </div>
 
@@ -51,6 +54,17 @@
           >
             <span>🗑</span>
             Clear Qty ({{ quickQtyCount }})
+          </button>
+          <button
+            @click="toggleDisabledOnly"
+            :disabled="disabledLoading"
+            class="flex items-center gap-2 rounded-lg border px-3 py-1.5 text-sm transition-all disabled:opacity-50"
+            :class="showDisabledOnly ? 'border-[var(--color-danger)] bg-[var(--color-danger)]/15 text-[var(--color-danger)]' : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+            title="Show disabled items only (F8)"
+          >
+            <span v-if="disabledLoading" class="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+            <span v-else>⛔</span>
+            Disabled (F8)
           </button>
           <button
             @click="openSupplierSearch"
@@ -150,7 +164,7 @@
               :key="item.item_code"
               class="cursor-pointer transition-colors"
               :class="selectedIdx === idx ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]' : 'hover:bg-[var(--color-midlight)]/20'"
-              @click="$emit('select', item)"
+              @click="!showDisabledOnly && $emit('select', item)"
             >
               <td class="p-[5px] font-mono text-5xl flex items-center gap-2" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-highlight)]'">
                 <div v-if="item.has_history" class="flex flex-col items-center">
@@ -187,7 +201,7 @@
             </tr>
             <tr v-if="!results.length && !loading">
               <td :colspan="quickQtyMode ? 5 : 4" class="px-5 py-12 text-center text-[var(--color-text-muted)] text-xl italic">
-                No items found matching "{{ query }}"
+                {{ showDisabledOnly && !query ? 'No disabled items' : `No items found matching "${query}"` }}
               </td>
             </tr>
           </tbody>
@@ -236,6 +250,7 @@
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">S+F4</kbd> Price</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F5</kbd> Sync</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F7</kbd> Supplier</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F8</kbd> Disabled</span>
         <span v-if="enableQuickQty"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">F6</kbd> {{ quickQtyMode ? 'Exit Qty Mode' : 'Qty Mode' }}</span>
         <span v-if="quickQtyMode"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+Enter</kbd> Add Batch</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Esc</kbd> Close</span>
@@ -262,6 +277,7 @@
         :edit-item-code="editItemCode"
         @close="showEditModal = false; focus()"
         @created="handleItemUpdated"
+        @disabled-changed="handleDisabledChanged"
       />
 
       <PriceListUpdate
@@ -293,7 +309,7 @@ import { serverNow } from '../services/serverTime'
 import { ref, nextTick, watch, computed, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import { useItemCache, uomLabel } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
-import { frappeGet } from '../api.js'
+import { frappeGet, getDisabledItems } from '../api.js'
 import DateFilter from './DateFilter.vue'
 import ItemCreation from './ItemCreation.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
@@ -376,6 +392,8 @@ useSubwindowWatcher(computed(() => props.show), {
       qtyCellActive.value = !qtyCellActive.value
       return
     }
+    // Disabled items cannot be billed; F3 opens them for re-enabling instead.
+    if (showDisabledOnly.value) return
     const item = results.value[selectedIdx.value]
     if (item) {
       e.preventDefault()
@@ -388,12 +406,13 @@ useSubwindowWatcher(computed(() => props.show), {
   },
   F6: (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
-    if (!props.enableQuickQty) return
+    if (!props.enableQuickQty || showDisabledOnly.value) return
     quickQtyMode.value = !quickQtyMode.value
     qtyCellActive.value = quickQtyMode.value
   },
   'CTRL+ENTER': (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
+    if (showDisabledOnly.value) return
     submitQuickQtyBatch()
   },
   '/': (e) => {
@@ -436,6 +455,11 @@ useSubwindowWatcher(computed(() => props.show), {
     e.preventDefault()
     openSupplierSearch()
   },
+  F8: (e) => {
+    if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
+    e.preventDefault()
+    toggleDisabledOnly()
+  },
   Delete: (e) => {
     if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return
     e.preventDefault()
@@ -474,6 +498,11 @@ const showSupplierModal = ref(false)
 const selectedSupplier = ref(null)
 const supplierModalClosedAt = ref(0)
 const quickQtyMode = ref(false)
+// Disabled items are never in the shared cache; they are fetched on demand while this view is on.
+const showDisabledOnly = ref(false)
+const disabledItems = ref([])
+const disabledLoading = ref(false)
+const sourceItems = computed(() => (showDisabledOnly.value ? disabledItems.value : allItems.value))
 // Whether the selected row's qty cell is accepting digits. Enter commits the
 // value and drops this focus; moving rows re-arms it.
 const qtyCellActive = ref(false)
@@ -632,6 +661,44 @@ function submitQuickQtyBatch() {
 
 function openSupplierSearch() {
   showSupplierModal.value = true
+}
+
+async function loadDisabledItems() {
+  disabledLoading.value = true
+  try {
+    const list = await getDisabledItems({
+      search_type: props.searchType,
+      price_list: props.priceList || null,
+      warehouse: props.warehouse || null,
+      company: localStorage.getItem('wb-company') || null
+    })
+    disabledItems.value = Array.isArray(list) ? list : []
+  } catch (e) {
+    console.error('[ItemSearch] Failed to load disabled items:', e)
+    disabledItems.value = []
+  } finally {
+    disabledLoading.value = false
+  }
+}
+
+async function toggleDisabledOnly() {
+  if (disabledLoading.value) return
+  if (!showDisabledOnly.value) {
+    quickQtyMode.value = false
+    qtyCellActive.value = false
+    await loadDisabledItems()
+  }
+  showDisabledOnly.value = !showDisabledOnly.value
+  selectedIdx.value = 0
+  focus()
+}
+
+// Re-enabling drops the item from the disabled list; the realtime sync puts it back in the cache.
+function handleDisabledChanged({ item_code, disabled }) {
+  if (showDisabledOnly.value && !disabled) {
+    disabledItems.value = disabledItems.value.filter(i => i.item_code !== item_code)
+    selectedIdx.value = Math.min(selectedIdx.value, Math.max(results.value.length - 1, 0))
+  }
 }
 
 function handleSupplierSelect(supplier) {
@@ -816,7 +883,7 @@ const results = computed(() => {
   if (!props.show) return []
   const q = query.value.trim().toLowerCase()
   const terms = q.split(/\s+/).filter(Boolean)
-  let list = allItems.value
+  let list = sourceItems.value
 
   if (selectedSupplier.value) {
     list = list.filter(i => {
@@ -1012,6 +1079,8 @@ watch(() => props.show, async (newVal) => {
   if (newVal) {
     query.value = ''
     selectedSupplier.value = null
+    showDisabledOnly.value = false
+    disabledItems.value = []
     isDecrypted.value = false
     loadCipherMap()
     quickQtyMap.value = loadQuickQtyMap()

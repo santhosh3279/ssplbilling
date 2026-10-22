@@ -84,8 +84,14 @@ def get_all_items_detailed(search_type="Sales", price_list=None, warehouse=None,
 	return _build_items_detailed(search_type, price_list, warehouse, company)
 
 
-def _item_filters(search_type):
-	filters = {"disabled": 0}
+@frappe.whitelist()
+def get_disabled_items_detailed(search_type="Sales", price_list=None, warehouse=None, company=None):
+	"""Disabled items in the same shape as get_all_items_detailed; the bulk cache never holds them."""
+	return _build_items_detailed(search_type, price_list, warehouse, company, disabled=1)
+
+
+def _item_filters(search_type, disabled=0):
+	filters = {"disabled": disabled}
 	if search_type == "Sales":
 		filters["is_sales_item"] = 1
 	elif search_type == "Purchase":
@@ -103,9 +109,9 @@ def _company_warehouses(company):
 	)
 
 
-def _build_items_detailed(search_type, price_list, warehouse, company, item_codes=None):
+def _build_items_detailed(search_type, price_list, warehouse, company, item_codes=None, disabled=0):
 	"""Build the detailed item rows; restricted to `item_codes` when given (delta sync)."""
-	filters = _item_filters(search_type)
+	filters = _item_filters(search_type, disabled)
 	if item_codes is not None:
 		if not item_codes:
 			return []

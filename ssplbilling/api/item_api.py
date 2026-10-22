@@ -242,7 +242,20 @@ def get_item_for_edit(item_code):
 		"uom_conversions": uom_conversions,
 		"extra_barcodes": extra_barcodes,
 		"image": item.image or "",
+		"disabled": frappe.utils.cint(item.disabled),
 	}
+
+
+@frappe.whitelist()
+def set_item_disabled(item_code, disabled):
+	"""Enable or disable an item. The realtime item sync drops it from (or restores it to) every cache."""
+	if not frappe.db.exists("Item", item_code):
+		frappe.throw(f"Item {item_code} not found")
+	item = frappe.get_doc("Item", item_code)
+	item.disabled = 1 if frappe.utils.cint(disabled) else 0
+	item.flags.ignore_permissions = True
+	item.save()
+	return {"item_code": item.item_code, "disabled": item.disabled}
 
 
 @frappe.whitelist()
