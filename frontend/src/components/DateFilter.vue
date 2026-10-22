@@ -165,11 +165,15 @@ function handleButtonKeydown(e, index) {
     })
   } else if (e.key === 'Enter') {
     e.preventDefault()
+    // Confirming closes this window before the key reaches window listeners; don't let
+    // the page underneath (e.g. the dashboard tile grid) act on the same Enter.
+    e.stopPropagation()
     const ranges = ['Today', 'Yesterday', 'CM', 'LM', 'FY']
     setDateRange(ranges[index])
     confirmDate()
   } else if (e.key === 'Escape') {
     e.preventDefault()
+    e.stopPropagation()
     emit('close')
   }
 }

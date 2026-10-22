@@ -1113,6 +1113,10 @@ function handleTileKeyNav(e) {
   // whenever a subwindow overlay (global item search, price update, etc.) is open,
   // otherwise its Enter/F4 handling operates the tile grid / inherit dropdown blind
   if (isSubwindowActive()) return
+  // A key whose target is gone came from an overlay that closed while handling it
+  // (Vue unmounts it before window listeners run), so the subwindow check above
+  // already reads empty — it was not meant for the tile grid.
+  if (e.target && !e.target.isConnected) return
 
   if (e.key === 'F4' && !e.shiftKey) {
     if (isActualAdmin.value) {
