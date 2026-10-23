@@ -15,7 +15,7 @@
       </div>
       <div class="text-sm text-[var(--color-text-muted)]">
         <span v-if="!paytmEnabled" class="font-bold text-[var(--color-danger)]">Paytm is disabled in SSPL Paytm Settings</span>
-        <span v-else>Esc back · F2 customer · Ctrl+Enter generate</span>
+        <span v-else>Esc back · F2 customer · Ctrl+Enter generate QR</span>
       </div>
     </header>
 
@@ -79,173 +79,219 @@
         </div>
       </aside>
 
-      <!-- RIGHT: create form + selected entry -->
-      <main class="flex-1 overflow-y-auto p-6 custom-scrollbar">
-        <div class="mx-auto flex max-w-2xl flex-col gap-6">
-          <!-- Create -->
-          <section class="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-5">
-            <h2 class="text-lg font-bold uppercase tracking-wide">New UPI QR</h2>
-            <p class="-mt-2 text-xs text-[var(--color-text-muted)]">Dynamic UPI QR for the exact amount. Paytm keeps it payable for 10 minutes; once paid it cannot be paid again.</p>
-
-            <label class="flex flex-col gap-1 rounded-xl p-1.5 -m-1.5 focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
-              <span class="text-xs font-bold uppercase opacity-75">Customer</span>
-              <input
-                ref="customerInput"
-                :value="form.customer_name"
-                readonly
-                placeholder="Press Enter to search customer"
-                @keydown.enter.prevent="openCustomerSearch"
-                @click="openCustomerSearch"
-                class="w-full cursor-pointer rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-lg text-[var(--color-text)] outline-none"
-              />
-            </label>
-
-            <div class="grid grid-cols-2 gap-4">
-              <label class="flex flex-col gap-1 rounded-xl p-1.5 -m-1.5 focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
-                <span class="text-xs font-bold uppercase opacity-75">Amount (₹)</span>
-                <input
-                  ref="amountInput"
-                  v-model="form.amount"
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  @keydown.enter.prevent="descInput?.focus()"
-                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-right font-mono text-2xl font-bold text-[var(--color-text)] outline-none"
-                />
-              </label>
-              <label class="flex flex-col gap-1 rounded-xl p-1.5 -m-1.5 focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
-                <span class="text-xs font-bold uppercase opacity-75">Mobile</span>
-                <input
-                  ref="mobileInput"
-                  v-model="form.mobile"
-                  maxlength="14"
-                  placeholder="10-digit mobile"
-                  @keydown.enter.prevent="createEntry"
-                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-lg text-[var(--color-text)] outline-none"
-                />
-              </label>
+      <!-- RIGHT: entry row + selected QR + action footer (paymentv2 layout) -->
+      <div class="flex flex-1 flex-col overflow-hidden">
+        <main class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+          <div class="flex flex-col gap-4">
+            <!-- Entry row (table style) -->
+            <div class="shrink-0 overflow-hidden rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl">
+              <table class="w-full border-collapse text-left">
+                <thead class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]">
+                  <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                    <th class="w-1/2 px-4 py-2">Customer</th>
+                    <th class="w-64 px-4 py-2 text-right text-[var(--color-success)]">Amount (Cr)</th>
+                    <th class="w-72 px-4 py-2">Mobile</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="divide-x divide-[var(--color-border)]">
+                    <td class="group px-2 py-1.5 transition-colors hover:bg-[var(--color-midlight)]/20 focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
+                      <div class="relative">
+                        <input
+                          ref="customerInput"
+                          :value="form.customer_name"
+                          readonly
+                          placeholder="Search Customer..."
+                          @keydown.enter.prevent="openCustomerSearch"
+                          @click="openCustomerSearch"
+                          class="w-full cursor-pointer bg-transparent text-4xl font-normal placeholder:text-inherit focus:outline-none"
+                        />
+                        <div class="absolute right-0 top-1/2 -translate-y-1/2 text-[10px] font-bold text-[var(--color-highlight)] opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:text-[var(--color-text-on-focus)]">CLICK TO SEARCH</div>
+                      </div>
+                    </td>
+                    <td class="bg-[var(--color-success)]/5 px-4 py-1.5 transition-colors focus-within:bg-[var(--color-focus)]">
+                      <input
+                        ref="amountInput"
+                        v-model="form.amount"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="0.00"
+                        @keydown.enter.prevent="mobileInput?.focus()"
+                        class="w-full bg-transparent text-right text-5xl font-light text-[var(--color-text)] placeholder:text-inherit focus:text-[var(--color-text-on-focus)] focus:outline-none"
+                      />
+                    </td>
+                    <td class="px-4 py-1.5 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
+                      <input
+                        ref="mobileInput"
+                        v-model="form.mobile"
+                        maxlength="14"
+                        placeholder="10-digit mobile"
+                        @keydown.enter.prevent="descInput?.focus()"
+                        class="w-full bg-transparent font-mono text-3xl placeholder:text-inherit focus:outline-none"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
-            <label class="flex flex-col gap-1 rounded-xl p-1.5 -m-1.5 focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
-              <span class="text-xs font-bold uppercase opacity-75">
-                Remarks
-                <span class="normal-case opacity-75">(goes on the Payment Entry)</span>
-              </span>
-              <input
-                ref="descInput"
-                v-model="form.description"
-                maxlength="140"
-                placeholder="Optional"
-                @keydown.enter.prevent="mobileInput?.focus()"
-                class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[var(--color-text)] outline-none"
-              />
-            </label>
+            <!-- Selected QR -->
+            <div
+              v-if="selected"
+              class="flex flex-col gap-4 rounded-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-lg"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">UPI QR · {{ selected.order_id }}</div>
+                  <div class="truncate text-4xl font-normal">{{ selected.customer }}</div>
+                  <div class="text-sm text-[var(--color-text-muted)]">{{ selected.link_description }}</div>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="text-5xl font-black">₹{{ fmt(selected.amount) }}</span>
+                  <span class="rounded px-2 py-0.5 text-sm font-bold uppercase" :class="statusClass(selected.status)">{{ statusLabel(selected) }}</span>
+                </div>
+              </div>
 
-            <div class="flex items-center justify-between">
-              <span v-if="!qrEnabled" class="text-sm font-bold text-[var(--color-danger)]">Dynamic QR is disabled in SSPL Paytm Settings</span>
-              <span v-else></span>
+              <div class="flex gap-6">
+                <!-- QR / result -->
+                <div class="flex w-80 shrink-0 flex-col items-center justify-center">
+                  <div v-if="selected.status === 'Success'" class="w-full rounded-2xl bg-[var(--color-success)] py-10 text-center text-white">
+                    <div class="text-5xl font-black uppercase">Paid</div>
+                    <div class="text-sm opacity-90">₹{{ fmt(selected.amount) }} via {{ selected.pay_method || 'UPI' }}</div>
+                  </div>
+                  <div v-else-if="selected.status === 'Pending' && qrSecondsLeft(selected) > 0" class="flex flex-col items-center gap-3">
+                    <div class="rounded-2xl bg-white p-3 shadow">
+                      <img v-if="qrImages[selected.order_id]" :src="`data:image/png;base64,${qrImages[selected.order_id]}`" alt="UPI QR" class="h-64 w-64" />
+                      <div v-else class="flex h-64 w-64 items-center justify-center text-sm text-gray-500">Loading QR…</div>
+                    </div>
+                    <div class="text-center">
+                      <div class="font-mono text-3xl font-black" :class="qrSecondsLeft(selected) < 60 ? 'text-[var(--color-danger)]' : ''">{{ mmss(qrSecondsLeft(selected)) }}</div>
+                      <div class="text-xs text-[var(--color-text-muted)]">Waiting for payment · scan with any UPI app</div>
+                    </div>
+                  </div>
+                  <div v-else class="w-full rounded-2xl bg-[var(--color-midlight)] py-10 text-center">
+                    <div class="text-2xl font-bold uppercase">{{ qrExpired(selected) ? 'QR expired' : selected.status === 'Cancelled' ? 'Stopped waiting' : 'Payment failed' }}</div>
+                    <div class="text-sm text-[var(--color-text-muted)]">Not paid. Generate a new QR for the customer.</div>
+                  </div>
+                </div>
+
+                <!-- Details + actions -->
+                <div class="flex min-w-0 flex-1 flex-col justify-between gap-4">
+                  <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-lg">
+                    <dt class="text-[var(--color-text-muted)]">Created</dt><dd>{{ selected.transaction_datetime }} · {{ selected.owner }}</dd>
+                    <dt class="text-[var(--color-text-muted)]">Mobile</dt><dd>{{ selected.customer_mobile || '—' }}</dd>
+                    <template v-if="selected.status === 'Success'">
+                      <dt class="text-[var(--color-text-muted)]">Paid via</dt><dd>{{ selected.pay_method || '—' }}</dd>
+                      <dt class="text-[var(--color-text-muted)]">Bank ref</dt><dd class="font-mono">{{ selected.rrn || selected.paytm_txn_id || '—' }}</dd>
+                      <dt class="text-[var(--color-text-muted)]">Receipt</dt>
+                      <dd>
+                        <a v-if="selected.payment_entry" :href="`/app/payment-entry/${selected.payment_entry}`" target="_blank" class="font-bold text-[var(--color-info)] underline">{{ selected.payment_entry }}</a>
+                        <span v-else class="font-bold text-[var(--color-danger)]">Not created</span>
+                      </dd>
+                    </template>
+                    <template v-if="selected.result_message && selected.status !== 'Pending'">
+                      <dt class="text-[var(--color-text-muted)]">Message</dt><dd>{{ selected.result_message }}</dd>
+                    </template>
+                  </dl>
+
+                  <div class="flex flex-wrap justify-end gap-2">
+                    <template v-if="selected.status === 'Pending' && qrSecondsLeft(selected) > 0">
+                      <button v-if="canShareFiles" @click="shareQr(selected)" class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white">Share QR</button>
+                      <button
+                        v-if="selected.customer_mobile"
+                        @click="whatsappQr(selected)"
+                        title="Downloads the QR and opens WhatsApp; attach the downloaded image"
+                        class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white"
+                      >WhatsApp</button>
+                      <button @click="downloadQr(selected)" class="rounded-lg border border-[var(--color-border)] px-4 py-2 font-bold hover:bg-[var(--color-midlight)]">Download QR</button>
+                    </template>
+                    <button
+                      v-if="selected.status === 'Pending'"
+                      @click="checkStatus(selected)"
+                      :disabled="busy"
+                      class="rounded-lg border border-[var(--color-border)] px-4 py-2 font-bold hover:bg-[var(--color-midlight)] disabled:opacity-50"
+                    >Check Status</button>
+                    <button
+                      v-if="selected.status === 'Pending'"
+                      @click="stopWaiting(selected)"
+                      :disabled="busy"
+                      class="rounded-lg bg-[var(--color-danger)] px-4 py-2 font-bold text-white disabled:opacity-50"
+                    >Stop Waiting</button>
+                    <button
+                      v-if="selected.status !== 'Success' && qrSecondsLeft(selected) === 0"
+                      @click="regenerateQr(selected)"
+                      :disabled="creating"
+                      class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white disabled:opacity-50"
+                    >New QR</button>
+                    <button
+                      v-if="selected.status === 'Success' && !selected.payment_entry"
+                      @click="retryReceipt(selected)"
+                      :disabled="busy"
+                      class="rounded-lg bg-[var(--color-warning)] px-4 py-2 font-bold text-white disabled:opacity-50"
+                    >Create Receipt</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty state placeholder -->
+            <div v-else class="flex flex-col items-center justify-center gap-2 py-24 opacity-10">
+              <svg class="h-32 w-32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M4 4h6v6H4V4zm10 0h6v6h-6V4zM4 14h6v6H4v-6zm10 0h2v2h-2v-2zm4 0h2v2h-2v-2zm-4 4h2v2h-2v-2zm4 0h2v2h-2v-2z" />
+              </svg>
+            </div>
+          </div>
+        </main>
+
+        <!-- Bottom action bar -->
+        <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+          <div class="flex items-center justify-between gap-8">
+            <div class="flex flex-1 items-center gap-8">
+              <div class="-m-1.5 flex max-w-xl flex-1 flex-col gap-1.5 rounded-xl p-1.5 transition-all focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
+                <label class="ml-1 text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Remarks · goes on the Payment Entry</label>
+                <textarea
+                  ref="descInput"
+                  v-model="form.description"
+                  rows="2"
+                  maxlength="140"
+                  placeholder="Optional"
+                  @keydown.enter.prevent="generateBtn?.focus()"
+                  class="w-full resize-none rounded-xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-3 text-xl font-bold transition-all placeholder:text-inherit focus:bg-black/5 focus:outline-none"
+                ></textarea>
+              </div>
+              <div class="flex min-w-0 flex-col gap-1 text-sm">
+                <span v-if="!qrEnabled" class="font-bold text-[var(--color-danger)]">Dynamic QR is disabled in SSPL Paytm Settings</span>
+                <span v-else class="text-[var(--color-text-muted)]">Paytm keeps the QR payable for 10 minutes; once paid it cannot be paid again.</span>
+                <span v-if="formError" class="rounded-lg bg-[var(--color-danger)]/15 px-3 py-1.5 font-bold text-[var(--color-danger)]">{{ formError }}</span>
+              </div>
+            </div>
+
+            <div class="flex items-center border-l border-[var(--color-border)] pl-8">
               <button
+                ref="generateBtn"
                 @click="createEntry"
                 :disabled="creating || !paytmEnabled || !qrEnabled"
-                class="rounded-xl bg-[var(--color-success)] px-6 py-2.5 text-lg font-black uppercase text-white shadow-sm transition-opacity disabled:opacity-50"
-              >{{ creating ? 'Creating…' : 'Generate QR' }}</button>
+                class="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-[var(--color-success)] px-16 py-6 text-4xl font-black text-[var(--color-text-on-highlight)] shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl focus:scale-[1.02] focus:outline-none focus:ring-[10px] focus:ring-[var(--color-focus)] active:scale-95 disabled:opacity-40 disabled:grayscale disabled:hover:scale-100"
+              >
+                <span v-if="creating" class="flex items-center gap-3">
+                  <svg class="h-10 w-10 animate-spin" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating...
+                </span>
+                <span v-else class="flex items-center gap-4">
+                  Generate QR
+                  <svg class="h-10 w-10 transition-transform group-hover:translate-x-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                  </svg>
+                </span>
+              </button>
             </div>
-            <div v-if="formError" class="rounded-lg bg-[var(--color-danger)]/15 px-3 py-2 text-sm font-bold text-[var(--color-danger)]">{{ formError }}</div>
-          </section>
-
-          <!-- Selected entry -->
-          <section
-            v-if="selected"
-            class="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-5"
-          >
-            <div class="flex items-start justify-between gap-4">
-              <div class="min-w-0">
-                <div class="text-xs font-bold uppercase text-[var(--color-text-muted)]">UPI QR · {{ selected.order_id }}</div>
-                <div class="truncate text-xl font-bold">{{ selected.customer }}</div>
-                <div class="text-sm text-[var(--color-text-muted)]">{{ selected.link_description }}</div>
-              </div>
-              <div class="flex flex-col items-end gap-1">
-                <span class="font-mono text-3xl font-black">₹{{ fmt(selected.amount) }}</span>
-                <span class="rounded px-2 py-0.5 text-sm font-bold uppercase" :class="statusClass(selected.status)">{{ statusLabel(selected) }}</span>
-              </div>
-            </div>
-
-            <!-- QR -->
-            <div v-if="selected.status === 'Success'" class="rounded-xl bg-[var(--color-success)] py-6 text-center text-white">
-              <div class="text-4xl font-black uppercase">Paid</div>
-              <div class="text-sm opacity-90">₹{{ fmt(selected.amount) }} via {{ selected.pay_method || 'UPI' }}</div>
-            </div>
-            <div v-else-if="selected.status === 'Pending' && qrSecondsLeft(selected) > 0" class="flex flex-col items-center gap-3">
-              <div class="rounded-2xl bg-white p-3 shadow">
-                <img v-if="qrImages[selected.order_id]" :src="`data:image/png;base64,${qrImages[selected.order_id]}`" alt="UPI QR" class="h-64 w-64" />
-                <div v-else class="flex h-64 w-64 items-center justify-center text-sm text-gray-500">Loading QR…</div>
-              </div>
-              <div class="text-center">
-                <div class="font-mono text-2xl font-black" :class="qrSecondsLeft(selected) < 60 ? 'text-[var(--color-danger)]' : ''">{{ mmss(qrSecondsLeft(selected)) }}</div>
-                <div class="text-xs text-[var(--color-text-muted)]">Waiting for payment · scan with any UPI app</div>
-              </div>
-            </div>
-            <div v-else class="rounded-xl bg-[var(--color-midlight)] py-6 text-center">
-              <div class="text-xl font-bold uppercase">{{ qrExpired(selected) ? 'QR expired' : selected.status === 'Cancelled' ? 'Stopped waiting' : 'Payment failed' }}</div>
-              <div class="text-sm text-[var(--color-text-muted)]">Not paid. Generate a new QR for the customer.</div>
-            </div>
-
-            <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
-              <dt class="text-[var(--color-text-muted)]">Created</dt><dd>{{ selected.transaction_datetime }} · {{ selected.owner }}</dd>
-              <dt class="text-[var(--color-text-muted)]">Mobile</dt><dd>{{ selected.customer_mobile || '—' }}</dd>
-              <template v-if="selected.status === 'Success'">
-                <dt class="text-[var(--color-text-muted)]">Paid via</dt><dd>{{ selected.pay_method || '—' }}</dd>
-                <dt class="text-[var(--color-text-muted)]">Bank ref</dt><dd class="font-mono">{{ selected.rrn || selected.paytm_txn_id || '—' }}</dd>
-                <dt class="text-[var(--color-text-muted)]">Receipt</dt>
-                <dd>
-                  <a v-if="selected.payment_entry" :href="`/app/payment-entry/${selected.payment_entry}`" target="_blank" class="font-bold text-[var(--color-info)] underline">{{ selected.payment_entry }}</a>
-                  <span v-else class="font-bold text-[var(--color-danger)]">Not created</span>
-                </dd>
-              </template>
-              <template v-if="selected.result_message && selected.status !== 'Pending'">
-                <dt class="text-[var(--color-text-muted)]">Message</dt><dd>{{ selected.result_message }}</dd>
-              </template>
-            </dl>
-
-            <div class="flex flex-wrap justify-end gap-2">
-              <template v-if="selected.status === 'Pending' && qrSecondsLeft(selected) > 0">
-                <button v-if="canShareFiles" @click="shareQr(selected)" class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white">Share QR</button>
-                <button
-                  v-if="selected.customer_mobile"
-                  @click="whatsappQr(selected)"
-                  title="Downloads the QR and opens WhatsApp; attach the downloaded image"
-                  class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white"
-                >WhatsApp</button>
-                <button @click="downloadQr(selected)" class="rounded-lg border border-[var(--color-border)] px-4 py-2 font-bold hover:bg-[var(--color-midlight)]">Download QR</button>
-              </template>
-              <button
-                v-if="selected.status === 'Pending'"
-                @click="checkStatus(selected)"
-                :disabled="busy"
-                class="rounded-lg border border-[var(--color-border)] px-4 py-2 font-bold hover:bg-[var(--color-midlight)] disabled:opacity-50"
-              >Check Status</button>
-              <button
-                v-if="selected.status === 'Pending'"
-                @click="stopWaiting(selected)"
-                :disabled="busy"
-                class="rounded-lg bg-[var(--color-danger)] px-4 py-2 font-bold text-white disabled:opacity-50"
-              >Stop Waiting</button>
-              <button
-                v-if="selected.status !== 'Success' && qrSecondsLeft(selected) === 0"
-                @click="regenerateQr(selected)"
-                :disabled="creating"
-                class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white disabled:opacity-50"
-              >New QR</button>
-              <button
-                v-if="selected.status === 'Success' && !selected.payment_entry"
-                @click="retryReceipt(selected)"
-                :disabled="busy"
-                class="rounded-lg bg-[var(--color-warning)] px-4 py-2 font-bold text-white disabled:opacity-50"
-              >Create Receipt</button>
-            </div>
-          </section>
-        </div>
-      </main>
+          </div>
+        </footer>
+      </div>
     </div>
 
     <CustomerSearchModal
@@ -301,6 +347,7 @@ const customerInput = ref(null)
 const amountInput = ref(null)
 const descInput = ref(null)
 const mobileInput = ref(null)
+const generateBtn = ref(null)
 
 const canShareFiles = typeof navigator !== 'undefined' && !!navigator.canShare
 
@@ -579,3 +626,14 @@ onUnmounted(() => {
   clearInterval(tickTimer)
 })
 </script>
+
+<style scoped>
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] {
+  -moz-appearance: textfield;
+}
+</style>
