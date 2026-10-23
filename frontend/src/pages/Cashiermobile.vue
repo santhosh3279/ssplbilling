@@ -883,7 +883,8 @@ async function selectInvoice(inv) {
   } catch (e) {
     errorMsg.value = 'Failed to load details: ' + e.message
   } finally {
-    loadingPreview.value = false
+    // A stale response must not end the loading state of the bill opened after it
+    if (selectedInvoice.value?.name === inv.name) loadingPreview.value = false
   }
 }
 
