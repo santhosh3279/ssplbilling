@@ -256,44 +256,7 @@ def get_settings():
 			}
 			for r in settings.sessions
 		],
-		"users": frappe.get_all(
-			"User",
-			filters={"enabled": 1, "user_type": "System User", "name": ["!=", "Guest"]},
-			fields=["name", "full_name"],
-			order_by="full_name",
-		),
 	}
-
-
-@frappe.whitelist(methods=["POST"])
-def save_settings(base_url, api_key=None):
-	_require_manager()
-	settings = _settings()
-	settings.base_url = base_url
-	if api_key:
-		settings.api_key = api_key
-	settings.save()
-	return get_settings()
-
-
-@frappe.whitelist(methods=["POST"])
-def add_session(session_name, user=None):
-	"""Add a session row for a session that exists, or will be created, on the gateway."""
-	_require_manager()
-	settings = _settings()
-	settings.append("sessions", {"session_name": session_name, "user": user or None})
-	settings.save()
-	return get_settings()
-
-
-@frappe.whitelist(methods=["POST"])
-def remove_session(session_name):
-	"""Drop a session row. The gateway keeps the session; unlink it first to free the number."""
-	_require_manager()
-	settings = _settings()
-	settings.remove(_managed_row(settings, session_name))
-	settings.save()
-	return get_settings()
 
 
 # POST because it mirrors the gateway's status onto the settings, and Frappe only commits writes
