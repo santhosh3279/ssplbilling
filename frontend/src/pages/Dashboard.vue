@@ -960,7 +960,7 @@ const allTiles = [
   { id: 'expense',            bucket: 'accounts', name: 'Cash Box Entry',        desc: 'Manage company expenses',                  icon: '💸', shortcut: ''  },
   { id: 'single-entry',       bucket: 'accounts', name: 'Single Entry',          desc: 'Manage single payment entries',            icon: '🧾', shortcut: ''    },
   { id: 'payment',            bucket: 'accounts', name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'Shift+F3'  },
-  { id: 'paytm-link',         bucket: 'accounts', name: 'Paytm Receipt',         desc: 'UPI QR / payment link, auto receipt',      icon: '🔗', shortcut: ''    },
+  { id: 'paytm-link',         bucket: 'accounts', name: 'Paytm Receipt',         desc: 'UPI QR, auto receipt',                    icon: '🔗', shortcut: ''    },
   { id: 'paytm-unknown',      bucket: 'accounts', name: 'Paytm Unknown Payments', desc: 'Receipt Paytm payments not made here',    icon: '❓', shortcut: ''    },
   { id: 'unreconciled',       bucket: 'accounts', name: 'Unreconciled Entries',  desc: 'View and reconcile ledger entries',        icon: '🔗', shortcut: ''    },
   { id: 'payment-reconciliation', bucket: 'accounts', name: 'Payment Reconciliation', desc: 'Link payments to invoices', icon: '🤝', shortcut: '' },
