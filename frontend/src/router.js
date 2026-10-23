@@ -145,7 +145,7 @@ const routes = [
     path: '/expense',
     name: 'Expense',
     component: Expense,
-    meta: { title: 'Expense Entry' },
+    meta: { title: 'Cash Box Entry' },
   },
   {
     path: '/login',
