@@ -26,6 +26,17 @@ def _sync_whatsapp_to_contact(supplier_id, whatsapp):
 	contact.save(ignore_permissions=True)
 
 
+def _set_pricelist_percentages(sup, percentages):
+	"""Rebuild the Supplier's pricelist percentage rows, skipping blank entries."""
+	sup.set("custom_pricelist_percentages", [])
+	for p in percentages or []:
+		if p.get("pricelist") and p.get("percentage") not in (None, ""):
+			sup.append("custom_pricelist_percentages", {
+				"pricelist": p["pricelist"],
+				"percentage": str(p["percentage"]),
+			})
+
+
 @frappe.whitelist()
 def get_supplier_groups():
 	"""Return all active Supplier Groups for dropdown population."""
@@ -59,6 +70,7 @@ def create_supplier_full(data):
 	sup.gstin = data.get("gstin") or ""
 	sup.gst_category = _resolve_gst_category(sup.gstin)
 	sup.disabled = 1 if data.get("disabled") else 0
+	_set_pricelist_percentages(sup, data.get("pricelist_percentages"))
 	sup.insert(ignore_permissions=True)
 
 	if address_line1:
@@ -123,6 +135,10 @@ def get_supplier_details(supplier):
 		"primary_party": "",
 		"primary_party_role": "",
 		"disabled": sup.disabled or 0,
+		"pricelist_percentages": [
+			{"pricelist": row.pricelist, "percentage": float(row.percentage or 0)}
+			for row in sup.get("custom_pricelist_percentages") or []
+		],
 	}
 
 	# Fetch WhatsApp from Contact phone_nos row 1
@@ -202,6 +218,8 @@ def update_supplier_full(data):
 	sup.gstin = data.get("gstin") or ""
 	sup.gst_category = _resolve_gst_category(sup.gstin)
 	sup.disabled = 1 if data.get("disabled") else 0
+	if "pricelist_percentages" in data:
+		_set_pricelist_percentages(sup, data["pricelist_percentages"])
 	sup.save(ignore_permissions=True)
 
 	if "whatsapp" in data:

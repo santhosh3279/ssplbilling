@@ -235,6 +235,27 @@
             @keydown.enter.prevent="focusNext"
           />
         </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[15px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pricelist Percentages</label>
+          <div class="flex flex-col gap-2 rounded border border-[var(--color-border)] bg-[var(--color-surface)] p-2">
+            <div v-for="(row, i) in pricelistRows" :key="row.pricelist" class="flex items-center gap-2">
+              <span class="flex-1 truncate font-semibold text-[var(--color-text)]" :title="row.pricelist">{{ row.pricelist }}</span>
+              <input
+                :ref="el => (pctInputs[i] = el)"
+                v-model="row.percentage"
+                type="number"
+                step="any"
+                class="w-28 rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-right text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
+                style="font-size: 1.5rem; padding: 0.2em;"
+                placeholder="0"
+                @keydown.esc.stop="$emit('close')"
+                @keydown.enter.prevent="focusNext"
+              />
+              <span class="font-bold text-[var(--color-text-muted)]">%</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Column 3: Address & Location -->
@@ -418,6 +439,31 @@ const stateInput           = ref(null)
 const primaryPartyQuery = ref('')
 const primaryParties = ref([])
 
+// ─── Pricelist percentages ────────────────────────────────────────────────────
+// One row per configured price list (same source as PriceListUpdate), plus any saved extras
+const pricelistRows = ref([])
+const pctInputs = []
+// False while an edit's saved percentages are unknown, so a save cannot wipe them
+let pctLoaded = true
+
+function buildPricelistRows(saved = []) {
+  let names = []
+  try {
+    names = JSON.parse(localStorage.getItem('wb-pricelist') || '[]')
+  } catch {
+    names = []
+  }
+  if (!names.length) names = ['Standard Selling', 'Standard Buying']
+  for (const s of saved) {
+    if (s.pricelist && !names.includes(s.pricelist)) names.push(s.pricelist)
+  }
+  pricelistRows.value = names.map(pricelist => {
+    const hit = saved.find(s => s.pricelist === pricelist)
+    return { pricelist, percentage: hit ? hit.percentage : '' }
+  })
+  pctInputs.length = pricelistRows.value.length
+}
+
 const fieldOrder = [
   gstinInput,
   typeInput,
@@ -429,6 +475,7 @@ const fieldOrder = [
   mobileInput,
   whatsappInput,
   emailInput,
+  { value: pctInputs },
   addr1Input,
   addr2Input,
   cityInput,
@@ -529,7 +576,7 @@ function focusNext() {
     return
   }
   const current = document.activeElement
-  const inputs = fieldOrder.map(r => r.value).filter(Boolean)
+  const inputs = fieldOrder.flatMap(r => r.value).filter(Boolean)
   const idx = inputs.indexOf(current)
   if (idx > -1 && idx < inputs.length - 1) {
     inputs[idx + 1].focus()
@@ -567,12 +614,16 @@ async function initForm() {
       disabled:      props.supplierRow.disabled     || 0,
     })
     loading.value = true
+    pctLoaded = false
     try {
       const full = await fetchSupplierDetails(props.supplierRow.name)
       // Merge: only overwrite with non-empty values from API so ledger prefill isn't blanked
-      for (const [k, v] of Object.entries(full)) {
+      const { pricelist_percentages, ...fields } = full
+      for (const [k, v] of Object.entries(fields)) {
         if (k === 'address_name' || v !== '') form[k] = v
       }
+      buildPricelistRows(pricelist_percentages || [])
+      pctLoaded = true
       if (form.primary_party) {
         primaryPartyQuery.value = form.primary_party
       }
@@ -600,6 +651,7 @@ function resetForm() {
   fetchedGstData.value = null
   primaryPartyQuery.value = ''
   primaryParties.value = []
+  buildPricelistRows()
   Object.assign(form, {
     name: '',
     supplier_type: 'Individual',
@@ -650,7 +702,12 @@ async function submit() {
     const payload = {
       ...form,
       new_supplier_name: form.supplier_name,
-      new_name: form.supplier_name
+      new_name: form.supplier_name,
+    }
+    if (pctLoaded) {
+      payload.pricelist_percentages = pricelistRows.value
+        .filter(r => r.percentage !== '' && r.percentage !== null)
+        .map(r => ({ pricelist: r.pricelist, percentage: parseFloat(r.percentage) }))
     }
     const result = props.isEdit
       ? await updateSupplier(form.name, payload)

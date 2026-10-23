@@ -324,7 +324,8 @@ def _build_items_detailed(search_type, price_list, warehouse, company, item_code
 	# 7. Batch fetch Price List Percentages
 	all_percentages = frappe.get_all(
 		"Item Price List Percentage",
-		filters={"parent": ["in", item_codes]},
+		# Supplier shares this child doctype, so restrict to Item rows
+		filters={"parenttype": "Item", "parent": ["in", item_codes]},
 		fields=["parent as item_code", "pricelist", "percentage"],
 	)
 	item_percentages_map = {}

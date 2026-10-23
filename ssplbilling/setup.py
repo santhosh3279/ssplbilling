@@ -173,6 +173,13 @@ CUSTOM_FIELDS = {
 			"insert_after": "whatsapp_verified_number",
 			"read_only": 1,
 		},
+		{
+			"fieldname": "custom_pricelist_percentages",
+			"label": "Pricelist Percentages",
+			"fieldtype": "Table",
+			"options": "Item Price List Percentage",
+			"insert_after": "whatsapp_checked_on",
+		},
 	],
 	"Sales Invoice": [
 		{
