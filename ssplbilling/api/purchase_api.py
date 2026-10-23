@@ -289,6 +289,57 @@ def _append_extra_charges(pi, charges, previous_taxes=()):
         pi.append("taxes", row)
 
 
+def _find_duplicate_supplier_bill(supplier, bill_no, company=None, posting_date=None, invoice_name=None):
+    """Name of another live Purchase Invoice with this supplier bill no in the same company and
+    fiscal year, or None. Returns and the bill's own mirrored copy are not duplicates."""
+    bill_no = (bill_no or "").strip()
+    if not supplier or not bill_no:
+        return None
+    company = company or frappe.defaults.get_user_default("Company")
+    filters = {"supplier": supplier, "bill_no": bill_no, "docstatus": ["<", 2], "is_return": 0}
+    if company:
+        filters["company"] = company
+    if invoice_name:
+        filters["name"] = ["!=", invoice_name]
+    try:
+        from erpnext.accounts.utils import get_fiscal_year
+
+        fy = get_fiscal_year(posting_date or frappe.utils.today(), company=company, as_dict=True)
+        filters["posting_date"] = ["between", [fy.year_start_date, fy.year_end_date]]
+    except Exception:
+        pass
+    has_mirror = frappe.get_meta("Purchase Invoice").has_field("custom_mirrored")
+    own_mirror = frappe.db.get_value("Purchase Invoice", invoice_name, "custom_mirrored") if (
+        has_mirror and invoice_name
+    ) else None
+    for row in frappe.get_all(
+        "Purchase Invoice", filters=filters, fields=["name", "custom_mirrored"] if has_mirror else ["name"]
+    ):
+        is_mirror_pair = invoice_name and (row.get("custom_mirrored") == invoice_name or row.name == own_mirror)
+        if not is_mirror_pair:
+            return row.name
+    return None
+
+
+def _validate_unique_supplier_bill(pi):
+    if pi.is_return:
+        return
+    duplicate = _find_duplicate_supplier_bill(pi.supplier, pi.bill_no, pi.company, pi.posting_date, pi.name)
+    if duplicate:
+        frappe.throw(
+            frappe._("Supplier Invoice No {0} is already used in Purchase Invoice {1}").format(
+                frappe.bold(pi.bill_no), frappe.bold(duplicate)
+            ),
+            title=frappe._("Duplicate Supplier Invoice No"),
+        )
+
+
+@frappe.whitelist()
+def check_supplier_bill_no(supplier, bill_no, company=None, posting_date=None, invoice_name=None):
+    """Live check from the Purchase Invoice screen: which invoice already uses this supplier bill no."""
+    return {"duplicate": _find_duplicate_supplier_bill(supplier, bill_no, company, posting_date, invoice_name)}
+
+
 @frappe.whitelist()
 def create_purchase_invoice(data=None, **kwargs):
     """Create Purchase Invoice in Draft."""
@@ -371,6 +422,7 @@ def create_purchase_invoice(data=None, **kwargs):
     # Fill company_gstin before India Compliance's before_validate derives place_of_supply;
     # otherwise it falls back to the supplier GSTIN and an inter-state bill reads as intra-state.
     pi.set_missing_values()
+    _validate_unique_supplier_bill(pi)
     pi.insert()
 
     # Save incentive_system if the field exists
@@ -673,6 +725,7 @@ def update_purchase_invoice(data=None, **kwargs):
     # Append extra charge rows from taxes key (freight, packing, loading, other)
     _append_extra_charges(pi, data.get("taxes"), previous_taxes)
 
+    _validate_unique_supplier_bill(pi)
     pi.save()
 
     # Save incentive_system if the field exists
@@ -719,6 +772,8 @@ def update_supplier_bill_no(invoice_name, bill_no, bill_date=None, custom_remark
     pi.bill_no = bill_no
     pi.bill_date = bill_date
     pi.custom_remarks = remarks
+    if bill_details_changed:
+        _validate_unique_supplier_bill(pi)
     pi.validate_supplier_invoice()
     pi.save()
 

@@ -249,7 +249,7 @@
                   :disabled="isReadOnly && !isSubmitted"
                   placeholder="Bill No"
                   class="border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] w-48"
-                  @keydown.enter.prevent="supplierInvoiceNo.trim() ? supplierInvoiceDateInputRef?.focus() : alert('Supplier Invoice No is mandatory.')"
+                  @keydown.enter.prevent="onSupplierInvoiceNoEnter"
                   @keydown.esc="isSubmitted && revertSubmittedSupplierBill()"
                 />
               </div>
@@ -1753,12 +1753,44 @@ function handlePageUp() {
   }
 }
 
+// Warns when another bill from this supplier already carries the supplier invoice no;
+// the server enforces the same rule on save
+async function isDuplicateSupplierInvoiceNo() {
+  const billNo = supplierInvoiceNo.value.trim()
+  if (!billNo || !supplierId.value || isReturn.value) return false
+  try {
+    const res = await frappeGet('ssplbilling.api.purchase_api.check_supplier_bill_no', {
+      supplier: supplierId.value,
+      bill_no: billNo,
+      company: localStorage.getItem('wb-company') || '',
+      posting_date: invoiceDate.value || '',
+      invoice_name: isSaved.value ? invoiceNo.value : '',
+    })
+    if (res?.duplicate) {
+      alert(`Supplier Invoice No ${billNo} is already used in Purchase Invoice ${res.duplicate}.`)
+      supplierInvoiceNoRef.value?.focus()
+      supplierInvoiceNoRef.value?.select()
+      return true
+    }
+  } catch (e) {
+    console.error('Supplier invoice no check failed:', e)
+  }
+  return false
+}
+
+async function onSupplierInvoiceNoEnter() {
+  if (!supplierInvoiceNo.value.trim()) { alert('Supplier Invoice No is mandatory.'); return }
+  if (await isDuplicateSupplierInvoiceNo()) return
+  supplierInvoiceDateInputRef.value?.focus()
+}
+
 // A submitted bill only allows its supplier bill no, date and remark to change
 async function saveSubmittedSupplierBill() {
   const billNo = supplierInvoiceNo.value.trim()
   if (!billNo) { alert('Supplier Invoice No is mandatory.'); return }
   if (!supplierInvoiceDate.value) { alert('Supplier Invoice Date is mandatory.'); return }
   if (!supplierBillChanged.value || savingSupplierBill.value) return
+  if (billNo !== savedSupplierInvoiceNo.value && await isDuplicateSupplierInvoiceNo()) return
   savingSupplierBill.value = true
   try {
     const res = await frappePost('ssplbilling.api.purchase_api.update_supplier_bill_no', {
