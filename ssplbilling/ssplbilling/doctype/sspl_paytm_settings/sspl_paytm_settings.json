@@ -27,7 +27,6 @@
   "qr_pos_id",
   "webhook_section",
   "payment_notification_url",
-  "public_site_url",
   "devices_section",
   "devices"
  ],
@@ -167,13 +166,6 @@
    "label": "Payment Notification URL",
    "options": "URL",
    "description": "Register this URL in the Paytm merchant dashboard. Defaults to this site's webhook endpoint."
-  },
-  {
-   "description": "Address customers open a receipt QR pay link on, e.g. https://pay.example.com. It must reach this site from the internet. Empty uses the host of the Payment Notification URL.",
-   "fieldname": "public_site_url",
-   "fieldtype": "Data",
-   "label": "Public Site URL",
-   "options": "URL"
   },
   {
    "fieldname": "devices_section",

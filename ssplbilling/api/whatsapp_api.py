@@ -526,7 +526,7 @@ def send_document(doctype, document_name, pdf_base64, filename, caption="", sess
 @frappe.whitelist(methods=["POST"])
 def send_receipt_pay_link(order_id, session_id=None):
 	"""Send a pending Paytm receipt's pay link to the customer's WhatsApp as a text: a receipt QR's
-	signed pay page (paytm_api.qr_pay_link) or a payment request's Paytm paymentUrl.
+	UPI string (what scanning the QR gives, upi://pay?...) or a payment request's Paytm paymentUrl.
 
 	The number and link are read from the row, never taken from the caller, so this can only
 	message the number the receipt was made for."""
@@ -534,20 +534,19 @@ def send_receipt_pay_link(order_id, session_id=None):
 	from ssplbilling.api.paytm_api import (
 		PAYMENT_REQUEST_PREFIX,
 		_qr_expires_in,
-		qr_pay_link,
 	)
 
 	txn = frappe.db.get_value(
 		"SSPL Paytm Transaction",
 		order_id,
-		["order_id", "channel", "status", "customer", "sales_invoice", "customer_mobile", "amount", "short_url", "creation"],
+		["order_id", "channel", "status", "customer", "sales_invoice", "customer_mobile", "amount", "short_url", "qr_data", "creation"],
 		as_dict=True,
 	)
 	is_qr = bool(txn) and txn.channel == "QR"
 	is_request = bool(txn) and txn.channel == "Link" and txn.order_id.startswith(PAYMENT_REQUEST_PREFIX)
 	if not txn or not txn.customer or txn.sales_invoice or not (is_qr or is_request):
 		frappe.throw(_("{0} is not a Paytm receipt QR or payment request").format(order_id))
-	if txn.status != "Pending" or (is_request and not txn.short_url):
+	if txn.status != "Pending" or not (txn.qr_data if is_qr else txn.short_url):
 		frappe.throw(_("Only a pending receipt can be sent"))
 	minutes_left = _qr_expires_in("QR", txn.status, txn.creation) // 60 if is_qr else 0
 	if is_qr and minutes_left <= 0:
@@ -562,7 +561,7 @@ def send_receipt_pay_link(order_id, session_id=None):
 	if is_qr:
 		text = _(
 			"Dear {0}, please pay Rs. {1} to Sundaram and Sons using this link (valid for {2} minutes): {3}"
-		).format(customer_name, amount, max(1, minutes_left), qr_pay_link(txn.order_id))
+		).format(customer_name, amount, max(1, minutes_left), txn.qr_data)
 	else:
 		text = _("Dear {0}, please pay Rs. {1} to Sundaram and Sons using this Paytm link: {2}").format(
 			customer_name, amount, txn.short_url

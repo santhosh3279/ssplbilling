@@ -284,7 +284,7 @@
               <div class="flex min-w-0 flex-col gap-1 text-sm">
                 <span v-if="!qrEnabled" class="font-bold text-[var(--color-danger)]">Dynamic QR is disabled in SSPL Paytm Settings</span>
                 <span v-else class="text-[var(--color-text-muted)]">Paytm keeps the QR payable for 10 minutes; once paid it cannot be paid again.</span>
-                <span class="text-[var(--color-text-muted)]">Send Request: makes the QR and sends its pay link to the customer's WhatsApp.</span>
+                <span class="text-[var(--color-text-muted)]">Send Request: makes the QR and sends its UPI payment link to the customer's WhatsApp.</span>
                 <span v-if="formError" class="rounded-lg bg-[var(--color-danger)]/15 px-3 py-1.5 font-bold text-[var(--color-danger)]">{{ formError }}</span>
               </div>
             </div>
@@ -550,7 +550,7 @@ async function createEntry() {
   if (args) await createQr(args)
 }
 
-// Generate QR, then send its pay link (a public page with the QR and a UPI app button) on WhatsApp
+// Generate QR, then send its UPI link (the QR's own upi://pay string) on WhatsApp
 async function createRequest() {
   const args = formArgs()
   if (!args) return
@@ -561,7 +561,7 @@ async function createRequest() {
   await createQr(args, { sendLink: true })
 }
 
-// Receipt QRs carry a signed pay page (pay_url); old payment requests their Paytm link (short_url)
+// Receipt QRs: their UPI string (pay_url, what scanning gives); old payment requests: Paytm link (short_url)
 function payUrl(l) {
   return l.channel === 'QR' ? l.pay_url : l.short_url
 }
