@@ -11,16 +11,22 @@ keeps the pairing; logout() unlinks the device, so the next connect needs a fres
 Sending: send_document() takes the bill PDF the print dialog already rendered and hands it to
 OpenWA's send-document route. Every send is recorded in SSPL WhatsApp Log. OpenWA answers 201
 once it has accepted the message, which is not a delivery receipt.
+
+Chat (WhatsApp Chat page): list_chats() / get_messages() read the linked account's chats live from
+the gateway; send_chat_message() / send_chat_file() reply in them. Open to System Managers and to
+users whose SSPL Dashboard Tile Access grants the whatsapp-chat tile.
 """
 
 import base64
 import binascii
+from urllib.parse import quote
 
 import frappe
 import requests
 from frappe import _
 from frappe.utils import now_datetime
 
+from ssplbilling.api.dashboard_api import get_allowed_tiles
 from ssplbilling.api.print_preview_api import (
 	get_party_link,
 	get_party_whatsapp,
@@ -393,3 +399,183 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 		"caption": (caption or "")[:1024],
 	}
 	return _send(phone, "Document", "send-document", body, caption, reference=(doctype, document_name))
+
+
+# ── Chat ─────────────────────────────────────────────────────────────────────────────────────────
+
+CHAT_TILE = "whatsapp-chat"
+# Status, channel and broadcast "chats" are not conversations anyone replies in
+CHAT_KINDS = ("individual", "group")
+# send-image shows a picture inline; anything else goes as a document
+IMAGE_MIMETYPES = ("image/jpeg", "image/png", "image/webp")
+
+
+def _require_chat_user():
+	"""The chat reads every conversation on the business number, so it needs an explicit grant."""
+	_require_desk_user()
+	if "System Manager" in frappe.get_roles():
+		return
+	if CHAT_TILE not in (get_allowed_tiles().get("tiles") or []):
+		frappe.throw(_("WhatsApp Chat is not enabled for you"), frappe.PermissionError)
+
+
+def _chat_settings():
+	settings = _settings()
+	if not settings.session_id:
+		frappe.throw(_("No WhatsApp number is linked. Open the WhatsApp Link page first."))
+	return settings
+
+
+def _chat_path(settings, chat_id, suffix=""):
+	return f"/sessions/{settings.session_id}/messages/{quote(chat_id, safe='@.')}{suffix}"
+
+
+def _media_info(media):
+	if not media:
+		return None
+	return {"mimetype": media.get("mimetype") or "", "filename": media.get("filename") or ""}
+
+
+def _live_message(m):
+	return {
+		"id": m.get("id"),
+		"body": m.get("body") or "",
+		"type": m.get("type") or "text",
+		"from_me": bool(m.get("fromMe")),
+		"timestamp": m.get("timestamp") or 0,
+		"author": m.get("author") if m.get("isGroup") else "",
+		"media": _media_info(m.get("media")),
+		"status": "",
+	}
+
+
+def _stored_message(m):
+	return {
+		"id": m.get("waMessageId") or m.get("id"),
+		"body": m.get("body") or "",
+		"type": m.get("type") or "text",
+		"from_me": m.get("direction") == "outgoing",
+		"timestamp": m.get("timestamp") or 0,
+		"author": m.get("chatName") or m.get("author") or "",
+		"media": _media_info((m.get("metadata") or {}).get("media")),
+		"status": m.get("status") or "",
+	}
+
+
+@frappe.whitelist()
+def list_chats(limit=200):
+	_require_chat_user()
+
+	def run():
+		settings = _chat_settings()
+		chats = _call(
+			settings,
+			"GET",
+			f"/sessions/{settings.session_id}/chats",
+			params={"limit": min(frappe.utils.cint(limit) or 200, 1000)},
+		)
+		return [
+			{
+				"id": c.get("id"),
+				"name": c.get("name") or c.get("id", "").split("@")[0],
+				"is_group": c.get("kind") == "group",
+				"unread": c.get("unreadCount") or 0,
+				"timestamp": c.get("timestamp") or 0,
+				"last_message": c.get("lastMessage") or "",
+				"last_type": c.get("lastMessageType") or "",
+				"pinned": bool(c.get("pinned")),
+			}
+			for c in chats
+			if (c.get("kind") or "individual") in CHAT_KINDS and not c.get("archived")
+		]
+
+	return _guarded(run)
+
+
+@frappe.whitelist()
+def get_messages(chat_id, limit=50):
+	"""Newest `limit` messages of a chat, oldest first."""
+	_require_chat_user()
+	limit = min(frappe.utils.cint(limit) or 50, 100)
+
+	def run():
+		settings = _chat_settings()
+		try:
+			history = _call(
+				settings, "GET", _chat_path(settings, chat_id, "/history"), params={"limit": limit}
+			)
+			return [_live_message(m) for m in history]
+		except OpenWAError as e:
+			# Only whatsapp-web.js reads history live; Baileys answers 501, so use what OpenWA stored
+			if e.status_code != 501:
+				raise
+		stored = _call(
+			settings,
+			"GET",
+			f"/sessions/{settings.session_id}/messages",
+			params={"chatId": chat_id, "limit": limit, "orderBy": "timestamp", "inlineMedia": "false"},
+		)
+		return [_stored_message(m) for m in reversed(stored.get("messages") or [])]
+
+	return _guarded(run)
+
+
+@frappe.whitelist(methods=["POST"])
+def mark_chat_read(chat_id):
+	_require_chat_user()
+	settings = _chat_settings()
+	try:
+		_call(settings, "POST", f"/sessions/{settings.session_id}/chats/read", json={"chatId": chat_id})
+	except OpenWAError:
+		# Unread counts are cosmetic; a failed receipt must not break opening the chat
+		pass
+	return True
+
+
+@frappe.whitelist()
+def resolve_chat(phone):
+	"""Chat id for a new conversation with a number, or an error when it is not on WhatsApp."""
+	_require_chat_user()
+	return _guarded(lambda: dict(zip(("phone", "chat_id"), _chat_id(_chat_settings(), phone), strict=True)))
+
+
+def _chat_send(chat_id, message_type, route, body, content):
+	settings = _chat_settings()
+	phone = chat_id.split("@")[0]
+	try:
+		result = _call(settings, "POST", f"/sessions/{settings.session_id}/messages/{route}", json=body)
+	except OpenWAError as e:
+		_log(phone, message_type, content, "Failed", error=str(e))
+		frappe.db.commit()
+		frappe.throw(str(e), title=_("WhatsApp send failed"))
+	_log(phone, message_type, content, "Sent", message_id=result.get("messageId"))
+	return {"message_id": result.get("messageId"), "timestamp": result.get("timestamp")}
+
+
+@frappe.whitelist(methods=["POST"])
+def send_chat_message(chat_id, text):
+	_require_chat_user()
+	text = (text or "").strip()
+	if not text:
+		frappe.throw(_("Type a message"))
+	return _chat_send(chat_id, "Text", "send-text", {"chatId": chat_id, "text": text[:4096]}, text)
+
+
+@frappe.whitelist(methods=["POST"])
+def send_chat_file(chat_id, file_base64, mimetype, filename, caption=""):
+	_require_chat_user()
+	is_image = mimetype in IMAGE_MIMETYPES
+	body = {
+		"chatId": chat_id,
+		"base64": file_base64,
+		"mimetype": mimetype or "application/octet-stream",
+		"filename": filename,
+		"caption": (caption or "")[:1024],
+	}
+	return _chat_send(
+		chat_id,
+		"Image" if is_image else "Document",
+		"send-image" if is_image else "send-document",
+		body,
+		caption or filename,
+	)

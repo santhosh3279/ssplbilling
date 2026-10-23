@@ -207,6 +207,7 @@ DASHBOARD_TILES = [
 	("essl-machines", "eSSL Machines", "SSPL Special"),
 	("create-user", "Create User", "SSPL Special"),
 	("whatsapp-link", "WhatsApp Link", "SSPL Special"),
+	("whatsapp-chat", "WhatsApp Chat", "SSPL Special"),
 	("daily-report", "Daily Report", "Report"),
 	("reports", "Reports", "Report"),
 	("store-sale-report", "Store Sale Report", "Report"),

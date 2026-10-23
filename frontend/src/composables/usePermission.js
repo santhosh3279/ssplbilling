@@ -241,7 +241,8 @@ export const PUBLIC_HRMS_ROUTES = []
 
 // Tiles that are never gated by the license `features` list (free with every license).
 // WhatsApp Link only pairs the OpenWA gateway (System Manager, server-checked); it bills nothing itself.
-const LICENSE_FREE_TILES = new Set(['stock-check', 'whatsapp-link'])
+// WhatsApp Chat is kept out of the licence for now; the server still requires the tile or System Manager.
+const LICENSE_FREE_TILES = new Set(['stock-check', 'whatsapp-link', 'whatsapp-chat'])
 
 // Tiles licensed under another tile's feature instead of their own id.
 // Customer users exist to log in to the catalogue, so they ride on the Catalogue Editor licence.
@@ -375,6 +376,7 @@ const TILE_ROUTE_MAP = {
   'payment':           'Payment',
   'paytm-link':        'PaytmLink',
   'whatsapp-link':     'WhatsAppLink',
+  'whatsapp-chat':     'WhatsAppChat',
   'expense':           'Expense',
   'pricelist-update':  'PriceListUpdate',
   'barcode-print':     'BarcodePrintPage',

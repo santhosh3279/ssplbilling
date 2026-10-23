@@ -29,7 +29,7 @@
    "fieldname": "message_type",
    "fieldtype": "Select",
    "label": "Type",
-   "options": "Text\nDocument",
+   "options": "Text\nDocument\nImage",
    "in_list_view": 1,
    "read_only": 1
   },
@@ -88,7 +88,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-23 00:00:00",
+ "modified": "2026-10-23 12:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL WhatsApp Log",
