@@ -9,7 +9,6 @@ export function fireConfetti({
   size = 6, // min piece size; max is size * 2
   gravity = 0.25,
   drag = 0.99,
-  allCorners = false, // true: cannons from all four corners, not just the bottom two
 } = {}) {
   if (typeof document === 'undefined') return
 
@@ -24,24 +23,14 @@ export function fireConfetti({
   canvas.height = h * dpr
   ctx.scale(dpr, dpr)
 
-  // Cannons in the bottom corners aim up and inward; top-corner cannons (allCorners) aim down and inward
-  const cannons = [
-    { x: 0, y: h, deg: -60 },
-    { x: w, y: h, deg: -120 },
-    ...(allCorners
-      ? [
-          { x: 0, y: 0, deg: 30 },
-          { x: w, y: 0, deg: 150 },
-        ]
-      : []),
-  ]
+  // Two cannons from the bottom corners, aimed up and inward
   const pieces = Array.from({ length: count }, (_, i) => {
-    const c = cannons[i % cannons.length]
-    const angle = c.deg * (Math.PI / 180) + (Math.random() - 0.5) * spread
+    const left = i % 2 === 0
+    const angle = (left ? -60 : -120) * (Math.PI / 180) + (Math.random() - 0.5) * spread
     const v = speed + Math.random() * speed
     return {
-      x: c.x,
-      y: c.y,
+      x: left ? 0 : w,
+      y: h,
       vx: Math.cos(angle) * v,
       vy: Math.sin(angle) * v,
       size: size + Math.random() * size,
