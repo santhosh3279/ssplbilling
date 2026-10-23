@@ -150,8 +150,10 @@
 import { ref, reactive, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import { useCompetitiveCache } from '../services/competitiveCache.js'
 
 const router = useRouter()
+const { refreshCompetitiveCache } = useCompetitiveCache()
 const API = 'ssplbilling.api.competitive_api'
 
 const inputCls = 'w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[var(--color-text)] outline-none focus:border-[var(--color-info)]'
@@ -261,6 +263,7 @@ async function save() {
       }),
     })
     showToast(`${res.name} saved`)
+    refreshCompetitiveCache()
     await loadList()
     await openRecord(res.name)
   } catch (e) {
@@ -276,6 +279,7 @@ async function remove() {
   try {
     await frappePost(`${API}.delete_competitive_item`, { name: form.name })
     showToast(`${form.name} deleted`)
+    refreshCompetitiveCache()
     newRecord()
     await loadList()
   } catch (e) {

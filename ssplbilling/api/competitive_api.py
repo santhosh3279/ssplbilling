@@ -29,6 +29,27 @@ def get_competitive_items():
 
 
 @frappe.whitelist()
+def get_competitive_items_full():
+	"""Every Competitive Item with its pricelist percentages, for the client's IndexedDB cache."""
+	items = frappe.get_all("Competitive Item", fields=["name", "modified"], order_by="name asc")
+	rows = frappe.get_all(
+		"Item Price List Percentage",
+		filters={"parenttype": "Competitive Item"},
+		fields=["parent", "pricelist", "percentage"],
+		order_by="idx asc",
+	)
+	by_parent = {}
+	for r in rows:
+		by_parent.setdefault(r.parent, []).append(
+			{"pricelist": r.pricelist, "percentage": float(r.percentage or 0)}
+		)
+	return [
+		{"name": i.name, "modified": str(i.modified), "pricelist_percentages": by_parent.get(i.name, [])}
+		for i in items
+	]
+
+
+@frappe.whitelist()
 def get_competitive_item(name):
 	"""Return one Competitive Item with its pricelist percentages and linked items."""
 	doc = frappe.get_doc("Competitive Item", name)
