@@ -245,10 +245,13 @@
                 <input
                   ref="supplierInvoiceNoRef"
                   v-model="supplierInvoiceNo"
-                  :disabled="isReadOnly"
+                  :disabled="isReadOnly && !isSubmitted"
                   placeholder="Bill No"
+                  :title="isSubmitted ? 'Press Enter to save the changed bill no' : ''"
                   class="border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] w-48"
-                  @keydown.enter.prevent="supplierInvoiceNo.trim() ? supplierInvoiceDateInputRef?.focus() : alert('Supplier Invoice No is mandatory.')"
+                  @keydown.enter.prevent="isSubmitted ? saveSubmittedSupplierInvoiceNo() : (supplierInvoiceNo.trim() ? supplierInvoiceDateInputRef?.focus() : alert('Supplier Invoice No is mandatory.'))"
+                  @keydown.esc="isSubmitted && (supplierInvoiceNo = savedSupplierInvoiceNo)"
+                  @blur="isSubmitted && (supplierInvoiceNo = savedSupplierInvoiceNo)"
                 />
               </div>
 
@@ -1002,6 +1005,8 @@ const isInclusiveTax = ref(localStorage.getItem('wb-tax-type-incl') === '1')
 const isReturn = ref(false)
 
 const supplierInvoiceNo = ref('')
+// Last bill no stored on the server; a submitted bill reverts to it on blur/Esc
+const savedSupplierInvoiceNo = ref('')
 const supplierInvoiceDate = ref(serverToday())
 
 function handleSupplierInvoiceDateChange(days) {
@@ -1316,6 +1321,7 @@ async function handleSelectSidebarItem(item) {
     selectedSeries.value = data.naming_series || selectedSeries.value
     invoiceDate.value = data.posting_date || invoiceDate.value
     supplierInvoiceNo.value = data.bill_no || ''
+    savedSupplierInvoiceNo.value = supplierInvoiceNo.value
     supplierInvoiceDate.value = data.bill_date || data.posting_date || serverToday()
 
     supplierId.value = data.supplier || ''
@@ -1723,6 +1729,24 @@ function handlePageUp() {
     showSupplierModal.value = true
   } else {
     showSeriesModal.value = true
+  }
+}
+
+// A submitted bill only allows its supplier bill no to change, saved on Enter
+async function saveSubmittedSupplierInvoiceNo() {
+  const billNo = supplierInvoiceNo.value.trim()
+  if (!billNo) { alert('Supplier Invoice No is mandatory.'); return }
+  if (billNo === savedSupplierInvoiceNo.value) { supplierInvoiceNoRef.value?.blur(); return }
+  try {
+    const res = await frappePost('ssplbilling.api.purchase_api.update_supplier_bill_no', {
+      invoice_name: invoiceNo.value,
+      bill_no: billNo,
+    }, { silent: true })
+    savedSupplierInvoiceNo.value = res?.bill_no || billNo
+    supplierInvoiceNo.value = savedSupplierInvoiceNo.value
+    supplierInvoiceNoRef.value?.blur()
+  } catch (e) {
+    alert('Failed to update supplier bill no: ' + (e?.message || e))
   }
 }
 

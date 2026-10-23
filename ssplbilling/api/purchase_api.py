@@ -690,6 +690,33 @@ def update_purchase_invoice(data=None, **kwargs):
 
 
 @frappe.whitelist()
+def update_supplier_bill_no(invoice_name, bill_no):
+    """Change the supplier bill no of a Purchase Invoice, including a submitted one."""
+    bill_no = (bill_no or "").strip()
+    if not bill_no:
+        frappe.throw("Supplier Invoice No is mandatory.")
+
+    pi = frappe.get_doc("Purchase Invoice", invoice_name)
+    if pi.docstatus == 2:
+        frappe.throw("Cannot change the supplier bill no of a cancelled invoice.")
+    if pi.bill_no == bill_no:
+        return {"invoice_name": pi.name, "bill_no": pi.bill_no}
+
+    pi.bill_no = bill_no
+    pi.validate_supplier_invoice()
+    pi.save()
+
+    # Keep the mirrored copy of this invoice on the same supplier bill no
+    mirrored = pi.get("custom_mirrored")
+    if mirrored and frappe.db.exists("Purchase Invoice", {"name": mirrored, "docstatus": ["<", 2]}):
+        mirror = frappe.get_doc("Purchase Invoice", mirrored)
+        mirror.bill_no = bill_no
+        mirror.save(ignore_permissions=True)
+
+    return {"invoice_name": pi.name, "bill_no": pi.bill_no}
+
+
+@frappe.whitelist()
 def is_purchase_mirror_series(naming_series):
 	"""Check whether a naming series or invoice name has purchase mirroring configured in Automatic Entries."""
 	if not naming_series:

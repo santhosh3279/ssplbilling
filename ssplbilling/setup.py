@@ -1,5 +1,6 @@
 import frappe
 from frappe.custom.doctype.custom_field.custom_field import create_custom_fields
+from frappe.custom.doctype.property_setter.property_setter import make_property_setter
 
 
 CUSTOM_FIELDS = {
@@ -351,11 +352,19 @@ def backfill_mirrored_purchase_invoices():
 	""")
 
 
+def allow_supplier_bill_no_edit_after_submit():
+	"""Let the supplier bill no on a submitted Purchase Invoice be corrected."""
+	make_property_setter(
+		"Purchase Invoice", "bill_no", "allow_on_submit", 1, "Check", validate_fields_for_doctype=False
+	)
+
+
 def after_install():
 	create_custom_fields(CUSTOM_FIELDS, ignore_validate=True)
 	sync_dashboard_tiles()
 	sync_offer_print_template()
 	backfill_mirrored_purchase_invoices()
+	allow_supplier_bill_no_edit_after_submit()
 
 
 def after_migrate():
@@ -363,3 +372,4 @@ def after_migrate():
 	sync_dashboard_tiles()
 	sync_offer_print_template()
 	backfill_mirrored_purchase_invoices()
+	allow_supplier_bill_no_edit_after_submit()
