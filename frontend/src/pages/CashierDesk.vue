@@ -587,15 +587,6 @@
                     >
                       UPI
                     </button>
-                    <button
-                      v-if="hasPaytmMachine && !upiLocked"
-                      @click="openPaytmModal('CARD')"
-                      type="button"
-                      title="Take a card payment for this amount on the Paytm machine"
-                      class="px-2 py-1 rounded-lg bg-[var(--color-info)] text-white font-black text-[15px] uppercase tracking-wider hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-info)] active:scale-95 transition-all shadow-sm"
-                    >
-                      Card
-                    </button>
                   </div>
                   <input
                     ref="upiInput"
@@ -619,8 +610,19 @@
                   placeholder="UPI Ref No (optional)"
                   class="read-only:bg-[var(--color-success)]/10 read-only:border-[var(--color-success)]/50 read-only:cursor-not-allowed w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-1.5 px-4 text-right font-mono text-[14px] font-bold text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] focus:border-[var(--color-success)] outline-none transition-all"
                 />
-                <div class="group relative">
-                  <div class="absolute left-5 top-1/2 -translate-y-1/2 text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cardLabel }}</div>
+                <div class="group relative flex items-center">
+                  <div :ref="bindCardOverlay" class="absolute left-5 top-1/2 -translate-y-1/2 flex items-center gap-2 whitespace-nowrap z-10">
+                    <span class="text-[18px] font-black text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors uppercase">{{ cardLabel }}</span>
+                    <button
+                      v-if="hasPaytmMachine && !cardLocked"
+                      @click="openPaytmModal('CARD')"
+                      type="button"
+                      title="Take a card payment for this amount on the Paytm machine"
+                      class="px-2 py-1 rounded-lg bg-[var(--color-info)] text-white font-black text-[15px] uppercase tracking-wider hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-info)] active:scale-95 transition-all shadow-sm"
+                    >
+                      Card
+                    </button>
+                  </div>
                   <input
                     ref="cardInput"
                     type="number"
@@ -629,7 +631,8 @@
                     :title="cardLocked ? 'Received through Paytm — locked' : ''"
                     @focus="$event.target.select()"
                     step="0.01"
-                    class="read-only:bg-[var(--color-success)]/10 read-only:border-[var(--color-success)]/50 read-only:cursor-not-allowed w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pl-24 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-info)] focus:ring-4 focus:ring-[var(--color-info)]/20 transition-all"
+                    class="read-only:bg-[var(--color-success)]/10 read-only:border-[var(--color-success)]/50 read-only:cursor-not-allowed w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-3 pr-6 text-right font-mono text-[24px] font-black text-[var(--color-text)] focus:border-[var(--color-info)] focus:ring-4 focus:ring-[var(--color-info)]/20 transition-all"
+                    :style="{ paddingLeft: `${cardInputPad}px` }"
                   />
                 </div>
                 <div class="group relative">
@@ -1031,7 +1034,7 @@ const showGstWarning = ref(false)
 const cardRefNo = ref('')
 const upiRefNo = ref('')
 
-// Paytm EDC card machine: push the UPI box amount to the machine, wait for the result
+// Paytm EDC card machine: push the UPI (QR) or Card box amount to the machine, wait for the result
 // (socket event from the webhook, with polling as fallback), then fill UPI or Card.
 const paytm = ref({ enabled: false, qrEnabled: false, devices: [], show: false, payMode: 'QR', tid: '', deviceName: '', customerName: '', phone: '', askPhone: false, amount: 0, orderId: '', status: '', message: '', sending: false })
 let paytmPollTimer = null
@@ -1043,22 +1046,27 @@ const paytmQrSrc = computed(() => {
   const img = paytmQr.value.image || ''
   return img.startsWith('data:') ? img : `data:image/png;base64,${img}`
 })
-// Left padding of the UPI box = measured width of its label + machine buttons; the label is the
-// UPI account name, so a fixed padding either overlaps the amount or wastes the box
+// Left padding of the UPI / Card box = measured width of its label + machine button; the label is
+// the account name, so a fixed padding either overlaps the amount or wastes the box
+function overlayPadBinder(padRef) {
+  let overlayEl = null
+  let observer = null
+  return (el) => {
+    if (el === overlayEl) return
+    observer?.disconnect()
+    overlayEl = el
+    observer = null
+    if (!el) return
+    observer = new ResizeObserver(() => { padRef.value = el.offsetWidth + 36 }) // left-5 + 16px gap
+    observer.observe(el)
+  }
+}
 const upiInputPad = ref(96)
+const cardInputPad = ref(96)
+const bindUpiOverlay = overlayPadBinder(upiInputPad)
+const bindCardOverlay = overlayPadBinder(cardInputPad)
 // UPI / Card buttons only for a cashier with a machine assigned in SSPL Paytm Settings
 const hasPaytmMachine = computed(() => paytm.value.enabled && paytm.value.devices.length > 0)
-let upiOverlayEl = null
-let upiPadObserver = null
-function bindUpiOverlay(el) {
-  if (el === upiOverlayEl) return
-  upiPadObserver?.disconnect()
-  upiOverlayEl = el
-  upiPadObserver = null
-  if (!el) return
-  upiPadObserver = new ResizeObserver(() => { upiInputPad.value = el.offsetWidth + 36 }) // left-5 + 16px gap
-  upiPadObserver.observe(el)
-}
 const processedInvoiceName = ref('')
 const mirrorQueued = ref(false)
 
@@ -1670,7 +1678,9 @@ async function loadPaytmDevices() {
 
 async function openPaytmModal(payMode) {
   errorMsg.value = ''
-  const amount = Number(payments.value.upi) || 0
+  // QR takes the UPI box amount, CARD the Card box amount
+  const box = payMode === 'CARD' ? 'card' : 'upi'
+  const amount = Number(payments.value[box]) || 0
   if (!selectedInvoice.value) {
     errorMsg.value = 'Select a bill before sending to the card machine.'
     return
@@ -1680,7 +1690,7 @@ async function openPaytmModal(payMode) {
     return
   }
   if (amount <= 0) {
-    errorMsg.value = 'Enter the amount in the UPI box before sending to the card machine.'
+    errorMsg.value = `Enter the amount in the ${box === 'card' ? 'Card' : 'UPI'} box before sending to the card machine.`
     return
   }
   // The machine is fixed by SSPL Paytm Settings (the user's assigned row); no picking here
@@ -1748,14 +1758,20 @@ function applyPaytmResult(r) {
     p.message = r.message || `Payment ${r.status.toLowerCase()}.`
     return
   }
-  if (r.mode === 'card') {
-    // Paid by card on the machine: move the amount out of UPI into the Card box
-    payments.value.upi = Math.max(0, (Number(payments.value.upi) || 0) - r.amount)
-    payments.value.card = (Number(payments.value.card) || 0) + r.amount
+  // The customer may pay the other way on the machine: move the amount out of the box it was
+  // sent from into the box matching how it was actually paid
+  const sentFrom = p.payMode === 'CARD' ? 'card' : 'upi'
+  const paidBy = r.mode === 'card' ? 'card' : 'upi'
+  if (sentFrom !== paidBy) {
+    payments.value[sentFrom] = Math.max(0, (Number(payments.value[sentFrom]) || 0) - r.amount)
+    payments.value[paidBy] = (Number(payments.value[paidBy]) || 0) + r.amount
+  } else {
+    payments.value[paidBy] = r.amount
+  }
+  if (paidBy === 'card') {
     cardRefNo.value = r.reference_no
     lockPaytmPayment('card', r.amount, r.reference_no)
   } else {
-    payments.value.upi = r.amount
     upiRefNo.value = r.reference_no
     lockPaytmPayment('upi', r.amount, r.reference_no)
   }
@@ -2375,7 +2391,8 @@ onUnmounted(() => {
   _billPanelCleanup?.()
   stopPaytmPolling()
   stopPaytmQrPolling()
-  upiPadObserver?.disconnect()
+  bindUpiOverlay(null)
+  bindCardOverlay(null)
   getFrappeSocket()?.off('paytm_payment_update', onPaytmSocket)
 })
 
