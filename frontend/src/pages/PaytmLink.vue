@@ -15,7 +15,7 @@
       </div>
       <div class="text-sm text-[var(--color-text-muted)]">
         <span v-if="!paytmEnabled" class="font-bold text-[var(--color-danger)]">Paytm is disabled in SSPL Paytm Settings</span>
-        <span v-else>Esc back · F2 customer · Ctrl+Enter generate QR</span>
+        <span v-else>Esc back · F2 customer · Ctrl+Enter generate QR · F8 send request</span>
       </div>
     </header>
 
@@ -24,7 +24,7 @@
       <aside class="flex w-[380px] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
         <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-bold uppercase tracking-wide text-[var(--color-text-muted)]">UPI QRs</span>
+            <span class="text-sm font-bold uppercase tracking-wide text-[var(--color-text-muted)]">QRs &amp; Requests</span>
             <button
               @click="loadLinks"
               class="rounded-md px-2 py-0.5 text-sm hover:bg-[var(--color-midlight)]"
@@ -64,6 +64,7 @@
           >
             <div class="flex items-center justify-between gap-2">
               <span class="flex min-w-0 items-center gap-1.5">
+                <span class="shrink-0 rounded border border-current px-1 text-[10px] font-bold uppercase opacity-75">{{ isRequest(l) ? 'Req' : 'QR' }}</span>
                 <span class="truncate font-bold">{{ l.customer || '—' }}</span>
               </span>
               <span class="shrink-0 font-mono font-bold">₹{{ fmt(l.amount) }}</span>
@@ -150,7 +151,7 @@
             >
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
-                  <div class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">UPI QR · {{ selected.order_id }}</div>
+                  <div class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">{{ isRequest(selected) ? 'Payment Request' : 'UPI QR' }} · {{ selected.order_id }}</div>
                   <div class="truncate text-4xl font-normal">{{ selected.customer }}</div>
                   <div class="text-sm text-[var(--color-text-muted)]">{{ selected.link_description }}</div>
                 </div>
@@ -167,6 +168,11 @@
                     <div class="text-5xl font-black uppercase">Paid</div>
                     <div class="text-sm opacity-90">₹{{ fmt(selected.amount) }} via {{ selected.pay_method || 'UPI' }}</div>
                   </div>
+                  <div v-else-if="isRequest(selected) && selected.status === 'Pending'" class="w-full rounded-2xl bg-[var(--color-info)]/15 px-4 py-10 text-center">
+                    <div class="text-2xl font-black uppercase">Request sent</div>
+                    <div class="font-mono text-lg">+91 {{ selected.customer_mobile }}</div>
+                    <div class="mt-1 text-xs text-[var(--color-text-muted)]">Waiting for the customer to pay in their UPI app</div>
+                  </div>
                   <div v-else-if="selected.status === 'Pending' && qrSecondsLeft(selected) > 0" class="flex flex-col items-center gap-3">
                     <div class="rounded-2xl bg-white p-3 shadow">
                       <img v-if="qrImages[selected.order_id]" :src="`data:image/png;base64,${qrImages[selected.order_id]}`" alt="UPI QR" class="h-64 w-64" />
@@ -179,7 +185,7 @@
                   </div>
                   <div v-else class="w-full rounded-2xl bg-[var(--color-midlight)] py-10 text-center">
                     <div class="text-2xl font-bold uppercase">{{ qrExpired(selected) ? 'QR expired' : selected.status === 'Cancelled' ? 'Stopped waiting' : 'Payment failed' }}</div>
-                    <div class="text-sm text-[var(--color-text-muted)]">Not paid. Generate a new QR for the customer.</div>
+                    <div class="text-sm text-[var(--color-text-muted)]">Not paid. {{ isRequest(selected) ? 'Send a new request' : 'Generate a new QR' }} for the customer.</div>
                   </div>
                 </div>
 
@@ -203,7 +209,16 @@
                   </dl>
 
                   <div class="flex flex-wrap justify-end gap-2">
-                    <template v-if="selected.status === 'Pending' && qrSecondsLeft(selected) > 0">
+                    <template v-if="isRequest(selected) && selected.status === 'Pending' && selected.short_url">
+                      <button @click="copyText(selected.short_url)" class="rounded-lg bg-[var(--color-info)] px-4 py-2 font-bold text-white">{{ copied ? 'Copied' : 'Copy Link' }}</button>
+                      <a
+                        :href="whatsappUrl(selected)"
+                        target="_blank"
+                        rel="noopener"
+                        class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white"
+                      >WhatsApp</a>
+                    </template>
+                    <template v-else-if="selected.status === 'Pending' && qrSecondsLeft(selected) > 0">
                       <button v-if="canShareFiles" @click="shareQr(selected)" class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white">Share QR</button>
                       <button
                         v-if="selected.customer_mobile"
@@ -226,7 +241,7 @@
                       class="rounded-lg bg-[var(--color-danger)] px-4 py-2 font-bold text-white disabled:opacity-50"
                     >Stop Waiting</button>
                     <button
-                      v-if="selected.status !== 'Success' && qrSecondsLeft(selected) === 0"
+                      v-if="!isRequest(selected) && selected.status !== 'Success' && qrSecondsLeft(selected) === 0"
                       @click="regenerateQr(selected)"
                       :disabled="creating"
                       class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white disabled:opacity-50"
@@ -270,11 +285,22 @@
               <div class="flex min-w-0 flex-col gap-1 text-sm">
                 <span v-if="!qrEnabled" class="font-bold text-[var(--color-danger)]">Dynamic QR is disabled in SSPL Paytm Settings</span>
                 <span v-else class="text-[var(--color-text-muted)]">Paytm keeps the QR payable for 10 minutes; once paid it cannot be paid again.</span>
+                <span class="text-[var(--color-text-muted)]">
+                  Send Request: Paytm sends the request to the WhatsApp / mobile number
+                  <template v-if="posId">from POS {{ posId }}<template v-if="tid"> · TID {{ tid }}</template></template>
+                  <span v-else class="font-bold text-[var(--color-danger)]">— no POS ID assigned to you</span>
+                </span>
                 <span v-if="formError" class="rounded-lg bg-[var(--color-danger)]/15 px-3 py-1.5 font-bold text-[var(--color-danger)]">{{ formError }}</span>
               </div>
             </div>
 
-            <div class="flex items-center border-l border-[var(--color-border)] pl-8">
+            <div class="flex items-center gap-4 border-l border-[var(--color-border)] pl-8">
+              <button
+                @click="createRequest"
+                :disabled="creating || !paytmEnabled || !posId"
+                :title="posId ? 'Paytm sends a payment request to the customer\'s phone (F8)' : 'Assign a card machine with a POS ID to this user in SSPL Paytm Settings'"
+                class="rounded-2xl bg-[var(--color-info)] px-8 py-6 text-2xl font-black text-white shadow-xl transition-all hover:scale-[1.02] focus:scale-[1.02] focus:outline-none focus:ring-[10px] focus:ring-[var(--color-focus)] active:scale-95 disabled:opacity-40 disabled:grayscale disabled:hover:scale-100"
+              >Send Request</button>
               <button
                 ref="generateBtn"
                 @click="createEntry"
@@ -356,6 +382,11 @@ const amountInput = ref(null)
 const descInput = ref(null)
 const mobileInput = ref(null)
 const generateBtn = ref(null)
+const copied = ref(false)
+
+// Operator's card machine (wb-posid / wb-tid, from SSPL Paytm Settings) sends the payment request
+const posId = localStorage.getItem('wb-posid') || ''
+const tid = localStorage.getItem('wb-tid') || ''
 
 const canShareFiles = typeof navigator !== 'undefined' && !!navigator.canShare
 
@@ -388,9 +419,15 @@ function statusClass(status) {
 // The server marks an unpaid receipt QR Cancelled with this message once Paytm closes the order
 const QR_EXPIRED_MSG = 'QR expired unpaid'
 
+// Payment requests are "Link" rows with a PRQ order id (old /link/create links stay hidden)
+const REQUEST_PREFIX = 'PRQ'
+function isRequest(l) {
+  return l.channel === 'Link' && (l.order_id || '').startsWith(REQUEST_PREFIX)
+}
+
 function qrExpired(l) {
-  return (l.status === 'Pending' && qrSecondsLeft(l) === 0)
-    || (l.status === 'Cancelled' && l.result_message === QR_EXPIRED_MSG)
+  return l.channel === 'QR' && ((l.status === 'Pending' && qrSecondsLeft(l) === 0)
+    || (l.status === 'Cancelled' && l.result_message === QR_EXPIRED_MSG))
 }
 
 function statusLabel(l) {
@@ -412,8 +449,9 @@ function qrSecondsLeft(l) {
 async function loadLinks() {
   loadingLinks.value = true
   try {
-    // the server also returns old payment links; this page handles QRs only
-    links.value = (await frappeGet(`${API}.get_payment_links`, { limit: 200 })).filter((l) => l.channel === 'QR')
+    // the server also returns old payment links; this page handles QRs and payment requests only
+    links.value = (await frappeGet(`${API}.get_payment_links`, { limit: 200 }))
+      .filter((l) => l.channel === 'QR' || isRequest(l))
     for (const l of links.value) setDeadline(l.order_id, l.expires_in)
     if (selected.value) selected.value = links.value.find((l) => l.order_id === selected.value.order_id) || null
   } catch (e) {
@@ -434,13 +472,15 @@ function applyResult(r) {
     pay_method: r.pay_method,
     payment_entry: r.payment_entry,
     result_message: r.message,
+    short_url: r.short_url || row.short_url,
   })
   if (r.reference_no && r.reference_no !== r.order_id) row.rrn = r.reference_no
 }
 
 async function selectLink(l) {
   selected.value = l
-  if (l.status === 'Pending' && qrSecondsLeft(l) > 0 && !qrImages[l.order_id]) {
+  copied.value = false
+  if (l.channel === 'QR' && l.status === 'Pending' && qrSecondsLeft(l) > 0 && !qrImages[l.order_id]) {
     try {
       const r = await frappeGet(`${API}.get_receipt_qr`, { order_id: l.order_id })
       qrImages[l.order_id] = r.qr_image
@@ -494,24 +534,55 @@ function resetForm() {
   ledgerBalance.value = null
 }
 
-async function createEntry() {
+function formArgs() {
   formError.value = ''
-  if (!form.customer) { formError.value = 'Select a customer'; return customerInput.value?.focus() }
-  if (!(Number(form.amount) > 0)) { formError.value = 'Enter an amount'; return amountInput.value?.focus() }
-  const args = { customer: form.customer, amount: Number(form.amount), description: form.description, mobile: form.mobile }
-  await createQr(args)
+  if (!form.customer) { formError.value = 'Select a customer'; customerInput.value?.focus(); return null }
+  if (!(Number(form.amount) > 0)) { formError.value = 'Enter an amount'; amountInput.value?.focus(); return null }
+  return { customer: form.customer, amount: Number(form.amount), description: form.description, mobile: form.mobile }
+}
+
+// operator defaults: the receipt is debited to wb-upi under wb-company / wb-cost-center
+function accountArgs() {
+  return {
+    company: localStorage.getItem('wb-company') || '',
+    cost_center: localStorage.getItem('wb-cost-center') || '',
+    upi_account: localStorage.getItem('wb-upi') || '',
+  }
+}
+
+async function createEntry() {
+  const args = formArgs()
+  if (args) await createQr(args)
+}
+
+// Paytm sends the request to the customer's phone and returns its payment URL
+async function createRequest() {
+  const args = formArgs()
+  if (!args) return
+  if (!/^\d{10}$/.test(String(args.mobile).replace(/\D/g, '').slice(-10))) {
+    formError.value = 'Enter the 10-digit WhatsApp / mobile number'
+    return mobileInput.value?.focus()
+  }
+  creating.value = true
+  try {
+    const r = await frappePost(`${API}.send_payment_request`, {
+      ...args, ...accountArgs(), pos_id: posId, tid,
+    }, { silent: true })
+    resetForm()
+    await loadLinks()
+    selected.value = links.value.find((l) => l.order_id === r.order_id) || null
+  } catch (e) {
+    formError.value = e.message
+    loadLinks() // the failed attempt is recorded too
+  } finally {
+    creating.value = false
+  }
 }
 
 async function createQr(args) {
   creating.value = true
   try {
-    // operator defaults: the receipt is debited to wb-upi under wb-company / wb-cost-center
-    const r = await frappePost(`${API}.create_receipt_qr`, {
-      ...args,
-      company: localStorage.getItem('wb-company') || '',
-      cost_center: localStorage.getItem('wb-cost-center') || '',
-      upi_account: localStorage.getItem('wb-upi') || '',
-    }, { silent: true })
+    const r = await frappePost(`${API}.create_receipt_qr`, { ...args, ...accountArgs() }, { silent: true })
     qrImages[r.order_id] = r.qr_image
     setDeadline(r.order_id, r.expires_in)
     resetForm()
@@ -543,7 +614,8 @@ async function checkStatus(l, { quiet = false } = {}) {
 }
 
 async function stopWaiting(l) {
-  const msg = `Stop waiting for ₹${fmt(l.amount)} from ${l.customer}?\n\nPaytm cannot cancel a QR: it stays payable until it expires. If the customer still pays, the receipt is still posted.`
+  const what = isRequest(l) ? 'a payment request: it stays payable on the customer\'s phone' : 'a QR: it stays payable until it expires'
+  const msg = `Stop waiting for ₹${fmt(l.amount)} from ${l.customer}?\n\nPaytm cannot cancel ${what}. If the customer still pays, the receipt is still posted.`
   if (!confirm(msg)) return
   busy.value = true
   try {
@@ -594,6 +666,31 @@ function downloadQr(l) {
   URL.revokeObjectURL(url)
 }
 
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text)
+  } catch {
+    // clipboard API needs https (store terminals use http on the LAN); copy via a temporary textarea
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    const ok = document.execCommand('copy')
+    ta.remove()
+    if (!ok) return
+  }
+  copied.value = true
+  setTimeout(() => { copied.value = false }, 1500)
+}
+
+function whatsappUrl(l) {
+  const phone = String(l.customer_mobile).replace(/\D/g, '').slice(-10)
+  const text = `Dear ${l.customer}, please pay ₹${fmt(l.amount)} to Sundaram and Sons using this Paytm link: ${l.short_url}`
+  return `https://wa.me/91${phone}?text=${encodeURIComponent(text)}`
+}
+
 // wa.me cannot carry an image: save the QR, open the chat with the message, staff attach the image
 function whatsappQr(l) {
   downloadQr(l)
@@ -614,7 +711,7 @@ async function pollPending() {
     const today = serverToday()
     const pending = links.value.filter((l) => l.status === 'Pending'
       && (l.transaction_datetime || '').startsWith(today)
-      && qrStillLive(l))
+      && (l.channel !== 'QR' || qrStillLive(l)))
     for (const l of pending) await checkStatus(l, { quiet: true })
   } finally {
     polling = false
@@ -629,7 +726,7 @@ function qrStillLive(l) {
 
 function pollSelectedQr() {
   const l = selected.value
-  if (!l || l.status !== 'Pending' || document.hidden || !qrStillLive(l)) return
+  if (!l || l.channel !== 'QR' || l.status !== 'Pending' || document.hidden || !qrStillLive(l)) return
   checkStatus(l, { quiet: true })
 }
 
@@ -642,6 +739,7 @@ function onKeydown(e) {
   if (e.key === 'Escape') { e.preventDefault(); router.push('/') }
   else if (e.key === 'F2') { e.preventDefault(); openCustomerSearch() }
   else if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); createEntry() }
+  else if (e.key === 'F8') { e.preventDefault(); if (posId) createRequest() }
 }
 
 onMounted(async () => {

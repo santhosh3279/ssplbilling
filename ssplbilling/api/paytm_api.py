@@ -11,7 +11,10 @@ through the PG v3 order status API.
 Customer receipts (no invoice) on the Paytm receipt page:
 - payment link (channel "Link"): create_payment_link() asks Paytm for a fixed-amount link bound to
   our order id (linkOrderId), so the same PG order status API and webhook confirm it;
-- receipt QR (channel "QR" with a customer): create_receipt_qr(), a dynamic QR valid for 10 minutes.
+- receipt QR (channel "QR" with a customer): create_receipt_qr(), a dynamic QR valid for 10 minutes;
+- payment request (channel "Link", order id PRQ...): send_payment_request() has Paytm send a
+  payment request for our order id (merchantOrderId) to the customer's phone from the operator's
+  POS ID, and returns its payment URL; the same PG order status API and webhook confirm it.
 Unlike the cashier's EDC/QR payments, which submit_invoice_with_payment() enters, a successful
 receipt creates and submits its own Receipt Payment Entry against the customer (_make_receipt).
 """
@@ -59,6 +62,9 @@ LINK_BASE_URL = {
 }
 LINK_CREATE_PATH = "/link/create"
 LINK_EXPIRE_PATH = "/link/expire"
+# Payment request sent to the customer's phone; same host as links, head is {clientId, version, signature}
+PAYMENT_REQUEST_PATH = "/order/sendpaymentrequest"
+PAYMENT_REQUEST_PREFIX = "PRQ"
 
 CARD_PAY_METHODS = ("CARD", "CREDIT_CARD", "DEBIT_CARD", "EMI", "CC", "DC")
 PG_CHANNELS = ("QR", "Link")
@@ -496,6 +502,109 @@ def create_payment_link(customer, amount, description=None, mobile=None, send_sm
 	return _txn_result(txn)
 
 
+@frappe.whitelist(methods=["POST"])
+def send_payment_request(
+	customer,
+	amount,
+	mobile,
+	pos_id,
+	tid=None,
+	description=None,
+	company=None,
+	cost_center=None,
+	upi_account=None,
+):
+	"""Have Paytm send a payment request for a customer receipt to the customer's phone, from the
+	operator's POS ID (wb-posid; wb-tid is kept on the row). Returns the row with the payment URL
+	in short_url. Confirmed and receipted like a payment link (channel "Link", no link_id)."""
+	_require_desk_user()
+	settings = _settings()
+	amount = flt(amount, 2)
+	if amount <= 0:
+		frappe.throw(_("Amount must be greater than 0"))
+	if not frappe.db.exists("Customer", customer):
+		frappe.throw(_("Customer {0} not found").format(customer))
+	mobile = _valid_phone(mobile)
+	if not mobile:
+		frappe.throw(_("A valid 10-digit mobile number is needed to send a payment request"))
+	pos_id = (pos_id or "").strip()
+	if not pos_id:
+		frappe.throw(_("No POS ID: assign a card machine with a POS ID to this user in SSPL Paytm Settings"))
+	upi_account = upi_account or settings.upi_account
+	if not upi_account:
+		frappe.throw(_("Set the UPI Account in SSPL Paytm Settings; payment requests are received into it"))
+	_validate_receipt_accounts(upi_account, company, cost_center)
+
+	now = now_datetime()
+	txn = frappe.get_doc(
+		{
+			"doctype": "SSPL Paytm Transaction",
+			"order_id": f"{PAYMENT_REQUEST_PREFIX}{now.strftime('%y%m%d%H%M%S%f')[:16]}",
+			"amount": amount,
+			"status": "Pending",
+			"channel": "Link",
+			"customer": customer,
+			"customer_mobile": mobile,
+			"link_description": (description or "").strip()[:140],
+			"upi_account": upi_account,
+			"company": company or None,
+			"cost_center": cost_center or None,
+			"device_name": pos_id,
+			"tid": (tid or "").strip() or None,
+			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
+		}
+	).insert(ignore_permissions=True)
+
+	body = {
+		"mid": settings.merchant_id,
+		"merchantOrderId": txn.order_id,
+		"amount": f"{amount:.2f}",
+		"posId": pos_id,
+		"userPhoneNo": mobile,
+	}
+	try:
+		res = _post_payment_request(settings, body)
+	except Exception as e:
+		_update_txn(txn, "Failed", {"error": str(e)}, str(e))
+		frappe.db.commit()
+		frappe.log_error(title="Paytm payment request failed", message=frappe.get_traceback())
+		frappe.throw(_("Could not reach Paytm: {0}").format(e))
+
+	rb = res.get("body") or {}
+	info = rb.get("resultInfo") or {}
+	if (info.get("resultStatus") or "").upper() != "SUCCESS" or not rb.get("paymentUrl"):
+		msg = info.get("resultMsg") or "no payment URL returned"
+		_update_txn(txn, "Failed", res, msg)
+		frappe.db.commit()
+		frappe.throw(_("Paytm could not send the payment request: {0}").format(msg))
+
+	txn.short_url = rb["paymentUrl"]
+	_update_txn(txn, "Pending", res, info.get("resultMsg"))
+	return _txn_result(txn)
+
+
+def _post_payment_request(settings, body):
+	"""Payment request variant of _post_link(): head is {clientId, version, signature}; rejections
+	come back as HTTP 200 with resultInfo.resultStatus FAILURE (checked by the caller)."""
+	from paytmchecksum import generateSignature
+
+	body_str = json.dumps(body, separators=(",", ":"))
+	head = {
+		"clientId": settings.qr_client_id or "C11",
+		"version": "v1",
+		"signature": generateSignature(body_str, _pg_key(settings)),
+	}
+	payload = '{"head":' + json.dumps(head, separators=(",", ":")) + ',"body":' + body_str + "}"
+	res = requests.post(
+		LINK_BASE_URL[settings.environment] + PAYMENT_REQUEST_PATH,
+		data=payload,
+		headers={"Content-Type": "application/json"},
+		timeout=REQUEST_TIMEOUT,
+	)
+	res.raise_for_status()
+	return res.json()
+
+
 @frappe.whitelist()
 def get_customer_whatsapp(customer):
 	"""Customer's number for the receipt form: its saved WhatsApp number, else its mobile."""
@@ -673,6 +782,19 @@ def refresh_pending_links():
 			"sales_invoice": ("is", "not set"),
 			"status": "Cancelled",
 			"creation": (">=", frappe.utils.add_to_date(now, seconds=-2 * QR_EXPIRY_SECONDS)),
+		},
+		fields=["name", "channel", "creation"],
+	)
+	# nor a payment request: a stopped one stays payable on the customer's phone
+	rows += frappe.get_all(
+		"SSPL Paytm Transaction",
+		filters={
+			"channel": "Link",
+			"order_id": ("like", f"{PAYMENT_REQUEST_PREFIX}%"),
+			"customer": ("is", "set"),
+			"sales_invoice": ("is", "not set"),
+			"status": "Cancelled",
+			"creation": (">=", frappe.utils.add_days(now, -RECEIPT_QR_REFRESH_DAYS)),
 		},
 		fields=["name", "channel", "creation"],
 	)
