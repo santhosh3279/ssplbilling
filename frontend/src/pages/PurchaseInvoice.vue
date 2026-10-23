@@ -106,7 +106,7 @@
             :class="overridePercentages
               ? 'bg-[var(--color-warning)] text-[var(--color-text-on-highlight)]'
               : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] border border-[var(--color-border)]'"
-            title="Use the supplier's pricelist percentages in Price List Update instead of the item's"
+            title="Price List Update uses the item's Competitive Item percentages first, then the supplier's, instead of the item's own"
           >
             Override {{ overridePercentages ? 'On' : 'Off' }}
           </button>
@@ -1426,7 +1426,7 @@ async function handleSelectSidebarItem(item) {
 
 const supplierName = ref('Select Supplier...')
 const supplierId = ref('')
-// Price List Update uses the supplier's pricelist percentages instead of the item's
+// Price List Update uses the item's Competitive Item percentages, then the supplier's, instead of the item's own
 const overridePercentages = ref(false)
 const supplierDetails = ref('')
 const supplierAddress = ref('')

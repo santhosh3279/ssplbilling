@@ -25,6 +25,13 @@
           <div v-if="cachedItem && cachedItem.stock !== undefined" class="rounded-full px-3 py-1 text-3xl font-bold" :class="cachedItem.stock <= 0 ? 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]' : 'bg-[var(--color-success)]/20 text-[var(--color-success)]'">
             Stock: {{ cachedItem.stock }} {{ cachedItem.uom || '' }}
           </div>
+          <div
+            v-if="competitiveItemName"
+            class="rounded-full bg-[var(--color-highlight)]/20 px-3 py-1 text-3xl font-bold text-[var(--color-highlight)]"
+            :title="overrideSources.includes('competitive') ? 'Competitive item percentages applied' : 'Competitive item (applied when Override is on)'"
+          >
+            ⚖️ {{ competitiveItemName }}
+          </div>
           <div v-if="hsnSac" class="rounded-full bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1 text-3xl font-bold text-[var(--color-text-muted)]">
             HSN: {{ hsnSac }}
           </div>
@@ -96,7 +103,8 @@
                   <div class="flex flex-col gap-1.5 items-start w-full">
                     <div class="flex items-center gap-1.5">
                       <span>Calc</span>
-                      <span v-if="overrideApplied" class="text-[18px] bg-[var(--color-warning)]/20 text-[var(--color-warning)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none" title="Using supplier pricelist percentages">Override</span>
+                      <span v-if="overrideSources.includes('competitive')" class="text-[18px] bg-[var(--color-highlight)]/20 text-[var(--color-highlight)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none" :title="`Using ${competitiveItemName} pricelist percentages`">Competitive</span>
+                      <span v-if="overrideSources.includes('supplier')" class="text-[18px] bg-[var(--color-warning)]/20 text-[var(--color-warning)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none" title="Using supplier pricelist percentages">Supplier</span>
                       <span v-else-if="hasFetchedPercentages" class="text-[18px] bg-[var(--color-success)]/20 text-[var(--color-success)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none">Fetched</span>
                     </div>
                   </div>
@@ -350,6 +358,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 import { useItemCache } from '../services/itemCache.js'
+import { useCompetitiveCache } from '../services/competitiveCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { canAccessTile } from '../composables/usePermission'
 import Warning from '../components/Warning.vue'
@@ -369,7 +378,7 @@ const props = defineProps({
   supplier: { type: String, default: '' },
   // Opened from a submitted bill: buying price lists are read-only
   lockBuying: { type: Boolean, default: false },
-  // Use the supplier's pricelist percentages instead of the item's
+  // Use the item's competitive item percentages, then the supplier's, instead of the item's own
   overridePercentages: { type: Boolean, default: false }
 })
 
@@ -389,8 +398,11 @@ const loading = ref(false)
 const saving = ref(false)
 const savingPercentage = ref(false)
 const hasFetchedPercentages = ref(false)
-// True when supplier percentages replaced the item's for this load
-const overrideApplied = ref(false)
+// Override sources ('competitive', 'supplier') whose percentages replaced the item's for this load
+const overrideSources = ref([])
+const overrideApplied = computed(() => overrideSources.value.length > 0)
+// Competitive Item assigned to the loaded item, shown as a header badge
+const competitiveItemName = ref('')
 const showPercentagePrompt = ref(false)
 const manualItemCode = ref('')
 const activeRow = ref(0)
@@ -401,6 +413,31 @@ const taxRate = ref(0)
 const toast = ref(null)
 
 const { lookupItemInCache } = useItemCache()
+const { lookupCompetitiveItem, refreshCompetitiveCache } = useCompetitiveCache()
+
+// Competitive Item name for an item: from the item cache, else from the server
+async function resolveCompetitiveItemName(code, cached) {
+  if (cached && 'custom_competitive_item' in cached) return cached.custom_competitive_item || ''
+  try {
+    const res = await frappeGet('frappe.client.get_value', {
+      doctype: 'Item', filters: code, fieldname: 'custom_competitive_item',
+    })
+    return res?.custom_competitive_item || ''
+  } catch {
+    return ''
+  }
+}
+
+// Competitive Item percentages from the IndexedDB cache, refreshing it once when the record is missing
+async function competitivePercentages(name) {
+  if (!name) return []
+  let rec = lookupCompetitiveItem(name)
+  if (!rec) {
+    await refreshCompetitiveCache()
+    rec = lookupCompetitiveItem(name)
+  }
+  return rec?.pricelist_percentages || []
+}
 const loadedItemCode = ref('')
 const loadedPercentages = ref([])
 const currentItemCode = computed(() => props.itemCode || loadedItemCode.value)
@@ -665,25 +702,37 @@ async function loadPrices(code) {
 
     const savedMarkups = JSON.parse(localStorage.getItem('sspl_pricelist_markups') || '{}')
 
+    competitiveItemName.value = await resolveCompetitiveItemName(code, cached)
+
+    let competitive = []
     let supplierPercentages = []
-    if (props.overridePercentages && props.supplier) {
-      try {
-        supplierPercentages = await frappeGet('ssplbilling.api.supplier_creator_api.get_supplier_pricelist_percentages', { supplier: props.supplier }) || []
-      } catch (e) {
-        showToast('Failed to load supplier percentages: ' + e.message, 'error')
+    if (props.overridePercentages) {
+      competitive = await competitivePercentages(competitiveItemName.value)
+      if (props.supplier) {
+        try {
+          supplierPercentages = await frappeGet('ssplbilling.api.supplier_creator_api.get_supplier_pricelist_percentages', { supplier: props.supplier }) || []
+        } catch (e) {
+          showToast('Failed to load supplier percentages: ' + e.message, 'error')
+        }
       }
     }
-    overrideApplied.value = supplierPercentages.length > 0
+    const sources = new Set()
 
     prices.value = (data.prices || []).map((p, idx, arr) => {
       let markup = 0
 
-      // 0. Override: supplier percentages win over the item's
-      const override = supplierPercentages.find(sp => sp.pricelist === p.price_list)
+      // 0. Override: competitive item first, then supplier, both win over the item's own
+      const comp = competitive.find(cp => cp.pricelist === p.price_list)
+      const sup = supplierPercentages.find(sp => sp.pricelist === p.price_list)
       // 1. Prioritize fetched markup from child table in item master
       const fetched = (data.pricelist_percentages || []).find(fp => fp.pricelist === p.price_list)
-      if (override) {
-        markup = parseFloat(override.percentage) || 0
+      if (comp) {
+        markup = parseFloat(comp.percentage) || 0
+        sources.add('competitive')
+      }
+      else if (sup) {
+        markup = parseFloat(sup.percentage) || 0
+        sources.add('supplier')
       }
       else if (fetched) {
         markup = parseFloat(fetched.percentage) || 0
@@ -720,6 +769,8 @@ async function loadPrices(code) {
       }
       return res
     })
+    // Set before the watcher's next flush so override markups are never persisted as the item's
+    overrideSources.value = ['competitive', 'supplier'].filter(s => sources.has(s))
 
     // Set active row to selected price list if exists
     activeRow.value = 0 // In transposed, activeRow is UOM index
