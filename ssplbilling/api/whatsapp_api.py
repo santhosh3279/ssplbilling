@@ -5,10 +5,8 @@ SSPL WhatsApp Settings. ERPNext only ever talks to it from here, so the API key 
 browser. A user works through the session row assigned to them, else through the shared row (the
 one with no user); see _session_row().
 
-Linking (WhatsApp Link page, System Manager, one session at a time): connect() creates the named
-session on the gateway if it is missing and starts it -> get_status() polls and returns the QR while it is "qr_ready" ->
-the phone scans it under Linked Devices -> status turns "ready". disconnect() stops the engine but
-keeps the pairing; logout() unlinks the device, so the next connect needs a fresh scan.
+Linking: sessions are created and scanned on the OpenWA dashboard, then picked in the settings
+table. get_status() / refresh_sessions() mirror a session's state onto its row.
 
 Sending: send_document() takes the bill PDF the print dialog already rendered and hands it to
 OpenWA's send-document route. Every send is recorded in SSPL WhatsApp Log. OpenWA answers 201
@@ -44,8 +42,6 @@ SESSION_DOCTYPE = "SSPL WhatsApp Session"
 LOG_DOCTYPE = "SSPL WhatsApp Log"
 
 REQUEST_TIMEOUT = 20
-# A slow engine launch answers 504 after ~30s, so the start call must outwait it
-START_TIMEOUT = 60
 # The print dialog asks on open; a dead gateway must not hold the dialog up
 STATE_TIMEOUT = 3
 
@@ -282,7 +278,7 @@ def save_settings(base_url, api_key=None):
 
 @frappe.whitelist(methods=["POST"])
 def add_session(session_name, user=None):
-	"""Add a session row; it is created on the gateway by its first connect()."""
+	"""Add a session row for a session that exists, or will be created, on the gateway."""
 	_require_manager()
 	settings = _settings()
 	settings.append("sessions", {"session_name": session_name, "user": user or None})
@@ -355,83 +351,6 @@ def refresh_sessions():
 			session = _fetch_session(settings, row)
 			if session:
 				_store_session(row, session)
-
-	return _guarded(run)
-
-
-@frappe.whitelist(methods=["POST"])
-def connect(session_name):
-	"""Create the session on the gateway if needed and start it; the QR follows via get_status()."""
-	_require_manager()
-
-	def run():
-		settings = _settings()
-		row = _managed_row(settings, session_name)
-		session = _fetch_session(settings, row)
-		if not session:
-			session = _call(settings, "POST", "/sessions", json={"name": row.session_name})
-
-		# engineLoaded, not status: "disconnected" also covers an engine still backing off
-		if not session.get("engineLoaded"):
-			try:
-				session = _call(settings, "POST", f"/sessions/{session['id']}/start", timeout=START_TIMEOUT)
-			except OpenWAError as e:
-				# 400 = already started / starting, which is what we wanted
-				if e.status_code != 400 or "maximum concurrent" in str(e).lower():
-					raise
-				session = _call(settings, "GET", f"/sessions/{session['id']}")
-
-		_store_session(row, session)
-		return _status_payload(settings, row, session)
-
-	return _guarded(run)
-
-
-@frappe.whitelist(methods=["POST"])
-def disconnect(session_name):
-	"""Stop the engine. The pairing is kept, so connect() resumes without a scan."""
-	_require_manager()
-
-	def run():
-		settings = _settings()
-		row = _managed_row(settings, session_name)
-		session = _fetch_session(settings, row)
-		if session and session.get("engineLoaded"):
-			session = _call(settings, "POST", f"/sessions/{session['id']}/stop")
-		if session:
-			_store_session(row, session)
-		return _status_payload(settings, row, session)
-
-	return _guarded(run)
-
-
-@frappe.whitelist(methods=["POST"])
-def logout(session_name):
-	"""Unlink this device from the WhatsApp account. The next connect needs a fresh QR scan."""
-	_require_manager()
-
-	def run():
-		settings = _settings()
-		row = _managed_row(settings, session_name)
-		session = _fetch_session(settings, row)
-		if not session:
-			return _status_payload(settings, row, None)
-		if not session.get("engineLoaded"):
-			frappe.throw(_("Connect the session first — WhatsApp can only unlink a running session"))
-		try:
-			_call(settings, "POST", f"/sessions/{session['id']}/logout", timeout=START_TIMEOUT)
-		except OpenWAError as e:
-			# Torn down locally but WhatsApp did not confirm; the phone may still list the device
-			if e.code != "SESSION_LOGOUT_INCOMPLETE":
-				raise
-			frappe.msgprint(
-				_(
-					"Logged out here, but WhatsApp did not confirm. Remove the device from Linked Devices on the phone."
-				)
-			)
-		session = _call(settings, "GET", f"/sessions/{session['id']}")
-		_store_session(row, session)
-		return _status_payload(settings, row, session)
 
 	return _guarded(run)
 
