@@ -360,8 +360,22 @@ def _log(phone, message_type, content, status, message_id=None, error=None, refe
 	).insert(ignore_permissions=True)
 
 
-def _send(phone, message_type, route, body, content, reference=None, chat_id=None):
-	"""Send and log. `chat_id` skips the WhatsApp lookup when the caller already did it."""
+def _is_number_failure(error):
+	"""Whether a failed send says something about the recipient rather than the gateway.
+
+	OpenWA refuses a recipient it cannot resolve with 400. Everything else (gateway unreachable,
+	bad key, session not ready, timeouts, 5xx) is the gateway's problem and says nothing about
+	the number. A 400 about the session is the gateway's too.
+	"""
+	if not isinstance(error, OpenWAError):
+		# Our own refusals before the gateway was asked, e.g. "not on WhatsApp"
+		return True
+	return error.status_code == 400 and "session" not in str(error).lower()
+
+
+def _send(phone, message_type, route, body, content, reference=None, chat_id=None, on_failure=None):
+	"""Send and log. `chat_id` skips the WhatsApp lookup when the caller already did it.
+	`on_failure(error)` runs with the original error before the failure is reported."""
 	settings = _settings()
 	if not settings.session_id:
 		frappe.throw(_("No WhatsApp session is linked. Open the WhatsApp Link page first."))
@@ -378,6 +392,8 @@ def _send(phone, message_type, route, body, content, reference=None, chat_id=Non
 		)
 	except frappe.ValidationError as e:
 		_log(number, message_type, content, "Failed", error=str(e), reference=reference)
+		if on_failure:
+			on_failure(e)
 		# The failure is worth keeping even though the request is about to roll back
 		frappe.db.commit()
 		frappe.throw(str(e), title=_("WhatsApp send failed"))
@@ -439,21 +455,23 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 		"filename": filename,
 		"caption": (caption or "")[:1024],
 	}
-	try:
-		return _send(
-			number,
-			"Document",
-			"send-document",
-			body,
-			caption,
-			reference=(doctype, document_name),
-			chat_id=chat_id,
-		)
-	except frappe.ValidationError:
-		# A failed send is the one thing that makes a Valid number worth checking again
-		_record_party_status(party_doctype, party, number, NOT_CHECKED)
-		frappe.db.commit()
-		raise
+
+	def on_failure(error):
+		# A send refused over the recipient is the one thing that makes a Valid number worth
+		# checking again; a gateway outage says nothing about the number, so it stays as it was
+		if _is_number_failure(error):
+			_record_party_status(party_doctype, party, number, NOT_CHECKED)
+
+	return _send(
+		number,
+		"Document",
+		"send-document",
+		body,
+		caption,
+		reference=(doctype, document_name),
+		chat_id=chat_id,
+		on_failure=on_failure,
+	)
 
 
 @frappe.whitelist()
@@ -552,12 +570,23 @@ def _party_number_valid(party_doctype, party, number):
 	return status == VALID and normalize_whatsapp_number(checked) == number
 
 
+def _recorded_status(party_doctype, party, number):
+	"""The stored status, if it was recorded for this number; any other number is Not Checked."""
+	status, checked = frappe.db.get_value(
+		party_doctype, party, ["whatsapp_status", "whatsapp_verified_number"]
+	) or (None, None)
+	if status and normalize_whatsapp_number(checked) == number:
+		return status
+	return NOT_CHECKED
+
+
 def check_party_whatsapp(party_doctype, party, force=False):
 	"""Check a party's saved WhatsApp number and record the result on the party.
 
 	Called from the customer / supplier save and the Check button. A number already Valid is not
-	checked again unless `force`. A gateway that is down or unlinked never blocks the caller: the
-	status is left Not Checked and the reason returned.
+	checked again unless `force`. A gateway that is down or unlinked never blocks the caller and
+	never changes the recorded status, since it says nothing about the number; the reason is
+	returned instead.
 	"""
 	number = normalize_whatsapp_number(get_party_whatsapp(party_doctype, party))
 	if not number:
@@ -568,17 +597,15 @@ def check_party_whatsapp(party_doctype, party, force=False):
 
 	settings = _settings()
 	if not settings.session_id or not settings.get_password("api_key", raise_exception=False):
-		_record_party_status(party_doctype, party, number, NOT_CHECKED)
 		return {
-			"status": NOT_CHECKED,
+			"status": _recorded_status(party_doctype, party, number),
 			"phone": number,
 			"error": _("No WhatsApp number is linked to check with"),
 		}
 	try:
 		exists = bool(_whatsapp_id(settings, number, timeout=SAVE_CHECK_TIMEOUT))
 	except OpenWAError as e:
-		_record_party_status(party_doctype, party, number, NOT_CHECKED)
-		return {"status": NOT_CHECKED, "phone": number, "error": str(e)}
+		return {"status": _recorded_status(party_doctype, party, number), "phone": number, "error": str(e)}
 
 	status = VALID if exists else INVALID
 	_record_party_status(party_doctype, party, number, status)
