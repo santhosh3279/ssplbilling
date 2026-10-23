@@ -247,11 +247,9 @@
                   v-model="supplierInvoiceNo"
                   :disabled="isReadOnly && !isSubmitted"
                   placeholder="Bill No"
-                  :title="isSubmitted ? 'Press Enter to save the changed bill no' : ''"
                   class="border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] w-48"
-                  @keydown.enter.prevent="isSubmitted ? saveSubmittedSupplierInvoiceNo() : (supplierInvoiceNo.trim() ? supplierInvoiceDateInputRef?.focus() : alert('Supplier Invoice No is mandatory.'))"
-                  @keydown.esc="isSubmitted && (supplierInvoiceNo = savedSupplierInvoiceNo)"
-                  @blur="isSubmitted && (supplierInvoiceNo = savedSupplierInvoiceNo)"
+                  @keydown.enter.prevent="supplierInvoiceNo.trim() ? supplierInvoiceDateInputRef?.focus() : alert('Supplier Invoice No is mandatory.')"
+                  @keydown.esc="isSubmitted && revertSubmittedSupplierBill()"
                 />
               </div>
 
@@ -260,7 +258,7 @@
                 <div class="flex items-center gap-1 border-b border-[var(--color-border)]" :class="suppDateFocused ? 'bg-[var(--color-focus)]' : ''">
                   <button
                     @click="handleSupplierInvoiceDateChange(-1)"
-                    :disabled="isReadOnly"
+                    :disabled="isReadOnly && !isSubmitted"
                     class="disabled:opacity-30 px-1 text-3xl" :class="suppDateFocused ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)]'"
                   >&larr;</button>
                   <div class="relative min-w-[140px] flex items-center justify-center">
@@ -269,7 +267,7 @@
                       ref="supplierInvoiceDateInputRef"
                       type="text"
                       v-model="suppDateEntry"
-                      :disabled="isReadOnly"
+                      :disabled="isReadOnly && !isSubmitted"
                       maxlength="10"
                       placeholder="DD/MM/YYYY"
                       class="text-4xl font-bold tabular-nums text-center outline-none bg-transparent"
@@ -279,16 +277,24 @@
                       @input="onSuppDateInput"
                       @keydown.backspace="handleSuppDateBackspace"
                       @keydown.enter.prevent="parseSuppDate"
+                      @keydown.esc="isSubmitted && revertSubmittedSupplierBill()"
                     />
                   </div>
-                  <DatePickerButton v-model="supplierInvoiceDate" :disabled="isReadOnly" label="Choose supplier invoice date" @update:model-value="suppDateEntry = isoToDisplayDate($event)" />
+                  <DatePickerButton v-model="supplierInvoiceDate" :disabled="isReadOnly && !isSubmitted" label="Choose supplier invoice date" @update:model-value="suppDateEntry = isoToDisplayDate($event)" />
                   <button
                     @click="handleSupplierInvoiceDateChange(1)"
-                    :disabled="isReadOnly"
+                    :disabled="isReadOnly && !isSubmitted"
                     class="disabled:opacity-30 px-1 text-3xl" :class="suppDateFocused ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text-on-highlight)]'"
                   >&rarr;</button>
                 </div>
               </div>
+
+              <button
+                v-if="isSubmitted"
+                @click="saveSubmittedSupplierBill"
+                :disabled="!supplierBillChanged || savingSupplierBill"
+                class="rounded border border-[var(--color-success)] bg-[var(--color-success)]/20 px-4 py-1 text-2xl font-semibold uppercase text-[var(--color-success)] hover:bg-[var(--color-success)]/30 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-95"
+              >{{ savingSupplierBill ? 'Saving…' : 'Save' }}</button>
             </div>
 
             <!-- Bill Date (Original) -->
@@ -1005,9 +1011,15 @@ const isInclusiveTax = ref(localStorage.getItem('wb-tax-type-incl') === '1')
 const isReturn = ref(false)
 
 const supplierInvoiceNo = ref('')
-// Last bill no stored on the server; a submitted bill reverts to it on blur/Esc
-const savedSupplierInvoiceNo = ref('')
 const supplierInvoiceDate = ref(serverToday())
+// Supplier bill no/date stored on the server; a submitted bill edits these via its Save button
+const savedSupplierInvoiceNo = ref('')
+const savedSupplierInvoiceDate = ref('')
+const savingSupplierBill = ref(false)
+const supplierBillChanged = computed(() =>
+  supplierInvoiceNo.value.trim() !== savedSupplierInvoiceNo.value
+  || supplierInvoiceDate.value !== savedSupplierInvoiceDate.value
+)
 
 function handleSupplierInvoiceDateChange(days) {
   const d = parseCalendarDate(supplierInvoiceDate.value)
@@ -1179,6 +1191,10 @@ function autoCompleteSuppDate() {
 
 function parseSuppDate() {
   autoCompleteSuppDate()
+  if (isSubmitted.value) {
+    saveSubmittedSupplierBill()
+    return
+  }
   if (supplierInvoiceNo.value.trim()) {
     focusBarcodeInput()
   } else {
@@ -1321,8 +1337,9 @@ async function handleSelectSidebarItem(item) {
     selectedSeries.value = data.naming_series || selectedSeries.value
     invoiceDate.value = data.posting_date || invoiceDate.value
     supplierInvoiceNo.value = data.bill_no || ''
-    savedSupplierInvoiceNo.value = supplierInvoiceNo.value
     supplierInvoiceDate.value = data.bill_date || data.posting_date || serverToday()
+    savedSupplierInvoiceNo.value = supplierInvoiceNo.value
+    savedSupplierInvoiceDate.value = supplierInvoiceDate.value
 
     supplierId.value = data.supplier || ''
     supplierName.value = data.supplier_name || data.customer_name || 'Select Supplier...'
@@ -1732,22 +1749,35 @@ function handlePageUp() {
   }
 }
 
-// A submitted bill only allows its supplier bill no to change, saved on Enter
-async function saveSubmittedSupplierInvoiceNo() {
+// A submitted bill only allows its supplier bill no and date to change
+async function saveSubmittedSupplierBill() {
   const billNo = supplierInvoiceNo.value.trim()
   if (!billNo) { alert('Supplier Invoice No is mandatory.'); return }
-  if (billNo === savedSupplierInvoiceNo.value) { supplierInvoiceNoRef.value?.blur(); return }
+  if (!supplierInvoiceDate.value) { alert('Supplier Invoice Date is mandatory.'); return }
+  if (!supplierBillChanged.value || savingSupplierBill.value) return
+  savingSupplierBill.value = true
   try {
     const res = await frappePost('ssplbilling.api.purchase_api.update_supplier_bill_no', {
       invoice_name: invoiceNo.value,
       bill_no: billNo,
+      bill_date: supplierInvoiceDate.value,
     }, { silent: true })
     savedSupplierInvoiceNo.value = res?.bill_no || billNo
+    savedSupplierInvoiceDate.value = res?.bill_date || supplierInvoiceDate.value
     supplierInvoiceNo.value = savedSupplierInvoiceNo.value
-    supplierInvoiceNoRef.value?.blur()
+    supplierInvoiceDate.value = savedSupplierInvoiceDate.value
+    document.activeElement?.blur()
   } catch (e) {
-    alert('Failed to update supplier bill no: ' + (e?.message || e))
+    alert('Failed to update supplier bill details: ' + (e?.message || e))
+  } finally {
+    savingSupplierBill.value = false
   }
+}
+
+function revertSubmittedSupplierBill() {
+  supplierInvoiceNo.value = savedSupplierInvoiceNo.value
+  supplierInvoiceDate.value = savedSupplierInvoiceDate.value
+  suppDateEntry.value = isoToDisplayDate(savedSupplierInvoiceDate.value)
 }
 
 async function handleSave() {

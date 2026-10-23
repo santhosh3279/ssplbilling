@@ -353,10 +353,11 @@ def backfill_mirrored_purchase_invoices():
 
 
 def allow_supplier_bill_no_edit_after_submit():
-	"""Let the supplier bill no on a submitted Purchase Invoice be corrected."""
-	make_property_setter(
-		"Purchase Invoice", "bill_no", "allow_on_submit", 1, "Check", validate_fields_for_doctype=False
-	)
+	"""Let the supplier bill no and date on a submitted Purchase Invoice be corrected."""
+	for fieldname in ("bill_no", "bill_date"):
+		make_property_setter(
+			"Purchase Invoice", fieldname, "allow_on_submit", 1, "Check", validate_fields_for_doctype=False
+		)
 
 
 def after_install():
