@@ -211,7 +211,7 @@
                         class="shrink-0 flex items-center gap-1.5 rounded-md bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2 py-0.5 text-[10px] font-bold shadow-sm"
                       >
                         <span class="text-[var(--color-text-muted)]">{{ alloc.reference_name }}</span>
-                        <span class="text-[var(--color-success)]">₹{{ fmt(alloc.allocated_amount) }}</span>
+                        <span class="text-[var(--color-success)]">₹{{ fmt(Math.abs(alloc.allocated_amount)) }}</span>
                         <button
                           type="button"
                           @click.stop="unlinkReference(idx, alloc)"
