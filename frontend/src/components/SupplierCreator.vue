@@ -453,10 +453,12 @@ function buildPricelistRows(saved = []) {
   } catch {
     names = []
   }
-  if (!names.length) names = ['Standard Selling', 'Standard Buying']
+  if (!names.length) names = ['Standard Selling']
   for (const s of saved) {
     if (s.pricelist && !names.includes(s.pricelist)) names.push(s.pricelist)
   }
+  // Percentages apply to selling lists only; buying lists detected by name, as in PriceListUpdate
+  names = names.filter(n => !n.toLowerCase().includes('buying'))
   pricelistRows.value = names.map(pricelist => {
     const hit = saved.find(s => s.pricelist === pricelist)
     return { pricelist, percentage: hit ? hit.percentage : '' }
