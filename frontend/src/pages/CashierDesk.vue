@@ -943,12 +943,14 @@
         </div>
       </div>
     </transition>
+
+    <component :is="ConfettiTester" v-if="ConfettiTester" />
   </div>
 </template>
 
 <script setup>
 import DatePickerButton from '../components/DatePickerButton.vue'
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { applyPanelEvent } from '../services/billPanelCache.js'
 import { session } from '../session'
@@ -967,6 +969,8 @@ import { canAccessTile, canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
 import { fireConfetti } from '../utils/confetti'
+// Dev server only: Vite drops this import from production builds
+const ConfettiTester = import.meta.env.DEV ? defineAsyncComponent(() => import('../components/ConfettiTester.vue')) : null
 import { serverToday, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
 /**
  * HELPER: getTodayIST
