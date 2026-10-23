@@ -8,10 +8,12 @@ Dynamic UPI QR (channel "QR"): create_qr() asks Paytm PG for a QR bound to an or
 amount, the cashier page shows it, and the same get_status()/webhook path confirms the payment
 through the PG v3 order status API.
 
-Payment link (channel "Link"): create_payment_link() asks Paytm for a fixed-amount link bound to
-our order id (linkOrderId), so the same PG order status API and webhook confirm it. Unlike EDC
-and QR, a successful link payment creates and submits its own Receipt Payment Entry against the
-customer (_make_link_receipt); EDC/QR payments are still entered by submit_invoice_with_payment().
+Customer receipts (no invoice) on the Paytm receipt page:
+- payment link (channel "Link"): create_payment_link() asks Paytm for a fixed-amount link bound to
+  our order id (linkOrderId), so the same PG order status API and webhook confirm it;
+- receipt QR (channel "QR" with a customer): create_receipt_qr(), a dynamic QR valid for 10 minutes.
+Unlike the cashier's EDC/QR payments, which submit_invoice_with_payment() enters, a successful
+receipt creates and submits its own Receipt Payment Entry against the customer (_make_receipt).
 """
 
 import base64
@@ -60,6 +62,10 @@ CARD_PAY_METHODS = ("CARD", "CREDIT_CARD", "DEBIT_CARD", "EMI", "CC", "DC")
 PG_CHANNELS = ("QR", "Link")
 # The scheduler keeps asking Paytm about unpaid links this many days old
 LINK_REFRESH_DAYS = 15
+# Paytm expires a dynamic QR order 10 minutes after it is created (longer needs Paytm to enable it);
+# the scheduler stops asking about an unpaid receipt QR after a day
+QR_EXPIRY_SECONDS = 600
+RECEIPT_QR_REFRESH_DAYS = 1
 
 
 def _settings():
@@ -360,12 +366,24 @@ def create_qr(invoice_name, amount):
 		}
 	).insert(ignore_permissions=True)
 
+	rb = _request_qr(settings, txn)
+	return {
+		"order_id": order_id,
+		"status": "Pending",
+		"qr_image": rb.get("image") or _qr_png(rb.get("qrData")),
+		"qr_data": rb.get("qrData"),
+	}
+
+
+def _request_qr(settings, txn):
+	"""Ask Paytm PG for the dynamic QR of a new QR row; marks the row Failed (committed) and throws
+	when Paytm refuses. Returns Paytm's response body (image, qrData)."""
 	body = {
 		"mid": settings.merchant_id,
-		"orderId": order_id,
-		"amount": f"{amount:.2f}",  # rupees, unlike the EDC paise amount
+		"orderId": txn.order_id,
+		"amount": f"{flt(txn.amount):.2f}",  # rupees, unlike the EDC paise amount
 		"businessType": "UPI_QR_CODE",
-		"posId": pos_id,
+		"posId": txn.device_name,
 	}
 	try:
 		res = _post_pg(
@@ -388,13 +406,9 @@ def create_qr(invoice_name, amount):
 			_("Paytm could not create the QR: {0}").format(info.get("resultMsg") or "no QR returned")
 		)
 
+	txn.qr_data = rb.get("qrData")
 	_update_txn(txn, "Pending", stored, info.get("resultMsg"))
-	return {
-		"order_id": order_id,
-		"status": "Pending",
-		"qr_image": rb.get("image") or _qr_png(rb.get("qrData")),
-		"qr_data": rb.get("qrData"),
-	}
+	return rb
 
 
 def _qr_png(data):
@@ -480,18 +494,79 @@ def create_payment_link(customer, amount, description=None, mobile=None, send_sm
 	return _txn_result(txn)
 
 
+@frappe.whitelist(methods=["POST"])
+def create_receipt_qr(customer, amount, description=None, mobile=None):
+	"""Dynamic UPI QR for a customer receipt (no invoice), shown on screen or shared with the
+	customer. Valid for QR_EXPIRY_SECONDS; once paid it gets its Receipt Payment Entry like a link."""
+	_require_desk_user()
+	settings = _settings()
+	if not settings.qr_enabled:
+		frappe.throw(_("Dynamic QR is disabled in SSPL Paytm Settings"))
+	amount = flt(amount, 2)
+	if amount <= 0:
+		frappe.throw(_("Amount must be greater than 0"))
+	if not frappe.db.exists("Customer", customer):
+		frappe.throw(_("Customer {0} not found").format(customer))
+	if not settings.upi_account:
+		frappe.throw(_("Set the UPI Account in SSPL Paytm Settings; QR receipts are received into it"))
+
+	now = now_datetime()
+	txn = frappe.get_doc(
+		{
+			"doctype": "SSPL Paytm Transaction",
+			"order_id": f"RQR{now.strftime('%y%m%d%H%M%S%f')[:16]}",
+			"amount": amount,
+			"status": "Pending",
+			"channel": "QR",
+			"customer": customer,
+			"customer_mobile": _valid_phone(mobile)
+			or _valid_phone(frappe.db.get_value("Customer", customer, "mobile_no")),
+			"link_description": (description or "").strip()[:140],
+			"device_name": settings.qr_pos_id or re.sub(r"[^A-Za-z0-9_]", "_", frappe.session.user)[:20],
+			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
+		}
+	).insert(ignore_permissions=True)
+	rb = _request_qr(settings, txn)
+	return {**_txn_result(txn), "qr_image": rb.get("image") or _qr_png(rb.get("qrData"))}
+
+
+@frappe.whitelist()
+def get_receipt_qr(order_id):
+	"""QR image of an unpaid receipt QR, to show it again after the page is reloaded."""
+	_require_desk_user()
+	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
+	if not _is_receipt(txn) or txn.channel != "QR" or not txn.qr_data:
+		frappe.throw(_("No QR stored for {0}").format(order_id))
+	return {**_txn_result(txn), "qr_image": _qr_png(txn.qr_data)}
+
+
+def _is_receipt(txn):
+	"""Receipt rows (payment link, receipt QR) belong to a customer, not a bill; a successful one
+	creates its own Payment Entry. Cashier EDC/QR rows carry a sales_invoice instead."""
+	return bool(txn.customer) and not txn.sales_invoice
+
+
+def _qr_expires_in(channel, status, creation):
+	if channel != "QR" or status != "Pending" or not creation:
+		return 0
+	age = (now_datetime() - frappe.utils.get_datetime(creation)).total_seconds()
+	return max(0, int(QR_EXPIRY_SECONDS - age))
+
+
 @frappe.whitelist()
 def get_payment_links(limit=100, status=None):
-	"""Payment links, newest first, for the left panel of the Paytm link page."""
+	"""Payment links and receipt QRs, newest first, for the left panel of the Paytm receipt page."""
 	_require_desk_user()
-	filters = {"channel": "Link"}
+	filters = {"channel": ("in", PG_CHANNELS), "customer": ("is", "set"), "sales_invoice": ("is", "not set")}
 	if status:
 		filters["status"] = status
-	return frappe.get_all(
+	rows = frappe.get_all(
 		"SSPL Paytm Transaction",
 		filters=filters,
 		fields=[
 			"order_id",
+			"channel",
+			"creation",
 			"status",
 			"amount",
 			"customer",
@@ -509,17 +584,20 @@ def get_payment_links(limit=100, status=None):
 		order_by="creation desc",
 		limit_page_length=frappe.utils.cint(limit) or 100,
 	)
+	for r in rows:
+		r.expires_in = _qr_expires_in(r.channel, r.status, r.pop("creation"))
+	return rows
 
 
 @frappe.whitelist(methods=["POST"])
 def retry_link_receipt(order_id):
-	"""Create the Payment Entry for a paid link whose automatic receipt failed."""
+	"""Create the Payment Entry for a paid link or receipt QR whose automatic receipt failed."""
 	_require_desk_user()
 	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
-	if txn.channel != "Link" or txn.status != "Success":
-		frappe.throw(_("Only a paid payment link can get a receipt"))
+	if not _is_receipt(txn) or txn.status != "Success":
+		frappe.throw(_("Only a paid payment link or receipt QR can get a receipt"))
 	if not txn.payment_entry:
-		_make_link_receipt(txn)
+		_make_receipt(txn)
 		if not txn.payment_entry:
 			frappe.db.commit()
 			frappe.throw(_("Payment Entry could not be created; see Error Log"))
@@ -529,17 +607,43 @@ def retry_link_receipt(order_id):
 
 
 def refresh_pending_links():
-	"""Scheduler: re-read unpaid links from Paytm so a link paid after the page was closed (and
+	"""Scheduler: re-read unpaid receipts from Paytm so one paid after the page was closed (and
 	whose webhook was missed) still gets its receipt. One row failing never stops the rest."""
 	settings = frappe.get_cached_doc("SSPL Paytm Settings")
 	if not settings.enabled or not settings.merchant_id:
 		return
-	since = frappe.utils.add_days(now_datetime(), -LINK_REFRESH_DAYS)
-	for order_id in frappe.get_all(
+	now = now_datetime()
+	qr_since = frappe.utils.add_days(now, -RECEIPT_QR_REFRESH_DAYS)
+	rows = frappe.get_all(
 		"SSPL Paytm Transaction",
-		filters={"channel": "Link", "status": "Pending", "creation": (">=", since)},
-		pluck="name",
-	):
+		filters={
+			"channel": ("in", PG_CHANNELS),
+			"customer": ("is", "set"),
+			"sales_invoice": ("is", "not set"),
+			"status": "Pending",
+			"creation": (">=", frappe.utils.add_days(now, -LINK_REFRESH_DAYS)),
+		},
+		fields=["name", "channel", "creation"],
+	)
+	# Paytm has no QR void: a QR cancelled on the page can still be scanned until it expires
+	rows += frappe.get_all(
+		"SSPL Paytm Transaction",
+		filters={
+			"channel": "QR",
+			"customer": ("is", "set"),
+			"sales_invoice": ("is", "not set"),
+			"status": "Cancelled",
+			"creation": (">=", frappe.utils.add_to_date(now, seconds=-2 * QR_EXPIRY_SECONDS)),
+		},
+		fields=["name", "channel", "creation"],
+	)
+	for row in rows:
+		order_id = row.name
+		if row.channel == "QR" and row.creation < qr_since:
+			# long past Paytm's QR expiry: stop asking
+			frappe.db.set_value("SSPL Paytm Transaction", order_id, "status", "Cancelled")
+			frappe.db.commit()
+			continue
 		try:
 			_refresh_from_paytm(frappe.get_doc("SSPL Paytm Transaction", order_id))
 			frappe.db.commit()
@@ -560,8 +664,8 @@ def _expire_link(txn):
 	txn.db_set("result_message", f"Expire: {msg}")
 
 
-def _make_link_receipt(txn):
-	"""Submit the Receipt Payment Entry for a paid link, once: the row lock makes the webhook and
+def _make_receipt(txn):
+	"""Submit the Receipt Payment Entry for a paid link or receipt QR, once: the row lock makes the webhook and
 	the page's polling agree on who creates it. Runs as the link's creator, since the webhook
 	request is a Guest. A failure is logged and leaves the link Success without an entry."""
 	from ssplbilling.api.paymentv2_api import _build_and_submit_payment_entry
@@ -588,7 +692,8 @@ def _make_link_receipt(txn):
 				or "Cash",
 				"reference_no": txn.rrn or txn.paytm_txn_id or txn.order_id,
 				"reference_date": frappe.utils.today(),
-				"remarks": f"Paytm payment link {txn.order_id}: {txn.link_description or ''}".strip(),
+				"remarks": f"Paytm {'payment link' if txn.channel == 'Link' else 'UPI QR'} {txn.order_id}: "
+				f"{txn.link_description or ''}".strip(),
 			}
 		)
 		txn.payment_entry = pe_name
@@ -701,8 +806,8 @@ def payment_webhook():
 
 	# Cancelled rows are re-checked too: the customer can still pay on the machine after
 	# the cashier stopped waiting, and that payment must not be silently dropped.
-	# A link the customer failed to pay can still be retried and paid on the same order.
-	if txn.status in ("Pending", "Cancelled") or (txn.channel == "Link" and txn.status == "Failed"):
+	# A receipt the customer failed to pay can still be retried and paid on the same order.
+	if txn.status in ("Pending", "Cancelled") or (_is_receipt(txn) and txn.status == "Failed"):
 		was_cancelled = txn.status == "Cancelled"
 		_refresh_from_paytm(txn)
 		if was_cancelled and txn.status == "Success":
@@ -801,8 +906,8 @@ def _update_txn(txn, status, response, message=None):
 	txn.response = json.dumps(response, indent=1, default=str)
 	if message:
 		txn.result_message = message
-	if status == "Success" and txn.channel == "Link" and not txn.payment_entry:
-		_make_link_receipt(txn)
+	if status == "Success" and _is_receipt(txn) and not txn.payment_entry:
+		_make_receipt(txn)
 	txn.save(ignore_permissions=True)
 	if was_open and status in ("Success", "Failed"):
 		frappe.publish_realtime(
@@ -825,4 +930,5 @@ def _txn_result(txn):
 		"customer": txn.customer,
 		"short_url": txn.short_url,
 		"payment_entry": txn.payment_entry,
+		"expires_in": _qr_expires_in(txn.channel, txn.status, txn.creation),
 	}

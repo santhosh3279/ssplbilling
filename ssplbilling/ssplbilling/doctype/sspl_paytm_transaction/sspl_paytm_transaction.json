@@ -21,6 +21,7 @@
   "link_id",
   "short_url",
   "payment_entry",
+  "qr_data",
   "result_section",
   "pay_method",
   "paytm_txn_id",
@@ -103,8 +104,8 @@
   {
    "fieldname": "link_section",
    "fieldtype": "Section Break",
-   "label": "Payment Link",
-   "depends_on": "eval:doc.channel=='Link'"
+   "label": "Customer Receipt",
+   "depends_on": "customer"
   },
   {
    "fieldname": "customer",
@@ -150,6 +151,13 @@
    "label": "Payment Entry",
    "options": "Payment Entry",
    "read_only": 1
+  },
+  {
+   "fieldname": "qr_data",
+   "fieldtype": "Small Text",
+   "label": "QR Data",
+   "read_only": 1,
+   "description": "UPI string of a receipt QR, to show the QR again"
   },
   {
    "fieldname": "result_section",
@@ -205,7 +213,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-23 00:00:00",
+ "modified": "2026-10-23 12:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Paytm Transaction",
