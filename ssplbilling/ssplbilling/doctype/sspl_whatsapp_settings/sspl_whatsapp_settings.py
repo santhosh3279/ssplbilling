@@ -17,7 +17,7 @@ class SSPLWhatsAppSettings(Document):
 
 	def validate_sessions(self):
 		before = self.get_doc_before_save()
-		old_names = {row.name: row.session_name for row in (before.sessions if before else [])}
+		old_rows = {row.name: row for row in (before.sessions if before else [])}
 		names, users = set(), set()
 
 		for row in self.sessions:
@@ -37,6 +37,8 @@ class SSPLWhatsAppSettings(Document):
 				frappe.throw(_("Row {0}: {1} already has a session").format(row.idx, user or _("Shared")))
 			users.add(user)
 
-			if row.name in old_names and old_names[row.name] != row.session_name:
-				# A different name is a different WhatsApp link on the gateway
+			old = old_rows.get(row.name)
+			# A different name is a different WhatsApp link on the gateway. The form refills the row
+			# from the gateway when a name is picked; a row it did not refill keeps no stale link.
+			if old and old.session_name != row.session_name and old.session_id == row.session_id:
 				row.session_id = row.status = row.phone = row.push_name = ""

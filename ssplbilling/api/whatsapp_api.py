@@ -301,6 +301,24 @@ def list_gateway_sessions():
 	)
 
 
+@frappe.whitelist()
+def get_gateway_session(session_name):
+	"""A gateway session's id, status, number and profile, to fill a row picked in the settings form."""
+	_require_manager()
+
+	def run():
+		found = _call(_settings(), "GET", "/sessions", params={"name": session_name})
+		session = found[0] if found else {}
+		return {
+			"session_id": session.get("id") or "",
+			"status": session.get("status") or "",
+			"phone": session.get("phone") or "",
+			"push_name": session.get("pushName") or "",
+		}
+
+	return _guarded(run)
+
+
 @frappe.whitelist(methods=["POST"])
 def refresh_sessions():
 	"""Mirror every row's session from the gateway, for the settings form."""

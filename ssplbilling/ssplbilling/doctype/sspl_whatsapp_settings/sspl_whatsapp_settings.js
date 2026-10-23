@@ -21,6 +21,31 @@ frappe.ui.form.on("SSPL WhatsApp Settings", {
 	},
 });
 
+frappe.ui.form.on("SSPL WhatsApp Session", {
+	session_name(frm, cdt, cdn) {
+		fill_session_row(frm, cdt, cdn);
+	},
+});
+
+// Picking a session fills its read-only details from the gateway, so the row shows what it links
+function fill_session_row(frm, cdt, cdn) {
+	const name = locals[cdt][cdn].session_name;
+	const clear = { session_id: "", status: "", phone: "", push_name: "" };
+	if (!name) {
+		frappe.model.set_value(cdt, cdn, clear);
+		return;
+	}
+	frappe.call({
+		method: "ssplbilling.api.whatsapp_api.get_gateway_session",
+		args: { session_name: name },
+		callback(r) {
+			// A slower reply for a name since changed again must not overwrite the newer one
+			if (locals[cdt][cdn]?.session_name !== name) return;
+			frappe.model.set_value(cdt, cdn, { ...clear, ...(r.message || {}) });
+		},
+	});
+}
+
 // Session Name offers the gateway's sessions; the rows' own names stay listed so a session
 // missing from the gateway still shows instead of turning blank
 function load_session_names(frm) {
