@@ -142,13 +142,18 @@ def _session_row(settings, user=None):
 	)
 
 
-def _linked_row(settings, message=None):
-	"""The current user's session row, which must already be linked on the gateway."""
+def _linked_row(settings, message=None, session_id=None):
+	"""The current user's session row, which must already be linked on the gateway.
+
+	`session_id` is the one the browser stored at login (see get_my_session). It is only trusted
+	when it is still this user's session, so a browser can never send through someone else's."""
 	row = _session_row(settings)
 	if not row or not row.session_id:
 		frappe.throw(
 			message or _("No WhatsApp session is linked for you. Open the WhatsApp Link page first.")
 		)
+	if session_id and session_id != row.session_id:
+		frappe.throw(_("Your WhatsApp session has changed. Reload the page and try again."))
 	return row
 
 
@@ -422,11 +427,11 @@ def get_my_session():
 
 
 @frappe.whitelist()
-def get_gateway_state():
+def get_gateway_state(session_id=None):
 	"""Whether this user's bills can go out through OpenWA right now. Called by the print dialog."""
 	settings = _settings()
 	row = _session_row(settings)
-	if not row or not row.session_id:
+	if not row or not row.session_id or (session_id and session_id != row.session_id):
 		return {"ready": False}
 	try:
 		session = _call(settings, "GET", f"/sessions/{row.session_id}", timeout=STATE_TIMEOUT)
@@ -522,7 +527,7 @@ def send_test(session_name, phone, text):
 
 
 @frappe.whitelist(methods=["POST"])
-def send_document(doctype, document_name, pdf_base64, filename, caption=""):
+def send_document(doctype, document_name, pdf_base64, filename, caption="", session_id=None):
 	"""Send a bill PDF the print dialog already rendered to the party's WhatsApp.
 
 	The number is looked up here from the bill's party, never taken from the caller, so the
@@ -535,7 +540,7 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 	_require_desk_user()
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
 	settings = _settings()
-	row = _linked_row(settings)
+	row = _linked_row(settings, session_id=session_id)
 
 	party_doctype, party = get_party_link(doctype, document_name)
 	if not party:
@@ -639,7 +644,7 @@ def _party_whatsapp_enabled(party_doctype, party):
 
 
 @frappe.whitelist(methods=["POST"])
-def send_document_to_number(doctype, document_name, phone, pdf_base64, filename, caption=""):
+def send_document_to_number(doctype, document_name, phone, pdf_base64, filename, caption="", session_id=None):
 	"""Send a bill to a number the operator typed, for a customer whose WhatsApp is disabled.
 
 	The number is used for this one send only: it is not written to the customer, its contact or
@@ -649,7 +654,7 @@ def send_document_to_number(doctype, document_name, phone, pdf_base64, filename,
 	_require_desk_user()
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
 	settings = _settings()
-	row = _linked_row(settings)
+	row = _linked_row(settings, session_id=session_id)
 	party_doctype, party = get_party_link(doctype, document_name)
 	if not party or _party_whatsapp_enabled(party_doctype, party):
 		frappe.throw(_("This customer's WhatsApp is enabled; send to the saved number instead"))
@@ -708,7 +713,7 @@ def _set_contact_whatsapp(party_doctype, party, number):
 
 
 @frappe.whitelist(methods=["POST"])
-def save_party_whatsapp(doctype, document_name, phone):
+def save_party_whatsapp(doctype, document_name, phone, session_id=None):
 	"""Verify a number on WhatsApp and store it as the bill party's WhatsApp number."""
 	_require_desk_user()
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
@@ -721,7 +726,7 @@ def save_party_whatsapp(doctype, document_name, phone):
 	if not number or len(number) < 11:
 		frappe.throw(_("Enter a full mobile number"))
 	settings = _settings()
-	row = _linked_row(settings, _("No WhatsApp number is linked to check against"))
+	row = _linked_row(settings, _("No WhatsApp number is linked to check against"), session_id=session_id)
 	try:
 		exists = bool(_whatsapp_id(settings, row, number))
 	except OpenWAError as e:
@@ -851,10 +856,10 @@ def _require_chat_user():
 		frappe.throw(_("WhatsApp Chat is not enabled for you"), frappe.PermissionError)
 
 
-def _chat_settings():
+def _chat_settings(session_id=None):
 	"""The settings and the current user's linked session row the chat reads through."""
 	settings = _settings()
-	return settings, _linked_row(settings)
+	return settings, _linked_row(settings, session_id=session_id)
 
 
 def _chat_path(row, chat_id, suffix=""):
@@ -894,11 +899,11 @@ def _stored_message(m):
 
 
 @frappe.whitelist()
-def list_chats(limit=200):
+def list_chats(limit=200, session_id=None):
 	_require_chat_user()
 
 	def run():
-		settings, row = _chat_settings()
+		settings, row = _chat_settings(session_id)
 		chats = _call(
 			settings,
 			"GET",
@@ -948,13 +953,13 @@ def _apply_receipts(settings, row, chat_id, messages):
 
 
 @frappe.whitelist()
-def get_messages(chat_id, limit=50):
+def get_messages(chat_id, limit=50, session_id=None):
 	"""Newest `limit` messages of a chat, oldest first."""
 	_require_chat_user()
 	limit = min(frappe.utils.cint(limit) or 50, 100)
 
 	def run():
-		settings, row = _chat_settings()
+		settings, row = _chat_settings(session_id)
 		try:
 			history = _call(settings, "GET", _chat_path(row, chat_id, "/history"), params={"limit": limit})
 			messages = [_live_message(m) for m in history]
@@ -976,9 +981,9 @@ def get_messages(chat_id, limit=50):
 
 
 @frappe.whitelist(methods=["POST"])
-def mark_chat_read(chat_id):
+def mark_chat_read(chat_id, session_id=None):
 	_require_chat_user()
-	settings, row = _chat_settings()
+	settings, row = _chat_settings(session_id)
 	try:
 		_call(settings, "POST", f"/sessions/{row.session_id}/chats/read", json={"chatId": chat_id})
 	except OpenWAError:
@@ -988,14 +993,16 @@ def mark_chat_read(chat_id):
 
 
 @frappe.whitelist()
-def resolve_chat(phone):
+def resolve_chat(phone, session_id=None):
 	"""Chat id for a new conversation with a number, or an error when it is not on WhatsApp."""
 	_require_chat_user()
-	return _guarded(lambda: dict(zip(("phone", "chat_id"), _chat_id(*_chat_settings(), phone), strict=True)))
+	return _guarded(
+		lambda: dict(zip(("phone", "chat_id"), _chat_id(*_chat_settings(session_id), phone), strict=True))
+	)
 
 
-def _chat_send(chat_id, message_type, route, body, content):
-	settings, row = _chat_settings()
+def _chat_send(chat_id, message_type, route, body, content, session_id=None):
+	settings, row = _chat_settings(session_id)
 	phone = chat_id.split("@")[0]
 	try:
 		result = _call(settings, "POST", f"/sessions/{row.session_id}/messages/{route}", json=body)
@@ -1008,16 +1015,18 @@ def _chat_send(chat_id, message_type, route, body, content):
 
 
 @frappe.whitelist(methods=["POST"])
-def send_chat_message(chat_id, text):
+def send_chat_message(chat_id, text, session_id=None):
 	_require_chat_user()
 	text = (text or "").strip()
 	if not text:
 		frappe.throw(_("Type a message"))
-	return _chat_send(chat_id, "Text", "send-text", {"chatId": chat_id, "text": text[:4096]}, text)
+	return _chat_send(
+		chat_id, "Text", "send-text", {"chatId": chat_id, "text": text[:4096]}, text, session_id
+	)
 
 
 @frappe.whitelist(methods=["POST"])
-def send_chat_file(chat_id, file_base64, mimetype, filename, caption=""):
+def send_chat_file(chat_id, file_base64, mimetype, filename, caption="", session_id=None):
 	_require_chat_user()
 	is_image = mimetype in IMAGE_MIMETYPES
 	body = {
@@ -1033,6 +1042,7 @@ def send_chat_file(chat_id, file_base64, mimetype, filename, caption=""):
 		"send-image" if is_image else "send-document",
 		body,
 		caption or filename,
+		session_id,
 	)
 
 
@@ -1089,7 +1099,7 @@ def _live_media(settings, row, chat_id, message_id, depth):
 
 
 @frappe.whitelist()
-def get_chat_media(chat_id, message_id, depth=0):
+def get_chat_media(chat_id, message_id, depth=0, session_id=None):
 	"""A message's attachment as {mimetype, filename, data (base64)}.
 
 	`depth` is the message's position counted from the newest in the open thread (1 = newest).
@@ -1097,7 +1107,7 @@ def get_chat_media(chat_id, message_id, depth=0):
 	_require_chat_user()
 
 	def run():
-		settings, row = _chat_settings()
+		settings, row = _chat_settings(session_id)
 		media = _stored_media(settings, row, chat_id, message_id) or _live_media(
 			settings, row, chat_id, message_id, frappe.utils.cint(depth)
 		)

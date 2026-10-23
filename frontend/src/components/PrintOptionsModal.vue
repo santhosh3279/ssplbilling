@@ -159,6 +159,7 @@
 import { serverNow } from '../services/serverTime'
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
+import { getWhatsAppSessionId } from '../session.js'
 import { useSubwindow } from '../services/shortcutManager'
 import { getCachedPrintLists, refreshPrintCache, loadPrintLists } from '../services/printCache'
 import { hasWhatsAppBridge, openWhatsAppTab } from '../services/whatsappBridge'
@@ -403,7 +404,7 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   hasExtension.value = hasWhatsAppBridge()
   loadSettings()
-  frappeGet('ssplbilling.api.whatsapp_api.get_gateway_state')
+  frappeGet('ssplbilling.api.whatsapp_api.get_gateway_state', { session_id: getWhatsAppSessionId() })
     .then((r) => { gatewayReady.value = !!r?.ready })
     .catch(() => { gatewayReady.value = false })
 })
@@ -822,6 +823,7 @@ function sendBillViaGateway(bill) {
     pdf_base64: bill.pdf,
     filename: bill.billName,
     caption: bill.caption,
+    session_id: getWhatsAppSessionId(),
   }, { silent: true })
 }
 
@@ -849,6 +851,7 @@ async function submitNumber() {
         pdf_base64: prompt.bill.pdf,
         filename: prompt.bill.billName,
         caption: prompt.bill.caption,
+        session_id: getWhatsAppSessionId(),
       }, { silent: true })
       numberPrompt.value = null
       success.value = `Sent "${prompt.bill.billName}" to +${sent.phone} via OpenWA (number not saved)`
@@ -865,6 +868,7 @@ async function submitNumber() {
       doctype: props.doctype,
       document_name: props.invoiceName,
       phone: promptNumber.value,
+      session_id: getWhatsAppSessionId(),
     }, { silent: true })
     const sent = await sendBillViaGateway(prompt.bill)
     if (sent.needs_number) {

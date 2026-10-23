@@ -38,6 +38,17 @@ export async function refreshTilePermissions(targetUser) {
 // The WhatsApp session this login sends through, kept so pages can read it without asking the server
 export const WHATSAPP_SESSION_KEY = 'wb-whatsapp-session'
 
+// The stored session id, sent with every bill and chat call; the server checks it is still this
+// user's. Empty when nothing is stored for the logged-in user, which lets the server pick.
+export function getWhatsAppSessionId() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(WHATSAPP_SESSION_KEY) || 'null')
+    return stored && stored.user === user.value ? stored.session_id || '' : ''
+  } catch {
+    return ''
+  }
+}
+
 async function refreshWhatsAppSession() {
   try {
     const res = await frappeGet('ssplbilling.api.whatsapp_api.get_my_session')

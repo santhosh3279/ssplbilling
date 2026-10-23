@@ -246,6 +246,7 @@
 import { ref, shallowReactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import { getWhatsAppSessionId } from '../session.js'
 
 const API = 'ssplbilling.api.whatsapp_api'
 const CHATS_POLL_MS = 15000
@@ -386,7 +387,7 @@ function clearMedia() {
 async function fetchMedia(m, i) {
   if (mediaCache.has(m.id)) return mediaCache.get(m.id)
   const chatId = active.value.id
-  const qs = new URLSearchParams({ chat_id: chatId, message_id: m.id, depth: String(messages.value.length - i) })
+  const qs = new URLSearchParams({ chat_id: chatId, message_id: m.id, depth: String(messages.value.length - i), session_id: getWhatsAppSessionId() })
   const res = await fetch(`/api/method/${API}.get_chat_media?${qs}`)
   const json = await res.json().catch(() => ({}))
   if (!res.ok || json.exc) {
@@ -515,7 +516,7 @@ async function scrollToBottom() {
 async function loadChats() {
   loadingChats.value = true
   try {
-    chats.value = await frappeGet(`${API}.list_chats`)
+    chats.value = await frappeGet(`${API}.list_chats`, { session_id: getWhatsAppSessionId() })
     error.value = ''
   } catch (e) {
     error.value = e.message || String(e)
@@ -530,7 +531,7 @@ async function loadThread({ scroll = false } = {}) {
   const stick = scroll || nearBottom()
   loadingThread.value = true
   try {
-    const list = await frappeGet(`${API}.get_messages`, { chat_id: active.value.id, limit: 80 })
+    const list = await frappeGet(`${API}.get_messages`, { chat_id: active.value.id, limit: 80, session_id: getWhatsAppSessionId() })
     if (token !== threadToken) return
     messages.value = list
     if (stick) scrollToBottom()
@@ -562,7 +563,7 @@ async function openChat(chat) {
   composerEl.value?.focus()
   if (chat.unread) {
     chat.unread = 0
-    frappePost(`${API}.mark_chat_read`, { chat_id: chat.id }, { silent: true }).catch(() => {})
+    frappePost(`${API}.mark_chat_read`, { chat_id: chat.id, session_id: getWhatsAppSessionId() }, { silent: true }).catch(() => {})
   }
 }
 
@@ -577,7 +578,7 @@ function closeChat() {
 async function startChat() {
   starting.value = true
   try {
-    const r = await frappeGet(`${API}.resolve_chat`, { phone: newNumber.value })
+    const r = await frappeGet(`${API}.resolve_chat`, { phone: newNumber.value, session_id: getWhatsAppSessionId() })
     const existing = chats.value.find((c) => c.id === r.chat_id)
     newNumber.value = ''
     error.value = ''
@@ -625,9 +626,10 @@ async function send() {
         mimetype: file.type || 'application/octet-stream',
         filename: file.name,
         caption: text,
+        session_id: getWhatsAppSessionId(),
       }, { silent: true })
     } else {
-      await frappePost(`${API}.send_chat_message`, { chat_id: chat.id, text }, { silent: true })
+      await frappePost(`${API}.send_chat_message`, { chat_id: chat.id, text, session_id: getWhatsAppSessionId() }, { silent: true })
     }
     draft.value = ''
     pendingFile.value = null
