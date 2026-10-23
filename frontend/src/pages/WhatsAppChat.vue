@@ -99,7 +99,7 @@
             </div>
           </div>
 
-          <div ref="threadEl" class="flex-1 overflow-y-auto px-4 py-3 space-y-1">
+          <div ref="threadEl" class="flex-1 overflow-y-auto px-4 py-3 space-y-1" @scroll="onThreadScroll">
             <div v-if="loadingThread && !messages.length" class="py-6 text-center text-sm text-[var(--color-text-muted)] animate-pulse">Loading messages…</div>
             <template v-for="(m, i) in messages" :key="m.id || i">
               <div v-if="dayLabel(m, messages[i - 1])" class="py-2 text-center">
@@ -109,14 +109,44 @@
               </div>
               <div class="flex" :class="m.from_me ? 'justify-end' : 'justify-start'">
                 <div
-                  class="max-w-[80%] rounded-xl px-3 py-1.5 text-sm shadow-sm"
-                  :class="m.from_me ? 'bg-[#25D366]/25' : 'bg-[var(--color-surface)]'"
+                  class="max-w-[80%] rounded-xl text-sm"
+                  :class="[
+                    m.type === 'sticker' ? '' : m.from_me ? 'bg-[#25D366]/25 shadow-sm' : 'bg-[var(--color-surface)] shadow-sm',
+                    INLINE_TYPES.has(m.type) ? 'p-1' : 'px-3 py-1.5',
+                  ]"
                 >
-                  <div v-if="active.is_group && !m.from_me && m.author" class="text-[11px] font-semibold text-[var(--color-info)]">
+                  <div
+                    v-if="active.is_group && !m.from_me && m.author"
+                    class="text-[11px] font-semibold text-[var(--color-info)]"
+                    :class="INLINE_TYPES.has(m.type) && 'px-2 pt-0.5'"
+                  >
                     {{ m.author.split('@')[0] }}
                   </div>
-                  <div v-if="mediaLabel(m)" class="text-xs font-semibold text-[var(--color-text-muted)]">{{ mediaLabel(m) }}</div>
-                  <div v-if="MEDIA_TYPES.has(m.type)" class="mt-1 flex gap-1.5">
+                  <template v-if="INLINE_TYPES.has(m.type)">
+                    <img
+                      v-if="mediaCache.get(m.id)"
+                      :src="mediaCache.get(m.id).url"
+                      :alt="m.body || m.type"
+                      class="block cursor-pointer rounded-lg"
+                      :class="m.type === 'sticker' ? 'h-32 w-32 object-contain' : 'max-h-80 min-w-[160px] max-w-full object-cover'"
+                      @load="onInlineLoad"
+                      @click="viewer = mediaCache.get(m.id)"
+                    />
+                    <button
+                      v-else
+                      v-lazy-media="m"
+                      type="button"
+                      class="flex max-w-full items-center justify-center rounded-lg bg-[var(--color-surface-raised)] px-3 text-center text-xs text-[var(--color-text-muted)]"
+                      :class="m.type === 'sticker' ? 'h-32 w-32' : 'h-48 w-64'"
+                      :disabled="!mediaFailed[m.id]"
+                      @click="retryInline(m)"
+                    >
+                      <span v-if="mediaFailed[m.id]">⚠ Could not load<br />Tap to retry</span>
+                      <span v-else class="animate-pulse">🖼 Loading…</span>
+                    </button>
+                  </template>
+                  <div v-else-if="mediaLabel(m)" class="text-xs font-semibold text-[var(--color-text-muted)]">{{ mediaLabel(m) }}</div>
+                  <div v-if="MEDIA_TYPES.has(m.type) && !INLINE_TYPES.has(m.type)" class="mt-1 flex gap-1.5">
                     <button
                       type="button"
                       class="rounded-md bg-[var(--color-surface-raised)] px-2 py-0.5 text-xs font-semibold hover:bg-[var(--color-info)]/20 disabled:opacity-50"
@@ -134,8 +164,8 @@
                       {{ mediaBusy[m.id] === 'download' ? 'Loading…' : '⬇ Download' }}
                     </button>
                   </div>
-                  <div v-if="m.body" class="whitespace-pre-wrap break-words">{{ m.body }}</div>
-                  <div class="mt-0.5 text-right text-[10px] text-[var(--color-text-muted)]">
+                  <div v-if="m.body" class="whitespace-pre-wrap break-words" :class="INLINE_TYPES.has(m.type) && 'px-2 pt-1'">{{ m.body }}</div>
+                  <div class="mt-0.5 text-right text-[10px] text-[var(--color-text-muted)]" :class="INLINE_TYPES.has(m.type) && 'px-1.5'">
                     {{ clock(m.timestamp) }}
                     <span
                       v-if="m.from_me && TICKS[m.status]"
@@ -206,7 +236,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, shallowReactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 
@@ -219,6 +249,10 @@ const MAX_FILE_BYTES = 16 * 1024 * 1024
 const TICKS = { pending: '🕓', sent: '✓', delivered: '✓✓', read: '✓✓', failed: '⚠' }
 // Message types that carry a downloadable attachment
 const MEDIA_TYPES = new Set(['image', 'video', 'audio', 'voice', 'ptt', 'document', 'sticker'])
+// Drawn inside the bubble as WhatsApp Web does; the rest stay behind Preview / Download
+const INLINE_TYPES = new Set(['image', 'sticker'])
+// Each fetch makes OpenWA pull chat history with media, so only a couple run at once
+const INLINE_CONCURRENCY = 2
 // Archived attachments come back without a type, so recognise the common ones by their first bytes
 const MAGIC = [
   ['%PDF', 'application/pdf'],
@@ -252,13 +286,22 @@ const viewer = ref(null)
 // message id -> 'preview' | 'download' while its attachment is being fetched
 const mediaBusy = ref({})
 // message id -> { url, mimetype, filename, kind }; object URLs are revoked when the chat closes
-const mediaCache = new Map()
+const mediaCache = shallowReactive(new Map())
+// message id -> true when an inline image could not be fetched
+const mediaFailed = ref({})
 
 let chatsTimer = null
 let threadTimer = null
 // A slow answer for a chat the operator has already left must not overwrite the open one
 let threadToken = 0
 let unmounted = false
+// Inline images load as they scroll into view
+let inlineQueue = []
+const inlineLoading = new Set()
+let inlineRunning = 0
+let lazyObserver = null
+// Whether the thread was at the bottom before an image grew it
+let pinnedToBottom = true
 
 const filteredChats = computed(() => {
   const q = search.value.trim().toLowerCase()
@@ -324,6 +367,9 @@ function previewKind(mimetype) {
 function clearMedia() {
   viewer.value = null
   mediaBusy.value = {}
+  mediaFailed.value = {}
+  inlineQueue = []
+  inlineLoading.clear()
   for (const f of mediaCache.values()) URL.revokeObjectURL(f.url)
   mediaCache.clear()
 }
@@ -382,6 +428,69 @@ function previewMedia(m, i) {
 
 function downloadMedia(m, i) {
   return withMedia(m, i, 'download', saveFile)
+}
+
+function queueInline(m) {
+  if (mediaCache.has(m.id) || mediaFailed.value[m.id] || inlineLoading.has(m.id)) return
+  inlineLoading.add(m.id)
+  inlineQueue.push(m)
+  pumpInline()
+}
+
+function pumpInline() {
+  while (inlineRunning < INLINE_CONCURRENCY && inlineQueue.length) {
+    const m = inlineQueue.shift()
+    const i = messages.value.findIndex((x) => x.id === m.id)
+    if (i < 0) {
+      inlineLoading.delete(m.id)
+      continue
+    }
+    const token = threadToken
+    inlineRunning++
+    fetchMedia(m, i)
+      .catch(() => {
+        if (token === threadToken) mediaFailed.value = { ...mediaFailed.value, [m.id]: true }
+      })
+      .finally(() => {
+        inlineRunning--
+        if (token === threadToken) inlineLoading.delete(m.id)
+        pumpInline()
+      })
+  }
+}
+
+function retryInline(m) {
+  const { [m.id]: _, ...rest } = mediaFailed.value
+  mediaFailed.value = rest
+  queueInline(m)
+}
+
+function onInlineLoad() {
+  if (pinnedToBottom) scrollToBottom()
+}
+
+function onThreadScroll() {
+  pinnedToBottom = nearBottom()
+}
+
+const vLazyMedia = {
+  mounted(el, { value }) {
+    lazyObserver ??= new IntersectionObserver((entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue
+        lazyObserver.unobserve(e.target)
+        queueInline(e.target._lazyMessage)
+      }
+    })
+    el._lazyMessage = value
+    lazyObserver.observe(el)
+  },
+  updated(el, { value }) {
+    el._lazyMessage = value
+  },
+  beforeUnmount(el) {
+    lazyObserver?.unobserve(el)
+  },
 }
 
 function nearBottom() {
@@ -553,6 +662,7 @@ onUnmounted(() => {
   threadToken++
   clearTimeout(chatsTimer)
   clearTimeout(threadTimer)
+  lazyObserver?.disconnect()
   clearMedia()
 })
 </script>
