@@ -58,6 +58,8 @@ LINK_EXPIRE_PATH = "/link/expire"
 
 CARD_PAY_METHODS = ("CARD", "CREDIT_CARD", "DEBIT_CARD", "EMI", "CC", "DC")
 PG_CHANNELS = ("QR", "Link")
+# The scheduler keeps asking Paytm about unpaid links this many days old
+LINK_REFRESH_DAYS = 15
 
 
 def _settings():
@@ -88,6 +90,15 @@ def _pg_key(settings):
 def _is_pg(txn):
 	"""QR and payment link orders live on Paytm PG; EDC orders on the card machine (ECR) API."""
 	return txn.channel in PG_CHANNELS
+
+
+def _require_desk_user():
+	"""Payment links expose customer phones and amounts; portal (catalogue) users get none of it."""
+	if (
+		frappe.session.user == "Guest"
+		or frappe.get_cached_value("User", frappe.session.user, "user_type") != "System User"
+	):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
 def _key_for(settings, txn):
@@ -399,6 +410,7 @@ def _qr_png(data):
 def create_payment_link(customer, amount, description=None, mobile=None, send_sms=0):
 	"""Create a fixed-amount Paytm payment link for a customer receipt; returns the link row.
 	The link carries our order id (linkOrderId) so status checks and the webhook find it."""
+	_require_desk_user()
 	settings = _settings()
 	amount = flt(amount, 2)
 	if amount <= 0:
@@ -471,6 +483,7 @@ def create_payment_link(customer, amount, description=None, mobile=None, send_sm
 @frappe.whitelist()
 def get_payment_links(limit=100, status=None):
 	"""Payment links, newest first, for the left panel of the Paytm link page."""
+	_require_desk_user()
 	filters = {"channel": "Link"}
 	if status:
 		filters["status"] = status
@@ -501,6 +514,7 @@ def get_payment_links(limit=100, status=None):
 @frappe.whitelist(methods=["POST"])
 def retry_link_receipt(order_id):
 	"""Create the Payment Entry for a paid link whose automatic receipt failed."""
+	_require_desk_user()
 	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
 	if txn.channel != "Link" or txn.status != "Success":
 		frappe.throw(_("Only a paid payment link can get a receipt"))
@@ -512,6 +526,26 @@ def retry_link_receipt(order_id):
 		txn.result_message = None
 		txn.save(ignore_permissions=True)
 	return _txn_result(txn)
+
+
+def refresh_pending_links():
+	"""Scheduler: re-read unpaid links from Paytm so a link paid after the page was closed (and
+	whose webhook was missed) still gets its receipt. One row failing never stops the rest."""
+	settings = frappe.get_cached_doc("SSPL Paytm Settings")
+	if not settings.enabled or not settings.merchant_id:
+		return
+	since = frappe.utils.add_days(now_datetime(), -LINK_REFRESH_DAYS)
+	for order_id in frappe.get_all(
+		"SSPL Paytm Transaction",
+		filters={"channel": "Link", "status": "Pending", "creation": (">=", since)},
+		pluck="name",
+	):
+		try:
+			_refresh_from_paytm(frappe.get_doc("SSPL Paytm Transaction", order_id))
+			frappe.db.commit()
+		except Exception:
+			frappe.db.rollback()
+			frappe.log_error(title="Paytm link refresh failed", message=frappe.get_traceback())
 
 
 def _expire_link(txn):
@@ -588,6 +622,7 @@ def get_status(order_id):
 def cancel(order_id):
 	"""Stop waiting on this order: clear the request off the card machine, then mark it Cancelled.
 	A payment that completed before the void is kept (status re-read after the void)."""
+	_require_desk_user()
 	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
 	if txn.status == "Pending":
 		_refresh_from_paytm(txn)
@@ -642,6 +677,8 @@ def payment_webhook():
 		# a link payment may be reported under Paytm's own order id; find it by the link
 		order_id = frappe.db.get_value("SSPL Paytm Transaction", {"link_id": link_id}, "name") or ""
 	if not order_id or not frappe.db.exists("SSPL Paytm Transaction", order_id):
+		# kept so a payload shape we do not recognise (e.g. a new link callback) can be traced
+		frappe.log_error(title="Paytm webhook unknown order", message=raw[:5000])
 		frappe.local.response["http_status_code"] = 404
 		return {"status": "unknown order"}
 
@@ -664,7 +701,8 @@ def payment_webhook():
 
 	# Cancelled rows are re-checked too: the customer can still pay on the machine after
 	# the cashier stopped waiting, and that payment must not be silently dropped.
-	if txn.status in ("Pending", "Cancelled"):
+	# A link the customer failed to pay can still be retried and paid on the same order.
+	if txn.status in ("Pending", "Cancelled") or (txn.channel == "Link" and txn.status == "Failed"):
 		was_cancelled = txn.status == "Cancelled"
 		_refresh_from_paytm(txn)
 		if was_cancelled and txn.status == "Success":

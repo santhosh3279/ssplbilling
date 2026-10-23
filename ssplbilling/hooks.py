@@ -360,7 +360,9 @@ scheduler_events = {
 		# Pull the eSSL attendance devices and create Employee Checkin / Attendance.
 		# Idempotent, so a missed or repeated tick costs nothing.
 		"*/10 * * * *": [
-			"ssplbilling.api.essl_attendance_api.run_auto_sync"
+			"ssplbilling.api.essl_attendance_api.run_auto_sync",
+			# Paytm payment links are often paid long after the page is closed
+			"ssplbilling.api.paytm_api.refresh_pending_links",
 		]
 	}
 }
