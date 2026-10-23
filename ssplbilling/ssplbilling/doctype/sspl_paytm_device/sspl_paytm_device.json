@@ -6,6 +6,7 @@
  "field_order": [
   "device_name",
   "tid",
+  "pos_id",
   "user",
   "enabled"
  ],
@@ -26,6 +27,12 @@
    "description": "Terminal ID printed on the card machine"
   },
   {
+   "fieldname": "pos_id",
+   "fieldtype": "Data",
+   "label": "POS ID",
+   "in_list_view": 1
+  },
+  {
    "fieldname": "user",
    "fieldtype": "Link",
    "label": "Cashier",
@@ -42,7 +49,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-19 00:00:00",
+ "modified": "2026-10-23 00:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Paytm Device",
