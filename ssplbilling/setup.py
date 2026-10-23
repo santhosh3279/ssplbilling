@@ -195,6 +195,7 @@ CUSTOM_FIELDS = {
 			"fieldtype": "Small Text",
 			"label": "Remarks",
 			"insert_after": "supplier_name",
+			"allow_on_submit": 1,
 		},
 		{
 			"fieldname": "custom_mirrored",

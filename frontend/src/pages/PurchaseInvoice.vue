@@ -229,10 +229,11 @@
             <label class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap">Remark</label>
             <input
               v-model="customRemarks"
-              :disabled="isReadOnly"
+              :disabled="isReadOnly && !isSubmitted"
               placeholder="Remark (F6)"
               class="border-b border-[var(--color-border)] px-1 py-0 text-4xl font-bold outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] bg-transparent text-[var(--color-text)] placeholder:text-[var(--color-text-muted)] w-80"
               @keydown.enter.prevent="supplierInvoiceNoRef?.focus()"
+              @keydown.esc="isSubmitted && revertSubmittedSupplierBill()"
             />
           </div>
 
@@ -1012,13 +1013,15 @@ const isReturn = ref(false)
 
 const supplierInvoiceNo = ref('')
 const supplierInvoiceDate = ref(serverToday())
-// Supplier bill no/date stored on the server; a submitted bill edits these via its Save button
+// Supplier bill no/date and remark stored on the server; a submitted bill edits these via its Save button
 const savedSupplierInvoiceNo = ref('')
 const savedSupplierInvoiceDate = ref('')
+const savedCustomRemarks = ref('')
 const savingSupplierBill = ref(false)
 const supplierBillChanged = computed(() =>
   supplierInvoiceNo.value.trim() !== savedSupplierInvoiceNo.value
   || supplierInvoiceDate.value !== savedSupplierInvoiceDate.value
+  || customRemarks.value.trim() !== savedCustomRemarks.value
 )
 
 function handleSupplierInvoiceDateChange(days) {
@@ -1347,6 +1350,7 @@ async function handleSelectSidebarItem(item) {
     supplierState.value = data.state || ''
 
     customRemarks.value = data.custom_remarks || ''
+    savedCustomRemarks.value = customRemarks.value
     customMirrored.value = data.custom_mirrored || ''
 
     if (data.price_list) priceList.value = data.price_list
@@ -1749,7 +1753,7 @@ function handlePageUp() {
   }
 }
 
-// A submitted bill only allows its supplier bill no and date to change
+// A submitted bill only allows its supplier bill no, date and remark to change
 async function saveSubmittedSupplierBill() {
   const billNo = supplierInvoiceNo.value.trim()
   if (!billNo) { alert('Supplier Invoice No is mandatory.'); return }
@@ -1761,11 +1765,14 @@ async function saveSubmittedSupplierBill() {
       invoice_name: invoiceNo.value,
       bill_no: billNo,
       bill_date: supplierInvoiceDate.value,
+      custom_remarks: customRemarks.value.trim(),
     }, { silent: true })
     savedSupplierInvoiceNo.value = res?.bill_no || billNo
     savedSupplierInvoiceDate.value = res?.bill_date || supplierInvoiceDate.value
     supplierInvoiceNo.value = savedSupplierInvoiceNo.value
     supplierInvoiceDate.value = savedSupplierInvoiceDate.value
+    savedCustomRemarks.value = res?.custom_remarks ?? customRemarks.value.trim()
+    customRemarks.value = savedCustomRemarks.value
     document.activeElement?.blur()
   } catch (e) {
     alert('Failed to update supplier bill details: ' + (e?.message || e))
@@ -1777,6 +1784,7 @@ async function saveSubmittedSupplierBill() {
 function revertSubmittedSupplierBill() {
   supplierInvoiceNo.value = savedSupplierInvoiceNo.value
   supplierInvoiceDate.value = savedSupplierInvoiceDate.value
+  customRemarks.value = savedCustomRemarks.value
   suppDateEntry.value = isoToDisplayDate(savedSupplierInvoiceDate.value)
 }
 

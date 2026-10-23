@@ -690,8 +690,8 @@ def update_purchase_invoice(data=None, **kwargs):
 
 
 @frappe.whitelist()
-def update_supplier_bill_no(invoice_name, bill_no, bill_date=None):
-    """Change the supplier bill no and date of a Purchase Invoice, including a submitted one."""
+def update_supplier_bill_no(invoice_name, bill_no, bill_date=None, custom_remarks=None):
+    """Change the supplier bill no, date and remarks of a Purchase Invoice, including a submitted one."""
     bill_no = (bill_no or "").strip()
     if not bill_no:
         frappe.throw("Supplier Invoice No is mandatory.")
@@ -701,23 +701,40 @@ def update_supplier_bill_no(invoice_name, bill_no, bill_date=None):
         frappe.throw("Cannot change the supplier bill details of a cancelled invoice.")
 
     bill_date = frappe.utils.getdate(bill_date) if bill_date else pi.bill_date
-    if pi.bill_no == bill_no and pi.bill_date == bill_date:
-        return {"invoice_name": pi.name, "bill_no": pi.bill_no, "bill_date": str(pi.bill_date or "")}
+    old_remarks = pi.get("custom_remarks") or ""
+    remarks = old_remarks if custom_remarks is None else custom_remarks.strip()
 
+    def result():
+        return {
+            "invoice_name": pi.name,
+            "bill_no": pi.bill_no,
+            "bill_date": str(pi.bill_date or ""),
+            "custom_remarks": pi.get("custom_remarks") or "",
+        }
+
+    if pi.bill_no == bill_no and pi.bill_date == bill_date and old_remarks == remarks:
+        return result()
+
+    bill_details_changed = pi.bill_no != bill_no or pi.bill_date != bill_date
     pi.bill_no = bill_no
     pi.bill_date = bill_date
+    pi.custom_remarks = remarks
     pi.validate_supplier_invoice()
     pi.save()
 
     # Keep the mirrored copy of this invoice on the same supplier bill details
     mirrored = pi.get("custom_mirrored")
-    if mirrored and frappe.db.exists("Purchase Invoice", {"name": mirrored, "docstatus": ["<", 2]}):
+    if (
+        bill_details_changed
+        and mirrored
+        and frappe.db.exists("Purchase Invoice", {"name": mirrored, "docstatus": ["<", 2]})
+    ):
         mirror = frappe.get_doc("Purchase Invoice", mirrored)
         mirror.bill_no = bill_no
         mirror.bill_date = bill_date
         mirror.save(ignore_permissions=True)
 
-    return {"invoice_name": pi.name, "bill_no": pi.bill_no, "bill_date": str(pi.bill_date or "")}
+    return result()
 
 
 @frappe.whitelist()
