@@ -269,10 +269,23 @@
                 ref="taxTemplateInput"
                 v-model="form.item_tax_template"
                 class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
-                @keydown.enter.prevent="rateInput?.focus()"
+                @keydown.enter.prevent="competitiveItemInput?.focus()"
               >
                 <option value=""></option>
                 <option v-for="t in taxTemplateOptions" :key="t.name" :value="t.name">{{ t.name }}</option>
+              </select>
+            </div>
+
+            <div class="space-y-[4px]">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Competitive Item</label>
+              <select
+                ref="competitiveItemInput"
+                v-model="form.custom_competitive_item"
+                class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all appearance-none"
+                @keydown.enter.prevent="rateInput?.focus()"
+              >
+                <option value=""></option>
+                <option v-for="c in competitiveItemOptions" :key="c.name" :value="c.name">{{ c.name }}</option>
               </select>
             </div>
           </div>
@@ -517,6 +530,7 @@ function _applyItemData(data, itemCode) {
   form.value.hsn_sac           = data.hsn_sac           || ''
   form.value.stock_uom         = data.stock_uom || 'Nos'
   form.value.item_tax_template = data.item_tax_template || ''
+  form.value.custom_competitive_item = data.custom_competitive_item || ''
   form.value.standard_rate     = data.standard_rate || 0
   form.value.safety_stock      = data.safety_stock      || 0
   form.value.suppliers         = (data.suppliers || []).map(s => {
@@ -570,6 +584,7 @@ const uomInput = ref(null)
 const rateInput = ref(null)
 const safetyStockInput = ref(null)
 const taxTemplateInput = ref(null)
+const competitiveItemInput = ref(null)
 
 const isSubmitting = ref(false)
 const isFetchingBarcode = ref(false)
@@ -591,6 +606,7 @@ const form = ref({
   standard_rate: 0,
   safety_stock: 0,
   item_tax_template: '',
+  custom_competitive_item: '',
   suppliers: [],
   uom_conversions: [],
   extra_barcodes: [],
@@ -757,6 +773,7 @@ const metadata = ref({
   uoms: [],
   tax_templates: [],
   hsn_codes: [],
+  competitive_items: [],
   naming_series: []
 })
 
@@ -775,6 +792,16 @@ const taxTemplateOptions = computed(() => {
   const list = metadata.value.tax_templates || []
   const current = form.value.item_tax_template
   if (current && !list.some(t => t.name === current)) {
+    return [...list, { name: current }]
+  }
+  return list
+})
+
+// Keep an edited item's competitive item selectable even if metadata has not loaded it
+const competitiveItemOptions = computed(() => {
+  const list = metadata.value.competitive_items || []
+  const current = form.value.custom_competitive_item
+  if (current && !list.some(c => c.name === current)) {
     return [...list, { name: current }]
   }
   return list
@@ -917,6 +944,7 @@ function resetForm(blank = false) {
     hsn_sac:           (retainTaxFields.value && cache.hsn_sac)           || '',
     stock_uom:         cache.stock_uom         || 'Nos',
     item_tax_template: (retainTaxFields.value && cache.item_tax_template) || '',
+    custom_competitive_item: '',
     standard_rate: 0,
     safety_stock: 0,
     suppliers:         cache.suppliers         || [],

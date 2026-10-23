@@ -47,6 +47,7 @@ def get_item_creation_metadata(company=None):
 		"uoms": frappe.get_all("UOM", fields=["name"]),
 		"tax_templates": frappe.get_all("Item Tax Template", filters=tax_filters, fields=["name"]),
 		"hsn_codes": frappe.get_all("GST HSN Code", fields=["name", "description"]),
+		"competitive_items": frappe.get_all("Competitive Item", fields=["name"], order_by="name asc"),
 		"naming_series": get_item_naming_series()
 	}
 
@@ -108,6 +109,8 @@ def create_item(data):
 	item.safety_stock = float(data.get("safety_stock") or 0)
 	if "custom_is_gst_item" in data:
 		item.custom_is_gst_item = 1 if frappe.utils.cint(data.get("custom_is_gst_item")) else 0
+	if "custom_competitive_item" in data:
+		item.custom_competitive_item = data.get("custom_competitive_item") or None
 	
 	if data.get("hsn_sac"):
 		item.gst_hsn_code = data.get("hsn_sac")
@@ -231,6 +234,7 @@ def get_item_for_edit(item_code):
 		"barcode": barcode,
 		"item_group": item.item_group or "",
 		"custom_is_gst_item": frappe.utils.cint(item.get("custom_is_gst_item")),
+		"custom_competitive_item": item.get("custom_competitive_item") or "",
 		"hsn_sac": item.gst_hsn_code or "",
 		"stock_uom": item.stock_uom or "Nos",
 		"standard_rate": float(standard_rate),
@@ -280,6 +284,8 @@ def update_item(data):
 	item.safety_stock = float(data.get("safety_stock") or 0)
 	if "custom_is_gst_item" in data:
 		item.custom_is_gst_item = 1 if frappe.utils.cint(data.get("custom_is_gst_item")) else 0
+	if "custom_competitive_item" in data:
+		item.custom_competitive_item = data.get("custom_competitive_item") or None
 	if data.get("hsn_sac"):
 		item.gst_hsn_code = data["hsn_sac"]
 	if "image" in data:

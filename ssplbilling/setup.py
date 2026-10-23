@@ -23,6 +23,13 @@ CUSTOM_FIELDS = {
 			"insert_after": "custom_max_stock",
 		},
 		{
+			"fieldname": "custom_competitive_item",
+			"label": "Competitive Item",
+			"fieldtype": "Link",
+			"options": "Competitive Item",
+			"insert_after": "custom_pricelist_percentages",
+		},
+		{
 			"fieldname": "custom_max_stock",
 			"label": "Max Stock",
 			"fieldtype": "Float",
