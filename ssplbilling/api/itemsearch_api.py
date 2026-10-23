@@ -121,7 +121,7 @@ def _build_items_detailed(search_type, price_list, warehouse, company, item_code
 		"Item",
 		filters=filters,
 		fields=["item_code", "item_name", "item_print_name", "item_group", "custom_is_gst_item",
-				"stock_uom as uom", "standard_rate as rate", "valuation_rate", "gst_hsn_code as hsn_sac", "safety_stock", "min_order_qty", "custom_max_stock", "custom_max_order_qty", "image"],
+				"stock_uom as uom", "standard_rate as rate", "valuation_rate", "gst_hsn_code as hsn_sac", "safety_stock", "min_order_qty", "custom_max_stock", "custom_max_order_qty", "custom_competitive_item", "image"],
 		limit=0,
 		order_by="item_name asc",
 	)
@@ -342,7 +342,7 @@ def _build_items_detailed(search_type, price_list, warehouse, company, item_code
 
 
 # Bump together with SYNC_SCHEMA in frontend/src/services/itemCache.js whenever the item row shape changes.
-ITEM_SYNC_SCHEMA = 1
+ITEM_SYNC_SCHEMA = 2
 # `modified` is stamped before commit, so a slow transaction can land behind the previous sync_ts.
 _SYNC_OVERLAP_SECONDS = 60
 _SYNC_MAX_DELTA = 3000
