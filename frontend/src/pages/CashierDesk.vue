@@ -966,6 +966,7 @@ import Warning from '../components/Warning.vue'
 import { canAccessTile, canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
+import { fireConfetti } from '../utils/confetti'
 import { serverToday, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
 /**
  * HELPER: getTodayIST
@@ -1776,6 +1777,7 @@ function applyPaytmResult(r) {
     lockPaytmPayment('upi', r.amount, r.reference_no)
   }
   p.message = `₹${fmt(r.amount)} received by ${r.mode === 'card' ? 'card' : 'UPI'} (Ref ${r.reference_no})`
+  fireConfetti()
   setTimeout(() => {
     if (paytm.value.orderId === r.order_id) closePaytmModal()
     nextTick(() => postButton.value?.focus())
@@ -1861,6 +1863,7 @@ function applyPaytmQrResult(r) {
   upiRefNo.value = r.reference_no
   lockPaytmPayment('upi', r.amount, r.reference_no)
   q.message = `₹${fmt(r.amount)} received by UPI (Ref ${r.reference_no})`
+  fireConfetti()
   setTimeout(() => {
     if (paytmQr.value.orderId === r.order_id) closePaytmQr()
     nextTick(() => postButton.value?.focus())
