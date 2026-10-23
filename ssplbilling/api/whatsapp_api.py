@@ -142,18 +142,38 @@ def _session_row(settings, user=None):
 	)
 
 
+# Same rule as dashboard_api.get_allowed_tiles: only these may work under another user's settings
+INHERIT_USERS = ("Administrator", "admin")
+
+
+def _inheritable_user(user=None):
+	"""`user` when the caller may take on that user's settings, else the caller."""
+	if user and frappe.session.user in INHERIT_USERS:
+		return user
+	return frappe.session.user
+
+
 def _linked_row(settings, message=None, session_id=None):
 	"""The current user's session row, which must already be linked on the gateway.
 
 	`session_id` is the one the browser stored at login (see get_my_session). It is only trusted
-	when it is still this user's session, so a browser can never send through someone else's."""
+	when it is still this user's session, so a browser can never send through someone else's.
+	Administrator may also use the session of the user whose settings it inherits."""
 	row = _session_row(settings)
+	if session_id and (not row or session_id != row.session_id):
+		inherited = frappe.session.user in INHERIT_USERS and next(
+			(r for r in settings.sessions if r.session_id == session_id), None
+		)
+		if not inherited:
+			frappe.throw(_("Your WhatsApp session has changed. Reload the page and try again."))
+		row = inherited
 	if not row or not row.session_id:
 		frappe.throw(
-			message or _("No WhatsApp session is linked for you. Open the WhatsApp Link page first.")
+			message
+			or _(
+				"No WhatsApp session is linked for you. Ask an administrator to assign one in SSPL WhatsApp Settings."
+			)
 		)
-	if session_id and session_id != row.session_id:
-		frappe.throw(_("Your WhatsApp session has changed. Reload the page and try again."))
 	return row
 
 
@@ -417,10 +437,11 @@ def logout(session_name):
 
 
 @frappe.whitelist()
-def get_my_session():
-	"""The session the logged-in user sends through: their own row, else the shared one."""
+def get_my_session(user=None):
+	"""The session the logged-in user sends through: their own row, else the shared one.
+	Administrator gets the session of `user`, the user whose settings it inherits."""
 	_require_desk_user()
-	row = _session_row(_settings())
+	row = _session_row(_settings(), _inheritable_user(user))
 	if not row:
 		return None
 	return {"session_name": row.session_name, "session_id": row.session_id or "", "shared": not row.user}
@@ -430,8 +451,9 @@ def get_my_session():
 def get_gateway_state(session_id=None):
 	"""Whether this user's bills can go out through OpenWA right now. Called by the print dialog."""
 	settings = _settings()
-	row = _session_row(settings)
-	if not row or not row.session_id or (session_id and session_id != row.session_id):
+	try:
+		row = _linked_row(settings, session_id=session_id)
+	except frappe.ValidationError:
 		return {"ready": False}
 	try:
 		session = _call(settings, "GET", f"/sessions/{row.session_id}", timeout=STATE_TIMEOUT)

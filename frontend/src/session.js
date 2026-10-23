@@ -49,9 +49,10 @@ export function getWhatsAppSessionId() {
   }
 }
 
-async function refreshWhatsAppSession() {
+// `targetUser` is the inherited settings user; only Administrator gets someone else's session
+async function refreshWhatsAppSession(targetUser) {
   try {
-    const res = await frappeGet('ssplbilling.api.whatsapp_api.get_my_session')
+    const res = await frappeGet('ssplbilling.api.whatsapp_api.get_my_session', { user: targetUser || '' })
     if (res) {
       localStorage.setItem(WHATSAPP_SESSION_KEY, JSON.stringify({ user: user.value, ...res }))
     } else {
@@ -121,7 +122,7 @@ async function init() {
       userInfoResource.fetch(),
       refreshCsrfToken(),
       refreshTilePermissions(effectiveUser),
-      refreshWhatsAppSession(),
+      refreshWhatsAppSession(effectiveUser),
     ])
   }
 }
