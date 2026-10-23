@@ -18,27 +18,27 @@
 
     <div class="flex flex-1 overflow-hidden">
       <!-- LEFT: payments Paytm reported for orders the system did not create -->
-      <aside class="flex w-[380px] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
+      <aside class="flex w-[456px] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
         <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Unknown Payments</span>
+            <span class="text-[1.05rem] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Unknown Payments</span>
             <button
               @click="loadRows"
-              class="rounded-md px-2 py-0.5 text-sm hover:bg-[var(--color-midlight)]"
+              class="rounded-md px-2 py-0.5 text-[1.05rem] hover:bg-[var(--color-midlight)]"
               :disabled="loading"
             >{{ loading ? 'Loading…' : '↻ Refresh' }}</button>
           </div>
           <input
             v-model="search"
             placeholder="Search ref / txn id / amount"
-            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
           />
           <div class="flex flex-wrap gap-1">
             <button
               v-for="s in statusFilters"
               :key="s"
               @click="statusFilter = s"
-              class="rounded-md px-2 py-0.5 text-xs font-bold uppercase"
+              class="rounded-md px-2 py-0.5 text-[0.9rem] font-bold uppercase"
               :class="statusFilter === s
                 ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]'
                 : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]'"
@@ -47,7 +47,7 @@
         </div>
 
         <div class="flex-1 overflow-y-auto custom-scrollbar">
-          <div v-if="!filteredRows.length" class="p-6 text-center text-sm text-[var(--color-text-muted)]">
+          <div v-if="!filteredRows.length" class="p-6 text-center text-[1.05rem] text-[var(--color-text-muted)]">
             {{ loading ? 'Loading…' : 'No unknown payments' }}
           </div>
           <div
@@ -61,28 +61,28 @@
           >
             <div class="flex items-center justify-between gap-2">
               <span class="flex min-w-0 items-center gap-1.5">
-                <span class="shrink-0 rounded border border-current px-1 text-[10px] font-bold uppercase opacity-75">{{ r.pay_method || 'Paytm' }}</span>
-                <span class="truncate font-mono text-sm">{{ r.rrn || r.paytm_txn_id }}</span>
+                <span class="shrink-0 rounded border border-current px-1 text-[12px] font-bold uppercase opacity-75">{{ r.pay_method || 'Paytm' }}</span>
+                <span class="truncate font-mono text-[1.05rem]">{{ r.rrn || r.paytm_txn_id }}</span>
               </span>
-              <span class="shrink-0 font-mono font-bold">₹{{ fmt(r.amount) }}</span>
+              <span class="shrink-0 font-mono text-[1.2rem] font-bold">₹{{ fmt(r.amount) }}</span>
             </div>
-            <div class="flex items-center justify-between gap-2 text-xs">
+            <div class="flex items-center justify-between gap-2 text-[0.9rem]">
               <span class="truncate opacity-75">{{ fmtDate(r.received_at) }} · {{ r.name }}</span>
               <span
                 class="shrink-0 rounded px-1.5 py-0.5 font-bold uppercase"
                 :class="r.verified ? 'bg-[var(--color-success)] text-white' : 'bg-[var(--color-danger)] text-white'"
               >{{ r.verified ? 'Verified' : 'Unverified' }}</span>
             </div>
-            <div v-if="r.status === 'Receipted'" class="text-xs opacity-75">Receipt {{ r.payment_entry }} · {{ r.party }}</div>
+            <div v-if="r.status === 'Receipted'" class="text-[0.9rem] opacity-75">Receipt {{ r.payment_entry }} · {{ r.party }}</div>
             <div v-else class="flex justify-end gap-2 pt-0.5">
               <button
                 @click.stop="removeRow(r)"
                 :disabled="busy"
-                class="rounded-md bg-[var(--color-danger)] px-3 py-1 text-xs font-bold uppercase text-white disabled:opacity-50"
+                class="rounded-md bg-[var(--color-danger)] px-3 py-1 text-[0.9rem] font-bold uppercase text-white disabled:opacity-50"
               >Delete</button>
               <button
                 @click.stop="openReceipt(r)"
-                class="rounded-md bg-[var(--color-success)] px-3 py-1 text-xs font-bold uppercase text-white"
+                class="rounded-md bg-[var(--color-success)] px-3 py-1 text-[0.9rem] font-bold uppercase text-white"
               >Create Receipt</button>
             </div>
           </div>
