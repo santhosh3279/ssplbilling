@@ -227,6 +227,12 @@
               />
             </label>
 
+            <div class="text-sm text-[var(--color-text-muted)]">
+              Posted on {{ (selected.txn_date || selected.received_at || '').slice(0, 10) }} (Paytm txn date)
+              · {{ defaultCompany || 'default company' }}
+              · Cost center {{ defaultCostCenter || '—' }}
+            </div>
+
             <div class="flex items-center justify-between gap-4">
               <span v-if="!selected.verified" class="text-sm font-bold text-[var(--color-danger)]">Not verified by Paytm: check the Paytm dashboard before receipting.</span>
               <span v-else></span>
@@ -284,6 +290,8 @@ const selected = ref(null)
 const busy = ref(false)
 const error = ref('')
 const upiAccount = ref('')
+const defaultCompany = localStorage.getItem('wb-company') || ''
+const defaultCostCenter = localStorage.getItem('wb-cost-center') || ''
 
 const receiptOpen = ref(false)
 const creating = ref(false)
@@ -413,6 +421,9 @@ async function createReceipt() {
       reference_no: form.reference_no.trim(),
       remarks: form.remarks,
       allow_unverified: allowUnverified,
+      // Same defaults the Payment / Receipt page books with
+      company: localStorage.getItem('wb-company') || null,
+      cost_center: localStorage.getItem('wb-cost-center') || null,
     }, { silent: true })
     Object.assign(r, res)
     receiptOpen.value = false

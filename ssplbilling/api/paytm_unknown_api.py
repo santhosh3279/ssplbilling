@@ -285,10 +285,22 @@ def delete_unknown_payment(name):
 
 
 @frappe.whitelist(methods=["POST"])
-def create_receipt(name, party_type, party, paid_to, reference_no=None, remarks=None, allow_unverified=0):
+def create_receipt(
+	name,
+	party_type,
+	party,
+	paid_to,
+	reference_no=None,
+	remarks=None,
+	allow_unverified=0,
+	company=None,
+	cost_center=None,
+):
 	"""Submit the Payment Entry for an unknown payment, once: the row lock stops a double click from
 	booking it twice. From an Account it is an Internal Transfer (both must be Bank / Cash, as on the
-	Payment / Receipt page); from a Customer / Supplier / Employee it is a Receive."""
+	Payment / Receipt page); from a Customer / Supplier / Employee it is a Receive. Company and cost
+	center are the operator's defaults, as on the Payment / Receipt page; the entry is posted on the
+	day Paytm took the money."""
 	from ssplbilling.api.paymentv2_api import _build_and_submit_payment_entry
 
 	_require_desk_user()
@@ -306,8 +318,15 @@ def create_receipt(name, party_type, party, paid_to, reference_no=None, remarks=
 	if party_type == "Account" and party == paid_to:
 		frappe.throw(_("From and To ledgers must differ"))
 
+	company = company or frappe.defaults.get_user_default("company") or frappe.defaults.get_global_default(
+		"company"
+	)
+	if cost_center and frappe.db.get_value("Cost Center", cost_center, "company") != company:
+		frappe.throw(_("Cost center {0} does not belong to {1}").format(cost_center, company))
+
 	doc = frappe.get_doc(DOCTYPE, name)
 	reference_no = (reference_no or "").strip() or doc.rrn or doc.paytm_txn_id or doc.name
+	posting_date = _txn_posting_date(doc)
 	is_transfer = party_type == "Account"
 	pe_name = _build_and_submit_payment_entry(
 		{
@@ -322,7 +341,10 @@ def create_receipt(name, party_type, party, paid_to, reference_no=None, remarks=
 			)
 			or "Cash",
 			"reference_no": reference_no,
-			"reference_date": frappe.utils.today(),
+			"posting_date": posting_date,
+			"reference_date": posting_date,
+			"company": company,
+			"cost_center": cost_center or None,
 			"remarks": (
 				f"Paytm {doc.pay_method or 'payment'} {doc.paytm_txn_id or doc.rrn} ({doc.name})"
 				+ (f": {remarks.strip()}" if remarks and remarks.strip() else "")
@@ -354,3 +376,15 @@ def create_receipt(name, party_type, party, paid_to, reference_no=None, remarks=
 		frappe.log_error(frappe.get_traceback(), "Automatic Entries: payment mirror failed")
 
 	return {k: doc.get(k) for k in LIST_FIELDS}
+
+
+def _txn_posting_date(doc):
+	"""The day Paytm took the money: its txn date ("2026-10-23 16:25:27", sometimes with ".0"),
+	else the day the payment reached us. Never later than today, which ERPNext would refuse."""
+	for value in (doc.txn_date, doc.received_at):
+		try:
+			if value:
+				return min(frappe.utils.getdate(str(value).replace("T", " ")[:10]), frappe.utils.getdate())
+		except Exception:
+			continue
+	return frappe.utils.getdate()
