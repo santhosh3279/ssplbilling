@@ -4,8 +4,6 @@
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
-  "enabled",
-  "column_break_enabled",
   "session_name",
   "gateway_section",
   "base_url",
@@ -20,17 +18,6 @@
   "last_checked"
  ],
  "fields": [
-  {
-   "fieldname": "enabled",
-   "fieldtype": "Check",
-   "label": "Send Bills via OpenWA",
-   "default": "0",
-   "description": "When the linked session is ready, the print dialog's WhatsApp button sends the bill PDF straight from the server instead of through WhatsApp Web"
-  },
-  {
-   "fieldname": "column_break_enabled",
-   "fieldtype": "Column Break"
-  },
   {
    "fieldname": "session_name",
    "fieldtype": "Data",
@@ -103,7 +90,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-23 00:00:00",
+ "modified": "2026-10-23 12:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL WhatsApp Settings",

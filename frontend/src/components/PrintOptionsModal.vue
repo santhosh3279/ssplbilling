@@ -191,7 +191,7 @@ const whatsapping    = ref(false)
 // offering an action that ends in "install the extension". Read on mount: the content script
 // stamps the page at document_start, long before this modal opens.
 const hasExtension   = ref(false)
-// OpenWA gateway linked and enabled: the bill goes out from the server, no WhatsApp tab needed.
+// OpenWA session linked and ready: the bill goes out from the server, no WhatsApp tab needed.
 // Asked on open, because the click handler must decide synchronously whether to open a tab.
 const gatewayReady   = ref(false)
 // Asks for a WhatsApp number when the party has none, or one WhatsApp does not recognise

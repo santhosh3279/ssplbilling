@@ -52,19 +52,6 @@
             <p class="mt-1 text-xs text-[var(--color-text-muted)]">Changing it links a different WhatsApp number.</p>
           </div>
 
-          <label
-            class="flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-colors"
-            :class="form.enabled ? 'bg-[var(--color-success)]/15' : 'bg-[var(--color-surface-raised)]'"
-          >
-            <input v-model="form.enabled" type="checkbox" class="mt-1 h-4 w-4 accent-[#25D366]" />
-            <span>
-              <span class="block text-sm font-bold">Send bills via OpenWA</span>
-              <span class="block text-xs text-[var(--color-text-muted)]">
-                While the session is ready, the print dialog's WhatsApp button sends the bill PDF from the server. Otherwise it falls back to WhatsApp Web.
-              </span>
-            </span>
-          </label>
-
           <div class="flex justify-end">
             <button
               @click="save"
@@ -191,7 +178,7 @@ const busy = ref('')
 const hasApiKey = ref(false)
 const message = ref('')
 const messageIsError = ref(false)
-const form = reactive({ base_url: '', session_name: '', enabled: false, api_key: '' })
+const form = reactive({ base_url: '', session_name: '', api_key: '' })
 const state = reactive({ status: '', phone: '', push_name: '', engine_loaded: false, qr: '', last_error: '', restriction: null })
 const test = reactive({ phone: '', text: 'Test message from SSPL Billing' })
 
@@ -265,7 +252,6 @@ async function save() {
     const s = await frappePost(`${API}.save_settings`, {
       base_url: form.base_url,
       session_name: form.session_name,
-      enabled: form.enabled ? 1 : 0,
       api_key: form.api_key || null,
     }, { silent: true })
     hasApiKey.value = !!s.has_api_key
@@ -315,7 +301,6 @@ onMounted(async () => {
     Object.assign(form, {
       base_url: s.base_url || '',
       session_name: s.session_name || '',
-      enabled: !!s.enabled,
       api_key: '',
     })
     hasApiKey.value = !!s.has_api_key

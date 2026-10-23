@@ -194,7 +194,6 @@ def get_settings():
 	_require_manager()
 	settings = _settings()
 	return {
-		"enabled": settings.enabled,
 		"base_url": settings.base_url,
 		"session_name": settings.session_name,
 		# The key itself never leaves the server
@@ -208,11 +207,10 @@ def get_settings():
 
 
 @frappe.whitelist(methods=["POST"])
-def save_settings(base_url, session_name, enabled=0, api_key=None):
+def save_settings(base_url, session_name, api_key=None):
 	_require_manager()
 	settings = _settings()
 	settings.base_url = base_url
-	settings.enabled = 1 if frappe.utils.cint(enabled) else 0
 	if session_name != settings.session_name:
 		# A different name is a different WhatsApp link on the gateway
 		settings.session_name = session_name
@@ -320,7 +318,7 @@ def logout():
 def get_gateway_state():
 	"""Whether bills can go out through OpenWA right now. Called by the print dialog for every user."""
 	settings = _settings()
-	if not settings.enabled or not settings.session_id:
+	if not settings.session_id:
 		return {"ready": False}
 	try:
 		session = _call(settings, "GET", f"/sessions/{settings.session_id}", timeout=STATE_TIMEOUT)
@@ -428,8 +426,8 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 	_require_desk_user()
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
 	settings = _settings()
-	if not settings.enabled:
-		frappe.throw(_("Sending bills via OpenWA is turned off"))
+	if not settings.session_id:
+		frappe.throw(_("No WhatsApp session is linked. Open the WhatsApp Link page first."))
 
 	party_doctype, party = get_party_link(doctype, document_name)
 	if not party:
@@ -542,8 +540,8 @@ def send_document_to_number(doctype, document_name, phone, pdf_base64, filename,
 	_require_desk_user()
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
 	settings = _settings()
-	if not settings.enabled:
-		frappe.throw(_("Sending bills via OpenWA is turned off"))
+	if not settings.session_id:
+		frappe.throw(_("No WhatsApp session is linked. Open the WhatsApp Link page first."))
 	party_doctype, party = get_party_link(doctype, document_name)
 	if not party or _party_whatsapp_enabled(party_doctype, party):
 		frappe.throw(_("This customer's WhatsApp is enabled; send to the saved number instead"))
