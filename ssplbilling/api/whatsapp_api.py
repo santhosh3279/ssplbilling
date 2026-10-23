@@ -523,6 +523,45 @@ def send_document(doctype, document_name, pdf_base64, filename, caption="", sess
 	return {**sent, "saved_from_mobile": from_mobile}
 
 
+@frappe.whitelist(methods=["POST"])
+def send_payment_request_link(order_id, session_id=None):
+	"""Send a pending Paytm payment request's link to the customer's WhatsApp as a text.
+
+	The number and link are read from the request row (paytm_api.send_payment_request), never taken
+	from the caller, so this can only message the number the request was made for."""
+	_require_desk_user()
+	from ssplbilling.api.paytm_api import PAYMENT_REQUEST_PREFIX
+
+	txn = frappe.db.get_value(
+		"SSPL Paytm Transaction",
+		order_id,
+		["order_id", "channel", "status", "customer", "customer_mobile", "amount", "short_url"],
+		as_dict=True,
+	)
+	if not txn or txn.channel != "Link" or not txn.order_id.startswith(PAYMENT_REQUEST_PREFIX):
+		frappe.throw(_("{0} is not a Paytm payment request").format(order_id))
+	if txn.status != "Pending" or not txn.short_url:
+		frappe.throw(_("Only a pending payment request with a link can be sent"))
+	if not txn.customer_mobile:
+		frappe.throw(_("The payment request has no mobile number"))
+
+	settings = _settings()
+	row = _linked_row(settings, session_id=session_id)
+	customer_name = frappe.db.get_value("Customer", txn.customer, "customer_name") or txn.customer
+	text = _(
+		"Dear {0}, please pay Rs. {1} to Sundaram and Sons using this Paytm link: {2}"
+	).format(customer_name, frappe.utils.fmt_money(txn.amount, precision=2), txn.short_url)
+	return _send(
+		txn.customer_mobile,
+		"Text",
+		"send-text",
+		{"text": text},
+		text,
+		reference=("SSPL Paytm Transaction", txn.order_id),
+		row=row,
+	)
+
+
 def _bill_body(pdf_base64, filename, caption):
 	try:
 		head = base64.b64decode(pdf_base64[:8], validate=True)

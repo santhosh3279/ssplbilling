@@ -203,6 +203,10 @@
                         <span v-else class="font-bold text-[var(--color-danger)]">Not created</span>
                       </dd>
                     </template>
+                    <template v-if="isRequest(selected) && waResult[selected.order_id]">
+                      <dt class="text-[var(--color-text-muted)]">WhatsApp</dt>
+                      <dd class="font-bold" :class="waResult[selected.order_id].ok ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ waResult[selected.order_id].text }}</dd>
+                    </template>
                     <template v-if="selected.result_message && selected.status !== 'Pending'">
                       <dt class="text-[var(--color-text-muted)]">Message</dt><dd>{{ selected.result_message }}</dd>
                     </template>
@@ -211,12 +215,12 @@
                   <div class="flex flex-wrap justify-end gap-2">
                     <template v-if="isRequest(selected) && selected.status === 'Pending' && selected.short_url">
                       <button @click="copyText(selected.short_url)" class="rounded-lg bg-[var(--color-info)] px-4 py-2 font-bold text-white">{{ copied ? 'Copied' : 'Copy Link' }}</button>
-                      <a
-                        :href="whatsappUrl(selected)"
-                        target="_blank"
-                        rel="noopener"
-                        class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white"
-                      >WhatsApp</a>
+                      <button
+                        @click="sendRequestWhatsApp(selected)"
+                        :disabled="waSending[selected.order_id]"
+                        title="Sends the payment link to the customer's WhatsApp through OpenWA"
+                        class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white disabled:opacity-50"
+                      >{{ waSending[selected.order_id] ? 'Sending…' : waResult[selected.order_id]?.ok ? 'Send Again on WhatsApp' : 'Send on WhatsApp' }}</button>
                     </template>
                     <template v-else-if="selected.status === 'Pending' && qrSecondsLeft(selected) > 0">
                       <button v-if="canShareFiles" @click="shareQr(selected)" class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white">Share QR</button>
@@ -286,7 +290,7 @@
                 <span v-if="!qrEnabled" class="font-bold text-[var(--color-danger)]">Dynamic QR is disabled in SSPL Paytm Settings</span>
                 <span v-else class="text-[var(--color-text-muted)]">Paytm keeps the QR payable for 10 minutes; once paid it cannot be paid again.</span>
                 <span class="text-[var(--color-text-muted)]">
-                  Send Request: Paytm sends the request to the WhatsApp / mobile number
+                  Send Request: Paytm payment link sent to the customer's WhatsApp
                   <template v-if="posId">from POS {{ posId }}<template v-if="tid"> · TID {{ tid }}</template></template>
                   <span v-else class="font-bold text-[var(--color-danger)]">— no POS ID assigned to you</span>
                 </span>
@@ -298,7 +302,7 @@
               <button
                 @click="createRequest"
                 :disabled="creating || !paytmEnabled || !posId"
-                :title="posId ? 'Paytm sends a payment request to the customer\'s phone (F8)' : 'Assign a card machine with a POS ID to this user in SSPL Paytm Settings'"
+                :title="posId ? 'Creates a Paytm payment request and sends its link to the customer\'s WhatsApp (F8)' : 'Assign a card machine with a POS ID to this user in SSPL Paytm Settings'"
                 class="rounded-2xl bg-[var(--color-info)] px-8 py-6 text-2xl font-black text-white shadow-xl transition-all hover:scale-[1.02] focus:scale-[1.02] focus:outline-none focus:ring-[10px] focus:ring-[var(--color-focus)] active:scale-95 disabled:opacity-40 disabled:grayscale disabled:hover:scale-100"
               >Send Request</button>
               <button
@@ -348,6 +352,7 @@ import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { serverToday } from '../services/serverTime'
+import { getWhatsAppSessionId } from '../session.js'
 
 const router = useRouter()
 const API = 'ssplbilling.api.paytm_api'
@@ -383,6 +388,9 @@ const descInput = ref(null)
 const mobileInput = ref(null)
 const generateBtn = ref(null)
 const copied = ref(false)
+// OpenWA send of a payment request's link, by order id
+const waSending = reactive({})
+const waResult = reactive({})
 
 // Operator's card machine (wb-posid / wb-tid, from SSPL Paytm Settings) sends the payment request
 const posId = localStorage.getItem('wb-posid') || ''
@@ -571,11 +579,29 @@ async function createRequest() {
     resetForm()
     await loadLinks()
     selected.value = links.value.find((l) => l.order_id === r.order_id) || null
+    if (selected.value) sendRequestWhatsApp(selected.value)
   } catch (e) {
     formError.value = e.message
     loadLinks() // the failed attempt is recorded too
   } finally {
     creating.value = false
+  }
+}
+
+// The request stands even when WhatsApp fails; the button on the entry retries the send
+async function sendRequestWhatsApp(l) {
+  if (waSending[l.order_id]) return
+  waSending[l.order_id] = true
+  try {
+    const sent = await frappePost('ssplbilling.api.whatsapp_api.send_payment_request_link', {
+      order_id: l.order_id,
+      session_id: getWhatsAppSessionId(),
+    }, { silent: true })
+    waResult[l.order_id] = { ok: true, text: `Link sent to +${sent.phone}` }
+  } catch (e) {
+    waResult[l.order_id] = { ok: false, text: `Not sent: ${e.message || e}` }
+  } finally {
+    waSending[l.order_id] = false
   }
 }
 
@@ -683,12 +709,6 @@ async function copyText(text) {
   }
   copied.value = true
   setTimeout(() => { copied.value = false }, 1500)
-}
-
-function whatsappUrl(l) {
-  const phone = String(l.customer_mobile).replace(/\D/g, '').slice(-10)
-  const text = `Dear ${l.customer}, please pay ₹${fmt(l.amount)} to Sundaram and Sons using this Paytm link: ${l.short_url}`
-  return `https://wa.me/91${phone}?text=${encodeURIComponent(text)}`
 }
 
 // wa.me cannot carry an image: save the QR, open the chat with the message, staff attach the image
