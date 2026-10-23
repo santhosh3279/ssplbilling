@@ -203,7 +203,7 @@
                         <span v-else class="font-bold text-[var(--color-danger)]">Not created</span>
                       </dd>
                     </template>
-                    <template v-if="isRequest(selected) && waResult[selected.order_id]">
+                    <template v-if="waResult[selected.order_id]">
                       <dt class="text-[var(--color-text-muted)]">WhatsApp</dt>
                       <dd class="font-bold" :class="waResult[selected.order_id].ok ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ waResult[selected.order_id].text }}</dd>
                     </template>
@@ -213,23 +213,18 @@
                   </dl>
 
                   <div class="flex flex-wrap justify-end gap-2">
-                    <template v-if="isRequest(selected) && selected.status === 'Pending' && selected.short_url">
-                      <button @click="copyText(selected.short_url)" class="rounded-lg bg-[var(--color-info)] px-4 py-2 font-bold text-white">{{ copied ? 'Copied' : 'Copy Link' }}</button>
-                      <button
-                        @click="sendRequestWhatsApp(selected)"
-                        :disabled="waSending[selected.order_id]"
-                        title="Sends the payment link to the customer's WhatsApp through OpenWA"
-                        class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white disabled:opacity-50"
-                      >{{ waSending[selected.order_id] ? 'Sending…' : waResult[selected.order_id]?.ok ? 'Send Again on WhatsApp' : 'Send on WhatsApp' }}</button>
-                    </template>
-                    <template v-else-if="selected.status === 'Pending' && qrSecondsLeft(selected) > 0">
-                      <button v-if="canShareFiles" @click="shareQr(selected)" class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white">Share QR</button>
+                    <template v-if="payLinkLive(selected)">
+                      <button @click="copyText(payUrl(selected))" class="rounded-lg bg-[var(--color-info)] px-4 py-2 font-bold text-white">{{ copied ? 'Copied' : 'Copy Link' }}</button>
                       <button
                         v-if="selected.customer_mobile"
-                        @click="whatsappQr(selected)"
-                        title="Downloads the QR and opens WhatsApp; attach the downloaded image"
-                        class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white"
-                      >WhatsApp</button>
+                        @click="sendPayLink(selected)"
+                        :disabled="waSending[selected.order_id]"
+                        title="Sends the pay link to the customer's WhatsApp through OpenWA"
+                        class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white disabled:opacity-50"
+                      >{{ waSending[selected.order_id] ? 'Sending…' : waResult[selected.order_id]?.ok ? 'Send Link Again' : 'Send Link on WhatsApp' }}</button>
+                    </template>
+                    <template v-if="selected.channel === 'QR' && selected.status === 'Pending' && qrSecondsLeft(selected) > 0">
+                      <button v-if="canShareFiles" @click="shareQr(selected)" class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white">Share QR</button>
                       <button @click="downloadQr(selected)" class="rounded-lg border border-[var(--color-border)] px-4 py-2 font-bold hover:bg-[var(--color-midlight)]">Download QR</button>
                     </template>
                     <button
@@ -289,11 +284,7 @@
               <div class="flex min-w-0 flex-col gap-1 text-sm">
                 <span v-if="!qrEnabled" class="font-bold text-[var(--color-danger)]">Dynamic QR is disabled in SSPL Paytm Settings</span>
                 <span v-else class="text-[var(--color-text-muted)]">Paytm keeps the QR payable for 10 minutes; once paid it cannot be paid again.</span>
-                <span class="text-[var(--color-text-muted)]">
-                  Send Request: Paytm payment link sent to the customer's WhatsApp
-                  <template v-if="posId">from POS {{ posId }}<template v-if="tid"> · TID {{ tid }}</template></template>
-                  <span v-else class="font-bold text-[var(--color-danger)]">— no POS ID assigned to you</span>
-                </span>
+                <span class="text-[var(--color-text-muted)]">Send Request: makes the QR and sends its pay link to the customer's WhatsApp.</span>
                 <span v-if="formError" class="rounded-lg bg-[var(--color-danger)]/15 px-3 py-1.5 font-bold text-[var(--color-danger)]">{{ formError }}</span>
               </div>
             </div>
@@ -301,8 +292,8 @@
             <div class="flex items-center gap-4 border-l border-[var(--color-border)] pl-8">
               <button
                 @click="createRequest"
-                :disabled="creating || !paytmEnabled || !posId"
-                :title="posId ? 'Creates a Paytm payment request and sends its link to the customer\'s WhatsApp (F8)' : 'Assign a card machine with a POS ID to this user in SSPL Paytm Settings'"
+                :disabled="creating || !paytmEnabled || !qrEnabled"
+                title="Generates the QR and sends its pay link to the customer's WhatsApp (F8)"
                 class="rounded-2xl bg-[var(--color-info)] px-8 py-6 text-2xl font-black text-white shadow-xl transition-all hover:scale-[1.02] focus:scale-[1.02] focus:outline-none focus:ring-[10px] focus:ring-[var(--color-focus)] active:scale-95 disabled:opacity-40 disabled:grayscale disabled:hover:scale-100"
               >Send Request</button>
               <button
@@ -388,13 +379,9 @@ const descInput = ref(null)
 const mobileInput = ref(null)
 const generateBtn = ref(null)
 const copied = ref(false)
-// OpenWA send of a payment request's link, by order id
+// OpenWA send of a receipt's pay link, by order id
 const waSending = reactive({})
 const waResult = reactive({})
-
-// Operator's card machine (wb-posid / wb-tid, from SSPL Paytm Settings) sends the payment request
-const posId = localStorage.getItem('wb-posid') || ''
-const tid = localStorage.getItem('wb-tid') || ''
 
 const canShareFiles = typeof navigator !== 'undefined' && !!navigator.canShare
 
@@ -563,7 +550,7 @@ async function createEntry() {
   if (args) await createQr(args)
 }
 
-// Paytm sends the request to the customer's phone and returns its payment URL
+// Generate QR, then send its pay link (a public page with the QR and a UPI app button) on WhatsApp
 async function createRequest() {
   const args = formArgs()
   if (!args) return
@@ -571,29 +558,25 @@ async function createRequest() {
     formError.value = 'Enter the 10-digit WhatsApp / mobile number'
     return mobileInput.value?.focus()
   }
-  creating.value = true
-  try {
-    const r = await frappePost(`${API}.send_payment_request`, {
-      ...args, ...accountArgs(), pos_id: posId, tid,
-    }, { silent: true })
-    resetForm()
-    await loadLinks()
-    selected.value = links.value.find((l) => l.order_id === r.order_id) || null
-    if (selected.value) sendRequestWhatsApp(selected.value)
-  } catch (e) {
-    formError.value = e.message
-    loadLinks() // the failed attempt is recorded too
-  } finally {
-    creating.value = false
-  }
+  await createQr(args, { sendLink: true })
 }
 
-// The request stands even when WhatsApp fails; the button on the entry retries the send
-async function sendRequestWhatsApp(l) {
+// Receipt QRs carry a signed pay page (pay_url); old payment requests their Paytm link (short_url)
+function payUrl(l) {
+  return l.channel === 'QR' ? l.pay_url : l.short_url
+}
+
+function payLinkLive(l) {
+  if (l.status !== 'Pending' || !payUrl(l)) return false
+  return l.channel !== 'QR' || qrSecondsLeft(l) > 0
+}
+
+// The QR stands even when WhatsApp fails; the button on the entry retries the send
+async function sendPayLink(l) {
   if (waSending[l.order_id]) return
   waSending[l.order_id] = true
   try {
-    const sent = await frappePost('ssplbilling.api.whatsapp_api.send_payment_request_link', {
+    const sent = await frappePost('ssplbilling.api.whatsapp_api.send_receipt_pay_link', {
       order_id: l.order_id,
       session_id: getWhatsAppSessionId(),
     }, { silent: true })
@@ -605,7 +588,7 @@ async function sendRequestWhatsApp(l) {
   }
 }
 
-async function createQr(args) {
+async function createQr(args, { sendLink = false } = {}) {
   creating.value = true
   try {
     const r = await frappePost(`${API}.create_receipt_qr`, { ...args, ...accountArgs() }, { silent: true })
@@ -614,6 +597,7 @@ async function createQr(args) {
     resetForm()
     await loadLinks()
     selected.value = links.value.find((l) => l.order_id === r.order_id) || null
+    if (sendLink && selected.value) sendPayLink(selected.value)
   } catch (e) {
     formError.value = e.message
     loadLinks() // the failed attempt is recorded too
@@ -711,13 +695,6 @@ async function copyText(text) {
   setTimeout(() => { copied.value = false }, 1500)
 }
 
-// wa.me cannot carry an image: save the QR, open the chat with the message, staff attach the image
-function whatsappQr(l) {
-  downloadQr(l)
-  const phone = String(l.customer_mobile).replace(/\D/g, '').slice(-10)
-  window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(qrMessage(l))}`, '_blank', 'noopener')
-}
-
 // Socket event from the webhook is the primary signal; polling is the fallback:
 // the shown QR every few seconds, today's other pending entries less often
 let pollTimer = null
@@ -759,7 +736,7 @@ function onKeydown(e) {
   if (e.key === 'Escape') { e.preventDefault(); router.push('/') }
   else if (e.key === 'F2') { e.preventDefault(); openCustomerSearch() }
   else if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); createEntry() }
-  else if (e.key === 'F8') { e.preventDefault(); if (posId) createRequest() }
+  else if (e.key === 'F8') { e.preventDefault(); createRequest() }
 }
 
 onMounted(async () => {

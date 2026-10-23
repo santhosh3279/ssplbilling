@@ -524,33 +524,49 @@ def send_document(doctype, document_name, pdf_base64, filename, caption="", sess
 
 
 @frappe.whitelist(methods=["POST"])
-def send_payment_request_link(order_id, session_id=None):
-	"""Send a pending Paytm payment request's link to the customer's WhatsApp as a text.
+def send_receipt_pay_link(order_id, session_id=None):
+	"""Send a pending Paytm receipt's pay link to the customer's WhatsApp as a text: a receipt QR's
+	signed pay page (paytm_api.qr_pay_link) or a payment request's Paytm paymentUrl.
 
-	The number and link are read from the request row (paytm_api.send_payment_request), never taken
-	from the caller, so this can only message the number the request was made for."""
+	The number and link are read from the row, never taken from the caller, so this can only
+	message the number the receipt was made for."""
 	_require_desk_user()
-	from ssplbilling.api.paytm_api import PAYMENT_REQUEST_PREFIX
+	from ssplbilling.api.paytm_api import (
+		PAYMENT_REQUEST_PREFIX,
+		_qr_expires_in,
+		qr_pay_link,
+	)
 
 	txn = frappe.db.get_value(
 		"SSPL Paytm Transaction",
 		order_id,
-		["order_id", "channel", "status", "customer", "customer_mobile", "amount", "short_url"],
+		["order_id", "channel", "status", "customer", "sales_invoice", "customer_mobile", "amount", "short_url", "creation"],
 		as_dict=True,
 	)
-	if not txn or txn.channel != "Link" or not txn.order_id.startswith(PAYMENT_REQUEST_PREFIX):
-		frappe.throw(_("{0} is not a Paytm payment request").format(order_id))
-	if txn.status != "Pending" or not txn.short_url:
-		frappe.throw(_("Only a pending payment request with a link can be sent"))
+	is_qr = bool(txn) and txn.channel == "QR"
+	is_request = bool(txn) and txn.channel == "Link" and txn.order_id.startswith(PAYMENT_REQUEST_PREFIX)
+	if not txn or not txn.customer or txn.sales_invoice or not (is_qr or is_request):
+		frappe.throw(_("{0} is not a Paytm receipt QR or payment request").format(order_id))
+	if txn.status != "Pending" or (is_request and not txn.short_url):
+		frappe.throw(_("Only a pending receipt can be sent"))
+	minutes_left = _qr_expires_in("QR", txn.status, txn.creation) // 60 if is_qr else 0
+	if is_qr and minutes_left <= 0:
+		frappe.throw(_("This QR has expired; generate a new one"))
 	if not txn.customer_mobile:
-		frappe.throw(_("The payment request has no mobile number"))
+		frappe.throw(_("The receipt has no mobile number"))
 
 	settings = _settings()
 	row = _linked_row(settings, session_id=session_id)
 	customer_name = frappe.db.get_value("Customer", txn.customer, "customer_name") or txn.customer
-	text = _(
-		"Dear {0}, please pay Rs. {1} to Sundaram and Sons using this Paytm link: {2}"
-	).format(customer_name, frappe.utils.fmt_money(txn.amount, precision=2), txn.short_url)
+	amount = frappe.utils.fmt_money(txn.amount, precision=2)
+	if is_qr:
+		text = _(
+			"Dear {0}, please pay Rs. {1} to Sundaram and Sons using this link (valid for {2} minutes): {3}"
+		).format(customer_name, amount, max(1, minutes_left), qr_pay_link(txn.order_id))
+	else:
+		text = _("Dear {0}, please pay Rs. {1} to Sundaram and Sons using this Paytm link: {2}").format(
+			customer_name, amount, txn.short_url
+		)
 	return _send(
 		txn.customer_mobile,
 		"Text",

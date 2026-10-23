@@ -12,6 +12,8 @@ Customer receipts (no invoice) on the Paytm receipt page:
 - payment link (channel "Link"): create_payment_link() asks Paytm for a fixed-amount link bound to
   our order id (linkOrderId), so the same PG order status API and webhook confirm it;
 - receipt QR (channel "QR" with a customer): create_receipt_qr(), a dynamic QR valid for 10 minutes;
+- receipt QR pay link: qr_pay_link() is a signed public URL (qr_pay()) showing that QR with a
+  "Pay with UPI app" button, so the QR can be sent to the customer's WhatsApp as a link;
 - payment request (channel "Link", order id PRQ...): send_payment_request() has Paytm send a
   payment request for our order id (merchantOrderId) to the customer's phone from the operator's
   POS ID, and returns its payment URL; the same PG order status API and webhook confirm it.
@@ -20,9 +22,12 @@ receipt creates and submits its own Receipt Payment Entry against the customer (
 """
 
 import base64
+import hashlib
+import hmac
 import io
 import json
 import re
+from urllib.parse import urlsplit
 
 import frappe
 import requests
@@ -732,9 +737,88 @@ def get_payment_links(limit=100, status=None):
 		order_by="creation desc",
 		limit_page_length=frappe.utils.cint(limit) or 100,
 	)
+	settings = frappe.get_cached_doc("SSPL Paytm Settings")
 	for r in rows:
 		r.expires_in = _qr_expires_in(r.channel, r.status, r.pop("creation"))
+		r.pay_url = qr_pay_link(r.order_id, settings) if r.channel == "QR" else ""
 	return rows
+
+
+def _pay_token(order_id):
+	"""Signs a pay link so one cannot be made for another order id by guessing it."""
+	from frappe.utils.password import get_encryption_key
+
+	return hmac.new(get_encryption_key().encode(), order_id.encode(), hashlib.sha256).hexdigest()[:24]
+
+
+def _public_base_url(settings):
+	"""Customers open the pay link from outside the shop LAN: the Public Site URL setting, else the
+	host Paytm's webhook is configured on, rather than the site's (LAN) host_name."""
+	if settings.get("public_site_url"):
+		return settings.public_site_url.rstrip("/")
+	parts = urlsplit(settings.payment_notification_url or "")
+	if parts.scheme and parts.netloc:
+		return f"{parts.scheme}://{parts.netloc}"
+	return frappe.utils.get_url()
+
+
+def qr_pay_link(order_id, settings=None):
+	settings = settings or frappe.get_cached_doc("SSPL Paytm Settings")
+	return (
+		f"{_public_base_url(settings)}/api/method/ssplbilling.api.paytm_api.qr_pay"
+		f"?o={order_id}&t={_pay_token(order_id)}"
+	)
+
+
+@frappe.whitelist(allow_guest=True, methods=["GET"])
+def qr_pay(o=None, t=None):
+	"""Public page behind a receipt QR's pay link: the QR, and a button that opens the customer's
+	UPI app on the same UPI string (same order, so the webhook / status check confirm it)."""
+	order_id = str(o or "")
+	txn = None
+	if order_id and t and hmac.compare_digest(str(t), _pay_token(order_id)):
+		txn = frappe.db.get_value(
+			"SSPL Paytm Transaction",
+			order_id,
+			["order_id", "channel", "status", "amount", "customer", "sales_invoice", "qr_data", "creation"],
+			as_dict=True,
+		)
+	if not txn or txn.channel != "QR" or not txn.customer or txn.sales_invoice or not txn.qr_data:
+		txn = None
+
+	esc = frappe.utils.escape_html
+	amount = f"Rs. {frappe.utils.fmt_money(txn.amount, precision=2)}" if txn else ""
+	expires_in = _qr_expires_in("QR", txn.status, txn.creation) if txn else 0
+	if not txn:
+		body = "<h1>Link not valid</h1><p>Please ask Sundaram and Sons for a new payment link.</p>"
+	elif txn.status == "Success":
+		body = f"<h1>Paid</h1><p class=amt>{esc(amount)}</p><p>Thank you. Your payment has been received.</p>"
+	elif txn.status != "Pending" or expires_in <= 0:
+		body = "<h1>QR expired</h1><p>This payment QR is no longer valid. Please ask Sundaram and Sons for a new one.</p>"
+	else:
+		upi = esc(txn.qr_data)
+		body = f"""<p class=muted>Pay to</p><h1>Sundaram and Sons</h1>
+<p class=amt>{esc(amount)}</p>
+<a class=btn href="{upi}">Pay with UPI app</a>
+<img alt="UPI QR" src="data:image/png;base64,{_qr_png(txn.qr_data)}">
+<p class=muted>Or scan this QR with any UPI app. Valid for
+<b id=left data-s="{expires_in}">{expires_in // 60} min</b>.</p>
+<script>(function(){{var e=document.getElementById('left'),s=+e.dataset.s;setInterval(function(){{s=Math.max(0,s-1);
+e.textContent=s?Math.floor(s/60)+':'+String(s%60).padStart(2,'0'):'expired';}},1000);}})();</script>"""
+
+	html = f"""<!doctype html><html><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1"><title>Pay Sundaram and Sons</title>
+<style>body{{margin:0;font-family:system-ui,sans-serif;background:#f4f6f8;color:#1b1f24;text-align:center}}
+main{{max-width:420px;margin:0 auto;padding:32px 16px}}h1{{margin:4px 0 8px;font-size:24px}}
+.amt{{font-size:34px;font-weight:800;margin:8px 0 20px}}.muted{{color:#5f6b76;font-size:14px}}
+.btn{{display:block;background:#0b8a3e;color:#fff;text-decoration:none;font-weight:700;font-size:18px;
+padding:14px;border-radius:12px;margin:0 0 20px}}img{{width:240px;height:240px;background:#fff;padding:8px;border-radius:12px}}</style>
+</head><body><main>{body}</main></body></html>"""
+	frappe.response["type"] = "download"  # served by as_raw(); inline below keeps it a page
+	frappe.response["content_type"] = "text/html"
+	frappe.response["display_content_as"] = "inline"
+	frappe.response["filename"] = "pay.html"
+	frappe.response["filecontent"] = html
 
 
 @frappe.whitelist(methods=["POST"])
