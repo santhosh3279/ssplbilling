@@ -118,7 +118,13 @@
                   <div v-if="mediaLabel(m)" class="text-xs font-semibold text-[var(--color-text-muted)]">{{ mediaLabel(m) }}</div>
                   <div v-if="m.body" class="whitespace-pre-wrap break-words">{{ m.body }}</div>
                   <div class="mt-0.5 text-right text-[10px] text-[var(--color-text-muted)]">
-                    {{ clock(m.timestamp) }}<span v-if="m.from_me && m.status"> · {{ m.status }}</span>
+                    {{ clock(m.timestamp) }}
+                    <span
+                      v-if="m.from_me && TICKS[m.status]"
+                      class="ml-0.5 font-bold"
+                      :class="m.status === 'read' ? 'text-[#34B7F1]' : m.status === 'failed' ? 'text-[var(--color-danger)]' : ''"
+                      :title="m.status"
+                    >{{ TICKS[m.status] }}</span>
                   </div>
                 </div>
               </div>
@@ -167,6 +173,8 @@ const CHATS_POLL_MS = 15000
 const THREAD_POLL_MS = 5000
 // OpenWA's body limit is 25mb by default and base64 adds a third
 const MAX_FILE_BYTES = 16 * 1024 * 1024
+// WhatsApp's own marks: one tick sent, two delivered, two blue read
+const TICKS = { pending: '🕓', sent: '✓', delivered: '✓✓', read: '✓✓', failed: '⚠' }
 
 const router = useRouter()
 

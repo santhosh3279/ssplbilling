@@ -492,6 +492,30 @@ def list_chats(limit=200):
 	return _guarded(run)
 
 
+def _apply_receipts(settings, chat_id, messages):
+	"""Live history carries no ack, so take sent/delivered/read from the rows OpenWA stored.
+
+	Only messages the gateway has seen have a row: anything sent while it was linked, from ERPNext
+	or the phone. Older messages keep no receipt.
+	"""
+	if not any(m["from_me"] for m in messages):
+		return
+	try:
+		stored = _call(
+			settings,
+			"GET",
+			f"/sessions/{settings.session_id}/messages",
+			params={"chatId": chat_id, "direction": "outgoing", "limit": 100, "inlineMedia": "false"},
+		)
+	except OpenWAError:
+		# Receipts are a nicety; the thread still shows without them
+		return
+	status = {m.get("waMessageId"): m.get("status") for m in stored.get("messages") or []}
+	for m in messages:
+		if m["from_me"]:
+			m["status"] = status.get(m["id"], "")
+
+
 @frappe.whitelist()
 def get_messages(chat_id, limit=50):
 	"""Newest `limit` messages of a chat, oldest first."""
@@ -504,7 +528,9 @@ def get_messages(chat_id, limit=50):
 			history = _call(
 				settings, "GET", _chat_path(settings, chat_id, "/history"), params={"limit": limit}
 			)
-			return [_live_message(m) for m in history]
+			messages = [_live_message(m) for m in history]
+			_apply_receipts(settings, chat_id, messages)
+			return messages
 		except OpenWAError as e:
 			# Only whatsapp-web.js reads history live; Baileys answers 501, so use what OpenWA stored
 			if e.status_code != 501:
