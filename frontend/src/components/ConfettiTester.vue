@@ -25,6 +25,12 @@
         🎉 Test confetti
       </button>
       <button
+        class="rounded-lg bg-[var(--color-success)] px-3 py-1.5 text-white shadow active:scale-95"
+        @click="emit('mock-upi')"
+      >
+        Mock UPI
+      </button>
+      <button
         class="rounded-lg bg-[var(--color-surface-raised)] px-2.5 py-1.5 text-[var(--color-text)] shadow"
         @click="open = !open"
       >
@@ -38,6 +44,8 @@
 // Dev-only playground for tuning fireConfetti(); CashierDesk loads it only when import.meta.env.DEV
 import { ref, reactive, computed } from 'vue'
 import { fireConfetti } from '../utils/confetti'
+
+const emit = defineEmits(['mock-upi'])
 
 const DEFAULTS = { count: 160, duration: 2500, speed: 9, spread: 0.9, size: 6, gravity: 0.25, drag: 0.99 }
 const FIELDS = [

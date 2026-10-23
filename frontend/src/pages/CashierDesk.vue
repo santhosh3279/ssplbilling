@@ -944,7 +944,7 @@
       </div>
     </transition>
 
-    <component :is="ConfettiTester" v-if="ConfettiTester" />
+    <component :is="ConfettiTester" v-if="ConfettiTester" @mock-upi="mockPaytmQrSuccess" />
   </div>
 </template>
 
@@ -1874,6 +1874,16 @@ function applyPaytmQrResult(r) {
   }, 1500)
 }
 
+// Dev-only: walk the Paytm QR modal through Pending → Success without calling Paytm. The
+// MOCK- reference it locks in is refused by processPayment, so nothing real can be posted.
+function mockPaytmQrSuccess() {
+  const amount = Number(payments.value.upi) || selectedInvoice.value?.rounded_total || selectedInvoice.value?.grand_total || 100
+  const orderId = `MOCK-${Date.now()}`
+  stopPaytmQrPolling()
+  Object.assign(paytmQr.value, { show: true, amount, orderId, status: 'Pending', message: 'Waiting for the customer to scan and pay… (mock)', image: '', sending: false })
+  setTimeout(() => applyPaytmQrResult({ order_id: orderId, status: 'Success', amount, mode: 'upi', reference_no: orderId }), 2000)
+}
+
 async function closePaytmQr() {
   const q = paytmQr.value
   stopPaytmQrPolling()
@@ -1892,6 +1902,10 @@ async function closePaytmQr() {
 
 async function processPayment() {
   if (!canSubmit.value) return
+  if (import.meta.env.DEV && [upiRefNo.value, cardRefNo.value].some(r => String(r || '').startsWith('MOCK-'))) {
+    errorMsg.value = 'This bill has a mock Paytm payment; reload the page before posting.'
+    return
+  }
 
   isSubmitting.value = true
   errorMsg.value = ''
