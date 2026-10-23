@@ -84,8 +84,8 @@
             <!-- WhatsApp number prompt -->
             <form v-if="numberPrompt" class="space-y-2 rounded-lg bg-[#25D366]/15 p-3" @submit.prevent="submitNumber">
               <div class="text-xs font-semibold text-[var(--color-text)]">
-                {{ numberPrompt.reason === 'invalid' ? `+${numberPrompt.phone} is not on WhatsApp.` : 'No WhatsApp number on file for this party.' }}
-                Enter their WhatsApp number — it is checked and saved to the party.
+                {{ promptReason }}
+                Enter a new WhatsApp number — it is checked, saved to the {{ partyLabel }} and the bill is sent.
               </div>
               <div class="flex gap-2">
                 <input
@@ -100,7 +100,7 @@
                   :disabled="promptBusy || !promptNumber.trim()"
                   class="rounded-lg bg-[#25D366] px-3 py-2 text-xs font-bold text-black disabled:opacity-50"
                 >
-                  {{ promptBusy ? 'Checking…' : 'Verify & Send' }}
+                  {{ promptBusy ? 'Checking…' : 'Save & Send' }}
                 </button>
                 <button type="button" class="rounded-lg px-2 text-xs text-[var(--color-text-muted)]" @click="numberPrompt = null">Cancel</button>
               </div>
@@ -156,7 +156,7 @@
 
 <script setup>
 import { serverNow } from '../services/serverTime'
-import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 import { getCachedPrintLists, refreshPrintCache, loadPrintLists } from '../services/printCache'
@@ -198,6 +198,14 @@ const numberPrompt   = ref(null)
 const promptNumber   = ref('')
 const promptBusy     = ref(false)
 const promptInput    = ref(null)
+const promptReason   = computed(() => {
+  const p = numberPrompt.value
+  if (!p) return ''
+  if (p.reason === 'failed') return `Sending to +${p.phone} failed${p.error ? ` (${p.error})` : ''}.`
+  if (p.reason === 'invalid') return `+${p.phone} is not on WhatsApp.`
+  return 'No WhatsApp number on file.'
+})
+const partyLabel     = computed(() => (numberPrompt.value?.partyType || 'party').toLowerCase())
 const refreshing     = ref(false)
 const error          = ref('')
 const success        = ref('')
@@ -814,7 +822,7 @@ function sendBillViaGateway(bill) {
 }
 
 async function openNumberPrompt(state, bill) {
-  numberPrompt.value = { reason: state.reason, phone: state.phone, bill }
+  numberPrompt.value = { reason: state.reason, phone: state.phone, error: state.error || '', partyType: state.party_type, bill }
   promptNumber.value = ''
   await nextTick()
   promptInput.value?.focus()
@@ -835,7 +843,10 @@ async function submitNumber() {
     }, { silent: true })
     const sent = await sendBillViaGateway(prompt.bill)
     if (sent.needs_number) {
-      error.value = 'Number saved, but the bill still could not be sent — try again'
+      // The new number was saved but WhatsApp refused it on sending too: ask again
+      numberPrompt.value = { reason: sent.reason, phone: sent.phone, error: sent.error || '', partyType: sent.party_type, bill: prompt.bill }
+      promptNumber.value = ''
+      promptInput.value?.focus()
       return
     }
     numberPrompt.value = null

@@ -413,9 +413,10 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 	"""Send a bill PDF the print dialog already rendered to the party's WhatsApp.
 
 	The number is looked up here from the bill's party, never taken from the caller, so the
-	business number can only ever message the party a bill belongs to. A missing number, or one
-	with no WhatsApp account, comes back as `needs_number` instead of an error, so the dialog can
-	ask for one and store it on the party with save_party_whatsapp().
+	business number can only ever message the party a bill belongs to. A missing number, one with
+	no WhatsApp account, or one WhatsApp refused on sending comes back as `needs_number` instead of
+	an error, so the dialog can ask for a new one and store it on the party with
+	save_party_whatsapp().
 	"""
 	_require_desk_user()
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
@@ -428,7 +429,7 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 		frappe.throw(_("This document has no customer or supplier to send it to"))
 	number = normalize_whatsapp_number(get_party_whatsapp(party_doctype, party))
 	if not number:
-		return {"needs_number": True, "reason": "missing", "phone": ""}
+		return {"needs_number": True, "party_type": party_doctype, "reason": "missing", "phone": ""}
 
 	if _party_number_valid(party_doctype, party, number):
 		chat_id = f"{number}@c.us"
@@ -440,7 +441,7 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 		_record_party_status(party_doctype, party, number, VALID if chat_id else INVALID)
 		if not chat_id:
 			# Kept although the request returns normally: Frappe commits POSTs
-			return {"needs_number": True, "reason": "invalid", "phone": number}
+			return {"needs_number": True, "party_type": party_doctype, "reason": "invalid", "phone": number}
 
 	try:
 		head = base64.b64decode(pdf_base64[:8], validate=True)
@@ -456,22 +457,39 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 		"caption": (caption or "")[:1024],
 	}
 
+	number_failure = {}
+
 	def on_failure(error):
 		# A send refused over the recipient is the one thing that makes a Valid number worth
 		# checking again; a gateway outage says nothing about the number, so it stays as it was
 		if _is_number_failure(error):
 			_record_party_status(party_doctype, party, number, NOT_CHECKED)
+			number_failure["error"] = str(error)
 
-	return _send(
-		number,
-		"Document",
-		"send-document",
-		body,
-		caption,
-		reference=(doctype, document_name),
-		chat_id=chat_id,
-		on_failure=on_failure,
-	)
+	try:
+		return _send(
+			number,
+			"Document",
+			"send-document",
+			body,
+			caption,
+			reference=(doctype, document_name),
+			chat_id=chat_id,
+			on_failure=on_failure,
+		)
+	except frappe.ValidationError:
+		if not number_failure:
+			raise
+		# The number itself was refused: let the dialog ask for a new one instead of erroring.
+		# The failure is already logged and committed by _send.
+		frappe.clear_messages()
+		return {
+			"needs_number": True,
+			"party_type": party_doctype,
+			"reason": "failed",
+			"phone": number,
+			"error": number_failure["error"],
+		}
 
 
 @frappe.whitelist()
