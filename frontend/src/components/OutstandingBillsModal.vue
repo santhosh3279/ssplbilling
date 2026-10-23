@@ -386,7 +386,8 @@ function autoFillAllocations(force = false) {
 }
 
 watch(() => props.modalAmounts, (newVal) => {
-  localAmounts.value = { ...newVal }
+  // Return invoices come back signed negative; the inputs work in magnitudes
+  localAmounts.value = Object.fromEntries(Object.entries(newVal || {}).map(([k, v]) => [k, Math.abs(parseFloat(v) || 0)]))
   if (!lastModifiedKey.value) {
     const keys = Object.keys(localAmounts.value)
     for (let i = keys.length - 1; i >= 0; i--) {
@@ -525,7 +526,7 @@ function getAdjustedOutstanding(item) {
   const key = item.reference_row || item.name
   const others = props.otherAllocations
     .filter(a => (a._row || a.reference_name) === key)
-    .reduce((s, a) => s + (parseFloat(a.allocated_amount) || 0), 0)
+    .reduce((s, a) => s + Math.abs(parseFloat(a.allocated_amount) || 0), 0)
   
   const raw = Math.abs(item.outstanding_amount || item.unallocated_amount || 0)
   return Math.max(0, raw - others)
@@ -581,7 +582,7 @@ function emitAllocations() {
       allocated_amount: clamp(localAmounts.value[p.name], maxVal),
     }
   })
-  emit('update-allocations', [...allInvoices, ...allJournals, ...allPayments].filter(a => a.allocated_amount > 0.005))
+  emit('update-allocations', [...allInvoices, ...allJournals, ...allPayments].filter(a => Math.abs(a.allocated_amount) > 0.005))
 }
 
 function confirmAdjustments() {

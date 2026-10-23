@@ -728,7 +728,7 @@ const invoiceDocType = computed(() =>
 )
 
 const totalAllocated = computed(() =>
-  allocationRefs.value.reduce((sum, item) => sum + (parseFloat(item.alloc.allocated_amount) || 0), 0)
+  allocationRefs.value.reduce((sum, item) => sum + Math.abs(parseFloat(item.alloc.allocated_amount) || 0), 0)
 )
 
 const todayDate = computed(() => {
@@ -1085,7 +1085,8 @@ async function handleSubmit() {
           reference_name: r.reference_name,
           total_amount: r.total_amount,
           outstanding_amount: r.outstanding_amount,
-          allocated_amount: parseFloat(r.allocated_amount) || 0,
+          // Credit / debit notes carry a negative outstanding; the allocation must match its sign
+          allocated_amount: (Math.sign(r.outstanding_amount) || 1) * Math.abs(parseFloat(r.allocated_amount) || 0),
         }))
 
       const payload = {
