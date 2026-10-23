@@ -81,6 +81,31 @@
             <div v-if="error" class="rounded-lg px-3 py-2 text-xs font-medium border bg-[var(--color-danger)]/20 text-[var(--color-danger)] border-[var(--color-danger)]">{{ error }}</div>
             <div v-if="success" class="rounded-lg px-3 py-2 text-xs font-medium border bg-[var(--color-success)]/20 text-[var(--color-success)] border-[var(--color-success)]">{{ success }}</div>
 
+            <!-- WhatsApp number prompt -->
+            <form v-if="numberPrompt" class="space-y-2 rounded-lg bg-[#25D366]/15 p-3" @submit.prevent="submitNumber">
+              <div class="text-xs font-semibold text-[var(--color-text)]">
+                {{ numberPrompt.reason === 'invalid' ? `+${numberPrompt.phone} is not on WhatsApp.` : 'No WhatsApp number on file for this party.' }}
+                Enter their WhatsApp number — it is checked and saved to the party.
+              </div>
+              <div class="flex gap-2">
+                <input
+                  ref="promptInput"
+                  v-model="promptNumber"
+                  type="tel"
+                  placeholder="98xxxxxxxx"
+                  class="min-w-0 flex-1 rounded-lg bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/15"
+                />
+                <button
+                  type="submit"
+                  :disabled="promptBusy || !promptNumber.trim()"
+                  class="rounded-lg bg-[#25D366] px-3 py-2 text-xs font-bold text-black disabled:opacity-50"
+                >
+                  {{ promptBusy ? 'Checking…' : 'Verify & Send' }}
+                </button>
+                <button type="button" class="rounded-lg px-2 text-xs text-[var(--color-text-muted)]" @click="numberPrompt = null">Cancel</button>
+              </div>
+            </form>
+
             <!-- Actions -->
             <div class="flex flex-col gap-3 mt-2">
               <button
@@ -131,7 +156,7 @@
 
 <script setup>
 import { serverNow } from '../services/serverTime'
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
 import { getCachedPrintLists, refreshPrintCache, loadPrintLists } from '../services/printCache'
@@ -168,6 +193,11 @@ const hasExtension   = ref(false)
 // OpenWA gateway linked and enabled: the bill goes out from the server, no WhatsApp tab needed.
 // Asked on open, because the click handler must decide synchronously whether to open a tab.
 const gatewayReady   = ref(false)
+// Asks for a WhatsApp number when the party has none, or one WhatsApp does not recognise
+const numberPrompt   = ref(null)
+const promptNumber   = ref('')
+const promptBusy     = ref(false)
+const promptInput    = ref(null)
 const refreshing     = ref(false)
 const error          = ref('')
 const success        = ref('')
@@ -314,6 +344,15 @@ async function loadPageCount() {
 // Note: no watch on selectedPrinter — changing printer must not auto-change the template
 
 function handleKeydown(e) {
+  // Typing a number must not fire the print / preview / WhatsApp shortcuts; Enter submits its form
+  if (numberPrompt.value && document.activeElement === promptInput.value) {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      numberPrompt.value = null
+    }
+    return
+  }
+
   if (e.key === 'Escape') {
     emit('close')
     return
@@ -685,15 +724,15 @@ async function sendWhatsApp() {
       ? `https://web.whatsapp.com/send?phone=${recipient.phone}&text=${text}`
       : `https://web.whatsapp.com/`
 
-    if (viaGateway && recipient.phone) {
+    if (viaGateway) {
       try {
-        const sent = await frappePost('ssplbilling.api.whatsapp_api.send_document', {
-          doctype: props.doctype,
-          document_name: props.invoiceName,
-          pdf_base64: await blobToBase64(blob),
-          filename: billName,
-          caption,
-        }, { silent: true })
+        const bill = { pdf: await blobToBase64(blob), billName, caption }
+        const sent = await sendBillViaGateway(bill)
+        if (sent.needs_number) {
+          // The server looked up the party's number and found none, or one WhatsApp does not know
+          openNumberPrompt(sent, bill)
+          return
+        }
         success.value = `Sent "${billName}" to +${sent.phone} via OpenWA`
         return
       } catch (e) {
@@ -705,10 +744,6 @@ async function sendWhatsApp() {
         }
         console.warn('[PrintOptionsModal] OpenWA send failed, using the extension:', e)
       }
-    } else if (viaGateway && !viaBridge) {
-      saveBillPdf(billName, blob)
-      success.value = `Saved "${billName}" — no WhatsApp number on file for this party`
-      return
     }
 
     if (viaBridge) {
@@ -765,6 +800,51 @@ async function sendWhatsApp() {
     error.value = 'WhatsApp share failed: ' + (e.message || e)
   } finally {
     whatsapping.value = false
+  }
+}
+
+function sendBillViaGateway(bill) {
+  return frappePost('ssplbilling.api.whatsapp_api.send_document', {
+    doctype: props.doctype,
+    document_name: props.invoiceName,
+    pdf_base64: bill.pdf,
+    filename: bill.billName,
+    caption: bill.caption,
+  }, { silent: true })
+}
+
+async function openNumberPrompt(state, bill) {
+  numberPrompt.value = { reason: state.reason, phone: state.phone, bill }
+  promptNumber.value = ''
+  await nextTick()
+  promptInput.value?.focus()
+}
+
+// The number is checked on WhatsApp and saved to the party's Contact before the bill goes,
+// so the next bill for this party finds it without asking.
+async function submitNumber() {
+  const prompt = numberPrompt.value
+  if (!prompt || !promptNumber.value.trim() || promptBusy.value) return
+  promptBusy.value = true
+  error.value = ''
+  try {
+    await frappePost('ssplbilling.api.whatsapp_api.save_party_whatsapp', {
+      doctype: props.doctype,
+      document_name: props.invoiceName,
+      phone: promptNumber.value,
+    }, { silent: true })
+    const sent = await sendBillViaGateway(prompt.bill)
+    if (sent.needs_number) {
+      error.value = 'Number saved, but the bill still could not be sent — try again'
+      return
+    }
+    numberPrompt.value = null
+    success.value = `Saved the number and sent "${prompt.bill.billName}" to +${sent.phone} via OpenWA`
+  } catch (e) {
+    error.value = e.message || String(e)
+    promptInput.value?.focus()
+  } finally {
+    promptBusy.value = false
   }
 }
 </script>

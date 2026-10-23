@@ -28,6 +28,7 @@ from frappe.utils import now_datetime
 
 from ssplbilling.api.dashboard_api import get_allowed_tiles
 from ssplbilling.api.print_preview_api import (
+	DEFAULT_COUNTRY_CODE,
 	get_party_link,
 	get_party_whatsapp,
 	normalize_whatsapp_number,
@@ -311,14 +312,22 @@ def get_gateway_state():
 	return {"ready": session.get("status") == READY}
 
 
+def _whatsapp_id(settings, number):
+	"""Canonical chat id when the (normalized) number has a WhatsApp account, else None."""
+	check = _call(settings, "GET", f"/sessions/{settings.session_id}/contacts/check/{number}")
+	if not check.get("exists"):
+		return None
+	return check.get("whatsappId") or f"{number}@c.us"
+
+
 def _chat_id(settings, phone):
 	number = normalize_whatsapp_number(phone)
 	if not number:
 		frappe.throw(_("No WhatsApp number"))
-	check = _call(settings, "GET", f"/sessions/{settings.session_id}/contacts/check/{number}")
-	if not check.get("exists"):
+	chat_id = _whatsapp_id(settings, number)
+	if not chat_id:
 		frappe.throw(_("{0} is not on WhatsApp").format(number))
-	return number, check.get("whatsappId") or f"{number}@c.us"
+	return number, chat_id
 
 
 def _log(phone, message_type, content, status, message_id=None, error=None, reference=None):
@@ -338,14 +347,16 @@ def _log(phone, message_type, content, status, message_id=None, error=None, refe
 	).insert(ignore_permissions=True)
 
 
-def _send(phone, message_type, route, body, content, reference=None):
+def _send(phone, message_type, route, body, content, reference=None, chat_id=None):
+	"""Send and log. `chat_id` skips the WhatsApp lookup when the caller already did it."""
 	settings = _settings()
 	if not settings.session_id:
 		frappe.throw(_("No WhatsApp session is linked. Open the WhatsApp Link page first."))
 
 	number = normalize_whatsapp_number(phone)
 	try:
-		number, chat_id = _chat_id(settings, phone)
+		if not chat_id:
+			number, chat_id = _chat_id(settings, phone)
 		result = _call(
 			settings,
 			"POST",
@@ -373,17 +384,28 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 	"""Send a bill PDF the print dialog already rendered to the party's WhatsApp.
 
 	The number is looked up here from the bill's party, never taken from the caller, so the
-	business number can only ever message the party a bill belongs to.
+	business number can only ever message the party a bill belongs to. A missing number, or one
+	with no WhatsApp account, comes back as `needs_number` instead of an error, so the dialog can
+	ask for one and store it on the party with save_party_whatsapp().
 	"""
 	_require_desk_user()
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
-	if not frappe.utils.cint(frappe.db.get_single_value(SETTINGS_DOCTYPE, "enabled")):
+	settings = _settings()
+	if not settings.enabled:
 		frappe.throw(_("Sending bills via OpenWA is turned off"))
 
 	party_doctype, party = get_party_link(doctype, document_name)
-	phone = get_party_whatsapp(party_doctype, party) if party else ""
-	if not phone:
-		frappe.throw(_("No WhatsApp number on file for this party"))
+	if not party:
+		frappe.throw(_("This document has no customer or supplier to send it to"))
+	number = normalize_whatsapp_number(get_party_whatsapp(party_doctype, party))
+	if not number:
+		return {"needs_number": True, "reason": "missing", "phone": ""}
+	try:
+		chat_id = _whatsapp_id(settings, number)
+	except OpenWAError as e:
+		frappe.throw(str(e), title=_("WhatsApp send failed"))
+	if not chat_id:
+		return {"needs_number": True, "reason": "invalid", "phone": number}
 
 	try:
 		head = base64.b64decode(pdf_base64[:8], validate=True)
@@ -398,7 +420,85 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 		"filename": filename,
 		"caption": (caption or "")[:1024],
 	}
-	return _send(phone, "Document", "send-document", body, caption, reference=(doctype, document_name))
+	return _send(
+		number,
+		"Document",
+		"send-document",
+		body,
+		caption,
+		reference=(doctype, document_name),
+		chat_id=chat_id,
+	)
+
+
+@frappe.whitelist()
+def check_whatsapp_number(phone):
+	"""Whether a number has a WhatsApp account, for forms that take a WhatsApp number."""
+	_require_desk_user()
+	number = normalize_whatsapp_number(phone)
+	if not number:
+		return {"phone": "", "exists": False}
+	settings = _settings()
+	if not settings.session_id:
+		frappe.throw(_("No WhatsApp number is linked to check against"))
+	return _guarded(lambda: {"phone": number, "exists": bool(_whatsapp_id(settings, number))})
+
+
+def _set_contact_whatsapp(party_doctype, party, number):
+	"""Store the WhatsApp number where this app keeps it: the party Contact's non-primary phone row
+	(see get_party_whatsapp). A party without a Contact gets one."""
+	contact_name = frappe.db.get_value(
+		"Dynamic Link",
+		{"link_doctype": party_doctype, "link_name": party, "parenttype": "Contact"},
+		"parent",
+	)
+	if contact_name:
+		contact = frappe.get_doc("Contact", contact_name)
+	else:
+		name_field = "customer_name" if party_doctype == "Customer" else "supplier_name"
+		contact = frappe.get_doc(
+			{
+				"doctype": "Contact",
+				"first_name": frappe.db.get_value(party_doctype, party, name_field) or party,
+				"links": [{"link_doctype": party_doctype, "link_name": party}],
+			}
+		)
+
+	# Stored the way the customer and supplier forms store it: bare 10 digits for Indian numbers
+	if number.startswith(DEFAULT_COUNTRY_CODE) and len(number) == len(DEFAULT_COUNTRY_CODE) + 10:
+		number = number[len(DEFAULT_COUNTRY_CODE) :]
+
+	row = next((p for p in contact.phone_nos if not p.is_primary_mobile_no), None)
+	if row:
+		row.phone = number
+	else:
+		contact.append("phone_nos", {"phone": number, "is_primary_mobile_no": 0})
+	contact.save(ignore_permissions=True)
+
+
+@frappe.whitelist(methods=["POST"])
+def save_party_whatsapp(doctype, document_name, phone):
+	"""Verify a number on WhatsApp and store it as the bill party's WhatsApp number."""
+	_require_desk_user()
+	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
+	party_doctype, party = get_party_link(doctype, document_name)
+	if not party:
+		frappe.throw(_("This document has no customer or supplier"))
+	frappe.has_permission(party_doctype, "write", doc=party, throw=True)
+
+	number = normalize_whatsapp_number(phone)
+	if not number or len(number) < 11:
+		frappe.throw(_("Enter a full mobile number"))
+	settings = _settings()
+	try:
+		exists = bool(_whatsapp_id(settings, number))
+	except OpenWAError as e:
+		frappe.throw(str(e), title=_("OpenWA"))
+	if not exists:
+		frappe.throw(_("{0} is not on WhatsApp").format(number))
+
+	_set_contact_whatsapp(party_doctype, party, number)
+	return {"phone": number, "party": party}
 
 
 # ── Chat ─────────────────────────────────────────────────────────────────────────────────────────
