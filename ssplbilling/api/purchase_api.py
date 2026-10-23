@@ -803,7 +803,20 @@ def delete_purchase_invoice(invoice_name):
 
 
 @frappe.whitelist()
-def submit_purchase_desk(invoice_name, allocations=None):
+def update_purchase_remarks(invoice_name, custom_remarks=None):
+	"""Change the remarks of a draft or submitted Purchase Invoice without touching anything else."""
+	pi = frappe.get_doc("Purchase Invoice", invoice_name)
+	pi.check_permission("write")
+	if pi.docstatus == 2:
+		frappe.throw("Cannot change the remarks of a cancelled invoice.")
+	remarks = (custom_remarks or "").strip()
+	if (pi.get("custom_remarks") or "") != remarks:
+		frappe.db.set_value("Purchase Invoice", pi.name, "custom_remarks", remarks)
+	return {"invoice_name": pi.name, "custom_remarks": remarks}
+
+
+@frappe.whitelist()
+def submit_purchase_desk(invoice_name, allocations=None, custom_remarks=None):
 	"""Purchase Desk submit: submit the bill, link its supplier to the items and reconcile the
 	chosen debit notes / payments against it, all in one request and one transaction.
 
@@ -811,6 +824,10 @@ def submit_purchase_desk(invoice_name, allocations=None):
 	is never left submitted but unlinked. Supplier linking is best-effort and never blocks."""
 	if isinstance(allocations, str):
 		allocations = json.loads(allocations)
+
+	# An unsaved remark edit on the desk goes in with the submit, in the same transaction
+	if custom_remarks is not None:
+		update_purchase_remarks(invoice_name, custom_remarks)
 
 	result = submit_purchase_invoice(invoice_name)
 	if result.get("status") != "Submitted":

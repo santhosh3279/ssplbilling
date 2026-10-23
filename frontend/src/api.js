@@ -682,10 +682,21 @@ export async function submitPurchaseInvoice(invoiceName) {
  * Purchase Desk submit: submits the bill, links its supplier to the items and
  * reconciles the given debit notes / payments in one server transaction.
  */
-export async function submitPurchaseDesk(invoiceName, allocations = []) {
+export async function submitPurchaseDesk(invoiceName, allocations = [], customRemarks = null) {
   return frappePost("ssplbilling.api.purchase_api.submit_purchase_desk", {
     invoice_name: invoiceName,
     allocations: JSON.stringify(allocations),
+    ...(customRemarks !== null && { custom_remarks: customRemarks }),
+  });
+}
+
+/**
+ * Save only the remarks of a draft or submitted Purchase Invoice.
+ */
+export async function updatePurchaseRemarks(invoiceName, customRemarks) {
+  return frappePost("ssplbilling.api.purchase_api.update_purchase_remarks", {
+    invoice_name: invoiceName,
+    custom_remarks: customRemarks,
   });
 }
 

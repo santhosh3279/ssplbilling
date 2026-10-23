@@ -312,9 +312,26 @@
                   {{ successMsg }}
                 </div>
 
-                <div v-if="selectedInvoice.custom_remarks" class="mb-4 rounded-xl bg-[var(--color-highlight)]/15 border border-[var(--color-highlight)] p-4">
-                  <div class="text-[12px] font-bold uppercase tracking-widest text-[var(--color-highlight)] mb-1">Remark</div>
-                  <p class="text-[17px] font-semibold text-[var(--color-text)] leading-snug whitespace-pre-wrap break-words">{{ selectedInvoice.custom_remarks }}</p>
+                <div class="mb-4 rounded-xl bg-[var(--color-highlight)]/15 border border-[var(--color-highlight)] p-4">
+                  <div class="flex items-center justify-between mb-1">
+                    <div class="text-[12px] font-bold uppercase tracking-widest text-[var(--color-highlight)]">Remark</div>
+                    <button
+                      v-if="remarkChanged"
+                      @click="saveRemark"
+                      :disabled="savingRemark || isSubmitting"
+                      class="rounded-lg border border-[var(--color-success)] bg-[var(--color-success)]/20 px-3 py-0.5 text-[12px] font-bold uppercase tracking-widest text-[var(--color-success)] hover:bg-[var(--color-success)]/30 disabled:opacity-40 transition-all active:scale-95"
+                    >{{ savingRemark ? 'Saving…' : 'Save' }}</button>
+                  </div>
+                  <input
+                    v-model="remarkDraft"
+                    :disabled="isSubmitting"
+                    placeholder="Add a remark"
+                    class="w-full border-b border-[var(--color-border)] bg-transparent px-1 py-0.5 text-[17px] font-semibold text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)] focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+                    @keydown.enter.stop.prevent="saveRemark"
+                    @keydown.esc.stop.prevent="remarkDraft = selectedInvoice.custom_remarks || ''"
+                    @keydown.up.stop
+                    @keydown.down.stop
+                  />
                 </div>
 
                 <button
@@ -389,7 +406,7 @@ import { serverCalendarDate } from '../services/serverTime'
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { useRouter } from 'vue-router'
-import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseDesk, frappeGet } from '../api.js'
+import { fetchPurchaseInvoices, getPurchaseInvoiceDetails, submitPurchaseDesk, updatePurchaseRemarks, frappeGet } from '../api.js'
 import { useShortcuts, useSubwindow, useSubwindowWatcher } from '../services/shortcutManager'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import BarcodePrintPage from './BarcodePrintPage.vue'
@@ -416,6 +433,12 @@ const showLcvModal = ref(false)
 const lastSubmittedInvoice = ref(null)
 const unlinkedEntries = ref([])
 const loadingUnlinked = ref(false)
+// Remark being edited on the desk; saved with its Save button or along with the submit
+const remarkDraft = ref('')
+const savingRemark = ref(false)
+const remarkChanged = computed(() =>
+  !!selectedInvoice.value && remarkDraft.value.trim() !== (selectedInvoice.value.custom_remarks || '')
+)
 
 useSubwindowWatcher(showPrintModal)
 useSubwindowWatcher(showBarcodeModal)
@@ -549,6 +572,7 @@ async function selectInvoice(inv) {
   if (selectedInvoice.value?.name === inv.name) return
 
   selectedInvoice.value = inv
+  remarkDraft.value = inv.custom_remarks || ''
   previewItems.value = []
   unlinkedEntries.value = []
   errorMsg.value = ''
@@ -559,6 +583,7 @@ async function selectInvoice(inv) {
     // Ignore a slow response once the user has moved on to another bill
     if (selectedInvoice.value?.name !== inv.name) return
     selectedInvoice.value = details
+    remarkDraft.value = details.custom_remarks || ''
     previewItems.value = details.items || []
     loadUnlinkedEntries(details.supplier, inv.name)
   } catch (e) {
@@ -663,6 +688,22 @@ async function handleModifyClose() {
   }
 }
 
+async function saveRemark() {
+  if (!selectedInvoice.value || !remarkChanged.value || savingRemark.value) return
+  const inv = selectedInvoice.value
+  savingRemark.value = true
+  errorMsg.value = ''
+  try {
+    const res = await updatePurchaseRemarks(inv.name, remarkDraft.value.trim())
+    inv.custom_remarks = res?.custom_remarks ?? remarkDraft.value.trim()
+    if (selectedInvoice.value === inv) remarkDraft.value = inv.custom_remarks
+  } catch (e) {
+    errorMsg.value = 'Failed to save remark: ' + e.message
+  } finally {
+    savingRemark.value = false
+  }
+}
+
 async function confirmSubmission() {
   if (!selectedInvoice.value || isSubmitting.value) return
 
@@ -686,7 +727,7 @@ async function confirmSubmission() {
       }))
 
     // One request: submit, supplier link and reconciliation succeed or fail together
-    await submitPurchaseDesk(invName, allocations)
+    await submitPurchaseDesk(invName, allocations, remarkChanged.value ? remarkDraft.value.trim() : null)
 
     const nameToRemove = selectedInvoice.value.name
     lastSubmittedInvoice.value = {
