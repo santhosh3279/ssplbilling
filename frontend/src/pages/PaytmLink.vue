@@ -91,6 +91,7 @@
                     <th class="w-1/2 px-4 py-2">Customer</th>
                     <th class="w-64 px-4 py-2 text-right text-[var(--color-success)]">Amount (Cr)</th>
                     <th class="w-72 px-4 py-2">Mobile</th>
+                    <th class="w-64 px-6 py-2 text-right">Balance</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -130,6 +131,12 @@
                         @keydown.enter.prevent="descInput?.focus()"
                         class="w-full bg-transparent font-mono text-3xl placeholder:text-inherit focus:outline-none"
                       />
+                    </td>
+                    <td class="bg-[var(--color-surface-raised)] px-6 py-1.5 text-right">
+                      <div v-if="ledgerBalance !== null" class="text-4xl font-black" :class="ledgerBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                        {{ Math.abs(ledgerBalance).toLocaleString('en-IN') }} {{ ledgerBalance > 0 ? 'Dr' : 'Cr' }}
+                      </div>
+                      <div v-else class="text-xl font-medium italic text-[var(--color-text-muted)]">—</div>
                     </td>
                   </tr>
                 </tbody>
@@ -342,6 +349,7 @@ const showCustomerSearch = ref(false)
 const creating = ref(false)
 const formError = ref('')
 const form = reactive({ customer: '', customer_name: '', amount: '', mobile: '', description: '' })
+const ledgerBalance = ref(null)
 
 const customerInput = ref(null)
 const amountInput = ref(null)
@@ -452,11 +460,27 @@ function onCustomerSelect(item) {
   form.customer = item.name
   form.customer_name = item.label || item.customer_name || item.name
   if (item.mobile_no) form.mobile = item.mobile_no
+  fetchLedgerBalance(item.name)
   nextTick(() => amountInput.value?.focus())
+}
+
+// Customer's ledger closing balance (positive = Dr, they owe us)
+async function fetchLedgerBalance(customer) {
+  ledgerBalance.value = null
+  try {
+    const res = await frappeGet('ssplbilling.api.paymentv2_api.get_ledger', {
+      ledger_name: customer,
+      ledger_type: 'Customer',
+      company: localStorage.getItem('wb-company') || '',
+    })
+    // ignore a late reply for a customer that is no longer selected
+    if (form.customer === customer && res?.closing_balance !== undefined) ledgerBalance.value = res.closing_balance
+  } catch { /* balance is informational only */ }
 }
 
 function resetForm() {
   Object.assign(form, { customer: '', customer_name: '', amount: '', mobile: '', description: '' })
+  ledgerBalance.value = null
 }
 
 async function createEntry() {
