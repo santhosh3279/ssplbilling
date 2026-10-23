@@ -1,6 +1,8 @@
 import json
 import frappe
 
+from ssplbilling.api.whatsapp_api import check_party_whatsapp
+
 
 def _resolve_gst_category(gstin):
 	return "Registered Regular" if (gstin or "").strip() else "Unregistered"
@@ -89,7 +91,11 @@ def create_supplier_full(data):
 	if data.get("whatsapp"):
 		_sync_whatsapp_to_contact(sup.name, data["whatsapp"])
 
-	return {"name": sup.name, "supplier_name": sup.supplier_name}
+	return {
+		"name": sup.name,
+		"supplier_name": sup.supplier_name,
+		"whatsapp_check": check_party_whatsapp("Supplier", sup.name),
+	}
 
 
 @frappe.whitelist()
@@ -263,7 +269,11 @@ def update_supplier_full(data):
 			addr.append("links", {"link_doctype": "Supplier", "link_name": supplier_id})
 			addr.insert(ignore_permissions=True)
 
-	return {"name": sup.name, "supplier_name": sup.supplier_name}
+	return {
+		"name": sup.name,
+		"supplier_name": sup.supplier_name,
+		"whatsapp_check": check_party_whatsapp("Supplier", supplier_id),
+	}
 
 
 @frappe.whitelist()

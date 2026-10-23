@@ -157,6 +157,7 @@
         <div class="flex flex-col gap-1.5">
           <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp Number</label>
           <input v-model="form.whatsapp" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+          <WhatsAppStatus party-doctype="Customer" :party="isEdit ? form.name : ''" :number="form.whatsapp" />
         </div>
 
         <div class="flex flex-col gap-1.5">
@@ -218,6 +219,7 @@ import { fetchCustomerDetails, createCustomer, updateCustomer, fetchCustomerGrou
 import { validateGstin } from '../api.js'
 import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 import QuickLedgerSearch from './QuickLedgerSearch.vue'
+import WhatsAppStatus from './WhatsAppStatus.vue'
 
 const props = defineProps({
   show: Boolean,
@@ -489,12 +491,18 @@ async function submit() {
     const result = props.isEdit
       ? await updateCustomer(form.value.name, payload)
       : await createCustomer(payload)
+    warnInvalidWhatsApp(result?.whatsapp_check)
     // Keep the latch until unmount: the parent refreshes ledgers asynchronously.
     emit('saved', result)
   } catch (e) {
     saving.value = false
     alert('Failed to save customer: ' + e.message)
   }
+}
+
+// The save checked the number on WhatsApp; it is kept either way, the operator only needs to know
+function warnInvalidWhatsApp(check) {
+  if (check?.status === 'Invalid') alert(`Saved. WhatsApp number ${check.phone} is not on WhatsApp — bills cannot be sent to it.`)
 }
 
 defineExpose({ focusFirst, submit })

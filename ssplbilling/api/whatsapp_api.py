@@ -43,6 +43,17 @@ START_TIMEOUT = 60
 # The print dialog asks on open; a dead gateway must not hold the dialog up
 STATE_TIMEOUT = 3
 
+# A customer/supplier save waits on this check, so a stalled gateway must give up quickly
+SAVE_CHECK_TIMEOUT = 8
+
+# Customer / Supplier `whatsapp_status` values. A number is checked only when an operator acts
+# (saves the party, presses Check, or sends it a bill); nothing checks in the background. Once
+# Valid it is trusted until a send to it fails or the number is changed.
+NOT_CHECKED = "Not Checked"
+VALID = "Valid"
+INVALID = "Invalid"
+STATUS_DOCTYPES = ("Customer", "Supplier")
+
 # OpenWA wire values for session status (lowercase)
 READY = "ready"
 QR_READY = "qr_ready"
@@ -312,9 +323,11 @@ def get_gateway_state():
 	return {"ready": session.get("status") == READY}
 
 
-def _whatsapp_id(settings, number):
+def _whatsapp_id(settings, number, timeout=REQUEST_TIMEOUT):
 	"""Canonical chat id when the (normalized) number has a WhatsApp account, else None."""
-	check = _call(settings, "GET", f"/sessions/{settings.session_id}/contacts/check/{number}")
+	check = _call(
+		settings, "GET", f"/sessions/{settings.session_id}/contacts/check/{number}", timeout=timeout
+	)
 	if not check.get("exists"):
 		return None
 	return check.get("whatsappId") or f"{number}@c.us"
@@ -400,12 +413,18 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 	number = normalize_whatsapp_number(get_party_whatsapp(party_doctype, party))
 	if not number:
 		return {"needs_number": True, "reason": "missing", "phone": ""}
-	try:
-		chat_id = _whatsapp_id(settings, number)
-	except OpenWAError as e:
-		frappe.throw(str(e), title=_("WhatsApp send failed"))
-	if not chat_id:
-		return {"needs_number": True, "reason": "invalid", "phone": number}
+
+	if _party_number_valid(party_doctype, party, number):
+		chat_id = f"{number}@c.us"
+	else:
+		try:
+			chat_id = _whatsapp_id(settings, number)
+		except OpenWAError as e:
+			frappe.throw(str(e), title=_("WhatsApp send failed"))
+		_record_party_status(party_doctype, party, number, VALID if chat_id else INVALID)
+		if not chat_id:
+			# Kept although the request returns normally: Frappe commits POSTs
+			return {"needs_number": True, "reason": "invalid", "phone": number}
 
 	try:
 		head = base64.b64decode(pdf_base64[:8], validate=True)
@@ -420,15 +439,21 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 		"filename": filename,
 		"caption": (caption or "")[:1024],
 	}
-	return _send(
-		number,
-		"Document",
-		"send-document",
-		body,
-		caption,
-		reference=(doctype, document_name),
-		chat_id=chat_id,
-	)
+	try:
+		return _send(
+			number,
+			"Document",
+			"send-document",
+			body,
+			caption,
+			reference=(doctype, document_name),
+			chat_id=chat_id,
+		)
+	except frappe.ValidationError:
+		# A failed send is the one thing that makes a Valid number worth checking again
+		_record_party_status(party_doctype, party, number, NOT_CHECKED)
+		frappe.db.commit()
+		raise
 
 
 @frappe.whitelist()
@@ -498,7 +523,93 @@ def save_party_whatsapp(doctype, document_name, phone):
 		frappe.throw(_("{0} is not on WhatsApp").format(number))
 
 	_set_contact_whatsapp(party_doctype, party, number)
+	_record_party_status(party_doctype, party, number, VALID)
 	return {"phone": number, "party": party}
+
+
+def _record_party_status(party_doctype, party, number, status):
+	if party_doctype not in STATUS_DOCTYPES:
+		return
+	frappe.db.set_value(
+		party_doctype,
+		party,
+		{
+			"whatsapp_status": status,
+			"whatsapp_verified_number": number or "",
+			"whatsapp_checked_on": now_datetime(),
+		},
+		update_modified=False,
+	)
+
+
+def _party_number_valid(party_doctype, party, number):
+	"""Valid only for the number that was checked; an edited number has to be checked again."""
+	if party_doctype not in STATUS_DOCTYPES:
+		return False
+	status, checked = frappe.db.get_value(
+		party_doctype, party, ["whatsapp_status", "whatsapp_verified_number"]
+	) or (None, None)
+	return status == VALID and normalize_whatsapp_number(checked) == number
+
+
+def check_party_whatsapp(party_doctype, party, force=False):
+	"""Check a party's saved WhatsApp number and record the result on the party.
+
+	Called from the customer / supplier save and the Check button. A number already Valid is not
+	checked again unless `force`. A gateway that is down or unlinked never blocks the caller: the
+	status is left Not Checked and the reason returned.
+	"""
+	number = normalize_whatsapp_number(get_party_whatsapp(party_doctype, party))
+	if not number:
+		_record_party_status(party_doctype, party, "", NOT_CHECKED)
+		return {"status": NOT_CHECKED, "phone": "", "error": ""}
+	if not force and _party_number_valid(party_doctype, party, number):
+		return {"status": VALID, "phone": number, "error": ""}
+
+	settings = _settings()
+	if not settings.session_id or not settings.get_password("api_key", raise_exception=False):
+		_record_party_status(party_doctype, party, number, NOT_CHECKED)
+		return {
+			"status": NOT_CHECKED,
+			"phone": number,
+			"error": _("No WhatsApp number is linked to check with"),
+		}
+	try:
+		exists = bool(_whatsapp_id(settings, number, timeout=SAVE_CHECK_TIMEOUT))
+	except OpenWAError as e:
+		_record_party_status(party_doctype, party, number, NOT_CHECKED)
+		return {"status": NOT_CHECKED, "phone": number, "error": str(e)}
+
+	status = VALID if exists else INVALID
+	_record_party_status(party_doctype, party, number, status)
+	return {"status": status, "phone": number, "error": ""}
+
+
+@frappe.whitelist()
+def get_party_whatsapp_status(party_doctype, party):
+	_require_desk_user()
+	if party_doctype not in STATUS_DOCTYPES:
+		frappe.throw(_("Not a customer or supplier"))
+	frappe.has_permission(party_doctype, "read", doc=party, throw=True)
+	status, checked, checked_on = frappe.db.get_value(
+		party_doctype, party, ["whatsapp_status", "whatsapp_verified_number", "whatsapp_checked_on"]
+	) or (None, None, None)
+	return {
+		"status": status or NOT_CHECKED,
+		"verified_number": checked or "",
+		"checked_on": checked_on,
+		"phone": normalize_whatsapp_number(get_party_whatsapp(party_doctype, party)),
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def verify_party_whatsapp(party_doctype, party):
+	"""The Check button: check the saved number now, even if it was Valid before."""
+	_require_desk_user()
+	if party_doctype not in STATUS_DOCTYPES:
+		frappe.throw(_("Not a customer or supplier"))
+	frappe.has_permission(party_doctype, "write", doc=party, throw=True)
+	return check_party_whatsapp(party_doctype, party, force=True)
 
 
 # ── Chat ─────────────────────────────────────────────────────────────────────────────────────────

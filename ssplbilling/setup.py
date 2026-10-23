@@ -48,6 +48,31 @@ CUSTOM_FIELDS = {
 			"fieldtype": "Float",
 			"insert_after": "default_price_list",
 		},
+		{
+			"fieldname": "whatsapp_status",
+			"label": "WhatsApp Status",
+			"fieldtype": "Select",
+			"options": "Not Checked\nValid\nInvalid",
+			"default": "Not Checked",
+			"insert_after": "customer_print_name",
+			"read_only": 1,
+			"in_standard_filter": 1,
+			"description": "Checked when the party is saved, on Check, or when a bill is sent. Stays Valid until a send fails or the number changes.",
+		},
+		{
+			"fieldname": "whatsapp_verified_number",
+			"label": "WhatsApp Number Checked",
+			"fieldtype": "Data",
+			"insert_after": "whatsapp_status",
+			"read_only": 1,
+		},
+		{
+			"fieldname": "whatsapp_checked_on",
+			"label": "WhatsApp Checked On",
+			"fieldtype": "Datetime",
+			"insert_after": "whatsapp_verified_number",
+			"read_only": 1,
+		},
 	],
 	"Quotation": [
 		{
@@ -113,7 +138,32 @@ CUSTOM_FIELDS = {
 			"label": "Supplier Print Name",
 			"insert_after": "supplier_name",
 			"translatable": 0,
-		}
+		},
+		{
+			"fieldname": "whatsapp_status",
+			"label": "WhatsApp Status",
+			"fieldtype": "Select",
+			"options": "Not Checked\nValid\nInvalid",
+			"default": "Not Checked",
+			"insert_after": "supplier_print_name",
+			"read_only": 1,
+			"in_standard_filter": 1,
+			"description": "Checked when the party is saved, on Check, or when a bill is sent. Stays Valid until a send fails or the number changes.",
+		},
+		{
+			"fieldname": "whatsapp_verified_number",
+			"label": "WhatsApp Number Checked",
+			"fieldtype": "Data",
+			"insert_after": "whatsapp_status",
+			"read_only": 1,
+		},
+		{
+			"fieldname": "whatsapp_checked_on",
+			"label": "WhatsApp Checked On",
+			"fieldtype": "Datetime",
+			"insert_after": "whatsapp_verified_number",
+			"read_only": 1,
+		},
 	],
 	"Sales Invoice": [
 		{

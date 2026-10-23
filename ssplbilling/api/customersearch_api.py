@@ -1,5 +1,6 @@
 import json
 import frappe
+from ssplbilling.api.whatsapp_api import check_party_whatsapp
 
 @frappe.whitelist()
 def get_user_mop_ledgers():
@@ -850,7 +851,11 @@ def update_customer_full(data):
 
 		contact.save(ignore_permissions=True)
 
-	return {"name": cust.name, "customer_name": cust.customer_name}
+	return {
+		"name": cust.name,
+		"customer_name": cust.customer_name,
+		"whatsapp_check": check_party_whatsapp("Customer", cust.name),
+	}
 
 @frappe.whitelist(methods=["POST"])
 def create_customer_full(data):
@@ -926,7 +931,9 @@ def create_customer_full(data):
             })
         contact.save()
 
-    return customer.as_dict()
+    result = customer.as_dict()
+    result["whatsapp_check"] = check_party_whatsapp("Customer", customer.name)
+    return result
 
 
 @frappe.whitelist()
