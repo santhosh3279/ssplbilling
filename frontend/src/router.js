@@ -22,6 +22,7 @@ const PaymentV2 = () => import('./pages/paymentv2.vue')
 const PaytmLink = () => import('./pages/PaytmLink.vue')
 const PaytmUnknown = () => import('./pages/PaytmUnknown.vue')
 const WhatsAppLink = () => import('./pages/WhatsAppLink.vue')
+const Competitive = () => import('./pages/Competitive.vue')
 const WhatsAppChat = () => import('./pages/WhatsAppChat.vue')
 const JournalContraEntry = () => import('./pages/JournalContraEntry.vue')
 const CashierManagement = () => import('./pages/CashierManagement.vue')
@@ -339,6 +340,12 @@ const routes = [
     name: 'WhatsAppLink',
     component: WhatsAppLink,
     meta: { title: 'WhatsApp Link' },
+  },
+  {
+    path: '/competitive',
+    name: 'Competitive',
+    component: Competitive,
+    meta: { title: 'Competitive Items' },
   },
   {
     path: '/whatsapp-chat',

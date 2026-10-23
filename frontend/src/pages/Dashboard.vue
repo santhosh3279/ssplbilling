@@ -992,6 +992,7 @@ const allTiles = [
   { id: 'ai-chat',            bucket: 'sspl',   name: 'AI Chat',               desc: 'Ask ERPNext data via Claude, Gemini, Codex', icon: '🤖', shortcut: ''    },
   { id: 'whatsapp-link',      bucket: 'sspl',   name: 'WhatsApp Link',         desc: 'Link a number to the OpenWA gateway',      icon: '💬', shortcut: ''    },
   { id: 'whatsapp-chat',      bucket: 'sspl',   name: 'WhatsApp Chat',         desc: 'Chat with customers on the business number', icon: '🗨️', shortcut: ''    },
+  { id: 'competitive',        bucket: 'sspl',   name: 'Competitive Items',     desc: 'Pricelist percentages per competitive item', icon: '⚖️', shortcut: ''    },
 
   { id: 'daily-report',       bucket: 'report',   name: 'Daily Report',          desc: 'Daily operations summary',                 icon: '📊', shortcut: ''    },
   { id: 'reports',            bucket: 'report',   name: 'Reports',               desc: 'Business reports and analytics',           icon: '📈', shortcut: ''    },
@@ -1253,7 +1254,7 @@ function tilesInBucket(bucketId) {
   return filteredTiles.value.filter(t => t.bucket === bucketId)
 }
 
-const readyModules = ['sales', 'mobile-bill', 'quotation', 'purchase-invoice', 'cashier', 'cashier-mobile', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user', 'ai-chat', 'item-barcode', 'paytm-link', 'paytm-unknown', 'whatsapp-link', 'whatsapp-chat']
+const readyModules = ['sales', 'mobile-bill', 'quotation', 'purchase-invoice', 'cashier', 'cashier-mobile', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user', 'ai-chat', 'item-barcode', 'paytm-link', 'paytm-unknown', 'whatsapp-link', 'whatsapp-chat', 'competitive']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
