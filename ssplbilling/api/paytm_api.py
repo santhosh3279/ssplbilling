@@ -497,12 +497,14 @@ def create_payment_link(customer, amount, description=None, mobile=None, send_sm
 
 
 @frappe.whitelist()
-def get_customer_mobile(customer):
-	"""Customer's mobile for the receipt form: its own mobile_no, else its Contact's mobile."""
+def get_customer_whatsapp(customer):
+	"""Customer's number for the receipt form: its saved WhatsApp number, else its mobile."""
 	_require_desk_user()
-	from ssplbilling.api.print_preview_api import get_party_mobile
+	from ssplbilling.api.print_preview_api import get_party_mobile, get_party_saved_whatsapp
 
-	return _valid_phone(get_party_mobile("Customer", customer))
+	return _valid_phone(get_party_saved_whatsapp("Customer", customer)) or _valid_phone(
+		get_party_mobile("Customer", customer)
+	)
 
 
 @frappe.whitelist(methods=["POST"])

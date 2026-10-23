@@ -90,7 +90,7 @@
                   <tr class="text-3xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">
                     <th class="w-1/2 px-4 py-2">Customer</th>
                     <th class="w-64 px-4 py-2 text-right text-[var(--color-success)]">Amount (Cr)</th>
-                    <th class="w-72 px-4 py-2">Mobile</th>
+                    <th class="w-72 px-4 py-2">WhatsApp</th>
                     <th class="w-64 px-6 py-2 text-right">Balance</th>
                   </tr>
                 </thead>
@@ -127,7 +127,7 @@
                         ref="mobileInput"
                         v-model="form.mobile"
                         maxlength="14"
-                        placeholder="10-digit mobile"
+                        placeholder="WhatsApp / mobile"
                         @keydown.enter.prevent="descInput?.focus()"
                         class="w-full bg-transparent font-mono text-3xl placeholder:text-inherit focus:outline-none"
                       />
@@ -459,16 +459,17 @@ function onCustomerSelect(item) {
   showCustomerSearch.value = false
   form.customer = item.name
   form.customer_name = item.label || item.customer_name || item.name
-  form.mobile = item.mobile_no || ''
+  form.mobile = item.whatsapp || item.mobile_no || ''
   fetchLedgerBalance(item.name)
   fetchMobile(item.name, form.mobile)
   nextTick(() => amountInput.value?.focus())
 }
 
-// Search results can lack the mobile (it may live only on the linked Contact); ask the server
+// WhatsApp number, else mobile. Search results can lack both (they may live only on the
+// linked Contact), so the server has the final say
 async function fetchMobile(customer, prefilled) {
   try {
-    const mobile = await frappeGet(`${API}.get_customer_mobile`, { customer })
+    const mobile = await frappeGet(`${API}.get_customer_whatsapp`, { customer })
     // keep a number the operator already typed, and ignore a late reply for another customer
     if (mobile && form.customer === customer && form.mobile === prefilled) form.mobile = mobile
   } catch { /* operator can still type it */ }
