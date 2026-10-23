@@ -155,7 +155,18 @@
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp Number</label>
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex justify-between items-center">
+            <span>WhatsApp Number</span>
+            <button
+              type="button"
+              @click="form.whatsapp = form.mobile"
+              class="text-[9px] bg-[#25D366] text-black px-2 py-0.5 rounded hover:opacity-80 transition-opacity shadow-sm disabled:opacity-40 disabled:cursor-not-allowed"
+              :disabled="!form.mobile || form.whatsapp === form.mobile"
+              title="Use the mobile number as the WhatsApp number"
+            >
+              Same as Mobile
+            </button>
+          </label>
           <input v-model="form.whatsapp" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
           <WhatsAppStatus v-if="form.whatsapp_enabled" party-doctype="Customer" :party="isEdit ? form.name : ''" :number="form.whatsapp" />
           <label
