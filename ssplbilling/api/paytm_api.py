@@ -49,6 +49,8 @@ PG_BASE_URL = {
 }
 PG_QR_CREATE_PATH = "/paymentservices/qr/create"
 PG_STATUS_PATH = "/v3/order/status"
+# order status resultCode once Paytm has closed an unpaid QR order ("ORDER IS CLOSE.")
+PG_ORDER_CLOSED = "810"
 
 # Paytm payment link APIs; signed with the PG Merchant Key, head carries tokenType "AES"
 LINK_BASE_URL = {
@@ -868,8 +870,12 @@ def _refresh_qr(txn):
 	status = (info.get("resultStatus") or "").upper()
 	# Before the customer scans, Paytm can answer TXN_FAILURE ("Invalid Order Id") for an order
 	# with no payment attempt yet; only a failure that carries a txnId is a real failed payment.
+	message = info.get("resultMsg")
 	if status == "TXN_SUCCESS":
 		new_status = "Success"
+	elif status == "TXN_FAILURE" and info.get("resultCode") == PG_ORDER_CLOSED and _is_receipt(txn):
+		# Paytm closed the unpaid order at QR expiry: nothing failed, the customer just did not pay
+		new_status, message = "Cancelled", _("QR expired unpaid")
 	elif status == "TXN_FAILURE" and rb.get("txnId"):
 		new_status = "Failed"
 	else:
@@ -880,7 +886,7 @@ def _refresh_qr(txn):
 	txn.rrn = rb.get("bankTxnId") or txn.rrn
 	if new_status == "Success" and rb.get("txnAmount"):
 		_check_amount(txn, flt(rb.get("txnAmount")))  # rupees
-	_update_txn(txn, new_status, res, info.get("resultMsg"))
+	_update_txn(txn, new_status, res, message)
 
 
 def _log_status_failure(txn, title):

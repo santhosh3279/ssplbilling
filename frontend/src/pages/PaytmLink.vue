@@ -208,7 +208,7 @@
                 </div>
               </div>
               <div v-else class="rounded-xl bg-[var(--color-midlight)] py-6 text-center">
-                <div class="text-xl font-bold uppercase">{{ selected.status === 'Pending' ? 'QR expired' : selected.status === 'Cancelled' ? 'Stopped waiting' : 'Payment failed' }}</div>
+                <div class="text-xl font-bold uppercase">{{ qrExpired(selected) ? 'QR expired' : selected.status === 'Cancelled' ? 'Stopped waiting' : 'Payment failed' }}</div>
                 <div class="text-sm text-[var(--color-text-muted)]">Not paid. Generate a new QR for the customer.</div>
               </div>
             </template>
@@ -376,8 +376,16 @@ function statusClass(status) {
   }[status] || 'bg-[var(--color-midlight)]'
 }
 
+// The server marks an unpaid receipt QR Cancelled with this message once Paytm closes the order
+const QR_EXPIRED_MSG = 'QR expired unpaid'
+
+function qrExpired(l) {
+  return l.channel === 'QR' && ((l.status === 'Pending' && qrSecondsLeft(l) === 0)
+    || (l.status === 'Cancelled' && l.result_message === QR_EXPIRED_MSG))
+}
+
 function statusLabel(l) {
-  if (l.channel === 'QR' && l.status === 'Pending' && qrSecondsLeft(l) === 0) return 'Expired'
+  if (qrExpired(l)) return 'Expired'
   return l.status === 'Success' ? 'Paid' : l.status
 }
 
