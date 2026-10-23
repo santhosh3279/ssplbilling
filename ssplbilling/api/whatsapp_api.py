@@ -412,6 +412,16 @@ def logout(session_name):
 
 
 @frappe.whitelist()
+def get_my_session():
+	"""The session the logged-in user sends through: their own row, else the shared one."""
+	_require_desk_user()
+	row = _session_row(_settings())
+	if not row:
+		return None
+	return {"session_name": row.session_name, "session_id": row.session_id or "", "shared": not row.user}
+
+
+@frappe.whitelist()
 def get_gateway_state():
 	"""Whether this user's bills can go out through OpenWA right now. Called by the print dialog."""
 	settings = _settings()

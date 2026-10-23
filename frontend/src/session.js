@@ -35,6 +35,23 @@ export async function refreshTilePermissions(targetUser) {
   }
 }
 
+// The WhatsApp session this login sends through, kept so pages can read it without asking the server
+export const WHATSAPP_SESSION_KEY = 'wb-whatsapp-session'
+
+async function refreshWhatsAppSession() {
+  try {
+    const res = await frappeGet('ssplbilling.api.whatsapp_api.get_my_session')
+    if (res) {
+      localStorage.setItem(WHATSAPP_SESSION_KEY, JSON.stringify({ user: user.value, ...res }))
+    } else {
+      localStorage.removeItem(WHATSAPP_SESSION_KEY)
+    }
+  } catch {
+    // Portal logins have no WhatsApp session
+    localStorage.removeItem(WHATSAPP_SESSION_KEY)
+  }
+}
+
 const userResource = createResource({
   url: '/api/method/frappe.auth.get_logged_user',
   onSuccess(data) {
@@ -93,6 +110,7 @@ async function init() {
       userInfoResource.fetch(),
       refreshCsrfToken(),
       refreshTilePermissions(effectiveUser),
+      refreshWhatsAppSession(),
     ])
   }
 }
@@ -176,6 +194,7 @@ async function logout() {
   localStorage.removeItem('wb-allow-date-modification')
   localStorage.removeItem('wb-allowed-tiles-v3')
   localStorage.removeItem('wb-inherited-user')
+  localStorage.removeItem(WHATSAPP_SESSION_KEY)
   // Persisted item snapshots carry every price list and valuation rate.
   await clearItemSnapshots().catch((e) => console.warn('[session] Could not clear item cache:', e))
   // The ledger snapshot carries every party's balance.
