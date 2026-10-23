@@ -96,17 +96,29 @@
             </div>
             <div>
               <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Session Name</label>
-              <input v-model="newSession.session_name" type="text" placeholder="sspl-billing" :class="inputCls" @keydown.enter="addSession" />
+              <select v-model="newSession.pick" :class="inputCls">
+                <option value="" disabled>Select a session</option>
+                <option v-for="n in freeGatewaySessions" :key="n" :value="n">{{ n }}</option>
+                <option :value="NEW_SESSION">New session…</option>
+              </select>
+              <input
+                v-if="newSession.pick === NEW_SESSION"
+                v-model="newSession.session_name"
+                type="text"
+                placeholder="sspl-billing"
+                :class="[inputCls, 'mt-2']"
+                @keydown.enter="addSession"
+              />
             </div>
             <button
               @click="addSession"
-              :disabled="!!busy || !newSession.session_name"
+              :disabled="!!busy || !newSessionName"
               class="rounded-lg bg-[var(--color-info)] px-5 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {{ busy === 'add' ? 'Adding…' : 'Add' }}
             </button>
           </div>
-          <p class="text-xs text-[var(--color-text-muted)]">3-50 letters, numbers or hyphens. Each session links its own WhatsApp number.</p>
+          <p class="text-xs text-[var(--color-text-muted)]">Pick a session already on the gateway, or start a new one: 3-50 letters, numbers or hyphens. Each session links its own WhatsApp number.</p>
         </section>
 
         <!-- Link status / QR -->
@@ -235,7 +247,16 @@ const form = reactive({ base_url: '', api_key: '' })
 const sessions = ref([])
 const users = ref([])
 const selected = ref('')
-const newSession = reactive({ user: '', session_name: '' })
+const NEW_SESSION = '__new__'
+const newSession = reactive({ user: '', pick: '', session_name: '' })
+const gatewaySessions = ref([])
+// Gateway sessions no row uses yet; a name can belong to one row only
+const freeGatewaySessions = computed(() =>
+  gatewaySessions.value.filter((n) => !sessions.value.some((x) => x.session_name === n)),
+)
+const newSessionName = computed(() =>
+  newSession.pick === NEW_SESSION ? newSession.session_name.trim() : newSession.pick,
+)
 const state = reactive({ status: '', phone: '', push_name: '', engine_loaded: false, qr: '', last_error: '', restriction: null })
 const test = reactive({ phone: '', text: 'Test message from SSPL Billing' })
 
@@ -270,6 +291,16 @@ function applySettings(s) {
   sessions.value = s.sessions || []
   users.value = s.users || []
   if (!sessions.value.some((x) => x.session_name === selected.value)) selected.value = sessions.value[0]?.session_name || ''
+}
+
+async function loadGatewaySessions() {
+  if (!hasApiKey.value) return
+  try {
+    gatewaySessions.value = await frappeGet(`${API}.list_gateway_sessions`)
+  } catch {
+    // An unreachable gateway still leaves "New session…"
+    gatewaySessions.value = []
+  }
 }
 
 function notify(text, isError = false) {
@@ -330,6 +361,7 @@ async function save() {
     applySettings(s)
     form.api_key = ''
     notify('Saved')
+    loadGatewaySessions()
   } catch (e) {
     notify(e.message || String(e), true)
   } finally {
@@ -349,12 +381,12 @@ function select(name) {
 }
 
 async function addSession() {
-  if (busy.value || !newSession.session_name) return
+  if (busy.value || !newSessionName.value) return
   busy.value = 'add'
   try {
-    const name = newSession.session_name.trim()
+    const name = newSessionName.value
     applySettings(await frappePost(`${API}.add_session`, { session_name: name, user: newSession.user || null }, { silent: true }))
-    Object.assign(newSession, { user: '', session_name: '' })
+    Object.assign(newSession, { user: '', pick: '', session_name: '' })
     busy.value = ''
     selected.value = ''
     select(name)
@@ -424,6 +456,7 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+  loadGatewaySessions()
   await refresh()
 })
 

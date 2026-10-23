@@ -292,6 +292,15 @@ def get_status(session_name):
 	return _guarded(run)
 
 
+@frappe.whitelist()
+def list_gateway_sessions():
+	"""Names of the sessions that exist on the gateway, for the Session Name dropdowns."""
+	_require_manager()
+	return _guarded(
+		lambda: sorted(s.get("name") for s in _call(_settings(), "GET", "/sessions") if s.get("name"))
+	)
+
+
 @frappe.whitelist(methods=["POST"])
 def refresh_sessions():
 	"""Mirror every row's session from the gateway, for the settings form."""

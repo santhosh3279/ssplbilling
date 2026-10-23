@@ -6,6 +6,7 @@ const AUTO_REFRESH_GAP_MS = 30 * 1000;
 frappe.ui.form.on("SSPL WhatsApp Settings", {
 	refresh(frm) {
 		frm.add_custom_button(__("Refresh Status"), () => refresh_session(frm, false));
+		load_session_names(frm);
 
 		// Desk reuses this form across visits, so gate on time: each reopen refreshes, while the
 		// reload that follows a refresh (which fires `refresh` again) does not loop
@@ -19,6 +20,26 @@ frappe.ui.form.on("SSPL WhatsApp Settings", {
 		}
 	},
 });
+
+// Session Name offers the gateway's sessions; the rows' own names stay listed so a session
+// missing from the gateway still shows instead of turning blank
+function load_session_names(frm) {
+	frappe.call({
+		method: "ssplbilling.api.whatsapp_api.list_gateway_sessions",
+		// A dead or unconfigured gateway must not pop an error just for opening the form
+		silent: true,
+		callback(r) {
+			const names = new Set(r.message || []);
+			(frm.doc.sessions || []).forEach((row) => row.session_name && names.add(row.session_name));
+			frm.fields_dict.sessions.grid.update_docfield_property(
+				"session_name",
+				"options",
+				["", ...[...names].sort()].join("\n")
+			);
+			frm.refresh_field("sessions");
+		},
+	});
+}
 
 // refresh_sessions mirrors each row's gateway session onto this record, so only a reload follows
 function refresh_session(frm, auto) {
