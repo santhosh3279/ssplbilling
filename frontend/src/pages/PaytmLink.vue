@@ -505,7 +505,13 @@ async function createEntry() {
 async function createQr(args) {
   creating.value = true
   try {
-    const r = await frappePost(`${API}.create_receipt_qr`, args, { silent: true })
+    // operator defaults: the receipt is debited to wb-upi under wb-company / wb-cost-center
+    const r = await frappePost(`${API}.create_receipt_qr`, {
+      ...args,
+      company: localStorage.getItem('wb-company') || '',
+      cost_center: localStorage.getItem('wb-cost-center') || '',
+      upi_account: localStorage.getItem('wb-upi') || '',
+    }, { silent: true })
     qrImages[r.order_id] = r.qr_image
     setDeadline(r.order_id, r.expires_in)
     resetForm()

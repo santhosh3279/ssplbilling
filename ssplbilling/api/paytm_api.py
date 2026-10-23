@@ -508,9 +508,13 @@ def get_customer_whatsapp(customer):
 
 
 @frappe.whitelist(methods=["POST"])
-def create_receipt_qr(customer, amount, description=None, mobile=None):
+def create_receipt_qr(customer, amount, description=None, mobile=None, company=None, cost_center=None, upi_account=None):
 	"""Dynamic UPI QR for a customer receipt (no invoice), shown on screen or shared with the
-	customer. Valid for QR_EXPIRY_SECONDS; once paid it gets its Receipt Payment Entry like a link."""
+	customer. Valid for QR_EXPIRY_SECONDS; once paid it gets its Receipt Payment Entry like a link.
+
+	company, cost_center and upi_account are the operator's defaults (wb-company, wb-cost-center,
+	wb-upi). They are stored on the row because the Payment Entry is made later, by the webhook or
+	the page's polling; upi_account falls back to the UPI Account in SSPL Paytm Settings."""
 	_require_desk_user()
 	settings = _settings()
 	if not settings.qr_enabled:
@@ -520,8 +524,10 @@ def create_receipt_qr(customer, amount, description=None, mobile=None):
 		frappe.throw(_("Amount must be greater than 0"))
 	if not frappe.db.exists("Customer", customer):
 		frappe.throw(_("Customer {0} not found").format(customer))
-	if not settings.upi_account:
+	upi_account = upi_account or settings.upi_account
+	if not upi_account:
 		frappe.throw(_("Set the UPI Account in SSPL Paytm Settings; QR receipts are received into it"))
+	_validate_receipt_accounts(upi_account, company, cost_center)
 
 	now = now_datetime()
 	txn = frappe.get_doc(
@@ -535,6 +541,9 @@ def create_receipt_qr(customer, amount, description=None, mobile=None):
 			"customer_mobile": _valid_phone(mobile)
 			or _valid_phone(frappe.db.get_value("Customer", customer, "mobile_no")),
 			"link_description": (description or "").strip()[:140],
+			"upi_account": upi_account,
+			"company": company or None,
+			"cost_center": cost_center or None,
 			"device_name": settings.qr_pos_id or re.sub(r"[^A-Za-z0-9_]", "_", frappe.session.user)[:20],
 			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
 		}
@@ -551,6 +560,23 @@ def get_receipt_qr(order_id):
 	if not _is_receipt(txn) or txn.channel != "QR" or not txn.qr_data:
 		frappe.throw(_("No QR stored for {0}").format(order_id))
 	return {**_txn_result(txn), "qr_image": _qr_png(txn.qr_data)}
+
+
+def _validate_receipt_accounts(upi_account, company, cost_center):
+	"""Fail at QR creation, not after the customer has paid, when the receipt cannot be posted."""
+	acc = frappe.db.get_value("Account", upi_account, ["company", "is_group", "disabled"], as_dict=True)
+	if not acc or acc.is_group or acc.disabled:
+		frappe.throw(_("UPI account {0} is not a usable ledger account").format(upi_account))
+	if company and acc.company != company:
+		frappe.throw(_("UPI account {0} does not belong to company {1}").format(upi_account, company))
+	if cost_center:
+		cc_company = frappe.db.get_value("Cost Center", cost_center, "company")
+		if not cc_company:
+			frappe.throw(_("Cost Center {0} not found").format(cost_center))
+		if cc_company != (company or acc.company):
+			frappe.throw(
+				_("Cost Center {0} does not belong to company {1}").format(cost_center, company or acc.company)
+			)
 
 
 def _is_receipt(txn):
@@ -686,6 +712,8 @@ def _make_receipt(txn):
 	if frappe.db.get_value("SSPL Paytm Transaction", txn.name, "payment_entry", for_update=True):
 		return
 	settings = frappe.get_cached_doc("SSPL Paytm Settings")
+	# rows from before these fields existed use the settings account and the default company
+	upi_account = txn.get("upi_account") or settings.upi_account
 	session_user = frappe.session.user
 	frappe.db.savepoint("paytm_link_receipt")
 	try:
@@ -697,10 +725,12 @@ def _make_receipt(txn):
 				"party_type": "Customer",
 				"party": txn.customer,
 				"amount": txn.amount,
-				"mop_account": settings.upi_account,
+				"mop_account": upi_account,
+				"company": txn.get("company") or frappe.db.get_value("Account", upi_account, "company"),
+				"cost_center": txn.get("cost_center"),
 				# same fallback as the cashier desk when no Mode of Payment maps to the account
 				"mode_of_payment": frappe.db.get_value(
-					"Mode of Payment Account", {"default_account": settings.upi_account}, "parent"
+					"Mode of Payment Account", {"default_account": upi_account}, "parent"
 				)
 				or "Cash",
 				"reference_no": txn.rrn or txn.paytm_txn_id or txn.order_id,

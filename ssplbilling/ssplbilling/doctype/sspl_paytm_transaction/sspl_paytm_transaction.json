@@ -21,6 +21,9 @@
   "link_id",
   "short_url",
   "payment_entry",
+  "upi_account",
+  "company",
+  "cost_center",
   "qr_data",
   "result_section",
   "pay_method",
@@ -153,6 +156,28 @@
    "read_only": 1
   },
   {
+   "description": "Account the receipt is debited to; empty uses the UPI Account in SSPL Paytm Settings",
+   "fieldname": "upi_account",
+   "fieldtype": "Link",
+   "label": "UPI Account",
+   "options": "Account",
+   "read_only": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center",
+   "read_only": 1
+  },
+  {
    "fieldname": "qr_data",
    "fieldtype": "Small Text",
    "label": "QR Data",
@@ -213,7 +238,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-23 12:00:00",
+ "modified": "2026-10-23 18:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Paytm Transaction",
