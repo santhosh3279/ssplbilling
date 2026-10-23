@@ -11,7 +11,6 @@ export function fireConfetti({
   drag = 0.99,
 } = {}) {
   if (typeof document === 'undefined') return
-  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
 
   const canvas = document.createElement('canvas')
   canvas.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999'
