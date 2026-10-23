@@ -123,8 +123,15 @@
                     {{ m.author.split('@')[0] }}
                   </div>
                   <template v-if="INLINE_TYPES.has(m.type)">
+                    <audio
+                      v-if="mediaCache.get(m.id) && AUDIO_TYPES.has(m.type)"
+                      :src="mediaCache.get(m.id).url"
+                      controls
+                      preload="metadata"
+                      class="block h-12 w-72 max-w-full"
+                    />
                     <img
-                      v-if="mediaCache.get(m.id)"
+                      v-else-if="mediaCache.get(m.id)"
                       :src="mediaCache.get(m.id).url"
                       :alt="m.body || m.type"
                       class="block cursor-pointer rounded-lg"
@@ -137,12 +144,12 @@
                       v-lazy-media="m"
                       type="button"
                       class="flex max-w-full items-center justify-center rounded-lg bg-[var(--color-surface-raised)] px-3 text-center text-xs text-[var(--color-text-muted)]"
-                      :class="m.type === 'sticker' ? 'h-32 w-32' : 'h-48 w-64'"
+                      :class="m.type === 'sticker' ? 'h-32 w-32' : AUDIO_TYPES.has(m.type) ? 'h-12 w-72' : 'h-48 w-64'"
                       :disabled="!mediaFailed[m.id]"
                       @click="retryInline(m)"
                     >
                       <span v-if="mediaFailed[m.id]">⚠ Could not load<br />Tap to retry</span>
-                      <span v-else class="animate-pulse">🖼 Loading…</span>
+                      <span v-else class="animate-pulse">{{ AUDIO_TYPES.has(m.type) ? '🎤' : '🖼' }} Loading…</span>
                     </button>
                   </template>
                   <div v-else-if="mediaLabel(m)" class="text-xs font-semibold text-[var(--color-text-muted)]">{{ mediaLabel(m) }}</div>
@@ -249,8 +256,10 @@ const MAX_FILE_BYTES = 16 * 1024 * 1024
 const TICKS = { pending: '🕓', sent: '✓', delivered: '✓✓', read: '✓✓', failed: '⚠' }
 // Message types that carry a downloadable attachment
 const MEDIA_TYPES = new Set(['image', 'video', 'audio', 'voice', 'ptt', 'document', 'sticker'])
+// Played inside the bubble instead of drawn
+const AUDIO_TYPES = new Set(['audio', 'voice', 'ptt'])
 // Drawn inside the bubble as WhatsApp Web does; the rest stay behind Preview / Download
-const INLINE_TYPES = new Set(['image', 'sticker'])
+const INLINE_TYPES = new Set(['image', 'sticker', ...AUDIO_TYPES])
 // Each fetch makes OpenWA pull chat history with media, so only a couple run at once
 const INLINE_CONCURRENCY = 2
 // Archived attachments come back without a type, so recognise the common ones by their first bytes
