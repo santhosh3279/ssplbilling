@@ -85,7 +85,8 @@
             <form v-if="numberPrompt" class="space-y-2 rounded-lg bg-[#25D366]/15 p-3" @submit.prevent="submitNumber">
               <div class="text-xs font-semibold text-[var(--color-text)]">
                 {{ promptReason }}
-                Enter a new WhatsApp number — it is checked, saved to the {{ partyLabel }} and the bill is sent.
+                <template v-if="numberPrompt.reason === 'disabled'">Enter the number to send this bill to — it is used once and not saved.</template>
+                <template v-else>Enter a new WhatsApp number — it is checked, saved to the {{ partyLabel }} and the bill is sent.</template>
               </div>
               <div class="flex gap-2">
                 <input
@@ -100,7 +101,7 @@
                   :disabled="promptBusy || !promptNumber.trim()"
                   class="rounded-lg bg-[#25D366] px-3 py-2 text-xs font-bold text-black disabled:opacity-50"
                 >
-                  {{ promptBusy ? 'Checking…' : 'Save & Send' }}
+                  {{ promptBusy ? 'Checking…' : numberPrompt.reason === 'disabled' ? 'Send' : 'Save & Send' }}
                 </button>
                 <button type="button" class="rounded-lg px-2 text-xs text-[var(--color-text-muted)]" @click="numberPrompt = null">Cancel</button>
               </div>
@@ -201,6 +202,7 @@ const promptInput    = ref(null)
 const promptReason   = computed(() => {
   const p = numberPrompt.value
   if (!p) return ''
+  if (p.reason === 'disabled') return 'WhatsApp is disabled for this customer.'
   if (p.reason === 'failed') return `Sending to +${p.phone} failed${p.error ? ` (${p.error})` : ''}.`
   if (p.reason === 'invalid') return `+${p.phone} is not on WhatsApp.`
   return 'No WhatsApp number on file.'
@@ -835,6 +837,27 @@ async function submitNumber() {
   if (!prompt || !promptNumber.value.trim() || promptBusy.value) return
   promptBusy.value = true
   error.value = ''
+  if (prompt.reason === 'disabled') {
+    // WhatsApp disabled on the customer: send to this number once, store it nowhere
+    try {
+      const sent = await frappePost('ssplbilling.api.whatsapp_api.send_document_to_number', {
+        doctype: props.doctype,
+        document_name: props.invoiceName,
+        phone: promptNumber.value,
+        pdf_base64: prompt.bill.pdf,
+        filename: prompt.bill.billName,
+        caption: prompt.bill.caption,
+      }, { silent: true })
+      numberPrompt.value = null
+      success.value = `Sent "${prompt.bill.billName}" to +${sent.phone} via OpenWA (number not saved)`
+    } catch (e) {
+      error.value = e.message || String(e)
+      promptInput.value?.focus()
+    } finally {
+      promptBusy.value = false
+    }
+    return
+  }
   try {
     await frappePost('ssplbilling.api.whatsapp_api.save_party_whatsapp', {
       doctype: props.doctype,

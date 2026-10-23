@@ -60,6 +60,8 @@ export async function fetchCustomerDetails(customerId) {
     result.email = cust.email_id || ''
     result.gstin = cust.gstin || ''
     result.disabled = cust.disabled || 0
+    // Unset on rows from before the field existed: those are enabled
+    result.whatsapp_enabled = cust.whatsapp_enabled ?? 1
     result.pricelist_multiplication_factor = cust.pricelist_multiplication_factor !== undefined ? cust.pricelist_multiplication_factor : null
 
     // 2. Fetch linked Address

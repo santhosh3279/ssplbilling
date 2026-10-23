@@ -427,6 +427,9 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 	party_doctype, party = get_party_link(doctype, document_name)
 	if not party:
 		frappe.throw(_("This document has no customer or supplier to send it to"))
+	if not _party_whatsapp_enabled(party_doctype, party):
+		# The saved number is not to be used: ask every time, see send_document_to_number()
+		return {"needs_number": True, "party_type": party_doctype, "reason": "disabled", "phone": ""}
 	number = normalize_whatsapp_number(get_party_whatsapp(party_doctype, party))
 	if not number:
 		return {"needs_number": True, "party_type": party_doctype, "reason": "missing", "phone": ""}
@@ -443,20 +446,7 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 			# Kept although the request returns normally: Frappe commits POSTs
 			return {"needs_number": True, "party_type": party_doctype, "reason": "invalid", "phone": number}
 
-	try:
-		head = base64.b64decode(pdf_base64[:8], validate=True)
-	except (binascii.Error, TypeError):
-		head = b""
-	if not head.startswith(b"%PDF"):
-		frappe.throw(_("The bill is not a PDF"))
-
-	body = {
-		"base64": pdf_base64,
-		"mimetype": "application/pdf",
-		"filename": filename,
-		"caption": (caption or "")[:1024],
-	}
-
+	body = _bill_body(pdf_base64, filename, caption)
 	number_failure = {}
 
 	def on_failure(error):
@@ -490,6 +480,54 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 			"phone": number,
 			"error": number_failure["error"],
 		}
+
+
+def _bill_body(pdf_base64, filename, caption):
+	try:
+		head = base64.b64decode(pdf_base64[:8], validate=True)
+	except (binascii.Error, TypeError):
+		head = b""
+	if not head.startswith(b"%PDF"):
+		frappe.throw(_("The bill is not a PDF"))
+	return {
+		"base64": pdf_base64,
+		"mimetype": "application/pdf",
+		"filename": filename,
+		"caption": (caption or "")[:1024],
+	}
+
+
+def _party_whatsapp_enabled(party_doctype, party):
+	"""Only customers carry the switch; suppliers always use their saved number."""
+	if party_doctype != "Customer":
+		return True
+	enabled = frappe.db.get_value("Customer", party, "whatsapp_enabled")
+	# A row from before the field existed reads None: that is the default, enabled
+	return enabled is None or bool(frappe.utils.cint(enabled))
+
+
+@frappe.whitelist(methods=["POST"])
+def send_document_to_number(doctype, document_name, phone, pdf_base64, filename, caption=""):
+	"""Send a bill to a number the operator typed, for a customer whose WhatsApp is disabled.
+
+	The number is used for this one send only: it is not written to the customer, its contact or
+	its WhatsApp status. Allowed only when the bill's customer has WhatsApp disabled, so the
+	party's saved number is never bypassed this way.
+	"""
+	_require_desk_user()
+	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
+	settings = _settings()
+	if not settings.enabled:
+		frappe.throw(_("Sending bills via OpenWA is turned off"))
+	party_doctype, party = get_party_link(doctype, document_name)
+	if not party or _party_whatsapp_enabled(party_doctype, party):
+		frappe.throw(_("This customer's WhatsApp is enabled; send to the saved number instead"))
+
+	number = normalize_whatsapp_number(phone)
+	if not number or len(number) < 11:
+		frappe.throw(_("Enter a full mobile number"))
+	body = _bill_body(pdf_base64, filename, caption)
+	return _send(number, "Document", "send-document", body, caption, reference=(doctype, document_name))
 
 
 @frappe.whitelist()
@@ -606,6 +644,9 @@ def check_party_whatsapp(party_doctype, party, force=False):
 	never changes the recorded status, since it says nothing about the number; the reason is
 	returned instead.
 	"""
+	if not _party_whatsapp_enabled(party_doctype, party):
+		# A disabled number is never used, so it is not checked either
+		return {"status": NOT_CHECKED, "phone": "", "error": "", "disabled": True}
 	number = normalize_whatsapp_number(get_party_whatsapp(party_doctype, party))
 	if not number:
 		_record_party_status(party_doctype, party, "", NOT_CHECKED)
@@ -640,6 +681,7 @@ def get_party_whatsapp_status(party_doctype, party):
 		party_doctype, party, ["whatsapp_status", "whatsapp_verified_number", "whatsapp_checked_on"]
 	) or (None, None, None)
 	return {
+		"enabled": _party_whatsapp_enabled(party_doctype, party),
 		"status": status or NOT_CHECKED,
 		"verified_number": checked or "",
 		"checked_on": checked_on,

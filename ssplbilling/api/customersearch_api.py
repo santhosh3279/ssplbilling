@@ -746,6 +746,8 @@ def update_customer_full(data):
 	cust.gstin = data.get("gstin") or ""
 	cust.gst_category = "Registered Regular" if cust.gstin else "Unregistered"
 	cust.disabled = 1 if data.get("disabled") else 0
+	if "whatsapp_enabled" in data:
+		cust.whatsapp_enabled = 1 if frappe.utils.cint(data.get("whatsapp_enabled")) else 0
 	
 	if "pricelist_modifier" in data:
 		mod = float(data.get("pricelist_modifier") or 0)
@@ -889,6 +891,8 @@ def create_customer_full(data):
         "gstin": data.get("gstin") or "",
         "gst_category": "Registered Regular" if data.get("gstin") else "Unregistered",
         "disabled": 1 if data.get("disabled") else 0,
+        # On unless the form explicitly turned it off
+        "whatsapp_enabled": frappe.utils.cint(data.get("whatsapp_enabled", 1)),
         "pricelist_multiplication_factor": 1 + float(modifier or 0) / 100,
     })
     customer.insert()

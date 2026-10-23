@@ -157,7 +157,25 @@
         <div class="flex flex-col gap-1.5">
           <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp Number</label>
           <input v-model="form.whatsapp" class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em;" placeholder="10-digit whatsapp" maxlength="10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
-          <WhatsAppStatus party-doctype="Customer" :party="isEdit ? form.name : ''" :number="form.whatsapp" />
+          <WhatsAppStatus v-if="form.whatsapp_enabled" party-doctype="Customer" :party="isEdit ? form.name : ''" :number="form.whatsapp" />
+          <label
+            class="mt-1 flex cursor-pointer items-center gap-2 rounded px-2 py-1"
+            :class="form.whatsapp_enabled ? '' : 'bg-[var(--color-warning)]/15'"
+          >
+            <input
+              v-model="form.whatsapp_enabled"
+              type="checkbox"
+              :true-value="1"
+              :false-value="0"
+              class="h-5 w-5 rounded border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-info)] focus:ring-[var(--color-info)]"
+              @keydown.esc.stop="$emit('close')"
+              @keydown.enter.prevent="handleFormEnter"
+            />
+            <span class="text-base font-semibold uppercase tracking-wider text-[var(--color-text)]">WhatsApp Enabled</span>
+          </label>
+          <p v-if="!form.whatsapp_enabled" class="text-xs text-[var(--color-text-muted)]">
+            The saved number is not used: sending a bill asks for a number every time and keeps none.
+          </p>
         </div>
 
         <div class="flex flex-col gap-1.5">
@@ -266,6 +284,7 @@ const defaultForm = () => ({
   primary_party: '',
   primary_party_role: '',
   disabled: 0,
+  whatsapp_enabled: 1,
 })
 
 const form = ref(defaultForm())
@@ -310,6 +329,7 @@ onMounted(async () => {
       primary_party:  '',
       primary_party_role: '',
       disabled:       row.disabled       || 0,
+      whatsapp_enabled: 1,
     }
     primaryPartyQuery.value = ''
     editLoading.value = true
