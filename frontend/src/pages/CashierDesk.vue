@@ -1781,7 +1781,7 @@ function applyPaytmResult(r) {
     lockPaytmPayment('upi', r.amount, r.reference_no)
   }
   p.message = `₹${fmt(r.amount)} received by ${r.mode === 'card' ? 'card' : 'UPI'} (Ref ${r.reference_no})`
-  fireConfetti()
+  fireConfetti({ count: 800, allCorners: true })
   setTimeout(() => {
     if (paytm.value.orderId === r.order_id) closePaytmModal()
     nextTick(() => postButton.value?.focus())
@@ -1867,7 +1867,7 @@ function applyPaytmQrResult(r) {
   upiRefNo.value = r.reference_no
   lockPaytmPayment('upi', r.amount, r.reference_no)
   q.message = `₹${fmt(r.amount)} received by UPI (Ref ${r.reference_no})`
-  fireConfetti()
+  fireConfetti({ count: 800, allCorners: true })
   setTimeout(() => {
     if (paytmQr.value.orderId === r.order_id) closePaytmQr()
     nextTick(() => postButton.value?.focus())
