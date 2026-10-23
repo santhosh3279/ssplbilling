@@ -464,6 +464,9 @@ function applyToLocalStorage(settings, targetUserArg) {
   if (settings.user_defaults?.income_account) localStorage.setItem('wb-income-account', settings.user_defaults.income_account)
   if (settings.user_defaults?.company)        localStorage.setItem('wb-company',        settings.user_defaults.company)
   if (settings.user_defaults?.default_printer) localStorage.setItem('wb-default-printer', settings.user_defaults.default_printer)
+  // Paytm card machine assigned to this user; cleared when the assignment is removed
+  ;[['wb-tid', settings.user_defaults?.paytm_tid], ['wb-posid', settings.user_defaults?.paytm_pos_id]]
+    .forEach(([k, v]) => (v ? localStorage.setItem(k, v) : localStorage.removeItem(k)))
 
   // Set billing defaults from the first visible series row
   const firstSeries = (settings.billing_series || [])[0]

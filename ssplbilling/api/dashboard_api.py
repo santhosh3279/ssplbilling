@@ -667,6 +667,16 @@ def get_billing_settings(user=None, company=None):
 	automatic_entries = frappe.get_cached_doc("Automatic Entries", "Automatic Entries")
 	incentive_rule = frappe.get_cached_doc("Incentive Rule")
 
+	# The card machine assigned to this user in SSPL Paytm Settings (first enabled row)
+	paytm_device = frappe.get_all(
+		"SSPL Paytm Device",
+		filters={"parent": "SSPL Paytm Settings", "user": target_user, "enabled": 1},
+		fields=["tid", "pos_id"],
+		order_by="idx asc",
+		limit=1,
+	)
+	paytm_device = paytm_device[0] if paytm_device else {}
+
 	user_zoom = (user_row.zoom_value or "") if user_row else ""
 	user_theme = (user_row.theme or "Light") if user_row else "Light"
 	user_defaults = {
@@ -680,6 +690,8 @@ def get_billing_settings(user=None, company=None):
 		"income_account": (user_row.income_account or "") if user_row else "",
 		"company": (user_row.company or "") if user_row else "",
 		"default_printer": (user_row.default_printer or "") if user_row else "",
+		"paytm_tid": paytm_device.get("tid") or "",
+		"paytm_pos_id": paytm_device.get("pos_id") or "",
 		"theme": user_theme,
 	}
 

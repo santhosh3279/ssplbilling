@@ -165,6 +165,9 @@ async function syncBillingSettings(targetUser, force) {
       if (defaults.cost_center) localStorage.setItem('wb-cost-center', defaults.cost_center)
       if (defaults.income_account) localStorage.setItem('wb-income-account', defaults.income_account)
       if (defaults.company) localStorage.setItem('wb-company', defaults.company)
+      // Paytm card machine assigned to this user; cleared when the assignment is removed
+      ;[['wb-tid', defaults.paytm_tid], ['wb-posid', defaults.paytm_pos_id]]
+        .forEach(([k, v]) => (v ? localStorage.setItem(k, v) : localStorage.removeItem(k)))
     }
 
     // Printer & Template mapping from settings
