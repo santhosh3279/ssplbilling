@@ -20,6 +20,7 @@ const PurchaseSubmit = () => import('./pages/PurchaseSubmit.vue')
 const GeneralLedger = () => import('./pages/GeneralLedger.vue')
 const PaymentV2 = () => import('./pages/paymentv2.vue')
 const PaytmLink = () => import('./pages/PaytmLink.vue')
+const WhatsAppLink = () => import('./pages/WhatsAppLink.vue')
 const JournalContraEntry = () => import('./pages/JournalContraEntry.vue')
 const CashierManagement = () => import('./pages/CashierManagement.vue')
 const PricingRuleSync = () => import('./pages/PricingRuleSync.vue')
@@ -324,6 +325,12 @@ const routes = [
     name: 'PaytmLink',
     component: PaytmLink,
     meta: { title: 'Paytm Receipt' },
+  },
+  {
+    path: '/whatsapp-link',
+    name: 'WhatsAppLink',
+    component: WhatsAppLink,
+    meta: { title: 'WhatsApp Link' },
   },
   {
     path: '/stock-reconciliation',

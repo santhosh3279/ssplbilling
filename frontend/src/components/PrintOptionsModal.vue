@@ -111,7 +111,7 @@
               </button>
 
               <button
-                v-if="hasExtension"
+                v-if="hasExtension || gatewayReady"
                 @click="sendWhatsApp"
                 :disabled="whatsapping || !templates.length"
                 class="w-full rounded-xl py-3 text-sm font-bold border transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border-[#25D366] text-[#25D366] bg-[var(--color-surface)] hover:bg-[#25D366]/10"
@@ -165,6 +165,9 @@ const whatsapping    = ref(false)
 // offering an action that ends in "install the extension". Read on mount: the content script
 // stamps the page at document_start, long before this modal opens.
 const hasExtension   = ref(false)
+// OpenWA gateway linked and enabled: the bill goes out from the server, no WhatsApp tab needed.
+// Asked on open, because the click handler must decide synchronously whether to open a tab.
+const gatewayReady   = ref(false)
 const refreshing     = ref(false)
 const error          = ref('')
 const success        = ref('')
@@ -341,7 +344,7 @@ function handleKeydown(e) {
   } else if (e.key.toLowerCase() === 'r') {
     e.preventDefault()
     refreshLists()
-  } else if (e.key.toLowerCase() === 'w' && hasExtension.value) {
+  } else if (e.key.toLowerCase() === 'w' && (hasExtension.value || gatewayReady.value)) {
     e.preventDefault()
     sendWhatsApp()
   }
@@ -351,6 +354,9 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   hasExtension.value = hasWhatsAppBridge()
   loadSettings()
+  frappeGet('ssplbilling.api.whatsapp_api.get_gateway_state')
+    .then((r) => { gatewayReady.value = !!r?.ready })
+    .catch(() => { gatewayReady.value = false })
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
@@ -638,13 +644,14 @@ async function sendWhatsApp() {
   // With the SSPL WhatsApp Tab extension installed, the tab is found and focused by the
   // extension — opening one here as well would leave the operator with two.
   const viaBridge = hasWhatsAppBridge()
+  const viaGateway = gatewayReady.value
 
   // No extension: fall back to a named target so at least this app's own tab is reused.
   // WhatsApp's Cross-Origin-Opener-Policy clears that name once the tab reaches
   // web.whatsapp.com, so the reuse only holds until the first chat loads. Opened
   // synchronously inside the click because a window.open after the awaits below is
   // blocked as an unsolicited popup.
-  const waTab = viaBridge ? null : window.open('', WHATSAPP_WINDOW_NAME)
+  const waTab = viaBridge || viaGateway ? null : window.open('', WHATSAPP_WINDOW_NAME)
   waTab?.focus()
   // Only a tab this click created is disposable. A reused one already holds the operator's
   // WhatsApp session and must survive a failure below. A fresh window is still same-origin
@@ -677,6 +684,33 @@ async function sendWhatsApp() {
     const waUrl = recipient.phone
       ? `https://web.whatsapp.com/send?phone=${recipient.phone}&text=${text}`
       : `https://web.whatsapp.com/`
+
+    if (viaGateway && recipient.phone) {
+      try {
+        const sent = await frappePost('ssplbilling.api.whatsapp_api.send_document', {
+          doctype: props.doctype,
+          document_name: props.invoiceName,
+          phone: recipient.phone,
+          base64: await blobToBase64(blob),
+          filename: billName,
+          caption,
+        }, { silent: true })
+        success.value = `Sent "${billName}" to +${sent.phone} via OpenWA`
+        return
+      } catch (e) {
+        // The extension can still deliver it by hand; without one the operator needs the file
+        if (!viaBridge) {
+          saveBillPdf(billName, blob)
+          error.value = `OpenWA send failed, saved "${billName}" instead: ${e.message || e}`
+          return
+        }
+        console.warn('[PrintOptionsModal] OpenWA send failed, using the extension:', e)
+      }
+    } else if (viaGateway && !viaBridge) {
+      saveBillPdf(billName, blob)
+      success.value = `Saved "${billName}" — no WhatsApp number on file for this party`
+      return
+    }
 
     if (viaBridge) {
       // The extension puts the bill straight into WhatsApp's attachment preview. It refuses to

@@ -239,8 +239,9 @@ export function isDevLicense(info) {
 // HRMS sub-pages are now restricted under the 'hrms' license feature.
 export const PUBLIC_HRMS_ROUTES = []
 
-// Tiles that are never gated by the license `features` list (free with every license)
-const LICENSE_FREE_TILES = new Set(['stock-check'])
+// Tiles that are never gated by the license `features` list (free with every license).
+// WhatsApp Link only pairs the OpenWA gateway (System Manager, server-checked); it bills nothing itself.
+const LICENSE_FREE_TILES = new Set(['stock-check', 'whatsapp-link'])
 
 // Tiles licensed under another tile's feature instead of their own id.
 // Customer users exist to log in to the catalogue, so they ride on the Catalogue Editor licence.
@@ -373,6 +374,7 @@ const TILE_ROUTE_MAP = {
   'stock-reconciliation': 'StockReconciliation',
   'payment':           'Payment',
   'paytm-link':        'PaytmLink',
+  'whatsapp-link':     'WhatsAppLink',
   'expense':           'Expense',
   'pricelist-update':  'PriceListUpdate',
   'barcode-print':     'BarcodePrintPage',

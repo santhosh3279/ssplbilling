@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "creation": "2026-10-23 00:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "column_break_enabled",
+  "session_name",
+  "gateway_section",
+  "base_url",
+  "column_break_gateway",
+  "api_key",
+  "session_section",
+  "session_id",
+  "status",
+  "column_break_session",
+  "phone",
+  "push_name",
+  "last_checked"
+ ],
+ "fields": [
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Send Bills via OpenWA",
+   "default": "0",
+   "description": "When the linked session is ready, the print dialog's WhatsApp button sends the bill PDF straight from the server instead of through WhatsApp Web"
+  },
+  {
+   "fieldname": "column_break_enabled",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "session_name",
+   "fieldtype": "Data",
+   "label": "Session Name",
+   "default": "sspl-billing",
+   "reqd": 1,
+   "description": "OpenWA session to use: 3-50 letters, numbers or hyphens. Created on first connect."
+  },
+  {
+   "fieldname": "gateway_section",
+   "fieldtype": "Section Break",
+   "label": "OpenWA Gateway"
+  },
+  {
+   "fieldname": "base_url",
+   "fieldtype": "Data",
+   "label": "Gateway URL",
+   "default": "http://127.0.0.1:2785",
+   "reqd": 1,
+   "description": "Without the /api suffix"
+  },
+  {
+   "fieldname": "column_break_gateway",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API Key",
+   "description": "Unscoped OPERATOR key (owa_k1_…) from the OpenWA dashboard"
+  },
+  {
+   "fieldname": "session_section",
+   "fieldtype": "Section Break",
+   "label": "Linked Session"
+  },
+  {
+   "fieldname": "session_id",
+   "fieldtype": "Data",
+   "label": "Session ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_session",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Linked Number",
+   "read_only": 1
+  },
+  {
+   "fieldname": "push_name",
+   "fieldtype": "Data",
+   "label": "Profile Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_checked",
+   "fieldtype": "Datetime",
+   "label": "Last Checked",
+   "read_only": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-10-23 00:00:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL WhatsApp Settings",
+ "owner": "Administrator",
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "issingle": 1,
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ]
+}
