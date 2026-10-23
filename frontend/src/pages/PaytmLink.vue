@@ -214,14 +214,7 @@
             </template>
 
             <!-- Link -->
-            <div v-else-if="selected.short_url" class="flex items-center gap-2">
-              <input
-                ref="urlInput"
-                :value="selected.short_url"
-                readonly
-                class="flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 font-mono text-sm outline-none"
-                @focus="$event.target.select()"
-              />
+            <div v-else-if="selected.short_url" class="flex items-center justify-end gap-2">
               <button @click="copyText(selected.short_url)" class="rounded-lg bg-[var(--color-info)] px-4 py-2 font-bold text-white">{{ copied ? 'Copied' : 'Copy' }}</button>
               <a
                 v-if="selected.customer_mobile"
@@ -346,7 +339,6 @@ const customerInput = ref(null)
 const amountInput = ref(null)
 const descInput = ref(null)
 const mobileInput = ref(null)
-const urlInput = ref(null)
 
 const canShareFiles = typeof navigator !== 'undefined' && !!navigator.canShare
 
@@ -547,9 +539,16 @@ async function copyText(text) {
   try {
     await navigator.clipboard.writeText(text)
   } catch {
-    // clipboard API needs https (store terminals use http on the LAN); copy from the input instead
-    urlInput.value?.select()
-    if (!document.execCommand('copy')) return
+    // clipboard API needs https (store terminals use http on the LAN); copy via a temporary textarea
+    const ta = document.createElement('textarea')
+    ta.value = text
+    ta.style.position = 'fixed'
+    ta.style.opacity = '0'
+    document.body.appendChild(ta)
+    ta.select()
+    const ok = document.execCommand('copy')
+    ta.remove()
+    if (!ok) return
   }
   copied.value = true
   setTimeout(() => { copied.value = false }, 1500)
