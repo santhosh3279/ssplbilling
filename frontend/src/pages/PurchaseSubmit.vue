@@ -312,6 +312,11 @@
                   {{ successMsg }}
                 </div>
 
+                <div v-if="selectedInvoice.custom_remarks" class="mb-4 rounded-xl bg-[var(--color-highlight)]/15 border border-[var(--color-highlight)] p-4">
+                  <div class="text-[12px] font-bold uppercase tracking-widest text-[var(--color-highlight)] mb-1">Remark</div>
+                  <p class="text-[17px] font-semibold text-[var(--color-text)] leading-snug whitespace-pre-wrap break-words">{{ selectedInvoice.custom_remarks }}</p>
+                </div>
+
                 <button
                   @click="confirmSubmission"
                   :disabled="isSubmitting"
