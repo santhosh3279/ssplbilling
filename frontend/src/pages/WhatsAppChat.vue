@@ -116,6 +116,24 @@
                     {{ m.author.split('@')[0] }}
                   </div>
                   <div v-if="mediaLabel(m)" class="text-xs font-semibold text-[var(--color-text-muted)]">{{ mediaLabel(m) }}</div>
+                  <div v-if="MEDIA_TYPES.has(m.type)" class="mt-1 flex gap-1.5">
+                    <button
+                      type="button"
+                      class="rounded-md bg-[var(--color-surface-raised)] px-2 py-0.5 text-xs font-semibold hover:bg-[var(--color-info)]/20 disabled:opacity-50"
+                      :disabled="!!mediaBusy[m.id]"
+                      @click="previewMedia(m, i)"
+                    >
+                      {{ mediaBusy[m.id] === 'preview' ? 'Loading…' : '👁 Preview' }}
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-md bg-[var(--color-surface-raised)] px-2 py-0.5 text-xs font-semibold hover:bg-[var(--color-info)]/20 disabled:opacity-50"
+                      :disabled="!!mediaBusy[m.id]"
+                      @click="downloadMedia(m, i)"
+                    >
+                      {{ mediaBusy[m.id] === 'download' ? 'Loading…' : '⬇ Download' }}
+                    </button>
+                  </div>
                   <div v-if="m.body" class="whitespace-pre-wrap break-words">{{ m.body }}</div>
                   <div class="mt-0.5 text-right text-[10px] text-[var(--color-text-muted)]">
                     {{ clock(m.timestamp) }}
@@ -160,6 +178,30 @@
         </template>
       </section>
     </div>
+
+    <!-- Attachment preview -->
+    <div
+      v-if="viewer"
+      class="fixed inset-0 z-50 flex flex-col bg-black/80 p-4"
+      @click.self="viewer = null"
+    >
+      <div class="mx-auto flex w-full max-w-5xl shrink-0 items-center justify-between gap-3 pb-3 text-white">
+        <span class="truncate text-sm font-semibold">{{ viewer.filename }}</span>
+        <div class="flex shrink-0 gap-2">
+          <button class="rounded-lg bg-[#25D366] px-3 py-1.5 text-sm font-bold text-black" @click="saveFile(viewer)">⬇ Download</button>
+          <button class="rounded-lg bg-white/15 px-3 py-1.5 text-sm font-bold hover:bg-white/25" @click="viewer = null">✕ Close</button>
+        </div>
+      </div>
+      <div class="mx-auto flex min-h-0 w-full max-w-5xl flex-1 items-center justify-center" @click.self="viewer = null">
+        <img v-if="viewer.kind === 'image'" :src="viewer.url" :alt="viewer.filename" class="max-h-full max-w-full rounded-lg object-contain" />
+        <video v-else-if="viewer.kind === 'video'" :src="viewer.url" controls autoplay class="max-h-full max-w-full rounded-lg" />
+        <audio v-else-if="viewer.kind === 'audio'" :src="viewer.url" controls autoplay class="w-full max-w-md" />
+        <iframe v-else-if="viewer.kind === 'pdf'" :src="viewer.url" :title="viewer.filename" class="h-full w-full rounded-lg bg-white" />
+        <div v-else class="rounded-lg bg-[var(--color-surface)] p-6 text-center text-sm">
+          No preview for {{ viewer.mimetype || 'this file type' }}. Use Download to open it.
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -175,6 +217,20 @@ const THREAD_POLL_MS = 5000
 const MAX_FILE_BYTES = 16 * 1024 * 1024
 // WhatsApp's own marks: one tick sent, two delivered, two blue read
 const TICKS = { pending: '🕓', sent: '✓', delivered: '✓✓', read: '✓✓', failed: '⚠' }
+// Message types that carry a downloadable attachment
+const MEDIA_TYPES = new Set(['image', 'video', 'audio', 'voice', 'ptt', 'document', 'sticker'])
+// Archived attachments come back without a type, so recognise the common ones by their first bytes
+const MAGIC = [
+  ['%PDF', 'application/pdf'],
+  ['\xFF\xD8\xFF', 'image/jpeg'],
+  ['\x89PNG', 'image/png'],
+  ['GIF8', 'image/gif'],
+  ['OggS', 'audio/ogg'],
+]
+const EXTENSIONS = {
+  'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif', 'image/webp': 'webp',
+  'video/mp4': 'mp4', 'audio/ogg': 'ogg', 'audio/mpeg': 'mp3', 'audio/mp4': 'm4a',
+}
 
 const router = useRouter()
 
@@ -192,6 +248,11 @@ const sending = ref(false)
 const starting = ref(false)
 const threadEl = ref(null)
 const composerEl = ref(null)
+const viewer = ref(null)
+// message id -> 'preview' | 'download' while its attachment is being fetched
+const mediaBusy = ref({})
+// message id -> { url, mimetype, filename, kind }; object URLs are revoked when the chat closes
+const mediaCache = new Map()
 
 let chatsTimer = null
 let threadTimer = null
@@ -248,6 +309,81 @@ function fileSize(bytes) {
   return bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.ceil(bytes / 1024)} KB`
 }
 
+function sniffMimetype(bytes) {
+  const head = String.fromCharCode(...bytes.subarray(0, 4))
+  if (head === 'RIFF' && String.fromCharCode(...bytes.subarray(8, 12)) === 'WEBP') return 'image/webp'
+  if (String.fromCharCode(...bytes.subarray(4, 8)) === 'ftyp') return 'video/mp4'
+  return MAGIC.find(([sig]) => head.startsWith(sig))?.[1] || 'application/octet-stream'
+}
+
+function previewKind(mimetype) {
+  if (mimetype === 'application/pdf') return 'pdf'
+  return ['image', 'video', 'audio'].find((k) => mimetype.startsWith(`${k}/`)) || ''
+}
+
+function clearMedia() {
+  viewer.value = null
+  mediaBusy.value = {}
+  for (const f of mediaCache.values()) URL.revokeObjectURL(f.url)
+  mediaCache.clear()
+}
+
+async function fetchMedia(m, i) {
+  if (mediaCache.has(m.id)) return mediaCache.get(m.id)
+  const chatId = active.value.id
+  const qs = new URLSearchParams({ chat_id: chatId, message_id: m.id, depth: String(messages.value.length - i) })
+  const res = await fetch(`/api/method/${API}.get_chat_media?${qs}`)
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok || json.exc) {
+    // frappe.throw puts the readable text in _server_messages
+    let msg = ''
+    try { msg = JSON.parse(JSON.parse(json._server_messages)[0]).message } catch { /* fall through */ }
+    throw new Error(msg || `Could not load the attachment (HTTP ${res.status})`)
+  }
+  const { data, filename } = json.message
+  const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0))
+  const mimetype = json.message.mimetype || sniffMimetype(bytes)
+  const name = filename || m.media?.filename || `whatsapp-${m.type}-${m.timestamp || Date.now()}.${EXTENSIONS[mimetype] || 'bin'}`
+  const file = { url: URL.createObjectURL(new Blob([bytes], { type: mimetype })), mimetype, filename: name, kind: previewKind(mimetype) }
+  // The operator may have switched chats while this downloaded
+  if (active.value?.id !== chatId) {
+    URL.revokeObjectURL(file.url)
+    return null
+  }
+  mediaCache.set(m.id, file)
+  return file
+}
+
+async function withMedia(m, i, mode, fn) {
+  if (mediaBusy.value[m.id]) return
+  mediaBusy.value = { ...mediaBusy.value, [m.id]: mode }
+  try {
+    const file = await fetchMedia(m, i)
+    if (file) fn(file)
+    error.value = ''
+  } catch (e) {
+    error.value = e.message || String(e)
+  } finally {
+    const { [m.id]: _, ...rest } = mediaBusy.value
+    mediaBusy.value = rest
+  }
+}
+
+function saveFile(file) {
+  const a = document.createElement('a')
+  a.href = file.url
+  a.download = file.filename
+  a.click()
+}
+
+function previewMedia(m, i) {
+  return withMedia(m, i, 'preview', (file) => { viewer.value = file })
+}
+
+function downloadMedia(m, i) {
+  return withMedia(m, i, 'download', saveFile)
+}
+
 function nearBottom() {
   const el = threadEl.value
   return !el || el.scrollHeight - el.scrollTop - el.clientHeight < 80
@@ -300,6 +436,7 @@ async function openChat(chat) {
   threadToken++
   active.value = chat
   messages.value = []
+  clearMedia()
   draft.value = ''
   pendingFile.value = null
   await loadThread({ scroll: true })
@@ -316,6 +453,7 @@ function closeChat() {
   clearTimeout(threadTimer)
   active.value = null
   messages.value = []
+  clearMedia()
 }
 
 async function startChat() {
@@ -398,7 +536,9 @@ function scheduleChatsPoll() {
 }
 
 function onKeydown(e) {
-  if (e.key === 'Escape' && active.value) closeChat()
+  if (e.key !== 'Escape') return
+  if (viewer.value) viewer.value = null
+  else if (active.value) closeChat()
 }
 
 onMounted(async () => {
@@ -413,5 +553,6 @@ onUnmounted(() => {
   threadToken++
   clearTimeout(chatsTimer)
   clearTimeout(threadTimer)
+  clearMedia()
 })
 </script>

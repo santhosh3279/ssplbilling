@@ -13,7 +13,8 @@ OpenWA's send-document route. Every send is recorded in SSPL WhatsApp Log. OpenW
 once it has accepted the message, which is not a delivery receipt.
 
 Chat (WhatsApp Chat page): list_chats() / get_messages() read the linked account's chats live from
-the gateway; send_chat_message() / send_chat_file() reply in them. Open to System Managers and to
+the gateway; send_chat_message() / send_chat_file() reply in them; get_chat_media() fetches an
+attachment for preview or download. Open to System Managers and to
 users whose SSPL Dashboard Tile Access grants the whatsapp-chat tile.
 """
 
@@ -95,7 +96,7 @@ def _error_message(res):
 	return str(message or res.reason), body.get("code") if isinstance(body, dict) else None
 
 
-def _call(settings, method, path, json=None, params=None, timeout=REQUEST_TIMEOUT):
+def _call(settings, method, path, json=None, params=None, timeout=REQUEST_TIMEOUT, raw=False):
 	base_url = (settings.base_url or "").rstrip("/")
 	api_key = settings.get_password("api_key", raise_exception=False)
 	if not base_url or not api_key:
@@ -118,6 +119,9 @@ def _call(settings, method, path, json=None, params=None, timeout=REQUEST_TIMEOU
 		if res.status_code == 401:
 			message = _("OpenWA rejected the API key")
 		raise OpenWAError(res.status_code, message, code)
+
+	if raw:
+		return res
 
 	try:
 		return res.json()
@@ -903,3 +907,73 @@ def send_chat_file(chat_id, file_base64, mimetype, filename, caption=""):
 		body,
 		caption or filename,
 	)
+
+
+
+def _stored_media(settings, chat_id, message_id):
+	"""The copy OpenWA kept of a message it saw while linked, or None."""
+	try:
+		res = _call(
+			settings,
+			"GET",
+			_chat_path(settings, chat_id, f"/{quote(message_id, safe='@.')}/media"),
+			timeout=60,
+			raw=True,
+		)
+	except OpenWAError as e:
+		if e.status_code == 404:
+			return None
+		raise
+	content_type = (res.headers.get("content-type") or "").split(";")[0].strip()
+	return {
+		# Archived rows come back as a bare attachment; the page sniffs the bytes for those
+		"mimetype": "" if content_type == "application/octet-stream" else content_type,
+		"filename": "",
+		"data": base64.b64encode(res.content).decode(),
+	}
+
+
+def _live_media(settings, chat_id, message_id, depth):
+	"""Download one message's media from the phone through live history.
+
+	History downloads media oldest first against a per-response budget, so the window is sized to
+	start at the wanted message and it is served before anything newer can use the budget up.
+	"""
+	try:
+		history = _call(
+			settings,
+			"GET",
+			_chat_path(settings, chat_id, "/history"),
+			params={"limit": min(max(depth, 1), 100), "includeMedia": "true"},
+			timeout=90,
+		)
+	except OpenWAError as e:
+		# Baileys reads no live history
+		if e.status_code == 501:
+			return None
+		raise
+	media = next((m.get("media") for m in history if m.get("id") == message_id), None)
+	if not media or not media.get("data"):
+		return None
+	return {"mimetype": media.get("mimetype") or "", "filename": media.get("filename") or "", "data": media["data"]}
+
+
+@frappe.whitelist()
+def get_chat_media(chat_id, message_id, depth=0):
+	"""A message's attachment as {mimetype, filename, data (base64)}.
+
+	`depth` is the message's position counted from the newest in the open thread (1 = newest).
+	"""
+	_require_chat_user()
+
+	def run():
+		settings = _chat_settings()
+		media = _stored_media(settings, chat_id, message_id) or _live_media(
+			settings, chat_id, message_id, frappe.utils.cint(depth)
+		)
+		if not media:
+			# WhatsApp drops media from its servers after a while; the phone may still hold it
+			frappe.throw(_("This attachment could not be downloaded. Open it on the phone instead."))
+		return media
+
+	return _guarded(run)
