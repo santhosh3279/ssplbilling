@@ -316,7 +316,7 @@ const routes = [
     path: '/paytm-link',
     name: 'PaytmLink',
     component: PaytmLink,
-    meta: { title: 'Paytm Link Receipt' },
+    meta: { title: 'Paytm Receipt' },
   },
   {
     path: '/stock-reconciliation',

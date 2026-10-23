@@ -245,7 +245,7 @@ const LICENSE_FREE_TILES = new Set(['stock-check'])
 // Customer users exist to log in to the catalogue, so they ride on the Catalogue Editor licence.
 // Mobile Bill is another front end for Sales Invoice, so it rides on the Sales licence.
 // Item Barcodes edits the barcodes Print Barcodes prints, so it rides on that licence.
-// Paytm Link Receipt creates customer receipts, so it rides on the Payment Receipt licence.
+// Paytm Receipt (QR / link) creates customer receipts, so it rides on the Payment Receipt licence.
 const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display', 'mobile-bill': 'sales', 'item-barcode': 'barcode-print', 'paytm-link': 'payment' }
 
 function isLicensedFeature(features, tileId) {

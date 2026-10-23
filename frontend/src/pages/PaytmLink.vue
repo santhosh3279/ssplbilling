@@ -376,8 +376,9 @@ function statusLabel(l) {
 }
 
 // expires_in comes from the server (seconds), so the countdown does not depend on the PC clock
+// (0 = already expired: keep an earlier deadline, or none, so a reload does not restart the grace)
 function setDeadline(orderId, expiresIn) {
-  if (expiresIn != null) qrDeadlines[orderId] = Date.now() + Number(expiresIn) * 1000
+  if (Number(expiresIn) > 0) qrDeadlines[orderId] = Date.now() + Number(expiresIn) * 1000
 }
 
 function qrSecondsLeft(l) {
@@ -581,18 +582,24 @@ async function pollPending() {
   polling = true
   try {
     const today = serverToday()
-    const pending = links.value.filter((l) => l.status === 'Pending' && (l.transaction_datetime || '').startsWith(today))
+    const pending = links.value.filter((l) => l.status === 'Pending'
+      && (l.transaction_datetime || '').startsWith(today)
+      && (l.channel !== 'QR' || qrStillLive(l)))
     for (const l of pending) await checkStatus(l, { quiet: true })
   } finally {
     polling = false
   }
 }
 
+// keeps checking a minute past expiry, for a payment started just before it;
+// the scheduler picks up anything later
+function qrStillLive(l) {
+  return nowMs.value - (qrDeadlines[l.order_id] || 0) < 60000
+}
+
 function pollSelectedQr() {
   const l = selected.value
-  if (!l || l.channel !== 'QR' || l.status !== 'Pending' || document.hidden) return
-  // keep checking a minute past expiry, for a payment started just before it
-  if (qrSecondsLeft(l) === 0 && nowMs.value - (qrDeadlines[l.order_id] || 0) > 60000) return
+  if (!l || l.channel !== 'QR' || l.status !== 'Pending' || document.hidden || !qrStillLive(l)) return
   checkStatus(l, { quiet: true })
 }
 
