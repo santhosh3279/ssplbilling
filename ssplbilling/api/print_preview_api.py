@@ -180,29 +180,49 @@ def get_party_link(doctype, document_name):
 	return None, None
 
 
-def get_party_whatsapp(party_doctype, party):
-	"""WhatsApp number for a party: the Contact's secondary phone, else mobile_no.
-
-	Customer/Supplier creation in this app stores the WhatsApp number on the linked
-	Contact as a Contact Phone row with is_primary_mobile_no = 0 (see CustomerCreator
-	and customersearch_api), which is why the primary mobile is only the fallback.
-	"""
-	contact_name = frappe.db.get_value(
+def _party_contact(party_doctype, party):
+	return frappe.db.get_value(
 		"Dynamic Link",
 		{"link_doctype": party_doctype, "link_name": party, "parenttype": "Contact"},
 		"parent",
 	)
-	if contact_name:
-		phone = frappe.db.get_value(
-			"Contact Phone", {"parent": contact_name, "is_primary_mobile_no": 0}, "phone"
-		)
-		if phone:
-			return phone
 
+
+def get_party_saved_whatsapp(party_doctype, party):
+	"""The WhatsApp number stored on the party, without the mobile fallback.
+
+	Customer/Supplier creation in this app stores the WhatsApp number on the linked
+	Contact as a Contact Phone row with is_primary_mobile_no = 0 (see CustomerCreator
+	and customersearch_api).
+	"""
+	contact_name = _party_contact(party_doctype, party)
+	if not contact_name:
+		return ""
+	return (
+		frappe.db.get_value("Contact Phone", {"parent": contact_name, "is_primary_mobile_no": 0}, "phone")
+		or ""
+	)
+
+
+def get_party_mobile(party_doctype, party):
+	"""The party's mobile number: its own mobile_no, else its Contact's primary mobile.
+
+	mobile_no on Customer / Supplier is fetched from the primary contact, so it reads empty
+	when no primary contact is set even though the linked Contact has a mobile.
+	"""
 	if frappe.get_meta(party_doctype).has_field("mobile_no"):
-		return frappe.db.get_value(party_doctype, party, "mobile_no") or ""
-
+		mobile = frappe.db.get_value(party_doctype, party, "mobile_no")
+		if mobile:
+			return mobile
+	contact_name = _party_contact(party_doctype, party)
+	if contact_name:
+		return frappe.db.get_value("Contact", contact_name, "mobile_no") or ""
 	return ""
+
+
+def get_party_whatsapp(party_doctype, party):
+	"""WhatsApp number for a party: the stored WhatsApp number, else the mobile number."""
+	return get_party_saved_whatsapp(party_doctype, party) or get_party_mobile(party_doctype, party)
 
 
 def normalize_whatsapp_number(phone):

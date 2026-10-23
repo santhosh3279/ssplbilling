@@ -31,6 +31,8 @@ from ssplbilling.api.dashboard_api import get_allowed_tiles
 from ssplbilling.api.print_preview_api import (
 	DEFAULT_COUNTRY_CODE,
 	get_party_link,
+	get_party_mobile,
+	get_party_saved_whatsapp,
 	get_party_whatsapp,
 	normalize_whatsapp_number,
 )
@@ -420,7 +422,8 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 	business number can only ever message the party a bill belongs to. A missing number, one with
 	no WhatsApp account, or one WhatsApp refused on sending comes back as `needs_number` instead of
 	an error, so the dialog can ask for a new one and store it on the party with
-	save_party_whatsapp().
+	save_party_whatsapp(). A party with no WhatsApp number is sent to its mobile number, which is
+	then stored as its WhatsApp number (`saved_from_mobile`).
 	"""
 	_require_desk_user()
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
@@ -434,7 +437,12 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 	if not _party_whatsapp_enabled(party_doctype, party):
 		# The saved number is not to be used: ask every time, see send_document_to_number()
 		return {"needs_number": True, "party_type": party_doctype, "reason": "disabled", "phone": ""}
-	number = normalize_whatsapp_number(get_party_whatsapp(party_doctype, party))
+	number = normalize_whatsapp_number(get_party_saved_whatsapp(party_doctype, party))
+	# No WhatsApp number stored: try the mobile, and keep it as the WhatsApp number once a bill
+	# reaches it, so the next bill finds it without the fallback
+	from_mobile = not number
+	if from_mobile:
+		number = normalize_whatsapp_number(get_party_mobile(party_doctype, party))
 	if not number:
 		return {"needs_number": True, "party_type": party_doctype, "reason": "missing", "phone": ""}
 
@@ -461,7 +469,7 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 			number_failure["error"] = str(error)
 
 	try:
-		return _send(
+		sent = _send(
 			number,
 			"Document",
 			"send-document",
@@ -484,6 +492,19 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 			"phone": number,
 			"error": number_failure["error"],
 		}
+
+	# Saved only after the bill went through, so a mobile WhatsApp refused never becomes the
+	# stored WhatsApp number. The bill is already sent: a Contact that will not save is logged,
+	# not reported as a failed send.
+	if from_mobile:
+		frappe.db.savepoint("save_whatsapp_from_mobile")
+		try:
+			_set_contact_whatsapp(party_doctype, party, number)
+		except Exception:
+			frappe.db.rollback(save_point="save_whatsapp_from_mobile")
+			frappe.log_error(title=f"Could not save WhatsApp number for {party_doctype} {party}")
+			from_mobile = False
+	return {**sent, "saved_from_mobile": from_mobile}
 
 
 def _bill_body(pdf_base64, filename, caption):

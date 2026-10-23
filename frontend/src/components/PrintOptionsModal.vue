@@ -743,7 +743,9 @@ async function sendWhatsApp() {
           openNumberPrompt(sent, bill)
           return
         }
-        success.value = `Sent "${billName}" to +${sent.phone} via OpenWA`
+        success.value = sent.saved_from_mobile
+          ? `Sent "${billName}" to mobile +${sent.phone} via OpenWA — saved as the WhatsApp number`
+          : `Sent "${billName}" to +${sent.phone} via OpenWA`
         return
       } catch (e) {
         // The extension can still deliver it by hand; without one the operator needs the file
