@@ -784,10 +784,13 @@ def payment_webhook():
 		# a link payment may be reported under Paytm's own order id; find it by the link
 		order_id = frappe.db.get_value("SSPL Paytm Transaction", {"link_id": link_id}, "name") or ""
 	if not order_id or not frappe.db.exists("SSPL Paytm Transaction", order_id):
-		# kept so a payload shape we do not recognise (e.g. a new link callback) can be traced
-		frappe.log_error(title="Paytm webhook unknown order", message=raw[:5000])
-		frappe.local.response["http_status_code"] = 404
-		return {"status": "unknown order"}
+		# a payment the system did not start (static QR, soundbox, dashboard link): kept for the
+		# Paytm Unknown Payments page. Always 200, so Paytm does not keep retrying it.
+		from ssplbilling.api.paytm_unknown_api import record_unknown_payment
+
+		result = record_unknown_payment(raw, data, body)
+		frappe.db.commit()
+		return {"status": result}
 
 	settings = frappe.get_cached_doc("SSPL Paytm Settings")
 	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)

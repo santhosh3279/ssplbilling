@@ -20,6 +20,7 @@ const PurchaseSubmit = () => import('./pages/PurchaseSubmit.vue')
 const GeneralLedger = () => import('./pages/GeneralLedger.vue')
 const PaymentV2 = () => import('./pages/paymentv2.vue')
 const PaytmLink = () => import('./pages/PaytmLink.vue')
+const PaytmUnknown = () => import('./pages/PaytmUnknown.vue')
 const WhatsAppLink = () => import('./pages/WhatsAppLink.vue')
 const WhatsAppChat = () => import('./pages/WhatsAppChat.vue')
 const JournalContraEntry = () => import('./pages/JournalContraEntry.vue')
@@ -326,6 +327,12 @@ const routes = [
     name: 'PaytmLink',
     component: PaytmLink,
     meta: { title: 'Paytm Receipt' },
+  },
+  {
+    path: '/paytm-unknown',
+    name: 'PaytmUnknown',
+    component: PaytmUnknown,
+    meta: { title: 'Paytm Unknown Payments' },
   },
   {
     path: '/whatsapp-link',

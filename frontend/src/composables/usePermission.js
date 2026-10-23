@@ -71,6 +71,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'NamingSettings',
   'Payment',
   'PaytmLink',
+  'PaytmUnknown',
   'Expense',
   'IncentiveRedeem',
   'IncentiveEntry',
@@ -85,6 +86,7 @@ export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES
 export const ACCOUNTS_ROUTES = new Set([
   'Payment',
   'PaytmLink',
+  'PaytmUnknown',
   'JournalContraEntry',
   'Reports',
   'DailyReport',
@@ -249,8 +251,9 @@ const LICENSE_FREE_TILES = new Set(['stock-check', 'whatsapp-link', 'whatsapp-ch
 // Mobile Bill is another front end for Sales Invoice, so it rides on the Sales licence.
 // Item Barcodes edits the barcodes Print Barcodes prints, so it rides on that licence.
 // Paytm Receipt (QR / link) creates customer receipts, so it rides on the Payment Receipt licence.
+// Paytm Unknown Payments receipts payments from the same Paytm account, so it rides there too.
 // Cashier Mobile is the phone front end for the Cashier Desk, so it rides on the Cashier licence.
-const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display', 'mobile-bill': 'sales', 'item-barcode': 'barcode-print', 'paytm-link': 'payment', 'cashier-mobile': 'cashier' }
+const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display', 'mobile-bill': 'sales', 'item-barcode': 'barcode-print', 'paytm-link': 'payment', 'paytm-unknown': 'payment', 'cashier-mobile': 'cashier' }
 
 function isLicensedFeature(features, tileId) {
   const feature = LICENSE_FEATURE_ALIAS[tileId] || tileId
@@ -375,6 +378,7 @@ const TILE_ROUTE_MAP = {
   'stock-reconciliation': 'StockReconciliation',
   'payment':           'Payment',
   'paytm-link':        'PaytmLink',
+  'paytm-unknown':     'PaytmUnknown',
   'whatsapp-link':     'WhatsAppLink',
   'whatsapp-chat':     'WhatsAppChat',
   'expense':           'Expense',

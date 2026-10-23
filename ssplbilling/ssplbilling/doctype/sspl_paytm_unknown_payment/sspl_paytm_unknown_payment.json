@@ -1,0 +1,201 @@
+{
+ "actions": [],
+ "autoname": "PTU-.#####",
+ "creation": "2026-10-23 12:00:00",
+ "description": "Paytm payment notifications for orders the system did not create (static QR, soundbox, dashboard links). Receipted or deleted from the Paytm Unknown Payments page.",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "received_at",
+  "amount",
+  "status",
+  "verified",
+  "verification",
+  "column_break_1",
+  "paytm_order_id",
+  "paytm_txn_id",
+  "rrn",
+  "pay_method",
+  "txn_date",
+  "tid",
+  "receipt_section",
+  "payment_entry",
+  "party_type",
+  "party",
+  "column_break_2",
+  "paid_to",
+  "reference_no",
+  "payload_section",
+  "payload"
+ ],
+ "fields": [
+  {
+   "fieldname": "received_at",
+   "fieldtype": "Datetime",
+   "label": "Received At",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "amount",
+   "fieldtype": "Currency",
+   "label": "Amount",
+   "in_list_view": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "Open\nReceipted",
+   "default": "Open",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "verified",
+   "fieldtype": "Check",
+   "label": "Verified",
+   "default": "0",
+   "in_standard_filter": 1,
+   "read_only": 1,
+   "description": "Confirmed by Paytm's order status API or by a valid checksum"
+  },
+  {
+   "fieldname": "verification",
+   "fieldtype": "Data",
+   "label": "Verification",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "paytm_order_id",
+   "fieldtype": "Data",
+   "label": "Paytm Order ID",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "paytm_txn_id",
+   "fieldtype": "Data",
+   "label": "Paytm Txn ID",
+   "in_standard_filter": 1,
+   "search_index": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "rrn",
+   "fieldtype": "Data",
+   "label": "Bank Ref (RRN)",
+   "in_list_view": 1,
+   "search_index": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "pay_method",
+   "fieldtype": "Data",
+   "label": "Pay Method",
+   "read_only": 1
+  },
+  {
+   "fieldname": "txn_date",
+   "fieldtype": "Data",
+   "label": "Paytm Txn Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tid",
+   "fieldtype": "Data",
+   "label": "TID",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "receipt_section",
+   "fieldtype": "Section Break",
+   "label": "Receipt"
+  },
+  {
+   "fieldname": "payment_entry",
+   "fieldtype": "Link",
+   "label": "Payment Entry",
+   "options": "Payment Entry",
+   "read_only": 1
+  },
+  {
+   "fieldname": "party_type",
+   "fieldtype": "Data",
+   "label": "From Ledger Type",
+   "read_only": 1
+  },
+  {
+   "fieldname": "party",
+   "fieldtype": "Data",
+   "label": "From Ledger",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_2",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "paid_to",
+   "fieldtype": "Link",
+   "label": "To Ledger",
+   "options": "Account",
+   "read_only": 1
+  },
+  {
+   "fieldname": "reference_no",
+   "fieldtype": "Data",
+   "label": "Reference No",
+   "read_only": 1
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "payload_section",
+   "fieldtype": "Section Break",
+   "label": "Payload"
+  },
+  {
+   "fieldname": "payload",
+   "fieldtype": "Code",
+   "label": "Payload",
+   "options": "JSON",
+   "read_only": 1
+  }
+ ],
+ "in_create": 1,
+ "links": [],
+ "modified": "2026-10-23 12:00:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL Paytm Unknown Payment",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User"
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "rrn"
+}

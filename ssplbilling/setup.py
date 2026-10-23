@@ -236,6 +236,7 @@ DASHBOARD_TILES = [
 	("single-entry", "Single Entry", "Accounts"),
 	("payment", "Payment Receipt", "Accounts"),
 	("paytm-link", "Paytm Receipt", "Accounts"),
+	("paytm-unknown", "Paytm Unknown Payments", "Accounts"),
 	("unreconciled", "Unreconciled Entries", "Accounts"),
 	("payment-reconciliation", "Payment Reconciliation", "Accounts"),
 	("journal-contra", "Journal Contra", "Accounts"),
