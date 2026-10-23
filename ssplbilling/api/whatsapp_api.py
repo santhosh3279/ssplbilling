@@ -13,12 +13,19 @@ OpenWA's send-document route. Every send is recorded in SSPL WhatsApp Log. OpenW
 once it has accepted the message, which is not a delivery receipt.
 """
 
+import base64
+import binascii
+
 import frappe
 import requests
 from frappe import _
 from frappe.utils import now_datetime
 
-from ssplbilling.api.print_preview_api import normalize_whatsapp_number
+from ssplbilling.api.print_preview_api import (
+	get_party_link,
+	get_party_whatsapp,
+	normalize_whatsapp_number,
+)
 
 SETTINGS_DOCTYPE = "SSPL WhatsApp Settings"
 LOG_DOCTYPE = "SSPL WhatsApp Log"
@@ -43,6 +50,15 @@ class OpenWAError(frappe.ValidationError):
 
 def _require_manager():
 	frappe.only_for("System Manager")
+
+
+def _require_desk_user():
+	"""Portal (catalogue) logins can read their own bills but must not drive the business number."""
+	if (
+		frappe.session.user == "Guest"
+		or frappe.get_cached_value("User", frappe.session.user, "user_type") != "System User"
+	):
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
 
 
 def _settings():
@@ -186,7 +202,9 @@ def save_settings(base_url, session_name, enabled=0, api_key=None):
 	return get_settings()
 
 
-@frappe.whitelist()
+# POST because it mirrors the gateway's status onto the settings, and Frappe only commits writes
+# made during unsafe requests
+@frappe.whitelist(methods=["POST"])
 def get_status():
 	_require_manager()
 
@@ -345,14 +363,31 @@ def send_test(phone, text):
 
 
 @frappe.whitelist(methods=["POST"])
-def send_document(doctype, document_name, phone, base64, filename, caption=""):
-	"""Send a bill PDF the print dialog already rendered to the party's WhatsApp."""
+def send_document(doctype, document_name, pdf_base64, filename, caption=""):
+	"""Send a bill PDF the print dialog already rendered to the party's WhatsApp.
+
+	The number is looked up here from the bill's party, never taken from the caller, so the
+	business number can only ever message the party a bill belongs to.
+	"""
+	_require_desk_user()
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
 	if not frappe.utils.cint(frappe.db.get_single_value(SETTINGS_DOCTYPE, "enabled")):
 		frappe.throw(_("Sending bills via OpenWA is turned off"))
 
+	party_doctype, party = get_party_link(doctype, document_name)
+	phone = get_party_whatsapp(party_doctype, party) if party else ""
+	if not phone:
+		frappe.throw(_("No WhatsApp number on file for this party"))
+
+	try:
+		head = base64.b64decode(pdf_base64[:8], validate=True)
+	except (binascii.Error, TypeError):
+		head = b""
+	if not head.startswith(b"%PDF"):
+		frappe.throw(_("The bill is not a PDF"))
+
 	body = {
-		"base64": base64,
+		"base64": pdf_base64,
 		"mimetype": "application/pdf",
 		"filename": filename,
 		"caption": (caption or "")[:1024],

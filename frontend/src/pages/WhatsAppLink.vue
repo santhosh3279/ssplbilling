@@ -241,7 +241,7 @@ function schedulePoll() {
 
 async function poll() {
   try {
-    applyState(await frappeGet(`${API}.get_status`))
+    applyState(await frappePost(`${API}.get_status`, {}, { silent: true }))
   } catch (e) {
     notify(e.message || String(e), true)
   }
@@ -251,7 +251,7 @@ async function refresh() {
   if (!hasApiKey.value) return
   busy.value = 'refresh'
   try {
-    applyState(await frappeGet(`${API}.get_status`))
+    applyState(await frappePost(`${API}.get_status`, {}, { silent: true }))
   } catch (e) {
     notify(e.message || String(e), true)
   } finally {

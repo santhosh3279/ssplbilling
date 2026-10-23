@@ -690,8 +690,7 @@ async function sendWhatsApp() {
         const sent = await frappePost('ssplbilling.api.whatsapp_api.send_document', {
           doctype: props.doctype,
           document_name: props.invoiceName,
-          phone: recipient.phone,
-          base64: await blobToBase64(blob),
+          pdf_base64: await blobToBase64(blob),
           filename: billName,
           caption,
         }, { silent: true })
