@@ -496,6 +496,15 @@ def create_payment_link(customer, amount, description=None, mobile=None, send_sm
 	return _txn_result(txn)
 
 
+@frappe.whitelist()
+def get_customer_mobile(customer):
+	"""Customer's mobile for the receipt form: its own mobile_no, else its Contact's mobile."""
+	_require_desk_user()
+	from ssplbilling.api.print_preview_api import get_party_mobile
+
+	return _valid_phone(get_party_mobile("Customer", customer))
+
+
 @frappe.whitelist(methods=["POST"])
 def create_receipt_qr(customer, amount, description=None, mobile=None):
 	"""Dynamic UPI QR for a customer receipt (no invoice), shown on screen or shared with the

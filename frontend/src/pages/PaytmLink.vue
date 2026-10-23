@@ -459,9 +459,19 @@ function onCustomerSelect(item) {
   showCustomerSearch.value = false
   form.customer = item.name
   form.customer_name = item.label || item.customer_name || item.name
-  if (item.mobile_no) form.mobile = item.mobile_no
+  form.mobile = item.mobile_no || ''
   fetchLedgerBalance(item.name)
+  fetchMobile(item.name, form.mobile)
   nextTick(() => amountInput.value?.focus())
+}
+
+// Search results can lack the mobile (it may live only on the linked Contact); ask the server
+async function fetchMobile(customer, prefilled) {
+  try {
+    const mobile = await frappeGet(`${API}.get_customer_mobile`, { customer })
+    // keep a number the operator already typed, and ignore a late reply for another customer
+    if (mobile && form.customer === customer && form.mobile === prefilled) form.mobile = mobile
+  } catch { /* operator can still type it */ }
 }
 
 // Customer's ledger closing balance (positive = Dr, they owe us)
