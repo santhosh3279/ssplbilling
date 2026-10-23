@@ -96,7 +96,8 @@
                   <div class="flex flex-col gap-1.5 items-start w-full">
                     <div class="flex items-center gap-1.5">
                       <span>Calc</span>
-                      <span v-if="hasFetchedPercentages" class="text-[18px] bg-[var(--color-success)]/20 text-[var(--color-success)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none">Fetched</span>
+                      <span v-if="overrideApplied" class="text-[18px] bg-[var(--color-warning)]/20 text-[var(--color-warning)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none" title="Using supplier pricelist percentages">Override</span>
+                      <span v-else-if="hasFetchedPercentages" class="text-[18px] bg-[var(--color-success)]/20 text-[var(--color-success)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none">Fetched</span>
                     </div>
                   </div>
                 </th>
@@ -367,7 +368,9 @@ const props = defineProps({
   isInclusive: { type: Boolean, default: false },
   supplier: { type: String, default: '' },
   // Opened from a submitted bill: buying price lists are read-only
-  lockBuying: { type: Boolean, default: false }
+  lockBuying: { type: Boolean, default: false },
+  // Use the supplier's pricelist percentages instead of the item's
+  overridePercentages: { type: Boolean, default: false }
 })
 
 const emit = defineEmits(['close', 'saved'])
@@ -386,6 +389,8 @@ const loading = ref(false)
 const saving = ref(false)
 const savingPercentage = ref(false)
 const hasFetchedPercentages = ref(false)
+// True when supplier percentages replaced the item's for this load
+const overrideApplied = ref(false)
 const showPercentagePrompt = ref(false)
 const manualItemCode = ref('')
 const activeRow = ref(0)
@@ -545,7 +550,8 @@ watch(() => prices.value, (newPrices) => {
     }
   })
 
-  // 2. Persist markups to local storage
+  // 2. Persist markups to local storage (supplier override values are not the item's own)
+  if (overrideApplied.value) return
   try {
     const savedMarkups = JSON.parse(localStorage.getItem('sspl_pricelist_markups') || '{}')
     let hasChanged = false
@@ -659,12 +665,27 @@ async function loadPrices(code) {
 
     const savedMarkups = JSON.parse(localStorage.getItem('sspl_pricelist_markups') || '{}')
 
+    let supplierPercentages = []
+    if (props.overridePercentages && props.supplier) {
+      try {
+        supplierPercentages = await frappeGet('ssplbilling.api.supplier_creator_api.get_supplier_pricelist_percentages', { supplier: props.supplier }) || []
+      } catch (e) {
+        showToast('Failed to load supplier percentages: ' + e.message, 'error')
+      }
+    }
+    overrideApplied.value = supplierPercentages.length > 0
+
     prices.value = (data.prices || []).map((p, idx, arr) => {
       let markup = 0
-      
+
+      // 0. Override: supplier percentages win over the item's
+      const override = supplierPercentages.find(sp => sp.pricelist === p.price_list)
       // 1. Prioritize fetched markup from child table in item master
       const fetched = (data.pricelist_percentages || []).find(fp => fp.pricelist === p.price_list)
-      if (fetched) {
+      if (override) {
+        markup = parseFloat(override.percentage) || 0
+      }
+      else if (fetched) {
         markup = parseFloat(fetched.percentage) || 0
       }
       // 2. Fallback to saved markup from local storage if it exists
@@ -746,7 +767,8 @@ function percentagesChanged() {
 function saveAll() {
   if (!currentItemCode.value || saving.value || showPercentagePrompt.value) return
   // Never saved: always ask. Already saved: ask only if a markup changed.
-  if (!hasFetchedPercentages.value || percentagesChanged()) {
+  // Override: markups are the supplier's, so never offer to write them to the Item Master.
+  if (!overrideApplied.value && (!hasFetchedPercentages.value || percentagesChanged())) {
     showPercentagePrompt.value = true
     return
   }

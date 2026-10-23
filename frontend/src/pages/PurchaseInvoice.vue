@@ -99,6 +99,17 @@
           >
             <span>📜</span> History
           </button>
+          <button
+            v-if="supplierId"
+            @click="overridePercentages = !overridePercentages"
+            class="flex items-center gap-2 rounded px-3 py-1 text-xs font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg"
+            :class="overridePercentages
+              ? 'bg-[var(--color-warning)] text-[var(--color-text-on-highlight)]'
+              : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] border border-[var(--color-border)]'"
+            title="Use the supplier's pricelist percentages in Price List Update instead of the item's"
+          >
+            Override {{ overridePercentages ? 'On' : 'Off' }}
+          </button>
         </div>
       </template>
 
@@ -858,6 +869,7 @@
       :is-inclusive="isInclusiveTax"
       :supplier="supplierId"
       :lock-buying="viewPriceUpdate"
+      :override-percentages="overridePercentages"
       @close="onPriceListUpdateClose"
       @saved="onPriceListUpdateSaved"
     />
@@ -1414,6 +1426,8 @@ async function handleSelectSidebarItem(item) {
 
 const supplierName = ref('Select Supplier...')
 const supplierId = ref('')
+// Price List Update uses the supplier's pricelist percentages instead of the item's
+const overridePercentages = ref(false)
 const supplierDetails = ref('')
 const supplierAddress = ref('')
 const supplierAddressName = ref('')

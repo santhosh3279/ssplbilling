@@ -187,6 +187,18 @@ def get_supplier_details(supplier):
 
 
 @frappe.whitelist()
+def get_supplier_pricelist_percentages(supplier):
+	"""Return only the Supplier's pricelist percentage rows (used by the price list override)."""
+	rows = frappe.get_all(
+		"Item Price List Percentage",
+		filters={"parenttype": "Supplier", "parent": supplier},
+		fields=["pricelist", "percentage"],
+		order_by="idx asc",
+	)
+	return [{"pricelist": r.pricelist, "percentage": float(r.percentage or 0)} for r in rows]
+
+
+@frappe.whitelist()
 def update_supplier_full(data):
 	"""Update Supplier + Address in one call."""
 	if isinstance(data, str):
