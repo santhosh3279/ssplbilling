@@ -252,6 +252,12 @@
             <div class="flex flex-wrap justify-end gap-2">
               <template v-if="selected.channel === 'QR' && selected.status === 'Pending' && qrSecondsLeft(selected) > 0">
                 <button v-if="canShareFiles" @click="shareQr(selected)" class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white">Share QR</button>
+                <button
+                  v-if="selected.customer_mobile"
+                  @click="whatsappQr(selected)"
+                  title="Downloads the QR and opens WhatsApp; attach the downloaded image"
+                  class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white"
+                >WhatsApp</button>
                 <button @click="downloadQr(selected)" class="rounded-lg border border-[var(--color-border)] px-4 py-2 font-bold hover:bg-[var(--color-midlight)]">Download QR</button>
               </template>
               <button
@@ -546,10 +552,14 @@ function qrFile(l) {
   return new File([bytes], `paytm-qr-${l.order_id}.png`, { type: 'image/png' })
 }
 
-// Phone / tablet: hands the QR image to WhatsApp or any other app
+function qrMessage(l) {
+  return `Dear ${l.customer}, please scan this QR to pay ₹${fmt(l.amount)} to Sundaram and Sons. Valid for ${Math.ceil(qrSecondsLeft(l) / 60)} minutes.`
+}
+
+// Phone / tablet (https only): hands the QR image to WhatsApp or any other app
 async function shareQr(l) {
   const file = qrFile(l)
-  const text = `Dear ${l.customer}, please scan this QR to pay ₹${fmt(l.amount)} to Sundaram and Sons. Valid for ${Math.ceil(qrSecondsLeft(l) / 60)} minutes.`
+  const text = qrMessage(l)
   if (!navigator.canShare({ files: [file] })) return downloadQr(l)
   try {
     await navigator.share({ files: [file], text })
@@ -563,6 +573,13 @@ function downloadQr(l) {
   a.download = `paytm-qr-${l.order_id}.png`
   a.click()
   URL.revokeObjectURL(url)
+}
+
+// wa.me cannot carry an image: save the QR, open the chat with the message, staff attach the image
+function whatsappQr(l) {
+  downloadQr(l)
+  const phone = String(l.customer_mobile).replace(/\D/g, '').slice(-10)
+  window.open(`https://wa.me/91${phone}?text=${encodeURIComponent(qrMessage(l))}`, '_blank', 'noopener')
 }
 
 function whatsappUrl(l) {

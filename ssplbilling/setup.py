@@ -158,6 +158,7 @@ DASHBOARD_TILES = [
 	("mobile-bill", "Mobile Bill", "Sale"),
 	("quotation", "Quotation", "Sale"),
 	("cashier", "Cashier Desk", "Sale"),
+	("cashier-mobile", "Cashier Mobile", "Sale"),
 	("sales-order", "Sales Order", "Sale"),
 	("Cashier-Management", "Cashier Management", "Sale"),
 	("cancellation", "Cancellation", "Sale"),

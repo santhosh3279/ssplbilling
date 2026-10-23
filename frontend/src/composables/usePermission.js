@@ -61,6 +61,7 @@ export const BILLER_ROUTES = new Set([
 // Route names additionally accessible by cashier (beyond biller)
 export const CASHIER_EXTRA_ROUTES = new Set([
   'CashierDesk',
+  'CashierMobile',
   'PurchaseSubmit',
   'CustomerLedger',
   'JournalContraEntry',
@@ -246,7 +247,8 @@ const LICENSE_FREE_TILES = new Set(['stock-check'])
 // Mobile Bill is another front end for Sales Invoice, so it rides on the Sales licence.
 // Item Barcodes edits the barcodes Print Barcodes prints, so it rides on that licence.
 // Paytm Receipt (QR / link) creates customer receipts, so it rides on the Payment Receipt licence.
-const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display', 'mobile-bill': 'sales', 'item-barcode': 'barcode-print', 'paytm-link': 'payment' }
+// Cashier Mobile is the phone front end for the Cashier Desk, so it rides on the Cashier licence.
+const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display', 'mobile-bill': 'sales', 'item-barcode': 'barcode-print', 'paytm-link': 'payment', 'cashier-mobile': 'cashier' }
 
 function isLicensedFeature(features, tileId) {
   const feature = LICENSE_FEATURE_ALIAS[tileId] || tileId
@@ -362,6 +364,7 @@ const TILE_ROUTE_MAP = {
   'essl-machines':     'EsslMachines',
   'sales-order':       'SalesOrderEntry',
   'cashier':           'CashierDesk',
+  'cashier-mobile':    'CashierMobile',
   'purchase-submit':   'PurchaseSubmit',
   'ledger':            'CustomerLedger',
   'general-ledger':    'GeneralLedger',

@@ -15,6 +15,7 @@ const MobileDashboard = () => import('./pages/mobiledashboard.vue')
 const ItemBarcode = () => import('./pages/ItemBarcode.vue')
 const BarcodePrintPage = () => import('./pages/BarcodePrintPage.vue')
 const CashierDesk = () => import('./pages/CashierDesk.vue')
+const CashierMobile = () => import('./pages/Cashiermobile.vue')
 const PurchaseSubmit = () => import('./pages/PurchaseSubmit.vue')
 const GeneralLedger = () => import('./pages/GeneralLedger.vue')
 const PaymentV2 = () => import('./pages/paymentv2.vue')
@@ -287,6 +288,12 @@ const routes = [
     name: 'CashierDesk',
     component: CashierDesk,
     meta: { requiresOpening: true, title: 'Cashier' },
+  },
+  {
+    path: '/cashier-mobile',
+    name: 'CashierMobile',
+    component: CashierMobile,
+    meta: { requiresOpening: true, title: 'Cashier Mobile' },
   },
   {
     path: '/purchase-submit',
