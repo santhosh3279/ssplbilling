@@ -13,6 +13,14 @@
   "device_name",
   "tid",
   "transaction_datetime",
+  "link_section",
+  "customer",
+  "customer_mobile",
+  "link_description",
+  "column_break_link",
+  "link_id",
+  "short_url",
+  "payment_entry",
   "result_section",
   "pay_method",
   "paytm_txn_id",
@@ -63,12 +71,12 @@
    "fieldname": "channel",
    "fieldtype": "Select",
    "label": "Channel",
-   "options": "EDC\nQR",
+   "options": "EDC\nQR\nLink",
    "default": "EDC",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "read_only": 1,
-   "description": "EDC = card machine, QR = Paytm dynamic UPI QR shown on the cashier screen"
+   "description": "EDC = card machine, QR = Paytm dynamic UPI QR shown on the cashier screen, Link = Paytm payment link sent to the customer"
   },
   {
    "fieldname": "column_break_1",
@@ -90,6 +98,57 @@
    "fieldname": "transaction_datetime",
    "fieldtype": "Data",
    "label": "Transaction Date Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "link_section",
+   "fieldtype": "Section Break",
+   "label": "Payment Link",
+   "depends_on": "eval:doc.channel=='Link'"
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "in_standard_filter": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "customer_mobile",
+   "fieldtype": "Data",
+   "label": "Customer Mobile",
+   "read_only": 1
+  },
+  {
+   "fieldname": "link_description",
+   "fieldtype": "Data",
+   "label": "Description",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_link",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "link_id",
+   "fieldtype": "Data",
+   "label": "Paytm Link ID",
+   "search_index": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "short_url",
+   "fieldtype": "Data",
+   "label": "Link URL",
+   "options": "URL",
+   "read_only": 1
+  },
+  {
+   "fieldname": "payment_entry",
+   "fieldtype": "Link",
+   "label": "Payment Entry",
+   "options": "Payment Entry",
    "read_only": 1
   },
   {
@@ -146,7 +205,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-21 00:00:00",
+ "modified": "2026-10-23 00:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Paytm Transaction",

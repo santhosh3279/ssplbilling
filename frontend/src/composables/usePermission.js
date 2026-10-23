@@ -69,6 +69,7 @@ export const CASHIER_EXTRA_ROUTES = new Set([
   'SingleEntry',
   'NamingSettings',
   'Payment',
+  'PaytmLink',
   'Expense',
   'IncentiveRedeem',
   'IncentiveEntry',
@@ -82,6 +83,7 @@ export const CASHIER_ROUTES = new Set([...BILLER_ROUTES, ...CASHIER_EXTRA_ROUTES
 // Routes accessible by accounts role
 export const ACCOUNTS_ROUTES = new Set([
   'Payment',
+  'PaytmLink',
   'JournalContraEntry',
   'Reports',
   'DailyReport',
@@ -243,7 +245,8 @@ const LICENSE_FREE_TILES = new Set(['stock-check'])
 // Customer users exist to log in to the catalogue, so they ride on the Catalogue Editor licence.
 // Mobile Bill is another front end for Sales Invoice, so it rides on the Sales licence.
 // Item Barcodes edits the barcodes Print Barcodes prints, so it rides on that licence.
-const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display', 'mobile-bill': 'sales', 'item-barcode': 'barcode-print' }
+// Paytm Link Receipt creates customer receipts, so it rides on the Payment Receipt licence.
+const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display', 'mobile-bill': 'sales', 'item-barcode': 'barcode-print', 'paytm-link': 'payment' }
 
 function isLicensedFeature(features, tileId) {
   const feature = LICENSE_FEATURE_ALIAS[tileId] || tileId
@@ -366,6 +369,7 @@ const TILE_ROUTE_MAP = {
   'journal-contra':    'JournalContraEntry',
   'stock-reconciliation': 'StockReconciliation',
   'payment':           'Payment',
+  'paytm-link':        'PaytmLink',
   'expense':           'Expense',
   'pricelist-update':  'PriceListUpdate',
   'barcode-print':     'BarcodePrintPage',

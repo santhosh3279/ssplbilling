@@ -8,7 +8,10 @@ Dynamic UPI QR (channel "QR"): create_qr() asks Paytm PG for a QR bound to an or
 amount, the cashier page shows it, and the same get_status()/webhook path confirms the payment
 through the PG v3 order status API.
 
-Nothing here creates a Payment Entry; submit_invoice_with_payment() still does that.
+Payment link (channel "Link"): create_payment_link() asks Paytm for a fixed-amount link bound to
+our order id (linkOrderId), so the same PG order status API and webhook confirm it. Unlike EDC
+and QR, a successful link payment creates and submits its own Receipt Payment Entry against the
+customer (_make_link_receipt); EDC/QR payments are still entered by submit_invoice_with_payment().
 """
 
 import base64
@@ -45,7 +48,16 @@ PG_BASE_URL = {
 PG_QR_CREATE_PATH = "/paymentservices/qr/create"
 PG_STATUS_PATH = "/v3/order/status"
 
+# Paytm payment link APIs; signed with the PG Merchant Key, head carries tokenType "AES"
+LINK_BASE_URL = {
+	"Staging": "https://securestage.paytmpayments.com",
+	"Production": "https://secure.paytmpayments.com",
+}
+LINK_CREATE_PATH = "/link/create"
+LINK_EXPIRE_PATH = "/link/expire"
+
 CARD_PAY_METHODS = ("CARD", "CREDIT_CARD", "DEBIT_CARD", "EMI", "CC", "DC")
+PG_CHANNELS = ("QR", "Link")
 
 
 def _settings():
@@ -73,8 +85,13 @@ def _pg_key(settings):
 	return key
 
 
+def _is_pg(txn):
+	"""QR and payment link orders live on Paytm PG; EDC orders on the card machine (ECR) API."""
+	return txn.channel in PG_CHANNELS
+
+
 def _key_for(settings, txn):
-	return _pg_key(settings) if txn.channel == "QR" else _signing_key(settings)
+	return _pg_key(settings) if _is_pg(txn) else _signing_key(settings)
 
 
 def _post_pg(settings, path, body, head=None):
@@ -98,6 +115,24 @@ def _post_pg(settings, path, body, head=None):
 			msg = None
 		if msg:
 			raise Exception(f"HTTP {res.status_code}: {msg}")
+	res.raise_for_status()
+	return res.json()
+
+
+def _post_link(settings, path, body):
+	"""Payment link variant of _post_pg(): head is {tokenType, signature}, and rejections come back
+	as HTTP 200 with resultInfo.resultStatus FAILED (checked by the caller)."""
+	from paytmchecksum import generateSignature
+
+	body_str = json.dumps(body, separators=(",", ":"))
+	head = {"tokenType": "AES", "signature": generateSignature(body_str, _pg_key(settings))}
+	payload = '{"head":' + json.dumps(head, separators=(",", ":")) + ',"body":' + body_str + "}"
+	res = requests.post(
+		LINK_BASE_URL[settings.environment] + path,
+		data=payload,
+		headers={"Content-Type": "application/json"},
+		timeout=REQUEST_TIMEOUT,
+	)
 	res.raise_for_status()
 	return res.json()
 
@@ -361,6 +396,186 @@ def _qr_png(data):
 
 
 @frappe.whitelist(methods=["POST"])
+def create_payment_link(customer, amount, description=None, mobile=None, send_sms=0):
+	"""Create a fixed-amount Paytm payment link for a customer receipt; returns the link row.
+	The link carries our order id (linkOrderId) so status checks and the webhook find it."""
+	settings = _settings()
+	amount = flt(amount, 2)
+	if amount <= 0:
+		frappe.throw(_("Amount must be greater than 0"))
+	customer_name = frappe.db.get_value("Customer", customer, "customer_name")
+	if not customer_name:
+		frappe.throw(_("Customer {0} not found").format(customer))
+	if not settings.upi_account:
+		frappe.throw(_("Set the UPI Account in SSPL Paytm Settings; link payments are received into it"))
+
+	mobile = _valid_phone(mobile) or _valid_phone(frappe.db.get_value("Customer", customer, "mobile_no"))
+	if frappe.utils.cint(send_sms) and not mobile:
+		frappe.throw(_("A valid mobile number is needed to send the link by SMS"))
+	# linkDescription is limited to 30 characters, linkName to 64
+	description = (description or "").strip()[:30] or "Payment to Sundaram and Sons"
+	now = now_datetime()
+	order_id = f"LNK{now.strftime('%y%m%d%H%M%S%f')[:16]}"
+
+	txn = frappe.get_doc(
+		{
+			"doctype": "SSPL Paytm Transaction",
+			"order_id": order_id,
+			"amount": amount,
+			"status": "Pending",
+			"channel": "Link",
+			"customer": customer,
+			"customer_mobile": mobile,
+			"link_description": description,
+			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
+		}
+	).insert(ignore_permissions=True)
+
+	body = {
+		"mid": settings.merchant_id,
+		"linkType": "FIXED",
+		"linkName": re.sub(r"[^A-Za-z0-9]", "", customer_name)[:64] or "Payment",
+		"linkDescription": description,
+		"amount": amount,
+		"linkOrderId": order_id,
+		"singleTransactionOnly": True,
+		"sendSms": bool(frappe.utils.cint(send_sms)),
+		"sendEmail": False,
+	}
+	if settings.payment_notification_url:
+		body["statusCallbackUrl"] = settings.payment_notification_url
+	if mobile:
+		body["customerContact"] = {"customerName": customer_name, "customerMobile": mobile}
+	try:
+		res = _post_link(settings, LINK_CREATE_PATH, body)
+	except Exception as e:
+		_update_txn(txn, "Failed", {"error": str(e)}, str(e))
+		frappe.db.commit()
+		frappe.log_error(title="Paytm link create failed", message=frappe.get_traceback())
+		frappe.throw(_("Could not reach Paytm: {0}").format(e))
+
+	rb = res.get("body") or {}
+	info = rb.get("resultInfo") or {}
+	if (info.get("resultStatus") or "").upper() != "SUCCESS" or not rb.get("shortUrl"):
+		msg = info.get("resultMessage") or info.get("resultMsg") or "no link returned"
+		_update_txn(txn, "Failed", res, msg)
+		frappe.db.commit()
+		frappe.throw(_("Paytm could not create the link: {0}").format(msg))
+
+	txn.link_id = str(rb.get("linkId") or "")
+	txn.short_url = rb["shortUrl"]
+	_update_txn(txn, "Pending", res, info.get("resultMessage"))
+	return _txn_result(txn)
+
+
+@frappe.whitelist()
+def get_payment_links(limit=100, status=None):
+	"""Payment links, newest first, for the left panel of the Paytm link page."""
+	filters = {"channel": "Link"}
+	if status:
+		filters["status"] = status
+	return frappe.get_all(
+		"SSPL Paytm Transaction",
+		filters=filters,
+		fields=[
+			"order_id",
+			"status",
+			"amount",
+			"customer",
+			"customer_mobile",
+			"link_description",
+			"short_url",
+			"payment_entry",
+			"pay_method",
+			"rrn",
+			"paytm_txn_id",
+			"result_message",
+			"transaction_datetime",
+			"owner",
+		],
+		order_by="creation desc",
+		limit_page_length=frappe.utils.cint(limit) or 100,
+	)
+
+
+@frappe.whitelist(methods=["POST"])
+def retry_link_receipt(order_id):
+	"""Create the Payment Entry for a paid link whose automatic receipt failed."""
+	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
+	if txn.channel != "Link" or txn.status != "Success":
+		frappe.throw(_("Only a paid payment link can get a receipt"))
+	if not txn.payment_entry:
+		_make_link_receipt(txn)
+		if not txn.payment_entry:
+			frappe.db.commit()
+			frappe.throw(_("Payment Entry could not be created; see Error Log"))
+		txn.result_message = None
+		txn.save(ignore_permissions=True)
+	return _txn_result(txn)
+
+
+def _expire_link(txn):
+	settings = _settings()
+	try:
+		res = _post_link(settings, LINK_EXPIRE_PATH, {"mid": settings.merchant_id, "linkId": txn.link_id})
+	except Exception:
+		frappe.log_error(title="Paytm link expire failed", message=frappe.get_traceback())
+		return
+	info = (res.get("body") or {}).get("resultInfo") or {}
+	msg = info.get("resultMessage") or info.get("resultMsg") or info.get("resultStatus") or "no reply"
+	txn.db_set("result_message", f"Expire: {msg}")
+
+
+def _make_link_receipt(txn):
+	"""Submit the Receipt Payment Entry for a paid link, once: the row lock makes the webhook and
+	the page's polling agree on who creates it. Runs as the link's creator, since the webhook
+	request is a Guest. A failure is logged and leaves the link Success without an entry."""
+	from ssplbilling.api.paymentv2_api import _build_and_submit_payment_entry
+
+	if frappe.db.get_value("SSPL Paytm Transaction", txn.name, "payment_entry", for_update=True):
+		return
+	settings = frappe.get_cached_doc("SSPL Paytm Settings")
+	session_user = frappe.session.user
+	frappe.db.savepoint("paytm_link_receipt")
+	try:
+		if session_user == "Guest":
+			frappe.set_user(txn.owner)
+		pe_name = _build_and_submit_payment_entry(
+			{
+				"payment_type": "Receive",
+				"party_type": "Customer",
+				"party": txn.customer,
+				"amount": txn.amount,
+				"mop_account": settings.upi_account,
+				# same fallback as the cashier desk when no Mode of Payment maps to the account
+				"mode_of_payment": frappe.db.get_value(
+					"Mode of Payment Account", {"default_account": settings.upi_account}, "parent"
+				)
+				or "Cash",
+				"reference_no": txn.rrn or txn.paytm_txn_id or txn.order_id,
+				"reference_date": frappe.utils.today(),
+				"remarks": f"Paytm payment link {txn.order_id}: {txn.link_description or ''}".strip(),
+			}
+		)
+		txn.payment_entry = pe_name
+		try:
+			from ssplbilling.api.automatic_entries_api import mirror_standalone_payment_entry
+
+			frappe.db.savepoint("paytm_link_mirror")
+			mirror_standalone_payment_entry(frappe.get_doc("Payment Entry", pe_name))
+		except Exception:
+			frappe.db.rollback(save_point="paytm_link_mirror")
+			frappe.log_error(frappe.get_traceback(), "Automatic Entries: payment mirror failed")
+	except Exception:
+		frappe.db.rollback(save_point="paytm_link_receipt")
+		frappe.log_error(title="Paytm link receipt failed", message=frappe.get_traceback())
+		txn.result_message = _("Paid, but the Payment Entry could not be created; see Error Log")
+	finally:
+		if frappe.session.user != session_user:
+			frappe.set_user(session_user)
+
+
+@frappe.whitelist(methods=["POST"])
 def get_status(order_id):
 	"""Ask Paytm for the payment status and return the result for the cashier page."""
 	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
@@ -376,7 +591,10 @@ def cancel(order_id):
 	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
 	if txn.status == "Pending":
 		_refresh_from_paytm(txn)
-	if txn.status == "Pending" and txn.channel != "QR":
+	if txn.status == "Pending" and txn.channel == "Link" and txn.link_id:
+		_expire_link(txn)
+		_refresh_from_paytm(txn)
+	elif txn.status == "Pending" and not _is_pg(txn):
 		_void_on_machine(txn)
 		_refresh_from_paytm(txn)
 	if txn.status == "Pending":
@@ -412,9 +630,17 @@ def payment_webhook():
 		data = dict(frappe.form_dict)
 	body = data.get("body") if isinstance(data.get("body"), dict) else data
 
-	order_id = (
-		body.get("merchantTransactionId") or body.get("ORDERID") or body.get("orderId") or ""
+	order_id = str(
+		body.get("merchantTransactionId")
+		or body.get("ORDERID")
+		or body.get("orderId")
+		or body.get("linkOrderId")
+		or ""
 	).strip()
+	link_id = str(body.get("linkId") or body.get("LINKID") or "").strip()
+	if (not order_id or not frappe.db.exists("SSPL Paytm Transaction", order_id)) and link_id:
+		# a link payment may be reported under Paytm's own order id; find it by the link
+		order_id = frappe.db.get_value("SSPL Paytm Transaction", {"link_id": link_id}, "name") or ""
 	if not order_id or not frappe.db.exists("SSPL Paytm Transaction", order_id):
 		frappe.local.response["http_status_code"] = 404
 		return {"status": "unknown order"}
@@ -427,7 +653,7 @@ def payment_webhook():
 		from paytmchecksum import verifySignature
 
 		# PG JSON payloads are signed over the raw "body" text exactly as Paytm sent it
-		if txn.channel != "QR" and "head" in data:
+		if not _is_pg(txn) and "head" in data:
 			signed = _ecr_sign_fields(body)
 		elif "head" in data and '"body":' in raw:
 			signed = raw[raw.index('"body":') + 7 : raw.rindex("}")].strip()
@@ -452,7 +678,7 @@ def payment_webhook():
 
 
 def _refresh_from_paytm(txn):
-	if txn.channel == "QR":
+	if _is_pg(txn):
 		return _refresh_qr(txn)
 	settings = _settings()
 	body = {
@@ -537,6 +763,8 @@ def _update_txn(txn, status, response, message=None):
 	txn.response = json.dumps(response, indent=1, default=str)
 	if message:
 		txn.result_message = message
+	if status == "Success" and txn.channel == "Link" and not txn.payment_entry:
+		_make_link_receipt(txn)
 	txn.save(ignore_permissions=True)
 	if was_open and status in ("Success", "Failed"):
 		frappe.publish_realtime(
@@ -552,8 +780,11 @@ def _txn_result(txn):
 		"sales_invoice": txn.sales_invoice,
 		"status": txn.status,
 		"amount": flt(txn.amount),
-		"mode": "card" if txn.channel != "QR" and method in CARD_PAY_METHODS else "upi",
+		"mode": "card" if not _is_pg(txn) and method in CARD_PAY_METHODS else "upi",
 		"pay_method": txn.pay_method,
 		"reference_no": txn.rrn or txn.paytm_txn_id or txn.auth_code or txn.order_id,
 		"message": txn.result_message,
+		"customer": txn.customer,
+		"short_url": txn.short_url,
+		"payment_entry": txn.payment_entry,
 	}

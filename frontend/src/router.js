@@ -18,6 +18,7 @@ const CashierDesk = () => import('./pages/CashierDesk.vue')
 const PurchaseSubmit = () => import('./pages/PurchaseSubmit.vue')
 const GeneralLedger = () => import('./pages/GeneralLedger.vue')
 const PaymentV2 = () => import('./pages/paymentv2.vue')
+const PaytmLink = () => import('./pages/PaytmLink.vue')
 const JournalContraEntry = () => import('./pages/JournalContraEntry.vue')
 const CashierManagement = () => import('./pages/CashierManagement.vue')
 const PricingRuleSync = () => import('./pages/PricingRuleSync.vue')
@@ -310,6 +311,12 @@ const routes = [
     name: 'Payment',
     component: PaymentV2,
     meta: { title: 'Payment / Receipt' },
+  },
+  {
+    path: '/paytm-link',
+    name: 'PaytmLink',
+    component: PaytmLink,
+    meta: { title: 'Paytm Link Receipt' },
   },
   {
     path: '/stock-reconciliation',
