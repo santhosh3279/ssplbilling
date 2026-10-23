@@ -20,7 +20,7 @@ frappe.ui.form.on("SSPL WhatsApp Settings", {
 	},
 });
 
-// get_status mirrors the gateway's session onto this record, so the form only needs a reload after it
+// refresh_sessions mirrors each row's gateway session onto this record, so only a reload follows
 function refresh_session(frm, auto) {
 	if (frm.is_dirty()) {
 		// Reloading would throw away the unsaved edits
@@ -30,12 +30,12 @@ function refresh_session(frm, auto) {
 	if (!frm.doc.base_url) return;
 
 	frappe.call({
-		method: "ssplbilling.api.whatsapp_api.get_status",
+		method: "ssplbilling.api.whatsapp_api.refresh_sessions",
 		type: "POST",
 		// A dead or unconfigured gateway must not pop an error just for opening the form
 		silent: auto,
 		freeze: !auto,
-		freeze_message: __("Checking OpenWA session..."),
+		freeze_message: __("Checking OpenWA sessions..."),
 		callback() {
 			frm.reload_doc();
 			if (!auto)

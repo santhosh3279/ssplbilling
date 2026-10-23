@@ -1,0 +1,73 @@
+{
+ "actions": [],
+ "creation": "2026-10-23 12:30:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "user",
+  "session_name",
+  "push_name",
+  "phone",
+  "status",
+  "session_id"
+ ],
+ "fields": [
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "in_list_view": 1,
+   "description": "Sends this user's bills and chats. Leave empty for the shared session used by everyone without their own."
+  },
+  {
+   "fieldname": "session_name",
+   "fieldtype": "Data",
+   "label": "Session Name",
+   "reqd": 1,
+   "in_list_view": 1,
+   "description": "OpenWA session: 3-50 letters, numbers or hyphens. Created on first connect."
+  },
+  {
+   "fieldname": "push_name",
+   "fieldtype": "Data",
+   "label": "Profile Name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "phone",
+   "fieldtype": "Data",
+   "label": "Linked Number",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "session_id",
+   "fieldtype": "Data",
+   "label": "Session ID",
+   "hidden": 1,
+   "read_only": 1
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-23 12:30:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL WhatsApp Session",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -1,10 +1,12 @@
 """OpenWA (self-hosted WhatsApp HTTP gateway) integration.
 
-OpenWA runs beside the bench (Docker, port 2785) and holds one linked WhatsApp session. ERPNext
-only ever talks to it from here, so the API key never reaches a browser.
+OpenWA runs beside the bench (Docker, port 2785) and holds the linked WhatsApp sessions listed in
+SSPL WhatsApp Settings. ERPNext only ever talks to it from here, so the API key never reaches a
+browser. A user works through the session row assigned to them, else through the shared row (the
+one with no user); see _session_row().
 
-Linking (WhatsApp Link page, System Manager): connect() creates the named session on the gateway
-if it is missing and starts it -> get_status() polls and returns the QR while it is "qr_ready" ->
+Linking (WhatsApp Link page, System Manager, one session at a time): connect() creates the named
+session on the gateway if it is missing and starts it -> get_status() polls and returns the QR while it is "qr_ready" ->
 the phone scans it under Linked Devices -> status turns "ready". disconnect() stops the engine but
 keeps the pairing; logout() unlinks the device, so the next connect needs a fresh scan.
 
@@ -38,6 +40,7 @@ from ssplbilling.api.print_preview_api import (
 )
 
 SETTINGS_DOCTYPE = "SSPL WhatsApp Settings"
+SESSION_DOCTYPE = "SSPL WhatsApp Session"
 LOG_DOCTYPE = "SSPL WhatsApp Log"
 
 REQUEST_TIMEOUT = 20
@@ -131,36 +134,61 @@ def _call(settings, method, path, json=None, params=None, timeout=REQUEST_TIMEOU
 		return {}
 
 
-def _store_session(session):
-	"""Mirror the gateway's view of the session onto the settings record."""
-	frappe.db.set_single_value(
-		SETTINGS_DOCTYPE,
-		{
-			"session_id": session.get("id") or "",
-			"status": session.get("status") or "",
-			"phone": session.get("phone") or "",
-			"push_name": session.get("pushName") or "",
-			"last_checked": now_datetime(),
-		},
+def _session_row(settings, user=None):
+	"""The session row a user sends and chats through: their own, else the shared one (no user)."""
+	user = user or frappe.session.user
+	return next((r for r in settings.sessions if r.user == user), None) or next(
+		(r for r in settings.sessions if not r.user), None
 	)
 
 
-def _fetch_session(settings):
-	"""The configured session as OpenWA reports it, or None when it does not exist there."""
-	if settings.session_id:
+def _linked_row(settings, message=None):
+	"""The current user's session row, which must already be linked on the gateway."""
+	row = _session_row(settings)
+	if not row or not row.session_id:
+		frappe.throw(
+			message or _("No WhatsApp session is linked for you. Open the WhatsApp Link page first.")
+		)
+	return row
+
+
+def _managed_row(settings, session_name):
+	"""A session row picked on the WhatsApp Link page."""
+	row = next((r for r in settings.sessions if r.session_name == session_name), None)
+	if not row:
+		frappe.throw(_("No session named {0} in SSPL WhatsApp Settings").format(session_name))
+	return row
+
+
+def _store_session(row, session):
+	"""Mirror the gateway's view of the session onto its row."""
+	values = {
+		"session_id": session.get("id") or "",
+		"status": session.get("status") or "",
+		"phone": session.get("phone") or "",
+		"push_name": session.get("pushName") or "",
+	}
+	frappe.db.set_value(SESSION_DOCTYPE, row.name, values, update_modified=False)
+	row.update(values)
+
+
+def _fetch_session(settings, row):
+	"""The row's session as OpenWA reports it, or None when it does not exist there."""
+	if row.session_id:
 		try:
-			return _call(settings, "GET", f"/sessions/{settings.session_id}")
+			return _call(settings, "GET", f"/sessions/{row.session_id}")
 		except OpenWAError as e:
 			if e.status_code != 404:
 				raise
 
 	# Stored id missing or stale (session deleted on the dashboard): look it up by name
-	found = _call(settings, "GET", "/sessions", params={"name": settings.session_name})
+	found = _call(settings, "GET", "/sessions", params={"name": row.session_name})
 	return found[0] if found else None
 
 
-def _status_payload(settings, session):
+def _status_payload(settings, row, session):
 	payload = {
+		"session_name": row.session_name,
 		"status": session.get("status") if session else "not_created",
 		"session_id": (session or {}).get("id") or "",
 		"phone": (session or {}).get("phone") or "",
@@ -195,31 +223,54 @@ def get_settings():
 	settings = _settings()
 	return {
 		"base_url": settings.base_url,
-		"session_name": settings.session_name,
 		# The key itself never leaves the server
 		"has_api_key": bool(settings.get_password("api_key", raise_exception=False)),
-		"session_id": settings.session_id,
-		"status": settings.status,
-		"phone": settings.phone,
-		"push_name": settings.push_name,
-		"last_checked": settings.last_checked,
+		"sessions": [
+			{
+				"session_name": r.session_name,
+				"user": r.user or "",
+				"status": r.status or "",
+				"phone": r.phone or "",
+				"push_name": r.push_name or "",
+			}
+			for r in settings.sessions
+		],
+		"users": frappe.get_all(
+			"User",
+			filters={"enabled": 1, "user_type": "System User", "name": ["!=", "Guest"]},
+			fields=["name", "full_name"],
+			order_by="full_name",
+		),
 	}
 
 
 @frappe.whitelist(methods=["POST"])
-def save_settings(base_url, session_name, api_key=None):
+def save_settings(base_url, api_key=None):
 	_require_manager()
 	settings = _settings()
 	settings.base_url = base_url
-	if session_name != settings.session_name:
-		# A different name is a different WhatsApp link on the gateway
-		settings.session_name = session_name
-		settings.session_id = ""
-		settings.status = ""
-		settings.phone = ""
-		settings.push_name = ""
 	if api_key:
 		settings.api_key = api_key
+	settings.save()
+	return get_settings()
+
+
+@frappe.whitelist(methods=["POST"])
+def add_session(session_name, user=None):
+	"""Add a session row; it is created on the gateway by its first connect()."""
+	_require_manager()
+	settings = _settings()
+	settings.append("sessions", {"session_name": session_name, "user": user or None})
+	settings.save()
+	return get_settings()
+
+
+@frappe.whitelist(methods=["POST"])
+def remove_session(session_name):
+	"""Drop a session row. The gateway keeps the session; unlink it first to free the number."""
+	_require_manager()
+	settings = _settings()
+	settings.remove(_managed_row(settings, session_name))
 	settings.save()
 	return get_settings()
 
@@ -227,29 +278,46 @@ def save_settings(base_url, session_name, api_key=None):
 # POST because it mirrors the gateway's status onto the settings, and Frappe only commits writes
 # made during unsafe requests
 @frappe.whitelist(methods=["POST"])
-def get_status():
+def get_status(session_name):
 	_require_manager()
 
 	def run():
 		settings = _settings()
-		session = _fetch_session(settings)
+		row = _managed_row(settings, session_name)
+		session = _fetch_session(settings, row)
 		if session:
-			_store_session(session)
-		return _status_payload(settings, session)
+			_store_session(row, session)
+		return _status_payload(settings, row, session)
 
 	return _guarded(run)
 
 
 @frappe.whitelist(methods=["POST"])
-def connect():
+def refresh_sessions():
+	"""Mirror every row's session from the gateway, for the settings form."""
+	_require_manager()
+
+	def run():
+		settings = _settings()
+		for row in settings.sessions:
+			session = _fetch_session(settings, row)
+			if session:
+				_store_session(row, session)
+
+	return _guarded(run)
+
+
+@frappe.whitelist(methods=["POST"])
+def connect(session_name):
 	"""Create the session on the gateway if needed and start it; the QR follows via get_status()."""
 	_require_manager()
 
 	def run():
 		settings = _settings()
-		session = _fetch_session(settings)
+		row = _managed_row(settings, session_name)
+		session = _fetch_session(settings, row)
 		if not session:
-			session = _call(settings, "POST", "/sessions", json={"name": settings.session_name})
+			session = _call(settings, "POST", "/sessions", json={"name": row.session_name})
 
 		# engineLoaded, not status: "disconnected" also covers an engine still backing off
 		if not session.get("engineLoaded"):
@@ -261,39 +329,41 @@ def connect():
 					raise
 				session = _call(settings, "GET", f"/sessions/{session['id']}")
 
-		_store_session(session)
-		return _status_payload(settings, session)
+		_store_session(row, session)
+		return _status_payload(settings, row, session)
 
 	return _guarded(run)
 
 
 @frappe.whitelist(methods=["POST"])
-def disconnect():
+def disconnect(session_name):
 	"""Stop the engine. The pairing is kept, so connect() resumes without a scan."""
 	_require_manager()
 
 	def run():
 		settings = _settings()
-		session = _fetch_session(settings)
+		row = _managed_row(settings, session_name)
+		session = _fetch_session(settings, row)
 		if session and session.get("engineLoaded"):
 			session = _call(settings, "POST", f"/sessions/{session['id']}/stop")
 		if session:
-			_store_session(session)
-		return _status_payload(settings, session)
+			_store_session(row, session)
+		return _status_payload(settings, row, session)
 
 	return _guarded(run)
 
 
 @frappe.whitelist(methods=["POST"])
-def logout():
+def logout(session_name):
 	"""Unlink this device from the WhatsApp account. The next connect needs a fresh QR scan."""
 	_require_manager()
 
 	def run():
 		settings = _settings()
-		session = _fetch_session(settings)
+		row = _managed_row(settings, session_name)
+		session = _fetch_session(settings, row)
 		if not session:
-			return _status_payload(settings, None)
+			return _status_payload(settings, row, None)
 		if not session.get("engineLoaded"):
 			frappe.throw(_("Connect the session first — WhatsApp can only unlink a running session"))
 		try:
@@ -308,40 +378,39 @@ def logout():
 				)
 			)
 		session = _call(settings, "GET", f"/sessions/{session['id']}")
-		_store_session(session)
-		return _status_payload(settings, session)
+		_store_session(row, session)
+		return _status_payload(settings, row, session)
 
 	return _guarded(run)
 
 
 @frappe.whitelist()
 def get_gateway_state():
-	"""Whether bills can go out through OpenWA right now. Called by the print dialog for every user."""
+	"""Whether this user's bills can go out through OpenWA right now. Called by the print dialog."""
 	settings = _settings()
-	if not settings.session_id:
+	row = _session_row(settings)
+	if not row or not row.session_id:
 		return {"ready": False}
 	try:
-		session = _call(settings, "GET", f"/sessions/{settings.session_id}", timeout=STATE_TIMEOUT)
+		session = _call(settings, "GET", f"/sessions/{row.session_id}", timeout=STATE_TIMEOUT)
 	except frappe.ValidationError:
 		return {"ready": False}
 	return {"ready": session.get("status") == READY}
 
 
-def _whatsapp_id(settings, number, timeout=REQUEST_TIMEOUT):
+def _whatsapp_id(settings, row, number, timeout=REQUEST_TIMEOUT):
 	"""Canonical chat id when the (normalized) number has a WhatsApp account, else None."""
-	check = _call(
-		settings, "GET", f"/sessions/{settings.session_id}/contacts/check/{number}", timeout=timeout
-	)
+	check = _call(settings, "GET", f"/sessions/{row.session_id}/contacts/check/{number}", timeout=timeout)
 	if not check.get("exists"):
 		return None
 	return check.get("whatsappId") or f"{number}@c.us"
 
 
-def _chat_id(settings, phone):
+def _chat_id(settings, row, phone):
 	number = normalize_whatsapp_number(phone)
 	if not number:
 		frappe.throw(_("No WhatsApp number"))
-	chat_id = _whatsapp_id(settings, number)
+	chat_id = _whatsapp_id(settings, row, number)
 	if not chat_id:
 		frappe.throw(_("{0} is not on WhatsApp").format(number))
 	return number, chat_id
@@ -377,21 +446,23 @@ def _is_number_failure(error):
 	return error.status_code == 400 and "session" not in str(error).lower()
 
 
-def _send(phone, message_type, route, body, content, reference=None, chat_id=None, on_failure=None):
-	"""Send and log. `chat_id` skips the WhatsApp lookup when the caller already did it.
+def _send(phone, message_type, route, body, content, reference=None, chat_id=None, on_failure=None, row=None):
+	"""Send and log through `row`, by default the current user's session. `chat_id` skips the
+	WhatsApp lookup when the caller already did it.
 	`on_failure(error)` runs with the original error before the failure is reported."""
 	settings = _settings()
-	if not settings.session_id:
-		frappe.throw(_("No WhatsApp session is linked. Open the WhatsApp Link page first."))
+	row = row or _linked_row(settings)
+	if not row.session_id:
+		frappe.throw(_("Session {0} is not linked yet").format(row.session_name))
 
 	number = normalize_whatsapp_number(phone)
 	try:
 		if not chat_id:
-			number, chat_id = _chat_id(settings, phone)
+			number, chat_id = _chat_id(settings, row, phone)
 		result = _call(
 			settings,
 			"POST",
-			f"/sessions/{settings.session_id}/messages/{route}",
+			f"/sessions/{row.session_id}/messages/{route}",
 			json={"chatId": chat_id, **body},
 		)
 	except frappe.ValidationError as e:
@@ -407,9 +478,10 @@ def _send(phone, message_type, route, body, content, reference=None, chat_id=Non
 
 
 @frappe.whitelist(methods=["POST"])
-def send_test(phone, text):
+def send_test(session_name, phone, text):
 	_require_manager()
-	return _send(phone, "Text", "send-text", {"text": text}, text)
+	row = _managed_row(_settings(), session_name)
+	return _send(phone, "Text", "send-text", {"text": text}, text, row=row)
 
 
 @frappe.whitelist(methods=["POST"])
@@ -426,8 +498,7 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 	_require_desk_user()
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
 	settings = _settings()
-	if not settings.session_id:
-		frappe.throw(_("No WhatsApp session is linked. Open the WhatsApp Link page first."))
+	row = _linked_row(settings)
 
 	party_doctype, party = get_party_link(doctype, document_name)
 	if not party:
@@ -448,7 +519,7 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 		chat_id = f"{number}@c.us"
 	else:
 		try:
-			chat_id = _whatsapp_id(settings, number)
+			chat_id = _whatsapp_id(settings, row, number)
 		except OpenWAError as e:
 			frappe.throw(str(e), title=_("WhatsApp send failed"))
 		_record_party_status(party_doctype, party, number, VALID if chat_id else INVALID)
@@ -476,6 +547,7 @@ def send_document(doctype, document_name, pdf_base64, filename, caption=""):
 			reference=(doctype, document_name),
 			chat_id=chat_id,
 			on_failure=on_failure,
+			row=row,
 		)
 	except frappe.ValidationError:
 		if not number_failure:
@@ -540,8 +612,7 @@ def send_document_to_number(doctype, document_name, phone, pdf_base64, filename,
 	_require_desk_user()
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
 	settings = _settings()
-	if not settings.session_id:
-		frappe.throw(_("No WhatsApp session is linked. Open the WhatsApp Link page first."))
+	row = _linked_row(settings)
 	party_doctype, party = get_party_link(doctype, document_name)
 	if not party or _party_whatsapp_enabled(party_doctype, party):
 		frappe.throw(_("This customer's WhatsApp is enabled; send to the saved number instead"))
@@ -550,7 +621,9 @@ def send_document_to_number(doctype, document_name, phone, pdf_base64, filename,
 	if not number or len(number) < 11:
 		frappe.throw(_("Enter a full mobile number"))
 	body = _bill_body(pdf_base64, filename, caption)
-	return _send(number, "Document", "send-document", body, caption, reference=(doctype, document_name))
+	return _send(
+		number, "Document", "send-document", body, caption, reference=(doctype, document_name), row=row
+	)
 
 
 @frappe.whitelist()
@@ -561,9 +634,8 @@ def check_whatsapp_number(phone):
 	if not number:
 		return {"phone": "", "exists": False}
 	settings = _settings()
-	if not settings.session_id:
-		frappe.throw(_("No WhatsApp number is linked to check against"))
-	return _guarded(lambda: {"phone": number, "exists": bool(_whatsapp_id(settings, number))})
+	row = _linked_row(settings, _("No WhatsApp number is linked to check against"))
+	return _guarded(lambda: {"phone": number, "exists": bool(_whatsapp_id(settings, row, number))})
 
 
 def _set_contact_whatsapp(party_doctype, party, number):
@@ -612,8 +684,9 @@ def save_party_whatsapp(doctype, document_name, phone):
 	if not number or len(number) < 11:
 		frappe.throw(_("Enter a full mobile number"))
 	settings = _settings()
+	row = _linked_row(settings, _("No WhatsApp number is linked to check against"))
 	try:
-		exists = bool(_whatsapp_id(settings, number))
+		exists = bool(_whatsapp_id(settings, row, number))
 	except OpenWAError as e:
 		frappe.throw(str(e), title=_("OpenWA"))
 	if not exists:
@@ -678,14 +751,15 @@ def check_party_whatsapp(party_doctype, party, force=False):
 		return {"status": VALID, "phone": number, "error": ""}
 
 	settings = _settings()
-	if not settings.session_id or not settings.get_password("api_key", raise_exception=False):
+	row = _session_row(settings)
+	if not row or not row.session_id or not settings.get_password("api_key", raise_exception=False):
 		return {
 			"status": _recorded_status(party_doctype, party, number),
 			"phone": number,
 			"error": _("No WhatsApp number is linked to check with"),
 		}
 	try:
-		exists = bool(_whatsapp_id(settings, number, timeout=SAVE_CHECK_TIMEOUT))
+		exists = bool(_whatsapp_id(settings, row, number, timeout=SAVE_CHECK_TIMEOUT))
 	except OpenWAError as e:
 		return {"status": _recorded_status(party_doctype, party, number), "phone": number, "error": str(e)}
 
@@ -741,14 +815,13 @@ def _require_chat_user():
 
 
 def _chat_settings():
+	"""The settings and the current user's linked session row the chat reads through."""
 	settings = _settings()
-	if not settings.session_id:
-		frappe.throw(_("No WhatsApp number is linked. Open the WhatsApp Link page first."))
-	return settings
+	return settings, _linked_row(settings)
 
 
-def _chat_path(settings, chat_id, suffix=""):
-	return f"/sessions/{settings.session_id}/messages/{quote(chat_id, safe='@.')}{suffix}"
+def _chat_path(row, chat_id, suffix=""):
+	return f"/sessions/{row.session_id}/messages/{quote(chat_id, safe='@.')}{suffix}"
 
 
 def _media_info(media):
@@ -788,11 +861,11 @@ def list_chats(limit=200):
 	_require_chat_user()
 
 	def run():
-		settings = _chat_settings()
+		settings, row = _chat_settings()
 		chats = _call(
 			settings,
 			"GET",
-			f"/sessions/{settings.session_id}/chats",
+			f"/sessions/{row.session_id}/chats",
 			params={"limit": min(frappe.utils.cint(limit) or 200, 1000)},
 		)
 		return [
@@ -813,7 +886,7 @@ def list_chats(limit=200):
 	return _guarded(run)
 
 
-def _apply_receipts(settings, chat_id, messages):
+def _apply_receipts(settings, row, chat_id, messages):
 	"""Live history carries no ack, so take sent/delivered/read from the rows OpenWA stored.
 
 	Only messages the gateway has seen have a row: anything sent while it was linked, from ERPNext
@@ -825,7 +898,7 @@ def _apply_receipts(settings, chat_id, messages):
 		stored = _call(
 			settings,
 			"GET",
-			f"/sessions/{settings.session_id}/messages",
+			f"/sessions/{row.session_id}/messages",
 			params={"chatId": chat_id, "direction": "outgoing", "limit": 100, "inlineMedia": "false"},
 		)
 	except OpenWAError:
@@ -844,13 +917,11 @@ def get_messages(chat_id, limit=50):
 	limit = min(frappe.utils.cint(limit) or 50, 100)
 
 	def run():
-		settings = _chat_settings()
+		settings, row = _chat_settings()
 		try:
-			history = _call(
-				settings, "GET", _chat_path(settings, chat_id, "/history"), params={"limit": limit}
-			)
+			history = _call(settings, "GET", _chat_path(row, chat_id, "/history"), params={"limit": limit})
 			messages = [_live_message(m) for m in history]
-			_apply_receipts(settings, chat_id, messages)
+			_apply_receipts(settings, row, chat_id, messages)
 			return messages
 		except OpenWAError as e:
 			# Only whatsapp-web.js reads history live; Baileys answers 501, so use what OpenWA stored
@@ -859,7 +930,7 @@ def get_messages(chat_id, limit=50):
 		stored = _call(
 			settings,
 			"GET",
-			f"/sessions/{settings.session_id}/messages",
+			f"/sessions/{row.session_id}/messages",
 			params={"chatId": chat_id, "limit": limit, "orderBy": "timestamp", "inlineMedia": "false"},
 		)
 		return [_stored_message(m) for m in reversed(stored.get("messages") or [])]
@@ -870,9 +941,9 @@ def get_messages(chat_id, limit=50):
 @frappe.whitelist(methods=["POST"])
 def mark_chat_read(chat_id):
 	_require_chat_user()
-	settings = _chat_settings()
+	settings, row = _chat_settings()
 	try:
-		_call(settings, "POST", f"/sessions/{settings.session_id}/chats/read", json={"chatId": chat_id})
+		_call(settings, "POST", f"/sessions/{row.session_id}/chats/read", json={"chatId": chat_id})
 	except OpenWAError:
 		# Unread counts are cosmetic; a failed receipt must not break opening the chat
 		pass
@@ -883,14 +954,14 @@ def mark_chat_read(chat_id):
 def resolve_chat(phone):
 	"""Chat id for a new conversation with a number, or an error when it is not on WhatsApp."""
 	_require_chat_user()
-	return _guarded(lambda: dict(zip(("phone", "chat_id"), _chat_id(_chat_settings(), phone), strict=True)))
+	return _guarded(lambda: dict(zip(("phone", "chat_id"), _chat_id(*_chat_settings(), phone), strict=True)))
 
 
 def _chat_send(chat_id, message_type, route, body, content):
-	settings = _chat_settings()
+	settings, row = _chat_settings()
 	phone = chat_id.split("@")[0]
 	try:
-		result = _call(settings, "POST", f"/sessions/{settings.session_id}/messages/{route}", json=body)
+		result = _call(settings, "POST", f"/sessions/{row.session_id}/messages/{route}", json=body)
 	except OpenWAError as e:
 		_log(phone, message_type, content, "Failed", error=str(e))
 		frappe.db.commit()
@@ -928,14 +999,13 @@ def send_chat_file(chat_id, file_base64, mimetype, filename, caption=""):
 	)
 
 
-
-def _stored_media(settings, chat_id, message_id):
+def _stored_media(settings, row, chat_id, message_id):
 	"""The copy OpenWA kept of a message it saw while linked, or None."""
 	try:
 		res = _call(
 			settings,
 			"GET",
-			_chat_path(settings, chat_id, f"/{quote(message_id, safe='@.')}/media"),
+			_chat_path(row, chat_id, f"/{quote(message_id, safe='@.')}/media"),
 			timeout=60,
 			raw=True,
 		)
@@ -952,7 +1022,7 @@ def _stored_media(settings, chat_id, message_id):
 	}
 
 
-def _live_media(settings, chat_id, message_id, depth):
+def _live_media(settings, row, chat_id, message_id, depth):
 	"""Download one message's media from the phone through live history.
 
 	History downloads media oldest first against a per-response budget, so the window is sized to
@@ -962,7 +1032,7 @@ def _live_media(settings, chat_id, message_id, depth):
 		history = _call(
 			settings,
 			"GET",
-			_chat_path(settings, chat_id, "/history"),
+			_chat_path(row, chat_id, "/history"),
 			params={"limit": min(max(depth, 1), 100), "includeMedia": "true"},
 			timeout=90,
 		)
@@ -974,7 +1044,11 @@ def _live_media(settings, chat_id, message_id, depth):
 	media = next((m.get("media") for m in history if m.get("id") == message_id), None)
 	if not media or not media.get("data"):
 		return None
-	return {"mimetype": media.get("mimetype") or "", "filename": media.get("filename") or "", "data": media["data"]}
+	return {
+		"mimetype": media.get("mimetype") or "",
+		"filename": media.get("filename") or "",
+		"data": media["data"],
+	}
 
 
 @frappe.whitelist()
@@ -986,9 +1060,9 @@ def get_chat_media(chat_id, message_id, depth=0):
 	_require_chat_user()
 
 	def run():
-		settings = _chat_settings()
-		media = _stored_media(settings, chat_id, message_id) or _live_media(
-			settings, chat_id, message_id, frappe.utils.cint(depth)
+		settings, row = _chat_settings()
+		media = _stored_media(settings, row, chat_id, message_id) or _live_media(
+			settings, row, chat_id, message_id, frappe.utils.cint(depth)
 		)
 		if not media:
 			# WhatsApp drops media from its servers after a while; the phone may still hold it

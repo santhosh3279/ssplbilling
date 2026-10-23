@@ -46,12 +46,6 @@
             <p class="mt-1 text-xs text-[var(--color-text-muted)]">Unscoped OPERATOR key from the OpenWA dashboard. Stored encrypted; never sent back to the browser.</p>
           </div>
 
-          <div>
-            <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Session Name</label>
-            <input v-model="form.session_name" type="text" placeholder="sspl-billing" :class="inputCls" />
-            <p class="mt-1 text-xs text-[var(--color-text-muted)]">Changing it links a different WhatsApp number.</p>
-          </div>
-
           <div class="flex justify-end">
             <button
               @click="save"
@@ -63,9 +57,61 @@
           </div>
         </section>
 
-        <!-- Link status / QR -->
+        <!-- Sessions: one per user, plus the shared one for users without their own -->
         <section class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm space-y-4">
-          <h2 class="text-xl font-bold border-b border-[var(--color-border)] pb-3">Linked Number</h2>
+          <h2 class="text-xl font-bold border-b border-[var(--color-border)] pb-3">Sessions</h2>
+
+          <div v-if="!sessions.length" class="rounded-lg bg-[var(--color-surface-raised)] p-4 text-sm text-[var(--color-text-muted)]">
+            No sessions yet. Add one below, then Connect it.
+          </div>
+          <div v-else class="space-y-2">
+            <button
+              v-for="s in sessions"
+              :key="s.session_name"
+              @click="select(s.session_name)"
+              :disabled="!!busy"
+              class="flex w-full items-center justify-between gap-3 rounded-lg p-3 text-left transition-colors disabled:cursor-not-allowed"
+              :class="s.session_name === selected ? 'bg-[var(--color-info)]/15' : 'bg-[var(--color-surface-raised)] hover:bg-[var(--color-info)]/10'"
+            >
+              <span class="min-w-0">
+                <span class="block truncate text-sm font-bold">{{ s.session_name }}</span>
+                <span class="block truncate text-xs text-[var(--color-text-muted)]">
+                  {{ s.user ? userLabel(s.user) : 'Shared — everyone without their own' }}
+                </span>
+              </span>
+              <span class="shrink-0 text-right text-xs">
+                <span class="block font-mono">{{ s.phone ? '+' + s.phone : '' }}</span>
+                <span class="block text-[var(--color-text-muted)]">{{ s.status || 'not linked' }}</span>
+              </span>
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 gap-3 border-t border-[var(--color-border)] pt-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+            <div>
+              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">User</label>
+              <select v-model="newSession.user" :class="inputCls">
+                <option value="">Shared</option>
+                <option v-for="u in users" :key="u.name" :value="u.name">{{ u.full_name || u.name }}</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Session Name</label>
+              <input v-model="newSession.session_name" type="text" placeholder="sspl-billing" :class="inputCls" @keydown.enter="addSession" />
+            </div>
+            <button
+              @click="addSession"
+              :disabled="!!busy || !newSession.session_name"
+              class="rounded-lg bg-[var(--color-info)] px-5 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {{ busy === 'add' ? 'Adding…' : 'Add' }}
+            </button>
+          </div>
+          <p class="text-xs text-[var(--color-text-muted)]">3-50 letters, numbers or hyphens. Each session links its own WhatsApp number.</p>
+        </section>
+
+        <!-- Link status / QR -->
+        <section v-if="selected" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm space-y-4 lg:col-span-2">
+          <h2 class="text-xl font-bold border-b border-[var(--color-border)] pb-3">Linked Number · {{ selected }}</h2>
 
           <div v-if="state.status === 'ready'" class="rounded-lg bg-[var(--color-success)]/15 p-4">
             <div class="text-2xl font-bold font-mono">+{{ state.phone }}</div>
@@ -122,12 +168,19 @@
             >
               ↻ Refresh
             </button>
+            <button
+              @click="confirmRemove"
+              :disabled="!!busy"
+              class="ml-auto rounded-lg px-4 py-2 text-sm font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/15 disabled:opacity-50"
+            >
+              Remove Session
+            </button>
           </div>
         </section>
 
         <!-- Test send -->
-        <section class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm space-y-4 lg:col-span-2">
-          <h2 class="text-xl font-bold border-b border-[var(--color-border)] pb-3">Test Message</h2>
+        <section v-if="selected" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm space-y-4 lg:col-span-2">
+          <h2 class="text-xl font-bold border-b border-[var(--color-border)] pb-3">Test Message · {{ selected }}</h2>
           <div class="grid grid-cols-1 gap-4 md:grid-cols-[220px_1fr_auto] md:items-end">
             <div>
               <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Mobile</label>
@@ -178,7 +231,11 @@ const busy = ref('')
 const hasApiKey = ref(false)
 const message = ref('')
 const messageIsError = ref(false)
-const form = reactive({ base_url: '', session_name: '', api_key: '' })
+const form = reactive({ base_url: '', api_key: '' })
+const sessions = ref([])
+const users = ref([])
+const selected = ref('')
+const newSession = reactive({ user: '', session_name: '' })
 const state = reactive({ status: '', phone: '', push_name: '', engine_loaded: false, qr: '', last_error: '', restriction: null })
 const test = reactive({ phone: '', text: 'Test message from SSPL Billing' })
 
@@ -203,12 +260,28 @@ const statusHint = computed(() => {
   return `Session status: ${state.status}`
 })
 
+function userLabel(name) {
+  const u = users.value.find((x) => x.name === name)
+  return u?.full_name || name
+}
+
+function applySettings(s) {
+  hasApiKey.value = !!s.has_api_key
+  sessions.value = s.sessions || []
+  users.value = s.users || []
+  if (!sessions.value.some((x) => x.session_name === selected.value)) selected.value = sessions.value[0]?.session_name || ''
+}
+
 function notify(text, isError = false) {
   message.value = text
   messageIsError.value = isError
 }
 
 function applyState(s) {
+  // A reply for a session the page has since moved off must not overwrite the shown one
+  if (s.session_name && s.session_name !== selected.value) return
+  const row = sessions.value.find((x) => x.session_name === s.session_name)
+  if (row) Object.assign(row, { status: s.status || '', phone: s.phone || '', push_name: s.push_name || '' })
   Object.assign(state, {
     status: s.status || '',
     phone: s.phone || '',
@@ -227,18 +300,19 @@ function schedulePoll() {
 }
 
 async function poll() {
+  if (!selected.value) return
   try {
-    applyState(await frappePost(`${API}.get_status`, {}, { silent: true }))
+    applyState(await frappePost(`${API}.get_status`, { session_name: selected.value }, { silent: true }))
   } catch (e) {
     notify(e.message || String(e), true)
   }
 }
 
 async function refresh() {
-  if (!hasApiKey.value) return
+  if (!hasApiKey.value || !selected.value) return
   busy.value = 'refresh'
   try {
-    applyState(await frappePost(`${API}.get_status`, {}, { silent: true }))
+    applyState(await frappePost(`${API}.get_status`, { session_name: selected.value }, { silent: true }))
   } catch (e) {
     notify(e.message || String(e), true)
   } finally {
@@ -251,10 +325,9 @@ async function save() {
   try {
     const s = await frappePost(`${API}.save_settings`, {
       base_url: form.base_url,
-      session_name: form.session_name,
       api_key: form.api_key || null,
     }, { silent: true })
-    hasApiKey.value = !!s.has_api_key
+    applySettings(s)
     form.api_key = ''
     notify('Saved')
   } catch (e) {
@@ -265,11 +338,55 @@ async function save() {
   await refresh()
 }
 
+function select(name) {
+  if (name === selected.value) return
+  selected.value = name
+  clearTimeout(pollTimer)
+  const row = sessions.value.find((x) => x.session_name === name) || {}
+  Object.assign(state, { status: row.status || '', phone: row.phone || '', push_name: row.push_name || '', engine_loaded: false, qr: '', last_error: '', restriction: null })
+  notify('')
+  refresh()
+}
+
+async function addSession() {
+  if (busy.value || !newSession.session_name) return
+  busy.value = 'add'
+  try {
+    const name = newSession.session_name.trim()
+    applySettings(await frappePost(`${API}.add_session`, { session_name: name, user: newSession.user || null }, { silent: true }))
+    Object.assign(newSession, { user: '', session_name: '' })
+    busy.value = ''
+    selected.value = ''
+    select(name)
+  } catch (e) {
+    notify(e.message || String(e), true)
+  } finally {
+    if (busy.value === 'add') busy.value = ''
+  }
+}
+
+async function confirmRemove() {
+  if (!confirm(`Remove session ${selected.value}?\n\nIts user falls back to the shared session. Unlink the number first if it should stop being linked on the gateway.`)) return
+  busy.value = 'remove'
+  try {
+    clearTimeout(pollTimer)
+    applySettings(await frappePost(`${API}.remove_session`, { session_name: selected.value }, { silent: true }))
+    busy.value = ''
+    const next = selected.value
+    selected.value = ''
+    if (next) select(next)
+  } catch (e) {
+    notify(e.message || String(e), true)
+  } finally {
+    if (busy.value === 'remove') busy.value = ''
+  }
+}
+
 async function run(action) {
   busy.value = action
   notify('')
   try {
-    applyState(await frappePost(`${API}.${action}`, {}, { silent: true }))
+    applyState(await frappePost(`${API}.${action}`, { session_name: selected.value }, { silent: true }))
   } catch (e) {
     notify(e.message || String(e), true)
   } finally {
@@ -286,7 +403,7 @@ async function sendTest() {
   if (busy.value || state.status !== 'ready' || !test.phone || !test.text) return
   busy.value = 'test'
   try {
-    const r = await frappePost(`${API}.send_test`, { phone: test.phone, text: test.text }, { silent: true })
+    const r = await frappePost(`${API}.send_test`, { session_name: selected.value, phone: test.phone, text: test.text }, { silent: true })
     notify(`Accepted by OpenWA for +${r.phone}`)
   } catch (e) {
     notify(e.message || String(e), true)
@@ -298,13 +415,10 @@ async function sendTest() {
 onMounted(async () => {
   try {
     const s = await frappeGet(`${API}.get_settings`)
-    Object.assign(form, {
-      base_url: s.base_url || '',
-      session_name: s.session_name || '',
-      api_key: '',
-    })
-    hasApiKey.value = !!s.has_api_key
-    Object.assign(state, { status: s.status || '', phone: s.phone || '', push_name: s.push_name || '' })
+    Object.assign(form, { base_url: s.base_url || '', api_key: '' })
+    applySettings(s)
+    const row = sessions.value.find((x) => x.session_name === selected.value) || {}
+    Object.assign(state, { status: row.status || '', phone: row.phone || '', push_name: row.push_name || '' })
   } catch (e) {
     notify(e.message || String(e), true)
   } finally {
