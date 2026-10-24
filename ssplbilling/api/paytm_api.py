@@ -278,6 +278,19 @@ def get_invoice_contact(invoice_name):
 
 
 @frappe.whitelist()
+def get_invoice_whatsapp(invoice_name):
+	"""Number to send a bill's UPI pay link to: the customer's saved WhatsApp number, else the
+	bill's contact mobile, else the customer's mobile."""
+	_require_desk_user()
+	from ssplbilling.api.print_preview_api import get_party_saved_whatsapp
+
+	customer = frappe.db.get_value("Sales Invoice", invoice_name, "customer")
+	if not customer:
+		frappe.throw(_("Sales Invoice {0} not found").format(invoice_name))
+	return _valid_phone(get_party_saved_whatsapp("Customer", customer)) or _invoice_contact(invoice_name)[1]
+
+
+@frappe.whitelist()
 def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None, phone=None):
 	"""Push the amount to the card machine; returns the order id to poll.
 	pay_mode QR opens the machine on the UPI QR, CARD on card entry. The customer's name and phone
@@ -346,8 +359,9 @@ def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None, phone=No
 
 
 @frappe.whitelist()
-def create_qr(invoice_name, amount):
-	"""Create a Paytm dynamic UPI QR for the amount; returns the QR image and the order id to poll."""
+def create_qr(invoice_name, amount, mobile=None):
+	"""Create a Paytm dynamic UPI QR for the amount; returns the QR image and the order id to poll.
+	mobile is the customer's WhatsApp number when the cashier sends the QR's pay link to them."""
 	settings = _settings()
 	if not settings.qr_enabled:
 		frappe.throw(_("Dynamic QR is disabled in SSPL Paytm Settings"))
@@ -370,6 +384,7 @@ def create_qr(invoice_name, amount):
 			"amount": amount,
 			"status": "Pending",
 			"channel": "QR",
+			"customer_mobile": _valid_phone(mobile) or None,
 			"device_name": pos_id,
 			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
 		}

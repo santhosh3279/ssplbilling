@@ -544,7 +544,12 @@ def send_receipt_pay_link(order_id, session_id=None):
 	)
 	is_qr = bool(txn) and txn.channel == "QR"
 	is_request = bool(txn) and txn.channel == "Link" and txn.order_id.startswith(PAYMENT_REQUEST_PREFIX)
-	if not txn or not txn.customer or txn.sales_invoice or not (is_qr or is_request):
+	# a bill's QR (cashier desk) carries the invoice instead of the customer
+	if txn and is_qr and txn.sales_invoice:
+		txn.customer = frappe.db.get_value("Sales Invoice", txn.sales_invoice, "customer")
+	elif txn and txn.sales_invoice:
+		txn.customer = None
+	if not txn or not txn.customer or not (is_qr or is_request):
 		frappe.throw(_("{0} is not a Paytm receipt QR or payment request").format(order_id))
 	if txn.status != "Pending" or not (txn.qr_data if is_qr else txn.short_url):
 		frappe.throw(_("Only a pending receipt can be sent"))
@@ -558,7 +563,11 @@ def send_receipt_pay_link(order_id, session_id=None):
 	row = _linked_row(settings, session_id=session_id)
 	customer_name = frappe.db.get_value("Customer", txn.customer, "customer_name") or txn.customer
 	amount = frappe.utils.fmt_money(txn.amount, precision=2)
-	if is_qr:
+	if is_qr and txn.sales_invoice:
+		text = _(
+			"Dear {0}, please pay Rs. {1} for bill {2} to Sundaram and Sons using this link (valid for {3} minutes): {4}"
+		).format(customer_name, amount, txn.sales_invoice, max(1, minutes_left), txn.qr_data)
+	elif is_qr:
 		text = _(
 			"Dear {0}, please pay Rs. {1} to Sundaram and Sons using this link (valid for {2} minutes): {3}"
 		).format(customer_name, amount, max(1, minutes_left), txn.qr_data)

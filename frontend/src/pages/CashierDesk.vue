@@ -587,6 +587,15 @@
                     >
                       UPI
                     </button>
+                    <button
+                      v-if="paytm.qrEnabled && !upiLocked"
+                      @click="openPaytmQr"
+                      type="button"
+                      title="Send the UPI pay link for this amount to the customer's WhatsApp"
+                      class="px-2 py-1 rounded-lg bg-[var(--color-info)] text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-info)] active:scale-95 transition-all shadow-sm"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                    </button>
                   </div>
                   <input
                     ref="upiInput"
@@ -853,6 +862,24 @@
             <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Amount</span>
             <span class="font-mono text-[24px] font-black text-[var(--color-text)]">₹{{ fmt(paytmQr.amount) }}</span>
           </div>
+          <!-- WhatsApp number (saved WhatsApp, else mobile); the QR is created on Send -->
+          <div v-if="!paytmQr.orderId && !paytmQr.sending" class="space-y-1">
+            <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp number</label>
+            <input
+              ref="paytmQrPhoneInput"
+              v-model.trim="paytmQr.phone"
+              @keydown.enter="createPaytmQr"
+              maxlength="14"
+              placeholder="WhatsApp / mobile"
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-4 font-mono text-[20px] font-bold text-[var(--color-text)] focus:border-[var(--color-info)] outline-none transition-all"
+            />
+          </div>
+          <div v-else-if="paytmQr.phone" class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp</span>
+            <span class="text-[12px] font-bold" :class="paytmQr.waOk === false ? 'text-[var(--color-danger)]' : paytmQr.waOk ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'">
+              {{ paytmQr.waSending ? `Sending to +91 ${paytmQr.phone}…` : paytmQr.waText || `+91 ${paytmQr.phone}` }}
+            </span>
+          </div>
           <div class="flex items-center justify-center">
             <!-- white backing so the code scans in dark mode too -->
             <img v-if="paytmQr.image && paytmQr.status !== 'Failed'" :src="paytmQrSrc" alt="Paytm UPI QR" class="w-64 h-64 rounded-xl bg-white p-2" :class="paytmQr.status === 'Success' ? 'opacity-30' : ''" />
@@ -870,6 +897,18 @@
               @click="closePaytmQr"
               class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-all active:scale-95"
             >{{ paytmQr.orderId && paytmQr.status === 'Pending' ? 'Stop Waiting' : 'Close' }}</button>
+            <button
+              v-if="!paytmQr.orderId && paytmQr.status !== 'Failed'"
+              @click="createPaytmQr"
+              :disabled="paytmQr.sending"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-success)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+            >{{ paytmQr.sending ? 'Creating…' : 'Send' }}</button>
+            <button
+              v-if="paytmQr.orderId && paytmQr.status === 'Pending' && paytmQr.phone && paytmQr.waOk !== undefined"
+              @click="sendPaytmQrLink"
+              :disabled="paytmQr.waSending"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-success)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+            >{{ paytmQr.waOk ? 'Send Again' : 'Retry Send' }}</button>
             <button
               v-if="paytmQr.status === 'Failed'"
               @click="createPaytmQr"
@@ -953,7 +992,7 @@ import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { applyPanelEvent } from '../services/billPanelCache.js'
-import { session } from '../session'
+import { session, getWhatsAppSessionId } from '../session'
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
@@ -1045,8 +1084,10 @@ const paytm = ref({ enabled: false, qrEnabled: false, devices: [], show: false, 
 let paytmPollTimer = null
 const paytmPhoneInput = ref(null)
 // Paytm dynamic UPI QR: same wait-for-result flow, but the QR is shown on this screen
-const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', sending: false })
+// phone: WhatsApp number the QR's pay link is sent to; waOk undefined = not sent yet
+const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', sending: false, phone: '', waSending: false, waOk: undefined, waText: '' })
 let paytmQrPollTimer = null
+const paytmQrPhoneInput = ref(null)
 const paytmQrSrc = computed(() => {
   const img = paytmQr.value.image || ''
   return img.startsWith('data:') ? img : `data:image/png;base64,${img}`
@@ -1809,7 +1850,8 @@ async function closePaytmModal() {
   Object.assign(p, { show: false, orderId: '', status: '', message: '' })
 }
 
-function openPaytmQr() {
+// Phone button by the UPI box: ask for the WhatsApp number, then Send makes the QR and sends its pay link
+async function openPaytmQr() {
   errorMsg.value = ''
   const amount = Number(payments.value.upi) || 0
   if (!selectedInvoice.value) {
@@ -1820,19 +1862,32 @@ function openPaytmQr() {
     errorMsg.value = 'Enter the amount in the UPI box before creating the Paytm QR.'
     return
   }
-  Object.assign(paytmQr.value, { show: true, amount, orderId: '', status: '', message: '', image: '', sending: false })
-  createPaytmQr()
+  const invoiceName = selectedInvoice.value.name
+  Object.assign(paytmQr.value, { show: true, amount, orderId: '', status: '', message: '', image: '', sending: false, phone: '', waSending: false, waOk: undefined, waText: '' })
+  nextTick(() => paytmQrPhoneInput.value?.focus())
+  try {
+    const phone = await frappeGet('ssplbilling.api.paytm_api.get_invoice_whatsapp', { invoice_name: invoiceName })
+    // keep a number the cashier already typed
+    if (phone && paytmQr.value.show && !paytmQr.value.orderId && !paytmQr.value.phone) paytmQr.value.phone = phone
+  } catch (e) { /* cashier types it */ }
 }
 
 async function createPaytmQr() {
   const q = paytmQr.value
-  Object.assign(q, { sending: true, orderId: '', status: '', message: '', image: '' })
+  if (q.sending) return
+  if (q.phone && !/^\d{10}$/.test(q.phone.replace(/\D/g, '').slice(-10))) {
+    Object.assign(q, { status: '', message: 'Enter the 10-digit WhatsApp / mobile number' })
+    return paytmQrPhoneInput.value?.focus()
+  }
+  Object.assign(q, { sending: true, orderId: '', status: '', message: '', image: '', waOk: undefined, waText: '' })
   try {
     const res = await frappePost('ssplbilling.api.paytm_api.create_qr', {
       invoice_name: selectedInvoice.value.name,
       amount: q.amount,
+      mobile: q.phone,
     }, { silent: true })
     Object.assign(q, { orderId: res.order_id, image: res.qr_image, status: 'Pending', message: 'Waiting for the customer to scan and pay…' })
+    if (q.phone) sendPaytmQrLink()
     stopPaytmQrPolling()
     paytmQrPollTimer = setInterval(async () => {
       const orderId = paytmQr.value.orderId
@@ -1846,6 +1901,25 @@ async function createPaytmQr() {
     q.message = e.message || 'Could not create the Paytm QR.'
   } finally {
     q.sending = false
+  }
+}
+
+// The QR stands even when WhatsApp fails; Retry Send sends again
+async function sendPaytmQrLink() {
+  const q = paytmQr.value
+  const orderId = q.orderId
+  if (!orderId || q.waSending) return
+  q.waSending = true
+  try {
+    const sent = await frappePost('ssplbilling.api.whatsapp_api.send_receipt_pay_link', {
+      order_id: orderId,
+      session_id: getWhatsAppSessionId(),
+    }, { silent: true })
+    if (paytmQr.value.orderId === orderId) Object.assign(q, { waOk: true, waText: `Link sent to +${sent.phone}` })
+  } catch (e) {
+    if (paytmQr.value.orderId === orderId) Object.assign(q, { waOk: false, waText: `Not sent: ${e.message || e}` })
+  } finally {
+    q.waSending = false
   }
 }
 
@@ -1897,7 +1971,7 @@ async function closePaytmQr() {
       }
     } catch (e) { /* closing anyway */ }
   }
-  Object.assign(q, { show: false, orderId: '', status: '', message: '', image: '' })
+  Object.assign(q, { show: false, orderId: '', status: '', message: '', image: '', phone: '', waOk: undefined, waText: '' })
 }
 
 async function processPayment() {
