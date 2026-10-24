@@ -359,9 +359,11 @@ def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None, phone=No
 
 
 @frappe.whitelist()
-def create_qr(invoice_name, amount, mobile=None):
+def create_qr(invoice_name, amount, mobile=None, user=None):
 	"""Create a Paytm dynamic UPI QR for the amount; returns the QR image and the order id to poll.
-	mobile is the customer's WhatsApp number when the cashier sends the QR's pay link to them."""
+	mobile is the customer's WhatsApp number when the cashier sends the QR's pay link to them.
+	posId is the POS ID of the cashier's machine (SSPL Paytm Device), else QR POS ID, else the
+	user id; that machine's TID is kept on the row."""
 	settings = _settings()
 	if not settings.qr_enabled:
 		frappe.throw(_("Dynamic QR is disabled in SSPL Paytm Settings"))
@@ -374,7 +376,12 @@ def create_qr(invoice_name, amount, mobile=None):
 	now = now_datetime()
 	# Paytm order ids allow only letters, digits, "_", "-" and "@" (max 50); series often contain "/"
 	order_id = f"{_paytm_bill_no(invoice_name)[:40]}-{now.strftime('%H%M%S%f')[:9]}"
-	pos_id = settings.qr_pos_id or re.sub(r"[^A-Za-z0-9_]", "_", frappe.session.user)[:20]
+	device = next(iter(_user_devices(settings, user)), None)
+	pos_id = (
+		(device and device.pos_id)
+		or settings.qr_pos_id
+		or re.sub(r"[^A-Za-z0-9_]", "_", frappe.session.user)[:20]
+	)
 
 	txn = frappe.get_doc(
 		{
@@ -386,6 +393,7 @@ def create_qr(invoice_name, amount, mobile=None):
 			"channel": "QR",
 			"customer_mobile": _valid_phone(mobile) or None,
 			"device_name": pos_id,
+			"tid": device.tid if device else None,
 			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
 		}
 	).insert(ignore_permissions=True)

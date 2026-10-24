@@ -1885,6 +1885,7 @@ async function createPaytmQr() {
       invoice_name: selectedInvoice.value.name,
       amount: q.amount,
       mobile: q.phone,
+      user: paytmMachineUser(),
     }, { silent: true })
     Object.assign(q, { orderId: res.order_id, image: res.qr_image, status: 'Pending', message: 'Waiting for the customer to scan and pay…' })
     if (q.phone) sendPaytmQrLink()
