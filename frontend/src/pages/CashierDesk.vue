@@ -862,13 +862,17 @@
             <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Amount</span>
             <span class="font-mono text-[24px] font-black text-[var(--color-text)]">₹{{ fmt(paytmQr.amount) }}</span>
           </div>
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Machine</span>
+            <span class="font-mono text-[12px] font-bold text-[var(--color-text)]">TID {{ paytmQr.tid || '—' }} · POS ID {{ paytmQr.posId || '—' }}</span>
+          </div>
           <!-- WhatsApp number (saved WhatsApp, else mobile); the QR is created on Send -->
           <div v-if="!paytmQr.orderId && !paytmQr.sending" class="space-y-1">
             <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp number</label>
             <input
               ref="paytmQrPhoneInput"
               v-model.trim="paytmQr.phone"
-              @keydown.enter="createPaytmQr"
+              @keydown.enter="createPaytmQr(false)"
               maxlength="14"
               placeholder="WhatsApp / mobile"
               class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-4 font-mono text-[20px] font-bold text-[var(--color-text)] focus:border-[var(--color-info)] outline-none transition-all"
@@ -897,12 +901,20 @@
               @click="closePaytmQr"
               class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-all active:scale-95"
             >{{ paytmQr.orderId && paytmQr.status === 'Pending' ? 'Stop Waiting' : 'Close' }}</button>
-            <button
-              v-if="!paytmQr.orderId && paytmQr.status !== 'Failed'"
-              @click="createPaytmQr"
-              :disabled="paytmQr.sending"
-              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-success)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-            >{{ paytmQr.sending ? 'Creating…' : 'Send' }}</button>
+            <template v-if="!paytmQr.orderId && paytmQr.status !== 'Failed'">
+              <button
+                @click="createPaytmQr(true)"
+                :disabled="paytmQr.sending || !paytmQr.phone"
+                title="Send the bill PDF with the pay link as its caption"
+                class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+              >{{ paytmQr.sending && paytmQr.withBill ? 'Creating…' : 'Bill + Link' }}</button>
+              <button
+                @click="createPaytmQr(false)"
+                :disabled="paytmQr.sending"
+                :title="paytmQr.phone ? 'Send only the pay link (Enter)' : 'Show the QR without sending'"
+                class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-success)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+              >{{ paytmQr.sending && !paytmQr.withBill ? 'Creating…' : paytmQr.phone ? 'Only Link' : 'Show QR' }}</button>
+            </template>
             <button
               v-if="paytmQr.orderId && paytmQr.status === 'Pending' && paytmQr.phone && paytmQr.waOk !== undefined"
               @click="sendPaytmQrLink"
@@ -911,7 +923,7 @@
             >{{ paytmQr.waOk ? 'Send Again' : 'Retry Send' }}</button>
             <button
               v-if="paytmQr.status === 'Failed'"
-              @click="createPaytmQr"
+              @click="createPaytmQr()"
               :disabled="paytmQr.sending"
               class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
             >{{ paytmQr.sending ? 'Creating…' : 'New QR' }}</button>
@@ -1085,7 +1097,8 @@ let paytmPollTimer = null
 const paytmPhoneInput = ref(null)
 // Paytm dynamic UPI QR: same wait-for-result flow, but the QR is shown on this screen
 // phone: WhatsApp number the QR's pay link is sent to; waOk undefined = not sent yet
-const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', sending: false, phone: '', waSending: false, waOk: undefined, waText: '' })
+// withBill: the link goes as the caption of the bill PDF; tid/posId: the machine the QR is made for
+const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', sending: false, phone: '', withBill: false, tid: '', posId: '', waSending: false, waOk: undefined, waText: '' })
 let paytmQrPollTimer = null
 const paytmQrPhoneInput = ref(null)
 const paytmQrSrc = computed(() => {
@@ -1863,7 +1876,9 @@ async function openPaytmQr() {
     return
   }
   const invoiceName = selectedInvoice.value.name
-  Object.assign(paytmQr.value, { show: true, amount, orderId: '', status: '', message: '', image: '', sending: false, phone: '', waSending: false, waOk: undefined, waText: '' })
+  // shown before Send; create_qr answers with the POS ID it used (settings / user fallback)
+  const device = paytm.value.devices[0]
+  Object.assign(paytmQr.value, { show: true, amount, orderId: '', status: '', message: '', image: '', sending: false, phone: '', withBill: false, tid: device?.tid || '', posId: device?.pos_id || '', waSending: false, waOk: undefined, waText: '' })
   nextTick(() => paytmQrPhoneInput.value?.focus())
   try {
     const phone = await frappeGet('ssplbilling.api.paytm_api.get_invoice_whatsapp', { invoice_name: invoiceName })
@@ -1872,9 +1887,10 @@ async function openPaytmQr() {
   } catch (e) { /* cashier types it */ }
 }
 
-async function createPaytmQr() {
+async function createPaytmQr(withBill = paytmQr.value.withBill) {
   const q = paytmQr.value
   if (q.sending) return
+  q.withBill = withBill
   if (q.phone && !/^\d{10}$/.test(q.phone.replace(/\D/g, '').slice(-10))) {
     Object.assign(q, { status: '', message: 'Enter the 10-digit WhatsApp / mobile number' })
     return paytmQrPhoneInput.value?.focus()
@@ -1887,7 +1903,7 @@ async function createPaytmQr() {
       mobile: q.phone,
       user: paytmMachineUser(),
     }, { silent: true })
-    Object.assign(q, { orderId: res.order_id, image: res.qr_image, status: 'Pending', message: 'Waiting for the customer to scan and pay…' })
+    Object.assign(q, { orderId: res.order_id, image: res.qr_image, tid: res.tid || '', posId: res.pos_id || q.posId, status: 'Pending', message: 'Waiting for the customer to scan and pay…' })
     if (q.phone) sendPaytmQrLink()
     stopPaytmQrPolling()
     paytmQrPollTimer = setInterval(async () => {
@@ -1915,8 +1931,9 @@ async function sendPaytmQrLink() {
     const sent = await frappePost('ssplbilling.api.whatsapp_api.send_receipt_pay_link', {
       order_id: orderId,
       session_id: getWhatsAppSessionId(),
+      with_bill: q.withBill ? 1 : 0,
     }, { silent: true })
-    if (paytmQr.value.orderId === orderId) Object.assign(q, { waOk: true, waText: `Link sent to +${sent.phone}` })
+    if (paytmQr.value.orderId === orderId) Object.assign(q, { waOk: true, waText: `${q.withBill ? 'Bill + link' : 'Link'} sent to +${sent.phone}` })
   } catch (e) {
     if (paytmQr.value.orderId === orderId) Object.assign(q, { waOk: false, waText: `Not sent: ${e.message || e}` })
   } finally {
@@ -1972,7 +1989,7 @@ async function closePaytmQr() {
       }
     } catch (e) { /* closing anyway */ }
   }
-  Object.assign(q, { show: false, orderId: '', status: '', message: '', image: '', phone: '', waOk: undefined, waText: '' })
+  Object.assign(q, { show: false, orderId: '', status: '', message: '', image: '', phone: '', withBill: false, tid: '', posId: '', waOk: undefined, waText: '' })
 }
 
 async function processPayment() {

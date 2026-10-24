@@ -246,7 +246,7 @@ def get_devices(user=None):
 		"enabled": True,
 		"qr_enabled": bool(settings.qr_enabled),
 		"devices": [
-			{"device_name": d.device_name, "tid": d.tid, "user": d.user}
+			{"device_name": d.device_name, "tid": d.tid, "pos_id": d.pos_id, "user": d.user}
 			for d in _user_devices(settings, user)
 		],
 	}
@@ -404,6 +404,8 @@ def create_qr(invoice_name, amount, mobile=None, user=None):
 		"status": "Pending",
 		"qr_image": rb.get("image") or _qr_png(rb.get("qrData")),
 		"qr_data": rb.get("qrData"),
+		"pos_id": pos_id,
+		"tid": txn.tid,
 	}
 
 

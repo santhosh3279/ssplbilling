@@ -30,11 +30,13 @@ from frappe.utils import now_datetime
 from ssplbilling.api.dashboard_api import get_allowed_tiles
 from ssplbilling.api.print_preview_api import (
 	DEFAULT_COUNTRY_CODE,
+	build_preview_filename,
 	get_party_link,
 	get_party_mobile,
 	get_party_saved_whatsapp,
 	get_party_whatsapp,
 	normalize_whatsapp_number,
+	preview_print_template_pdf,
 )
 
 SETTINGS_DOCTYPE = "SSPL WhatsApp Settings"
@@ -524,9 +526,10 @@ def send_document(doctype, document_name, pdf_base64, filename, caption="", sess
 
 
 @frappe.whitelist(methods=["POST"])
-def send_receipt_pay_link(order_id, session_id=None):
+def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
 	"""Send a pending Paytm receipt's pay link to the customer's WhatsApp as a text: a receipt QR's
 	UPI string (what scanning the QR gives, upi://pay?...) or a payment request's Paytm paymentUrl.
+	with_bill sends a bill QR's link as the caption of the bill PDF instead (see _bill_pdf).
 
 	The number and link are read from the row, never taken from the caller, so this can only
 	message the number the receipt was made for."""
@@ -575,6 +578,18 @@ def send_receipt_pay_link(order_id, session_id=None):
 		text = _("Dear {0}, please pay Rs. {1} to Sundaram and Sons using this Paytm link: {2}").format(
 			customer_name, amount, txn.short_url
 		)
+	if frappe.utils.cint(with_bill) and is_qr and txn.sales_invoice:
+		frappe.has_permission("Sales Invoice", "read", doc=txn.sales_invoice, throw=True)
+		pdf_base64, filename = _bill_pdf(txn.sales_invoice)
+		return _send(
+			txn.customer_mobile,
+			"Document",
+			"send-document",
+			_bill_body(pdf_base64, filename, text),
+			text,
+			reference=("SSPL Paytm Transaction", txn.order_id),
+			row=row,
+		)
 	return _send(
 		txn.customer_mobile,
 		"Text",
@@ -584,6 +599,29 @@ def send_receipt_pay_link(order_id, session_id=None):
 		reference=("SSPL Paytm Transaction", txn.order_id),
 		row=row,
 	)
+
+
+def _bill_pdf(invoice_name):
+	"""Base64 PDF of a sales bill and its file name: the bill series' print template (SSPL Billing
+	Settings) when it renders a PDF, else the first PDF template for Sales Invoice."""
+	naming_series = frappe.db.get_value("Sales Invoice", invoice_name, "naming_series")
+	settings = frappe.get_cached_doc("SSPL Billing Settings")
+	series_template = next(
+		(r.print_format for r in settings.billing_series if r.series == naming_series and r.print_format), None
+	)
+	pdf_types = ("PDF", "Custom PDF")
+	if series_template and frappe.db.get_value("Print Template", series_template, "format_type") in pdf_types:
+		template = series_template
+	else:
+		template = frappe.db.get_value(
+			"Print Template", {"document_type": "Sales Invoice", "format_type": ["in", pdf_types]}, "name"
+		)
+	if not template:
+		frappe.throw(_("No PDF print template for Sales Invoice; send the link only"))
+	pdf_base64 = preview_print_template_pdf(template, invoice_name)
+	if not pdf_base64:
+		frappe.throw(_("Could not render bill {0} with {1}").format(invoice_name, template))
+	return pdf_base64, build_preview_filename("Sales Invoice", invoice_name, template)
 
 
 def _bill_body(pdf_base64, filename, caption):
