@@ -48,8 +48,65 @@ def get_item_creation_metadata(company=None):
 		"tax_templates": frappe.get_all("Item Tax Template", filters=tax_filters, fields=["name"]),
 		"hsn_codes": frappe.get_all("GST HSN Code", fields=["name", "description"]),
 		"competitive_items": frappe.get_all("Competitive Item", fields=["name"], order_by="name asc"),
+		"item_attributes": get_item_attributes(),
 		"naming_series": get_item_naming_series()
 	}
+
+
+def get_item_attributes():
+	"""Enabled Item Attributes with their values (or numeric range) for the variants tab."""
+	attributes = frappe.get_all(
+		"Item Attribute",
+		filters={"disabled": 0},
+		fields=["name", "numeric_values", "from_range", "to_range", "increment"],
+		order_by="name asc",
+	)
+	values = {}
+	for row in frappe.get_all(
+		"Item Attribute Value", fields=["parent", "attribute_value"], order_by="parent asc, idx asc"
+	):
+		values.setdefault(row.parent, []).append(row.attribute_value)
+	for attr in attributes:
+		attr["values"] = values.get(attr.name, [])
+	return attributes
+
+
+def _set_variant_attributes(item, data):
+	"""Apply has_variants and the template's attribute rows. Rows for attributes that stay are
+	kept as they are; numeric ranges are copied from the Item Attribute (no fetch_from on them)."""
+	if "has_variants" not in data or item.variant_of:
+		return
+	item.has_variants = 1 if frappe.utils.cint(data.get("has_variants")) else 0
+	if not item.has_variants:
+		if item.is_new() or not frappe.db.exists("Item", {"variant_of": item.name}):
+			item.set("attributes", [])
+		return
+
+	wanted = []
+	for row in data.get("attributes") or []:
+		attr = (row.get("attribute") or "").strip()
+		if attr and attr not in wanted:
+			wanted.append(attr)
+
+	existing = {d.attribute: d for d in item.attributes}
+	rows = []
+	for attr in wanted:
+		if attr in existing:
+			rows.append(existing[attr])
+			continue
+		meta = frappe.db.get_value(
+			"Item Attribute", attr, ["numeric_values", "from_range", "to_range", "increment"], as_dict=True
+		)
+		if not meta:
+			frappe.throw(f"Item Attribute {attr} not found")
+		rows.append({
+			"attribute": attr,
+			"numeric_values": meta.numeric_values,
+			"from_range": meta.from_range,
+			"to_range": meta.to_range,
+			"increment": meta.increment,
+		})
+	item.set("attributes", rows)
 
 def get_item_naming_series():
 	"""Get naming series for Item."""
@@ -117,6 +174,8 @@ def create_item(data):
 
 	if "image" in data:
 		item.image = data.get("image")
+
+	_set_variant_attributes(item, data)
 	
 	# Add to barcodes child table
 	item.append("barcodes", {"barcode": barcode, "uom": item.stock_uom})
@@ -247,6 +306,9 @@ def get_item_for_edit(item_code):
 		"extra_barcodes": extra_barcodes,
 		"image": item.image or "",
 		"disabled": frappe.utils.cint(item.disabled),
+		"has_variants": frappe.utils.cint(item.has_variants),
+		"variant_of": item.variant_of or "",
+		"attributes": [{"attribute": row.attribute} for row in item.attributes if not item.variant_of],
 	}
 
 
@@ -290,6 +352,7 @@ def update_item(data):
 		item.gst_hsn_code = data["hsn_sac"]
 	if "image" in data:
 		item.image = data.get("image")
+	_set_variant_attributes(item, data)
 
 	# Update barcodes (primary may be changed, extras replaced)
 	current_primary = (item.barcodes[0].barcode if item.barcodes else "") or item.item_code

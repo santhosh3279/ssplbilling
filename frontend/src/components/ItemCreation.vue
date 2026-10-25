@@ -59,9 +59,26 @@
         </div>
       </div>
 
+      <!-- Tabs -->
+      <div class="flex gap-[8px] px-[20px] pt-[12px] bg-[var(--color-bg)] border-b border-[var(--color-border)]">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          type="button"
+          @click="activeTab = tab.id"
+          class="rounded-t-xl px-[24px] py-[10px] text-2xl font-bold uppercase tracking-wider transition-colors"
+          :class="activeTab === tab.id
+            ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
+            : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+        >
+          {{ tab.label }}
+          <span v-if="tab.id === 'variants' && form.has_variants" class="ml-[6px] opacity-80">({{ form.attributes.length }})</span>
+        </button>
+      </div>
+
       <!-- Form Content -->
       <div class="flex-1 overflow-y-auto px-[20px] py-[12px]">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-[24px]">
+        <div v-show="activeTab === 'details'" class="grid grid-cols-1 md:grid-cols-3 gap-[24px]">
           <!-- Column 1: Names & Barcodes -->
           <div class="space-y-[16px]">
             <div class="space-y-[4px]">
@@ -221,6 +238,23 @@
                 class="h-6 w-6 accent-[var(--color-info)]"
               />
               <span>GST Incl</span>
+            </label>
+
+            <label
+              class="flex items-center gap-[12px] px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)]"
+              :class="form.variant_of ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+              :title="form.variant_of ? `Variant of ${form.variant_of}` : 'Template item — set attributes in the Variants tab'"
+            >
+              <input
+                v-model="form.has_variants"
+                type="checkbox"
+                :true-value="1"
+                :false-value="0"
+                :disabled="!!form.variant_of"
+                class="h-6 w-6 accent-[var(--color-info)]"
+              />
+              <span>Has Variants</span>
+              <span v-if="form.variant_of" class="text-xl font-normal text-[var(--color-text-muted)]">(variant of {{ form.variant_of }})</span>
             </label>
 
             <div class="space-y-[4px] relative">
@@ -419,6 +453,70 @@
             </div>
           </div>
         </div>
+
+        <!-- Variants: template attributes (ERPNext needs at least one when Has Variants is set) -->
+        <div v-show="activeTab === 'variants'" class="space-y-[16px] max-w-[1200px]">
+          <label
+            class="flex items-center gap-[12px] px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)]"
+            :class="form.variant_of ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+          >
+            <input
+              v-model="form.has_variants"
+              type="checkbox"
+              :true-value="1"
+              :false-value="0"
+              :disabled="!!form.variant_of"
+              class="h-6 w-6 accent-[var(--color-info)]"
+            />
+            <span>Has Variants</span>
+            <span class="text-xl font-normal text-[var(--color-text-muted)]">
+              {{ form.variant_of ? `This item is a variant of ${form.variant_of}` : 'Makes this item a template — variants are created from it, it is not billed itself' }}
+            </span>
+          </label>
+
+          <div v-if="form.has_variants" class="space-y-[4px]">
+            <div class="flex items-center justify-between px-[20px]">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Attributes *</label>
+              <button type="button" @click="addAttributeRow" class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors">+ Add Attribute</button>
+            </div>
+            <div class="border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-sm">
+              <table class="w-full border-collapse text-2xl">
+                <thead>
+                  <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]">
+                    <th class="w-1/3 px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">Attribute</th>
+                    <th class="px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">Values</th>
+                    <th class="w-16"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)]">
+                  <tr v-for="(row, idx) in form.attributes" :key="idx" class="divide-x divide-[var(--color-border)] hover:bg-[var(--color-border)]/10 transition-colors">
+                    <td class="p-0">
+                      <select v-model="row.attribute" class="w-full bg-transparent px-[10px] py-[6px] text-2xl text-[var(--color-text)] outline-none cursor-pointer focus:bg-[var(--color-info)]/10 appearance-none">
+                        <option value="" class="bg-[var(--color-surface)] text-[var(--color-text)]">Select Attribute...</option>
+                        <option
+                          v-for="a in metadata.item_attributes"
+                          :key="a.name"
+                          :value="a.name"
+                          :disabled="a.name !== row.attribute && form.attributes.some(r => r.attribute === a.name)"
+                          class="bg-[var(--color-surface)] text-[var(--color-text)]"
+                        >{{ a.name }}</option>
+                      </select>
+                    </td>
+                    <td class="px-[10px] py-[6px] text-xl text-[var(--color-text-muted)]">{{ attributeValuesLabel(row.attribute) }}</td>
+                    <td class="p-0 text-center">
+                      <button type="button" @click="removeAttributeRow(idx)" class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition-colors text-4xl font-bold leading-none w-full h-full py-[6px]">&times;</button>
+                    </td>
+                  </tr>
+                  <tr v-if="!form.attributes.length">
+                    <td colspan="3" class="px-[10px] py-[12px] text-center text-2xl text-[var(--color-danger)] italic">
+                      Add at least one attribute
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Footer Actions -->
@@ -540,6 +638,9 @@ function _applyItemData(data, itemCode) {
   })
   form.value.uom_conversions = data.uom_conversions || []
   form.value.extra_barcodes  = data.extra_barcodes  || []
+  form.value.has_variants    = Number(data.has_variants) === 1 ? 1 : 0
+  form.value.variant_of      = data.variant_of || ''
+  form.value.attributes      = (data.attributes || []).map(a => ({ attribute: a.attribute }))
   itemDisabled.value = Number(data.disabled) === 1
   autoBarcode.value = ''
   isBarcodeManual.value = true
@@ -610,7 +711,16 @@ const form = ref({
   suppliers: [],
   uom_conversions: [],
   extra_barcodes: [],
+  has_variants: 0,
+  variant_of: '',
+  attributes: [],
 })
+
+const tabs = [
+  { id: 'details', label: 'Details' },
+  { id: 'variants', label: 'Variants' },
+]
+const activeTab = ref('details')
 
 const fileInput = ref(null)
 const isUploadingImage = ref(false)
@@ -680,6 +790,26 @@ function addUomRow() {
 function removeUomRow(idx) {
   form.value.uom_conversions.splice(idx, 1)
 }
+
+function addAttributeRow() {
+  form.value.attributes.push({ attribute: '' })
+}
+
+function removeAttributeRow(idx) {
+  form.value.attributes.splice(idx, 1)
+}
+
+function attributeValuesLabel(name) {
+  const a = metadata.value.item_attributes?.find(x => x.name === name)
+  if (!a) return ''
+  if (Number(a.numeric_values) === 1) return `${a.from_range} to ${a.to_range}, step ${a.increment}`
+  return a.values.join(', ') || 'No values defined'
+}
+
+// A template needs at least one attribute row, so ticking the box seeds an empty one
+watch(() => form.value.has_variants, (on) => {
+  if (on && !form.value.attributes.length) addAttributeRow()
+})
 
 // ── Supplier search state ──────────────────────────────────────────────────
 const supplierOptions = ref([])
@@ -774,6 +904,7 @@ const metadata = ref({
   tax_templates: [],
   hsn_codes: [],
   competitive_items: [],
+  item_attributes: [],
   naming_series: []
 })
 
@@ -818,6 +949,7 @@ const availableUoms = computed(() => {
 const canSubmit = computed(() => {
   return form.value.item_name.trim() && form.value.item_group && form.value.stock_uom && form.value.item_tax_template
     && !duplicateItemName.value && !isCheckingItemName.value
+    && (!form.value.has_variants || form.value.attributes.some(a => a.attribute))
 })
 
 async function loadMetadata() {
@@ -950,6 +1082,9 @@ function resetForm(blank = false) {
     suppliers:         cache.suppliers         || [],
     uom_conversions: [],
     extra_barcodes: [],
+    has_variants: 0,
+    variant_of: '',
+    attributes: [],
   }
   startFreshBarcode()
 }
@@ -970,6 +1105,7 @@ function startNewFromCurrent() {
   form.value.item_print_name = ''
   form.value.barcode = ''
   form.value.extra_barcodes = []
+  form.value.variant_of = ''
   startFreshBarcode()
   nextTick(() => itemNameInput.value?.focus())
 }
@@ -977,6 +1113,7 @@ function startNewFromCurrent() {
 watch(() => props.show, async (newVal) => {
   if (newVal) {
     forceCreate.value = false
+    activeTab.value = 'details'
     if (!isEditMode.value) {
       resetForm(true)
       await loadMetadata()
