@@ -73,11 +73,28 @@ def get_print_page_count(print_template, document_name=None):
 	from pypdf import PdfReader
 
 	try:
+		if doc.format_type == "Custom PDF":
+			# Our Custom PDF templates paginate in Jinja: one fixed-height, overflow-hidden
+			# .page box per printed page. Counting them skips wkhtmltopdf, which takes up
+			# to ~20s on a long A5 bill against ~0.1s for the Jinja render.
+			pages = count_page_boxes(doc.preview(document_name) or "")
+			if pages:
+				return pages
 		return len(PdfReader(io.BytesIO(base64.b64decode(doc.preview_pdf(document_name)))).pages)
 	except Exception:
 		# The count is a hint on the button; a failed render must not block printing.
 		frappe.log_error(frappe.get_traceback(), "Print page count failed")
 		return None
+
+
+HTML_COMMENT = re.compile(r"<!--.*?-->", re.S)
+CLASS_ATTR = re.compile(r"""class\s*=\s*["']([^"']*)["']""")
+
+
+def count_page_boxes(html):
+	"""Elements carrying the exact "page" class; 0 when the template does not use them."""
+	html = HTML_COMMENT.sub("", html)
+	return sum(1 for classes in CLASS_ATTR.findall(html) if "page" in classes.split())
 
 
 @frappe.whitelist()
