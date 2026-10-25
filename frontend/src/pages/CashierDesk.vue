@@ -1062,10 +1062,12 @@
     <component
       :is="ConfettiTester"
       v-if="ConfettiTester"
-      :mock-mode="paytmMockOn"
+      :paytm-mock="paytmMockOn"
+      :whatsapp-mock="whatsappMockOn"
       @mock-upi="settleMock('Success')"
       @mock-fail="settleMock('Failed')"
-      @toggle-mock="togglePaytmMock"
+      @toggle-paytm-mock="togglePaytmMock"
+      @toggle-whatsapp-mock="setWhatsAppMock(!whatsappMockOn)"
     />
   </div>
 </template>
@@ -1091,7 +1093,7 @@ import { canAccessTile, canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
 import { fireConfetti } from '../utils/confetti'
-import { paytmMockOn, setPaytmMock, MOCKED_METHODS, paytmMockCall, settleMockOrder } from '../utils/paytmMock'
+import { paytmMockOn, whatsappMockOn, setPaytmMock, setWhatsAppMock, devCall, settleMockOrder } from '../utils/devMock'
 // Dev server only: Vite drops this import from production builds
 const ConfettiTester = import.meta.env.DEV ? defineAsyncComponent(() => import('../components/ConfettiTester.vue')) : null
 import { serverToday, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
@@ -1805,18 +1807,16 @@ function paytmMachineUser() {
   return inherited || session.user.value
 }
 
-// Paytm calls go through these so dev mock mode can answer them without reaching Paytm
+// Paytm / WhatsApp calls go through these so the dev mocks can answer them without reaching either
 function mockInvoiceInfo(name) {
   const inv = invoices.value.find(i => i.name === name) || (selectedInvoice.value?.name === name ? selectedInvoice.value : {})
   return { customer: inv.customer, customer_name: inv.customer_name }
 }
 function paytmPost(method, args, opts) {
-  if (import.meta.env.DEV && paytmMockOn.value && MOCKED_METHODS.has(method)) return paytmMockCall(method, args, mockInvoiceInfo)
-  return frappePost(method, args, opts)
+  return devCall(method, args, () => frappePost(method, args, opts), mockInvoiceInfo)
 }
 function paytmGet(method, args, opts) {
-  if (import.meta.env.DEV && paytmMockOn.value && MOCKED_METHODS.has(method)) return paytmMockCall(method, args, mockInvoiceInfo)
-  return frappeGet(method, args, opts)
+  return devCall(method, args, () => frappeGet(method, args, opts), mockInvoiceInfo)
 }
 
 async function loadPaytmDevices() {
@@ -2234,7 +2234,7 @@ function mockPaytmQrSuccess() {
   setTimeout(() => applyPaytmQrResult({ order_id: orderId, status: 'Success', amount, mode: 'upi', reference_no: orderId }), 2000)
 }
 
-// Dev mock mode: Paytm calls are answered in the browser (utils/paytmMock.js); switching it
+// Dev Paytm mock: Paytm calls are answered in the browser (utils/devMock.js); switching it
 // drops whatever was waiting so mock and real orders never mix
 async function togglePaytmMock() {
   stopPaytmPolling()

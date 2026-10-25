@@ -28,10 +28,10 @@
         class="rounded-lg bg-[var(--color-success)] px-3 py-1.5 text-white shadow active:scale-95"
         @click="emit('mock-upi')"
       >
-        {{ mockMode ? 'Mock Pay' : 'Mock UPI' }}
+        {{ paytmMock ? 'Mock Pay' : 'Mock UPI' }}
       </button>
       <button
-        v-if="mockMode"
+        v-if="paytmMock"
         class="rounded-lg bg-[var(--color-danger)] px-3 py-1.5 text-white shadow active:scale-95"
         title="Fail the newest waiting mock Paytm order"
         @click="emit('mock-fail')"
@@ -40,11 +40,19 @@
       </button>
       <button
         class="rounded-lg px-3 py-1.5 shadow active:scale-95"
-        :class="mockMode ? 'bg-[var(--color-warning)] text-white' : 'bg-[var(--color-surface-raised)] text-[var(--color-text)]'"
+        :class="paytmMock ? 'bg-[var(--color-warning)] text-white' : 'bg-[var(--color-surface-raised)] text-[var(--color-text)]'"
         title="Answer Paytm calls in the browser instead of sending them to Paytm"
-        @click="emit('toggle-mock')"
+        @click="emit('toggle-paytm-mock')"
       >
-        Mock Mode: {{ mockMode ? 'ON' : 'OFF' }}
+        Paytm Mock: {{ paytmMock ? 'ON' : 'OFF' }}
+      </button>
+      <button
+        class="rounded-lg px-3 py-1.5 shadow active:scale-95"
+        :class="whatsappMock ? 'bg-[var(--color-warning)] text-white' : 'bg-[var(--color-surface-raised)] text-[var(--color-text)]'"
+        title="Answer OpenWA sends (pay link, bill PDF) in the browser; what would be sent goes to the console"
+        @click="emit('toggle-whatsapp-mock')"
+      >
+        WhatsApp Mock: {{ whatsappMock ? 'ON' : 'OFF' }}
       </button>
       <button
         class="rounded-lg bg-[var(--color-surface-raised)] px-2.5 py-1.5 text-[var(--color-text)] shadow"
@@ -61,8 +69,11 @@
 import { ref, reactive, computed } from 'vue'
 import { fireConfetti } from '../utils/confetti'
 
-defineProps({ mockMode: { type: Boolean, default: false } })
-const emit = defineEmits(['mock-upi', 'mock-fail', 'toggle-mock'])
+defineProps({
+  paytmMock: { type: Boolean, default: false },
+  whatsappMock: { type: Boolean, default: false },
+})
+const emit = defineEmits(['mock-upi', 'mock-fail', 'toggle-paytm-mock', 'toggle-whatsapp-mock'])
 
 const DEFAULTS = { count: 160, duration: 2500, speed: 9, spread: 0.9, size: 6, gravity: 0.25, drag: 0.99 }
 const FIELDS = [

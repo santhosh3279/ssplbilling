@@ -160,6 +160,7 @@ import { serverNow } from '../services/serverTime'
 import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 import { getWhatsAppSessionId } from '../session.js'
+import { devCall } from '../utils/devMock'
 import { useSubwindow } from '../services/shortcutManager'
 import { getCachedPrintLists, refreshPrintCache, loadPrintLists } from '../services/printCache'
 import { hasWhatsAppBridge, openWhatsAppTab } from '../services/whatsappBridge'
@@ -404,7 +405,9 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   hasExtension.value = hasWhatsAppBridge()
   loadSettings()
-  frappeGet('ssplbilling.api.whatsapp_api.get_gateway_state', { session_id: getWhatsAppSessionId() })
+  // dev WhatsApp mock (utils/devMock.js) answers the OpenWA calls here so no bill reaches a customer
+  devCall('ssplbilling.api.whatsapp_api.get_gateway_state', { session_id: getWhatsAppSessionId() },
+    () => frappeGet('ssplbilling.api.whatsapp_api.get_gateway_state', { session_id: getWhatsAppSessionId() }))
     .then((r) => { gatewayReady.value = !!r?.ready })
     .catch(() => { gatewayReady.value = false })
 })
@@ -828,14 +831,16 @@ async function sendWhatsApp() {
 }
 
 function sendBillViaGateway(bill) {
-  return frappePost('ssplbilling.api.whatsapp_api.send_document', {
+  const args = {
     doctype: props.doctype,
     document_name: props.invoiceName,
     pdf_base64: bill.pdf,
     filename: bill.billName,
     caption: bill.caption,
     session_id: getWhatsAppSessionId(),
-  }, { silent: true })
+  }
+  return devCall('ssplbilling.api.whatsapp_api.send_document', args,
+    () => frappePost('ssplbilling.api.whatsapp_api.send_document', args, { silent: true }))
 }
 
 async function openNumberPrompt(state, bill) {
@@ -855,7 +860,7 @@ async function submitNumber() {
   if (prompt.reason === 'disabled') {
     // WhatsApp disabled on the customer: send to this number once, store it nowhere
     try {
-      const sent = await frappePost('ssplbilling.api.whatsapp_api.send_document_to_number', {
+      const args = {
         doctype: props.doctype,
         document_name: props.invoiceName,
         phone: promptNumber.value,
@@ -863,7 +868,9 @@ async function submitNumber() {
         filename: prompt.bill.billName,
         caption: prompt.bill.caption,
         session_id: getWhatsAppSessionId(),
-      }, { silent: true })
+      }
+      const sent = await devCall('ssplbilling.api.whatsapp_api.send_document_to_number', args,
+        () => frappePost('ssplbilling.api.whatsapp_api.send_document_to_number', args, { silent: true }))
       numberPrompt.value = null
       success.value = `Sent "${prompt.bill.billName}" to +${sent.phone} via OpenWA (number not saved)`
     } catch (e) {
@@ -875,12 +882,14 @@ async function submitNumber() {
     return
   }
   try {
-    await frappePost('ssplbilling.api.whatsapp_api.save_party_whatsapp', {
+    const saveArgs = {
       doctype: props.doctype,
       document_name: props.invoiceName,
       phone: promptNumber.value,
       session_id: getWhatsAppSessionId(),
-    }, { silent: true })
+    }
+    await devCall('ssplbilling.api.whatsapp_api.save_party_whatsapp', saveArgs,
+      () => frappePost('ssplbilling.api.whatsapp_api.save_party_whatsapp', saveArgs, { silent: true }))
     const sent = await sendBillViaGateway(prompt.bill)
     if (sent.needs_number) {
       // The new number was saved but WhatsApp refused it on sending too: ask again

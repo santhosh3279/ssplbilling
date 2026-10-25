@@ -1,24 +1,55 @@
-// Dev-only stand-in for ssplbilling.api.paytm_api (and the WhatsApp pay-link send) so CashierDesk's
-// Paytm machine / QR / link-queue flows can be tried without reaching Paytm. Orders live in memory
-// and carry MOCK- references, which processPayment refuses, so nothing mocked can be posted.
+// Dev-only stand-ins, switched separately from the CashierDesk tester:
+// - Paytm mock answers ssplbilling.api.paytm_api so the machine / QR / UPI-queue flows run without
+//   reaching Paytm. Orders live in memory and carry MOCK- references, which processPayment refuses,
+//   so nothing mocked can be posted.
+// - WhatsApp mock answers the OpenWA sends (pay link, bill PDF) so nothing reaches a customer; what
+//   would have gone is written to the console instead.
 import { ref } from 'vue'
 
-const STORAGE_KEY = 'wb-paytm-mock'
+const PAYTM_KEY = 'wb-paytm-mock'
+const WHATSAPP_KEY = 'wb-whatsapp-mock'
 
-function readFlag() {
-  try { return sessionStorage.getItem(STORAGE_KEY) === '1' } catch (e) { return false }
+function readFlag(key) {
+  try { return sessionStorage.getItem(key) === '1' } catch (e) { return false }
+}
+function writeFlag(key, on) {
+  try { sessionStorage.setItem(key, on ? '1' : '0') } catch (e) { /* storage blocked */ }
 }
 
-export const paytmMockOn = ref(import.meta.env.DEV && readFlag())
+export const paytmMockOn = ref(import.meta.env.DEV && readFlag(PAYTM_KEY))
+export const whatsappMockOn = ref(import.meta.env.DEV && readFlag(WHATSAPP_KEY))
 
 export function setPaytmMock(on) {
   paytmMockOn.value = import.meta.env.DEV && !!on
-  try { sessionStorage.setItem(STORAGE_KEY, paytmMockOn.value ? '1' : '0') } catch (e) { /* storage blocked */ }
+  writeFlag(PAYTM_KEY, paytmMockOn.value)
   if (!paytmMockOn.value) orders.clear()
 }
 
-// Methods answered here while mock mode is on; anything else still goes to the server
-export const MOCKED_METHODS = new Set([
+export function setWhatsAppMock(on) {
+  whatsappMockOn.value = import.meta.env.DEV && !!on
+  writeFlag(WHATSAPP_KEY, whatsappMockOn.value)
+}
+
+const WHATSAPP_METHODS = new Set([
+  'ssplbilling.api.whatsapp_api.send_receipt_pay_link',
+  'ssplbilling.api.whatsapp_api.get_gateway_state',
+  'ssplbilling.api.whatsapp_api.send_document',
+  'ssplbilling.api.whatsapp_api.send_document_to_number',
+  'ssplbilling.api.whatsapp_api.save_party_whatsapp',
+])
+
+// Whether the method is answered here rather than by the server, given the switches now on
+export function isMocked(method) {
+  if (!import.meta.env.DEV) return false
+  return (paytmMockOn.value && PAYTM_METHODS.has(method)) || (whatsappMockOn.value && WHATSAPP_METHODS.has(method))
+}
+
+// The mock answer when the method is mocked, else the real call
+export function devCall(method, args, real, invoiceInfo) {
+  return isMocked(method) ? mockCall(method, args, invoiceInfo) : real()
+}
+
+const PAYTM_METHODS = new Set([
   'ssplbilling.api.paytm_api.get_devices',
   'ssplbilling.api.paytm_api.send_to_device',
   'ssplbilling.api.paytm_api.create_qr',
@@ -26,7 +57,6 @@ export const MOCKED_METHODS = new Set([
   'ssplbilling.api.paytm_api.cancel',
   'ssplbilling.api.paytm_api.get_qr_queue',
   'ssplbilling.api.paytm_api.get_invoice_qr',
-  'ssplbilling.api.whatsapp_api.send_receipt_pay_link',
 ])
 
 const DEVICE = { device_name: 'Mock Machine', tid: 'MOCKTID1', pos_id: 'MOCKPOS1' }
@@ -69,8 +99,30 @@ function result(o) {
 
 const wait = (ms) => new Promise(r => setTimeout(r, ms))
 
-export async function paytmMockCall(method, args = {}, invoiceInfo = () => ({})) {
+function mockWhatsApp(method, args) {
+  const { pdf_base64, ...shown } = args
+  console.info(`[WhatsApp mock] ${method.split('.').pop()}`, shown)
+  switch (method) {
+    case 'ssplbilling.api.whatsapp_api.get_gateway_state':
+      return { ready: true }
+    case 'ssplbilling.api.whatsapp_api.save_party_whatsapp':
+      return {}
+    case 'ssplbilling.api.whatsapp_api.send_receipt_pay_link': {
+      const o = orders.get(args.order_id)
+      return { phone: o?.customer_mobile ? `91${o.customer_mobile} (mock)` : '(mock)', message_id: 'MOCK' }
+    }
+    default:
+      return { phone: args.phone ? `${args.phone} (mock)` : '(mock)', message_id: 'MOCK' }
+  }
+}
+
+export async function mockCall(method, args = {}, invoiceInfo = () => ({})) {
   await wait(300)
+  if (WHATSAPP_METHODS.has(method)) return mockWhatsApp(method, args)
+  return mockPaytm(method, args, invoiceInfo)
+}
+
+async function mockPaytm(method, args, invoiceInfo) {
   switch (method) {
     case 'ssplbilling.api.paytm_api.get_devices':
       return { enabled: true, qr_enabled: true, devices: [DEVICE] }
@@ -96,10 +148,6 @@ export async function paytmMockCall(method, args = {}, invoiceInfo = () => ({}))
       return [...orders.values()]
         .filter(o => ['Pending', 'Success'].includes(o.status))
         .map(o => ({ ...result(o), customer_mobile: o.customer_mobile, device_name: DEVICE.device_name, tid: DEVICE.tid, ...invoiceInfo(o.sales_invoice) }))
-    case 'ssplbilling.api.whatsapp_api.send_receipt_pay_link': {
-      const o = orders.get(args.order_id)
-      return { phone: `91${o?.customer_mobile || '0000000000'}` }
-    }
   }
   throw new Error(`No mock for ${method}`)
 }
