@@ -865,6 +865,17 @@ const inheritedUser = computed(() => {
 
 // --- Data Fetching & State Management ---
 const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache, discountRules } = useItemCache()
+
+// Variant templates cannot be billed: a scanned/typed template code resolves to nothing (falls
+// through to Item Search) and templates never show in the inline quick-search dropdown.
+function lookupBillableItem(code) {
+  const match = lookupItemInCache(code)
+  return match && !match.has_variants ? match : null
+}
+
+function searchBillableItems(query) {
+  return searchItemsInCache(query).filter(i => !i.has_variants)
+}
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 const { 
   fetchCustomerSalesHistory, hasHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading, 
@@ -2187,7 +2198,7 @@ function handleItemEntry() {
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) return
 
   const code = newItemCode.value.trim()
-  const match = lookupItemInCache(code)
+  const match = lookupBillableItem(code)
 
   if (!match) {
     openItemSearch(code)
@@ -2207,7 +2218,7 @@ function onNewCodeInput() {
     quickSearchResults.value = [{ item_code: 'DUMMY' }]
     quickSearchAnchor.value = newCodeInput.value
   } else if (code.length >= 2) {
-    const rawResults = searchItemsInCache(code)
+    const rawResults = searchBillableItems(code)
     quickSearchResults.value = rawResults.map(item => ({
       ...item,
       has_history: hasHistory(item.item_code)
@@ -2687,7 +2698,7 @@ function deleteNonGstItems() {
 function onQuickSearchRefresh() {
   // After cache refresh, re-run search if there's a query
   if (newItemCode.value) {
-    quickSearchResults.value = searchItemsInCache(newItemCode.value)
+    quickSearchResults.value = searchBillableItems(newItemCode.value)
   }
 }
 
@@ -2895,7 +2906,7 @@ function onItemSearchSelectMultiple(entries) {
 function onEditCodeInput(rowIdx) {
   const code = (items.value[rowIdx]?.item_code || '').trim()
   if (code.length >= 2) {
-    quickSearchResults.value = searchItemsInCache(code)
+    quickSearchResults.value = searchBillableItems(code)
     quickSearchAnchor.value = editCodeInput.value
     editQuickSearchRowIdx.value = rowIdx
   } else {
@@ -2930,7 +2941,7 @@ function onEditCodeKeydown(e, rowIdx) {
   if (e.key === 'Enter') {
     e.preventDefault()
     const code = (items.value[rowIdx]?.item_code || '').trim()
-    const match = lookupItemInCache(code)
+    const match = lookupBillableItem(code)
     if (match) {
       applyItemToRow(rowIdx, match)
       if (getItemUoms(match.item_code).length > 1) {
