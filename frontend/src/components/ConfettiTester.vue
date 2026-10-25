@@ -28,7 +28,23 @@
         class="rounded-lg bg-[var(--color-success)] px-3 py-1.5 text-white shadow active:scale-95"
         @click="emit('mock-upi')"
       >
-        Mock UPI
+        {{ mockMode ? 'Mock Pay' : 'Mock UPI' }}
+      </button>
+      <button
+        v-if="mockMode"
+        class="rounded-lg bg-[var(--color-danger)] px-3 py-1.5 text-white shadow active:scale-95"
+        title="Fail the newest waiting mock Paytm order"
+        @click="emit('mock-fail')"
+      >
+        Mock Fail
+      </button>
+      <button
+        class="rounded-lg px-3 py-1.5 shadow active:scale-95"
+        :class="mockMode ? 'bg-[var(--color-warning)] text-white' : 'bg-[var(--color-surface-raised)] text-[var(--color-text)]'"
+        title="Answer Paytm calls in the browser instead of sending them to Paytm"
+        @click="emit('toggle-mock')"
+      >
+        Mock Mode: {{ mockMode ? 'ON' : 'OFF' }}
       </button>
       <button
         class="rounded-lg bg-[var(--color-surface-raised)] px-2.5 py-1.5 text-[var(--color-text)] shadow"
@@ -45,7 +61,8 @@
 import { ref, reactive, computed } from 'vue'
 import { fireConfetti } from '../utils/confetti'
 
-const emit = defineEmits(['mock-upi'])
+defineProps({ mockMode: { type: Boolean, default: false } })
+const emit = defineEmits(['mock-upi', 'mock-fail', 'toggle-mock'])
 
 const DEFAULTS = { count: 160, duration: 2500, speed: 9, spread: 0.9, size: 6, gravity: 0.25, drag: 0.99 }
 const FIELDS = [

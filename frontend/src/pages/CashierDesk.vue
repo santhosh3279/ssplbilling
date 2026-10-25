@@ -1053,7 +1053,14 @@
       </div>
     </transition>
 
-    <component :is="ConfettiTester" v-if="ConfettiTester" @mock-upi="mockPaytmQrSuccess" />
+    <component
+      :is="ConfettiTester"
+      v-if="ConfettiTester"
+      :mock-mode="paytmMockOn"
+      @mock-upi="settleMock('Success')"
+      @mock-fail="settleMock('Failed')"
+      @toggle-mock="togglePaytmMock"
+    />
   </div>
 </template>
 
@@ -1078,6 +1085,7 @@ import { canAccessTile, canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
 import { fireConfetti } from '../utils/confetti'
+import { paytmMockOn, setPaytmMock, MOCKED_METHODS, paytmMockCall, settleMockOrder } from '../utils/paytmMock'
 // Dev server only: Vite drops this import from production builds
 const ConfettiTester = import.meta.env.DEV ? defineAsyncComponent(() => import('../components/ConfettiTester.vue')) : null
 import { serverToday, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
@@ -1791,9 +1799,23 @@ function paytmMachineUser() {
   return inherited || session.user.value
 }
 
+// Paytm calls go through these so dev mock mode can answer them without reaching Paytm
+function mockInvoiceInfo(name) {
+  const inv = invoices.value.find(i => i.name === name) || (selectedInvoice.value?.name === name ? selectedInvoice.value : {})
+  return { customer: inv.customer, customer_name: inv.customer_name }
+}
+function paytmPost(method, args, opts) {
+  if (import.meta.env.DEV && paytmMockOn.value && MOCKED_METHODS.has(method)) return paytmMockCall(method, args, mockInvoiceInfo)
+  return frappePost(method, args, opts)
+}
+function paytmGet(method, args, opts) {
+  if (import.meta.env.DEV && paytmMockOn.value && MOCKED_METHODS.has(method)) return paytmMockCall(method, args, mockInvoiceInfo)
+  return frappeGet(method, args, opts)
+}
+
 async function loadPaytmDevices() {
   try {
-    const res = await frappeGet('ssplbilling.api.paytm_api.get_devices', { user: paytmMachineUser() })
+    const res = await paytmGet('ssplbilling.api.paytm_api.get_devices', { user: paytmMachineUser() })
     paytm.value.enabled = !!res?.enabled
     paytm.value.qrEnabled = !!res?.qr_enabled
     paytm.value.devices = res?.devices || []
@@ -1840,7 +1862,7 @@ async function sendToPaytm() {
   const p = paytm.value
   Object.assign(p, { sending: true, orderId: '', status: '', message: 'Sending to the machine…' })
   try {
-    const res = await frappePost('ssplbilling.api.paytm_api.send_to_device', {
+    const res = await paytmPost('ssplbilling.api.paytm_api.send_to_device', {
       invoice_name: selectedInvoice.value.name,
       amount: p.amount,
       tid: p.tid,
@@ -1866,7 +1888,7 @@ function startPaytmPolling() {
     const orderId = paytm.value.orderId
     if (!orderId) return stopPaytmPolling()
     try {
-      applyPaytmResult(await frappePost('ssplbilling.api.paytm_api.get_status', { order_id: orderId }, { silent: true }))
+      applyPaytmResult(await paytmPost('ssplbilling.api.paytm_api.get_status', { order_id: orderId }, { silent: true }))
     } catch (e) { /* keep polling; the socket event may still arrive */ }
   }, 3000)
 }
@@ -1922,11 +1944,20 @@ const qrQueue = ref([])
 let qrQueueTimer = null
 let qrQueueLoading = false
 
+function startQrQueue() {
+  if (!paytm.value.qrEnabled) return
+  loadQrQueue()
+  if (qrQueueTimer) return
+  qrQueueTimer = setInterval(() => {
+    if (qrQueue.value.some(q => q.status === 'Pending')) loadQrQueue()
+  }, 5000)
+}
+
 async function loadQrQueue() {
   if (qrQueueLoading) return
   qrQueueLoading = true
   try {
-    const rows = await frappePost('ssplbilling.api.paytm_api.get_qr_queue', {}, { silent: true })
+    const rows = await paytmPost('ssplbilling.api.paytm_api.get_qr_queue', {}, { silent: true })
     // the QR still open in the modal is handled there
     const active = paytmQr.value.orderId
     const prev = qrQueue.value
@@ -1992,7 +2023,7 @@ async function openQueuedBill(q) {
 
 async function cancelQueuedQr(q) {
   try {
-    const r = await frappePost('ssplbilling.api.paytm_api.cancel', { order_id: q.order_id }, { silent: true })
+    const r = await paytmPost('ssplbilling.api.paytm_api.cancel', { order_id: q.order_id }, { silent: true })
     // Paid just before the cashier gave up waiting — keep the payment
     if (r?.status === 'Success') return applyQrQueueResult(r)
   } catch (e) { /* drop it anyway */ }
@@ -2004,7 +2035,7 @@ async function closePaytmModal() {
   stopPaytmPolling()
   if (p.orderId && p.status === 'Pending') {
     try {
-      const r = await frappePost('ssplbilling.api.paytm_api.cancel', { order_id: p.orderId }, { silent: true })
+      const r = await paytmPost('ssplbilling.api.paytm_api.cancel', { order_id: p.orderId }, { silent: true })
       if (r?.status === 'Success') {
         // Paid just before the cashier gave up waiting — keep the payment
         applyPaytmResult(r)
@@ -2056,7 +2087,7 @@ async function createPaytmQr(withBill = paytmQr.value.withBill) {
       q.show = false
       return
     }
-    const res = await frappePost('ssplbilling.api.paytm_api.create_qr', {
+    const res = await paytmPost('ssplbilling.api.paytm_api.create_qr', {
       invoice_name: selectedInvoice.value.name,
       amount: q.amount,
       mobile: q.phone,
@@ -2069,7 +2100,7 @@ async function createPaytmQr(withBill = paytmQr.value.withBill) {
       const orderId = paytmQr.value.orderId
       if (!orderId) return stopPaytmQrPolling()
       try {
-        applyPaytmQrResult(await frappePost('ssplbilling.api.paytm_api.get_status', { order_id: orderId }, { silent: true }))
+        applyPaytmQrResult(await paytmPost('ssplbilling.api.paytm_api.get_status', { order_id: orderId }, { silent: true }))
       } catch (e) { /* keep polling; the socket event may still arrive */ }
     }, 3000)
   } catch (e) {
@@ -2087,7 +2118,7 @@ async function sendPaytmQrLink() {
   if (!orderId || q.waSending) return
   q.waSending = true
   try {
-    const sent = await frappePost('ssplbilling.api.whatsapp_api.send_receipt_pay_link', {
+    const sent = await paytmPost('ssplbilling.api.whatsapp_api.send_receipt_pay_link', {
       order_id: orderId,
       session_id: getWhatsAppSessionId(),
       with_bill: q.withBill ? 1 : 0,
@@ -2134,12 +2165,33 @@ function mockPaytmQrSuccess() {
   setTimeout(() => applyPaytmQrResult({ order_id: orderId, status: 'Success', amount, mode: 'upi', reference_no: orderId }), 2000)
 }
 
+// Dev mock mode: Paytm calls are answered in the browser (utils/paytmMock.js); switching it
+// drops whatever was waiting so mock and real orders never mix
+async function togglePaytmMock() {
+  stopPaytmPolling()
+  stopPaytmQrPolling()
+  Object.assign(paytm.value, { show: false, orderId: '', status: '', message: '' })
+  Object.assign(paytmQr.value, { show: false, orderId: '', status: '', message: '', image: '', phone: '', withBill: false, waOk: undefined, waText: '' })
+  qrQueue.value = []
+  setPaytmMock(!paytmMockOn.value)
+  await loadPaytmDevices()
+  startQrQueue()
+}
+
+// Mock mode: settle the newest waiting mock order (machine, QR or queued link) as if Paytm answered
+function settleMock(status) {
+  if (!paytmMockOn.value) return status === 'Success' ? mockPaytmQrSuccess() : undefined
+  const r = settleMockOrder(status)
+  if (r) onPaytmSocket(r)
+  else errorMsg.value = 'No mock Paytm order is waiting.'
+}
+
 async function closePaytmQr() {
   const q = paytmQr.value
   stopPaytmQrPolling()
   if (q.orderId && q.status === 'Pending') {
     try {
-      const r = await frappePost('ssplbilling.api.paytm_api.cancel', { order_id: q.orderId }, { silent: true })
+      const r = await paytmPost('ssplbilling.api.paytm_api.cancel', { order_id: q.orderId }, { silent: true })
       if (r?.status === 'Success') {
         // Paid just before the cashier gave up waiting — keep the payment
         applyPaytmQrResult(r)
@@ -2232,7 +2284,7 @@ async function processPayment() {
     invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
     // a queued link still waiting must not stay payable once the bill is posted
     qrQueue.value.filter(q => q.sales_invoice === nameToRemove && q.status === 'Pending')
-      .forEach(q => frappePost('ssplbilling.api.paytm_api.cancel', { order_id: q.order_id }, { silent: true }).catch(() => {}))
+      .forEach(q => paytmPost('ssplbilling.api.paytm_api.cancel', { order_id: q.order_id }, { silent: true }).catch(() => {}))
     qrQueue.value = qrQueue.value.filter(q => q.sales_invoice !== nameToRemove)
     selectedInvoice.value = null
     // Stay where the settled bill was: the row that slid into its slot, or the new
@@ -2653,13 +2705,7 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
 
   _billPanelCleanup = onBillPanelUpdate('Sales Invoice', sidebarSeries, loadInvoices, applyCashierPanelEvent)
-  loadPaytmDevices().then(() => {
-    if (!paytm.value.qrEnabled) return
-    loadQrQueue()
-    qrQueueTimer = setInterval(() => {
-      if (qrQueue.value.some(q => q.status === 'Pending')) loadQrQueue()
-    }, 5000)
-  })
+  loadPaytmDevices().then(startQrQueue)
   getFrappeSocket()?.on('paytm_payment_update', onPaytmSocket)
 })
 
