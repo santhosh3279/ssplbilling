@@ -1014,6 +1014,9 @@ async function loadAllowedTiles(user = null, force = false) {
   refreshDraftCounts()
 }
 
+// Phone pages live on /mobile-dashboard; the desktop dashboard never shows them, even when granted
+const MOBILE_TILE_IDS = new Set(['mobile-bill', 'cashier-mobile', 'item-barcode', 'stock-check'])
+
 const tiles = computed(() => {
   permissionTrigger.value
   if (Array.isArray(allowedTileIds.value)) {
@@ -1026,9 +1029,9 @@ const tiles = computed(() => {
         + '(check tile_id spelling/case, or the deployed frontend is outdated):', unknown
       )
     }
-    return allowedTileIds.value.map(id => byId.get(id)).filter(Boolean)
+    return allowedTileIds.value.map(id => byId.get(id)).filter(t => t && !MOBILE_TILE_IDS.has(t.id))
   }
-  return allTiles.filter(t => canAccessTile(t.id))
+  return allTiles.filter(t => !MOBILE_TILE_IDS.has(t.id) && canAccessTile(t.id))
 })
 
 const draftCounts = ref({})
