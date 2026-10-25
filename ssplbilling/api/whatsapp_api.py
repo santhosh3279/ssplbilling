@@ -815,19 +815,34 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_t
 BILL_PDF_TYPES = ("PDF", "Custom PDF")
 
 
-def _bill_pdf_templates():
-	"""Print Templates that render a Sales Invoice as a PDF."""
-	return frappe.get_all(
+def _bill_pdf_templates(user=None):
+	"""Print Templates that render a Sales Invoice as a PDF and the user may print with, chosen the
+	way the print dialog (PrintOptionsModal.vue) chooses them: the formats of the user's printers
+	in SSPL Printer Setting (theirs and those open to everyone), then of their rows in SSPL Billing
+	Settings' printer table (else its rows with no user). No such format: every PDF template."""
+	from ssplbilling.api.dashboard_api import get_printer_records
+
+	user = user or frappe.session.user
+	pdf_templates = frappe.get_all(
 		"Print Template",
 		filters={"document_type": "Sales Invoice", "format_type": ["in", BILL_PDF_TYPES]},
 		pluck="name",
 		order_by="name",
 	)
+	records = get_printer_records()
+	legacy = frappe.get_cached_doc("SSPL Billing Settings").get("table_vycb") or []
+	legacy_rows = [r for r in legacy if r.user == user] or [r for r in legacy if not r.user]
+	allowed = [r["template"] for r in records if r["user"] == user]
+	allowed += [r["template"] for r in records if not r["user"]]
+	allowed += [r.template for r in legacy_rows]
+	# dict keeps the first place of each, so the dialog's order survives
+	allowed = [t for t in dict.fromkeys(allowed) if t in pdf_templates]
+	return allowed or pdf_templates
 
 
 def _default_bill_template(invoice_name, templates):
-	"""The bill series' print template (SSPL Billing Settings) when it renders a PDF, else the
-	first PDF template for Sales Invoice."""
+	"""The bill series' print template (SSPL Billing Settings) when it is one of `templates`, else
+	the first of them."""
 	naming_series = frappe.db.get_value("Sales Invoice", invoice_name, "naming_series")
 	settings = frappe.get_cached_doc("SSPL Billing Settings")
 	series_template = next(
@@ -854,7 +869,7 @@ def _hide_bill_no(invoice_name):
 
 @frappe.whitelist()
 def get_bill_print_templates(invoice_name):
-	"""PDF print templates the Bill + Link send can use, and the one it picks by default."""
+	"""PDF print templates the user may send Bill + Link in, and the one it picks by default."""
 	_require_desk_user()
 	frappe.has_permission("Sales Invoice", "read", doc=invoice_name, throw=True)
 	templates = _bill_pdf_templates()
@@ -862,9 +877,9 @@ def get_bill_print_templates(invoice_name):
 
 
 def _bill_pdf(invoice_name, print_template=None, hide_bill_no=False):
-	"""Base64 PDF of a sales bill and its file name: print_template when it is a PDF template for
-	Sales Invoice, else the default (see _default_bill_template). hide_bill_no leaves the bill
-	number out of the file name."""
+	"""Base64 PDF of a sales bill and its file name: print_template when the user may send in it
+	(see _bill_pdf_templates), else the default (see _default_bill_template). hide_bill_no leaves
+	the bill number out of the file name."""
 	templates = _bill_pdf_templates()
 	if print_template in templates:
 		template = print_template
