@@ -72,6 +72,52 @@ def get_item_attributes():
 	return attributes
 
 
+# Above this many combinations in one go the variants tab asks for a smaller selection.
+_MAX_VARIANTS_PER_CREATE = 100
+
+
+@frappe.whitelist()
+def get_item_variants(template):
+	"""Variants of a template item with their attribute values, for the variants tab."""
+	variants = frappe.get_all(
+		"Item",
+		filters={"variant_of": template},
+		fields=["item_code", "item_name", "disabled"],
+		order_by="item_code asc",
+	)
+	if not variants:
+		return []
+	attrs = {}
+	for row in frappe.get_all(
+		"Item Variant Attribute",
+		filters={"parenttype": "Item", "parent": ["in", [v.item_code for v in variants]]},
+		fields=["parent", "attribute", "attribute_value"],
+		order_by="parent asc, idx asc",
+	):
+		attrs.setdefault(row.parent, {})[row.attribute] = row.attribute_value
+	for v in variants:
+		v["attributes"] = attrs.get(v.item_code, {})
+	return variants
+
+
+@frappe.whitelist()
+def create_item_variants(template, args):
+	"""Create a variant for every combination of the chosen attribute values ({attribute: [values]}).
+	Combinations that already exist are skipped. Returns the number created."""
+	from erpnext.controllers.item_variant import create_multiple_variants, generate_keyed_value_combinations
+
+	frappe.has_permission("Item", ptype="create", throw=True)
+	args = frappe.parse_json(args) or {}
+	args = {key: values for key, values in args.items() if values}
+	if not args:
+		frappe.throw("Select at least one attribute value")
+	if not frappe.db.get_value("Item", template, "has_variants"):
+		frappe.throw(f"Item {template} is not a template (Has Variants is not set)")
+	if len(generate_keyed_value_combinations(args)) > _MAX_VARIANTS_PER_CREATE:
+		frappe.throw(f"Do not create more than {_MAX_VARIANTS_PER_CREATE} variants at a time")
+	return {"created": create_multiple_variants(template, args)}
+
+
 def publish_item_attribute_update(doc, method=None):
 	"""Tell every tab to refetch the Item Attribute list (insert, edit, disable, delete)."""
 	frappe.publish_realtime("item_attribute_update", {"name": doc.name}, after_commit=True)

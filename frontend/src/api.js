@@ -773,6 +773,15 @@ export async function setItemDisabled(itemCode, disabled) {
   return frappePost("ssplbilling.api.item_api.set_item_disabled", { item_code: itemCode, disabled: disabled ? 1 : 0 });
 }
 
+export async function getItemVariants(template) {
+  return frappeGet("ssplbilling.api.item_api.get_item_variants", { template });
+}
+
+/** args: { attribute: [values] } — one variant per combination; existing ones are skipped. */
+export async function createItemVariants(template, args) {
+  return frappePost("ssplbilling.api.item_api.create_item_variants", { template, args: JSON.stringify(args) });
+}
+
 export async function getDisabledItems(params = {}) {
   return frappeGet("ssplbilling.api.itemsearch_api.get_disabled_items_detailed", params);
 }

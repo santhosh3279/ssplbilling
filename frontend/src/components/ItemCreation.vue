@@ -519,6 +519,76 @@
               </table>
             </div>
           </div>
+
+          <!-- Variants of the saved template: list + create from attribute value combinations -->
+          <div v-if="canManageVariants" class="space-y-[4px]">
+            <div class="flex items-center justify-between px-[20px]">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Variants ({{ variants.length }})</label>
+              <button
+                type="button"
+                @click="toggleVariantCreate"
+                class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors"
+              >{{ showVariantCreate ? '− Cancel' : '+ Create Variants' }}</button>
+            </div>
+
+            <div v-if="showVariantCreate" class="border border-[var(--color-info)]/40 bg-[var(--color-info)]/5 p-[12px] space-y-[10px]">
+              <div v-for="attr in savedAttributes" :key="attr" class="flex items-start gap-[12px]">
+                <span class="w-48 shrink-0 pt-[4px] text-2xl font-bold text-[var(--color-text)]">{{ attr }}</span>
+                <div class="flex flex-wrap gap-[6px]">
+                  <button
+                    v-for="val in attributeValueOptions(attr)"
+                    :key="val"
+                    type="button"
+                    @click="toggleVariantValue(attr, val)"
+                    class="rounded-lg border px-[10px] py-[4px] text-xl transition-colors"
+                    :class="(variantSelection[attr] || []).includes(val)
+                      ? 'border-[var(--color-info)] bg-[var(--color-info)] text-[var(--color-text-on-highlight)] font-bold'
+                      : 'border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] hover:bg-[var(--color-info)]/10'"
+                  >{{ val }}</button>
+                  <span v-if="!attributeValueOptions(attr).length" class="text-xl italic text-[var(--color-danger)]">No values defined</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-end gap-[12px]">
+                <span class="text-xl text-[var(--color-text-muted)]">
+                  {{ variantComboCount }} combination(s){{ variantComboCount > MAX_VARIANTS_PER_CREATE ? ` — max ${MAX_VARIANTS_PER_CREATE} at a time` : '' }}, existing ones are skipped
+                </span>
+                <button
+                  type="button"
+                  @click="submitVariants"
+                  :disabled="!canCreateVariants || isCreatingVariants"
+                  class="rounded-lg bg-[var(--color-info)] px-[16px] py-[6px] text-xl font-bold uppercase text-[var(--color-text-on-highlight)] transition-colors hover:bg-[var(--color-info)]/80 disabled:opacity-50 disabled:pointer-events-none"
+                >{{ isCreatingVariants ? 'Creating…' : 'Create' }}</button>
+              </div>
+            </div>
+
+            <div class="max-h-[40vh] overflow-y-auto border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
+              <table class="w-full border-collapse text-2xl">
+                <thead class="sticky top-0">
+                  <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] bg-[var(--color-surface-raised)]">
+                    <th class="px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">Item Code</th>
+                    <th class="px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">Item Name</th>
+                    <th v-for="attr in savedAttributes" :key="attr" class="px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">{{ attr }}</th>
+                    <th class="w-32 px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)]">
+                  <tr v-for="v in variants" :key="v.item_code" class="divide-x divide-[var(--color-border)] hover:bg-[var(--color-border)]/10 transition-colors">
+                    <td class="px-[10px] py-[6px] font-mono text-[var(--color-text)]">{{ v.item_code }}</td>
+                    <td class="px-[10px] py-[6px] text-[var(--color-text)]">{{ v.item_name }}</td>
+                    <td v-for="attr in savedAttributes" :key="attr" class="px-[10px] py-[6px] text-[var(--color-text-muted)]">{{ v.attributes[attr] || '--' }}</td>
+                    <td class="px-[10px] py-[6px] text-xl font-bold" :class="Number(v.disabled) ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                      {{ Number(v.disabled) ? 'Disabled' : 'Enabled' }}
+                    </td>
+                  </tr>
+                  <tr v-if="!variants.length">
+                    <td :colspan="savedAttributes.length + 3" class="px-[10px] py-[12px] text-center text-2xl italic text-[var(--color-text-muted)]">
+                      {{ variantsLoading ? 'Loading variants…' : 'No variants yet' }}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
         </div>
       </div>
@@ -555,7 +625,7 @@
 
 <script setup>
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
-import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, setItemDisabled, frappeGet, uploadFile } from '../api.js'
+import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, setItemDisabled, getItemVariants, createItemVariants, frappeGet, uploadFile } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { useItemAttributeCache } from '../services/itemAttributeCache.js'
 
@@ -647,6 +717,8 @@ function _applyItemData(data, itemCode) {
   form.value.variant_of      = data.variant_of || ''
   form.value.attributes      = (data.attributes || []).map(a => ({ attribute: a.attribute }))
   variantsLock.value         = data.has_variants_lock || ''
+  savedTemplate.value        = Number(data.has_variants) === 1 && !data.variant_of
+  savedAttributes.value      = (data.attributes || []).map(a => a.attribute).filter(Boolean)
   itemDisabled.value = Number(data.disabled) === 1
   autoBarcode.value = ''
   isBarcodeManual.value = true
@@ -677,6 +749,9 @@ async function loadForEdit(itemCode) {
     // The edit API reads the tax template from the first Item Taxes child row.
     const data = await getItemForEdit(itemCode)
     _applyItemData(data, itemCode)
+    variants.value = []
+    showVariantCreate.value = false
+    if (savedTemplate.value) loadVariants()
   } catch (e) {
     console.error('[ItemCreation] loadForEdit failed:', e)
   }
@@ -821,6 +896,84 @@ function attributeValuesLabel(name) {
   if (!a) return ''
   if (Number(a.numeric_values) === 1) return `${a.from_range} to ${a.to_range}, step ${a.increment}`
   return a.values.join(', ') || 'No values defined'
+}
+
+// ─── Variants of a saved template ────────────────────────────────────────────
+// Only for a template already saved: variants are built from its saved attributes, so
+// unsaved attribute edits in the table above do not apply until Update Item.
+const MAX_VARIANTS_PER_CREATE = 100 // matches _MAX_VARIANTS_PER_CREATE in item_api.py
+const savedTemplate = ref(false)
+const savedAttributes = ref([])
+const variants = ref([])
+const variantsLoading = ref(false)
+const showVariantCreate = ref(false)
+const variantSelection = ref({}) // { attribute: [values] }
+const isCreatingVariants = ref(false)
+
+const canManageVariants = computed(() => isEditMode.value && savedTemplate.value && savedAttributes.value.length > 0)
+
+async function loadVariants() {
+  variantsLoading.value = true
+  try {
+    variants.value = (await getItemVariants(props.editItemCode)) || []
+  } catch (e) {
+    console.error('[ItemCreation] loadVariants failed:', e)
+  } finally {
+    variantsLoading.value = false
+  }
+}
+
+// Text values as defined; numeric attributes expand their range (capped so a fine step cannot flood the panel)
+function attributeValueOptions(name) {
+  const a = itemAttributes.value.find(x => x.name === name)
+  if (!a) return []
+  if (Number(a.numeric_values) !== 1) return a.values || []
+  const from = Number(a.from_range), to = Number(a.to_range), step = Number(a.increment)
+  if (!(step > 0) || to < from) return []
+  const out = []
+  for (let v = from; v <= to + 1e-9 && out.length < 200; v += step) out.push(String(parseFloat(v.toFixed(6))))
+  return out
+}
+
+function toggleVariantCreate() {
+  showVariantCreate.value = !showVariantCreate.value
+  variantSelection.value = {}
+}
+
+function toggleVariantValue(attr, val) {
+  const list = variantSelection.value[attr] || []
+  variantSelection.value = {
+    ...variantSelection.value,
+    [attr]: list.includes(val) ? list.filter(v => v !== val) : [...list, val],
+  }
+}
+
+const variantComboCount = computed(() => {
+  if (!savedAttributes.value.length) return 0
+  return savedAttributes.value.reduce((n, attr) => n * (variantSelection.value[attr]?.length || 0), 1)
+})
+
+// Every template attribute needs a value: ERPNext rejects a variant missing one
+const canCreateVariants = computed(() => variantComboCount.value > 0 && variantComboCount.value <= MAX_VARIANTS_PER_CREATE)
+
+async function submitVariants() {
+  if (!canCreateVariants.value || isCreatingVariants.value) return
+  isCreatingVariants.value = true
+  try {
+    const res = await createItemVariants(props.editItemCode, variantSelection.value)
+    const created = Number(res?.created || 0)
+    const skipped = variantComboCount.value - created
+    alert(`${created} variant(s) created${skipped ? `, ${skipped} already existed` : ''}`)
+    // Same rule as _has_variants_lock: a template with variants can no longer drop Has Variants
+    if (created && !variantsLock.value) variantsLock.value = 'Variants already created from this template'
+    showVariantCreate.value = false
+    variantSelection.value = {}
+    await loadVariants()
+  } catch (e) {
+    alert('Failed to create variants: ' + e.message)
+  } finally {
+    isCreatingVariants.value = false
+  }
 }
 
 // A template needs at least one attribute row, so ticking the box seeds an empty one
@@ -1122,6 +1275,9 @@ function startNewFromCurrent() {
   form.value.barcode = ''
   form.value.extra_barcodes = []
   form.value.variant_of = ''
+  savedTemplate.value = false
+  variants.value = []
+  showVariantCreate.value = false
   startFreshBarcode()
   nextTick(() => itemNameInput.value?.focus())
 }
@@ -1131,6 +1287,10 @@ watch(() => props.show, async (newVal) => {
     forceCreate.value = false
     activeTab.value = 'details'
     variantsLock.value = ''
+    savedTemplate.value = false
+    savedAttributes.value = []
+    variants.value = []
+    showVariantCreate.value = false
     ensureItemAttributeCache()
     if (!isEditMode.value) {
       resetForm(true)
