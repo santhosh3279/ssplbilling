@@ -11,7 +11,8 @@
   "sessions_section",
   "sessions",
   "templates_section",
-  "pay_link_template"
+  "pay_link_template",
+  "invoice_template"
  ],
  "fields": [
   {
@@ -57,11 +58,17 @@
    "fieldname": "pay_link_template",
    "fieldtype": "Data",
    "label": "Pay Link Template",
-   "description": "Name of the OpenWA template (Templates page, per session) used when sending a Paytm pay link. Placeholders: {{customer_name}} {{amount}} {{bill_no}} {{valid_minutes}} {{link}}. Blank or not found: the built-in message is sent."
+   "description": "Name of the OpenWA template (Templates page, per session) used when sending a Paytm pay link. Placeholders: {{link}} {{amount}} {{valid_minutes}} {{bill_no}} {{customer_name}}, plus any field of the bill (or of the customer for a receipt) by its fieldname, e.g. {{posting_date}}. Blank or not found: the built-in message is sent."
+  },
+  {
+   "fieldname": "invoice_template",
+   "fieldtype": "Data",
+   "label": "Invoice Template",
+   "description": "Name of the OpenWA template used as the caption when sending a bill from the print window. Placeholders: any field of the bill by its fieldname, e.g. {{customer_name}} {{name}} {{posting_date}} {{rounded_total}}. Blank or not found: the built-in caption is sent."
   }
  ],
  "links": [],
- "modified": "2026-10-25 12:00:00.000000",
+ "modified": "2026-10-25 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL WhatsApp Settings",

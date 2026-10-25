@@ -728,7 +728,18 @@ async function sendWhatsApp() {
       // Returns carry a negative total; sending "Amount: -16" to a customer invites a call.
       recipient.amount > 0 ? `Amount: ${recipient.amount.toLocaleString('en-IN')}` : '',
     ].filter(Boolean)
-    const caption = lines.join('\n')
+    let caption = lines.join('\n')
+    try {
+      // the Invoice Template set in SSPL WhatsApp Settings, filled with this bill's fields
+      const templated = await frappeGet('ssplbilling.api.whatsapp_api.get_document_caption', {
+        doctype: props.doctype,
+        document_name: props.invoiceName,
+        session_id: getWhatsAppSessionId(),
+      })
+      if (templated) caption = templated
+    } catch (e) {
+      console.warn('[PrintOptionsModal] WhatsApp caption template failed:', e)
+    }
     const text = encodeURIComponent(caption)
 
     const waUrl = recipient.phone

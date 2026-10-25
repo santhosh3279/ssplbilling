@@ -181,6 +181,30 @@ def _render_template(settings, row, template_name, values):
 	)
 
 
+# field types with no value of their own to put in a message
+NO_VALUE_FIELDTYPES = {
+	"Section Break", "Column Break", "Tab Break", "HTML", "Button", "Image", "Fold", "Heading",
+	"Table", "Table MultiSelect", "Attach", "Attach Image", "Password", "Signature", "Geolocation",
+}
+
+
+def _doc_values(doctype, name):
+	"""Every plain field of the document, formatted as the desk shows it (currency, dates…), keyed by
+	fieldname, plus name, so a template can use {{grand_total}}, {{posting_date}} or any other field."""
+	if not doctype or not name or not frappe.db.exists(doctype, name):
+		return {}
+	doc = frappe.get_doc(doctype, name)
+	values = {"name": doc.name}
+	for df in doc.meta.fields:
+		if df.fieldtype in NO_VALUE_FIELDTYPES:
+			continue
+		value = doc.get(df.fieldname)
+		if value in (None, ""):
+			continue
+		values[df.fieldname] = frappe.format_value(value, df, doc) if df.fieldtype != "Data" else value
+	return values
+
+
 def _linked_row(settings, message=None, session_id=None):
 	"""The current user's session row, which must already be linked on the gateway.
 
@@ -615,6 +639,12 @@ def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
 			row,
 			(settings.get("pay_link_template") or "").strip(),
 			{
+				# any field of the bill (or of the customer, for a receipt), then the pay link's own
+				**(
+					_doc_values("Sales Invoice", txn.sales_invoice)
+					if txn.sales_invoice
+					else _doc_values("Customer", txn.customer)
+				),
 				"customer_name": customer_name,
 				"amount": amount,
 				"bill_no": txn.sales_invoice or "",
@@ -668,6 +698,24 @@ def _bill_pdf(invoice_name):
 	if not pdf_base64:
 		frappe.throw(_("Could not render bill {0} with {1}").format(invoice_name, template))
 	return pdf_base64, build_preview_filename("Sales Invoice", invoice_name, template)
+
+
+@frappe.whitelist()
+def get_document_caption(doctype, document_name, session_id=None):
+	"""Caption for sending a bill / document on WhatsApp, from the OpenWA template named in
+	SSPL WhatsApp Settings (Invoice Template), filled with the document's fields. None when no
+	template is set or usable, so the print modal keeps its built-in caption."""
+	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
+	settings = _settings()
+	template_name = (settings.get("invoice_template") or "").strip()
+	if not template_name:
+		return None
+	try:
+		row = _linked_row(settings, session_id=session_id)
+	except frappe.ValidationError:
+		frappe.clear_messages()
+		return None
+	return _render_template(settings, row, template_name, _doc_values(doctype, document_name))
 
 
 def _bill_body(pdf_base64, filename, caption):
