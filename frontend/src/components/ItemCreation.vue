@@ -569,25 +569,45 @@
                     <th class="px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">Item Name</th>
                     <th v-for="attr in savedAttributes" :key="attr" class="px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">{{ attr }}</th>
                     <th class="w-32 px-[10px] py-[5px] text-left font-bold uppercase text-[var(--color-text-muted)]">Status</th>
+                    <th class="w-40"></th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
                   <tr
                     v-for="v in variants"
                     :key="v.item_code"
-                    @click="openVariant(v.item_code)"
+                    @click="editingVariant !== v.item_code && openVariant(v.item_code)"
                     class="cursor-pointer divide-x divide-[var(--color-border)] hover:bg-[var(--color-info)]/10 transition-colors"
                     title="Open variant"
                   >
                     <td class="px-[10px] py-[6px] font-mono text-[var(--color-text)]">{{ v.item_code }}</td>
                     <td class="px-[10px] py-[6px] text-[var(--color-text)]">{{ v.item_name }}</td>
-                    <td v-for="attr in savedAttributes" :key="attr" class="px-[10px] py-[6px] text-[var(--color-text-muted)]">{{ v.attributes[attr] || '--' }}</td>
+                    <td v-for="attr in savedAttributes" :key="attr" class="px-[10px] py-[6px] text-[var(--color-text-muted)]" :class="{ 'p-0': editingVariant === v.item_code }">
+                      <select
+                        v-if="editingVariant === v.item_code"
+                        v-model="variantDraft[attr]"
+                        @click.stop
+                        :aria-label="`${attr} for ${v.item_code}`"
+                        class="w-full bg-[var(--color-info)]/10 px-[10px] py-[6px] text-2xl text-[var(--color-text)] outline-none cursor-pointer"
+                      >
+                        <option v-for="val in attributeValueOptions(attr)" :key="val" :value="val" class="bg-[var(--color-surface)] text-[var(--color-text)]">{{ val }}</option>
+                        <option v-if="variantDraft[attr] && !attributeValueOptions(attr).includes(variantDraft[attr])" :value="variantDraft[attr]" class="bg-[var(--color-surface)] text-[var(--color-text)]">{{ variantDraft[attr] }}</option>
+                      </select>
+                      <template v-else>{{ v.attributes[attr] || '--' }}</template>
+                    </td>
                     <td class="px-[10px] py-[6px] text-xl font-bold" :class="Number(v.disabled) ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                       {{ Number(v.disabled) ? 'Disabled' : 'Enabled' }}
                     </td>
+                    <td class="px-[10px] py-[6px] text-right whitespace-nowrap" @click.stop>
+                      <template v-if="editingVariant === v.item_code">
+                        <button type="button" @click="saveVariantAttributes(v)" :disabled="isSavingVariant" class="text-xl font-bold text-[var(--color-success)] disabled:opacity-50">{{ isSavingVariant ? 'Saving…' : 'Save' }}</button>
+                        <button type="button" @click="cancelVariantEdit" :disabled="isSavingVariant" class="ml-[12px] text-xl font-bold text-[var(--color-text-muted)] disabled:opacity-50">Cancel</button>
+                      </template>
+                      <button v-else type="button" @click="startVariantEdit(v)" class="text-xl font-bold text-[var(--color-info)]" :aria-label="`Edit attributes of ${v.item_code}`">Edit</button>
+                    </td>
                   </tr>
                   <tr v-if="!variants.length">
-                    <td :colspan="savedAttributes.length + 3" class="px-[10px] py-[12px] text-center text-2xl italic text-[var(--color-text-muted)]">
+                    <td :colspan="savedAttributes.length + 4" class="px-[10px] py-[12px] text-center text-2xl italic text-[var(--color-text-muted)]">
                       {{ variantsLoading ? 'Loading variants…' : 'No variants yet' }}
                     </td>
                   </tr>
@@ -640,7 +660,7 @@
 
 <script setup>
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
-import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, setItemDisabled, getItemVariants, createItemVariants, frappeGet, uploadFile } from '../api.js'
+import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, setItemDisabled, getItemVariants, createItemVariants, updateVariantAttributes, frappeGet, uploadFile } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { useItemAttributeCache } from '../services/itemAttributeCache.js'
 
@@ -765,6 +785,7 @@ async function loadForEdit(itemCode) {
     const data = await getItemForEdit(itemCode)
     _applyItemData(data, itemCode)
     variants.value = []
+    cancelVariantEdit()
     showVariantCreate.value = false
     if (savedTemplate.value) loadVariants()
   } catch (e) {
@@ -945,6 +966,39 @@ function onVariantSaved(item) {
   // "New Item" from the variant window creates a fresh item — keep the window open
   if (item?.is_new) return
   closeVariant()
+}
+
+// Inline edit of one variant's attribute values; the item code is kept
+const editingVariant = ref('')
+const variantDraft = ref({})
+const isSavingVariant = ref(false)
+
+function startVariantEdit(v) {
+  editingVariant.value = v.item_code
+  variantDraft.value = Object.fromEntries(savedAttributes.value.map(attr => [attr, v.attributes[attr] || '']))
+}
+
+function cancelVariantEdit() {
+  editingVariant.value = ''
+  variantDraft.value = {}
+}
+
+async function saveVariantAttributes(v) {
+  if (isSavingVariant.value) return
+  if (savedAttributes.value.some(attr => !variantDraft.value[attr])) {
+    alert('Every attribute needs a value')
+    return
+  }
+  isSavingVariant.value = true
+  try {
+    await updateVariantAttributes(v.item_code, variantDraft.value)
+    cancelVariantEdit()
+    await loadVariants()
+  } catch (e) {
+    alert('Failed to update variant: ' + e.message)
+  } finally {
+    isSavingVariant.value = false
+  }
 }
 
 async function loadVariants() {
@@ -1312,6 +1366,7 @@ function startNewFromCurrent() {
   form.value.variant_of = ''
   savedTemplate.value = false
   variants.value = []
+  cancelVariantEdit()
   showVariantCreate.value = false
   startFreshBarcode()
   nextTick(() => itemNameInput.value?.focus())
@@ -1325,6 +1380,7 @@ watch(() => props.show, async (newVal) => {
     savedTemplate.value = false
     savedAttributes.value = []
     variants.value = []
+    cancelVariantEdit()
     showVariantCreate.value = false
     showVariantEdit.value = false
     ensureItemAttributeCache()

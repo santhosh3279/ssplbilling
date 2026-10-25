@@ -118,6 +118,47 @@ def create_item_variants(template, args):
 	return {"created": create_multiple_variants(template, args)}
 
 
+@frappe.whitelist()
+def update_variant_attributes(variant, attributes):
+	"""Change a variant's attribute values ({attribute: value}). ERPNext validates these only on
+	insert, so the same checks run here. The item code stays; an item name still auto-generated
+	from the old values is regenerated from the new ones when that name is free."""
+	from erpnext.controllers.item_variant import (
+		get_variant,
+		make_variant_item_code,
+		validate_item_variant_attributes,
+	)
+
+	attributes = frappe.parse_json(attributes) or {}
+	doc = frappe.get_doc("Item", variant)
+	doc.check_permission("write")
+	if not doc.variant_of:
+		frappe.throw(f"Item {variant} is not a variant")
+	if any(not str(attributes.get(row.attribute) or "").strip() for row in doc.attributes):
+		frappe.throw("Every attribute needs a value")
+
+	template = frappe.get_cached_doc("Item", doc.variant_of)
+	old_name = frappe._dict(item_code=None, item_name=None, attributes=doc.attributes)
+	make_variant_item_code(template.item_code, template.item_name, old_name)
+
+	args = {row.attribute: str(attributes[row.attribute]).strip() for row in doc.attributes}
+	existing = get_variant(doc.variant_of, args, doc.name)
+	if existing:
+		frappe.throw(f"Item variant {existing} exists with same attributes")
+	validate_item_variant_attributes(doc, args)
+
+	for row in doc.attributes:
+		row.attribute_value = args[row.attribute]
+	if old_name.item_name and doc.item_name == old_name.item_name:
+		new_name = frappe._dict(item_code=None, item_name=None, attributes=doc.attributes)
+		make_variant_item_code(template.item_code, template.item_name, new_name)
+		# Item names are unique; on a clash the old name stays rather than blocking the change
+		if new_name.item_name and not _find_item_by_name(new_name.item_name, doc.name):
+			doc.item_name = new_name.item_name
+	doc.save()
+	return {"item_code": doc.name, "item_name": doc.item_name}
+
+
 def publish_item_attribute_update(doc, method=None):
 	"""Tell every tab to refetch the Item Attribute list (insert, edit, disable, delete)."""
 	frappe.publish_realtime("item_attribute_update", {"name": doc.name}, after_commit=True)
