@@ -88,7 +88,7 @@ export async function paytmMockCall(method, args = {}, invoiceInfo = () => ({}))
     }
     case 'ssplbilling.api.paytm_api.get_qr_queue':
       return [...orders.values()]
-        .filter(o => o.channel === 'QR' && o.customer_mobile && ['Pending', 'Success'].includes(o.status))
+        .filter(o => ['Pending', 'Success'].includes(o.status))
         .map(o => ({ ...result(o), customer_mobile: o.customer_mobile, ...invoiceInfo(o.sales_invoice) }))
     case 'ssplbilling.api.whatsapp_api.send_receipt_pay_link': {
       const o = orders.get(args.order_id)

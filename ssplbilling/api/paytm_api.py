@@ -921,16 +921,15 @@ def get_status(order_id):
 
 @frappe.whitelist(methods=["POST"])
 def get_qr_queue():
-	"""This cashier's QR pay links sent to a phone today whose bill is still a draft, oldest first:
-	Pending ones (re-checked with Paytm, dropped once the QR expires) and paid ones waiting to be
-	posted. Only the newest QR per bill is kept."""
+	"""This cashier's Paytm requests today (screen QR, phone pay link, card machine) whose bill is
+	still a draft, oldest first: Pending ones (re-checked with Paytm, dropped once older than the QR
+	expiry) and paid ones waiting to be posted. Only the newest request per bill is kept."""
 	_require_desk_user()
 	names = frappe.get_all(
 		"SSPL Paytm Transaction",
 		filters={
-			"channel": "QR",
+			"channel": ("in", ("QR", "EDC")),
 			"sales_invoice": ("is", "set"),
-			"customer_mobile": ("is", "set"),
 			"owner": frappe.session.user,
 			"status": ("in", ("Pending", "Success")),
 			"creation": (">=", frappe.utils.today()),
@@ -950,7 +949,8 @@ def get_qr_queue():
 			continue
 		if txn.status == "Pending":
 			_refresh_from_paytm(txn)
-			if txn.status == "Pending" and not _qr_expires_in(txn.channel, txn.status, txn.creation):
+			age = (now_datetime() - frappe.utils.get_datetime(txn.creation)).total_seconds()
+			if txn.status == "Pending" and age > QR_EXPIRY_SECONDS:
 				continue
 		if txn.status not in ("Pending", "Success"):
 			continue
