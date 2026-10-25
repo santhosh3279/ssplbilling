@@ -6,27 +6,37 @@
  "engine": "InnoDB",
  "field_order": [
   "usage_area",
+  "user",
   "template_name",
   "placeholders"
  ],
  "fields": [
   {
    "fieldname": "usage_area",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "label": "Usage Area",
    "in_list_view": 1,
-   "read_only": 1,
    "reqd": 1,
    "columns": 3,
-   "description": "Where the message is sent from. Rows are added by the app on migrate."
+   "description": "Where the message is sent from. The app adds a shared row for each place on migrate; add more rows to give a user their own template.",
+   "options": "Cashier Desk - UPI Pay Link\nCashier Desk - Bill + UPI Link\nPaytm Receipt - Pay Link\nBill Sending (Print Window)"
+  },
+  {
+   "fieldname": "user",
+   "fieldtype": "Link",
+   "label": "User",
+   "options": "User",
+   "in_list_view": 1,
+   "columns": 2,
+   "description": "Whose sends use this row; their session (Users per Session) holds the template. Leave empty for everyone without a row of their own."
   },
   {
    "fieldname": "template_name",
-   "fieldtype": "Data",
+   "fieldtype": "Select",
    "label": "OpenWA Template",
    "in_list_view": 1,
-   "columns": 3,
-   "description": "Name of the template on the OpenWA Templates page (per session). Blank or not found: the built-in message is sent."
+   "columns": 2,
+   "description": "A template on the OpenWA Templates page of the user's session; the list loads on Refresh Status. Blank or not found: the built-in message is sent."
   },
   {
    "fieldname": "placeholders",
@@ -34,12 +44,12 @@
    "label": "Placeholders",
    "in_list_view": 1,
    "read_only": 1,
-   "columns": 4
+   "columns": 3
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-10-25 14:00:00",
+ "modified": "2026-10-25 16:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL WhatsApp Template Usage",

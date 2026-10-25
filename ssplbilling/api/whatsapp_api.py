@@ -164,7 +164,8 @@ TEMPLATE_PLACEHOLDER = re.compile(r"\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}")
 
 # Places that send a WhatsApp message, each a row of SSPL WhatsApp Settings > Template per Usage
 # Area (added on migrate by sync_template_usages) naming its OpenWA template. A new place: add it
-# here and look its template up with _area_template.
+# here and to the Usage Area options of SSPL WhatsApp Template Usage, and look its template up
+# with _area_template.
 AREA_UPI_PAY_LINK = "Cashier Desk - UPI Pay Link"
 AREA_BILL_UPI_LINK = "Cashier Desk - Bill + UPI Link"
 AREA_RECEIPT_PAY_LINK = "Paytm Receipt - Pay Link"
@@ -181,27 +182,30 @@ TEMPLATE_AREAS = [
 ]
 
 
-def _area_template(settings, area):
-	return next(
-		((r.template_name or "").strip() for r in settings.get("template_usages") or [] if r.usage_area == area),
-		"",
-	)
+def _area_template(settings, area, user=None):
+	"""Template set for `area`: the user's own row, else the shared row (no user)."""
+	user = user or frappe.session.user
+	rows = [r for r in settings.get("template_usages") or [] if r.usage_area == area]
+	row = next((r for r in rows if r.user == user), None) or next((r for r in rows if not r.user), None)
+	return (row.template_name or "").strip() if row else ""
 
 
 def sync_template_usages():
-	"""Give SSPL WhatsApp Settings one Template per Usage Area row for every TEMPLATE_AREAS entry,
-	keeping the template names already set. Never deletes rows."""
+	"""Give SSPL WhatsApp Settings one shared Template per Usage Area row for every TEMPLATE_AREAS
+	entry, keeping the template names already set. Never deletes rows."""
 	if not frappe.db.exists("DocType", "SSPL WhatsApp Template Usage"):
 		return
 	settings = frappe.get_single(SETTINGS_DOCTYPE)
-	rows = {r.usage_area: r for r in settings.get("template_usages") or []}
+	shared = {r.usage_area for r in settings.get("template_usages") or [] if not r.user}
+	placeholders_by_area = dict(TEMPLATE_AREAS)
 	changed = False
 	for area, placeholders in TEMPLATE_AREAS:
-		row = rows.get(area)
-		if not row:
+		if area not in shared:
 			settings.append("template_usages", {"usage_area": area, "placeholders": placeholders})
 			changed = True
-		elif row.placeholders != placeholders:
+	for row in settings.get("template_usages") or []:
+		placeholders = placeholders_by_area.get(row.usage_area)
+		if placeholders and row.placeholders != placeholders:
 			row.placeholders = placeholders
 			changed = True
 	if not changed:
@@ -429,8 +433,26 @@ def refresh_sessions():
 			session = _fetch_session(settings, row)
 			if session:
 				_store_session(row, session)
+				row.session_id = session.get("id") or ""
+		return {"templates": _session_templates(settings)}
 
 	return _guarded(run)
+
+
+def _session_templates(settings):
+	"""Template names on the gateway per session name, for the OpenWA Template dropdowns. A session
+	that is not linked, or whose templates cannot be listed, offers none."""
+	templates = {}
+	for row in settings.sessions:
+		names = []
+		if row.session_id:
+			try:
+				found = _call(settings, "GET", f"/sessions/{row.session_id}/templates")
+				names = sorted({(t.get("name") or "").strip() for t in found or []} - {""})
+			except OpenWAError:
+				frappe.log_error(title="OpenWA templates could not be listed", message=frappe.get_traceback())
+		templates[row.session_name] = names
+	return templates
 
 
 @frappe.whitelist()
