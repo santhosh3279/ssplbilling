@@ -1110,7 +1110,7 @@ let paidTickTimer = null
 function showPaidTick(amount, mode) {
   if (paidTickTimer) clearTimeout(paidTickTimer)
   paidTick.value = { show: true, amount, mode }
-  paidTickTimer = setTimeout(() => { paidTick.value.show = false }, 2000)
+  paidTickTimer = setTimeout(() => { paidTick.value.show = false }, 1000)
 }
 
 // Paytm EDC card machine: push the UPI (QR) or Card box amount to the machine, wait for the result
