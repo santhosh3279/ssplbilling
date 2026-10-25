@@ -155,6 +155,58 @@ def _inheritable_user(user=None):
 # {{name}} placeholders, as the OpenWA Templates page finds them
 TEMPLATE_PLACEHOLDER = re.compile(r"\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}")
 
+# Places that send a WhatsApp message, each a row of SSPL WhatsApp Settings > Template per Usage
+# Area (added on migrate by sync_template_usages) naming its OpenWA template. A new place: add it
+# here and look its template up with _area_template.
+AREA_UPI_PAY_LINK = "Cashier Desk - UPI Pay Link"
+AREA_BILL_UPI_LINK = "Cashier Desk - Bill + UPI Link"
+AREA_RECEIPT_PAY_LINK = "Paytm Receipt - Pay Link"
+AREA_BILL_SENDING = "Bill Sending (Print Window)"
+PAY_LINK_PLACEHOLDERS = "{{link}} {{amount}} {{valid_minutes}} {{customer_name}}"
+TEMPLATE_AREAS = [
+	(AREA_UPI_PAY_LINK, f"{PAY_LINK_PLACEHOLDERS} {{{{bill_no}}}} + any bill field"),
+	(
+		AREA_BILL_UPI_LINK,
+		f"PDF caption. {PAY_LINK_PLACEHOLDERS} {{{{bill_no}}}} + any bill field. Blank: UPI Pay Link's template",
+	),
+	(AREA_RECEIPT_PAY_LINK, f"{PAY_LINK_PLACEHOLDERS} + any customer field"),
+	(AREA_BILL_SENDING, "PDF caption. Any field of the bill, e.g. {{name}} {{posting_date}} {{rounded_total}}"),
+]
+
+
+def _area_template(settings, area):
+	return next(
+		((r.template_name or "").strip() for r in settings.get("template_usages") or [] if r.usage_area == area),
+		"",
+	)
+
+
+def sync_template_usages():
+	"""Give SSPL WhatsApp Settings one Template per Usage Area row for every TEMPLATE_AREAS entry,
+	keeping the template names already set. Never deletes rows."""
+	if not frappe.db.exists("DocType", "SSPL WhatsApp Template Usage"):
+		return
+	settings = frappe.get_single(SETTINGS_DOCTYPE)
+	rows = {r.usage_area: r for r in settings.get("template_usages") or []}
+	changed = False
+	for area, placeholders in TEMPLATE_AREAS:
+		row = rows.get(area)
+		if not row:
+			settings.append("template_usages", {"usage_area": area, "placeholders": placeholders})
+			changed = True
+		elif row.placeholders != placeholders:
+			row.placeholders = placeholders
+			changed = True
+	if not changed:
+		return
+	settings.flags.ignore_mandatory = True
+	try:
+		settings.save(ignore_permissions=True)
+	except Exception:
+		# a settings row that no longer validates must not fail the migrate
+		frappe.db.rollback()
+		frappe.log_error(title="WhatsApp template usage rows not synced", message=frappe.get_traceback())
+
 
 def _render_template(settings, row, template_name, values):
 	"""Text of the OpenWA template named template_name in row's session, rendered the way the
@@ -632,12 +684,22 @@ def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
 		text = _("Dear {0}, please pay Rs. {1} to Sundaram and Sons using this Paytm link: {2}").format(
 			customer_name, amount, txn.short_url
 		)
-	# the OpenWA template named in settings replaces the built-in text when it can be used
+	# the OpenWA template set for this usage area replaces the built-in text when it can be used;
+	# Bill + Link falls back to the plain pay link's template
+	with_bill = frappe.utils.cint(with_bill) and is_qr and txn.sales_invoice
+	if not txn.sales_invoice:
+		template_name = _area_template(settings, AREA_RECEIPT_PAY_LINK)
+	elif with_bill:
+		template_name = _area_template(settings, AREA_BILL_UPI_LINK) or _area_template(
+			settings, AREA_UPI_PAY_LINK
+		)
+	else:
+		template_name = _area_template(settings, AREA_UPI_PAY_LINK)
 	text = (
 		_render_template(
 			settings,
 			row,
-			(settings.get("pay_link_template") or "").strip(),
+			template_name,
 			{
 				# any field of the bill (or of the customer, for a receipt), then the pay link's own
 				**(
@@ -654,7 +716,7 @@ def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
 		)
 		or text
 	)
-	if frappe.utils.cint(with_bill) and is_qr and txn.sales_invoice:
+	if with_bill:
 		frappe.has_permission("Sales Invoice", "read", doc=txn.sales_invoice, throw=True)
 		pdf_base64, filename = _bill_pdf(txn.sales_invoice)
 		return _send(
@@ -702,12 +764,12 @@ def _bill_pdf(invoice_name):
 
 @frappe.whitelist()
 def get_document_caption(doctype, document_name, session_id=None):
-	"""Caption for sending a bill / document on WhatsApp, from the OpenWA template named in
-	SSPL WhatsApp Settings (Invoice Template), filled with the document's fields. None when no
-	template is set or usable, so the print modal keeps its built-in caption."""
+	"""Caption for sending a bill / document on WhatsApp, from the OpenWA template set for Bill
+	Sending in SSPL WhatsApp Settings, filled with the document's fields. None when no template is
+	set or usable, so the print modal keeps its built-in caption."""
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
 	settings = _settings()
-	template_name = (settings.get("invoice_template") or "").strip()
+	template_name = _area_template(settings, AREA_BILL_SENDING)
 	if not template_name:
 		return None
 	try:

@@ -1,0 +1,52 @@
+{
+ "actions": [],
+ "creation": "2026-10-25 14:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "usage_area",
+  "template_name",
+  "placeholders"
+ ],
+ "fields": [
+  {
+   "fieldname": "usage_area",
+   "fieldtype": "Data",
+   "label": "Usage Area",
+   "in_list_view": 1,
+   "read_only": 1,
+   "reqd": 1,
+   "columns": 3,
+   "description": "Where the message is sent from. Rows are added by the app on migrate."
+  },
+  {
+   "fieldname": "template_name",
+   "fieldtype": "Data",
+   "label": "OpenWA Template",
+   "in_list_view": 1,
+   "columns": 3,
+   "description": "Name of the template on the OpenWA Templates page (per session). Blank or not found: the built-in message is sent."
+  },
+  {
+   "fieldname": "placeholders",
+   "fieldtype": "Small Text",
+   "label": "Placeholders",
+   "in_list_view": 1,
+   "read_only": 1,
+   "columns": 4
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-25 14:00:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL WhatsApp Template Usage",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
