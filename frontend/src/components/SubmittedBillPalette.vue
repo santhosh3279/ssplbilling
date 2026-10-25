@@ -27,12 +27,12 @@
       </form>
       <p class="mt-2 text-xs text-[var(--color-text-muted)]">{{ bills.length }} {{ showDrafts ? 'draft' : 'submitted' }} bills</p>
     </div>
-    <div class="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
+    <div ref="listRef" class="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
       <p v-if="error" class="p-3 text-sm text-[var(--color-danger)]" role="alert">{{ error }}</p>
       <p v-if="!bills.length && !loading && !error" class="p-4 text-center text-sm italic text-[var(--color-text-muted)]">No {{ showDrafts ? 'draft' : 'submitted' }} bills found.</p>
       <template v-for="(bill, index) in bills" :key="`${bill.doctype}:${bill.name}`">
         <div v-if="index === 0 || bill.date !== bills[index - 1].date" class="sticky top-0 border-b border-[var(--color-border)] bg-[var(--color-lowlight)] px-3 py-1 text-sm font-bold text-[var(--color-text-muted)]">{{ formatDMY(bill.date) }}</div>
-        <button type="button" :disabled="busy" :aria-pressed="selectedName === bill.name && selectedDoctype === bill.doctype" @click="$emit('select', bill)" @keydown.down.prevent="focusAdjacent($event, 1)" @keydown.up.prevent="focusAdjacent($event, -1)" class="block w-full border-b border-[var(--color-border)] px-3 py-2 text-left outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-info)] disabled:opacity-60" :class="selectedName === bill.name && selectedDoctype === bill.doctype ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)] hover:bg-[var(--color-midlight)]'">
+        <button type="button" :disabled="busy" :aria-pressed="selectedName === bill.name && selectedDoctype === bill.doctype" @click="selectBill(bill, index)" @keydown.down.prevent="focusAdjacent($event, 1)" @keydown.up.prevent="focusAdjacent($event, -1)" class="block w-full border-b border-[var(--color-border)] px-3 py-2 text-left outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-info)] disabled:opacity-60" :class="selectedName === bill.name && selectedDoctype === bill.doctype ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)] hover:bg-[var(--color-midlight)]'">
           <div class="flex items-baseline justify-between gap-2">
             <span class="min-w-0 truncate font-mono text-xl font-bold">{{ bill.name }}</span>
             <span class="shrink-0 font-mono text-lg tabular-nums">{{ formatAmount(bill.total) }}</span>
@@ -60,13 +60,16 @@ const props = defineProps({
   // Offer a toggle to list drafts instead of submitted bills
   allowDrafts: Boolean,
 })
-defineEmits(['select'])
+const emit = defineEmits(['select'])
 const availableSeries = ref(readBillSeries())
 const selectedSeries = ref('')
 const showDrafts = ref(false)
 const searchText = ref('')
 const submittedSearch = ref('')
 const searchInputRef = ref(null)
+const listRef = ref(null)
+// Row index of the last picked bill, so a refresh after a change keeps the cursor on that row
+let selectedIndex = -1
 const bills = ref([])
 const loading = ref(false)
 const error = ref('')
@@ -77,12 +80,15 @@ const PAGE_SIZE = 50
 let requestVersion = 0
 let disposed = false
 
-async function loadBills(append = false) {
+async function loadBills(append = false, keepList = false) {
   if (append && loading.value) return
   const version = ++requestVersion
   if (!append) {
     offsets.clear()
-    bills.value = []
+    if (!keepList) {
+      bills.value = []
+      selectedIndex = -1
+    }
     moreTypes.value = BILL_TYPES.map(type => type.doctype)
   }
   loading.value = true
@@ -126,7 +132,24 @@ function searchBills() {
   submittedSearch.value = searchText.value.trim()
   return loadBills()
 }
-function refresh() { return loadBills() }
+function selectBill(bill, index) {
+  selectedIndex = index
+  emit('select', bill)
+}
+// Reload in place: the old list stays until the new one arrives, then the scroll position
+// and the focused row index are restored (the bill may have moved or left the list).
+async function refresh() {
+  const scrollTop = listRef.value?.scrollTop || 0
+  const index = selectedIndex
+  await loadBills(false, true)
+  await nextTick()
+  if (!listRef.value) return
+  listRef.value.scrollTop = scrollTop
+  const buttons = listRef.value.querySelectorAll('button[aria-pressed]')
+  const target = index >= 0 ? buttons[Math.min(index, buttons.length - 1)] : null
+  target?.focus({ preventScroll: true })
+  target?.scrollIntoView({ block: 'nearest' })
+}
 function focusSearch() { nextTick(() => { searchInputRef.value?.focus(); searchInputRef.value?.select() }) }
 function focusAdjacent(event, direction) {
   const buttons = [...event.currentTarget.parentElement.querySelectorAll('button[aria-pressed]')]
