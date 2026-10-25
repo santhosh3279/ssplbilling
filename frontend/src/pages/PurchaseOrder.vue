@@ -607,7 +607,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
 import { canModifyDate } from '../composables/usePermission.js'
-import { useItemCache, lookupItemInCache, uomLabel, patchItemInCache } from '../services/itemCache.js'
+import { useItemCache, lookupItemInCache, lookupBillableItem, searchBillableItems, uomLabel, patchItemInCache } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice, getFloatPrecision } from '../encryption.js'
 
@@ -627,7 +627,7 @@ import { getSeriesDefaults } from '../services/masterCache.js'
 const router = useRouter()
 
 // --- Data Fetching & State Management ---
-const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache } = useItemCache()
+const { items: cachedItems, lastSync, refreshItemCache } = useItemCache()
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 const {
   fetchCustomerSalesHistory, hasHistory, clearHistory, getItemHistoryFromCache, historyLoading,
@@ -1490,7 +1490,7 @@ function deleteItem(idx) {
 function onQuickSearchRefresh() {
   // After cache refresh, re-run search if there's a query
   if (newItemCode.value) {
-    quickSearchResults.value = searchItemsInCache(newItemCode.value)
+    quickSearchResults.value = searchBillableItems(newItemCode.value)
   }
 }
 
@@ -1587,7 +1587,7 @@ function onItemSearchSelectMultiple(entries) {
 function onEditCodeInput(rowIdx) {
   const code = (items.value[rowIdx]?.item_code || '').trim()
   if (code.length >= 2) {
-    const rawResults = searchItemsInCache(code)
+    const rawResults = searchBillableItems(code)
     quickSearchResults.value = rawResults.map(item => ({
       ...item,
       has_history: hasHistory(item.item_code)
@@ -1610,7 +1610,7 @@ function onEditCodeKeydown(e, rowIdx) {
   }
 
   if (e.key === 'Enter') {
-    e.preventDefault(); const code = (items.value[rowIdx]?.item_code || '').trim(); const match = lookupItemInCache(code)
+    e.preventDefault(); const code = (items.value[rowIdx]?.item_code || '').trim(); const match = lookupBillableItem(code)
     if (match) {
       applyItemToRow(rowIdx, match)
       if (getItemUoms(match.item_code).length > 1) focusEditField('uom', rowIdx)
@@ -1877,7 +1877,7 @@ async function fetchSupplierItems() {
       const exists = items.value.some(item => !item.deleted && item.item_code === code)
       if (exists) continue
 
-      const match = lookupItemInCache(code)
+      const match = lookupBillableItem(code)
       if (match) {
         const rate = getItemRateForPriceList(match, match.uom || 'Nos')
         const newItem = {
@@ -1950,7 +1950,7 @@ async function handleSeriesSelected(series) {
 function handleItemEntry() {
   if (!newItemCode.value) return
   if (quickSearchResults.value.length > 0 && quickSearchRef.value) return
-  const code = newItemCode.value.trim(); const match = lookupItemInCache(code)
+  const code = newItemCode.value.trim(); const match = lookupBillableItem(code)
   if (!match) { openItemSearch(code); return }
   setPendingItem({
     item_code: match.item_code, item_name: match.item_name, qty: 0,
@@ -1965,7 +1965,7 @@ function onNewCodeInput() {
     quickSearchResults.value = [{ item_code: 'DUMMY' }]
     quickSearchAnchor.value = newCodeInput.value
   } else if (code.length >= 2) {
-    const rawResults = searchItemsInCache(code)
+    const rawResults = searchBillableItems(code)
     quickSearchResults.value = rawResults.map(item => ({
       ...item,
       has_history: hasHistory(item.item_code)

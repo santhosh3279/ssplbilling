@@ -343,6 +343,17 @@ function lookupExact(code) {
   return null
 }
 
+// Variant templates cannot be billed or transacted: a scanned/typed template code resolves to
+// nothing (so entry falls through to Item Search) and templates never show in quick search.
+export function lookupBillableItem(code) {
+  const match = lookupItemInCache(code)
+  return match && !match.has_variants ? match : null
+}
+
+export function searchBillableItems(query, maxResults = 50) {
+  return searchItemsInCache(query, maxResults).filter(i => !i.has_variants)
+}
+
 /**
  * Search for items in the local cache by code or name.
  * Supports multi-term search (all terms must match partially).

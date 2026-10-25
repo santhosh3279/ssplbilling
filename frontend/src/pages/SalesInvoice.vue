@@ -831,7 +831,7 @@ import CustomAddress from '../components/CustomAddress.vue'
 import Warning from '../components/Warning.vue'
 import EWayBillModal from '../components/EWayBillModal.vue'
 import EWayBillOptionsModal from '../components/EWayBillOptionsModal.vue'
-import { useItemCache, lookupItemInCache, uomLabel } from '../services/itemCache.js'
+import { useItemCache, lookupItemInCache, lookupBillableItem, searchBillableItems, uomLabel } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice, getFloatPrecision } from '../encryption.js'
 
@@ -864,18 +864,7 @@ const inheritedUser = computed(() => {
 })
 
 // --- Data Fetching & State Management ---
-const { items: cachedItems, lastSync, refreshItemCache, searchItemsInCache, discountRules } = useItemCache()
-
-// Variant templates cannot be billed: a scanned/typed template code resolves to nothing (falls
-// through to Item Search) and templates never show in the inline quick-search dropdown.
-function lookupBillableItem(code) {
-  const match = lookupItemInCache(code)
-  return match && !match.has_variants ? match : null
-}
-
-function searchBillableItems(query) {
-  return searchItemsInCache(query).filter(i => !i.has_variants)
-}
+const { items: cachedItems, lastSync, refreshItemCache, discountRules } = useItemCache()
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 const { 
   fetchCustomerSalesHistory, hasHistory, clearHistory, clearItemInsights, getItemHistoryFromCache, historyLoading, 

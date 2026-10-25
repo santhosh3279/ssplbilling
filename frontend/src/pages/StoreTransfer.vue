@@ -322,7 +322,7 @@ import Warning from '../components/Warning.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import { frappePost } from '../api'
-import { useItemCache, uomLabel } from '../services/itemCache.js'
+import { useItemCache, uomLabel, searchBillableItems } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
@@ -341,7 +341,7 @@ useShortcuts({
     handleBack()
   }
 })
-const { refreshItemCache, lookupItemInCache, searchItemsInCache } = useItemCache()
+const { refreshItemCache, lookupItemInCache } = useItemCache()
 
 const transferNo = ref('')
 const transferDate = ref(serverToday())
@@ -513,7 +513,7 @@ async function getItemDetailsFromServer(code) {
 function onEditCodeInput(rowIdx) {
   const code = (items.value[rowIdx]?.item_code || '').trim()
   if (code.length >= 2) {
-    quickSearchResults.value = searchItemsInCache(code)
+    quickSearchResults.value = searchBillableItems(code)
     quickSearchAnchor.value = editCodeInput.value
   } else {
     quickSearchResults.value = []
@@ -580,7 +580,7 @@ function onBarcodeInput() {
     quickSearchResults.value = [{ item_code: 'DUMMY' }]
     quickSearchAnchor.value = barcodeInput.value
   } else if (code.length >= 2) {
-    quickSearchResults.value = searchItemsInCache(code)
+    quickSearchResults.value = searchBillableItems(code)
     quickSearchAnchor.value = barcodeInput.value
   } else {
     quickSearchResults.value = []
@@ -612,7 +612,8 @@ async function handleBarcodeEnter() {
   if (!barcodeQuery.value) return
   
   const code = barcodeQuery.value.trim()
-  const res = await getItemDetailsFromServer(code)
+  // Variant templates cannot be transferred; send them to Item Search like an unknown code
+  const res = lookupItemInCache(code)?.has_variants ? null : await getItemDetailsFromServer(code)
   
   if (res && res.found) {
     setPendingItem(res)
@@ -629,7 +630,7 @@ function onQuickSearchRefresh() {
     ? (items.value[editingRowIdx.value]?.item_code || '')
     : barcodeQuery.value
   if (query) {
-    quickSearchResults.value = searchItemsInCache(query)
+    quickSearchResults.value = searchBillableItems(query)
   }
 }
 
