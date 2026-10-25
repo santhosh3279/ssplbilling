@@ -1093,7 +1093,11 @@ watch(() => props.show, async (newVal) => {
     // The global cache may have been populated warehouse-less (e.g. by Dashboard),
     // which shows all-warehouse aggregate stock. preloadItems() only refetches when
     // the scope actually differs, so same-scope opens stay instant.
-    await preloadItems()
+    // Jump from the items already in memory: awaiting the sync held the jump until its network
+    // delta landed. Only an empty cache has nothing to jump to yet.
+    const preload = preloadItems()
+    if (!allItems.value.length) await preload
+    if (!props.show) return
     if (props.initialQuery) {
       const idx = results.value.findIndex(i => i.item_code === props.initialQuery)
       if (idx >= 0) {
