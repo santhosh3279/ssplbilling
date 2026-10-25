@@ -1860,10 +1860,8 @@ function applyPaytmResult(r) {
   p.message = `₹${fmt(r.amount)} received by ${r.mode === 'card' ? 'card' : 'UPI'} (Ref ${r.reference_no})`
   fireConfetti({ count: 800, spread: 1.6 })
   showPaidTick(r.amount, paidBy)
-  setTimeout(() => {
-    if (paytm.value.orderId === r.order_id) closePaytmModal()
-    nextTick(() => postButton.value?.focus())
-  }, 1500)
+  closePaytmModal()
+  nextTick(() => postButton.value?.focus())
 }
 
 function onPaytmSocket(r) {
@@ -1985,10 +1983,8 @@ function applyPaytmQrResult(r) {
   q.message = `₹${fmt(r.amount)} received by UPI (Ref ${r.reference_no})`
   fireConfetti({ count: 800, spread: 1.6 })
   showPaidTick(r.amount, 'upi')
-  setTimeout(() => {
-    if (paytmQr.value.orderId === r.order_id) closePaytmQr()
-    nextTick(() => postButton.value?.focus())
-  }, 1500)
+  closePaytmQr()
+  nextTick(() => postButton.value?.focus())
 }
 
 // Dev-only: walk the Paytm QR modal through Pending → Success without calling Paytm. The
