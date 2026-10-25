@@ -484,9 +484,18 @@ def get_next_bill_no(naming_series="PINV-.YY.-"):
     """Get the next number in the naming series."""
     try:
         from ssplbilling.api.salesinvoice_api import peek_naming_series
-        return peek_naming_series(naming_series)
+        next_no = peek_naming_series(naming_series)
     except Exception:
         return naming_series + "???"
+    # Mirrored series are saved with a trailing "/" (set_suffix_for_original_purchase_invoice).
+    try:
+        from ssplbilling.api.automatic_entries_api import get_automatic_entries
+        from ssplbilling.api.purchase_mirror_api import should_mirror_purchase_invoice
+        if next_no and not next_no.endswith("/") and should_mirror_purchase_invoice(naming_series, get_automatic_entries()):
+            next_no = f"{next_no}/"
+    except Exception:
+        pass
+    return next_no
 
 
 @frappe.whitelist()
@@ -1129,46 +1138,15 @@ def set_suffix_for_original_purchase_invoice(doc, method=None, ae=None):
 		except Exception:
 			return
 
-	from ssplbilling.api.purchase_mirror_api import get_purchase_mirror_mapping, _purchase_mirror_series
-
-	if not ae or not ae.alternative_company:
-		return
+	from ssplbilling.api.purchase_mirror_api import should_mirror_purchase_invoice
 
 	naming_series = doc.naming_series
-	if not naming_series:
+	if not naming_series or not ae or not should_mirror_purchase_invoice(naming_series, ae):
 		return
 
-	# 1. Check if configured in purchase_mirroring_series table
-	mapping = get_purchase_mirror_mapping(naming_series, ae)
-	if mapping:
-		purchase_s = mapping.get("purchase_series") or ""
-		mirror_s = mapping.get("mirroring_series") or ""
-		from frappe.model.naming import NamingSeries
-		p_prefix = NamingSeries(purchase_s).get_prefix().strip() if purchase_s else ""
-		m_prefix = NamingSeries(mirror_s).get_prefix().strip() if mirror_s else ""
+	# Every purchase series set for mirroring gets a trailing "/", whether the mirror
+	# uses the same series or a different one.
+	from frappe.model.naming import make_autoname
 
-		# If the mirror invoice series is different from the purchase series, no need to generate "/"
-		if m_prefix and p_prefix and m_prefix != p_prefix:
-			return
-
-		# If the mirror invoice series is the same as the purchase series, generate "/"
-		from frappe.model.naming import make_autoname
-		generated_name = make_autoname(naming_series, doc=doc)
-		if not generated_name.endswith("/"):
-			doc.name = f"{generated_name}/"
-		return
-
-	# 2. Fallback: check old ae.series table
-	allowed = _purchase_mirror_series(ae)
-	should_suffix = False
-	for prefix in allowed:
-		if naming_series == prefix or naming_series.startswith(prefix):
-			should_suffix = True
-			break
-
-	if should_suffix:
-		from frappe.model.naming import make_autoname
-		generated_name = make_autoname(naming_series, doc=doc)
-		if not generated_name.endswith("/"):
-			doc.name = f"{generated_name}/"
-
+	generated_name = make_autoname(naming_series, doc=doc)
+	doc.name = generated_name if generated_name.endswith("/") else f"{generated_name}/"

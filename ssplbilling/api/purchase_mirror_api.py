@@ -94,10 +94,10 @@ def should_mirror_purchase_invoice(naming_series, automatic_entries):
 
 
 def get_available_purchase_mirror_name(naming_series, target_company):
-	"""Find the next available purchase invoice number in `target_company` for `naming_series`."""
+	"""Next purchase invoice number for `naming_series`, taken from the bills already in
+	`target_company` (highest existing number + 1), not from the shared `tabSeries` counter."""
 	import re
 	from frappe.model.naming import NamingSeries
-	from frappe.utils import cint
 
 	if not naming_series:
 		field = frappe.get_meta("Purchase Invoice").get_field("naming_series")
@@ -107,6 +107,11 @@ def get_available_purchase_mirror_name(naming_series, target_company):
 	prefix = ns.get_prefix()
 	m = re.search(r"#+", naming_series)
 	digits = len(m.group(0)) if m else 5
+
+	# The series row is only used as a lock so two mirrors cannot pick the same number.
+	if not frappe.db.sql("SELECT 1 FROM `tabSeries` WHERE name = %s", (prefix,)):
+		frappe.db.sql("INSERT INTO `tabSeries` (name, current) VALUES (%s, 0)", (prefix,))
+	frappe.db.sql("SELECT current FROM `tabSeries` WHERE name = %s FOR UPDATE", (prefix,))
 
 	existing_names = frappe.db.get_all(
 		"Purchase Invoice",
@@ -122,21 +127,16 @@ def get_available_purchase_mirror_name(naming_series, target_company):
 			if val > max_company_num:
 				max_company_num = val
 
-	series_val = frappe.db.sql("SELECT current FROM `tabSeries` WHERE name = %s", (prefix,))
-	series_current = cint(series_val[0][0]) if series_val and series_val[0] and series_val[0][0] is not None else 0
-
-	next_num = max(series_current, max_company_num) + 1
+	next_num = max_company_num + 1
 	candidate = f"{prefix}{next_num:0{digits}d}"
 
+	# Names are unique across companies, so skip numbers another company already holds.
 	while frappe.db.exists("Purchase Invoice", candidate):
 		next_num += 1
 		candidate = f"{prefix}{next_num:0{digits}d}"
 
-	has_series = frappe.db.sql("SELECT 1 FROM `tabSeries` WHERE name = %s", (prefix,))
-	if has_series:
-		frappe.db.sql("UPDATE `tabSeries` SET current = GREATEST(current, %s) WHERE name = %s", (next_num, prefix))
-	else:
-		frappe.db.sql("INSERT INTO `tabSeries` (name, current) VALUES (%s, %s)", (prefix, next_num))
+	# Keep the counter at or past every used number so native entries in this series never collide.
+	frappe.db.sql("UPDATE `tabSeries` SET current = GREATEST(current, %s) WHERE name = %s", (next_num, prefix))
 
 	return candidate
 
@@ -150,7 +150,7 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 		return frappe.get_doc("Purchase Invoice", pi.custom_mirrored)
 
 	old_mirror_name = pi.name[:-1] if pi.name.endswith("/") else f"{pi.name}/"
-	if frappe.db.exists("Purchase Invoice", old_mirror_name):
+	if frappe.db.exists("Purchase Invoice", {"name": old_mirror_name, "company": automatic_entries.alternative_company}):
 		mpi = frappe.get_doc("Purchase Invoice", old_mirror_name)
 		if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
 			frappe.db.set_value("Purchase Invoice", pi.name, "custom_mirrored", mpi.name)

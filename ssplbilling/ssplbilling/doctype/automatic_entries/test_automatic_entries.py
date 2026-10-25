@@ -295,12 +295,13 @@ class TestAutomaticEntries(IntegrationTestCase):
 		self.assertTrue(should_mirror_purchase_invoice("PG.#####", ae))
 		self.assertTrue(should_mirror_purchase_invoice("PG00022", ae))
 
-		# 2. When mirror series is DIFFERENT, no '/' suffix should be generated
+		# 2. When mirror series is DIFFERENT, '/' suffix is still generated
 		pi_diff = frappe.new_doc("Purchase Invoice")
 		pi_diff.naming_series = "PG.#####"
 		# Mock autoname hook with ae passed
 		set_suffix_for_original_purchase_invoice(pi_diff, ae=ae)
-		self.assertIsNone(pi_diff.name)
+		self.assertIsNotNone(pi_diff.name)
+		self.assertTrue(pi_diff.name.endswith("/"))
 
 		# 3. When mirror series is the SAME, '/' suffix should be generated
 		pi_same = frappe.new_doc("Purchase Invoice")
