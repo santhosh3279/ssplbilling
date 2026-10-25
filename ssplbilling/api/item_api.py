@@ -82,7 +82,7 @@ def get_item_variants(template):
 	variants = frappe.get_all(
 		"Item",
 		filters={"variant_of": template},
-		fields=["item_code", "item_name", "disabled"],
+		fields=["item_code", "item_name", "disabled", "image"],
 		order_by="item_code asc",
 	)
 	if not variants:

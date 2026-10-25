@@ -547,7 +547,7 @@
                         <span v-else-if="item.itemcode" class="sheet-discount-none">—</span>
                       </td>
                       <td class="sheet-image">
-                        <button type="button" :disabled="!item.itemcode" :aria-label="`Manage image for ${item.itemname || item.itemcode}`" :class="['sheet-image-button', hasItemImage(item.itemcode) ? 'sheet-image-present' : 'sheet-image-missing']" @click="openItemImage(item)">Image</button>
+                        <button type="button" :disabled="!item.itemcode" :aria-label="`Manage image for ${item.itemname || item.itemcode}`" :class="['sheet-image-button', hasItemImage(item.itemcode) ? 'sheet-image-present' : 'sheet-image-missing']" @click="isTemplateItem(item) ? openItemVariants(item) : openItemImage(item)">{{ isTemplateItem(item) ? 'Variants' : 'Image' }}</button>
                       </td>
                       <td class="sheet-status">
                         <input
@@ -570,6 +570,39 @@
           </div>
         </div>
       </main>
+    </div>
+    <div v-if="variantTemplateCode" class="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4" @click.self="closeItemVariants">
+      <div role="dialog" aria-modal="true" aria-labelledby="item-variants-title" class="flex max-h-[80vh] w-full max-w-lg flex-col rounded-xl bg-[var(--color-surface)] p-5 shadow-xl">
+        <div class="flex items-center justify-between gap-3">
+          <h2 id="item-variants-title" class="text-base font-semibold">Variant images</h2>
+          <button type="button" aria-label="Close variants window" @click="closeItemVariants">×</button>
+        </div>
+        <p class="mt-1 text-xs text-[var(--color-text-muted)]">{{ variantTemplateName }} ({{ variantTemplateCode }}) · variants without an image show the template's</p>
+        <div class="mt-4 min-h-0 flex-1 overflow-y-auto rounded-lg border border-[var(--color-border)]">
+          <div v-if="variantsLoading" class="p-4 text-center text-sm text-[var(--color-text-muted)]">Loading variants...</div>
+          <table v-else class="w-full text-xs">
+            <tbody>
+              <tr class="border-b border-[var(--color-border)] bg-[var(--color-bg)]">
+                <td class="px-3 py-2 font-semibold">Template</td>
+                <td class="px-3 py-2 text-[var(--color-text-muted)]">{{ variantTemplateCode }}</td>
+                <td class="sheet-image px-3 py-2">
+                  <button type="button" :aria-label="`Manage image for ${variantTemplateName}`" :class="['sheet-image-button', hasItemImage(variantTemplateCode) ? 'sheet-image-present' : 'sheet-image-missing']" @click="openItemImage({ itemcode: variantTemplateCode, itemname: variantTemplateName })">Image</button>
+                </td>
+              </tr>
+              <tr v-for="variant in variantList" :key="variant.item_code" class="border-b border-[var(--color-border)] last:border-b-0" :class="{ 'opacity-50': variant.disabled }">
+                <td class="px-3 py-2">{{ variantLabel(variant) }}<span v-if="variant.disabled" class="ml-1 text-[10px] uppercase text-[var(--color-text-muted)]">Disabled</span></td>
+                <td class="px-3 py-2 text-[var(--color-text-muted)]">{{ variant.item_code }}</td>
+                <td class="sheet-image px-3 py-2">
+                  <button type="button" :aria-label="`Manage image for ${variant.item_name}`" :class="['sheet-image-button', hasItemImage(variant.item_code) ? 'sheet-image-present' : 'sheet-image-missing']" @click="openItemImage({ itemcode: variant.item_code, itemname: variant.item_name })">Image</button>
+                </td>
+              </tr>
+              <tr v-if="!variantList.length">
+                <td colspan="3" class="p-4 text-center text-sm text-[var(--color-text-muted)]">No variants yet</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
     <div v-if="imageItemCode" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" @click.self="closeItemImage">
       <div role="dialog" aria-modal="true" aria-labelledby="item-image-title" class="w-full max-w-sm rounded-xl bg-[var(--color-surface)] p-5 shadow-xl">
@@ -651,6 +684,39 @@ async function openItemImage(item) {
   } finally {
     imageLoading.value = false
   }
+}
+
+const variantTemplateCode = ref('')
+const variantTemplateName = ref('')
+const variantList = ref([])
+const variantsLoading = ref(false)
+
+function variantLabel(variant) {
+  return Object.values(variant.attributes || {}).join(' / ') || variant.item_name
+}
+
+// Template rows have no image of their own in the catalogue; each variant gets its image here.
+async function openItemVariants(item) {
+  variantTemplateCode.value = item.itemcode
+  variantTemplateName.value = itemDisplayName(item) || item.itemcode
+  variantList.value = []
+  variantsLoading.value = true
+  try {
+    const variants = await frappeGet('ssplbilling.api.item_api.get_item_variants', { template: item.itemcode })
+    if (variantTemplateCode.value !== item.itemcode) return
+    variantList.value = variants || []
+    for (const variant of variantList.value) imageByCode.value[variant.item_code] = variant.image || ''
+  } catch (e) {
+    alert(e.message || 'Failed to load variants')
+  } finally {
+    variantsLoading.value = false
+  }
+}
+
+function closeItemVariants() {
+  if (imageItemCode.value) return
+  variantTemplateCode.value = ''
+  variantList.value = []
 }
 
 function closeItemImage() {
@@ -815,6 +881,7 @@ const filteredCatalogues = computed(() => {
 // Select a catalogue list and load it details including the items child table
 async function selectCatalogue(name) {
   closeItemImage()
+  closeItemVariants()
   selectedName.value = name
   detailLoading.value = true
   isFormActive.value = true
@@ -866,6 +933,7 @@ async function selectCatalogue(name) {
 // Open clean form for creating new Catalogue List
 function handleNewCatalogue() {
   closeItemImage()
+  closeItemVariants()
   selectedName.value = null
   isFormActive.value = true
   form.value = emptyForm()
@@ -874,6 +942,7 @@ function handleNewCatalogue() {
 
 function closeForm() {
   closeItemImage()
+  closeItemVariants()
   closeItemSearch()
   isFormActive.value = false
   selectedName.value = null
