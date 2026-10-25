@@ -169,7 +169,7 @@
               <td class="p-[5px] font-mono text-5xl flex items-center gap-2" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-highlight)]'">
                 <div v-if="item.has_history" class="flex flex-col items-center">
                   <span class="h-3 w-3 shrink-0 rounded-full animate-pulse bg-[var(--color-highlight)]" :class="selectedIdx === idx ? 'bg-[var(--color-text-on-highlight)]/40' : 'bg-[var(--color-highlight)]'" title="Previously sold to this customer"></span>
-                  <span class="text-[10px] mt-1 uppercase font-bold text-[var(--color-text-muted)]" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)]' : ''">{{ item.history_qty }}</span>
+                  <span class="text-[10px] mt-1 uppercase font-bold text-[var(--color-text-muted)]" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)]' : ''">{{ formatQty(item.history_qty) }}</span>
                 </div>
                 <span>{{ item.item_code }}</span>
               </td>
@@ -718,6 +718,12 @@ function loadCipherMap() {
   // SalesOrder, Quotation, PurchaseOrder, OfferPage). null means encryption is
   // off; a bad wb-cipher still falls back to the default, never to plain rates.
   cipherMap.value = getCipherMap() || []
+}
+
+// Whole quantities as-is, fractional ones to 2 decimals (summed history qty can carry float noise)
+function formatQty(val) {
+  const n = Math.round(Number(val || 0) * 100) / 100
+  return Number.isInteger(n) ? String(n) : n.toFixed(2)
 }
 
 function encPrice(val) {
