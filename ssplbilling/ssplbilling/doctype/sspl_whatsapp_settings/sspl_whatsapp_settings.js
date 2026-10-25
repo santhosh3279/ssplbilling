@@ -7,6 +7,7 @@ frappe.ui.form.on("SSPL WhatsApp Settings", {
 	refresh(frm) {
 		frm.add_custom_button(__("Refresh Status"), () => refresh_session(frm, false));
 		load_session_names(frm);
+		set_user_session_options(frm);
 
 		// Desk reuses this form across visits, so gate on time: each reopen refreshes, while the
 		// reload that follows a refresh (which fires `refresh` again) does not loop
@@ -24,8 +25,23 @@ frappe.ui.form.on("SSPL WhatsApp Settings", {
 frappe.ui.form.on("SSPL WhatsApp Session", {
 	session_name(frm, cdt, cdn) {
 		fill_session_row(frm, cdt, cdn);
+		set_user_session_options(frm);
+	},
+	sessions_remove(frm) {
+		set_user_session_options(frm);
 	},
 });
+
+// Users per Session offers the sessions listed in the Sessions table above
+function set_user_session_options(frm) {
+	const names = (frm.doc.sessions || []).map((row) => row.session_name).filter(Boolean);
+	frm.fields_dict.session_users.grid.update_docfield_property(
+		"session_name",
+		"options",
+		["", ...new Set(names)].join("\n")
+	);
+	frm.refresh_field("session_users");
+}
 
 // Picking a session fills its read-only details from the gateway, so the row shows what it links
 function fill_session_row(frm, cdt, cdn) {

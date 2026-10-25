@@ -10,6 +10,7 @@
   "api_key",
   "sessions_section",
   "sessions",
+  "session_users",
   "templates_section",
   "template_usages"
  ],
@@ -49,6 +50,13 @@
    "options": "SSPL WhatsApp Session"
   },
   {
+   "fieldname": "session_users",
+   "fieldtype": "Table",
+   "label": "Users per Session",
+   "options": "SSPL WhatsApp Session User",
+   "description": "Each user sends their bills and chats through the session picked here; several users can share one session. Users not listed use the shared session: the one no user is assigned to."
+  },
+  {
    "fieldname": "templates_section",
    "fieldtype": "Section Break",
    "label": "Templates"
@@ -62,7 +70,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-25 14:00:00.000000",
+ "modified": "2026-10-25 15:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL WhatsApp Settings",

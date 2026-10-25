@@ -14,11 +14,12 @@ class SSPLWhatsAppSettings(Document):
 		if self.base_url.endswith("/api"):
 			self.base_url = self.base_url[: -len("/api")]
 		self.validate_sessions()
+		self.validate_session_users()
 
 	def validate_sessions(self):
 		before = self.get_doc_before_save()
 		old_rows = {row.name: row for row in (before.sessions if before else [])}
-		names, users = set(), set()
+		names = set()
 
 		for row in self.sessions:
 			row.session_name = (row.session_name or "").strip()
@@ -31,14 +32,34 @@ class SSPLWhatsAppSettings(Document):
 				frappe.throw(_("Row {0}: Session {1} is listed twice").format(row.idx, row.session_name))
 			names.add(row.session_name)
 
-			# An empty user is the shared session, and there can be only one of those too
-			user = row.user or ""
-			if user in users:
-				frappe.throw(_("Row {0}: {1} already has a session").format(row.idx, user or _("Shared")))
-			users.add(user)
-
 			old = old_rows.get(row.name)
 			# A different name is a different WhatsApp link on the gateway. The form refills the row
 			# from the gateway when a name is picked; a row it did not refill keeps no stale link.
 			if old and old.session_name != row.session_name and old.session_id == row.session_id:
 				row.session_id = row.status = row.phone = row.push_name = ""
+
+	def validate_session_users(self):
+		names = {row.session_name for row in self.sessions}
+		users = set()
+
+		for row in self.session_users:
+			if row.user in users:
+				frappe.throw(
+					_("Users per Session row {0}: {1} already has a session").format(row.idx, row.user)
+				)
+			users.add(row.user)
+			if row.session_name not in names:
+				frappe.throw(
+					_("Users per Session row {0}: {1} is not in the Sessions table").format(
+						row.idx, row.session_name
+					)
+				)
+
+		# A session no user is assigned to is the shared one, and there can be only one of those
+		shared = names - {row.session_name for row in self.session_users}
+		if len(shared) > 1:
+			frappe.throw(
+				_("Only one session can be left without users (the shared one): {0}").format(
+					", ".join(sorted(shared))
+				)
+			)

@@ -2,8 +2,8 @@
 
 OpenWA runs beside the bench (Docker, port 2785) and holds the linked WhatsApp sessions listed in
 SSPL WhatsApp Settings. ERPNext only ever talks to it from here, so the API key never reaches a
-browser. A user works through the session row assigned to them, else through the shared row (the
-one with no user); see _session_row().
+browser. A user works through the session assigned to them in Users per Session, else through the
+shared row (the session no user is assigned to); see _session_row().
 
 Linking: sessions are created and scanned on the OpenWA dashboard, then picked in the settings
 table. get_status() / refresh_sessions() mirror a session's state onto its row.
@@ -133,12 +133,19 @@ def _call(settings, method, path, json=None, params=None, timeout=REQUEST_TIMEOU
 		return {}
 
 
+def _session_users(settings, session_name):
+	"""Users assigned to a session in the Users per Session table; none means it is the shared one."""
+	return [r.user for r in settings.session_users if r.session_name == session_name]
+
+
 def _session_row(settings, user=None):
-	"""The session row a user sends and chats through: their own, else the shared one (no user)."""
+	"""The session row a user sends and chats through: the one assigned to them, else the shared
+	one (assigned to no user)."""
 	user = user or frappe.session.user
-	return next((r for r in settings.sessions if r.user == user), None) or next(
-		(r for r in settings.sessions if not r.user), None
-	)
+	assigned = next((r.session_name for r in settings.session_users if r.user == user), None)
+	if assigned:
+		return next((r for r in settings.sessions if r.session_name == assigned), None)
+	return next((r for r in settings.sessions if not _session_users(settings, r.session_name)), None)
 
 
 # Same rule as dashboard_api.get_allowed_tiles: only these may work under another user's settings
@@ -357,7 +364,7 @@ def get_settings():
 		"sessions": [
 			{
 				"session_name": r.session_name,
-				"user": r.user or "",
+				"users": _session_users(settings, r.session_name),
 				"status": r.status or "",
 				"phone": r.phone or "",
 				"push_name": r.push_name or "",
@@ -431,10 +438,15 @@ def get_my_session(user=None):
 	"""The session the logged-in user sends through: their own row, else the shared one.
 	Administrator gets the session of `user`, the user whose settings it inherits."""
 	_require_desk_user()
-	row = _session_row(_settings(), _inheritable_user(user))
+	settings = _settings()
+	row = _session_row(settings, _inheritable_user(user))
 	if not row:
 		return None
-	return {"session_name": row.session_name, "session_id": row.session_id or "", "shared": not row.user}
+	return {
+		"session_name": row.session_name,
+		"session_id": row.session_id or "",
+		"shared": not _session_users(settings, row.session_name),
+	}
 
 
 @frappe.whitelist()

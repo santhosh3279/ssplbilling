@@ -38,7 +38,7 @@
                 <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Session</label>
                 <select v-model="selected" :disabled="!!busy" :class="inputCls" @change="refresh">
                   <option v-for="s in sessions" :key="s.session_name" :value="s.session_name">
-                    {{ s.session_name }} — {{ s.user || 'Shared' }}{{ s.phone ? ' · +' + s.phone : '' }}
+                    {{ s.session_name }} — {{ s.users?.length ? s.users.join(', ') : 'Shared' }}{{ s.phone ? ' · +' + s.phone : '' }}
                   </option>
                 </select>
               </div>
