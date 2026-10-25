@@ -57,7 +57,7 @@
                   class="text-2xl font-bold"
                   :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : (itemMeta.item.stock > 20 ? 'text-[var(--color-success)]' : itemMeta.item.stock > 0 ? 'text-[var(--color-warning)]' : 'text-[var(--color-danger)]')"
                 >
-                  {{ itemMeta.item.stock }} {{ itemMeta.item.uom }}
+                  {{ formatQty(itemMeta.item.stock) }} {{ itemMeta.item.uom }}
                 </div>
               </div>
             </div>
@@ -319,6 +319,12 @@ function getItemPrice(item) {
   }
 
   return item.price
+}
+
+// Whole quantities as-is, fractional ones to 2 decimals
+function formatQty(val) {
+  const n = Math.round(Number(val || 0) * 100) / 100
+  return Number.isInteger(n) ? String(n) : n.toFixed(2)
 }
 
 function formatPrice(p) {
