@@ -674,7 +674,7 @@ def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
 def send_mock_pay_link(invoice_name, mobile, amount, order_id, with_bill=0, session_id=None):
 	"""Dev only (developer_mode): send a pay-link message for a browser-side mock Paytm order
 	(frontend utils/devMock.js) so the real WhatsApp / template output can be checked. The link is
-	an unpayable placeholder and the text is marked as a test."""
+	an unpayable placeholder."""
 	_require_desk_user()
 	if not frappe.conf.developer_mode:
 		frappe.throw(_("Mock pay links can only be sent with developer_mode on"))
@@ -747,8 +747,6 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False):
 		)
 		or text
 	)
-	if test:
-		text = f"[TEST - do not pay]\n{text}"
 	reference = ("Sales Invoice", txn.sales_invoice) if test else ("SSPL Paytm Transaction", txn.order_id)
 	if with_bill:
 		frappe.has_permission("Sales Invoice", "read", doc=txn.sales_invoice, throw=True)

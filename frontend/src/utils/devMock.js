@@ -120,7 +120,7 @@ function mockWhatsApp(method, args) {
   }
 }
 
-// WhatsApp mock off: really send the mock order's pay link (placeholder link, marked as a test)
+// WhatsApp mock off: really send the mock order's pay link (placeholder link)
 function sendMockPayLink(args) {
   const o = orders.get(args.order_id)
   if (!o) return Promise.reject(new Error(`Mock order ${args.order_id} not found`))
