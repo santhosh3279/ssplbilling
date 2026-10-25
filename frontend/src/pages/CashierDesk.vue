@@ -995,6 +995,21 @@
       </div>
     </transition>
 
+    <!-- PAYMENT RECEIVED BIG TICK (UPI / CARD) -->
+    <transition name="fade">
+      <div v-if="paidTick.show" class="fixed inset-0 z-[120] flex items-center justify-center pointer-events-none bg-[var(--color-bg)]/60 backdrop-blur-sm">
+        <div class="paid-tick-pop flex flex-col items-center gap-4">
+          <div class="flex h-56 w-56 items-center justify-center rounded-full bg-[var(--color-success)] shadow-2xl shadow-[var(--color-success)]/40">
+            <svg viewBox="0 0 52 52" class="h-36 w-36 text-white" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+              <path class="paid-tick-path" d="M14 27 l8 8 l16 -18" />
+            </svg>
+          </div>
+          <div class="font-mono text-[40px] font-black text-[var(--color-success)] leading-none">₹{{ fmt(paidTick.amount) }}</div>
+          <div class="text-[18px] font-black uppercase tracking-widest text-[var(--color-text)]">Received by {{ paidTick.mode === 'card' ? 'Card' : 'UPI' }}</div>
+        </div>
+      </div>
+    </transition>
+
     <component :is="ConfettiTester" v-if="ConfettiTester" @mock-upi="mockPaytmQrSuccess" />
   </div>
 </template>
@@ -1089,6 +1104,14 @@ const showBillMirrorCreator = ref(false)
 const showGstWarning = ref(false)
 const cardRefNo = ref('')
 const upiRefNo = ref('')
+// Full-screen tick flashed when Paytm confirms a UPI / card payment
+const paidTick = ref({ show: false, amount: 0, mode: 'upi' })
+let paidTickTimer = null
+function showPaidTick(amount, mode) {
+  if (paidTickTimer) clearTimeout(paidTickTimer)
+  paidTick.value = { show: true, amount, mode }
+  paidTickTimer = setTimeout(() => { paidTick.value.show = false }, 2000)
+}
 
 // Paytm EDC card machine: push the UPI (QR) or Card box amount to the machine, wait for the result
 // (socket event from the webhook, with polling as fallback), then fill UPI or Card.
@@ -1836,6 +1859,7 @@ function applyPaytmResult(r) {
   }
   p.message = `₹${fmt(r.amount)} received by ${r.mode === 'card' ? 'card' : 'UPI'} (Ref ${r.reference_no})`
   fireConfetti({ count: 800, spread: 1.6 })
+  showPaidTick(r.amount, paidBy)
   setTimeout(() => {
     if (paytm.value.orderId === r.order_id) closePaytmModal()
     nextTick(() => postButton.value?.focus())
@@ -1960,6 +1984,7 @@ function applyPaytmQrResult(r) {
   lockPaytmPayment('upi', r.amount, r.reference_no)
   q.message = `₹${fmt(r.amount)} received by UPI (Ref ${r.reference_no})`
   fireConfetti({ count: 800, spread: 1.6 })
+  showPaidTick(r.amount, 'upi')
   setTimeout(() => {
     if (paytmQr.value.orderId === r.order_id) closePaytmQr()
     nextTick(() => postButton.value?.focus())
@@ -2501,6 +2526,7 @@ onUnmounted(() => {
   window.removeEventListener('wb-global-date-focus', handleGlobalDateFocus);
   window.removeEventListener('click', handleSeriesClickAway)
   window.removeEventListener('keydown', handleKeydown)
+  if (paidTickTimer) clearTimeout(paidTickTimer)
   _billPanelCleanup?.()
   stopPaytmPolling()
   stopPaytmQrPolling()
@@ -2573,5 +2599,21 @@ input[type="date"]::-webkit-datetime-edit {
 .slide-up-leave-to {
   opacity: 0;
   transform: translateX(40px);
+}
+
+.paid-tick-pop {
+  animation: paid-tick-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.paid-tick-path {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: paid-tick-draw 0.4s ease-out 0.3s forwards;
+}
+@keyframes paid-tick-pop {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes paid-tick-draw {
+  to { stroke-dashoffset: 0; }
 }
 </style>
