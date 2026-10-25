@@ -77,6 +77,18 @@ def publish_item_attribute_update(doc, method=None):
 	frappe.publish_realtime("item_attribute_update", {"name": doc.name}, after_commit=True)
 
 
+def _has_variants_lock(item):
+	"""Why Has Variants cannot be toggled on this saved item ("" when it can), per ERPNext's rules:
+	hidden on variants, read-only once stock exists, and a template with variants cannot be unset."""
+	if item.variant_of:
+		return f"Variant of {item.variant_of}"
+	if item.stock_ledger_created():
+		return "Stock transactions exist for this item"
+	if item.has_variants and frappe.db.exists("Item", {"variant_of": item.name}):
+		return "Variants already created from this template"
+	return ""
+
+
 def _set_variant_attributes(item, data):
 	"""Apply has_variants and the template's attribute rows. Rows for attributes that stay are
 	kept as they are; numeric ranges are copied from the Item Attribute (no fetch_from on them)."""
@@ -314,6 +326,7 @@ def get_item_for_edit(item_code):
 		"disabled": frappe.utils.cint(item.disabled),
 		"has_variants": frappe.utils.cint(item.has_variants),
 		"variant_of": item.variant_of or "",
+		"has_variants_lock": _has_variants_lock(item),
 		"attributes": [{"attribute": row.attribute} for row in item.attributes if not item.variant_of],
 	}
 

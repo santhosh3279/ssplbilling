@@ -62,7 +62,7 @@
       <!-- Tabs -->
       <div class="flex gap-[8px] px-[20px] pt-[12px] bg-[var(--color-bg)] border-b border-[var(--color-border)]">
         <button
-          v-for="tab in tabs"
+          v-for="tab in visibleTabs"
           :key="tab.id"
           type="button"
           @click="activeTab = tab.id"
@@ -241,20 +241,18 @@
             </label>
 
             <label
-              class="flex items-center gap-[12px] px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)]"
-              :class="form.variant_of ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
-              :title="form.variant_of ? `Variant of ${form.variant_of}` : 'Template item — set attributes in the Variants tab'"
+              v-if="canToggleVariants"
+              class="flex items-center gap-[12px] px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)] cursor-pointer"
+              title="Template item — set attributes in the Variants tab"
             >
               <input
                 v-model="form.has_variants"
                 type="checkbox"
                 :true-value="1"
                 :false-value="0"
-                :disabled="!!form.variant_of"
                 class="h-6 w-6 accent-[var(--color-info)]"
               />
               <span>Has Variants</span>
-              <span v-if="form.variant_of" class="text-xl font-normal text-[var(--color-text-muted)]">(variant of {{ form.variant_of }})</span>
             </label>
 
             <div class="space-y-[4px] relative">
@@ -457,22 +455,24 @@
         <!-- Variants: template attributes (ERPNext needs at least one when Has Variants is set) -->
         <div v-show="activeTab === 'variants'" class="space-y-[16px] max-w-[1200px]">
           <label
-            class="flex items-center gap-[12px] px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)]"
-            :class="form.variant_of ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'"
+            v-if="canToggleVariants"
+            class="flex items-center gap-[12px] px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)] cursor-pointer"
           >
             <input
               v-model="form.has_variants"
               type="checkbox"
               :true-value="1"
               :false-value="0"
-              :disabled="!!form.variant_of"
               class="h-6 w-6 accent-[var(--color-info)]"
             />
             <span>Has Variants</span>
             <span class="text-xl font-normal text-[var(--color-text-muted)]">
-              {{ form.variant_of ? `This item is a variant of ${form.variant_of}` : 'Makes this item a template — variants are created from it, it is not billed itself' }}
+              Makes this item a template — variants are created from it, it is not billed itself
             </span>
           </label>
+          <p v-else class="px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)]">
+            Template item <span class="text-xl font-normal text-[var(--color-text-muted)]">— Has Variants cannot be changed: {{ variantsLock }}</span>
+          </p>
 
           <div v-if="form.has_variants" class="space-y-[4px]">
             <div class="flex items-center justify-between px-[20px]">
@@ -642,6 +642,7 @@ function _applyItemData(data, itemCode) {
   form.value.has_variants    = Number(data.has_variants) === 1 ? 1 : 0
   form.value.variant_of      = data.variant_of || ''
   form.value.attributes      = (data.attributes || []).map(a => ({ attribute: a.attribute }))
+  variantsLock.value         = data.has_variants_lock || ''
   itemDisabled.value = Number(data.disabled) === 1
   autoBarcode.value = ''
   isBarcodeManual.value = true
@@ -717,10 +718,18 @@ const form = ref({
   attributes: [],
 })
 
+// Why Has Variants cannot be toggled on the item being edited ('' = eligible). Always
+// eligible in create mode — ERPNext's limits only apply to saved items.
+const variantsLock = ref('')
+const canToggleVariants = computed(() => !isEditMode.value || !variantsLock.value)
+
 const tabs = [
   { id: 'details', label: 'Details' },
   { id: 'variants', label: 'Variants' },
 ]
+// Variants tab only when the box can be ticked, or the item already is a template
+const visibleTabs = computed(() =>
+  tabs.filter(t => t.id !== 'variants' || canToggleVariants.value || form.value.has_variants))
 const activeTab = ref('details')
 
 const fileInput = ref(null)
@@ -1117,6 +1126,7 @@ watch(() => props.show, async (newVal) => {
   if (newVal) {
     forceCreate.value = false
     activeTab.value = 'details'
+    variantsLock.value = ''
     ensureItemAttributeCache()
     if (!isEditMode.value) {
       resetForm(true)
