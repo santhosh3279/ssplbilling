@@ -124,6 +124,13 @@ def _order_price(item_code, price_list, barcode=None):
 		filters={"item_code": item_code, "price_list": price_list, "selling": 1},
 		fields=["uom", "price_list_rate"],
 	)
+	if not prices and item.variant_of:
+		# Like ERPNext, a variant without its own Item Price uses its template's.
+		prices = frappe.get_all(
+			"Item Price",
+			filters={"item_code": item.variant_of, "price_list": price_list, "selling": 1},
+			fields=["uom", "price_list_rate"],
+		)
 	for uom in (barcode_uom, item.stock_uom, None, ""):
 		for price in prices:
 			if (price.uom or None) == (uom or None):

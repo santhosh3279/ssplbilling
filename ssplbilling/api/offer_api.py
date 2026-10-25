@@ -252,12 +252,14 @@ def get_offer_details(pageaddress):
 		item_group = item_group_map.get(item_code)
 		stock_uom = item_stock_uom_map.get(item_code)
 		barcode_uom = barcode_uom_map.get(item.barcode) if item.barcode else None
+		# Like ERPNext, a variant without its own Item Price uses its template's.
+		item_prices = price_map.get(item_code) or price_map.get(item.get("variant_of")) or {}
 
 		# Compile rates list barcode-wise with fallbacks
 		item_rates = []
 		for plist in price_lists:
 			rate = None
-			uom_rates = price_map.get(item_code, {}).get(plist)
+			uom_rates = item_prices.get(plist)
 			if uom_rates:
 				if barcode_uom and barcode_uom in uom_rates:
 					rate = uom_rates[barcode_uom]
@@ -361,7 +363,7 @@ def get_offer_details(pageaddress):
 			b_info = barcode_by_factor[factor]
 			rates = {}
 			for plist in price_lists:
-				uom_rates = price_map.get(item_code, {}).get(plist)
+				uom_rates = item_prices.get(plist)
 				rates[plist] = resolve_rate(uom_rates, b_info["uom"], stock_uom)
 			barcodes_with_prices.append({
 				"barcode": b_info["barcode"],
@@ -371,7 +373,7 @@ def get_offer_details(pageaddress):
 		if not barcodes_with_prices:
 			rates = {}
 			for plist in price_lists:
-				uom_rates = price_map.get(item_code, {}).get(plist)
+				uom_rates = item_prices.get(plist)
 				rates[plist] = resolve_rate(uom_rates, stock_uom, stock_uom)
 			barcodes_with_prices.append({
 				"barcode": "",
