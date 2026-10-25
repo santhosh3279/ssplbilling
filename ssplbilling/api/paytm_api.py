@@ -697,6 +697,16 @@ def get_receipt_qr(order_id):
 	return {**_txn_result(txn), "qr_image": _qr_png(txn.qr_data)}
 
 
+@frappe.whitelist()
+def get_invoice_qr(order_id):
+	"""QR image of a bill's unpaid QR, to show it again when the cashier opens it from the queue."""
+	_require_desk_user()
+	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
+	if not txn.sales_invoice or txn.channel != "QR" or not txn.qr_data:
+		frappe.throw(_("No QR stored for {0}").format(order_id))
+	return {**_txn_result(txn), "qr_image": _qr_png(txn.qr_data), "pos_id": txn.device_name, "tid": txn.tid}
+
+
 def _validate_receipt_accounts(upi_account, company, cost_center):
 	"""Fail at QR creation, not after the customer has paid, when the receipt cannot be posted."""
 	acc = frappe.db.get_value("Account", upi_account, ["company", "is_group", "disabled"], as_dict=True)
@@ -957,7 +967,11 @@ def get_qr_queue():
 		seen.add(txn.sales_invoice)
 		row = _txn_result(txn)
 		row.update(
-			customer=inv.customer, customer_name=inv.customer_name, customer_mobile=txn.customer_mobile
+			customer=inv.customer,
+			customer_name=inv.customer_name,
+			customer_mobile=txn.customer_mobile,
+			device_name=txn.device_name,
+			tid=txn.tid,
 		)
 		rows.append(row)
 	return rows[::-1]

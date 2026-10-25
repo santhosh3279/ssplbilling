@@ -25,6 +25,7 @@ export const MOCKED_METHODS = new Set([
   'ssplbilling.api.paytm_api.get_status',
   'ssplbilling.api.paytm_api.cancel',
   'ssplbilling.api.paytm_api.get_qr_queue',
+  'ssplbilling.api.paytm_api.get_invoice_qr',
   'ssplbilling.api.whatsapp_api.send_receipt_pay_link',
 ])
 
@@ -86,10 +87,15 @@ export async function paytmMockCall(method, args = {}, invoiceInfo = () => ({}))
       if (method.endsWith('cancel') && o.status === 'Pending') o.status = 'Cancelled'
       return result(o)
     }
+    case 'ssplbilling.api.paytm_api.get_invoice_qr': {
+      const o = orders.get(args.order_id)
+      if (!o || o.channel !== 'QR') throw new Error(`No mock QR for ${args.order_id}`)
+      return { ...result(o), qr_image: QR_IMAGE, pos_id: DEVICE.pos_id, tid: DEVICE.tid }
+    }
     case 'ssplbilling.api.paytm_api.get_qr_queue':
       return [...orders.values()]
         .filter(o => ['Pending', 'Success'].includes(o.status))
-        .map(o => ({ ...result(o), customer_mobile: o.customer_mobile, ...invoiceInfo(o.sales_invoice) }))
+        .map(o => ({ ...result(o), customer_mobile: o.customer_mobile, device_name: DEVICE.device_name, tid: DEVICE.tid, ...invoiceInfo(o.sales_invoice) }))
     case 'ssplbilling.api.whatsapp_api.send_receipt_pay_link': {
       const o = orders.get(args.order_id)
       return { phone: `91${o?.customer_mobile || '0000000000'}` }

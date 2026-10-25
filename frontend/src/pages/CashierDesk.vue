@@ -2057,10 +2057,36 @@ async function replaceQueuedRequest() {
   return qrQueue.value.some(x => x.sales_invoice === name && x.status === 'Success')
 }
 
+// Opens the row's bill; a paid row fills UPI / Card, a waiting one reopens its QR or machine popup
 async function openQueuedBill(q) {
   const inv = invoices.value.find(i => i.name === q.sales_invoice) || { name: q.sales_invoice, customer: q.customer }
   await selectInvoice(inv)
-  applyQueuedPayment(q)
+  if (q.status === 'Success') return applyQueuedPayment(q)
+  if (q.status !== 'Pending' || selectedInvoice.value?.name !== q.sales_invoice || paytm.value.show || paytmQr.value.show) return
+  if (q.channel === 'EDC') {
+    qrQueue.value = qrQueue.value.filter(x => x !== q)
+    Object.assign(paytm.value, {
+      show: true, payMode: 'QR', amount: q.amount, orderId: q.order_id, status: 'Pending', sending: false,
+      deviceName: q.device_name || '', tid: q.tid || '', customerName: q.customer_name || '', phone: '', askPhone: false,
+      message: `Waiting for payment on ${q.device_name || 'the machine'}…`,
+    })
+    return startPaytmPolling()
+  }
+  try {
+    const res = await paytmPost('ssplbilling.api.paytm_api.get_invoice_qr', { order_id: q.order_id }, { silent: true })
+    // paid or cancelled while the QR was fetched: leave it to the queue
+    if (!qrQueue.value.includes(q) || q.status !== 'Pending') return
+    qrQueue.value = qrQueue.value.filter(x => x !== q)
+    Object.assign(paytmQr.value, {
+      show: true, amount: q.amount, orderId: q.order_id, status: 'Pending', sending: false, withBill: false,
+      message: 'Waiting for the customer to scan and pay…', image: res.qr_image, tid: res.tid || '', posId: res.pos_id || '',
+      phone: q.customer_mobile || '', waSending: false,
+      waOk: q.customer_mobile ? true : undefined, waText: q.customer_mobile ? `Link sent to ${q.customer_mobile}` : '',
+    })
+    startPaytmQrPolling()
+  } catch (e) {
+    errorMsg.value = e.message || 'Could not load the Paytm QR.'
+  }
 }
 
 async function cancelQueuedQr(q) {
@@ -2134,14 +2160,7 @@ async function createPaytmQr(withBill = paytmQr.value.withBill) {
     }, { silent: true })
     Object.assign(q, { orderId: res.order_id, image: res.qr_image, tid: res.tid || '', posId: res.pos_id || q.posId, status: 'Pending', message: 'Waiting for the customer to scan and pay…' })
     if (q.phone) sendPaytmQrLink()
-    stopPaytmQrPolling()
-    paytmQrPollTimer = setInterval(async () => {
-      const orderId = paytmQr.value.orderId
-      if (!orderId) return stopPaytmQrPolling()
-      try {
-        applyPaytmQrResult(await paytmPost('ssplbilling.api.paytm_api.get_status', { order_id: orderId }, { silent: true }))
-      } catch (e) { /* keep polling; the socket event may still arrive */ }
-    }, 3000)
+    startPaytmQrPolling()
   } catch (e) {
     q.status = 'Failed'
     q.message = e.message || 'Could not create the Paytm QR.'
@@ -2168,6 +2187,17 @@ async function sendPaytmQrLink() {
   } finally {
     q.waSending = false
   }
+}
+
+function startPaytmQrPolling() {
+  stopPaytmQrPolling()
+  paytmQrPollTimer = setInterval(async () => {
+    const orderId = paytmQr.value.orderId
+    if (!orderId) return stopPaytmQrPolling()
+    try {
+      applyPaytmQrResult(await paytmPost('ssplbilling.api.paytm_api.get_status', { order_id: orderId }, { silent: true }))
+    } catch (e) { /* keep polling; the socket event may still arrive */ }
+  }, 3000)
 }
 
 function stopPaytmQrPolling() {
