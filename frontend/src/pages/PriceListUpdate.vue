@@ -229,6 +229,37 @@
           </table>
         </div>
 
+        <!-- Discount Rules covering this item -->
+        <div v-if="currentItemCode && itemDiscountRules.length" class="mt-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm text-[var(--color-text)]">
+          <h3 class="mb-3 text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">🏷️ Discount Rules</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div
+              v-for="(rule, index) in itemDiscountRules"
+              :key="rule.name || rule.rule_name || index"
+              class="rounded-lg border border-[var(--color-focus)]/40 bg-[var(--color-focus)]/10 px-4 py-3"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <span class="truncate text-2xl font-black">{{ rule.rule_name || rule.name }}</span>
+                <span class="shrink-0 rounded bg-[var(--color-surface-raised)] px-2 py-0.5 text-sm font-bold uppercase text-[var(--color-text-muted)]">{{ rule.discount_type }}</span>
+              </div>
+              <div class="mt-1 text-lg text-[var(--color-text-muted)]">{{ describeRule(rule) }}</div>
+              <div class="mt-2 flex flex-wrap gap-1 text-sm">
+                <span
+                  v-for="pl in (getRulePriceLists(rule).length ? getRulePriceLists(rule) : ['All Price Lists'])"
+                  :key="pl"
+                  class="rounded-full px-2 py-0.5 font-bold"
+                  :class="pl === props.selectedPriceList ? 'bg-[var(--color-info)] text-white' : 'bg-[var(--color-info)]/20 text-[var(--color-info)]'"
+                >
+                  {{ pl }}
+                </span>
+                <span v-if="rule.start_date || rule.end_date" class="rounded-full bg-[var(--color-surface-raised)] px-2 py-0.5 text-[var(--color-text-muted)]">
+                  {{ rule.start_date ? formatDateShort(rule.start_date) : '…' }} → {{ rule.end_date ? formatDateShort(rule.end_date) : '…' }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Purchase History Sections -->
         <div v-if="currentItemCode" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-[var(--color-text)]">
           <!-- Same Supplier History (only if props.supplier is present) -->
@@ -360,6 +391,8 @@ import { useSubwindow } from '../services/shortcutManager'
 import { useItemCache } from '../services/itemCache.js'
 import { useCompetitiveCache } from '../services/competitiveCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
+import { getRulePriceLists } from '../composables/useDiscountRules.js'
+import { serverToday } from '../services/serverTime'
 import { canAccessTile } from '../composables/usePermission'
 import Warning from '../components/Warning.vue'
 
@@ -412,7 +445,7 @@ const taxRate = ref(0)
 
 const toast = ref(null)
 
-const { lookupItemInCache } = useItemCache()
+const { lookupItemInCache, discountRules } = useItemCache()
 const { lookupCompetitiveItem, refreshCompetitiveCache } = useCompetitiveCache()
 
 // Competitive Item name for an item: from the item cache, else from the server
@@ -446,6 +479,56 @@ const cachedItem = computed(() => {
   if (!currentItemCode.value) return null
   return lookupItemInCache(currentItemCode.value)
 })
+
+// Enabled, in-date Discount Rules that cover this item, across every price list
+const itemDiscountRules = computed(() => {
+  const itemCode = currentItemCode.value
+  if (!itemCode || !discountRules.value?.length) return []
+  const code = itemCode.toLowerCase()
+  const today = serverToday()
+  return discountRules.value.filter(rule => {
+    if (!rule.enabled) return false
+    if (rule.start_date && today < rule.start_date) return false
+    if (rule.end_date && today > rule.end_date) return false
+    if (rule.discount_type === 'X to Y product discount') {
+      return (rule.x_to_y_table || []).some(i => (i.item_code || '').toLowerCase() === code)
+    }
+    if (rule.applies_to === 'Item Code') {
+      return (rule.items || []).some(i => (i.item_code || '').toLowerCase() === code)
+    }
+    if (rule.applies_to === 'Product Group') {
+      const group = cachedItem.value?.item_group
+      return !!(group && rule.product_group && group.toLowerCase() === rule.product_group.toLowerCase())
+    }
+    return false
+  })
+})
+
+function describeRule(rule) {
+  const tiers = rule.custom_logic_rows || []
+  if (rule.discount_type === 'Percentage Discount') {
+    return tiers.length
+      ? tiers.map(t => `${t.min_quantity}+ → ${t.percentage || 0}% off`).join(' · ')
+      : `${rule.percentage_discount || 0}% off (Min Qty: ${rule.min_quantity || 0})`
+  }
+  if (rule.discount_type === 'Product Discount') {
+    return `Buy ${rule.min_quantity} Get ${rule.free_quantity} Free`
+  }
+  if (rule.discount_type === 'X to Y product discount') {
+    const code = (currentItemCode.value || '').toLowerCase()
+    const row = (rule.x_to_y_table || []).find(r => (r.item_code || '').toLowerCase() === code)
+    return row
+      ? `Buy ${row.min_quantity || 1} → ${row.free_item_quantity || 1} × ${row.free_item_name || row.free_item_code} @ ${row.free_item_price || 0}`
+      : 'X to Y Offer'
+  }
+  if (rule.discount_type === 'Custom Logic' && rule.custom_logic_type === 'Product') {
+    return tiers.map(t => `${t.min_quantity} + ${t.nos} free`).join(' · ') || 'Tiered offer'
+  }
+  if (rule.discount_type === 'Custom Logic' && rule.custom_logic_type === 'Percentage') {
+    return tiers.map(t => `${t.min_quantity}+ → ${t.percentage || 0}% off`).join(' · ') || 'Tiered discount'
+  }
+  return ''
+}
 
 const {
   fetchSupplierPurchaseHistory,
