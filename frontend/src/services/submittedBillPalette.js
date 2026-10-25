@@ -30,8 +30,8 @@ export function readBillSeries(storage = localStorage) {
   return [...series].sort((a, b) => a.localeCompare(b))
 }
 
-export function billListParams(type, { query = '', series = [], company = '', start = 0, limit = 50 } = {}) {
-  const filters = [['docstatus', '=', 1]]
+export function billListParams(type, { query = '', series = [], company = '', start = 0, limit = 50, docstatus = 1 } = {}) {
+  const filters = [['docstatus', '=', docstatus]]
   if (company) filters.push(['company', '=', company])
   if (series.length) filters.push(['naming_series', 'in', series])
   const params = {

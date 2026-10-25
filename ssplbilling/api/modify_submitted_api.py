@@ -93,8 +93,9 @@ def _archive_cancelled_invoice(doc):
 
 
 @frappe.whitelist()
-def get_submitted_invoice(invoice_no, doctype=None):
-	"""Fetch a submitted billing document; explicit type avoids number collisions."""
+def get_submitted_invoice(invoice_no, doctype=None, allow_draft=0):
+	"""Fetch a submitted billing document (or a draft, for the rename page); explicit type avoids
+	number collisions."""
 	_check_authenticated()
 	invoice_no = (invoice_no or "").strip()
 	if not invoice_no:
@@ -111,7 +112,7 @@ def get_submitted_invoice(invoice_no, doctype=None):
 
 	doc = frappe.get_doc(doctype, invoice_no)
 	doc.check_permission("read")
-	if doc.docstatus != 1:
+	if doc.docstatus != 1 and not (doc.docstatus == 0 and frappe.utils.cint(allow_draft)):
 		frappe.throw(f"Bill '{invoice_no}' must be submitted. Draft and cancelled documents cannot be modified here.")
 	date_field = "posting_date" if doctype in INVOICE_DOCTYPES else "transaction_date"
 	party = doc.get("supplier") or doc.get("customer") or doc.get("party_name")
@@ -120,6 +121,7 @@ def get_submitted_invoice(invoice_no, doctype=None):
 	return {
 		"doctype": doctype,
 		"name": doc.name,
+		"docstatus": doc.docstatus,
 		"party": party,
 		"party_name": party_name,
 		"posting_date": str(doc.get(date_field)),
@@ -458,7 +460,7 @@ def get_bill_number_series(doctype="Purchase Invoice"):
 
 @frappe.whitelist()
 def rename_submitted_bill(invoice_no, new_name, doctype="Purchase Invoice"):
-	"""Rename a submitted bill. Ledger links follow through rename_doc; the Data-typed
+	"""Rename a submitted or draft bill. Ledger links follow through rename_doc; the Data-typed
 	custom_mirrored pair, naming_series and the series counter are fixed up here."""
 	_check_authenticated()
 	_validate_doctype(doctype)
@@ -473,8 +475,8 @@ def rename_submitted_bill(invoice_no, new_name, doctype="Purchase Invoice"):
 
 	doc = frappe.get_doc(doctype, invoice_no)
 	doc.check_permission("write")
-	if doc.docstatus != 1:
-		frappe.throw(f"Bill '{invoice_no}' must be submitted to change its number.")
+	if doc.docstatus == 2:
+		frappe.throw(f"Bill '{invoice_no}' is cancelled. Its number cannot be changed.")
 	if doc.get("irn") or doc.get("ewaybill"):
 		frappe.throw(f"Bill '{invoice_no}' has an e-invoice / e-way bill. Its number cannot be changed.")
 	if frappe.db.exists(doctype, new_name):

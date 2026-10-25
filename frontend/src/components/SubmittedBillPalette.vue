@@ -1,7 +1,20 @@
 <template>
   <aside class="flex h-[45vh] w-full shrink-0 flex-col overflow-hidden border-t border-[var(--color-border)] bg-[var(--color-surface)] md:h-auto md:w-80 md:border-l md:border-t-0 xl:w-96" aria-label="Submitted bill palette">
     <div class="border-b border-[var(--color-border)] p-3">
-      <h2 class="mb-3 text-lg font-bold text-[var(--color-text)]">Submitted Bills</h2>
+      <div class="mb-3 flex items-center justify-between gap-2">
+        <h2 class="text-lg font-bold text-[var(--color-text)]">{{ showDrafts ? 'Draft Bills' : 'Submitted Bills' }}</h2>
+        <button
+          v-if="allowDrafts"
+          type="button"
+          :disabled="busy"
+          :aria-pressed="showDrafts"
+          @click="showDrafts = !showDrafts"
+          class="rounded-lg border px-3 py-1 text-xs font-bold transition-colors disabled:opacity-50"
+          :class="showDrafts
+            ? 'border-[var(--color-warning)] bg-[var(--color-warning)] text-[var(--color-text-on-highlight)]'
+            : 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+        >{{ showDrafts ? 'Show Submitted' : 'Show Drafts' }}</button>
+      </div>
       <label for="submitted-series" class="mb-1 block text-xs font-bold uppercase text-[var(--color-text-muted)]">Invoice Series</label>
       <select id="submitted-series" v-model="selectedSeries" :disabled="busy" class="mb-3 w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-2 text-[var(--color-text)]">
         <option value="">All Series</option>
@@ -12,11 +25,11 @@
         <input ref="searchInputRef" v-model="searchText" :disabled="busy" type="search" aria-label="Search bill number or party name" placeholder="Bill no. or party name" class="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-2 text-sm text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" />
         <button type="submit" :disabled="busy || loading" class="rounded-lg bg-[var(--color-info)] px-3 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] disabled:opacity-50">Search</button>
       </form>
-      <p class="mt-2 text-xs text-[var(--color-text-muted)]">{{ bills.length }} submitted bills</p>
+      <p class="mt-2 text-xs text-[var(--color-text-muted)]">{{ bills.length }} {{ showDrafts ? 'draft' : 'submitted' }} bills</p>
     </div>
     <div class="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
       <p v-if="error" class="p-3 text-sm text-[var(--color-danger)]" role="alert">{{ error }}</p>
-      <p v-if="!bills.length && !loading && !error" class="p-4 text-center text-sm italic text-[var(--color-text-muted)]">No submitted bills found.</p>
+      <p v-if="!bills.length && !loading && !error" class="p-4 text-center text-sm italic text-[var(--color-text-muted)]">No {{ showDrafts ? 'draft' : 'submitted' }} bills found.</p>
       <template v-for="(bill, index) in bills" :key="`${bill.doctype}:${bill.name}`">
         <div v-if="index === 0 || bill.date !== bills[index - 1].date" class="sticky top-0 border-b border-[var(--color-border)] bg-[var(--color-lowlight)] px-3 py-1 text-sm font-bold text-[var(--color-text-muted)]">{{ formatDMY(bill.date) }}</div>
         <button type="button" :disabled="busy" :aria-pressed="selectedName === bill.name && selectedDoctype === bill.doctype" @click="$emit('select', bill)" @keydown.down.prevent="focusAdjacent($event, 1)" @keydown.up.prevent="focusAdjacent($event, -1)" class="block w-full border-b border-[var(--color-border)] px-3 py-2 text-left outline-none focus:ring-2 focus:ring-inset focus:ring-[var(--color-info)] disabled:opacity-60" :class="selectedName === bill.name && selectedDoctype === bill.doctype ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)] hover:bg-[var(--color-midlight)]'">
@@ -44,10 +57,13 @@ const props = defineProps({
   busy: Boolean,
   selectedName: { type: String, default: '' },
   selectedDoctype: { type: String, default: '' },
+  // Offer a toggle to list drafts instead of submitted bills
+  allowDrafts: Boolean,
 })
 defineEmits(['select'])
 const availableSeries = ref(readBillSeries())
 const selectedSeries = ref('')
+const showDrafts = ref(false)
 const searchText = ref('')
 const submittedSearch = ref('')
 const searchInputRef = ref(null)
@@ -78,6 +94,7 @@ async function loadBills(append = false) {
     const start = offsets.get(type.doctype) || 0
     const rows = await frappeGet('frappe.client.get_list', billListParams(type, {
       query: submittedSearch.value, series: selected, company, start, limit: PAGE_SIZE,
+      docstatus: showDrafts.value ? 0 : 1,
     }))
     return { type, rows: rows || [], start }
   }))
@@ -95,7 +112,7 @@ async function loadBills(append = false) {
     offsets.set(type.doctype, start + rows.length)
     if (rows.length === PAGE_SIZE) more.push(type.doctype)
     next.push(...rows.map(row => ({
-      doctype: type.doctype, name: row.name, date: row[type.date] || '',
+      doctype: type.doctype, name: row.name, date: row[type.date] || '', docstatus: showDrafts.value ? 0 : 1,
       party: row[type.party] || '', total: row.grand_total || 0,
     })))
   }
@@ -122,6 +139,8 @@ function formatAmount(value) {
 }
 function reloadLocalSeries() { availableSeries.value = readBillSeries() }
 watch(selectedSeries, () => { submittedSearch.value = searchText.value.trim(); loadBills() })
+watch(showDrafts, () => loadBills())
+watch(() => props.allowDrafts, allowed => { if (!allowed) showDrafts.value = false })
 onMounted(() => { loadBills(); window.addEventListener('storage', reloadLocalSeries) })
 onUnmounted(() => { disposed = true; requestVersion++; window.removeEventListener('storage', reloadLocalSeries) })
 defineExpose({ focusSearch, refresh })

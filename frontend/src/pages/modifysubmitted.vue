@@ -86,7 +86,7 @@
           <p class="mt-2 text-sm text-[var(--color-text)]">
             <span class="font-mono">{{ renameResult.old_name }}</span> is now
             <span class="font-mono font-bold text-[var(--color-info)]">{{ renameResult.new_name }}</span>
-            ({{ renameResult.naming_series }}). Ledger, stock and payment entries were moved to the new number.
+            ({{ renameResult.naming_series }}).{{ renameResult.docstatus === 0 ? '' : ' Ledger, stock and payment entries were moved to the new number.' }}
           </p>
           <p v-if="renameResult.mirror_invoice" class="mt-1 text-sm text-[var(--color-text)]">Mirror bill {{ renameResult.mirror_invoice }} now points to {{ renameResult.new_name }}.</p>
         </div>
@@ -123,7 +123,10 @@
                     <span class="text-2xl font-black font-mono tracking-tight text-[var(--color-text)]">
                       {{ invoice.name }}
                     </span>
-                    <span class="px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded-md bg-[var(--color-success)]/20 text-[var(--color-success)] border border-[var(--color-success)]/30">
+                    <span v-if="invoice.docstatus === 0" class="px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded-md bg-[var(--color-warning)]/20 text-[var(--color-warning)] border border-[var(--color-warning)]/30">
+                      Draft
+                    </span>
+                    <span v-else class="px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded-md bg-[var(--color-success)]/20 text-[var(--color-success)] border border-[var(--color-success)]/30">
                       Submitted
                     </span>
                     <span class="px-2 py-0.5 text-xs font-semibold rounded-md bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] border border-[var(--color-border)]">
@@ -337,7 +340,7 @@
           <!-- BILL NUMBER ACTION -->
           <div v-if="activePage === 'bill-number'" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
             <h2 class="text-base font-black uppercase tracking-wider text-[var(--color-text)]">Change Bill Number</h2>
-            <p class="mt-3 text-sm text-[var(--color-text-muted)]">Renames the submitted bill and moves its ledger, stock and payment entries to the new number.</p>
+            <p class="mt-3 text-sm text-[var(--color-text-muted)]">{{ invoice.docstatus === 0 ? 'Renames the draft bill.' : 'Renames the submitted bill and moves its ledger, stock and payment entries to the new number.' }}</p>
 
             <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
               <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)]/60 p-5">
@@ -431,6 +434,7 @@
         :busy="loadingFetch || loadingUpdate || loadingDraft || loadingRename"
         :selected-name="invoice?.name || ''"
         :selected-doctype="invoice?.doctype || ''"
+        :allow-drafts="activePage === 'bill-number'"
         @select="handlePaletteSelect"
       />
     </div>
@@ -594,7 +598,7 @@ async function handleFetch(doctype) {
   loadingFetch.value = true
 
   try {
-    const res = await fetchSubmittedInvoice(query, doctype)
+    const res = await fetchSubmittedInvoice(query, doctype, activePage.value === 'bill-number')
     invoice.value = res
     newBillDate.value = res.posting_date || ''
     newBillNumber.value = res.name || ''
@@ -716,7 +720,7 @@ async function handleRename() {
   renameResult.value = null
 
   try {
-    renameResult.value = await renameSubmittedBill(invoice.value.name, newBillNumber.value.trim(), invoice.value.doctype)
+    renameResult.value = { ...(await renameSubmittedBill(invoice.value.name, newBillNumber.value.trim(), invoice.value.doctype)), docstatus: invoice.value.docstatus }
     invoice.value.name = renameResult.value.new_name
     billPaletteRef.value?.refresh()
     loadSeriesOptions()
@@ -728,6 +732,8 @@ async function handleRename() {
 }
 
 watch(activePage, page => {
+  // Only the rename page takes drafts; the other pages need a submitted bill
+  if (page !== 'bill-number' && invoice.value?.docstatus === 0) clearAll()
   if (page === 'bill-number' && invoice.value && !seriesOptions.value.length) loadSeriesOptions()
 })
 
