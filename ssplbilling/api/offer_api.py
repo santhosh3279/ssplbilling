@@ -56,19 +56,33 @@ def _catalogue_variants(item_codes):
 		order_by="name asc",
 		ignore_permissions=True,
 	)
-	labels = {}
+	labels, abbrs = {}, {}
 	if variants:
-		for row in frappe.get_all(
+		rows = frappe.get_all(
 			"Item Variant Attribute",
 			filters={"parent": ["in", [v.name for v in variants]], "parenttype": "Item"},
-			fields=["parent", "attribute_value"],
+			fields=["parent", "attribute", "attribute_value"],
 			order_by="idx asc",
 			ignore_permissions=True,
-		):
+		)
+		# Numeric attributes have no abbreviation, so their value is shown as is.
+		abbr_map = {
+			(row.parent, row.attribute_value): row.abbr
+			for row in frappe.get_all(
+				"Item Attribute Value",
+				filters={"parent": ["in", list({row.attribute for row in rows})]},
+				fields=["parent", "attribute_value", "abbr"],
+				ignore_permissions=True,
+			)
+		}
+		for row in rows:
 			if row.attribute_value:
 				labels.setdefault(row.parent, []).append(row.attribute_value)
+				abbrs.setdefault(row.parent, []).append(
+					abbr_map.get((row.attribute, row.attribute_value)) or row.attribute_value)
 	for variant in variants:
 		variant.variant_label = " / ".join(labels.get(variant.name, [])) or variant.item_name
+		variant.variant_abbr = "-".join(abbrs.get(variant.name, [])) or variant.name
 	return variants
 
 
@@ -161,7 +175,7 @@ def get_offer_details(pageaddress):
 	variants = [v for v in _catalogue_variants(direct_codes) if v.name not in direct_codes]
 	variant_rows = [
 		frappe._dict(itemcode=v.name, itemname=v.item_name, barcode=None, variant_of=v.variant_of,
-			variant_label=v.variant_label)
+			variant_label=v.variant_label, variant_abbr=v.variant_abbr)
 		for v in variants
 	]
 
@@ -397,6 +411,7 @@ def get_offer_details(pageaddress):
 		}
 		if item.get("variant_of"):
 			entry["variant_label"] = item.variant_label
+			entry["variant_abbr"] = item.variant_abbr
 			variant_entries.setdefault(item.variant_of, []).append(entry)
 		else:
 			items.append(entry)
