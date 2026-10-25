@@ -3,7 +3,7 @@
 # For license information, please see license.txt
 
 import frappe
-from frappe.utils import cint, get_url, getdate
+from frappe.utils import cint, flt, get_url, getdate
 from urllib.parse import quote
 import datetime
 
@@ -56,7 +56,7 @@ def _catalogue_variants(item_codes):
 		order_by="name asc",
 		ignore_permissions=True,
 	)
-	labels, abbrs = {}, {}
+	labels, abbrs, attributes = {}, {}, {}
 	if variants:
 		rows = frappe.get_all(
 			"Item Variant Attribute",
@@ -66,24 +66,43 @@ def _catalogue_variants(item_codes):
 			ignore_permissions=True,
 		)
 		# Numeric attributes have no abbreviation, so their value is shown as is.
-		abbr_map = {
-			(row.parent, row.attribute_value): row.abbr
+		value_map = {
+			(row.parent, row.attribute_value): row
 			for row in frappe.get_all(
 				"Item Attribute Value",
 				filters={"parent": ["in", list({row.attribute for row in rows})]},
-				fields=["parent", "attribute_value", "abbr"],
+				fields=["parent", "attribute_value", "abbr", "idx"],
 				ignore_permissions=True,
 			)
 		}
 		for row in rows:
 			if row.attribute_value:
+				value = value_map.get((row.attribute, row.attribute_value))
+				abbr = (value and value.abbr) or row.attribute_value
 				labels.setdefault(row.parent, []).append(row.attribute_value)
-				abbrs.setdefault(row.parent, []).append(
-					abbr_map.get((row.attribute, row.attribute_value)) or row.attribute_value)
+				abbrs.setdefault(row.parent, []).append(abbr)
+				attributes.setdefault(row.parent, []).append({
+					"attribute": row.attribute, "value": row.attribute_value, "abbr": abbr,
+					"sort": value.idx if value else flt(row.attribute_value),
+				})
 	for variant in variants:
 		variant.variant_label = " / ".join(labels.get(variant.name, [])) or variant.item_name
 		variant.variant_abbr = "-".join(abbrs.get(variant.name, [])) or variant.name
+		variant.variant_attributes = attributes.get(variant.name, [])
 	return variants
+
+
+def _variant_options(variants):
+	"""One button group per attribute (e.g. Colour, Size), values in the attribute's own order."""
+	options = {}
+	for variant in variants:
+		for attr in variant["variant_attributes"]:
+			options.setdefault(attr["attribute"], {}).setdefault(attr["value"], attr)
+	return [
+		{"attribute": attribute, "values": [{"value": v["value"], "abbr": v["abbr"]}
+			for v in sorted(values.values(), key=lambda v: v["sort"])]}
+		for attribute, values in options.items()
+	]
 
 
 @frappe.whitelist(allow_guest=True)
@@ -175,7 +194,7 @@ def get_offer_details(pageaddress):
 	variants = [v for v in _catalogue_variants(direct_codes) if v.name not in direct_codes]
 	variant_rows = [
 		frappe._dict(itemcode=v.name, itemname=v.item_name, barcode=None, variant_of=v.variant_of,
-			variant_label=v.variant_label, variant_abbr=v.variant_abbr)
+			variant_label=v.variant_label, variant_abbr=v.variant_abbr, variant_attributes=v.variant_attributes)
 		for v in variants
 	]
 
@@ -412,6 +431,7 @@ def get_offer_details(pageaddress):
 		if item.get("variant_of"):
 			entry["variant_label"] = item.variant_label
 			entry["variant_abbr"] = item.variant_abbr
+			entry["variant_attributes"] = item.variant_attributes
 			variant_entries.setdefault(item.variant_of, []).append(entry)
 		else:
 			items.append(entry)
@@ -422,6 +442,7 @@ def get_offer_details(pageaddress):
 			entry["variants"] = variant_entries.get(entry["itemcode"], [])
 			for variant in entry["variants"]:
 				variant["image"] = variant["image"] or entry["image"]
+			entry["variant_options"] = _variant_options(entry["variants"])
 
 	settings = frappe.get_single("SSPL Billing Settings")
 	cipher_map = settings.cipher_map or ""

@@ -167,26 +167,33 @@
               </div>
 
 
-              <!-- Template: pick a variant by its abbreviation; price, stock and quantity follow the pick -->
+              <!-- Template: pick one value per attribute; price, stock and quantity follow the matching variant -->
               <div v-if="item.is_template" class="shrink-0 max-h-[40%] overflow-y-auto space-y-2 pt-3">
                 <p v-if="!item.variants.length" class="text-sm text-slate-600">No variants available</p>
                 <template v-else>
-                  <div class="flex flex-wrap gap-1.5" role="radiogroup" :aria-label="`Variants of ${item.itemname}`">
-                    <button
-                      v-for="variant in item.variants"
-                      :key="variant.itemcode"
-                      type="button"
-                      role="radio"
-                      :aria-checked="selectedVariant(item) === variant"
-                      :title="variant.variant_label"
-                      class="rounded-lg px-2.5 py-1 font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-                      :class="selectedVariant(item) === variant ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-900 hover:bg-slate-200'"
-                      @click="selectVariant(item, variant)"
-                    >
-                      {{ variant.variant_abbr }}<span v-if="getQuantity(pageaddress, variant.itemcode)" class="ml-1 rounded bg-black/20 px-1 text-xs">{{ getQuantity(pageaddress, variant.itemcode) }}</span>
-                    </button>
+                  <div v-for="group in item.variant_options" :key="group.attribute" class="space-y-1">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">{{ group.attribute }}</p>
+                    <div class="flex flex-wrap gap-1.5" role="radiogroup" :aria-label="`${group.attribute} of ${item.itemname}`">
+                      <button
+                        v-for="option in group.values"
+                        :key="option.value"
+                        type="button"
+                        role="radio"
+                        :aria-checked="isValuePicked(item, group.attribute, option.value)"
+                        :title="option.value"
+                        class="rounded-lg px-2.5 py-1 font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+                        :class="[isValuePicked(item, group.attribute, option.value) ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-900 hover:bg-slate-200', isValueAvailable(item, group.attribute, option.value) ? '' : 'opacity-40']"
+                        @click="pickAttribute(item, group.attribute, option.value)"
+                      >
+                        {{ option.abbr }}
+                      </button>
+                    </div>
                   </div>
-                  <div v-for="variant in [selectedVariant(item)]" :key="variant.itemcode" class="rounded-lg border border-slate-200 p-2 space-y-1">
+                  <p v-if="cartVariants(item).length" class="text-xs text-slate-600">
+                    In cart: <span v-for="variant in cartVariants(item)" :key="variant.itemcode" class="mr-2 font-bold" :title="variant.itemname">{{ variant.variant_abbr }} × {{ getQuantity(pageaddress, variant.itemcode) }}</span>
+                  </p>
+                  <p v-if="!selectedVariant(item)" class="text-sm text-slate-600">No item for this combination. Pick another.</p>
+                  <div v-for="variant in selectedVariant(item) ? [selectedVariant(item)] : []" :key="variant.itemcode" class="rounded-lg border border-slate-200 p-2 space-y-1">
                     <div class="flex items-start justify-between gap-2">
                       <span class="font-bold text-slate-900 text-lg" :title="variant.itemname">{{ variant.variant_label }}</span>
                       <span class="shrink-0 text-xs font-semibold" :class="variant.available_stock > 0 ? 'text-emerald-700' : 'text-rose-700'">{{ displayStock(variant) }}</span>
@@ -444,26 +451,33 @@
               </div>
 
 
-              <!-- Template: pick a variant by its abbreviation; price, stock and quantity follow the pick -->
+              <!-- Template: pick one value per attribute; price, stock and quantity follow the matching variant -->
               <div v-if="item.is_template" class="flex-1 space-y-2 p-3">
                 <p v-if="!item.variants.length" class="text-sm text-[var(--color-text-muted)]">No variants available</p>
                 <template v-else>
-                  <div class="flex flex-wrap gap-1.5" role="radiogroup" :aria-label="`Variants of ${item.itemname}`">
-                    <button
-                      v-for="variant in item.variants"
-                      :key="variant.itemcode"
-                      type="button"
-                      role="radio"
-                      :aria-checked="selectedVariant(item) === variant"
-                      :title="variant.variant_label"
-                      class="rounded-lg px-2.5 py-1 font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-                      :class="selectedVariant(item) === variant ? 'bg-[var(--color-success)] text-white' : 'bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-border)]/40'"
-                      @click="selectVariant(item, variant)"
-                    >
-                      {{ variant.variant_abbr }}<span v-if="getQuantity(pageaddress, variant.itemcode)" class="ml-1 rounded bg-black/20 px-1 text-xs">{{ getQuantity(pageaddress, variant.itemcode) }}</span>
-                    </button>
+                  <div v-for="group in item.variant_options" :key="group.attribute" class="space-y-1">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">{{ group.attribute }}</p>
+                    <div class="flex flex-wrap gap-1.5" role="radiogroup" :aria-label="`${group.attribute} of ${item.itemname}`">
+                      <button
+                        v-for="option in group.values"
+                        :key="option.value"
+                        type="button"
+                        role="radio"
+                        :aria-checked="isValuePicked(item, group.attribute, option.value)"
+                        :title="option.value"
+                        class="rounded-lg px-2.5 py-1 font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
+                        :class="[isValuePicked(item, group.attribute, option.value) ? 'bg-[var(--color-success)] text-white' : 'bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-border)]/40', isValueAvailable(item, group.attribute, option.value) ? '' : 'opacity-40']"
+                        @click="pickAttribute(item, group.attribute, option.value)"
+                      >
+                        {{ option.abbr }}
+                      </button>
+                    </div>
                   </div>
-                  <div v-for="variant in [selectedVariant(item)]" :key="variant.itemcode" class="rounded-lg border border-[var(--color-border)]/50 p-2 space-y-1">
+                  <p v-if="cartVariants(item).length" class="text-xs text-[var(--color-text-muted)]">
+                    In cart: <span v-for="variant in cartVariants(item)" :key="variant.itemcode" class="mr-2 font-bold" :title="variant.itemname">{{ variant.variant_abbr }} × {{ getQuantity(pageaddress, variant.itemcode) }}</span>
+                  </p>
+                  <p v-if="!selectedVariant(item)" class="text-sm text-[var(--color-text-muted)]">No item for this combination. Pick another.</p>
+                  <div v-for="variant in selectedVariant(item) ? [selectedVariant(item)] : []" :key="variant.itemcode" class="rounded-lg border border-[var(--color-border)]/50 p-2 space-y-1">
                     <div class="flex items-start justify-between gap-2">
                       <span class="font-bold text-[var(--color-text)]" :title="variant.itemname">{{ variant.variant_label }}</span>
                       <span class="shrink-0 text-xs font-semibold" :class="variant.available_stock > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ displayStock(variant) }}</span>
@@ -742,15 +756,55 @@ function offerBannerColors(item) {
   return { background: 'bg-sky-700', heading: 'bg-sky-800', border: 'border-sky-500/60', text: 'text-sky-200' }
 }
 
-// Picked variant per template row, by item code; falls back to the first variant.
-const selectedVariantCodes = ref({})
+// Picked attribute values per template row ({ Colour: 'Red', Size: 'Large' }), by item code.
+// The variant whose attributes equal the picked values is the one shown and added to the cart.
+const variantSelections = ref({})
 
-function selectedVariant(item) {
-  return item.variants.find(variant => variant.itemcode === selectedVariantCodes.value[item.itemcode]) || item.variants[0]
+function attributesOf(variant) {
+  return Object.fromEntries(variant.variant_attributes.map(attr => [attr.attribute, attr.value]))
 }
 
-function selectVariant(item, variant) {
-  selectedVariantCodes.value = { ...selectedVariantCodes.value, [item.itemcode]: variant.itemcode }
+function sameSelection(a, b) {
+  const keys = Object.keys(a)
+  return keys.length === Object.keys(b).length && keys.every(key => a[key] === b[key])
+}
+
+function variantSelection(item) {
+  return variantSelections.value[item.itemcode] || (item.variants[0] ? attributesOf(item.variants[0]) : {})
+}
+
+function selectedVariant(item) {
+  const selection = variantSelection(item)
+  return item.variants.find(variant => sameSelection(attributesOf(variant), selection)) || null
+}
+
+function isValuePicked(item, attribute, value) {
+  return variantSelection(item)[attribute] === value
+}
+
+function isValueAvailable(item, attribute, value) {
+  const selection = { ...variantSelection(item), [attribute]: value }
+  return item.variants.some(variant => sameSelection(attributesOf(variant), selection))
+}
+
+// Clicking a picked value clears it (for variants without that attribute). A value with no variant
+// for the other picks switches to the closest variant that has it.
+function pickAttribute(item, attribute, value) {
+  const current = variantSelection(item)
+  let next = { ...current, [attribute]: value }
+  if (current[attribute] === value) delete next[attribute]
+  else if (!item.variants.some(variant => sameSelection(attributesOf(variant), next))) {
+    const shared = variant => Object.entries(next).filter(([key, val]) => attributesOf(variant)[key] === val).length
+    const closest = item.variants
+      .filter(variant => attributesOf(variant)[attribute] === value)
+      .sort((a, b) => shared(b) - shared(a))[0]
+    if (closest) next = attributesOf(closest)
+  }
+  variantSelections.value = { ...variantSelections.value, [item.itemcode]: next }
+}
+
+function cartVariants(item) {
+  return item.variants.filter(variant => getQuantity(pageaddress, variant.itemcode) > 0)
 }
 
 function setItemQuantity(item, event) {
