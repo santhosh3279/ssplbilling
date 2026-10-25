@@ -910,7 +910,7 @@
           </div>
           <!-- WhatsApp number (saved WhatsApp, else mobile); the QR is created on Send -->
           <div v-if="!paytmQr.orderId && !paytmQr.sending" class="space-y-1">
-            <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp number</label>
+            <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp number<template v-if="waSessionName"> · from {{ waSessionName }}</template></label>
             <input
               ref="paytmQrPhoneInput"
               v-model.trim="paytmQr.phone"
@@ -921,7 +921,7 @@
             />
           </div>
           <div v-else-if="paytmQr.phone" class="flex items-center justify-between">
-            <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp</span>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">WhatsApp<template v-if="waSessionName"> · {{ waSessionName }}</template></span>
             <span class="text-[12px] font-bold" :class="paytmQr.waOk === false ? 'text-[var(--color-danger)]' : paytmQr.waOk ? 'text-[var(--color-success)]' : 'text-[var(--color-text-muted)]'">
               {{ paytmQr.waSending ? `Sending to +91 ${paytmQr.phone}…` : paytmQr.waText || `+91 ${paytmQr.phone}` }}
             </span>
@@ -1077,7 +1077,7 @@ import DatePickerButton from '../components/DatePickerButton.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick, defineAsyncComponent } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { applyPanelEvent } from '../services/billPanelCache.js'
-import { session, getWhatsAppSessionId } from '../session'
+import { session, getWhatsAppSessionId, getWhatsAppSessionName } from '../session'
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { fetchDraftInvoices, getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet, frappePost } from '../api.js'
 import { useShortcuts, useSubwindowWatcher, isSubwindowActive } from '../services/shortcutManager'
@@ -1183,6 +1183,8 @@ const paytmPhoneInput = ref(null)
 const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', sending: false, phone: '', withBill: false, tid: '', posId: '', waSending: false, waOk: undefined, waText: '' })
 let paytmQrPollTimer = null
 const paytmQrPhoneInput = ref(null)
+// WhatsApp session the pay link goes from, read when the QR popup opens
+const waSessionName = ref('')
 const paytmQrSrc = computed(() => {
   const img = paytmQr.value.image || ''
   return img.startsWith('data:') ? img : `data:image/png;base64,${img}`
@@ -2077,6 +2079,7 @@ async function openQueuedBill(q) {
     // paid or cancelled while the QR was fetched: leave it to the queue
     if (!qrQueue.value.includes(q) || q.status !== 'Pending') return
     qrQueue.value = qrQueue.value.filter(x => x !== q)
+    waSessionName.value = getWhatsAppSessionName()
     Object.assign(paytmQr.value, {
       show: true, amount: q.amount, orderId: q.order_id, status: 'Pending', sending: false, withBill: false,
       message: 'Waiting for the customer to scan and pay…', image: res.qr_image, tid: res.tid || '', posId: res.pos_id || '',
@@ -2129,6 +2132,7 @@ async function openPaytmQr() {
   const invoiceName = selectedInvoice.value.name
   // shown before Send; create_qr answers with the POS ID it used (settings / user fallback)
   const device = paytm.value.devices[0]
+  waSessionName.value = getWhatsAppSessionName()
   Object.assign(paytmQr.value, { show: true, amount, orderId: '', status: '', message: '', image: '', sending: false, phone: '', withBill: false, tid: device?.tid || '', posId: device?.pos_id || '', waSending: false, waOk: undefined, waText: '' })
   nextTick(() => paytmQrPhoneInput.value?.focus())
   try {

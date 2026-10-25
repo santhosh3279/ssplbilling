@@ -42,11 +42,20 @@ export const WHATSAPP_SESSION_KEY = 'wb-whatsapp-session'
 // The stored session id, sent with every bill and chat call; the server checks it is still this
 // user's. Empty when nothing is stored for the logged-in user, which lets the server pick.
 export function getWhatsAppSessionId() {
+  return storedWhatsAppSession().session_id || ''
+}
+
+// Name of that session (SSPL WhatsApp Settings row), for showing which WhatsApp a message goes from
+export function getWhatsAppSessionName() {
+  return storedWhatsAppSession().session_name || ''
+}
+
+function storedWhatsAppSession() {
   try {
     const stored = JSON.parse(localStorage.getItem(WHATSAPP_SESSION_KEY) || 'null')
-    return stored && stored.user === user.value ? stored.session_id || '' : ''
+    return stored && stored.user === user.value ? stored : {}
   } catch {
-    return ''
+    return {}
   }
 }
 
