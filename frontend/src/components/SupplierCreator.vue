@@ -714,9 +714,6 @@ async function submit() {
     const result = props.isEdit
       ? await updateSupplier(form.name, payload)
       : await createSupplier(payload)
-    // The save checked the number on WhatsApp; it is kept either way, the operator only needs to know
-    const check = result?.whatsapp_check
-    if (check?.status === 'Invalid') alert(`Saved. WhatsApp number ${check.phone} is not on WhatsApp — bills cannot be sent to it.`)
     // Keep the latch until unmount: the parent refreshes ledgers asynchronously.
     emit('saved', result)
   } catch (e) {

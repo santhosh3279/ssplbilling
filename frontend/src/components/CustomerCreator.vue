@@ -522,18 +522,12 @@ async function submit() {
     const result = props.isEdit
       ? await updateCustomer(form.value.name, payload)
       : await createCustomer(payload)
-    warnInvalidWhatsApp(result?.whatsapp_check)
     // Keep the latch until unmount: the parent refreshes ledgers asynchronously.
     emit('saved', result)
   } catch (e) {
     saving.value = false
     alert('Failed to save customer: ' + e.message)
   }
-}
-
-// The save checked the number on WhatsApp; it is kept either way, the operator only needs to know
-function warnInvalidWhatsApp(check) {
-  if (check?.status === 'Invalid') alert(`Saved. WhatsApp number ${check.phone} is not on WhatsApp — bills cannot be sent to it.`)
 }
 
 defineExpose({ focusFirst, submit })

@@ -1,8 +1,6 @@
 import json
 import frappe
 
-from ssplbilling.api.whatsapp_api import check_party_whatsapp
-
 
 def _resolve_gst_category(gstin):
 	return "Registered Regular" if (gstin or "").strip() else "Unregistered"
@@ -106,7 +104,6 @@ def create_supplier_full(data):
 	return {
 		"name": sup.name,
 		"supplier_name": sup.supplier_name,
-		"whatsapp_check": check_party_whatsapp("Supplier", sup.name),
 	}
 
 
@@ -302,7 +299,6 @@ def update_supplier_full(data):
 	return {
 		"name": sup.name,
 		"supplier_name": sup.supplier_name,
-		"whatsapp_check": check_party_whatsapp("Supplier", supplier_id),
 	}
 
 

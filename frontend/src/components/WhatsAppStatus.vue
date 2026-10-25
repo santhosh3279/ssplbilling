@@ -17,8 +17,8 @@
 </template>
 
 <script setup>
-// WhatsApp number status for a Customer / Supplier form. Nothing is checked on its own: the
-// number is checked when the party is saved, or when the operator presses "Check now".
+// WhatsApp number status for a Customer / Supplier form. Nothing is checked on its own, not even
+// on save: the number is checked only when the operator presses "Check now".
 import { ref, computed, watch } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 
@@ -88,5 +88,5 @@ async function checkNow() {
 }
 
 watch(() => props.party, load, { immediate: true })
-watch(() => props.number, () => { if (!sameAsSaved.value) note.value = digits(props.number).length === 10 ? 'checked when you save' : '' })
+watch(() => props.number, () => { if (!sameAsSaved.value) note.value = digits(props.number).length === 10 ? 'save, then Check now' : '' })
 </script>

@@ -48,7 +48,7 @@ REQUEST_TIMEOUT = 20
 # The print dialog asks on open; a dead gateway must not hold the dialog up
 STATE_TIMEOUT = 3
 
-# A customer/supplier save waits on this check, so a stalled gateway must give up quickly
+# The operator waits on the Check button, so a stalled gateway must give up quickly
 SAVE_CHECK_TIMEOUT = 8
 
 # Customer / Supplier `whatsapp_status` values. A number is checked only when an operator acts
@@ -970,7 +970,7 @@ def _recorded_status(party_doctype, party, number):
 def check_party_whatsapp(party_doctype, party, force=False):
 	"""Check a party's saved WhatsApp number and record the result on the party.
 
-	Called from the customer / supplier save and the Check button. A number already Valid is not
+	Called from the Check button only; saving a party never checks. A number already Valid is not
 	checked again unless `force`. A gateway that is down or unlinked never blocks the caller and
 	never changes the recorded status, since it says nothing about the number; the reason is
 	returned instead.
