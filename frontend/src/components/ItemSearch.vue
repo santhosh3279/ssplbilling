@@ -508,7 +508,8 @@ const quickQtyMode = ref(false)
 // else the parent's focusItemCode (last billed row).
 const browseFocusCode = ref('')
 // Status view: '' = all (shared cache), 'Disabled' or 'Template' = that set only, fetched on demand
-// (disabled items are never in the shared cache). Neither set can be billed from this view.
+// (disabled items are never in the shared cache). Neither set can be billed from this view, so
+// All leaves templates out.
 const STATUS_OPTIONS = [
   { value: '', label: 'All' },
   { value: 'Disabled', label: 'Disabled' },
@@ -518,7 +519,9 @@ const statusFilter = ref('')
 const statusOnly = computed(() => !!statusFilter.value)
 const statusItems = ref([])
 const statusLoading = ref(false)
-const sourceItems = computed(() => (statusOnly.value ? statusItems.value : allItems.value))
+const sourceItems = computed(() =>
+  statusOnly.value ? statusItems.value : allItems.value.filter(i => !i.has_variants)
+)
 // Whether the selected row's qty cell is accepting digits. Enter commits the
 // value and drops this focus; moving rows re-arms it.
 const qtyCellActive = ref(false)
