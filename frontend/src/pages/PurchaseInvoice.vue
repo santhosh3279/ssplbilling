@@ -99,17 +99,40 @@
           >
             <span>📜</span> History
           </button>
-          <button
+          <div
             v-if="supplierId"
-            @click="overridePercentages = !overridePercentages"
-            class="flex items-center gap-2 rounded px-3 py-1 text-xs font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg"
-            :class="overridePercentages
-              ? 'bg-[var(--color-warning)] text-[var(--color-text-on-highlight)]'
-              : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] border border-[var(--color-border)]'"
-            title="Price List Update uses the item's Competitive Item percentages first, then the supplier's, instead of the item's own"
+            class="group relative"
+            @mouseenter="loadSupplierPercentages"
           >
-            Override {{ overridePercentages ? 'On' : 'Off' }}
-          </button>
+            <button
+              @click="overridePercentages = !overridePercentages"
+              class="flex items-center gap-2 rounded px-3 py-1 text-xs font-bold uppercase tracking-widest transition-all active:scale-95 shadow-lg"
+              :class="overridePercentages
+                ? 'bg-[var(--color-warning)] text-[var(--color-text-on-highlight)]'
+                : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] border border-[var(--color-border)]'"
+            >
+              Override {{ overridePercentages ? 'On' : 'Off' }}
+            </button>
+            <div
+              class="pointer-events-none absolute right-0 top-full z-50 mt-1 hidden min-w-[14rem] rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-2 text-xs text-[var(--color-text)] shadow-xl group-hover:block"
+            >
+              <div class="mb-1 font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Company Percentages</div>
+              <div v-if="supplierPercentagesLoading" class="text-[var(--color-text-muted)]">Loading...</div>
+              <div v-else-if="!supplierPercentages.length" class="text-[var(--color-text-muted)]">No percentages set for this supplier</div>
+              <div
+                v-else
+                v-for="row in supplierPercentages"
+                :key="row.pricelist"
+                class="flex justify-between gap-4 font-mono"
+              >
+                <span>{{ row.pricelist }}</span>
+                <span class="font-bold">{{ row.percentage }}%</span>
+              </div>
+              <div class="mt-1 border-t border-[var(--color-border)] pt-1 text-[10px] text-[var(--color-text-muted)]">
+                Competitive Item percentages win over these when set
+              </div>
+            </div>
+          </div>
         </div>
       </template>
 
@@ -1427,7 +1450,26 @@ async function handleSelectSidebarItem(item) {
 const supplierName = ref('Select Supplier...')
 const supplierId = ref('')
 // Price List Update uses the item's Competitive Item percentages, then the supplier's, instead of the item's own
-const overridePercentages = ref(false)
+const overridePercentages = ref(true)
+// Supplier's own pricelist percentages, shown on hover over the Override button
+const supplierPercentages = ref([])
+const supplierPercentagesLoading = ref(false)
+let supplierPercentagesFor = ''
+async function loadSupplierPercentages() {
+  const supplier = supplierId.value
+  if (!supplier || supplier === supplierPercentagesFor) return
+  supplierPercentagesFor = supplier
+  supplierPercentagesLoading.value = true
+  try {
+    const rows = await frappeGet('ssplbilling.api.supplier_creator_api.get_supplier_pricelist_percentages', { supplier }) || []
+    if (supplierId.value === supplier) supplierPercentages.value = rows
+  } catch {
+    supplierPercentagesFor = ''
+    supplierPercentages.value = []
+  } finally {
+    supplierPercentagesLoading.value = false
+  }
+}
 const supplierDetails = ref('')
 const supplierAddress = ref('')
 const supplierAddressName = ref('')
