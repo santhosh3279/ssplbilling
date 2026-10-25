@@ -498,6 +498,9 @@ const showSupplierModal = ref(false)
 const selectedSupplier = ref(null)
 const supplierModalClosedAt = ref(0)
 const quickQtyMode = ref(false)
+// Item the no-search browse window centers on: the entered item when it is an exact item code,
+// else the parent's focusItemCode (last billed row).
+const browseFocusCode = ref('')
 // Disabled items are never in the shared cache; they are fetched on demand while this view is on.
 const showDisabledOnly = ref(false)
 const disabledItems = ref([])
@@ -903,8 +906,8 @@ const results = computed(() => {
   // given, center the window on its natural (alphabetical) position instead
   // of always showing the front of the list.
   let sliceStart = 0
-  if (terms.length === 0 && props.focusItemCode) {
-    const idx = list.findIndex(i => i.item_code === props.focusItemCode)
+  if (terms.length === 0 && browseFocusCode.value) {
+    const idx = list.findIndex(i => i.item_code === browseFocusCode.value)
     if (idx >= 0) sliceStart = Math.max(0, idx - 50)
   }
 
@@ -1078,6 +1081,7 @@ watch(selectedIdx, async (idx) => {
 watch(() => props.show, async (newVal) => {
   if (newVal) {
     query.value = ''
+    browseFocusCode.value = ''
     selectedSupplier.value = null
     showDisabledOnly.value = false
     disabledItems.value = []
@@ -1097,17 +1101,20 @@ watch(() => props.show, async (newVal) => {
     // delta landed. Only an empty cache has nothing to jump to yet.
     const preload = preloadItems()
     if (!allItems.value.length) await preload
+    // Let the query watcher's selectedIdx reset run before the jump below sets it
+    await nextTick()
     if (!props.show) return
-    if (props.initialQuery) {
-      const idx = results.value.findIndex(i => i.item_code === props.initialQuery)
-      if (idx >= 0) {
-        selectedIdx.value = idx
-      } else {
-        // No exact match — treat as a failed barcode scan: pre-fill the search box
-        query.value = props.initialQuery
-      }
-    } else if (props.focusItemCode) {
-      const idx = results.value.findIndex(i => i.item_code === props.focusItemCode)
+    const entered = props.initialQuery.trim().toLowerCase()
+    const exact = entered && sourceItems.value.find(i => (i.item_code || '').toLowerCase() === entered)
+    if (entered && !exact) {
+      // No exact item code — treat as a failed barcode scan: pre-fill the search box
+      query.value = props.initialQuery
+      return
+    }
+    // Center the browse window on the entered item wherever it sits in the full list
+    browseFocusCode.value = exact ? exact.item_code : props.focusItemCode
+    if (browseFocusCode.value) {
+      const idx = results.value.findIndex(i => i.item_code === browseFocusCode.value)
       if (idx >= 0) {
         selectedIdx.value = idx
         // Center the row so items above and below it are visible, rather
