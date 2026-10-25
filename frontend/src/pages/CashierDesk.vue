@@ -154,6 +154,42 @@
             />
             <svg class="absolute left-3.5 top-2.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
+
+          <!-- UPI link queue: QR pay links sent to phones, waiting or paid; click opens the bill -->
+          <div v-if="qrQueue.length" class="space-y-1">
+            <div class="flex items-center justify-between px-1 text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+              <span>UPI Link Queue</span>
+              <span>{{ qrQueue.filter(q => q.status === 'Pending').length }} waiting</span>
+            </div>
+            <div class="max-h-48 overflow-y-auto custom-scrollbar space-y-1">
+              <div v-for="q in qrQueue" :key="q.order_id" class="flex items-stretch gap-1">
+                <button
+                  @click="openQueuedBill(q)"
+                  class="flex flex-1 min-w-0 items-center justify-between gap-2 rounded-lg border px-2 py-1 text-left transition-all active:scale-[0.98]"
+                  :class="q.status === 'Success'
+                    ? 'bg-[var(--color-success)]/30 border-[var(--color-success)]/50 text-[var(--color-text)]'
+                    : selectedInvoice?.name === q.sales_invoice
+                      ? 'bg-[var(--color-info)]/20 border-[var(--color-info)]/40 text-[var(--color-text)]'
+                      : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
+                >
+                  <div class="min-w-0">
+                    <div class="truncate text-[13px] font-black">{{ q.customer_name || q.customer }}</div>
+                    <div class="truncate text-[10px] font-bold opacity-70">{{ q.sales_invoice }} · {{ q.customer_mobile }}</div>
+                  </div>
+                  <div class="shrink-0 text-right">
+                    <div class="font-mono text-[15px] font-black">₹{{ fmt(q.amount) }}</div>
+                    <div class="text-[9px] font-black uppercase tracking-widest" :class="q.status === 'Success' ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">{{ q.status === 'Success' ? 'Paid' : 'Waiting' }}</div>
+                  </div>
+                </button>
+                <button
+                  v-if="q.status === 'Pending'"
+                  @click="cancelQueuedQr(q)"
+                  title="Stop waiting for this payment"
+                  class="rounded-lg border border-[var(--color-border)] px-2 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] transition-colors"
+                >×</button>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="flex-1 overflow-y-auto custom-scrollbar">
@@ -916,6 +952,12 @@
               >{{ paytmQr.sending && !paytmQr.withBill ? 'Creating…' : paytmQr.phone ? 'Only Link' : 'Show QR' }}</button>
             </template>
             <button
+              v-if="paytmQr.orderId && paytmQr.status === 'Pending' && paytmQr.waOk"
+              @click="queuePaytmQr"
+              title="Keep waiting in the UPI link queue and take the next bill"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] transition-all active:scale-95"
+            >Queue</button>
+            <button
               v-if="paytmQr.orderId && paytmQr.status === 'Pending' && paytmQr.phone && paytmQr.waOk !== undefined"
               @click="sendPaytmQrLink"
               :disabled="paytmQr.waSending"
@@ -1578,6 +1620,8 @@ async function selectInvoice(inv) {
     } else if (details.mop) {
       toggleCredit(details.mop === 'Credit')
     }
+    const queued = qrQueue.value.find(q => q.sales_invoice === inv.name && q.status === 'Success')
+    if (queued) applyQueuedPayment(queued)
   } catch (e) {
     errorMsg.value = "Failed to load details: " + e.message
   } finally {
@@ -1867,6 +1911,90 @@ function applyPaytmResult(r) {
 function onPaytmSocket(r) {
   applyPaytmResult(r)
   applyPaytmQrResult(r)
+  applyQrQueueResult(r)
+}
+
+// UPI link queue: a QR whose pay link went to the customer's phone can be moved out of the modal so
+// the cashier takes the next bill. The queue keeps checking; a paid one shows the tick and fills
+// UPI (locked) when its bill is opened, then the cashier posts it.
+const qrQueue = ref([])
+let qrQueueTimer = null
+let qrQueueLoading = false
+
+async function loadQrQueue() {
+  if (qrQueueLoading) return
+  qrQueueLoading = true
+  try {
+    const rows = await frappePost('ssplbilling.api.paytm_api.get_qr_queue', {}, { silent: true })
+    // the QR still open in the modal is handled there
+    const active = paytmQr.value.orderId
+    const prev = qrQueue.value
+    qrQueue.value = (rows || []).filter(r => r.order_id !== active)
+    for (const r of qrQueue.value) {
+      if (r.status === 'Success' && prev.find(p => p.order_id === r.order_id)?.status === 'Pending') onQrQueuePaid(r)
+    }
+  } catch (e) { /* next round retries */ } finally {
+    qrQueueLoading = false
+  }
+}
+
+function applyQrQueueResult(r) {
+  const q = qrQueue.value.find(x => x.order_id === r?.order_id)
+  if (!q || q.status !== 'Pending' || r.status === 'Pending') return
+  if (r.status !== 'Success') {
+    qrQueue.value = qrQueue.value.filter(x => x !== q)
+    return
+  }
+  Object.assign(q, { status: 'Success', amount: r.amount, reference_no: r.reference_no })
+  onQrQueuePaid(q)
+}
+
+function onQrQueuePaid(q) {
+  fireConfetti({ count: 800, spread: 1.6 })
+  showPaidTick(q.amount, 'upi')
+  applyQueuedPayment(q)
+}
+
+// Fill and lock UPI from a paid queue row, only while its bill is the one open
+function applyQueuedPayment(q) {
+  if (q.status !== 'Success' || selectedInvoice.value?.name !== q.sales_invoice) return
+  if (upiLocked.value && paytmLock.value.upiRef === q.reference_no) return
+  payments.value.upi = q.amount
+  upiRefNo.value = q.reference_no
+  lockPaytmPayment('upi', q.amount, q.reference_no)
+  nextTick(() => postButton.value?.focus())
+}
+
+function queuePaytmQr() {
+  const q = paytmQr.value
+  if (!q.orderId || q.status !== 'Pending' || !selectedInvoice.value) return
+  stopPaytmQrPolling()
+  qrQueue.value = [...qrQueue.value.filter(x => x.sales_invoice !== selectedInvoice.value.name), {
+    order_id: q.orderId,
+    sales_invoice: selectedInvoice.value.name,
+    customer: selectedInvoice.value.customer,
+    customer_name: selectedInvoice.value.customer_name,
+    customer_mobile: q.phone,
+    amount: q.amount,
+    status: 'Pending',
+    reference_no: '',
+  }]
+  Object.assign(q, { show: false, orderId: '', status: '', message: '', image: '', phone: '', withBill: false, tid: '', posId: '', waOk: undefined, waText: '' })
+}
+
+async function openQueuedBill(q) {
+  const inv = invoices.value.find(i => i.name === q.sales_invoice) || { name: q.sales_invoice, customer: q.customer }
+  await selectInvoice(inv)
+  applyQueuedPayment(q)
+}
+
+async function cancelQueuedQr(q) {
+  try {
+    const r = await frappePost('ssplbilling.api.paytm_api.cancel', { order_id: q.order_id }, { silent: true })
+    // Paid just before the cashier gave up waiting — keep the payment
+    if (r?.status === 'Success') return applyQrQueueResult(r)
+  } catch (e) { /* drop it anyway */ }
+  qrQueue.value = qrQueue.value.filter(x => x.order_id !== q.order_id)
 }
 
 async function closePaytmModal() {
@@ -2093,6 +2221,7 @@ async function processPayment() {
     
     // Clear state immediately for next transaction
     invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
+    qrQueue.value = qrQueue.value.filter(q => q.sales_invoice !== nameToRemove)
     selectedInvoice.value = null
     // Stay where the settled bill was: the row that slid into its slot, or the new
     // last row when the bottom bill was the one settled.
@@ -2512,7 +2641,13 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
 
   _billPanelCleanup = onBillPanelUpdate('Sales Invoice', sidebarSeries, loadInvoices, applyCashierPanelEvent)
-  loadPaytmDevices()
+  loadPaytmDevices().then(() => {
+    if (!paytm.value.qrEnabled) return
+    loadQrQueue()
+    qrQueueTimer = setInterval(() => {
+      if (qrQueue.value.some(q => q.status === 'Pending')) loadQrQueue()
+    }, 5000)
+  })
   getFrappeSocket()?.on('paytm_payment_update', onPaytmSocket)
 })
 
@@ -2526,6 +2661,7 @@ onUnmounted(() => {
   _billPanelCleanup?.()
   stopPaytmPolling()
   stopPaytmQrPolling()
+  if (qrQueueTimer) clearInterval(qrQueueTimer)
   bindUpiOverlay(null)
   bindCardOverlay(null)
   getFrappeSocket()?.off('paytm_payment_update', onPaytmSocket)

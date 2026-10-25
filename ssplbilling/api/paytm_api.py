@@ -919,6 +919,50 @@ def get_status(order_id):
 	return _txn_result(txn)
 
 
+@frappe.whitelist(methods=["POST"])
+def get_qr_queue():
+	"""This cashier's QR pay links sent to a phone today whose bill is still a draft, oldest first:
+	Pending ones (re-checked with Paytm, dropped once the QR expires) and paid ones waiting to be
+	posted. Only the newest QR per bill is kept."""
+	_require_desk_user()
+	names = frappe.get_all(
+		"SSPL Paytm Transaction",
+		filters={
+			"channel": "QR",
+			"sales_invoice": ("is", "set"),
+			"customer_mobile": ("is", "set"),
+			"owner": frappe.session.user,
+			"status": ("in", ("Pending", "Success")),
+			"creation": (">=", frappe.utils.today()),
+		},
+		pluck="name",
+		order_by="creation desc",
+	)
+	rows, seen = [], set()
+	for name in names:
+		txn = frappe.get_doc("SSPL Paytm Transaction", name)
+		if txn.sales_invoice in seen:
+			continue
+		inv = frappe.db.get_value(
+			"Sales Invoice", txn.sales_invoice, ["docstatus", "customer", "customer_name"], as_dict=True
+		)
+		if not inv or inv.docstatus != 0:
+			continue
+		if txn.status == "Pending":
+			_refresh_from_paytm(txn)
+			if txn.status == "Pending" and not _qr_expires_in(txn.channel, txn.status, txn.creation):
+				continue
+		if txn.status not in ("Pending", "Success"):
+			continue
+		seen.add(txn.sales_invoice)
+		row = _txn_result(txn)
+		row.update(
+			customer=inv.customer, customer_name=inv.customer_name, customer_mobile=txn.customer_mobile
+		)
+		rows.append(row)
+	return rows[::-1]
+
+
 @frappe.whitelist()
 def cancel(order_id):
 	"""Stop waiting on this order: clear the request off the card machine, then mark it Cancelled.
