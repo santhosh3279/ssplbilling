@@ -41,10 +41,16 @@
           <div
             v-for="(rule, index) in itemDiscountRules"
             :key="rule.name || rule.rule_name || index"
-            class="rounded-full bg-[var(--color-focus)]/20 px-3 py-1 text-3xl font-bold text-[var(--color-text)]"
+            class="flex items-baseline gap-2 rounded-full bg-[var(--color-focus)]/20 px-3 py-1 text-3xl font-bold text-[var(--color-text)]"
             :title="ruleTooltip(rule)"
           >
-            🏷️ {{ rule.rule_name || rule.name }}
+            <span>🏷️ {{ rule.rule_name || rule.name }}</span>
+            <span
+              v-if="crispRule(rule) && crispRule(rule) !== (rule.rule_name || rule.name)"
+              class="font-mono text-2xl text-[var(--color-text-muted)]"
+            >
+              {{ crispRule(rule) }}
+            </span>
           </div>
         </div>
         <div class="flex items-center gap-3">
@@ -504,6 +510,26 @@ function describeRule(rule) {
   if (rule.discount_type === 'Custom Logic' && rule.custom_logic_type === 'Percentage') {
     return tiers.map(t => `${t.min_quantity}+ → ${t.percentage || 0}% off`).join(' · ') || 'Tiered discount'
   }
+  return ''
+}
+
+// Short offer summary for the header badge, e.g. "10+1", "50+:5% · 100+:8%"
+function crispRule(rule) {
+  const tiers = rule.custom_logic_rows || []
+  const pctTiers = () => tiers.map(t => `${t.min_quantity}+:${t.percentage || 0}%`).join(' · ')
+  if (rule.discount_type === 'Percentage Discount') {
+    return tiers.length ? pctTiers() : `${rule.min_quantity || 0}+:${rule.percentage_discount || 0}%`
+  }
+  if (rule.discount_type === 'Product Discount') return `${rule.min_quantity}+${rule.free_quantity}`
+  if (rule.discount_type === 'X to Y product discount') {
+    const code = (currentItemCode.value || '').toLowerCase()
+    const row = (rule.x_to_y_table || []).find(r => (r.item_code || '').toLowerCase() === code)
+    return row ? `${row.min_quantity || 1} → ${row.free_item_quantity || 1}× ${row.free_item_name || row.free_item_code}` : ''
+  }
+  if (rule.discount_type === 'Custom Logic' && rule.custom_logic_type === 'Product') {
+    return tiers.map(t => `${t.min_quantity}+${t.nos}`).join(' · ')
+  }
+  if (rule.discount_type === 'Custom Logic' && rule.custom_logic_type === 'Percentage') return pctTiers()
   return ''
 }
 
