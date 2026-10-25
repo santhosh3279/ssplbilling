@@ -595,7 +595,19 @@
                       </select>
                       <template v-else>{{ v.attributes[attr] || '--' }}</template>
                     </td>
-                    <td class="px-[10px] py-[6px] text-xl font-bold" :class="Number(v.disabled) ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                    <td v-if="editingVariant === v.item_code" class="p-0">
+                      <select
+                        v-model="variantDraftDisabled"
+                        @click.stop
+                        :aria-label="`Status of ${v.item_code}`"
+                        class="w-full bg-[var(--color-info)]/10 px-[10px] py-[6px] text-xl font-bold outline-none cursor-pointer"
+                        :class="variantDraftDisabled ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'"
+                      >
+                        <option :value="0" class="bg-[var(--color-surface)] text-[var(--color-text)]">Enabled</option>
+                        <option :value="1" class="bg-[var(--color-surface)] text-[var(--color-text)]">Disabled</option>
+                      </select>
+                    </td>
+                    <td v-else class="px-[10px] py-[6px] text-xl font-bold" :class="Number(v.disabled) ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
                       {{ Number(v.disabled) ? 'Disabled' : 'Enabled' }}
                     </td>
                     <td class="px-[10px] py-[6px] text-right whitespace-nowrap" @click.stop>
@@ -968,14 +980,16 @@ function onVariantSaved(item) {
   closeVariant()
 }
 
-// Inline edit of one variant's attribute values; the item code is kept
+// Inline edit of one variant's attribute values and status; the item code is kept
 const editingVariant = ref('')
 const variantDraft = ref({})
+const variantDraftDisabled = ref(0)
 const isSavingVariant = ref(false)
 
 function startVariantEdit(v) {
   editingVariant.value = v.item_code
   variantDraft.value = Object.fromEntries(savedAttributes.value.map(attr => [attr, v.attributes[attr] || '']))
+  variantDraftDisabled.value = Number(v.disabled) ? 1 : 0
 }
 
 function cancelVariantEdit() {
@@ -991,7 +1005,7 @@ async function saveVariantAttributes(v) {
   }
   isSavingVariant.value = true
   try {
-    await updateVariantAttributes(v.item_code, variantDraft.value)
+    await updateVariantAttributes(v.item_code, variantDraft.value, variantDraftDisabled.value)
     cancelVariantEdit()
     await loadVariants()
   } catch (e) {

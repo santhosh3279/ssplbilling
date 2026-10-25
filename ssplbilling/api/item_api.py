@@ -119,8 +119,8 @@ def create_item_variants(template, args):
 
 
 @frappe.whitelist()
-def update_variant_attributes(variant, attributes):
-	"""Change a variant's attribute values ({attribute: value}). ERPNext validates these only on
+def update_variant_attributes(variant, attributes, disabled=None):
+	"""Change a variant's attribute values ({attribute: value}) and, when given, its disabled flag. ERPNext validates these only on
 	insert, so the same checks run here. The item code stays; an item name still auto-generated
 	from the old values is regenerated from the new ones when that name is free."""
 	from erpnext.controllers.item_variant import (
@@ -155,8 +155,10 @@ def update_variant_attributes(variant, attributes):
 		# Item names are unique; on a clash the old name stays rather than blocking the change
 		if new_name.item_name and not _find_item_by_name(new_name.item_name, doc.name):
 			doc.item_name = new_name.item_name
+	if disabled is not None:
+		doc.disabled = 1 if frappe.utils.cint(disabled) else 0
 	doc.save()
-	return {"item_code": doc.name, "item_name": doc.item_name}
+	return {"item_code": doc.name, "item_name": doc.item_name, "disabled": doc.disabled}
 
 
 def publish_item_attribute_update(doc, method=None):

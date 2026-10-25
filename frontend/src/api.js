@@ -783,8 +783,8 @@ export async function createItemVariants(template, args) {
 }
 
 /** attributes: { attribute: value } — the variant keeps its item code. */
-export async function updateVariantAttributes(variant, attributes) {
-  return frappePost("ssplbilling.api.item_api.update_variant_attributes", { variant, attributes: JSON.stringify(attributes) });
+export async function updateVariantAttributes(variant, attributes, disabled) {
+  return frappePost("ssplbilling.api.item_api.update_variant_attributes", { variant, attributes: JSON.stringify(attributes), disabled: disabled ? 1 : 0 });
 }
 
 export async function getDisabledItems(params = {}) {
