@@ -748,6 +748,8 @@ async function uploadItemImage(event) {
     imageByCode.value[imageItemCode.value] = uploaded.file_url
     const cached = cachedItems.value.find(item => item.item_code === imageItemCode.value)
     if (cached) cached.image = uploaded.file_url
+    imageItemCode.value = ''
+    imageUrl.value = ''
   } catch (e) {
     alert(e.message || 'Failed to upload product image')
   } finally {
