@@ -38,6 +38,14 @@
           <div v-if="taxRate !== undefined && taxRate !== null" class="rounded-full bg-[var(--color-warning)]/20 px-3 py-1 text-3xl font-bold text-[var(--color-warning)]">
             Tax: {{ taxRate }}%
           </div>
+          <div
+            v-for="(rule, index) in itemDiscountRules"
+            :key="rule.name || rule.rule_name || index"
+            class="rounded-full bg-[var(--color-focus)]/20 px-3 py-1 text-3xl font-bold text-[var(--color-text)]"
+            :title="ruleTooltip(rule)"
+          >
+            🏷️ {{ rule.rule_name || rule.name }}
+          </div>
         </div>
         <div class="flex items-center gap-3">
           <span class="text-xs text-[var(--color-text-muted)]">
@@ -227,37 +235,6 @@
               </template>
             </tbody>
           </table>
-        </div>
-
-        <!-- Discount Rules covering this item -->
-        <div v-if="currentItemCode && itemDiscountRules.length" class="mt-6 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm text-[var(--color-text)]">
-          <h3 class="mb-3 text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)]">🏷️ Discount Rules</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div
-              v-for="(rule, index) in itemDiscountRules"
-              :key="rule.name || rule.rule_name || index"
-              class="rounded-lg border border-[var(--color-focus)]/40 bg-[var(--color-focus)]/10 px-4 py-3"
-            >
-              <div class="flex items-center justify-between gap-2">
-                <span class="truncate text-2xl font-black">{{ rule.rule_name || rule.name }}</span>
-                <span class="shrink-0 rounded bg-[var(--color-surface-raised)] px-2 py-0.5 text-sm font-bold uppercase text-[var(--color-text-muted)]">{{ rule.discount_type }}</span>
-              </div>
-              <div class="mt-1 text-lg text-[var(--color-text-muted)]">{{ describeRule(rule) }}</div>
-              <div class="mt-2 flex flex-wrap gap-1 text-sm">
-                <span
-                  v-for="pl in (getRulePriceLists(rule).length ? getRulePriceLists(rule) : ['All Price Lists'])"
-                  :key="pl"
-                  class="rounded-full px-2 py-0.5 font-bold"
-                  :class="pl === props.selectedPriceList ? 'bg-[var(--color-info)] text-white' : 'bg-[var(--color-info)]/20 text-[var(--color-info)]'"
-                >
-                  {{ pl }}
-                </span>
-                <span v-if="rule.start_date || rule.end_date" class="rounded-full bg-[var(--color-surface-raised)] px-2 py-0.5 text-[var(--color-text-muted)]">
-                  {{ rule.start_date ? formatDateShort(rule.start_date) : '…' }} → {{ rule.end_date ? formatDateShort(rule.end_date) : '…' }}
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Purchase History Sections -->
@@ -528,6 +505,16 @@ function describeRule(rule) {
     return tiers.map(t => `${t.min_quantity}+ → ${t.percentage || 0}% off`).join(' · ') || 'Tiered discount'
   }
   return ''
+}
+
+// Hover text: offer, price lists and validity of a rule
+function ruleTooltip(rule) {
+  const lists = getRulePriceLists(rule)
+  const lines = [rule.discount_type, describeRule(rule), `Price Lists: ${lists.length ? lists.join(', ') : 'All'}`]
+  if (rule.start_date || rule.end_date) {
+    lines.push(`Valid: ${rule.start_date ? formatDateShort(rule.start_date) : '…'} → ${rule.end_date ? formatDateShort(rule.end_date) : '…'}`)
+  }
+  return lines.filter(Boolean).join('\n')
 }
 
 const {
