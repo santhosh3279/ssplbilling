@@ -777,6 +777,10 @@ export async function getDisabledItems(params = {}) {
   return frappeGet("ssplbilling.api.itemsearch_api.get_disabled_items_detailed", params);
 }
 
+export async function getTemplateItems(params = {}) {
+  return frappeGet("ssplbilling.api.itemsearch_api.get_template_items_detailed", params);
+}
+
 /**
  * Upload a file using Frappe's standard /api/method/upload_file endpoint.
  * @param {File} file
