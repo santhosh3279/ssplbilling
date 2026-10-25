@@ -926,6 +926,16 @@
               {{ paytmQr.waSending ? `Sending to +91 ${paytmQr.phone}…` : paytmQr.waText || `+91 ${paytmQr.phone}` }}
             </span>
           </div>
+          <!-- print template of the bill PDF that Bill + Link sends; defaults to the bill series' -->
+          <div v-if="!paytmQr.orderId && !paytmQr.sending && billFormat.list.length" class="space-y-1">
+            <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Bill format · for Bill + Link</label>
+            <select
+              v-model="billFormat.selected"
+              class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-4 text-[14px] font-bold text-[var(--color-text)] focus:border-[var(--color-info)] outline-none transition-all"
+            >
+              <option v-for="t in billFormat.list" :key="t" :value="t">{{ t }}</option>
+            </select>
+          </div>
           <div class="flex items-center justify-center">
             <!-- white backing so the code scans in dark mode too -->
             <img v-if="paytmQr.image && paytmQr.status !== 'Failed'" :src="paytmQrSrc" alt="Paytm UPI QR" class="w-64 h-64 rounded-xl bg-white p-2" :class="paytmQr.status === 'Success' ? 'opacity-30' : ''" />
@@ -1180,6 +1190,8 @@ const paytmPhoneInput = ref(null)
 // Paytm dynamic UPI QR: same wait-for-result flow, but the QR is shown on this screen
 // phone: WhatsApp number the QR's pay link is sent to; waOk undefined = not sent yet
 // withBill: the link goes as the caption of the bill PDF; tid/posId: the machine the QR is made for
+// PDF print templates Bill + Link can send the bill in, and the one picked (see openPaytmQr)
+const billFormat = ref({ list: [], selected: '' })
 const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', sending: false, phone: '', withBill: false, tid: '', posId: '', waSending: false, waOk: undefined, waText: '' })
 let paytmQrPollTimer = null
 const paytmQrPhoneInput = ref(null)
@@ -2135,6 +2147,13 @@ async function openPaytmQr() {
   waSessionName.value = getWhatsAppSessionName()
   Object.assign(paytmQr.value, { show: true, amount, orderId: '', status: '', message: '', image: '', sending: false, phone: '', withBill: false, tid: device?.tid || '', posId: device?.pos_id || '', waSending: false, waOk: undefined, waText: '' })
   nextTick(() => paytmQrPhoneInput.value?.focus())
+  billFormat.value = { list: [], selected: '' }
+  frappeGet('ssplbilling.api.whatsapp_api.get_bill_print_templates', { invoice_name: invoiceName })
+    .then((r) => {
+      // a later bill's dialog must not take this one's list
+      if (selectedInvoice.value?.name === invoiceName) billFormat.value = { list: r?.templates || [], selected: r?.default || '' }
+    })
+    .catch(() => { /* the server picks the default format */ })
   try {
     const phone = await frappeGet('ssplbilling.api.paytm_api.get_invoice_whatsapp', { invoice_name: invoiceName })
     // keep a number the cashier already typed
@@ -2184,6 +2203,7 @@ async function sendPaytmQrLink() {
       order_id: orderId,
       session_id: getWhatsAppSessionId(),
       with_bill: q.withBill ? 1 : 0,
+      print_template: q.withBill ? billFormat.value.selected || undefined : undefined,
     }, { silent: true })
     if (paytmQr.value.orderId === orderId) Object.assign(q, { waOk: true, waText: `${q.withBill ? 'Bill + link' : 'Link'} sent to +${sent.phone}` })
   } catch (e) {

@@ -130,6 +130,7 @@ function sendMockPayLink(args) {
     amount: o.amount,
     order_id: o.order_id,
     with_bill: args.with_bill,
+    print_template: args.print_template,
     session_id: args.session_id,
   }, { silent: true })
 }

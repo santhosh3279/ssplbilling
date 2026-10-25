@@ -34,10 +34,12 @@ from ssplbilling.api.print_preview_api import (
 	build_preview_filename,
 	get_party_link,
 	get_party_mobile,
+	get_party_name,
 	get_party_saved_whatsapp,
 	get_party_whatsapp,
 	normalize_whatsapp_number,
 	preview_print_template_pdf,
+	scrub_filename,
 )
 
 SETTINGS_DOCTYPE = "SSPL WhatsApp Settings"
@@ -666,10 +668,11 @@ def send_document(doctype, document_name, pdf_base64, filename, caption="", sess
 
 
 @frappe.whitelist(methods=["POST"])
-def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
+def send_receipt_pay_link(order_id, session_id=None, with_bill=0, print_template=None):
 	"""Send a pending Paytm receipt's pay link to the customer's WhatsApp as a text: a receipt QR's
 	UPI string (what scanning the QR gives, upi://pay?...) or a payment request's Paytm paymentUrl.
-	with_bill sends a bill QR's link as the caption of the bill PDF instead (see _bill_pdf).
+	with_bill sends a bill QR's link as the caption of the bill PDF instead, rendered with
+	print_template when given (see _bill_pdf).
 
 	The number and link are read from the row, never taken from the caller, so this can only
 	message the number the receipt was made for."""
@@ -701,11 +704,13 @@ def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
 		frappe.throw(_("This QR has expired; generate a new one"))
 	if not txn.customer_mobile:
 		frappe.throw(_("The receipt has no mobile number"))
-	return _send_pay_link(txn, minutes_left, with_bill, session_id)
+	return _send_pay_link(txn, minutes_left, with_bill, session_id, print_template=print_template)
 
 
 @frappe.whitelist(methods=["POST"])
-def send_mock_pay_link(invoice_name, mobile, amount, order_id, with_bill=0, session_id=None):
+def send_mock_pay_link(
+	invoice_name, mobile, amount, order_id, with_bill=0, session_id=None, print_template=None
+):
 	"""Dev only (developer_mode): send a pay-link message for a browser-side mock Paytm order
 	(frontend utils/devMock.js) so the real WhatsApp / template output can be checked. The link is
 	an unpayable placeholder."""
@@ -726,10 +731,10 @@ def send_mock_pay_link(invoice_name, mobile, amount, order_id, with_bill=0, sess
 	)
 	if not txn.customer or not mobile:
 		frappe.throw(_("Mock pay link needs a bill and a mobile number"))
-	return _send_pay_link(txn, 10, with_bill, session_id, test=True)
+	return _send_pay_link(txn, 10, with_bill, session_id, test=True, print_template=print_template)
 
 
-def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False):
+def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_template=None):
 	"""Build the pay-link message (OpenWA template for the usage area, else the built-in text) and
 	send it, as text or as the bill PDF's caption."""
 	is_qr = txn.channel == "QR"
@@ -737,7 +742,8 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False):
 	row = _linked_row(settings, session_id=session_id)
 	customer_name = frappe.db.get_value("Customer", txn.customer, "customer_name") or txn.customer
 	amount = frappe.utils.fmt_money(txn.amount, precision=2)
-	if is_qr and txn.sales_invoice:
+	hide_bill_no = bool(txn.sales_invoice) and _hide_bill_no(txn.sales_invoice)
+	if is_qr and txn.sales_invoice and not hide_bill_no:
 		text = _(
 			"Dear {0}, please pay Rs. {1} for bill {2} to Sundaram and Sons using this link (valid for {3} minutes): {4}"
 		).format(customer_name, amount, txn.sales_invoice, max(1, minutes_left), txn.qr_data)
@@ -772,9 +778,10 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False):
 					if txn.sales_invoice
 					else _doc_values("Customer", txn.customer)
 				),
+				**({"name": ""} if hide_bill_no else {}),
 				"customer_name": customer_name,
 				"amount": amount,
-				"bill_no": txn.sales_invoice or "",
+				"bill_no": "" if hide_bill_no else txn.sales_invoice or "",
 				"valid_minutes": max(1, minutes_left) if is_qr else "",
 				"link": txn.qr_data if is_qr else txn.short_url,
 			},
@@ -784,7 +791,7 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False):
 	reference = ("Sales Invoice", txn.sales_invoice) if test else ("SSPL Paytm Transaction", txn.order_id)
 	if with_bill:
 		frappe.has_permission("Sales Invoice", "read", doc=txn.sales_invoice, throw=True)
-		pdf_base64, filename = _bill_pdf(txn.sales_invoice)
+		pdf_base64, filename = _bill_pdf(txn.sales_invoice, print_template, hide_bill_no)
 		return _send(
 			txn.customer_mobile,
 			"Document",
@@ -805,27 +812,75 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False):
 	)
 
 
-def _bill_pdf(invoice_name):
-	"""Base64 PDF of a sales bill and its file name: the bill series' print template (SSPL Billing
-	Settings) when it renders a PDF, else the first PDF template for Sales Invoice."""
+BILL_PDF_TYPES = ("PDF", "Custom PDF")
+
+
+def _bill_pdf_templates():
+	"""Print Templates that render a Sales Invoice as a PDF."""
+	return frappe.get_all(
+		"Print Template",
+		filters={"document_type": "Sales Invoice", "format_type": ["in", BILL_PDF_TYPES]},
+		pluck="name",
+		order_by="name",
+	)
+
+
+def _default_bill_template(invoice_name, templates):
+	"""The bill series' print template (SSPL Billing Settings) when it renders a PDF, else the
+	first PDF template for Sales Invoice."""
 	naming_series = frappe.db.get_value("Sales Invoice", invoice_name, "naming_series")
 	settings = frappe.get_cached_doc("SSPL Billing Settings")
 	series_template = next(
 		(r.print_format for r in settings.billing_series if r.series == naming_series and r.print_format), None
 	)
-	pdf_types = ("PDF", "Custom PDF")
-	if series_template and frappe.db.get_value("Print Template", series_template, "format_type") in pdf_types:
-		template = series_template
+	if series_template in templates:
+		return series_template
+	return templates[0] if templates else None
+
+
+def _hide_bill_no(invoice_name):
+	"""Whether a message about this bill must leave its number out: an alternative company is set
+	in Automatic Entries but the bill's series is not one it mirrors."""
+	from ssplbilling.api.automatic_entries_api import get_automatic_entries, should_mirror_sales_invoice
+
+	ae = get_automatic_entries()
+	if not ae.alternative_company:
+		return False
+	# by series alone, so a bill already in the alternative company keeps its number when its
+	# series is a mirrored one
+	naming_series = frappe.db.get_value("Sales Invoice", invoice_name, "naming_series")
+	return not should_mirror_sales_invoice(naming_series, ae)
+
+
+@frappe.whitelist()
+def get_bill_print_templates(invoice_name):
+	"""PDF print templates the Bill + Link send can use, and the one it picks by default."""
+	_require_desk_user()
+	frappe.has_permission("Sales Invoice", "read", doc=invoice_name, throw=True)
+	templates = _bill_pdf_templates()
+	return {"templates": templates, "default": _default_bill_template(invoice_name, templates)}
+
+
+def _bill_pdf(invoice_name, print_template=None, hide_bill_no=False):
+	"""Base64 PDF of a sales bill and its file name: print_template when it is a PDF template for
+	Sales Invoice, else the default (see _default_bill_template). hide_bill_no leaves the bill
+	number out of the file name."""
+	templates = _bill_pdf_templates()
+	if print_template in templates:
+		template = print_template
 	else:
-		template = frappe.db.get_value(
-			"Print Template", {"document_type": "Sales Invoice", "format_type": ["in", pdf_types]}, "name"
-		)
+		template = _default_bill_template(invoice_name, templates)
 	if not template:
 		frappe.throw(_("No PDF print template for Sales Invoice; send the link only"))
 	pdf_base64 = preview_print_template_pdf(template, invoice_name)
 	if not pdf_base64:
 		frappe.throw(_("Could not render bill {0} with {1}").format(invoice_name, template))
-	return pdf_base64, build_preview_filename("Sales Invoice", invoice_name, template)
+	if hide_bill_no:
+		party = get_party_name("Sales Invoice", invoice_name) or "Bill"
+		filename = "{}.pdf".format(scrub_filename(party)[:120])
+	else:
+		filename = build_preview_filename("Sales Invoice", invoice_name, template)
+	return pdf_base64, filename
 
 
 @frappe.whitelist()
