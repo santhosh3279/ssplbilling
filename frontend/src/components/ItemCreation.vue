@@ -572,7 +572,13 @@
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--color-border)]">
-                  <tr v-for="v in variants" :key="v.item_code" class="divide-x divide-[var(--color-border)] hover:bg-[var(--color-border)]/10 transition-colors">
+                  <tr
+                    v-for="v in variants"
+                    :key="v.item_code"
+                    @click="openVariant(v.item_code)"
+                    class="cursor-pointer divide-x divide-[var(--color-border)] hover:bg-[var(--color-info)]/10 transition-colors"
+                    title="Open variant"
+                  >
                     <td class="px-[10px] py-[6px] font-mono text-[var(--color-text)]">{{ v.item_code }}</td>
                     <td class="px-[10px] py-[6px] text-[var(--color-text)]">{{ v.item_name }}</td>
                     <td v-for="attr in savedAttributes" :key="attr" class="px-[10px] py-[6px] text-[var(--color-text-muted)]">{{ v.attributes[attr] || '--' }}</td>
@@ -620,6 +626,15 @@
         </button>
       </div>
     </div>
+
+    <!-- A variant from the Variants tab, edited in a stacked copy of this window -->
+    <ItemCreation
+      v-if="showVariantEdit"
+      :show="showVariantEdit"
+      :edit-item-code="variantEditCode"
+      @close="closeVariant"
+      @created="onVariantSaved"
+    />
   </div>
 </template>
 
@@ -911,6 +926,26 @@ const variantSelection = ref({}) // { attribute: [values] }
 const isCreatingVariants = ref(false)
 
 const canManageVariants = computed(() => isEditMode.value && savedTemplate.value && savedAttributes.value.length > 0)
+
+// Stacked window for one variant; the list reloads on close since name/disabled may have changed
+const showVariantEdit = ref(false)
+const variantEditCode = ref('')
+
+function openVariant(itemCode) {
+  variantEditCode.value = itemCode
+  showVariantEdit.value = true
+}
+
+function closeVariant() {
+  showVariantEdit.value = false
+  loadVariants()
+}
+
+function onVariantSaved(item) {
+  // "New Item" from the variant window creates a fresh item — keep the window open
+  if (item?.is_new) return
+  closeVariant()
+}
 
 async function loadVariants() {
   variantsLoading.value = true
@@ -1291,6 +1326,7 @@ watch(() => props.show, async (newVal) => {
     savedAttributes.value = []
     variants.value = []
     showVariantCreate.value = false
+    showVariantEdit.value = false
     ensureItemAttributeCache()
     if (!isEditMode.value) {
       resetForm(true)
