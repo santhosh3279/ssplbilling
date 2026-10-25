@@ -513,7 +513,7 @@
                       </td>
                       <th scope="row" class="sheet-row-number">{{ idx + 1 }}</th>
                       <td v-for="(column, columnIndex) in itemColumns" :key="column.key" class="sheet-cell" :class="'sheet-col-' + column.key">
-                        <span v-if="column.key === 'itemname'" class="sheet-item-name">{{ itemDisplayName(item) }}</span>
+                        <span v-if="column.key === 'itemname'" class="sheet-item-name">{{ itemDisplayName(item) }}<span v-if="isTemplateItem(item)" class="sheet-template-badge" title="Template: the catalogue lists its current variants">Template</span></span>
                         <input
                           v-else
                           :value="searchTargetRow === idx ? itemSearchQuery : item.itemcode"
@@ -963,6 +963,11 @@ async function selectSearchItem(item) {
 function itemDisplayName(item) {
   const cached = item.itemcode ? lookupItemInCache(item.itemcode) : null
   return cached?.item_print_name || cached?.item_name || item.itemname
+}
+
+// Template rows are listed with their variants on the catalogue page.
+function isTemplateItem(item) {
+  return !!(item.itemcode && lookupItemInCache(item.itemcode)?.has_variants)
 }
 
 const itemsGrid = ref(null)
@@ -1697,6 +1702,16 @@ onMounted(() => {
 }
 .catalogue-sheet .sheet-inactive .sheet-discount-rule-col {
   opacity: 0.5;
+}
+.sheet-template-badge {
+  margin-left: 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--color-info);
+  padding: 0 0.375rem;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #fff;
 }
 .sheet-item-name {
   display: block;

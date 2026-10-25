@@ -159,15 +159,43 @@
                     </span>
                   </div>
                 </div>
-                <div v-if="item.barcode_prices && item.barcode_prices.length" class="shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 text-2xl font-mono font-bold text-slate-800 select-all">
+                <div v-if="!item.is_template && item.barcode_prices && item.barcode_prices.length" class="shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 text-2xl font-mono font-bold text-slate-800 select-all">
                   <div v-for="bp in item.barcode_prices" :key="bp.barcode">
                     <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans font-normal text-slate-600">({{ bp.uom }})</span>
                   </div>
                 </div>
               </div>
 
+
+              <!-- Template: one orderable row per current variant -->
+              <div v-if="item.is_template" class="shrink-0 max-h-[40%] overflow-y-auto space-y-2 pt-3">
+                <p v-if="!item.variants.length" class="text-sm text-slate-600">No variants available</p>
+                <div v-for="variant in item.variants" :key="variant.itemcode" role="group" :aria-label="variant.itemname" class="rounded-lg border border-slate-200 p-2 space-y-1">
+                  <div class="flex items-start justify-between gap-2">
+                    <span class="font-bold text-slate-900 text-lg" :title="variant.itemname">{{ variant.variant_label }}</span>
+                    <span class="shrink-0 text-xs font-semibold" :class="variant.available_stock > 0 ? 'text-emerald-700' : 'text-rose-700'">{{ displayStock(variant) }}</span>
+                  </div>
+                  <p v-if="variant.discount_desc && variant.discount_desc !== item.discount_desc" class="text-xs font-semibold text-indigo-700">{{ variant.discount_desc }}</p>
+                  <div v-for="bp in variant.barcode_prices" :key="bp.barcode" class="flex flex-wrap items-baseline gap-x-3 font-mono text-slate-900 text-lg">
+                    <span class="select-all">{{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans text-xs text-slate-600">({{ bp.uom }})</span></span>
+                    <span v-for="pl in offer.price_lists" :key="pl.price_list" class="font-bold tracking-widest text-indigo-700">
+                      {{ bp.prices[pl.price_list] != null ? displayPrice(bp.prices[pl.price_list]) : '—' }}
+                    </span>
+                  </div>
+                  <div v-if="catalogueUser" class="flex items-center justify-end gap-1.5 text-black">
+                    <template v-if="variant.order_rate != null">
+                      <button v-if="minimumOrderQuantity(variant) > 1" type="button" :aria-label="`Decrease ${variant.itemname} by ${minimumOrderQuantity(variant)}`" class="rounded-lg border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 font-bold hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500" @click="adjustByMinimum(variant, -1)">−{{ minimumOrderQuantity(variant) }}</button>
+                      <button type="button" :aria-label="`Decrease ${variant.itemname}`" class="rounded-lg border border-rose-500/40 bg-rose-500/15 px-2.5 py-0.5 font-bold hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500" @click="adjustQuantity(variant, -1)">−</button>
+                      <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" :aria-label="`Quantity for ${variant.itemname}`" :value="getQuantity(pageaddress, variant.itemcode)" class="w-12 rounded-lg border px-1 py-0.5 text-center font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 border-slate-300 bg-white text-black" @focus="$event.target.select()" @change="setItemQuantity(variant, $event)" @keydown.enter="$event.target.blur()" />
+                      <button type="button" :aria-label="`Increase ${variant.itemname}`" class="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 font-bold hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500" @click="adjustQuantity(variant, 1)">+</button>
+                      <button v-if="minimumOrderQuantity(variant) > 1" type="button" :aria-label="`Increase ${variant.itemname} by ${minimumOrderQuantity(variant)}`" class="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 font-bold hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500" @click="adjustByMinimum(variant, 1)">+{{ minimumOrderQuantity(variant) }}</button>
+                    </template>
+                    <span v-else class="text-xs text-slate-600">Price unavailable</span>
+                  </div>
+                </div>
+              </div>
               <!-- Bottom side for item details -->
-              <div class="shrink-0 space-y-2 pt-3">
+              <div v-if="!item.is_template" class="shrink-0 space-y-2 pt-3">
                 <div class="flex items-center justify-center shrink-0">
                   <div class="w-full max-w-xl bg-slate-50 rounded-xl p-3 shadow-inner">
                     <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-emerald-700' : 'text-rose-700'">
@@ -391,15 +419,43 @@
                     </span>
                   </div>
                 </div>
-                <div v-if="item.barcode_prices && item.barcode_prices.length" class="w-full shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 text-[21px] font-mono font-bold text-slate-800 select-all">
+                <div v-if="!item.is_template && item.barcode_prices && item.barcode_prices.length" class="w-full shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 text-[21px] font-mono font-bold text-slate-800 select-all">
                   <div v-for="bp in item.barcode_prices" :key="bp.barcode">
                     <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans font-normal text-slate-600">({{ bp.uom }})</span>
                   </div>
                 </div>
               </div>
 
+
+              <!-- Template: one orderable row per current variant -->
+              <div v-if="item.is_template" class="flex-1 space-y-2 p-3">
+                <p v-if="!item.variants.length" class="text-sm text-[var(--color-text-muted)]">No variants available</p>
+                <div v-for="variant in item.variants" :key="variant.itemcode" role="group" :aria-label="variant.itemname" class="rounded-lg border border-[var(--color-border)]/50 p-2 space-y-1">
+                  <div class="flex items-start justify-between gap-2">
+                    <span class="font-bold text-[var(--color-text)]" :title="variant.itemname">{{ variant.variant_label }}</span>
+                    <span class="shrink-0 text-xs font-semibold" :class="variant.available_stock > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ displayStock(variant) }}</span>
+                  </div>
+                  <p v-if="variant.discount_desc && variant.discount_desc !== item.discount_desc" class="text-xs font-semibold text-[var(--color-info)]">{{ variant.discount_desc }}</p>
+                  <div v-for="bp in variant.barcode_prices" :key="bp.barcode" class="flex flex-wrap items-baseline gap-x-3 font-mono text-[var(--color-text)]">
+                    <span class="select-all">{{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans text-xs text-[var(--color-text-muted)]">({{ bp.uom }})</span></span>
+                    <span v-for="pl in offer.price_lists" :key="pl.price_list" class="font-bold tracking-widest text-[var(--color-info)]">
+                      {{ bp.prices[pl.price_list] != null ? displayPrice(bp.prices[pl.price_list]) : '—' }}
+                    </span>
+                  </div>
+                  <div v-if="catalogueUser" class="flex items-center justify-end gap-1.5 text-black">
+                    <template v-if="variant.order_rate != null">
+                      <button v-if="minimumOrderQuantity(variant) > 1" type="button" :aria-label="`Decrease ${variant.itemname} by ${minimumOrderQuantity(variant)}`" class="rounded-lg border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 font-bold hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500" @click="adjustByMinimum(variant, -1)">−{{ minimumOrderQuantity(variant) }}</button>
+                      <button type="button" :aria-label="`Decrease ${variant.itemname}`" class="rounded-lg border border-rose-500/40 bg-rose-500/15 px-2.5 py-0.5 font-bold hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500" @click="adjustQuantity(variant, -1)">−</button>
+                      <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" :aria-label="`Quantity for ${variant.itemname}`" :value="getQuantity(pageaddress, variant.itemcode)" class="w-12 rounded-lg border px-1 py-0.5 text-center font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]" @focus="$event.target.select()" @change="setItemQuantity(variant, $event)" @keydown.enter="$event.target.blur()" />
+                      <button type="button" :aria-label="`Increase ${variant.itemname}`" class="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 font-bold hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500" @click="adjustQuantity(variant, 1)">+</button>
+                      <button v-if="minimumOrderQuantity(variant) > 1" type="button" :aria-label="`Increase ${variant.itemname} by ${minimumOrderQuantity(variant)}`" class="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 font-bold hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500" @click="adjustByMinimum(variant, 1)">+{{ minimumOrderQuantity(variant) }}</button>
+                    </template>
+                    <span v-else class="text-xs text-[var(--color-text-muted)]">Price unavailable</span>
+                  </div>
+                </div>
+              </div>
               <!-- Card Details -->
-              <div class="flex-1 flex flex-col justify-between" :class="cardPaddingClass">
+              <div v-if="!item.is_template" class="flex-1 flex flex-col justify-between" :class="cardPaddingClass">
                 <div v-if="catalogueUser" class="flex items-center justify-center gap-2 border-t border-[var(--color-border)]/40 pt-3">
                   <template v-if="item.order_rate != null">
                     <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Decrease ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-rose-500/40 bg-rose-500/15 text-black shadow-lg shadow-rose-900/10 backdrop-blur-md hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500" @click="adjustByMinimum(item, -1)">−{{ minimumOrderQuantity(item) }}</button>
@@ -1272,16 +1328,21 @@ let _stockRefreshTimer = null
 let _stockRefreshId = 0
 let _offerDisposed = false
 
+// Catalogue rows plus the variants listed under template rows.
+function offerLines() {
+  return (offer.value?.items || []).flatMap(item => [item, ...(item.variants || [])])
+}
+
 async function refreshCatalogueStock() {
   if (_offerDisposed) return
   const id = ++_stockRefreshId
   try {
     const stock = await frappeGet('ssplbilling.api.offer_api.get_offer_stock', { pageaddress })
     if (_offerDisposed || id !== _stockRefreshId) return
-    for (const item of offer.value?.items || []) item.available_stock = stock[item.itemcode] ?? null
+    for (const item of offerLines()) item.available_stock = stock[item.itemcode] ?? null
   } catch (error) {
     if (_offerDisposed || id !== _stockRefreshId) return
-    for (const item of offer.value?.items || []) item.available_stock = null
+    for (const item of offerLines()) item.available_stock = null
     console.warn('[catalogue] Stock refresh failed:', error)
   }
 }
@@ -1310,14 +1371,14 @@ function setupOfferSocket() {
       if (data.type === 'stock') {
         // One message per saved document lists every changed item; older servers sent item_code.
         const changed = new Set(data.item_codes || (data.item_code ? [data.item_code] : []))
-        if (offer.value?.items?.some(item => changed.has(item.itemcode))) scheduleStockRefresh()
+        if (offerLines().some(item => changed.has(item.itemcode))) scheduleStockRefresh()
         return
       }
       const affectsThisPage =
         (data.type === 'offer' && data.pageaddress && data.pageaddress === pageaddress) ||
         (data.type === 'item' &&
           data.item_code &&
-          offer.value?.items?.some((i) => i.itemcode === data.item_code))
+          offerLines().some((i) => i.itemcode === data.item_code || i.itemcode === data.variant_of))
       if (affectsThisPage) scheduleOfferRefresh()
     }
     socket.on('offer_page_update', _offerHandler)

@@ -25,7 +25,9 @@ def publish_item_offer_update(doc, method=None):
 	but we send item_code explicitly to stay correct if that ever changes."""
 	if not doc or not doc.name:
 		return
-	_broadcast_offer_update({"type": "item", "item_code": getattr(doc, "item_code", doc.name)})
+	# variant_of lets a page listing the template refresh when one of its variants is added or changed.
+	_broadcast_offer_update({"type": "item", "item_code": getattr(doc, "item_code", doc.name),
+		"variant_of": getattr(doc, "variant_of", None)})
 
 
 def publish_offer_items_update(doc, method=None):

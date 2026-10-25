@@ -45,14 +45,42 @@ def _catalogue_stock(item_codes):
 		+ purchases.get((code, warehouse), 0.0) for code in item_codes}
 
 
+def _catalogue_variants(item_codes):
+	"""Enabled sales variants of any template among item_codes, read live so new variants show up."""
+	if not item_codes:
+		return []
+	variants = frappe.get_all(
+		"Item",
+		filters={"variant_of": ["in", list(item_codes)], "disabled": 0, "is_sales_item": 1},
+		fields=["name", "item_name", "variant_of"],
+		order_by="name asc",
+		ignore_permissions=True,
+	)
+	labels = {}
+	if variants:
+		for row in frappe.get_all(
+			"Item Variant Attribute",
+			filters={"parent": ["in", [v.name for v in variants]], "parenttype": "Item"},
+			fields=["parent", "attribute_value"],
+			order_by="idx asc",
+			ignore_permissions=True,
+		):
+			if row.attribute_value:
+				labels.setdefault(row.parent, []).append(row.attribute_value)
+	for variant in variants:
+		variant.variant_label = " / ".join(labels.get(variant.name, [])) or variant.item_name
+	return variants
+
+
 @frappe.whitelist(allow_guest=True)
 def get_offer_stock(pageaddress):
-	"""Refresh only stock for the public catalogue's enabled items."""
+	"""Refresh only stock for the public catalogue's enabled items and their variants."""
 	name = frappe.db.get_value("Offer-Items", {"pageaddress": pageaddress}, "name") if pageaddress else None
 	if not name:
 		return {}
 	doc = frappe.get_doc("Offer-Items", name)
-	return _catalogue_stock([row.itemcode for row in doc.items if not row.get("disabled")])
+	codes = [row.itemcode for row in doc.items if not row.get("disabled")]
+	return _catalogue_stock(codes + [v.name for v in _catalogue_variants(codes)])
 
 
 @frappe.whitelist(allow_guest=True)
@@ -128,21 +156,32 @@ def get_offer_details(pageaddress):
 		for lr in logic_rows:
 			custom_logic_rows.setdefault(lr.parent, []).append(lr)
 
+	# Template rows expand to their current variants; a variant already listed as its own row is not repeated.
+	direct_codes = {item.itemcode for item in active_items}
+	variants = [v for v in _catalogue_variants(direct_codes) if v.name not in direct_codes]
+	variant_rows = [
+		frappe._dict(itemcode=v.name, itemname=v.item_name, barcode=None, variant_of=v.variant_of,
+			variant_label=v.variant_label)
+		for v in variants
+	]
+
 	# Pre-fetch item group map for offer items
-	item_codes = [item.itemcode for item in active_items]
+	item_codes = [item.itemcode for item in active_items + variant_rows]
 	live_stock = _catalogue_stock(item_codes)
 	item_group_map = {}
 	item_display_name_map = {}
 	item_image_map = {}
 	item_stock_uom_map = {}
 	item_gst_map = {}
+	template_codes = set()
 	if item_codes:
 		item_details = frappe.get_all(
 			"Item",
 			filters={"item_code": ["in", item_codes]},
-			fields=["item_code", "item_group", "image", "stock_uom", "item_name", "item_print_name", "custom_is_gst_item"],
+			fields=["item_code", "item_group", "image", "stock_uom", "item_name", "item_print_name", "custom_is_gst_item", "has_variants"],
 			ignore_permissions=True
 		)
+		template_codes = {i.item_code for i in item_details if i.has_variants}
 		item_group_map = {i.item_code: i.item_group for i in item_details}
 		item_display_name_map = {i.item_code: i.item_print_name or i.item_name for i in item_details}
 		item_image_map = {i.item_code: i.image for i in item_details}
@@ -207,7 +246,8 @@ def get_offer_details(pageaddress):
 			uom_pl[p.uom or ""] = p.price_list_rate
 
 	items = []
-	for item in active_items:
+	variant_entries = {}
+	for item in active_items + variant_rows:
 		item_code = item.itemcode
 		item_group = item_group_map.get(item_code)
 		stock_uom = item_stock_uom_map.get(item_code)
@@ -339,7 +379,7 @@ def get_offer_details(pageaddress):
 				"prices": rates
 			})
 
-		items.append({
+		entry = {
 			"itemcode": item_code,
 			"available_stock": live_stock.get(item_code),
 			"stock_uom": stock_uom,
@@ -352,8 +392,20 @@ def get_offer_details(pageaddress):
 			"discount_desc": discount_desc,
 			"is_gst_item": item_gst_map.get(item_code, 0),
 			"prices": item_rates
-		})
-		
+		}
+		if item.get("variant_of"):
+			entry["variant_label"] = item.variant_label
+			variant_entries.setdefault(item.variant_of, []).append(entry)
+		else:
+			items.append(entry)
+
+	for entry in items:
+		if entry["itemcode"] in template_codes:
+			entry["is_template"] = 1
+			entry["variants"] = variant_entries.get(entry["itemcode"], [])
+			for variant in entry["variants"]:
+				variant["image"] = variant["image"] or entry["image"]
+
 	settings = frappe.get_single("SSPL Billing Settings")
 	cipher_map = settings.cipher_map or ""
 
@@ -584,6 +636,8 @@ def render_offer_catalog(pageaddress, print_template=None, include_prices=0, enc
 	price_lists = [pl["price_list"] for pl in offer.get("price_lists") or []]
 	base_url = get_url()
 
+	# Print templates know only plain items, so each template row prints as its variants.
+	offer["items"] = [v for item in offer["items"] for v in (item.get("variants") if item.get("is_template") else [item])]
 	for item in offer["items"]:
 		# wkhtmltopdf and a detached print window both need absolute image URLs,
 		# and file names routinely contain spaces, so the path is escaped too.

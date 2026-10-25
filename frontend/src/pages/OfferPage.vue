@@ -780,6 +780,8 @@ async function loadOffer(silent = false) {
       } else {
         localStorage.removeItem('wb-cipher')
       }
+      // This page shows plain item cards, so each template row is shown as its variants.
+      res.items = res.items.flatMap(item => item.is_template ? item.variants : [item])
       offer.value = res
       document.title = `${res.heading} | Deals`
       startTimer()

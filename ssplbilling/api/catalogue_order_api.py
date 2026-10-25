@@ -142,7 +142,7 @@ def get_customer_offer(pageaddress, customer=None, price_list=None):
 
 	price_list = context["price_list"]
 	offer["price_lists"] = [{"price_list": price_list}]
-	for row in offer["items"]:
+	for row in [line for item in offer["items"] for line in [item, *item.get("variants", [])]]:
 		_, row["order_uom"], row["order_rate"] = _order_price(
 			row["itemcode"], price_list, row.get("barcode")
 		)
@@ -183,17 +183,17 @@ def search_catalogue_items(query, start=0, customer=None, price_list=None, all_i
 				item.item_name,
 				item.image,
 				item.stock_uom,
-				COALESCE(line.barcode, '') AS barcode
+				IF(line.itemcode = item.name, COALESCE(line.barcode, ''), '') AS barcode
 			FROM `tabItem` item
 			LEFT JOIN `tabOffer-Item` line
-				ON line.itemcode = item.name
+				ON (line.itemcode = item.name OR line.itemcode = item.variant_of)
 				AND line.parenttype = 'Offer-Items'
 				AND line.parentfield = 'items'
 				AND COALESCE(line.disabled, 0) = 0
 			LEFT JOIN `tabOffer-Items` catalogue
 				ON catalogue.name = line.parent
 				AND COALESCE(catalogue.pageaddress, '') != ''
-			WHERE item.disabled = 0 AND item.is_sales_item = 1
+			WHERE item.disabled = 0 AND item.is_sales_item = 1 AND item.has_variants = 0
 				AND (item.name LIKE %(query)s OR item.item_name LIKE %(query)s
 					OR (line.itemname IS NOT NULL AND line.itemname LIKE %(query)s)
 					OR (line.barcode IS NOT NULL AND line.barcode LIKE %(query)s)
@@ -205,12 +205,14 @@ def search_catalogue_items(query, start=0, customer=None, price_list=None, all_i
 	else:
 		rows = frappe.db.sql("""
 			SELECT DISTINCT catalogue.pageaddress, catalogue.heading, item.name AS item_code,
-				item.item_name, item.image, item.stock_uom, line.barcode
+				item.item_name, item.image, item.stock_uom,
+				IF(item.name = line.itemcode, line.barcode, '') AS barcode
 			FROM `tabOffer-Item` line
 			INNER JOIN `tabOffer-Items` catalogue ON catalogue.name = line.parent
-			INNER JOIN `tabItem` item ON item.name = line.itemcode
+			INNER JOIN `tabItem` item ON item.name = line.itemcode OR item.variant_of = line.itemcode
 			WHERE line.parenttype = 'Offer-Items' AND line.parentfield = 'items'
 				AND COALESCE(line.disabled, 0) = 0 AND item.disabled = 0 AND item.is_sales_item = 1
+				AND item.has_variants = 0
 				AND COALESCE(catalogue.pageaddress, '') != ''
 				AND (item.name LIKE %(query)s OR item.item_name LIKE %(query)s
 					OR line.itemname LIKE %(query)s OR line.barcode LIKE %(query)s
@@ -376,13 +378,19 @@ def _preview(items, customer=None, price_list=None):
 				["barcode"], as_dict=True,
 			)
 			if not offer_item:
-				frappe.throw(f"{item_code} is no longer in the catalogue.")
-			barcode = offer_item.barcode
+				# A variant is in the catalogue through its template's row.
+				variant_of = frappe.db.get_value("Item", item_code, "variant_of")
+				if not variant_of or not frappe.db.exists("Offer-Item", {"parent": offer_name, "parenttype": "Offer-Items",
+						"parentfield": "items", "itemcode": variant_of, "disabled": 0}):
+					frappe.throw(f"{item_code} is no longer in the catalogue.")
+			barcode = offer_item.barcode if offer_item else None
 		else:
 			if not _is_system_user():
 				frappe.throw("Non-catalogue items can only be ordered by System Users.")
 			barcode = frappe.db.get_value("Item Barcode", {"parent": item_code}, "barcode")
 		item, uom, rate = _order_price(item_code, context["price_list"], barcode)
+		if item.has_variants:
+			frappe.throw(f"{item_code} is a template. Order one of its variants.")
 		if rate is None:
 			frappe.throw(f"{item_code} is unavailable in {context['price_list']}.")
 		lines.append({
