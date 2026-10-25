@@ -38,15 +38,18 @@ const WHATSAPP_METHODS = new Set([
   'ssplbilling.api.whatsapp_api.save_party_whatsapp',
 ])
 
-// Whether the method is answered here rather than by the server, given the switches now on
-export function isMocked(method) {
+// Whether the method is answered here rather than by the server, given the switches now on. A mock
+// Paytm order exists only in this browser, so the server can't send its pay link either: that send
+// is mocked even with the WhatsApp mock off.
+export function isMocked(method, args = {}) {
   if (!import.meta.env.DEV) return false
+  if (method === 'ssplbilling.api.whatsapp_api.send_receipt_pay_link' && String(args.order_id || '').startsWith('MOCK-')) return true
   return (paytmMockOn.value && PAYTM_METHODS.has(method)) || (whatsappMockOn.value && WHATSAPP_METHODS.has(method))
 }
 
 // The mock answer when the method is mocked, else the real call
 export function devCall(method, args, real, invoiceInfo) {
-  return isMocked(method) ? mockCall(method, args, invoiceInfo) : real()
+  return isMocked(method, args) ? mockCall(method, args, invoiceInfo) : real()
 }
 
 const PAYTM_METHODS = new Set([
