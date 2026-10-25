@@ -1048,6 +1048,7 @@
           </div>
           <div class="font-mono text-[40px] font-black text-[var(--color-success)] leading-none">₹{{ fmt(paidTick.amount) }}</div>
           <div class="text-[18px] font-black uppercase tracking-widest text-[var(--color-text)]">Received by {{ paidTick.mode === 'card' ? 'Card' : 'UPI' }}</div>
+          <div v-if="paidTick.label" class="text-[16px] font-bold text-[var(--color-text-muted)]">{{ paidTick.label }}</div>
         </div>
       </div>
     </transition>
@@ -1147,11 +1148,11 @@ const showGstWarning = ref(false)
 const cardRefNo = ref('')
 const upiRefNo = ref('')
 // Full-screen tick flashed when Paytm confirms a UPI / card payment
-const paidTick = ref({ show: false, amount: 0, mode: 'upi' })
+const paidTick = ref({ show: false, amount: 0, mode: 'upi', label: '' })
 let paidTickTimer = null
-function showPaidTick(amount, mode) {
+function showPaidTick(amount, mode, label = '') {
   if (paidTickTimer) clearTimeout(paidTickTimer)
-  paidTick.value = { show: true, amount, mode }
+  paidTick.value = { show: true, amount, mode, label }
   paidTickTimer = setTimeout(() => { paidTick.value.show = false }, 1000)
 }
 
@@ -1951,7 +1952,8 @@ function applyQrQueueResult(r) {
 
 function onQrQueuePaid(q) {
   fireConfetti({ count: 800, spread: 1.6 })
-  showPaidTick(q.amount, 'upi')
+  // the cashier may be on another bill: name the one that got paid
+  showPaidTick(q.amount, 'upi', `${q.customer_name || q.customer || ''} · ${q.sales_invoice}`)
   applyQueuedPayment(q)
 }
 
@@ -2047,6 +2049,13 @@ async function createPaytmQr(withBill = paytmQr.value.withBill) {
   }
   Object.assign(q, { sending: true, orderId: '', status: '', message: '', image: '', waOk: undefined, waText: '' })
   try {
+    // a new QR replaces this bill's queued one; stop if that one got paid meanwhile
+    const queued = qrQueue.value.find(x => x.sales_invoice === selectedInvoice.value.name && x.status === 'Pending')
+    if (queued) await cancelQueuedQr(queued)
+    if (qrQueue.value.some(x => x.sales_invoice === selectedInvoice.value.name && x.status === 'Success')) {
+      q.show = false
+      return
+    }
     const res = await frappePost('ssplbilling.api.paytm_api.create_qr', {
       invoice_name: selectedInvoice.value.name,
       amount: q.amount,
@@ -2221,6 +2230,9 @@ async function processPayment() {
     
     // Clear state immediately for next transaction
     invoices.value = invoices.value.filter(i => i.name !== nameToRemove)
+    // a queued link still waiting must not stay payable once the bill is posted
+    qrQueue.value.filter(q => q.sales_invoice === nameToRemove && q.status === 'Pending')
+      .forEach(q => frappePost('ssplbilling.api.paytm_api.cancel', { order_id: q.order_id }, { silent: true }).catch(() => {}))
     qrQueue.value = qrQueue.value.filter(q => q.sales_invoice !== nameToRemove)
     selectedInvoice.value = null
     // Stay where the settled bill was: the row that slid into its slot, or the new
