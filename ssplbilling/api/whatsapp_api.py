@@ -20,6 +20,7 @@ users whose SSPL Dashboard Tile Access grants the whatsapp-chat tile.
 
 import base64
 import binascii
+import re
 from urllib.parse import quote
 
 import frappe
@@ -149,6 +150,35 @@ def _inheritable_user(user=None):
 	if user and frappe.session.user in INHERIT_USERS:
 		return user
 	return frappe.session.user
+
+
+# {{name}} placeholders, as the OpenWA Templates page finds them
+TEMPLATE_PLACEHOLDER = re.compile(r"\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}")
+
+
+def _render_template(settings, row, template_name, values):
+	"""Text of the OpenWA template named template_name in row's session, rendered the way the
+	OpenWA Templates page previews it: header, body and footer joined by a blank line, each
+	{{placeholder}} filled from values (unknown ones left as written). None when no name is set, or
+	the template is missing or the gateway can't list templates, so the caller sends its own text."""
+	if not template_name:
+		return None
+	try:
+		templates = _call(settings, "GET", f"/sessions/{row.session_id}/templates")
+	except OpenWAError:
+		frappe.log_error(title="OpenWA templates could not be listed", message=frappe.get_traceback())
+		return None
+	tpl = next((t for t in templates or [] if (t.get("name") or "").strip() == template_name), None)
+	if not tpl:
+		frappe.log_error(
+			title="OpenWA template not found",
+			message=f"No template named {template_name!r} in session {row.session_name}",
+		)
+		return None
+	text = "\n\n".join(p for p in (tpl.get("header"), tpl.get("body"), tpl.get("footer")) if p)
+	return TEMPLATE_PLACEHOLDER.sub(
+		lambda m: str(values[m.group(1)]) if values.get(m.group(1)) not in (None, "") else m.group(0), text
+	)
 
 
 def _linked_row(settings, message=None, session_id=None):
@@ -578,6 +608,22 @@ def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
 		text = _("Dear {0}, please pay Rs. {1} to Sundaram and Sons using this Paytm link: {2}").format(
 			customer_name, amount, txn.short_url
 		)
+	# the OpenWA template named in settings replaces the built-in text when it can be used
+	text = (
+		_render_template(
+			settings,
+			row,
+			(settings.get("pay_link_template") or "").strip(),
+			{
+				"customer_name": customer_name,
+				"amount": amount,
+				"bill_no": txn.sales_invoice or "",
+				"valid_minutes": max(1, minutes_left) if is_qr else "",
+				"link": txn.qr_data if is_qr else txn.short_url,
+			},
+		)
+		or text
+	)
 	if frappe.utils.cint(with_bill) and is_qr and txn.sales_invoice:
 		frappe.has_permission("Sales Invoice", "read", doc=txn.sales_invoice, throw=True)
 		pdf_base64, filename = _bill_pdf(txn.sales_invoice)

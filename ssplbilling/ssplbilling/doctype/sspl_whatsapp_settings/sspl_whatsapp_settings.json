@@ -9,7 +9,9 @@
   "column_break_gateway",
   "api_key",
   "sessions_section",
-  "sessions"
+  "sessions",
+  "templates_section",
+  "pay_link_template"
  ],
  "fields": [
   {
@@ -45,10 +47,21 @@
    "fieldtype": "Table",
    "label": "Sessions",
    "options": "SSPL WhatsApp Session"
+  },
+  {
+   "fieldname": "templates_section",
+   "fieldtype": "Section Break",
+   "label": "Templates"
+  },
+  {
+   "fieldname": "pay_link_template",
+   "fieldtype": "Data",
+   "label": "Pay Link Template",
+   "description": "Name of the OpenWA template (Templates page, per session) used when sending a Paytm pay link. Placeholders: {{customer_name}} {{amount}} {{bill_no}} {{valid_minutes}} {{link}}. Blank or not found: the built-in message is sent."
   }
  ],
  "links": [],
- "modified": "2026-10-23 12:30:00",
+ "modified": "2026-10-25 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL WhatsApp Settings",
