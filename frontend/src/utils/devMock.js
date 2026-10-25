@@ -5,6 +5,7 @@
 // - WhatsApp mock answers the OpenWA sends (pay link, bill PDF) so nothing reaches a customer; what
 //   would have gone is written to the console instead.
 import { ref } from 'vue'
+import { frappePost } from '../api.js'
 
 const PAYTM_KEY = 'wb-paytm-mock'
 const WHATSAPP_KEY = 'wb-whatsapp-mock'
@@ -39,8 +40,8 @@ const WHATSAPP_METHODS = new Set([
 ])
 
 // Whether the method is answered here rather than by the server, given the switches now on. A mock
-// Paytm order exists only in this browser, so the server can't send its pay link either: that send
-// is mocked even with the WhatsApp mock off.
+// Paytm order exists only in this browser, so its pay link never goes to the real send: with the
+// WhatsApp mock off it goes to send_mock_pay_link instead (see mockCall).
 export function isMocked(method, args = {}) {
   if (!import.meta.env.DEV) return false
   if (method === 'ssplbilling.api.whatsapp_api.send_receipt_pay_link' && String(args.order_id || '').startsWith('MOCK-')) return true
@@ -119,7 +120,22 @@ function mockWhatsApp(method, args) {
   }
 }
 
+// WhatsApp mock off: really send the mock order's pay link (placeholder link, marked as a test)
+function sendMockPayLink(args) {
+  const o = orders.get(args.order_id)
+  if (!o) return Promise.reject(new Error(`Mock order ${args.order_id} not found`))
+  return frappePost('ssplbilling.api.whatsapp_api.send_mock_pay_link', {
+    invoice_name: o.sales_invoice,
+    mobile: o.customer_mobile,
+    amount: o.amount,
+    order_id: o.order_id,
+    with_bill: args.with_bill,
+    session_id: args.session_id,
+  }, { silent: true })
+}
+
 export async function mockCall(method, args = {}, invoiceInfo = () => ({})) {
+  if (method === 'ssplbilling.api.whatsapp_api.send_receipt_pay_link' && !whatsappMockOn.value) return sendMockPayLink(args)
   await wait(300)
   if (WHATSAPP_METHODS.has(method)) return mockWhatsApp(method, args)
   return mockPaytm(method, args, invoiceInfo)

@@ -667,7 +667,38 @@ def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
 		frappe.throw(_("This QR has expired; generate a new one"))
 	if not txn.customer_mobile:
 		frappe.throw(_("The receipt has no mobile number"))
+	return _send_pay_link(txn, minutes_left, with_bill, session_id)
 
+
+@frappe.whitelist(methods=["POST"])
+def send_mock_pay_link(invoice_name, mobile, amount, order_id, with_bill=0, session_id=None):
+	"""Dev only (developer_mode): send a pay-link message for a browser-side mock Paytm order
+	(frontend utils/devMock.js) so the real WhatsApp / template output can be checked. The link is
+	an unpayable placeholder and the text is marked as a test."""
+	_require_desk_user()
+	if not frappe.conf.developer_mode:
+		frappe.throw(_("Mock pay links can only be sent with developer_mode on"))
+	if not str(order_id).startswith("MOCK-"):
+		frappe.throw(_("Only mock orders can be sent this way"))
+	frappe.has_permission("Sales Invoice", "read", doc=invoice_name, throw=True)
+	txn = frappe._dict(
+		order_id=order_id,
+		sales_invoice=invoice_name,
+		customer=frappe.db.get_value("Sales Invoice", invoice_name, "customer"),
+		customer_mobile=mobile,
+		amount=frappe.utils.flt(amount, 2),
+		channel="QR",
+		qr_data=f"https://example.invalid/mock-pay/{order_id}",
+	)
+	if not txn.customer or not mobile:
+		frappe.throw(_("Mock pay link needs a bill and a mobile number"))
+	return _send_pay_link(txn, 10, with_bill, session_id, test=True)
+
+
+def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False):
+	"""Build the pay-link message (OpenWA template for the usage area, else the built-in text) and
+	send it, as text or as the bill PDF's caption."""
+	is_qr = txn.channel == "QR"
 	settings = _settings()
 	row = _linked_row(settings, session_id=session_id)
 	customer_name = frappe.db.get_value("Customer", txn.customer, "customer_name") or txn.customer
@@ -716,6 +747,9 @@ def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
 		)
 		or text
 	)
+	if test:
+		text = f"[TEST - do not pay]\n{text}"
+	reference = ("Sales Invoice", txn.sales_invoice) if test else ("SSPL Paytm Transaction", txn.order_id)
 	if with_bill:
 		frappe.has_permission("Sales Invoice", "read", doc=txn.sales_invoice, throw=True)
 		pdf_base64, filename = _bill_pdf(txn.sales_invoice)
@@ -725,7 +759,7 @@ def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
 			"send-document",
 			_bill_body(pdf_base64, filename, text),
 			text,
-			reference=("SSPL Paytm Transaction", txn.order_id),
+			reference=reference,
 			row=row,
 		)
 	return _send(
@@ -734,7 +768,7 @@ def send_receipt_pay_link(order_id, session_id=None, with_bill=0):
 		"send-text",
 		{"text": text},
 		text,
-		reference=("SSPL Paytm Transaction", txn.order_id),
+		reference=reference,
 		row=row,
 	)
 
