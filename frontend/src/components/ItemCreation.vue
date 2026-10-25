@@ -78,7 +78,10 @@
 
       <!-- Form Content -->
       <div class="flex-1 overflow-y-auto px-[20px] py-[12px]">
-        <div v-show="activeTab === 'details'" class="grid grid-cols-1 md:grid-cols-3 gap-[24px]">
+        <!-- Both tabs share one grid cell, so the window keeps the Details size and an
+             inactive tab is only hidden (invisible), never collapsed -->
+        <div class="grid">
+        <div class="[grid-area:1/1] grid grid-cols-1 md:grid-cols-3 gap-[24px]" :class="{ invisible: activeTab !== 'details' }">
           <!-- Column 1: Names & Barcodes -->
           <div class="space-y-[16px]">
             <div class="space-y-[4px]">
@@ -453,7 +456,7 @@
         </div>
 
         <!-- Variants: template attributes (ERPNext needs at least one when Has Variants is set) -->
-        <div v-show="activeTab === 'variants'" class="space-y-[16px] max-w-[1200px]">
+        <div class="[grid-area:1/1] self-start space-y-[16px] max-w-[1200px]" :class="{ invisible: activeTab !== 'variants' }">
           <label
             v-if="canToggleVariants"
             class="flex items-center gap-[12px] px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)] cursor-pointer"
@@ -516,6 +519,7 @@
               </table>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
