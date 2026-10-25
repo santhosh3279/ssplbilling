@@ -309,6 +309,10 @@ doc_events = {
 	"SSPL Billing Settings": {
 		"on_update": "ssplbilling.api.ledger_sync.on_billing_settings_change",
 	},
+	"Item Attribute": {
+		"on_update": "ssplbilling.api.item_api.publish_item_attribute_update",
+		"on_trash": "ssplbilling.api.item_api.publish_item_attribute_update",
+	},
 	"Discount Rule": {
 		"after_insert": "ssplbilling.api.discount_rule_api.publish_discount_rule_update",
 		"on_update": "ssplbilling.api.discount_rule_api.publish_discount_rule_update",

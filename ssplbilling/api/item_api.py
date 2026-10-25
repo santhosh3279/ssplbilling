@@ -48,13 +48,14 @@ def get_item_creation_metadata(company=None):
 		"tax_templates": frappe.get_all("Item Tax Template", filters=tax_filters, fields=["name"]),
 		"hsn_codes": frappe.get_all("GST HSN Code", fields=["name", "description"]),
 		"competitive_items": frappe.get_all("Competitive Item", fields=["name"], order_by="name asc"),
-		"item_attributes": get_item_attributes(),
 		"naming_series": get_item_naming_series()
 	}
 
 
+@frappe.whitelist()
 def get_item_attributes():
-	"""Enabled Item Attributes with their values (or numeric range) for the variants tab."""
+	"""Enabled Item Attributes with their values (or numeric range) for the variants tab.
+	The frontend keeps this in IndexedDB and refetches it on item_attribute_update."""
 	attributes = frappe.get_all(
 		"Item Attribute",
 		filters={"disabled": 0},
@@ -69,6 +70,11 @@ def get_item_attributes():
 	for attr in attributes:
 		attr["values"] = values.get(attr.name, [])
 	return attributes
+
+
+def publish_item_attribute_update(doc, method=None):
+	"""Tell every tab to refetch the Item Attribute list (insert, edit, disable, delete)."""
+	frappe.publish_realtime("item_attribute_update", {"name": doc.name}, after_commit=True)
 
 
 def _set_variant_attributes(item, data):

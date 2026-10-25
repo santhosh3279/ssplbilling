@@ -651,6 +651,7 @@ import { useItemCache } from '../services/itemCache.js'
 import { fetchSettings as fetchSettingsShared, syncSettings as syncSettingsShared, loadAllowedTiles as loadAllowedTilesShared, readTileCache, TILE_CACHE_KEY } from '../services/settingsSync.js'
 import { useLedgerCache } from '../services/ledgerCache.js'
 import { useCompetitiveCache } from '../services/competitiveCache.js'
+import { useItemAttributeCache } from '../services/itemAttributeCache.js'
 import { useShortcuts, isSubwindowActive } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole, isDevLicense } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
@@ -746,6 +747,7 @@ function handleFullscreenChange() {
 const { items: cachedItems, refreshItemCache } = useItemCache()
 const { refreshLedgerCache } = useLedgerCache()
 const { refreshCompetitiveCache } = useCompetitiveCache()
+const { ensureItemAttributeCache } = useItemAttributeCache()
 
 // ==================== PERMISSIONS & ROLES ====================
 const permissionTrigger = ref(0)
@@ -1596,6 +1598,7 @@ onMounted(async () => {
     // Non-forced, so this only fetches when nothing matches the (now known) company context.
     refreshLedgerCache()      // Preload ledgers for fast search
     refreshCompetitiveCache() // Competitive Items + pricelist percentages into IndexedDB
+    ensureItemAttributeCache() // Item Attributes (Item Creation → Variants) into IndexedDB
   })
   // MQTT status is fetched by App.vue's connectMqtt() on every page load (shared refs).
 

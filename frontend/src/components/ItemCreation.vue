@@ -494,7 +494,7 @@
                       <select v-model="row.attribute" class="w-full bg-transparent px-[10px] py-[6px] text-2xl text-[var(--color-text)] outline-none cursor-pointer focus:bg-[var(--color-info)]/10 appearance-none">
                         <option value="" class="bg-[var(--color-surface)] text-[var(--color-text)]">Select Attribute...</option>
                         <option
-                          v-for="a in metadata.item_attributes"
+                          v-for="a in itemAttributes"
                           :key="a.name"
                           :value="a.name"
                           :disabled="a.name !== row.attribute && form.attributes.some(r => r.attribute === a.name)"
@@ -553,6 +553,7 @@
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, setItemDisabled, frappeGet, uploadFile } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
+import { useItemAttributeCache } from '../services/itemAttributeCache.js'
 
 const props = defineProps({
   show: Boolean,
@@ -791,6 +792,9 @@ function removeUomRow(idx) {
   form.value.uom_conversions.splice(idx, 1)
 }
 
+// Served from IndexedDB, kept current by item_attribute_update socket events
+const { itemAttributes, ensureItemAttributeCache } = useItemAttributeCache()
+
 function addAttributeRow() {
   form.value.attributes.push({ attribute: '' })
 }
@@ -800,7 +804,7 @@ function removeAttributeRow(idx) {
 }
 
 function attributeValuesLabel(name) {
-  const a = metadata.value.item_attributes?.find(x => x.name === name)
+  const a = itemAttributes.value.find(x => x.name === name)
   if (!a) return ''
   if (Number(a.numeric_values) === 1) return `${a.from_range} to ${a.to_range}, step ${a.increment}`
   return a.values.join(', ') || 'No values defined'
@@ -904,7 +908,6 @@ const metadata = ref({
   tax_templates: [],
   hsn_codes: [],
   competitive_items: [],
-  item_attributes: [],
   naming_series: []
 })
 
@@ -1114,6 +1117,7 @@ watch(() => props.show, async (newVal) => {
   if (newVal) {
     forceCreate.value = false
     activeTab.value = 'details'
+    ensureItemAttributeCache()
     if (!isEditMode.value) {
       resetForm(true)
       await loadMetadata()
@@ -1127,6 +1131,7 @@ watch(() => props.show, async (newVal) => {
 
 onMounted(async () => {
   if (props.show) {
+    ensureItemAttributeCache()
     if (!isEditMode.value) resetForm(true)
     await loadMetadata()
     if (isEditMode.value) {

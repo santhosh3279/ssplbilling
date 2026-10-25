@@ -1,6 +1,7 @@
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { frappeGet } from '../api.js'
 import { invalidateMasterCache } from '../services/masterCache.js'
+import { useItemAttributeCache } from '../services/itemAttributeCache.js'
 import {
   patchItemInCache, updateItemPriceInCache, updateItemStockInCache, updateItemStocksInCache, refreshDiscountRuleCache,
   getLoadedItemScopes, reconcileItemDatasets, removePriceListFromCache, updatePriceListFlagsInCache,
@@ -22,6 +23,7 @@ let _priceHandler = null
 let _stockHandler = null
 let _stockBatchHandler = null
 let _discountRuleHandler = null
+let _itemAttributeHandler = null
 let _connectHandler = null
 let _priceListHandler = null
 let _debounceTimer = null
@@ -197,6 +199,12 @@ export function initItemSync() {
   }
   socket.on('discount_rule_update', _discountRuleHandler)
 
+  _itemAttributeHandler = (data) => {
+    console.log('[useItemSync] received item_attribute_update:', data)
+    useItemAttributeCache().refreshItemAttributeCache()
+  }
+  socket.on('item_attribute_update', _itemAttributeHandler)
+
   // Events sent while disconnected are lost: catch up with a delta per loaded scope. The first
   // connect is the initial one (the page load already synced); hidden tabs wait until visible.
   let initialConnectPending = !socket.connected
@@ -215,7 +223,7 @@ export function initItemSync() {
   clearInterval(_periodicTimer)
   _lastReconcileAt = Date.now() // the page load just synced
   _periodicTimer = setInterval(_periodicCheck, PERIODIC_CHECK_MS)
-  console.log('[useItemSync] subscribed to doctype:Item, listening for list_update, item_price_update, stock_update and discount_rule_update')
+  console.log('[useItemSync] subscribed to doctype:Item, listening for list_update, item_price_update, stock_update, discount_rule_update and item_attribute_update')
 }
 
 export function destroyItemSync() {
@@ -247,6 +255,10 @@ export function destroyItemSync() {
   if (_discountRuleHandler) {
     socket.off('discount_rule_update', _discountRuleHandler)
     _discountRuleHandler = null
+  }
+  if (_itemAttributeHandler) {
+    socket.off('item_attribute_update', _itemAttributeHandler)
+    _itemAttributeHandler = null
   }
   if (_priceListHandler) {
     socket.off('price_list_update', _priceListHandler)
