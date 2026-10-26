@@ -466,6 +466,7 @@ def make_sales_invoice_from_order(order_name, naming_series):
 	from erpnext.selling.doctype.sales_order.sales_order import make_sales_invoice
 
 	from ssplbilling.api.dashboard_api import get_allowed_series
+	from ssplbilling.api.SaleEntry_api import _apply_tax_template
 
 	if not order_name or not frappe.db.exists("Sales Order", order_name):
 		frappe.throw("Sales Order not found")
@@ -482,12 +483,18 @@ def make_sales_invoice_from_order(order_name, naming_series):
 	# ERPNext maps only the qty not yet invoiced and throws if nothing is left
 	si = make_sales_invoice(order_name, ignore_permissions=True)
 
-	# Carry the order's tax template and tax rows over as-is (incl. included_in_print_rate),
-	# so the invoice is taxed exactly like the order rather than by party/tax-category defaults
-	so = frappe.get_doc("Sales Order", order_name)
-	si.taxes_and_charges = so.taxes_and_charges
-	si.set("taxes", [t.as_dict(no_default_fields=True) for t in so.taxes])
-	si.calculate_taxes_and_totals()
+	# Tax like a bill made in this series: use the series' tax template (and inclusive flag)
+	# from SSPL Billing Settings; a series without one keeps the order's taxes
+	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
+	series_row = next((r for r in settings.billing_series if r.series == naming_series), None)
+	if series_row and series_row.tax_template:
+		_apply_tax_template(
+			si,
+			series_row.tax_template,
+			"Sales Taxes and Charges Template",
+			is_inclusive=series_row.tax_type_incl,
+		)
+		si.calculate_taxes_and_totals()
 
 	si.naming_series = naming_series
 	si.posting_date = frappe.utils.today()
