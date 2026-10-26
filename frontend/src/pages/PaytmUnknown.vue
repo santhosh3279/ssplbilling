@@ -31,6 +31,30 @@
           >{{ v.label }}</button>
         </div>
 
+        <div class="flex items-center gap-1 border-b border-[var(--color-border)] p-2">
+          <button
+            @click="shiftDay(-1)"
+            title="Previous day"
+            class="rounded-md bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] font-bold hover:bg-[var(--color-midlight)]"
+          >◀</button>
+          <input
+            type="date"
+            :value="day"
+            @change="setDay($event.target.value)"
+            class="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-center text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+          />
+          <button
+            @click="shiftDay(1)"
+            title="Next day"
+            class="rounded-md bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] font-bold hover:bg-[var(--color-midlight)]"
+          >▶</button>
+          <button
+            @click="setDay(today())"
+            :disabled="day === today()"
+            class="rounded-md bg-[var(--color-surface-raised)] px-2 py-1.5 text-[0.9rem] font-bold uppercase hover:bg-[var(--color-midlight)] disabled:opacity-50"
+          >Today</button>
+        </div>
+
         <template v-if="view === 'log'">
           <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3">
             <div class="flex items-center justify-between">
@@ -40,29 +64,6 @@
                 class="rounded-md px-2 py-0.5 text-[1.05rem] hover:bg-[var(--color-midlight)]"
                 :disabled="logsLoading"
               >{{ logsLoading ? 'Loading…' : '↻ Refresh' }}</button>
-            </div>
-            <div class="flex items-center gap-1">
-              <button
-                @click="shiftLogDate(-1)"
-                title="Previous day"
-                class="rounded-md bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] font-bold hover:bg-[var(--color-midlight)]"
-              >◀</button>
-              <input
-                type="date"
-                :value="logDate"
-                @change="setLogDate($event.target.value)"
-                class="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-center text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
-              />
-              <button
-                @click="shiftLogDate(1)"
-                title="Next day"
-                class="rounded-md bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] font-bold hover:bg-[var(--color-midlight)]"
-              >▶</button>
-              <button
-                @click="setLogDate(today())"
-                :disabled="logDate === today()"
-                class="rounded-md bg-[var(--color-surface-raised)] px-2 py-1.5 text-[0.9rem] font-bold uppercase hover:bg-[var(--color-midlight)] disabled:opacity-50"
-              >Today</button>
             </div>
             <input
               v-model="logSearch"
@@ -74,7 +75,7 @@
               class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
             >
               <option value="">All POS IDs ({{ logs.length }})</option>
-              <option v-for="p in posIds" :key="p.id" :value="p.id">{{ p.id === NO_POS ? 'No POS ID' : p.id }} ({{ p.count }})</option>
+              <option v-for="p in posOptions(logs)" :key="p.id" :value="p.id">{{ p.id === NO_POS ? 'No POS ID' : p.id }} ({{ p.count }})</option>
             </select>
             <div class="flex flex-wrap gap-1">
               <button
@@ -146,6 +147,13 @@
             placeholder="Search ref / txn id / amount"
             class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
           />
+          <select
+            v-model="rowPosFilter"
+            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+          >
+            <option value="">All POS IDs ({{ rows.length }})</option>
+            <option v-for="p in posOptions(rows)" :key="p.id" :value="p.id">{{ p.id === NO_POS ? 'No POS ID' : p.id }} ({{ p.count }})</option>
+          </select>
           <div class="flex flex-wrap gap-1">
             <button
               v-for="s in statusFilters"
@@ -161,7 +169,7 @@
 
         <div class="flex-1 overflow-y-auto custom-scrollbar">
           <div v-if="!filteredRows.length" class="p-6 text-center text-[1.05rem] text-[var(--color-text-muted)]">
-            {{ loading ? 'Loading…' : 'No unknown payments' }}
+            {{ loading ? 'Loading…' : 'No unknown payments on this day' }}
           </div>
           <div
             v-for="r in filteredRows"
@@ -276,7 +284,7 @@
               <div class="flex flex-wrap justify-end gap-2">
                 <button
                   v-if="selectedLog.ref_doctype === 'SSPL Paytm Unknown Payment' && selectedLog.ref_name"
-                  @click="openUnknown(selectedLog.ref_name)"
+                  @click="openUnknown(selectedLog.ref_name, selectedLog.received_at)"
                   class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white"
                 >Open unknown payment</button>
                 <button
@@ -517,7 +525,7 @@ const logSearch = ref('')
 // Local YYYY-MM-DD (toISOString would shift to UTC)
 const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const today = () => ymd(new Date())
-const logDate = ref(today())
+const day = ref(today())
 // linked: 1 booked (submitted invoice / receipt), 0 paid but not booked yet, null no payment to book
 const linkFilters = [
   { id: 'all', label: 'All' },
@@ -531,17 +539,19 @@ const linkMatch = (l, f) =>
 // pos_id: the system order's posId, else the machine's (SSPL Paytm Device) by TID
 const NO_POS = '__none__'
 const posFilter = ref('')
-const posMatch = (l) => !posFilter.value || (l.pos_id || NO_POS) === posFilter.value
-const posIds = computed(() => {
+const rowPosFilter = ref('')
+const posIs = (x, f) => !f || (x.pos_id || NO_POS) === f
+const posMatch = (l) => posIs(l, posFilter.value)
+const posOptions = (list) => {
   const counts = {}
-  for (const l of logs.value) {
-    const id = l.pos_id || NO_POS
+  for (const x of list) {
+    const id = x.pos_id || NO_POS
     counts[id] = (counts[id] || 0) + 1
   }
   return Object.keys(counts)
     .sort((a, b) => (a === NO_POS) - (b === NO_POS) || a.localeCompare(b))
     .map((id) => ({ id, count: counts[id] }))
-})
+}
 const selectedLog = ref(null)
 const showLogPayload = ref(false)
 const logPayloadText = ref('')
@@ -568,6 +578,7 @@ const filteredRows = computed(() => {
   const q = search.value.trim().toLowerCase()
   return rows.value.filter((r) => {
     if (statusFilter.value !== 'All' && r.status !== statusFilter.value) return false
+    if (!posIs(r, rowPosFilter.value)) return false
     if (!q) return true
     return [r.name, r.rrn, r.paytm_txn_id, r.paytm_order_id, r.payment_entry, r.party, String(r.amount)]
       .some((v) => (v || '').toLowerCase().includes(q))
@@ -602,7 +613,7 @@ const slug = (doctype) => (doctype || '').toLowerCase().replace(/ /g, '-')
 async function loadLogs() {
   logsLoading.value = true
   try {
-    logs.value = (await frappeGet(`${API}.get_webhook_logs`, { limit: 500, date: logDate.value })) || []
+    logs.value = (await frappeGet(`${API}.get_webhook_logs`, { limit: 500, date: day.value })) || []
     if (selectedLog.value) selectedLog.value = logs.value.find((l) => l.name === selectedLog.value.name) || null
   } catch (e) {
     error.value = e.message
@@ -611,16 +622,18 @@ async function loadLogs() {
   }
 }
 
-function setLogDate(d) {
-  if (!d || d === logDate.value) return
-  logDate.value = d
+// One day for both views
+function setDay(d) {
+  if (!d || d === day.value) return
+  day.value = d
   posFilter.value = ''
-  loadLogs()
+  rowPosFilter.value = ''
+  refresh()
 }
 
-function shiftLogDate(days) {
-  const [y, m, d] = logDate.value.split('-').map(Number)
-  setLogDate(ymd(new Date(y, m - 1, d + days)))
+function shiftDay(days) {
+  const [y, m, d] = day.value.split('-').map(Number)
+  setDay(ymd(new Date(y, m - 1, d + days)))
 }
 
 function setView(v) {
@@ -654,10 +667,13 @@ async function toggleLogPayload() {
   }
 }
 
-async function openUnknown(name) {
+async function openUnknown(name, receivedAt) {
   view.value = 'unknown'
   error.value = ''
   statusFilter.value = 'All'
+  rowPosFilter.value = ''
+  // the unknown payment is kept on the same day the webhook hit came in
+  if (receivedAt) day.value = receivedAt.slice(0, 10)
   await loadRows()
   const r = rows.value.find((x) => x.name === name)
   if (r) selectRow(r)
@@ -665,13 +681,13 @@ async function openUnknown(name) {
 }
 
 function statusCount(s) {
-  return s === 'All' ? rows.value.length : rows.value.filter((r) => r.status === s).length
+  return rows.value.filter((r) => posIs(r, rowPosFilter.value) && (s === 'All' || r.status === s)).length
 }
 
 async function loadRows() {
   loading.value = true
   try {
-    const res = await frappeGet(`${API}.get_unknown_payments`, { limit: 500 })
+    const res = await frappeGet(`${API}.get_unknown_payments`, { limit: 500, date: day.value })
     rows.value = res.rows || []
     upiAccount.value = res.upi_account || ''
     if (selected.value) selected.value = rows.value.find((r) => r.name === selected.value.name) || null

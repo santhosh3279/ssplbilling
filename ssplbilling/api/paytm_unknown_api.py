@@ -276,13 +276,9 @@ def get_webhook_logs(limit=500, date=None):
 	"""Every webhook hit, newest first, for the Webhook Log view, each marked with whether its
 	money is already booked (see _mark_linked). date (YYYY-MM-DD) limits it to hits received that day."""
 	_require_desk_user()
-	filters = {}
-	if date:
-		day = getdate(date)
-		filters["received_at"] = ("between", [f"{day} 00:00:00", f"{day} 23:59:59.999999"])
 	rows = frappe.get_all(
 		LOG_DOCTYPE,
-		filters=filters,
+		filters=_day_filter(date),
 		fields=[
 			"name",
 			"received_at",
@@ -304,6 +300,24 @@ def get_webhook_logs(limit=500, date=None):
 	return rows
 
 
+def _day_filter(date):
+	"""received_at filter for one day (YYYY-MM-DD), or none."""
+	if not date:
+		return {}
+	day = getdate(date)
+	return {"received_at": ("between", [f"{day} 00:00:00", f"{day} 23:59:59.999999"])}
+
+
+def _tid_pos(rows):
+	"""{tid: POS ID} of the SSPL Paytm Devices the rows' card machines are set up as."""
+	tids = {r.tid for r in rows if r.tid}
+	return dict(
+		frappe.get_all(
+			"SSPL Paytm Device", filters={"tid": ("in", list(tids))}, fields=["tid", "pos_id"], as_list=True
+		)
+	) if tids else {}
+
+
 def _mark_linked(rows):
 	"""Set linked (1 booked, 0 still to book, None no payment to book, e.g. failed or its unknown
 	payment deleted) and linked_to / linked_doctype on each row. A system order is booked once its Sales Invoice is submitted or its receipt Payment
@@ -318,12 +332,7 @@ def _mark_linked(rows):
 			fields=["name", "status", "sales_invoice", "payment_entry", "device_name"],
 		)
 	} if txn_names else {}
-	tids = {r.tid for r in rows if r.tid}
-	tid_pos = dict(
-		frappe.get_all(
-			"SSPL Paytm Device", filters={"tid": ("in", list(tids))}, fields=["tid", "pos_id"], as_list=True
-		)
-	) if tids else {}
+	tid_pos = _tid_pos(rows)
 	invoices = {t.sales_invoice for t in txns.values() if t.sales_invoice}
 	invoice_status = dict(
 		frappe.get_all(
@@ -369,10 +378,13 @@ def get_webhook_log(name):
 
 
 @frappe.whitelist()
-def get_unknown_payments(status=None, limit=200):
-	"""Rows for the left panel, newest first, plus the default To ledger (Paytm UPI account)."""
+def get_unknown_payments(status=None, limit=200, date=None):
+	"""Rows for the left panel, newest first, plus the default To ledger (Paytm UPI account).
+	date (YYYY-MM-DD) limits it to payments received that day; each row gets its machine's pos_id."""
 	_require_desk_user()
-	filters = {"status": status} if status else {}
+	filters = _day_filter(date)
+	if status:
+		filters["status"] = status
 	rows = frappe.get_all(
 		DOCTYPE,
 		filters=filters,
@@ -380,6 +392,9 @@ def get_unknown_payments(status=None, limit=200):
 		order_by="creation desc",
 		limit_page_length=frappe.utils.cint(limit) or 200,
 	)
+	tid_pos = _tid_pos(rows)
+	for r in rows:
+		r.pos_id = tid_pos.get(r.tid)
 	return {
 		"rows": rows,
 		"upi_account": frappe.db.get_single_value("SSPL Paytm Settings", "upi_account"),
