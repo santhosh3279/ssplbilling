@@ -57,19 +57,18 @@
 
         <template v-if="view === 'log'">
           <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3">
-            <div class="flex items-center justify-between">
-              <span class="text-[1.05rem] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Every webhook hit</span>
+            <div class="flex items-center gap-1">
+              <input
+                v-model="logSearch"
+                placeholder="Search order / ref / txn id / result / amount"
+                class="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              />
               <button
                 @click="loadLogs"
-                class="rounded-md px-2 py-0.5 text-[1.05rem] hover:bg-[var(--color-midlight)]"
                 :disabled="logsLoading"
+                class="shrink-0 rounded-lg bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] font-bold hover:bg-[var(--color-midlight)] disabled:opacity-50"
               >{{ logsLoading ? 'Loading…' : '↻ Refresh' }}</button>
             </div>
-            <input
-              v-model="logSearch"
-              placeholder="Search order / ref / txn id / result / amount"
-              class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
-            />
             <select
               v-model="posFilter"
               class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
@@ -134,19 +133,18 @@
 
         <template v-else>
         <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3">
-          <div class="flex items-center justify-between">
-            <span class="text-[1.05rem] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Unknown Payments</span>
+          <div class="flex items-center gap-1">
+            <input
+              v-model="search"
+              placeholder="Search ref / txn id / amount"
+              class="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+            />
             <button
               @click="loadRows"
-              class="rounded-md px-2 py-0.5 text-[1.05rem] hover:bg-[var(--color-midlight)]"
               :disabled="loading"
+              class="shrink-0 rounded-lg bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] font-bold hover:bg-[var(--color-midlight)] disabled:opacity-50"
             >{{ loading ? 'Loading…' : '↻ Refresh' }}</button>
           </div>
-          <input
-            v-model="search"
-            placeholder="Search ref / txn id / amount"
-            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
-          />
           <select
             v-model="rowPosFilter"
             class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
