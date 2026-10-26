@@ -59,7 +59,9 @@ import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
   show: Boolean,
-  doctype: { type: String, default: 'Sales Invoice' }
+  doctype: { type: String, default: 'Sales Invoice' },
+  // false = one-off pick that must not change the session's billing series
+  persist: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['close', 'selected'])
@@ -85,8 +87,10 @@ async function fetchAllowedSeries() {
 }
 
 function selectSeries(s) {
-  currentSeries.value = s
-  localStorage.setItem('wb-series', s)
+  if (props.persist) {
+    currentSeries.value = s
+    localStorage.setItem('wb-series', s)
+  }
   emit('selected', s)
   emit('close')
 }

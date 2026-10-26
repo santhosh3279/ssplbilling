@@ -379,6 +379,7 @@
             <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>          </div>
           <button @click="handleBarcodePrint" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-3xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors">Print Barcode</button>
           <button v-if="isSaved && !isSubmitted" @click="handleSalesOrderSubmit" class="w-full rounded border border-[var(--color-success)] bg-[var(--color-success)] px-4 py-2.5 text-center text-2xl font-semibold text-white">Submit Order</button>
+          <button v-if="isSubmitted" @click="showInvoiceSeriesModal = true" :disabled="creatingInvoice" class="w-full rounded border border-[var(--color-info)] bg-[var(--color-info)] px-4 py-2.5 text-center text-2xl font-semibold text-white disabled:opacity-50">{{ creatingInvoice ? 'Creating Invoice...' : 'Create Sales Invoice' }}</button>
         </div>
       </template>
 
@@ -515,6 +516,14 @@
       doctype="Sales Order"
       @close="showSeriesModal = false"
       @selected="handleSeriesSelected"
+    />
+
+    <Userseries
+      :show="showInvoiceSeriesModal"
+      doctype="Sales Invoice"
+      :persist="false"
+      @close="showInvoiceSeriesModal = false"
+      @selected="createInvoiceFromOrder"
     />
 
     <CustomerPrice
@@ -725,6 +734,8 @@ const { makeRowKey, ignoreDiscountRule } = useDiscountRules({ items, priceList, 
 
 // --- Page & UI State ---
 const showSeriesModal = ref(false)
+const showInvoiceSeriesModal = ref(false)
+const creatingInvoice = ref(false)
 const showCustomerModal = ref(false)
 const showShortcutPage = ref(false)
 const showCustomAddressModal = ref(false)
@@ -1481,6 +1492,24 @@ async function handleSalesOrderSubmit() {
   } catch (e) {
     console.error('Failed to submit sales order:', e)
     alert('Failed to submit sales order.')
+  }
+}
+
+// Draft Sales Invoice from the submitted order, in the series picked from the user's allowed list
+async function createInvoiceFromOrder(series) {
+  if (!isSubmitted.value || creatingInvoice.value) return
+  creatingInvoice.value = true
+  try {
+    const res = await frappePost('ssplbilling.api.sales_order_api.make_sales_invoice_from_order', {
+      order_name: invoiceNo.value,
+      naming_series: series,
+    })
+    alert(`Draft Sales Invoice ${res.invoice_name} created.`)
+  } catch (e) {
+    console.error('Failed to create sales invoice:', e)
+    alert(e.message || 'Failed to create sales invoice.')
+  } finally {
+    creatingInvoice.value = false
   }
 }
 
@@ -2855,7 +2884,7 @@ useShortcuts(salesInvoiceShortcuts({
 
 function handleGlobalEscape(e) {
   if (e.key === 'Escape') {
-    const modalOpen = showSeriesModal.value || showCustomerModal.value ||
+    const modalOpen = showSeriesModal.value || showInvoiceSeriesModal.value || showCustomerModal.value ||
                       showItemSearch.value || showPriceDetectModal.value ||
                       showPrintModal.value || showJumpModal.value ||
                       showCustomAddressModal.value ||
