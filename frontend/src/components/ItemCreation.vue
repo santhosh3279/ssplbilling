@@ -525,11 +525,74 @@
           <div v-if="canManageVariants" class="space-y-[4px]">
             <div class="flex items-center justify-between px-[20px]">
               <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Variants ({{ variants.length }})</label>
-              <button
-                type="button"
-                @click="toggleVariantCreate"
-                class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors"
-              >{{ showVariantCreate ? '− Cancel' : '+ Create Variants' }}</button>
+              <div class="flex items-center gap-[20px]">
+                <button
+                  type="button"
+                  @click="toggleVariantLink"
+                  class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors"
+                >{{ showVariantLink ? '− Cancel' : '+ Link Existing Item' }}</button>
+                <button
+                  type="button"
+                  @click="toggleVariantCreate"
+                  class="text-xl font-bold text-[var(--color-info)] hover:text-[var(--color-info)] transition-colors"
+                >{{ showVariantCreate ? '− Cancel' : '+ Create Variants' }}</button>
+              </div>
+            </div>
+
+            <!-- Link an existing normal item as a variant: it keeps its code, name and stock -->
+            <div v-if="showVariantLink" class="border border-[var(--color-info)]/40 bg-[var(--color-info)]/5 p-[12px] space-y-[10px]">
+              <div class="flex items-start gap-[12px]">
+                <span class="w-48 shrink-0 pt-[4px] text-2xl font-bold text-[var(--color-text)]">Item</span>
+                <div class="flex-1 space-y-[6px]">
+                  <div v-if="linkItem" class="flex items-center gap-[12px] text-xl">
+                    <span class="font-bold text-[var(--color-text)]">{{ linkItem.item_code }}</span>
+                    <span class="text-[var(--color-text-muted)]">{{ linkItem.item_name }} · {{ linkItem.stock_uom }}</span>
+                    <button type="button" @click="linkItem = null" class="font-bold text-[var(--color-info)]">Change</button>
+                  </div>
+                  <template v-else>
+                    <input
+                      v-model="linkSearch"
+                      @input="onLinkSearch"
+                      type="text"
+                      placeholder="Search normal item by code or name"
+                      class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-[10px] py-[4px] text-xl text-[var(--color-text)] focus:outline-none focus:bg-[var(--color-info)]/10"
+                    />
+                    <div v-if="linkResults.length" class="max-h-[24vh] overflow-y-auto border border-[var(--color-border)] bg-[var(--color-surface)]">
+                      <button
+                        v-for="it in linkResults"
+                        :key="it.item_code"
+                        type="button"
+                        @click="linkItem = it"
+                        class="flex w-full gap-[12px] px-[10px] py-[4px] text-left text-xl hover:bg-[var(--color-info)]/10"
+                        :class="{ 'opacity-50': Number(it.disabled) }"
+                      >
+                        <span class="font-bold text-[var(--color-text)]">{{ it.item_code }}</span>
+                        <span class="truncate text-[var(--color-text-muted)]">{{ it.item_name }} · {{ it.stock_uom }}</span>
+                      </button>
+                    </div>
+                    <span v-else-if="linkSearch.trim() && !linkSearching" class="text-xl italic text-[var(--color-text-muted)]">No normal items found</span>
+                  </template>
+                </div>
+              </div>
+              <div v-for="attr in savedAttributes" :key="attr" class="flex items-center gap-[12px]">
+                <span class="w-48 shrink-0 text-2xl font-bold text-[var(--color-text)]">{{ attr }}</span>
+                <select
+                  v-model="linkDraft[attr]"
+                  class="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-[10px] py-[4px] text-xl text-[var(--color-text)] focus:outline-none focus:bg-[var(--color-info)]/10"
+                >
+                  <option value="" class="bg-[var(--color-surface)] text-[var(--color-text)]">Select…</option>
+                  <option v-for="val in attributeValueOptions(attr)" :key="val" :value="val" class="bg-[var(--color-surface)] text-[var(--color-text)]">{{ val }}</option>
+                </select>
+              </div>
+              <div class="flex items-center justify-end gap-[12px]">
+                <span class="text-xl text-[var(--color-text-muted)]">Item code, name, stock and history are kept</span>
+                <button
+                  type="button"
+                  @click="submitVariantLink"
+                  :disabled="!canLinkVariant || isLinkingVariant"
+                  class="rounded-lg bg-[var(--color-info)] px-[16px] py-[6px] text-xl font-bold uppercase text-[var(--color-text-on-highlight)] transition-colors hover:bg-[var(--color-info)]/80 disabled:opacity-50 disabled:pointer-events-none"
+                >{{ isLinkingVariant ? 'Linking…' : 'Link' }}</button>
+              </div>
             </div>
 
             <div v-if="showVariantCreate" class="border border-[var(--color-info)]/40 bg-[var(--color-info)]/5 p-[12px] space-y-[10px]">
@@ -758,7 +821,7 @@
 
 <script setup>
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
-import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, setItemDisabled, getItemVariants, createItemVariants, updateVariantAttributes, frappeGet, uploadFile } from '../api.js'
+import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, setItemDisabled, getItemVariants, createItemVariants, updateVariantAttributes, searchLinkableItems, linkItemAsVariant, frappeGet, uploadFile } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { useItemAttributeCache } from '../services/itemAttributeCache.js'
 
@@ -891,6 +954,7 @@ async function loadForEdit(itemCode) {
     variants.value = []
     cancelVariantEdit()
     showVariantCreate.value = false
+    showVariantLink.value = false
     if (savedTemplate.value) loadVariants()
   } catch (e) {
     console.error('[ItemCreation] loadForEdit failed:', e)
@@ -1158,6 +1222,74 @@ function attributeValueOptions(name) {
 function toggleVariantCreate() {
   showVariantCreate.value = !showVariantCreate.value
   variantSelection.value = {}
+  showVariantLink.value = false
+}
+
+// Link an existing normal item as a variant of this template
+const showVariantLink = ref(false)
+const linkSearch = ref('')
+const linkResults = ref([])
+const linkSearching = ref(false)
+const linkItem = ref(null)
+const linkDraft = ref({}) // { attribute: value }
+const isLinkingVariant = ref(false)
+let linkSearchTimer = null
+let linkSearchSeq = 0
+
+const canLinkVariant = computed(() => !!linkItem.value && savedAttributes.value.every(attr => linkDraft.value[attr]))
+
+function resetVariantLink() {
+  clearTimeout(linkSearchTimer)
+  linkSearch.value = ''
+  linkResults.value = []
+  linkItem.value = null
+  linkDraft.value = Object.fromEntries(savedAttributes.value.map(attr => [attr, '']))
+}
+
+function toggleVariantLink() {
+  showVariantLink.value = !showVariantLink.value
+  resetVariantLink()
+  showVariantCreate.value = false
+}
+
+function onLinkSearch() {
+  clearTimeout(linkSearchTimer)
+  const txt = linkSearch.value.trim()
+  if (!txt) {
+    linkResults.value = []
+    return
+  }
+  linkSearchTimer = setTimeout(async () => {
+    const seq = ++linkSearchSeq
+    linkSearching.value = true
+    try {
+      const rows = (await searchLinkableItems(props.editItemCode, txt)) || []
+      if (seq === linkSearchSeq) linkResults.value = rows
+    } catch (e) {
+      console.error('[ItemCreation] searchLinkableItems failed:', e)
+    } finally {
+      if (seq === linkSearchSeq) linkSearching.value = false
+    }
+  }, 250)
+}
+
+async function submitVariantLink() {
+  if (!canLinkVariant.value || isLinkingVariant.value) return
+  const code = linkItem.value.item_code
+  if (!confirm(`Make ${code} a variant of ${props.editItemCode}? This cannot be undone from here.`)) return
+  isLinkingVariant.value = true
+  try {
+    await linkItemAsVariant(props.editItemCode, code, linkDraft.value)
+    alert(`${code} is now a variant of ${props.editItemCode}`)
+    if (!variantsLock.value) variantsLock.value = 'Variants already created from this template'
+    showVariantLink.value = false
+    resetVariantLink()
+    await loadVariants()
+  } catch (e) {
+    alert('Failed to link item: ' + e.message)
+  } finally {
+    isLinkingVariant.value = false
+  }
 }
 
 function toggleVariantValue(attr, val) {

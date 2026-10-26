@@ -782,6 +782,16 @@ export async function createItemVariants(template, args) {
   return frappePost("ssplbilling.api.item_api.create_item_variants", { template, args: JSON.stringify(args) });
 }
 
+/** Normal items (not template, not variant) to link as variants of the template. */
+export async function searchLinkableItems(template, txt) {
+  return frappeGet("ssplbilling.api.item_api.search_linkable_items", { template, txt });
+}
+
+/** attributes: { attribute: value } — an existing normal item becomes a variant, keeping its code and stock. */
+export async function linkItemAsVariant(template, itemCode, attributes) {
+  return frappePost("ssplbilling.api.item_api.link_item_as_variant", { template, item_code: itemCode, attributes: JSON.stringify(attributes) });
+}
+
 /** attributes: { attribute: value } — the variant keeps its item code. */
 export async function updateVariantAttributes(variant, attributes, disabled) {
   return frappePost("ssplbilling.api.item_api.update_variant_attributes", { variant, attributes: JSON.stringify(attributes), disabled: disabled ? 1 : 0 });

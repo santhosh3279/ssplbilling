@@ -161,6 +161,80 @@ def update_variant_attributes(variant, attributes, disabled=None):
 	return {"item_code": doc.name, "item_name": doc.item_name, "disabled": doc.disabled}
 
 
+@frappe.whitelist()
+def search_linkable_items(template, txt=""):
+	"""Normal items (neither template nor variant) matching code or name, to link as variants."""
+	txt = f"%{(txt or '').strip()}%"
+	return frappe.get_all(
+		"Item",
+		filters={"has_variants": 0, "variant_of": ["is", "not set"], "name": ["!=", template]},
+		or_filters={"item_code": ["like", txt], "item_name": ["like", txt]},
+		fields=["item_code", "item_name", "stock_uom", "disabled"],
+		order_by="item_code asc",
+		limit=20,
+	)
+
+
+# Copied from the template onto its variants on every template save (copy_attributes_to_variant),
+# then frozen by cant_change once transactions exist, so a mismatch would block later template saves.
+_VARIANT_MATCH_FIELDS = ("is_stock_item", "has_batch_no", "has_serial_no")
+
+
+@frappe.whitelist()
+def link_item_as_variant(template, item_code, attributes):
+	"""Make an existing normal item a variant of the template with the given values ({attribute: value}).
+	The item keeps its code, name, stock and history. ERPNext refuses to set Variant Of once stock
+	transactions exist, so such items get variant_of and the attribute rows written directly, after the
+	same checks ERPNext runs on a new variant."""
+	from erpnext.controllers.item_variant import get_variant, validate_item_variant_attributes
+
+	attributes = frappe.parse_json(attributes) or {}
+	doc = frappe.get_doc("Item", item_code)
+	doc.check_permission("write")
+	tmpl = frappe.get_doc("Item", template)
+	if not tmpl.has_variants:
+		frappe.throw(f"Item {template} is not a template (Has Variants is not set)")
+	if (tmpl.variant_based_on or "Item Attribute") != "Item Attribute":
+		frappe.throw(f"Template {template} is not based on Item Attribute")
+	if doc.name == tmpl.name or doc.has_variants:
+		frappe.throw(f"Item {item_code} is a template")
+	if doc.variant_of:
+		frappe.throw(f"Item {item_code} is already a variant of {doc.variant_of}")
+
+	args = {row.attribute: str(attributes.get(row.attribute) or "").strip() for row in tmpl.attributes}
+	if not args or not all(args.values()):
+		frappe.throw("Every attribute needs a value")
+	for field in _VARIANT_MATCH_FIELDS:
+		if frappe.utils.cint(doc.get(field)) != frappe.utils.cint(tmpl.get(field)):
+			label = doc.meta.get_label(field)
+			frappe.throw(f"{label} differs between {item_code} and template {template}")
+	if doc.stock_uom != tmpl.stock_uom and not frappe.db.get_single_value(
+		"Item Variant Settings", "allow_different_uom"
+	):
+		frappe.throw(
+			f"Stock UOM of {item_code} ({doc.stock_uom}) must match template {template} ({tmpl.stock_uom})"
+		)
+	existing = get_variant(template, args, doc.name)
+	if existing:
+		frappe.throw(f"Item variant {existing} exists with same attributes")
+	validate_item_variant_attributes(frappe._dict(name=doc.name, variant_of=template), args)
+
+	doc.set("attributes", [])
+	for attribute, value in args.items():
+		doc.append("attributes", {"attribute": attribute, "attribute_value": value, "variant_of": template})
+	doc.variant_of = template
+	doc.variant_based_on = "Item Attribute"
+	if not doc.stock_ledger_created():
+		doc.save()
+	else:
+		frappe.db.delete("Item Variant Attribute", {"parenttype": "Item", "parent": doc.name})
+		for row in doc.attributes:
+			row.db_insert()
+		doc.db_set({"variant_of": template, "variant_based_on": "Item Attribute"})
+		doc.add_comment("Edit", f"Linked as a variant of {template} with stock transactions present")
+	return {"item_code": doc.name, "item_name": doc.item_name}
+
+
 def publish_item_attribute_update(doc, method=None):
 	"""Tell every tab to refetch the Item Attribute list (insert, edit, disable, delete)."""
 	frappe.publish_realtime("item_attribute_update", {"name": doc.name}, after_commit=True)
