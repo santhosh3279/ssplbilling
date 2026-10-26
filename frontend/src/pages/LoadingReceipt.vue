@@ -11,6 +11,8 @@
       </div>
       <div class="flex items-center gap-3 text-sm text-[var(--color-text-muted)]">
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Tab</kbd> Next field</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">&uarr;&darr;</kbd> Row</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+Del</kbd> Delete row</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">End</kbd> Save</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Ctrl+S</kbd> Save</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Esc</kbd> Back</span>
@@ -41,7 +43,7 @@
             placeholder="Bill / Ref No"
             class="w-64 rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             @keydown.enter.prevent="focusCustomer"
-            @keydown.tab.prevent="focusCustomer"
+            @keydown.tab.exact.prevent="focusCustomer"
           />
         </div>
 
@@ -163,106 +165,105 @@
                 </tr>
               </thead>
               <tbody>
-                <!-- Existing rows -->
+                <!-- Existing rows: every cell is always editable -->
                 <tr
                   v-for="(row, idx) in rows"
-                  :key="idx"
-                  :ref="el => setRowRef(el, idx)"
-                  tabindex="-1"
-                  class="group outline-none transition-colors"
-                  :class="selectedRow === idx ? 'bg-[var(--color-info)]/10' : 'hover:bg-[var(--color-surface)]/40'"
-                  @click="selectRow(idx)"
-                  @keydown="onRowKeydown($event, idx)"
+                  :key="row._k"
+                  class="transition-colors"
+                  :class="activeRow === idx ? 'bg-[var(--color-success)]/15' : 'hover:bg-[var(--color-surface-raised)]/40'"
+                  @focusin="setActiveRow(idx)"
                 >
                   <td class="border border-[var(--color-border)] px-[1px] py-0 text-center text-[var(--color-text-muted)] font-mono bg-[var(--color-surface-raised)]/50 leading-none">{{ idx + 1 }}</td>
 
                   <!-- Item code -->
-                  <td class="border border-[var(--color-border)] px-0 py-0 relative" :class="{ 'ring-2 ring-inset ring-[var(--color-info)]': selectedRow === idx }">
-                    <div v-if="selectedRow === idx" class="relative">
-                      <input
-                        :ref="el => setRef(el, 'item', idx)"
-                        v-model="row.item"
-                        class="w-full bg-transparent px-[1px] font-mono text-[var(--color-text)] outline-none leading-none"
-                        @input="onRowItemInput(idx)"
-                        @keydown.enter.prevent="onRowItemEnter(idx)"
-                        @keydown.tab.prevent="focusField('qty', idx)"
-                        @keydown.down.prevent="onRowItemDown(idx)"
-                        @keydown.up.prevent="onRowItemUp(idx)"
-                        @keydown.escape="itemDropdownIdx = null"
-                      />
+                  <td class="border border-[var(--color-border)] px-0 py-0 relative">
+                    <input
+                      :ref="el => setRef(el, 'item', row._k)"
+                      v-model="row.item"
+                      :class="cellInput"
+                      class="font-mono font-semibold"
+                      @focus="selectAll"
+                      @blur="closeRowDropdown"
+                      @input="onRowItemInput(idx)"
+                      @keydown.enter.prevent="onRowItemEnter(idx)"
+                      @keydown.down.prevent="onRowItemDown(idx)"
+                      @keydown.up.prevent="onRowItemUp(idx)"
+                      @keydown.escape="onRowItemEscape"
+                      @keydown.ctrl.delete.prevent="removeRow(idx)"
+                    />
+                    <div
+                      v-if="itemDropdownIdx === idx && rowItemResults.length"
+                      class="absolute left-0 top-full z-50 mt-1 w-[600px] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
+                    >
                       <div
-                        v-if="itemDropdownIdx === idx && rowItemResults.length"
-                        class="absolute left-0 top-full z-50 mt-1 w-[600px] overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] shadow-2xl"
+                        v-for="(it, i) in rowItemResults"
+                        :key="it.item_code"
+                        class="cursor-pointer px-3 py-2 text-xl"
+                        :class="i === rowItemHighlight ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]'"
+                        @mousedown.prevent="pickRowItem(idx, it)"
+                        @mouseover="rowItemHighlight = i"
                       >
-                        <div
-                          v-for="(it, i) in rowItemResults"
-                          :key="it.item_code"
-                          class="cursor-pointer px-3 py-2 text-xl"
-                          :class="i === rowItemHighlight ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text)] hover:bg-[var(--color-surface)]'"
-                          @mousedown.prevent="pickRowItem(idx, it)"
-                          @mouseover="rowItemHighlight = i"
-                        >
-                          <div class="flex items-baseline gap-3">
-                            <span class="font-mono font-semibold text-[27px] shrink-0">{{ it.item_code }}</span>
-                            <span class="text-[22.5px] truncate" :class="i === rowItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</span>
-                          </div>
+                        <div class="flex items-baseline gap-3">
+                          <span class="font-mono font-semibold text-[27px] shrink-0">{{ it.item_code }}</span>
+                          <span class="text-[22.5px] truncate" :class="i === rowItemHighlight ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ it.item_name }}</span>
                         </div>
                       </div>
                     </div>
-                    <span v-else class="px-[1px] font-mono font-semibold text-[var(--color-info)] leading-none block">{{ row.item || '--' }}</span>
                   </td>
 
                   <!-- Item name -->
-                  <td class="border border-[var(--color-border)] px-0 py-0" :class="{ 'ring-2 ring-inset ring-[var(--color-info)]': selectedRow === idx }">
+                  <td class="border border-[var(--color-border)] px-0 py-0">
                     <input
-                      v-if="selectedRow === idx"
-                      :ref="el => setRef(el, 'item_name', idx)"
+                      :ref="el => setRef(el, 'item_name', row._k)"
                       v-model="row.item_name"
-                      class="w-full bg-transparent px-[1px] text-[var(--color-text)] outline-none leading-none"
+                      :class="cellInput"
+                      class="truncate"
+                      @focus="selectAll"
                       @keydown.enter.prevent="focusField('qty', idx)"
-                      @keydown.tab.prevent="focusField('qty', idx)"
-                      @keydown.down.prevent="moveRow(idx, 1)"
-                      @keydown.up.prevent="moveRow(idx, -1)"
+                      @keydown.down.prevent="moveRow('item_name', idx, 1)"
+                      @keydown.up.prevent="moveRow('item_name', idx, -1)"
+                      @keydown.ctrl.delete.prevent="removeRow(idx)"
                     />
-                    <span v-else class="px-[1px] text-[var(--color-text)] leading-none block truncate">{{ row.item_name || '--' }}</span>
                   </td>
 
                   <!-- Qty -->
-                  <td class="border border-[var(--color-border)] px-0 py-0 text-right font-mono" :class="{ 'ring-2 ring-inset ring-[var(--color-info)]': selectedRow === idx }">
+                  <td class="border border-[var(--color-border)] px-0 py-0 font-mono">
                     <input
-                      v-if="selectedRow === idx"
-                      :ref="el => setRef(el, 'qty', idx)"
+                      :ref="el => setRef(el, 'qty', row._k)"
                       v-model.number="row.qty"
                       type="number"
                       min="0"
                       step="any"
-                      class="w-full bg-transparent px-[1px] text-right text-[var(--color-text)] outline-none leading-none"
+                      :class="cellInput"
+                      class="text-right"
+                      @focus="selectAll"
+                      @wheel="$event.target.blur()"
                       @input="calcRowAmount(idx)"
                       @keydown.enter.prevent="focusField('rate', idx)"
-                      @keydown.tab.prevent="focusField('rate', idx)"
-                      @keydown.down.prevent="moveRow(idx, 1)"
-                      @keydown.up.prevent="moveRow(idx, -1)"
+                      @keydown.down.prevent="moveRow('qty', idx, 1)"
+                      @keydown.up.prevent="moveRow('qty', idx, -1)"
+                      @keydown.ctrl.delete.prevent="removeRow(idx)"
                     />
-                    <span v-else class="px-[1px] text-[var(--color-text)] leading-none block">{{ row.qty }}</span>
                   </td>
 
                   <!-- Rate -->
-                  <td class="border border-[var(--color-border)] px-0 py-0 text-right font-mono" :class="{ 'ring-2 ring-inset ring-[var(--color-info)]': selectedRow === idx }">
+                  <td class="border border-[var(--color-border)] px-0 py-0 font-mono">
                     <input
-                      v-if="selectedRow === idx"
-                      :ref="el => setRef(el, 'rate', idx)"
+                      :ref="el => setRef(el, 'rate', row._k)"
                       v-model.number="row.rate"
                       type="number"
                       min="0"
                       step="0.01"
-                      class="w-full bg-transparent px-[1px] text-right text-[var(--color-text)] outline-none leading-none"
+                      :class="cellInput"
+                      class="text-right"
+                      @focus="selectAll"
+                      @wheel="$event.target.blur()"
                       @input="calcRowAmount(idx)"
                       @keydown.enter.prevent="goToNextRow(idx)"
-                      @keydown.tab.prevent="goToNextRow(idx)"
-                      @keydown.down.prevent="moveRow(idx, 1)"
-                      @keydown.up.prevent="moveRow(idx, -1)"
+                      @keydown.down.prevent="moveRow('rate', idx, 1)"
+                      @keydown.up.prevent="moveRow('rate', idx, -1)"
+                      @keydown.ctrl.delete.prevent="removeRow(idx)"
                     />
-                    <span v-else class="px-[1px] text-[var(--color-text)] leading-none block">{{ (row.rate || 0).toFixed(2) }}</span>
                   </td>
 
                   <!-- Amount -->
@@ -271,6 +272,8 @@
                   <!-- Delete -->
                   <td class="border border-[var(--color-border)] px-[1px] py-0 text-center">
                     <button
+                      tabindex="-1"
+                      title="Delete row (Ctrl+Del)"
                       class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)] transition leading-none"
                       @click.stop="removeRow(idx)"
                     >&times;</button>
@@ -278,20 +281,23 @@
                 </tr>
 
                 <!-- NEW ROW -->
-                <tr class="bg-[var(--color-info)]/5">
+                <tr class="bg-[var(--color-info)]/5" @focusin="setActiveRow(-1)">
                   <td class="border border-[var(--color-border)] px-[1px] py-0 text-center text-[var(--color-info)] font-bold leading-none">+</td>
-                  <td class="border border-[var(--color-border)] px-[1px] py-0 relative">
+                  <td class="border border-[var(--color-border)] px-0 py-0 relative">
                     <input
                       ref="newItemInput"
                       v-model="newItem.item"
                       placeholder="Item..."
-                      class="w-full bg-transparent px-[1px] font-mono text-[var(--color-text)] outline-none leading-none"
+                      :class="cellInput"
+                      class="font-mono"
+                      @focus="selectAll"
+                      @blur="newItemResults = []"
                       @input="onNewItemInput"
                       @keydown.enter.prevent="onNewItemEnter"
-                      @keydown.tab.prevent="focusNewQty"
+                      @keydown.tab.exact.prevent="focusNewQty"
                       @keydown.down.prevent="onNewItemDown"
                       @keydown.up.prevent="onNewItemUp"
-                      @keydown.escape="newItemResults = []"
+                      @keydown.escape="onNewItemEscape"
                     />
                     <div
                       v-if="newItemResults.length"
@@ -312,30 +318,47 @@
                       </div>
                     </div>
                   </td>
-                  <td class="border border-[var(--color-border)] px-[1px] py-0">
-                    <div class="text-[var(--color-text-muted)] italic text-2xl truncate leading-none">{{ newItem.item_name || 'Item name...' }}</div>
+                  <td class="border border-[var(--color-border)] px-0 py-0">
+                    <input
+                      ref="newNameInput"
+                      v-model="newItem.item_name"
+                      placeholder="Item name..."
+                      :class="cellInput"
+                      class="truncate"
+                      @focus="selectAll"
+                      @keydown.enter.prevent="focusNewQty"
+                      @keydown.up.prevent="moveToLastRow('item_name')"
+                    />
                   </td>
-                  <td class="border border-[var(--color-border)] px-[1px] py-0 text-right">
+                  <td class="border border-[var(--color-border)] px-0 py-0">
                     <input
                       ref="newQtyInput"
                       v-model.number="newItem.qty"
                       type="number"
                       min="0"
                       step="any"
-                      class="w-full bg-transparent px-[1px] text-right font-mono text-[var(--color-text)] outline-none leading-none"
+                      :class="cellInput"
+                      class="text-right font-mono"
+                      @focus="selectAll"
+                      @wheel="$event.target.blur()"
                       @keydown.enter.prevent="addNewRow"
-                      @keydown.tab.prevent="focusNewRate"
+                      @keydown.tab.exact.prevent="focusNewRate"
+                      @keydown.up.prevent="moveToLastRow('qty')"
                     />
                   </td>
-                  <td class="border border-[var(--color-border)] px-[1px] py-0 text-right">
+                  <td class="border border-[var(--color-border)] px-0 py-0">
                     <input
                       ref="newRateInput"
                       v-model.number="newItem.rate"
                       type="number"
                       min="0"
                       step="0.01"
-                      class="w-full bg-transparent px-[1px] text-right font-mono text-[var(--color-text)] outline-none leading-none"
+                      :class="cellInput"
+                      class="text-right font-mono"
+                      @focus="selectAll"
+                      @wheel="$event.target.blur()"
                       @keydown.enter.prevent="addNewRow"
+                      @keydown.up.prevent="moveToLastRow('rate')"
                     />
                   </td>
                   <td class="border border-[var(--color-border)] px-[1px] py-0 text-right font-mono text-[var(--color-text-muted)] font-bold bg-[var(--color-surface-raised)]/30 leading-none">{{ ((newItem.qty || 0) * (newItem.rate || 0)).toFixed(2) }}</td>
@@ -462,15 +485,30 @@ async function fetchTodayTotal() {
 }
 
 // ── FORM STATE ───────────────────────────────────────────────────────
-const form = ref({ date: today, bill_no: '', customer: '', customer_name: '', party_type: 'Customer', time: '' })
+const emptyForm = () => ({ date: today, bill_no: '', customer: '', customer_name: '', party_type: 'Customer', time: '' })
+const form = ref(emptyForm())
 const rows = ref([])
 const docName = ref(null)
 const saving = ref(false)
-const selectedRow = ref(-1)
+const activeRow = ref(-1)
 const showPrint = ref(false)
 const showCustomerModal = ref(false)
 const showItemManager = ref(false)
 const pendingClearAfterPrint = ref(false)
+
+// Every grid cell is an input; the focused one gets a solid fill
+const cellInput = 'w-full bg-transparent px-[1px] text-[var(--color-text)] outline-none leading-none focus:bg-[var(--color-info)] focus:text-[var(--color-text-on-highlight)]'
+
+// Stable per-row key so refs and inputs survive row deletion
+let rowSeq = 0
+const withKey = r => ({ ...r, _k: ++rowSeq })
+
+// ── DIRTY TRACKING ───────────────────────────────────────────────────
+const snapshot = () => JSON.stringify({ form: form.value, rows: rows.value.map(({ _k, ...r }) => r) })
+const savedSnapshot = ref(snapshot())
+const isDirty = computed(() => snapshot() !== savedSnapshot.value)
+function markClean() { savedSnapshot.value = snapshot() }
+function confirmDiscard(msg = 'Discard unsaved changes?') { return !isDirty.value || confirm(msg) }
 
 // customer search
 const customerQuery = ref('')
@@ -489,10 +527,10 @@ let rowItemTimer = null
 
 // refs
 const inputRefs = {}
-const rowRefs = {}
 const billNoInput = ref(null)
 const customerInput = ref(null)
 const newItemInput = ref(null)
+const newNameInput = ref(null)
 const newQtyInput = ref(null)
 const newRateInput = ref(null)
 const saveBtn = ref(null)
@@ -525,36 +563,38 @@ const grandTotal = computed(() => rows.value.reduce((s, r) => s + (r.amount || 0
 const sidebarTotal = computed(() => sidebarReceipts.value.reduce((s, r) => s + (r.total || 0), 0))
 
 // ── REF HELPERS ──────────────────────────────────────────────────────
-function setRef(el, type, idx) { const k = `${type}-${idx}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
-function setRowRef(el, idx)    { if (el) rowRefs[idx] = el; else delete rowRefs[idx] }
-function focusField(f, idx)    { nextTick(() => inputRefs[`${f}-${idx}`]?.focus()) }
-function focusRow(idx)         { nextTick(() => rowRefs[idx]?.focus()) }
-function focusBillNo()         { nextTick(() => { billNoInput.value?.focus(); billNoInput.value?.select() }) }
+const NEW_ROW_REFS = { item: newItemInput, item_name: newNameInput, qty: newQtyInput, rate: newRateInput }
+
+function setRef(el, type, key) { const k = `${type}-${key}`; if (el) inputRefs[k] = el; else delete inputRefs[k] }
+function focusEl(el)           { el?.focus(); el?.select?.() }
+function focusField(f, idx)    { nextTick(() => focusEl(inputRefs[`${f}-${rows.value[idx]?._k}`])) }
+function focusNewField(f)      { nextTick(() => focusEl(NEW_ROW_REFS[f]?.value)) }
+function focusBillNo()         { nextTick(() => focusEl(billNoInput.value)) }
 function focusCustomer()       { nextTick(() => { customerInput.value?.focus() }) }
-function focusNewItem()        { nextTick(() => newItemInput.value?.focus()) }
-function focusNewQty()         { nextTick(() => { newQtyInput.value?.focus(); newQtyInput.value?.select() }) }
-function focusNewRate()        { nextTick(() => { newRateInput.value?.focus(); newRateInput.value?.select() }) }
+function focusNewItem()        { focusNewField('item') }
+function focusNewQty()         { focusNewField('qty') }
+function focusNewRate()        { focusNewField('rate') }
+function selectAll(e)          { e.target.select() }
 
 // ── ROW NAVIGATION ───────────────────────────────────────────────────
-function selectRow(idx) { selectedRow.value = idx; focusRow(idx) }
-function moveRow(from, dir) {
-  const next = from + dir
-  if (next >= 0 && next < rows.value.length) { selectedRow.value = next; focusRow(next) }
-  else if (dir === 1) { selectedRow.value = -1; focusNewItem() }
+function setActiveRow(idx) {
+  if (activeRow.value === idx) return
+  activeRow.value = idx
+  rowItemResults.value = []
+  itemDropdownIdx.value = null
 }
-function moveToLastRow() {
-  if (rows.value.length) { selectedRow.value = rows.value.length - 1; focusRow(rows.value.length - 1) }
+// Move up/down staying in the same column; past the last row lands in the new row
+function moveRow(field, from, dir) {
+  const next = from + dir
+  if (next >= 0 && next < rows.value.length) focusField(field, next)
+  else if (dir === 1) focusNewField(field)
+}
+function moveToLastRow(field = 'item') {
+  if (rows.value.length) focusField(field, rows.value.length - 1)
 }
 function goToNextRow(from) {
-  const next = from + 1
-  if (next < rows.value.length) { selectedRow.value = next; focusRow(next) }
-  else { selectedRow.value = -1; focusNewItem() }
-}
-function onRowKeydown(e, idx) {
-  if (e.target !== e.currentTarget) return
-  if (e.key === 'ArrowDown')  { e.preventDefault(); moveRow(idx, 1) }
-  else if (e.key === 'ArrowUp')  { e.preventDefault(); moveRow(idx, -1) }
-  else if (e.key === 'Enter')    { e.preventDefault(); focusField('item', idx) }
+  if (from + 1 < rows.value.length) focusField('item', from + 1)
+  else focusNewItem()
 }
 
 // ── AMOUNT CALC ──────────────────────────────────────────────────────
@@ -565,7 +605,9 @@ function calcRowAmount(idx) {
 
 function removeRow(idx) {
   rows.value.splice(idx, 1)
-  selectedRow.value = -1
+  activeRow.value = -1
+  if (idx < rows.value.length) focusField('item', idx)
+  else focusNewItem()
 }
 
 // ── CUSTOMER SEARCH ──────────────────────────────────────────────────
@@ -612,6 +654,11 @@ function onNewItemUp() {
   }
 }
 
+// Esc with the dropdown open only closes it; it must not reach the page-level "back" handler
+function onNewItemEscape(e) {
+  if (newItemResults.value.length) { e.stopPropagation(); newItemResults.value = [] }
+}
+
 function pickNewItem(it) {
   newItem.value.item = it.item_code
   newItem.value.item_name = it.item_name
@@ -623,13 +670,13 @@ function pickNewItem(it) {
 function addNewRow() {
   if (!newItem.value.item) return
   const amount = (newItem.value.qty || 0) * (newItem.value.rate || 0)
-  rows.value.push({
+  rows.value.push(withKey({
     item: newItem.value.item,
     item_name: newItem.value.item_name,
     qty: newItem.value.qty || 1,
     rate: newItem.value.rate || 0,
     amount,
-  })
+  }))
   newItem.value = { item: '', item_name: '', qty: 1, rate: 0 }
   newItemResults.value = []
   focusNewItem()
@@ -645,30 +692,45 @@ function onRowItemInput(idx) {
   rowItemTimer = setTimeout(async () => {
     try {
       const res = await frappePost(`${API}.search_loading_items`, { query: q })
-      rowItemResults.value = res || []
+      // ignore results that arrive after the user left this cell
+      if (itemDropdownIdx.value === idx) rowItemResults.value = res || []
     } catch { rowItemResults.value = [] }
   }, 250)
 }
 
+function closeRowDropdown() {
+  clearTimeout(rowItemTimer)
+  rowItemResults.value = []
+  itemDropdownIdx.value = null
+}
+
+function rowDropdownOpen(idx) {
+  return itemDropdownIdx.value === idx && rowItemResults.value.length > 0
+}
+
 function onRowItemEnter(idx) {
-  if (rowItemResults.value.length) pickRowItem(idx, rowItemResults.value[rowItemHighlight.value])
-  else focusField('qty', idx)
+  if (rowDropdownOpen(idx)) pickRowItem(idx, rowItemResults.value[rowItemHighlight.value])
+  else focusField('item_name', idx)
 }
 
 function onRowItemDown(idx) {
-  if (rowItemResults.value.length) {
+  if (rowDropdownOpen(idx)) {
     rowItemHighlight.value = (rowItemHighlight.value + 1) % rowItemResults.value.length
   } else {
-    moveRow(idx, 1)
+    moveRow('item', idx, 1)
   }
 }
 
 function onRowItemUp(idx) {
-  if (rowItemResults.value.length) {
+  if (rowDropdownOpen(idx)) {
     rowItemHighlight.value = (rowItemHighlight.value - 1 + rowItemResults.value.length) % rowItemResults.value.length
   } else {
-    moveRow(idx, -1)
+    moveRow('item', idx, -1)
   }
+}
+
+function onRowItemEscape(e) {
+  if (rowItemResults.value.length) { e.stopPropagation(); closeRowDropdown() }
 }
 
 function pickRowItem(idx, it) {
@@ -676,8 +738,7 @@ function pickRowItem(idx, it) {
   rows.value[idx].item_name = it.item_name
   rows.value[idx].rate = it.rate || 0
   calcRowAmount(idx)
-  rowItemResults.value = []
-  itemDropdownIdx.value = null
+  closeRowDropdown()
   focusField('qty', idx)
 }
 
@@ -693,11 +754,12 @@ async function saveReceipt() {
       ...form.value,
       amount: grandTotal.value,
       total: grandTotal.value,
-      loading_items: rows.value,
+      loading_items: rows.value.map(({ _k, ...r }) => r),
     }
     const method = docName.value ? 'update_loading_receipt' : 'create_loading_receipt'
     const res = await frappePost(`${API}.${method}`, { data: JSON.stringify(payload) })
     docName.value = res.name
+    markClean()
     // sync sidebar to the saved receipt's date
     sidebarDate.value = form.value.date
     await Promise.all([fetchSidebarReceipts(), fetchTodayTotal()])
@@ -710,18 +772,26 @@ async function saveReceipt() {
   }
 }
 
-function clearForm() {
-  if (rows.value.length && !confirm('Clear all data and start a new receipt?')) return
-  form.value = { date: today, bill_no: '', customer: '', customer_name: '', party_type: 'Customer', time: '' }
+function resetForm() {
+  form.value = emptyForm()
   customerQuery.value = ''
   rows.value = []
+  newItem.value = { item: '', item_name: '', qty: 1, rate: 0 }
   docName.value = null
-  selectedRow.value = -1
+  activeRow.value = -1
   pendingClearAfterPrint.value = false
+  markClean()
   nextTick(focusBillNo)
 }
 
+function clearForm() {
+  if (!confirmDiscard('Clear all data and start a new receipt?')) return
+  resetForm()
+}
+
 async function loadReceipt(name) {
+  if (name === docName.value) return
+  if (!confirmDiscard('Discard unsaved changes and open ' + name + '?')) return
   try {
     const d = await frappePost(`${API}.get_loading_receipt`, { name })
     docName.value = d.name
@@ -734,10 +804,13 @@ async function loadReceipt(name) {
       customer_name: d.customer_name,
     }
     customerQuery.value = d.customer_name || d.customer
-    rows.value = d.loading_items.map(r => ({ ...r }))
-    selectedRow.value = -1
+    rows.value = d.loading_items.map(withKey)
+    activeRow.value = -1
     pendingClearAfterPrint.value = false
-    nextTick(focusBillNo)
+    markClean()
+    // land on the first row so the operator can start editing right away
+    if (rows.value.length) focusField('item', 0)
+    else focusNewItem()
   } catch (e) {
     alert(e.message || 'Failed to load receipt')
   }
@@ -745,23 +818,21 @@ async function loadReceipt(name) {
 
 function closePrintModal() {
   showPrint.value = false
-  if (pendingClearAfterPrint.value) {
-    pendingClearAfterPrint.value = false
-    form.value = { date: today, bill_no: '', customer: '', customer_name: '', party_type: 'Customer', time: '' }
-    customerQuery.value = ''
-    rows.value = []
-    docName.value = null
-    selectedRow.value = -1
-    nextTick(focusBillNo)
-  }
+  if (pendingClearAfterPrint.value) resetForm()
 }
 
 // ── KEYBOARD SHORTCUTS ───────────────────────────────────────────────
+// End saves, unless the caret sits mid-text in a text field (then End just moves the caret)
+function endShouldSave(el) {
+  if (!el || el.tagName !== 'INPUT' || el.type !== 'text') return true
+  return el.selectionEnd == null || el.selectionEnd >= el.value.length
+}
+
 function onKeydown(e) {
   if (showPrint.value || showCustomerModal.value || showItemManager.value) return
   if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveReceipt() }
-  if (e.key === 'End') { e.preventDefault(); saveReceipt() }
-  if (e.key === 'Escape') { router.push('/') }
+  if (e.key === 'End' && !e.shiftKey && endShouldSave(e.target)) { e.preventDefault(); saveReceipt() }
+  if (e.key === 'Escape' && confirmDiscard('Discard unsaved changes and go back?')) { router.push('/') }
 }
 
 onMounted(() => {
