@@ -841,7 +841,7 @@
       <div class="w-full max-w-md bg-[var(--color-surface)] rounded-2xl shadow-2xl overflow-hidden border border-[var(--color-border)] animate-in fade-in zoom-in duration-200">
         <div class="p-5 border-b border-[var(--color-border)] flex justify-between items-center">
           <h3 class="text-sm font-bold uppercase tracking-widest text-[var(--color-text)]">Paytm Machine · {{ paytm.payMode === 'CARD' ? 'Card' : 'UPI' }}</h3>
-          <button @click="closePaytmModal" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
+          <button @click="dismissPaytmModal" :title="paytm.orderId && paytm.status === 'Pending' && paytm.payMode === 'QR' ? 'Keep waiting in the UPI queue' : 'Close'" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
         </div>
@@ -880,8 +880,12 @@
             <button
               @click="closePaytmModal"
               :disabled="paytm.sending"
-              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-            >{{ paytm.orderId && paytm.status === 'Pending' ? 'Stop Waiting' : 'Close' }}</button>
+              :title="paytm.orderId && paytm.status === 'Pending' ? 'Clear the request off the machine and free the bill' : ''"
+              class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
+              :class="paytm.orderId && paytm.status === 'Pending'
+                ? 'text-[var(--color-danger)] bg-[var(--color-danger)]/15 hover:bg-[var(--color-danger)]/25'
+                : 'text-[var(--color-text-muted)] bg-[var(--color-surface-raised)] hover:bg-[var(--color-border)]'"
+            >{{ paytm.orderId && paytm.status === 'Pending' ? 'Cancel' : 'Close' }}</button>
             <button
               v-if="paytm.orderId && paytm.status === 'Pending' && paytm.payMode === 'QR'"
               @click="queuePaytmMachine"
@@ -2138,6 +2142,14 @@ async function cancelQueuedQr(q) {
     if (r?.status === 'Success') return applyQrQueueResult(r)
   } catch (e) { /* drop it anyway */ }
   qrQueue.value = qrQueue.value.filter(x => x.order_id !== q.order_id)
+}
+
+// Closing a waiting machine UPI request keeps it in the UPI queue; a card request cannot be
+// queued, so its X still stops it
+function dismissPaytmModal() {
+  const p = paytm.value
+  if (p.orderId && p.status === 'Pending' && p.payMode === 'QR' && selectedInvoice.value) return queuePaytmMachine()
+  closePaytmModal()
 }
 
 async function closePaytmModal() {
