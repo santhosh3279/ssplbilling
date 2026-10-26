@@ -46,6 +46,17 @@
               placeholder="Search order / ref / txn id / result / amount"
               class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
             />
+            <div class="flex flex-wrap gap-1">
+              <button
+                v-for="f in linkFilters"
+                :key="f.id"
+                @click="linkFilter = f.id"
+                class="rounded-md px-2 py-0.5 text-[0.9rem] font-bold uppercase"
+                :class="linkFilter === f.id
+                  ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]'
+                  : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]'"
+              >{{ f.label }} <span class="opacity-70">{{ linkCount(f.id) }}</span></button>
+            </div>
           </div>
 
           <div class="flex-1 overflow-y-auto custom-scrollbar">
@@ -70,8 +81,16 @@
               </div>
               <div class="flex items-center justify-between gap-2 text-[0.9rem]">
                 <span class="truncate opacity-75">{{ fmtDate(l.received_at) }} · {{ l.ref_name || l.order_id || l.name }}</span>
-                <span class="shrink-0 rounded px-1.5 py-0.5 font-bold uppercase text-white" :class="resultClass(l.result)">{{ l.result }}</span>
+                <span class="flex shrink-0 gap-1">
+                  <span
+                    v-if="l.linked != null"
+                    class="rounded px-1.5 py-0.5 font-bold uppercase text-white"
+                    :class="l.linked ? 'bg-[var(--color-success)]' : 'bg-[var(--color-warning)]'"
+                  >{{ l.linked ? '✓ Booked' : 'To book' }}</span>
+                  <span class="rounded px-1.5 py-0.5 font-bold uppercase text-white" :class="resultClass(l.result)">{{ l.result }}</span>
+                </span>
               </div>
+              <div v-if="l.linked_to" class="truncate text-[0.9rem] opacity-75">{{ l.linked_doctype }} {{ l.linked_to }}</div>
             </div>
           </div>
         </template>
@@ -191,6 +210,19 @@
                   >{{ selectedLog.ref_name }}</a>
                   <span v-else>—</span>
                   <span v-if="selectedLog.ref_doctype" class="opacity-60"> ({{ selectedLog.ref_doctype }})</span>
+                </dd>
+                <dt class="text-[var(--color-text-muted)]">Booked in</dt>
+                <dd :class="selectedLog.linked === 0 ? 'font-bold text-[var(--color-warning)]' : ''">
+                  <a
+                    v-if="selectedLog.linked_to"
+                    :href="`/app/${slug(selectedLog.linked_doctype)}/${selectedLog.linked_to}`"
+                    target="_blank"
+                    class="font-bold text-[var(--color-info)] underline"
+                  >{{ selectedLog.linked_to }}</a>
+                  <span v-if="selectedLog.linked_doctype" class="opacity-60"> ({{ selectedLog.linked_doctype }})</span>
+                  <span v-if="selectedLog.linked === 1"> ✓ booked</span>
+                  <span v-else-if="selectedLog.linked === 0">{{ selectedLog.linked_to ? ' not submitted yet' : 'Not booked yet' }}</span>
+                  <span v-else>No payment to book</span>
                 </dd>
               </dl>
 
@@ -435,6 +467,16 @@ const view = ref('unknown')
 const logs = ref([])
 const logsLoading = ref(false)
 const logSearch = ref('')
+// linked: 1 booked (submitted invoice / receipt), 0 paid but not booked yet, null no payment to book
+const linkFilters = [
+  { id: 'all', label: 'All' },
+  { id: 'todo', label: 'To book' },
+  { id: 'booked', label: 'Booked' },
+  { id: 'none', label: 'No payment' },
+]
+const linkFilter = ref('all')
+const linkMatch = (l, f) =>
+  f === 'all' || (f === 'booked' ? l.linked === 1 : f === 'todo' ? l.linked === 0 : l.linked == null)
 const selectedLog = ref(null)
 const showLogPayload = ref(false)
 const logPayloadText = ref('')
@@ -469,11 +511,15 @@ const filteredRows = computed(() => {
 
 const filteredLogs = computed(() => {
   const q = logSearch.value.trim().toLowerCase()
-  if (!q) return logs.value
-  return logs.value.filter((l) =>
-    [l.name, l.result, l.order_id, l.rrn, l.paytm_txn_id, l.ref_name, l.tid, String(l.amount)]
-      .some((v) => (v || '').toLowerCase().includes(q)))
+  return logs.value.filter((l) => {
+    if (!linkMatch(l, linkFilter.value)) return false
+    if (!q) return true
+    return [l.name, l.result, l.order_id, l.rrn, l.paytm_txn_id, l.ref_name, l.linked_to, l.tid, String(l.amount)]
+      .some((v) => (v || '').toLowerCase().includes(q))
+  })
 })
+
+const linkCount = (f) => logs.value.filter((l) => linkMatch(l, f)).length
 
 function resultClass(result) {
   if (result === 'matched' || result === 'recorded') return 'bg-[var(--color-success)]'

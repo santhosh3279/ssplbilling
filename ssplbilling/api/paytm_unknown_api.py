@@ -273,9 +273,10 @@ def log_webhook(raw, data, body, result, txn=None):
 
 @frappe.whitelist()
 def get_webhook_logs(limit=500):
-	"""Every webhook hit, newest first, for the Webhook Log view."""
+	"""Every webhook hit, newest first, for the Webhook Log view, each marked with whether its
+	money is already booked (see _mark_linked)."""
 	_require_desk_user()
-	return frappe.get_all(
+	rows = frappe.get_all(
 		LOG_DOCTYPE,
 		fields=[
 			"name",
@@ -294,6 +295,57 @@ def get_webhook_logs(limit=500):
 		order_by="creation desc",
 		limit_page_length=frappe.utils.cint(limit) or 500,
 	)
+	_mark_linked(rows)
+	return rows
+
+
+def _mark_linked(rows):
+	"""Set linked (1 booked, 0 still to book, None no payment to book, e.g. failed or its unknown
+	payment deleted) and linked_to / linked_doctype on each row. A system order is booked once its Sales Invoice is submitted or its receipt Payment
+	Entry exists; an unknown payment once it is receipted."""
+	txn_names = {r.ref_name for r in rows if r.ref_doctype == "SSPL Paytm Transaction" and r.ref_name}
+	unknown_names = {r.ref_name for r in rows if r.ref_doctype == DOCTYPE and r.ref_name}
+	txns = {
+		t.name: t
+		for t in frappe.get_all(
+			"SSPL Paytm Transaction",
+			filters={"name": ("in", list(txn_names))},
+			fields=["name", "status", "sales_invoice", "payment_entry"],
+		)
+	} if txn_names else {}
+	invoices = {t.sales_invoice for t in txns.values() if t.sales_invoice}
+	invoice_status = dict(
+		frappe.get_all(
+			"Sales Invoice", filters={"name": ("in", list(invoices))}, fields=["name", "docstatus"], as_list=True
+		)
+	) if invoices else {}
+	unknowns = {
+		u.name: u
+		for u in frappe.get_all(
+			DOCTYPE, filters={"name": ("in", list(unknown_names))}, fields=["name", "status", "payment_entry"]
+		)
+	} if unknown_names else {}
+
+	for r in rows:
+		r.linked, r.linked_doctype, r.linked_to = None, None, None
+		if r.result not in ("matched", "recorded", "duplicate", "known"):
+			continue
+		t = txns.get(r.ref_name) if r.ref_doctype == "SSPL Paytm Transaction" else None
+		u = unknowns.get(r.ref_name) if r.ref_doctype == DOCTYPE else None
+		if t:
+			if t.status != "Success":
+				continue
+			if t.payment_entry:
+				r.linked, r.linked_doctype, r.linked_to = 1, "Payment Entry", t.payment_entry
+			elif t.sales_invoice:
+				r.linked = 1 if invoice_status.get(t.sales_invoice) == 1 else 0
+				r.linked_doctype, r.linked_to = "Sales Invoice", t.sales_invoice
+			else:
+				r.linked = 0
+		elif u:
+			r.linked = 1 if u.status == "Receipted" else 0
+			if u.payment_entry:
+				r.linked_doctype, r.linked_to = "Payment Entry", u.payment_entry
 
 
 @frappe.whitelist()
