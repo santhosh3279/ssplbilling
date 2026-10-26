@@ -1,6 +1,7 @@
 // Dev-only stand-ins, switched separately from the CashierDesk tester:
 // - Paytm mock answers ssplbilling.api.paytm_api so the machine / QR / UPI-queue flows run without
-//   reaching Paytm. Orders live in memory and carry MOCK- references, which processPayment refuses,
+//   reaching Paytm. Orders are kept in localStorage (today's only, like the server queue) so the
+//   UPI queue survives closing the page, and carry MOCK- references, which processPayment refuses,
 //   so nothing mocked can be posted.
 // - WhatsApp mock answers the OpenWA sends (pay link, bill PDF) so nothing reaches a customer; what
 //   would have gone is written to the console instead.
@@ -9,6 +10,7 @@ import { frappePost } from '../api.js'
 
 const PAYTM_KEY = 'wb-paytm-mock'
 const WHATSAPP_KEY = 'wb-whatsapp-mock'
+const ORDERS_KEY = 'wb-paytm-mock-orders'
 
 function readFlag(key) {
   try { return sessionStorage.getItem(key) === '1' } catch (e) { return false }
@@ -23,7 +25,10 @@ export const whatsappMockOn = ref(import.meta.env.DEV && readFlag(WHATSAPP_KEY))
 export function setPaytmMock(on) {
   paytmMockOn.value = import.meta.env.DEV && !!on
   writeFlag(PAYTM_KEY, paytmMockOn.value)
-  if (!paytmMockOn.value) orders.clear()
+  if (!paytmMockOn.value) {
+    orders.clear()
+    saveOrders()
+  }
 }
 
 export function setWhatsAppMock(on) {
@@ -64,7 +69,21 @@ const PAYTM_METHODS = new Set([
 ])
 
 const DEVICE = { device_name: 'Mock Machine', tid: 'MOCKTID1', pos_id: 'MOCKPOS1' }
-const orders = new Map()
+const orders = loadOrders()
+
+function loadOrders() {
+  const today = new Date().toDateString()
+  try {
+    const saved = JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]')
+    return new Map(saved.filter(o => new Date(o.created).toDateString() === today).map(o => [o.order_id, o]))
+  } catch (e) {
+    return new Map()
+  }
+}
+
+function saveOrders() {
+  try { localStorage.setItem(ORDERS_KEY, JSON.stringify([...orders.values()])) } catch (e) { /* storage blocked */ }
+}
 
 // Grey placeholder in place of Paytm's QR image
 const QR_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
@@ -85,6 +104,7 @@ function newOrder(channel, args) {
     created: Date.now(),
   }
   orders.set(order.order_id, order)
+  saveOrders()
   return order
 }
 
@@ -156,7 +176,10 @@ async function mockPaytm(method, args, invoiceInfo) {
     case 'ssplbilling.api.paytm_api.cancel': {
       const o = orders.get(args.order_id)
       if (!o) throw new Error(`Mock order ${args.order_id} not found`)
-      if (method.endsWith('cancel') && o.status === 'Pending') o.status = 'Cancelled'
+      if (method.endsWith('cancel') && o.status === 'Pending') {
+        o.status = 'Cancelled'
+        saveOrders()
+      }
       return result(o)
     }
     case 'ssplbilling.api.paytm_api.get_invoice_qr': {
@@ -178,5 +201,6 @@ export function settleMockOrder(status = 'Success', orderId = null) {
   const o = pending.sort((a, b) => b.created - a.created)[0]
   if (!o) return null
   o.status = status
+  saveOrders()
   return result(o)
 }
