@@ -155,7 +155,8 @@
             <svg class="absolute left-3.5 top-2.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
 
-          <!-- UPI queue: screen QR, phone pay link and machine requests, waiting or paid; click opens the bill -->
+          <!-- UPI queue: screen QR, phone pay link and machine requests, waiting or paid; click opens the bill,
+               whose popup is the only place a waiting request is cancelled -->
           <div v-if="qrQueue.length" class="space-y-1">
             <div class="flex items-center justify-between px-1 text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
               <span>UPI Queue</span>
@@ -181,12 +182,6 @@
                     <div class="text-[9px] font-black uppercase tracking-widest" :class="q.status === 'Success' ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">{{ q.status === 'Success' ? 'Paid' : 'Waiting' }}</div>
                   </div>
                 </button>
-                <button
-                  v-if="q.status === 'Pending'"
-                  @click="cancelQueuedQr(q)"
-                  title="Stop waiting for this payment"
-                  class="rounded-lg border border-[var(--color-border)] px-2 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] transition-colors"
-                >×</button>
               </div>
             </div>
           </div>
