@@ -49,6 +49,14 @@
           <MarqueeText manual :text="pending.item_name" class="min-w-0 flex-1 text-[1.3125rem] font-bold leading-tight" />
           <span class="shrink-0 rounded bg-[var(--color-bg)] px-1.5 py-0.5 text-xs font-bold uppercase text-[var(--color-text-muted)]">{{ pending.uom }}</span>
           <span v-if="pending.target !== 'new'" class="shrink-0 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Edit</span>
+          <button
+            v-if="itemHasBatch(pending.item_code)"
+            type="button"
+            :aria-label="`Batch of ${pending.item_name}`"
+            class="shrink-0 rounded px-1.5 py-0.5 font-mono text-xs font-bold"
+            :class="pending.batch_no ? 'bg-[var(--color-info)]/15 text-[var(--color-info)]' : 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]'"
+            @click="openBatchPicker"
+          >{{ pending.batch_no || 'Batch: Auto' }}</button>
           <button type="button" aria-label="Cancel item" class="shrink-0 rounded-lg px-2 text-lg leading-none text-[var(--color-text-muted)]" @click="cancelPending">&times;</button>
         </div>
         <!-- Qty · rate · disc at 1.25× size; the amount wraps below when the row runs out of room -->
@@ -87,7 +95,7 @@
               <!-- Code · qty · rate · amount on one line (1.25× size); tap qty / rate to edit on the keypad.
                    Qty, rate and amount are sized to the bill's longest value (lineColumns) so they line up on every row. -->
               <div class="mt-0.5 flex items-center gap-1.5 text-[0.9375rem] text-[var(--color-text-muted)]">
-                <span class="min-w-0 flex-1 truncate font-mono">{{ row.item_code }}<template v-if="row._is_free"> · <b class="text-[var(--color-success)]">FREE</b></template><template v-else-if="row.discount"> · <b class="text-[var(--color-warning)]">{{ row.discount }}% off</b></template></span>
+                <span class="min-w-0 flex-1 truncate font-mono">{{ row.item_code }}<template v-if="row.batch_no"> · <b class="text-[var(--color-info)]">{{ row.batch_no }}</b></template><template v-if="row._is_free"> · <b class="text-[var(--color-success)]">FREE</b></template><template v-else-if="row.discount"> · <b class="text-[var(--color-warning)]">{{ row.discount }}% off</b></template></span>
                 <button
                   type="button"
                   :disabled="isReadOnly || row._is_free"
@@ -296,6 +304,51 @@
       </div>
     </div>
 
+    <!-- Batch picker for the selected item: sales take stock from a batch held in the warehouse -->
+    <div v-if="showBatchPicker && pending" class="fixed inset-0 z-40 flex flex-col bg-[var(--color-bg)]">
+      <div class="flex shrink-0 items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-3 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div class="min-w-0 flex-1">
+          <h2 class="text-base font-bold">Select Batch</h2>
+          <MarqueeText manual :text="pending.item_name" class="text-xs text-[var(--color-text-muted)]" />
+        </div>
+        <button type="button" class="px-2 text-sm font-bold text-[var(--color-info)]" @click="showBatchPicker = false">Close</button>
+      </div>
+      <div class="min-h-0 flex-1 overflow-y-auto">
+        <button
+          v-if="!isReturn"
+          type="button"
+          class="block w-full border-b border-[var(--color-border)] px-4 py-3 text-left active:bg-[var(--color-surface-raised)]"
+          :class="!pending.batch_no ? 'bg-[var(--color-info)]/10' : ''"
+          @click="pickBatch('')"
+        >
+          <div class="text-[1.09375rem] font-semibold">Auto</div>
+          <div class="text-xs text-[var(--color-text-muted)]">Oldest stock is picked when the bill is submitted</div>
+        </button>
+        <div v-if="batchLoading" class="py-12 text-center text-sm text-[var(--color-text-muted)] animate-pulse">Loading batches…</div>
+        <div v-else-if="batchError" class="py-12 text-center text-sm text-[var(--color-danger)]">{{ batchError }}</div>
+        <div v-else-if="!batchOptions.length" class="py-12 text-center text-sm text-[var(--color-text-muted)]">
+          {{ isReturn ? 'No batches for this item.' : 'No batch has stock in this warehouse.' }}
+        </div>
+        <button
+          v-for="b in batchOptions"
+          :key="b.batch_no"
+          type="button"
+          class="flex w-full items-center gap-3 border-b border-[var(--color-border)] px-4 py-3 text-left active:bg-[var(--color-surface-raised)]"
+          :class="pending.batch_no === b.batch_no ? 'bg-[var(--color-info)]/10' : ''"
+          @click="pickBatch(b.batch_no)"
+        >
+          <div class="min-w-0 flex-1">
+            <div class="font-mono text-[1.09375rem] font-bold">{{ b.batch_no }}</div>
+            <div class="text-[11px]" :class="b.expired ? 'font-bold text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
+              <template v-if="b.expiry_date">Exp {{ formatDMY(b.expiry_date, '') }}{{ b.expired ? ' (expired)' : '' }}</template>
+              <template v-else-if="b.manufacturing_date">Mfg {{ formatDMY(b.manufacturing_date, '') }}</template>
+            </div>
+          </div>
+          <div class="shrink-0 font-mono text-base font-bold tabular-nums">{{ fmtQty(b.qty) }}</div>
+        </button>
+      </div>
+    </div>
+
     <PrintOptionsModal
       v-if="showPrintModal && invoiceName"
       :invoice-name="invoiceName"
@@ -317,7 +370,7 @@ import BarcodeScanner from '../components/BarcodeScanner.vue'
 import MarqueeText from '../components/MarqueeText.vue'
 import MobileSearchKeyboard from '../components/MobileSearchKeyboard.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
-import { useItemCache, lookupItemInCache, refreshItemCache, refreshDiscountRuleCache } from '../services/itemCache.js'
+import { useItemCache, lookupItemInCache, refreshItemCache, refreshDiscountRuleCache, itemHasBatch } from '../services/itemCache.js'
 import { useLedgerCache, ledgerCacheReady } from '../services/ledgerCache.js'
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
@@ -493,7 +546,7 @@ const pending = ref(null)
 const showKeypad = ref(true)
 const keypadVisible = computed(() =>
   showKeypad.value && !!pending.value && !isReadOnly.value &&
-  !showScanner.value && !showCustomerPicker.value && !showPastBills.value && !showPrintModal.value)
+  !showScanner.value && !showCustomerPicker.value && !showPastBills.value && !showPrintModal.value && !showBatchPicker.value)
 // Bill line number of the staged item: its own line when re-editing, else the next line
 const pendingLineNo = computed(() => {
   const p = pending.value
@@ -532,8 +585,49 @@ function addItem(cached, uom = null) {
     computedRate: rate,
     baseRate: base,
     tax_rate: cached.tax_rate || 0,
+    batch_no: '',
     field: 'qty',
   })
+  if (itemHasBatch(cached.item_code)) openBatchPicker()
+}
+
+// ── Batch ───────────────────────────────────────────────────────────────────
+const showBatchPicker = ref(false)
+const batchOptions = ref([])
+const batchLoading = ref(false)
+const batchError = ref('')
+let batchRequest = 0
+
+// Batches of the staged item; a return lists every batch, a sale only those with stock here
+async function openBatchPicker() {
+  const p = pending.value
+  if (!p) return
+  showBatchPicker.value = true
+  const request = ++batchRequest
+  batchLoading.value = true
+  batchError.value = ''
+  batchOptions.value = []
+  try {
+    const res = await frappeGet('ssplbilling.api.batch_api.get_item_batches', { item_code: p.item_code, warehouse: warehouse.value || '' })
+    if (request !== batchRequest) return
+    const list = res?.batches || []
+    batchOptions.value = isReturn.value ? list : list.filter(b => b.qty > 0)
+  } catch (e) {
+    if (request === batchRequest) batchError.value = e.message || 'Failed to load batches'
+  } finally {
+    if (request === batchRequest) batchLoading.value = false
+  }
+}
+
+function pickBatch(batchNo) {
+  if (pending.value) pending.value.batch_no = batchNo
+  showBatchPicker.value = false
+}
+
+// A return brings stock back in, which needs a named batch unless the item creates batches itself
+function batchRequired(itemCode) {
+  const cached = lookupItemInCache(itemCode)
+  return !!Number(cached?.has_batch_no) && !Number(cached?.create_new_batch)
 }
 
 function editRow(row, field) {
@@ -549,6 +643,7 @@ function editRow(row, field) {
     qty: String(row._total_qty ?? row.qty),
     rate: String(row.rate),
     discount: String(Number(row.discount) || 0),
+    batch_no: row.batch_no || '',
     field,
   })
 }
@@ -603,6 +698,7 @@ function pendingStepQty(delta) {
 
 function cancelPending() {
   pending.value = null
+  showBatchPicker.value = false
 }
 
 function commitPending() {
@@ -635,6 +731,7 @@ function commitPending() {
       row.discount = discount
       row._rule_discount = null // typed by hand, not set by a discount rule
     }
+    row.batch_no = p.batch_no || ''
     if (qtyChanged) reapplyAllDiscountRules()
     return
   }
@@ -653,6 +750,7 @@ function commitPending() {
     discount,
     tax_rate: p.tax_rate,
     warehouse: warehouse.value,
+    batch_no: p.batch_no || '',
     deleted: false,
     _rowKey: makeRowKey(),
   })
@@ -863,6 +961,7 @@ async function loadBill(name) {
         _rate_overridden: true,
         discount,
         tax_rate: i.tax_rate || 0,
+        batch_no: i.batch_no || '',
         deleted: false,
         _is_free: i.is_free_item === 1 || (effective === 0 && discount === 0),
         _rowKey: makeRowKey(),
@@ -923,6 +1022,15 @@ async function saveBill() {
   if (!customerId.value) { alert('Please select a customer first.'); openCustomerPicker(); return }
   const lines = activeRows.value.filter(r => Number(r.qty) > 0)
   if (!lines.length) { alert('No items to save'); return }
+  if (isReturn.value) {
+    const missing = lines.find(r => !r._is_free && !r.batch_no && batchRequired(r.item_code))
+    if (missing) {
+      alert(`Select a batch for ${missing.item_name || missing.item_code} on this return.`)
+      editRow(missing, 'qty')
+      openBatchPicker()
+      return
+    }
+  }
 
   const extra = _loadedExtras
   const payload = {
@@ -960,6 +1068,7 @@ async function saveBill() {
       price_list_rate: r._base_rate || r.price_list_rate || r.rate,
       discount: Number(r.discount) || 0,
       is_free_item: r._is_free ? 1 : 0,
+      batch_no: r.batch_no || '',
     })),
   }
 
