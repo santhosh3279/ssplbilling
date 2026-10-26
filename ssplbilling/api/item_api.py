@@ -183,8 +183,8 @@ _VARIANT_MATCH_FIELDS = ("is_stock_item", "has_batch_no", "has_serial_no")
 @frappe.whitelist()
 def link_item_as_variant(template, item_code, attributes):
 	"""Make an existing normal item a variant of the template with the given values ({attribute: value}).
-	The item keeps its code, name, stock and history. ERPNext refuses to set Variant Of once stock
-	transactions exist, so such items get variant_of and the attribute rows written directly, after the
+	The item keeps its code, name, stock and history. Variant Of is set-only-once and ERPNext also refuses
+	it once stock transactions exist, so variant_of and the attribute rows are written directly, after the
 	same checks ERPNext runs on a new variant."""
 	from erpnext.controllers.item_variant import get_variant, validate_item_variant_attributes
 
@@ -219,19 +219,13 @@ def link_item_as_variant(template, item_code, attributes):
 		frappe.throw(f"Item variant {existing} exists with same attributes")
 	validate_item_variant_attributes(frappe._dict(name=doc.name, variant_of=template), args)
 
+	frappe.db.delete("Item Variant Attribute", {"parenttype": "Item", "parent": doc.name})
 	doc.set("attributes", [])
 	for attribute, value in args.items():
-		doc.append("attributes", {"attribute": attribute, "attribute_value": value, "variant_of": template})
-	doc.variant_of = template
-	doc.variant_based_on = "Item Attribute"
-	if not doc.stock_ledger_created():
-		doc.save()
-	else:
-		frappe.db.delete("Item Variant Attribute", {"parenttype": "Item", "parent": doc.name})
-		for row in doc.attributes:
-			row.db_insert()
-		doc.db_set({"variant_of": template, "variant_based_on": "Item Attribute"})
-		doc.add_comment("Edit", f"Linked as a variant of {template} with stock transactions present")
+		row = doc.append("attributes", {"attribute": attribute, "attribute_value": value, "variant_of": template})
+		row.db_insert()
+	doc.db_set({"variant_of": template, "variant_based_on": "Item Attribute"})
+	doc.add_comment("Edit", f"Linked as a variant of {template}")
 	return {"item_code": doc.name, "item_name": doc.item_name}
 
 
