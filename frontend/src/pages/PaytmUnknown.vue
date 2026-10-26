@@ -74,7 +74,7 @@
               class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
             >
               <option value="">All POS IDs ({{ logs.length }})</option>
-              <option v-for="p in posOptions(logs)" :key="p.id" :value="p.id">{{ p.id === NO_POS ? 'No POS ID' : p.id }} ({{ p.count }})</option>
+              <option v-for="p in posOptions(logs, posFilter)" :key="p.id" :value="p.id">{{ p.id === NO_POS ? 'No POS ID' : p.id }} ({{ p.count }})</option>
             </select>
             <div class="flex flex-wrap gap-1">
               <button
@@ -150,7 +150,7 @@
             class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
           >
             <option value="">All POS IDs ({{ rows.length }})</option>
-            <option v-for="p in posOptions(rows)" :key="p.id" :value="p.id">{{ p.id === NO_POS ? 'No POS ID' : p.id }} ({{ p.count }})</option>
+            <option v-for="p in posOptions(rows, rowPosFilter)" :key="p.id" :value="p.id">{{ p.id === NO_POS ? 'No POS ID' : p.id }} ({{ p.count }})</option>
           </select>
           <div class="flex flex-wrap gap-1">
             <button
@@ -542,8 +542,10 @@ const posFilter = ref(myPos)
 const rowPosFilter = ref(myPos)
 const posIs = (x, f) => !f || (x.pos_id || NO_POS) === f
 const posMatch = (l) => posIs(l, posFilter.value)
-const posOptions = (list) => {
-  const counts = myPos ? { [myPos]: 0 } : {}
+// The chosen POS ID stays listed (count 0) on days it has no hits, so the select never goes blank
+const posOptions = (list, chosen) => {
+  const counts = {}
+  for (const id of [myPos, chosen]) if (id) counts[id] = 0
   for (const x of list) {
     const id = x.pos_id || NO_POS
     counts[id] = (counts[id] || 0) + 1
@@ -626,8 +628,6 @@ async function loadLogs() {
 function setDay(d) {
   if (!d || d === day.value) return
   day.value = d
-  posFilter.value = myPos
-  rowPosFilter.value = myPos
   refresh()
 }
 
