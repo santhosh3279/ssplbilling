@@ -43,9 +43,7 @@ def _split_by_batch(items, warehouse):
     """Batch items are counted per batch, so each batch with stock gets its own row."""
     from erpnext.stock.doctype.batch.batch import get_batch_qty
 
-    batch_items = set(frappe.get_all(
-        "Item", filters={"name": ["in", [i.item_code for i in items]], "has_batch_no": 1}, pluck="name"
-    )) if items else set()
+    batch_items = set(frappe.get_all("Item", filters={"has_batch_no": 1}, pluck="name"))
     out = []
     for item in items:
         if item.item_code not in batch_items:

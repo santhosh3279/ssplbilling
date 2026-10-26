@@ -707,8 +707,11 @@ function onBatchSelected(batchNo, batch) {
     focusRow(dup)
     return
   }
+  // An uncounted row follows the new batch's stock, so switching alone does not adjust anything
+  const untouched = Math.abs((row.qty || 0) - (row.current_qty || 0)) <= 0.0001
   row.batch_no = batchNo
   row.current_qty = batchQty
+  if (untouched) row.qty = batchQty
   focusRow(t.index)
 }
 
