@@ -513,6 +513,19 @@
                 Discount Settings — {{ form.discount_type }}
               </h3>
 
+              <div class="flex items-center gap-3">
+                <input
+                  id="form-apply-in-all-uom"
+                  v-model="form.apply_in_all_uom"
+                  type="checkbox"
+                  class="h-4 w-4 rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-info)]"
+                />
+                <label for="form-apply-in-all-uom" class="text-[12px] font-bold text-[var(--color-text)] cursor-pointer select-none">
+                  Apply Rule in All UOM
+                  <span class="font-normal text-[var(--color-text-muted)]">— quantities count in the stock UOM (qty × conversion factor), free quantity is added in the stock UOM</span>
+                </label>
+              </div>
+
               <!-- PRODUCT DISCOUNT SETTINGS -->
               <div v-if="form.discount_type === 'Product Discount'" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div class="flex flex-col gap-1.5">
@@ -713,6 +726,7 @@ const emptyForm = () => ({
   min_quantity: 0,
   free_quantity: 0,
   recursive: false,
+  apply_in_all_uom: false,
   percentage_discount: 0,
   custom_logic_type: 'Product',
   items: [],
@@ -791,6 +805,7 @@ async function selectRule(name) {
       min_quantity: doc.min_quantity || 0,
       free_quantity: doc.free_quantity || 0,
       recursive: doc.recursive === 1,
+      apply_in_all_uom: doc.apply_in_all_uom === 1,
       percentage_discount: doc.percentage_discount || 0,
       custom_logic_type: doc.custom_logic_type || 'Product',
       items: doc.items || [],
@@ -1003,7 +1018,8 @@ async function handleSave() {
     const payload = {
       ...form.value,
       enabled: form.value.enabled ? 1 : 0,
-      recursive: form.value.recursive ? 1 : 0
+      recursive: form.value.recursive ? 1 : 0,
+      apply_in_all_uom: form.value.apply_in_all_uom ? 1 : 0
     }
     if (form.value.discount_type === 'X to Y product discount') {
       payload.applies_to = ''

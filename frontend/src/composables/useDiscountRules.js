@@ -87,11 +87,28 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
   //   discount = 0     → rule matched but qty below threshold → clear disc
   //   discount = N     → apply N% to disc column
 
+  // Conversion factor of the row's UOM to the stock UOM (the cached item's uom); 1 when unknown
+  function _stockFactor(cached, uom) {
+    if (!cached || !uom || uom === cached.uom) return 1
+    return parseFloat((cached.uoms || []).find(u => u.uom === uom)?.conversion_factor) || 1
+  }
+
   function _buildResult(row, rule) {
+    const cached = lookupItemInCache(row.item_code)
+    // Apply Rule in All UOM on a row not in the stock UOM: thresholds count stock units
+    // (qty × conversion factor) and the free quantity is added on top in the stock UOM,
+    // since stock units cannot be carved out of the row's own UOM.
+    const factor = rule.apply_in_all_uom ? _stockFactor(cached, row.uom) : 1
+    if (factor !== 1) {
+      row._total_qty = row.qty
+      row._paid_qty = row.qty
+      delete row._loaded_free_qty
+      delete row._loaded_paid_qty
+      return _buildStockUomResult(row, rule, cached, row.qty * factor)
+    }
     if (row._paid_qty === undefined || row.qty !== row._paid_qty) {
       row._total_qty = row.qty
     }
-    const cached = lookupItemInCache(row.item_code)
     const freeBase = {
       item_code: row.item_code,
       item_name: row.item_name || cached?.item_name || row.item_code,
@@ -217,6 +234,72 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
     return { freeRows: [], discount: null }
   }
 
+  // Same rules as _buildResult, measured in stock units; the paid row keeps its qty
+  function _buildStockUomResult(row, rule, cached, stockQty) {
+    const freeRow = qty => ({
+      item_code: row.item_code,
+      item_name: row.item_name || cached?.item_name || row.item_code,
+      uom: cached?.uom || row.uom || '',
+      qty, rate: 0, discount: 0, tax_rate: row.tax_rate,
+      warehouse: row.warehouse, deleted: false, _is_free: true,
+    })
+
+    if (rule.discount_type === 'X to Y product discount') {
+      const matchRow = (rule.x_to_y_table || []).find(
+        r => (r.item_code || '').toLowerCase() === (row.item_code || '').toLowerCase()
+      )
+      if (!matchRow) return { freeRows: [], discount: null }
+      const totalFree = Math.floor(stockQty / (matchRow.min_quantity || 1)) * (matchRow.free_item_quantity || 1)
+      if (totalFree <= 0) return { freeRows: [], discount: null }
+      const yCached = lookupItemInCache(matchRow.free_item_code)
+      return { freeRows: [{
+        item_code: matchRow.free_item_code,
+        item_name: matchRow.free_item_name || yCached?.item_name || matchRow.free_item_code,
+        uom: yCached?.uom || 'Nos',
+        qty: totalFree,
+        rate: matchRow.free_item_price || 0.0,
+        discount: 0, tax_rate: yCached?.tax_rate || row.tax_rate,
+        warehouse: row.warehouse, deleted: false,
+        _is_free: true,
+      }], discount: null }
+    }
+
+    if (rule.discount_type === 'Product Discount') {
+      // Same "min + free" pack as stock-UOM rows, so 132 Nos entered as 11 Doz earn what 132 Nos would
+      const minQty = rule.min_quantity || 0
+      const free = rule.free_quantity || 0
+      if (!(minQty > 0 && free > 0)) return { freeRows: [], discount: null }
+      const packSize = minQty + free
+      const totalFree = rule.recursive ? Math.floor(stockQty / packSize) * free : (stockQty >= packSize ? free : 0)
+      return { freeRows: totalFree > 0 ? [freeRow(totalFree)] : [], discount: null }
+    }
+
+    if (rule.discount_type === 'Percentage Discount') {
+      const rows = rule.custom_logic_rows || []
+      if (rows.length) {
+        const tier = rows
+          .filter(r => stockQty >= (r.min_quantity || 0))
+          .sort((a, b) => b.min_quantity - a.min_quantity)[0]
+        return { freeRows: [], discount: tier ? tier.percentage || 0 : 0 }
+      }
+      const minQty = rule.min_quantity || 0
+      if (minQty > 0 && stockQty < minQty) return { freeRows: [], discount: 0 }
+      return { freeRows: [], discount: rule.percentage_discount || 0 }
+    }
+
+    if (rule.discount_type === 'Custom Logic') {
+      const isProduct = rule.custom_logic_type === 'Product'
+      const tier = (rule.custom_logic_rows || [])
+        .filter(r => stockQty >= (r.min_quantity || 0) + (isProduct ? (r.nos || 0) : 0))
+        .sort((a, b) => b.min_quantity - a.min_quantity)[0]
+      if (!tier) return { freeRows: [], discount: null }
+      if (isProduct) return { freeRows: (tier.nos || 0) > 0 ? [freeRow(tier.nos)] : [], discount: null }
+      if (rule.custom_logic_type === 'Percentage') return { freeRows: [], discount: tier.percentage || 0 }
+    }
+
+    return { freeRows: [], discount: null }
+  }
+
   // ── helpers: apply / clear percentage on a row ────────────────────────────
 
   function _applyDiscount(row, discount) {
@@ -316,7 +399,7 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
   const _regularItemSig = computed(() =>
     items.value
       .filter(i => !i._is_free && !i.deleted)
-      .map(i => `${i._rowKey}:${i.qty}:${i.item_code}`)
+      .map(i => `${i._rowKey}:${i.qty}:${i.item_code}:${i.uom}`)
       .join('|')
   )
   let _discountTimer = null

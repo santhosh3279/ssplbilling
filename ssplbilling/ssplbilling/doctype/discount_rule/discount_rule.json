@@ -21,6 +21,7 @@
   "min_quantity",
   "free_quantity",
   "recursive",
+  "apply_in_all_uom",
   "percentage_discount",
   "custom_logic_type",
   "custom_logic_table",
@@ -124,6 +125,13 @@
    "label": "Recursive"
   },
   {
+   "default": "0",
+   "description": "Check quantities in the stock UOM (qty × conversion factor) and add free quantity in the stock UOM",
+   "fieldname": "apply_in_all_uom",
+   "fieldtype": "Check",
+   "label": "Apply Rule in All UOM"
+  },
+  {
    "depends_on": "eval:doc.discount_type=='Percentage Discount'",
    "fieldname": "percentage_discount",
    "fieldtype": "Float",
@@ -154,7 +162,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-19 00:00:00.000000",
+ "modified": "2026-10-26 17:42:05.312162",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "Discount Rule",

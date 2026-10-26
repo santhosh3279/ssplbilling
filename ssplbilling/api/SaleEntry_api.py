@@ -549,7 +549,7 @@ def get_discount_rules():
         filters={"enabled": 1},
         fields=[
             "name", "rule_name", "price_list", "discount_type", "applies_to",
-            "product_group", "min_quantity", "free_quantity", "recursive",
+            "product_group", "min_quantity", "free_quantity", "recursive", "apply_in_all_uom",
             "percentage_discount", "custom_logic_type", "start_date", "end_date", "enabled",
         ],
         order_by="rule_name asc",

@@ -46,7 +46,7 @@ def get_discount_rules(query=""):
 		filters=filters,
 		fields=[
 			"name", "rule_name", "price_list", "discount_type", "applies_to",
-			"product_group", "min_quantity", "free_quantity", "recursive",
+			"product_group", "min_quantity", "free_quantity", "recursive", "apply_in_all_uom",
 			"percentage_discount", "custom_logic_type", "start_date", "end_date", "enabled",
 		],
 		order_by="rule_name asc",
@@ -105,6 +105,7 @@ def create_discount_rule(data):
 	doc.min_quantity = float(data.get("min_quantity") or 0.0)
 	doc.free_quantity = float(data.get("free_quantity") or 0.0)
 	doc.recursive = int(data.get("recursive") or 0)
+	doc.apply_in_all_uom = int(data.get("apply_in_all_uom") or 0)
 	doc.percentage_discount = float(data.get("percentage_discount") or 0.0)
 	doc.custom_logic_type = data.get("custom_logic_type")
 
@@ -170,6 +171,7 @@ def update_discount_rule(data):
 	doc.min_quantity = float(data.get("min_quantity") or 0.0)
 	doc.free_quantity = float(data.get("free_quantity") or 0.0)
 	doc.recursive = int(data.get("recursive") or 0)
+	doc.apply_in_all_uom = int(data.get("apply_in_all_uom") or 0)
 	doc.percentage_discount = float(data.get("percentage_discount") or 0.0)
 	doc.custom_logic_type = data.get("custom_logic_type")
 

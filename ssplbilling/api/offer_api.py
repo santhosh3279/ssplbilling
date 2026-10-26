@@ -141,7 +141,7 @@ def get_offer_details(pageaddress):
 		fields=[
 			"name", "rule_name", "discount_type", "applies_to", 
 			"product_group", "start_date", "end_date", "percentage_discount",
-			"min_quantity", "free_quantity", "recursive", "custom_logic_type"
+			"min_quantity", "free_quantity", "recursive", "apply_in_all_uom", "custom_logic_type"
 		],
 		ignore_permissions=True
 	)

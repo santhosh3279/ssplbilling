@@ -248,7 +248,7 @@ def _catalogue_rules(price_list):
 	rules = frappe.get_all(
 		"Discount Rule", filters={"enabled": 1},
 		fields=["name", "rule_name", "price_list", "discount_type", "applies_to",
-			"product_group", "min_quantity", "free_quantity", "recursive",
+			"product_group", "min_quantity", "free_quantity", "recursive", "apply_in_all_uom",
 			"percentage_discount", "custom_logic_type", "start_date", "end_date"],
 		order_by="rule_name asc", ignore_permissions=True,
 	)
@@ -280,6 +280,15 @@ def _catalogue_rules(price_list):
 	return active
 
 
+def _stock_uom_and_factor(item_code, uom):
+	"""The item's stock UOM and the conversion factor of uom to it (1 when unknown)."""
+	item = frappe.get_cached_doc("Item", item_code)
+	if not uom or uom == item.stock_uom:
+		return item.stock_uom, 1
+	factor = next((flt(row.conversion_factor) for row in item.uoms if row.uom == uom), 0)
+	return item.stock_uom, factor or 1
+
+
 def _apply_catalogue_rules(lines, price_list):
 	rules = _catalogue_rules(price_list)
 	priced = []
@@ -303,6 +312,11 @@ def _apply_catalogue_rules(lines, price_list):
 				continue
 
 			qty = line["requested_qty"]
+			# Apply Rule in All UOM: thresholds count stock units, free quantity is given in the stock UOM
+			free_uom = line.get("uom")
+			if rule.apply_in_all_uom:
+				free_uom, factor = _stock_uom_and_factor(line["item_code"], line.get("uom"))
+				qty = flt(qty * factor)
 			kind = rule.discount_type
 			if kind == "Product Discount":
 				minimum, free = flt(rule.min_quantity), flt(rule.free_quantity)
@@ -311,7 +325,7 @@ def _apply_catalogue_rules(lines, price_list):
 					free_qty = int(qty // minimum) * free if rule.recursive else free
 				if free_qty:
 					priced.append({**line, "qty": free_qty, "requested_qty": 0, "rate": 0,
-						"amount": 0, "discount_percentage": 0, "is_free_item": 1,
+						"amount": 0, "discount_percentage": 0, "is_free_item": 1, "uom": free_uom,
 						"source_item_code": line["item_code"]})
 			elif kind == "X to Y product discount" and matching_x_to_y:
 				minimum = flt(matching_x_to_y.min_quantity) or 1
@@ -334,13 +348,13 @@ def _apply_catalogue_rules(lines, price_list):
 					free_qty = flt(rows[0].nos) if rows else 0
 					if free_qty > 0:
 						priced.append({**line, "qty": free_qty, "requested_qty": 0, "rate": 0,
-							"amount": 0, "discount_percentage": 0, "is_free_item": 1,
+							"amount": 0, "discount_percentage": 0, "is_free_item": 1, "uom": free_uom,
 							"source_item_code": line["item_code"]})
 				else:
 					percent = (flt(rows[0].percentage) if rows else 0) if kind == "Custom Logic" or rule.custom_logic_rows else (
 						flt(rule.percentage_discount) if qty >= flt(rule.min_quantity) else 0)
 					line["discount_percentage"] = max(0, min(100, percent))
-					line["amount"] = flt(qty * line["rate"] * (1 - line["discount_percentage"] / 100))
+					line["amount"] = flt(line["requested_qty"] * line["rate"] * (1 - line["discount_percentage"] / 100))
 			break
 	for line in priced:
 		line.pop("item_group", None)
