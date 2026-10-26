@@ -143,8 +143,8 @@
                 <div class="relative flex-1 min-h-0 flex items-center justify-center">
                   <span class="absolute right-0 top-0 z-10 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide shadow" :class="item.is_gst_item ? 'bg-green-500 text-white' : 'bg-amber-400 text-slate-900'">{{ item.is_gst_item ? 'GST Incl' : 'GST Excl' }}</span>
                   <img
-                    v-if="item.image"
-                    :src="item.image"
+                    v-if="cardImage(item)"
+                    :src="cardImage(item)"
                     :alt="item.itemname"
                     class="max-w-full max-h-full object-contain transition-all duration-500"
                   />
@@ -426,8 +426,8 @@
                 <div class="relative flex-1 min-h-0 flex items-center justify-center">
                   <span class="absolute right-0 top-0 z-10 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide shadow" :class="item.is_gst_item ? 'bg-green-500 text-white' : 'bg-amber-400 text-slate-900'">{{ item.is_gst_item ? 'GST Incl' : 'GST Excl' }}</span>
                   <img
-                    v-if="item.image"
-                    :src="item.image"
+                    v-if="cardImage(item)"
+                    :src="cardImage(item)"
                     :alt="item.itemname"
                     class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
                     loading="lazy"
@@ -801,6 +801,11 @@ function pickAttribute(item, attribute, value) {
     if (closest) next = attributesOf(closest)
   }
   variantSelections.value = { ...variantSelections.value, [item.itemcode]: next }
+}
+
+// A template card shows the picked variant's image (variants without one already carry the template's)
+function cardImage(item) {
+  return (item.is_template && selectedVariant(item)?.image) || item.image
 }
 
 function cartVariants(item) {
