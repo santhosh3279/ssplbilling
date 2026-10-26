@@ -310,9 +310,15 @@ def _mark_linked(rows):
 		for t in frappe.get_all(
 			"SSPL Paytm Transaction",
 			filters={"name": ("in", list(txn_names))},
-			fields=["name", "status", "sales_invoice", "payment_entry"],
+			fields=["name", "status", "sales_invoice", "payment_entry", "device_name"],
 		)
 	} if txn_names else {}
+	tids = {r.tid for r in rows if r.tid}
+	tid_pos = dict(
+		frappe.get_all(
+			"SSPL Paytm Device", filters={"tid": ("in", list(tids))}, fields=["tid", "pos_id"], as_list=True
+		)
+	) if tids else {}
 	invoices = {t.sales_invoice for t in txns.values() if t.sales_invoice}
 	invoice_status = dict(
 		frappe.get_all(
@@ -328,9 +334,12 @@ def _mark_linked(rows):
 
 	for r in rows:
 		r.linked, r.linked_doctype, r.linked_to = None, None, None
+		t = txns.get(r.ref_name) if r.ref_doctype == "SSPL Paytm Transaction" else None
+		# POS ID the hit came from: the system order's posId, else the machine's by TID
+		r.pos_id = (t and t.device_name) or tid_pos.get(r.tid) or None
+		r.txn_status = t.status if t else None
 		if r.result not in ("matched", "recorded", "duplicate", "known"):
 			continue
-		t = txns.get(r.ref_name) if r.ref_doctype == "SSPL Paytm Transaction" else None
 		u = unknowns.get(r.ref_name) if r.ref_doctype == DOCTYPE else None
 		if t:
 			if t.status != "Success":

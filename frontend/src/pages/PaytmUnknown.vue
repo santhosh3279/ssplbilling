@@ -46,6 +46,13 @@
               placeholder="Search order / ref / txn id / result / amount"
               class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
             />
+            <select
+              v-model="posFilter"
+              class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+            >
+              <option value="">All POS IDs ({{ logs.length }})</option>
+              <option v-for="p in posIds" :key="p.id" :value="p.id">{{ p.id === NO_POS ? 'No POS ID' : p.id }} ({{ p.count }})</option>
+            </select>
             <div class="flex flex-wrap gap-1">
               <button
                 v-for="f in linkFilters"
@@ -80,8 +87,12 @@
                 <span class="shrink-0 font-mono text-[1.2rem] font-bold">₹{{ fmt(l.amount) }}</span>
               </div>
               <div class="flex items-center justify-between gap-2 text-[0.9rem]">
-                <span class="truncate opacity-75">{{ fmtDate(l.received_at) }} · {{ l.ref_name || l.order_id || l.name }}</span>
+                <span class="truncate opacity-75">{{ fmtDate(l.received_at) }} · {{ l.pos_id ? `${l.pos_id} · ` : '' }}{{ l.ref_name || l.order_id || l.name }}</span>
                 <span class="flex shrink-0 gap-1">
+                  <span
+                    v-if="l.txn_status === 'Cancelled'"
+                    class="rounded bg-[var(--color-danger)] px-1.5 py-0.5 font-bold uppercase text-white"
+                  >Cancelled</span>
                   <span
                     v-if="l.linked != null"
                     class="rounded px-1.5 py-0.5 font-bold uppercase text-white"
@@ -187,7 +198,13 @@
                 </div>
                 <div class="flex flex-col items-end gap-1">
                   <span class="font-mono text-3xl font-black">₹{{ fmt(selectedLog.amount) }}</span>
-                  <span class="rounded px-2 py-0.5 text-sm font-bold uppercase text-white" :class="resultClass(selectedLog.result)">{{ selectedLog.result }}</span>
+                  <span class="flex gap-1">
+                    <span
+                      v-if="selectedLog.txn_status === 'Cancelled'"
+                      class="rounded bg-[var(--color-danger)] px-2 py-0.5 text-sm font-bold uppercase text-white"
+                    >Cancelled</span>
+                    <span class="rounded px-2 py-0.5 text-sm font-bold uppercase text-white" :class="resultClass(selectedLog.result)">{{ selectedLog.result }}</span>
+                  </span>
                 </div>
               </div>
 
@@ -197,8 +214,13 @@
                 <dt class="text-[var(--color-text-muted)]">Order id</dt><dd class="font-mono break-all">{{ selectedLog.order_id || '—' }}</dd>
                 <dt class="text-[var(--color-text-muted)]">Bank ref (RRN)</dt><dd class="font-mono">{{ selectedLog.rrn || '—' }}</dd>
                 <dt class="text-[var(--color-text-muted)]">Paytm txn id</dt><dd class="font-mono break-all">{{ selectedLog.paytm_txn_id || '—' }}</dd>
+                <dt class="text-[var(--color-text-muted)]">POS ID</dt><dd class="font-mono">{{ selectedLog.pos_id || '—' }}</dd>
                 <template v-if="selectedLog.tid">
                   <dt class="text-[var(--color-text-muted)]">Machine TID</dt><dd class="font-mono">{{ selectedLog.tid }}</dd>
+                </template>
+                <template v-if="selectedLog.txn_status">
+                  <dt class="text-[var(--color-text-muted)]">Order status</dt>
+                  <dd :class="selectedLog.txn_status === 'Cancelled' ? 'font-bold text-[var(--color-danger)]' : ''">{{ selectedLog.txn_status }}</dd>
                 </template>
                 <dt class="text-[var(--color-text-muted)]">Linked record</dt>
                 <dd>
@@ -477,6 +499,20 @@ const linkFilters = [
 const linkFilter = ref('all')
 const linkMatch = (l, f) =>
   f === 'all' || (f === 'booked' ? l.linked === 1 : f === 'todo' ? l.linked === 0 : l.linked == null)
+// pos_id: the system order's posId, else the machine's (SSPL Paytm Device) by TID
+const NO_POS = '__none__'
+const posFilter = ref('')
+const posMatch = (l) => !posFilter.value || (l.pos_id || NO_POS) === posFilter.value
+const posIds = computed(() => {
+  const counts = {}
+  for (const l of logs.value) {
+    const id = l.pos_id || NO_POS
+    counts[id] = (counts[id] || 0) + 1
+  }
+  return Object.keys(counts)
+    .sort((a, b) => (a === NO_POS) - (b === NO_POS) || a.localeCompare(b))
+    .map((id) => ({ id, count: counts[id] }))
+})
 const selectedLog = ref(null)
 const showLogPayload = ref(false)
 const logPayloadText = ref('')
@@ -512,14 +548,14 @@ const filteredRows = computed(() => {
 const filteredLogs = computed(() => {
   const q = logSearch.value.trim().toLowerCase()
   return logs.value.filter((l) => {
-    if (!linkMatch(l, linkFilter.value)) return false
+    if (!linkMatch(l, linkFilter.value) || !posMatch(l)) return false
     if (!q) return true
-    return [l.name, l.result, l.order_id, l.rrn, l.paytm_txn_id, l.ref_name, l.linked_to, l.tid, String(l.amount)]
+    return [l.name, l.result, l.order_id, l.rrn, l.paytm_txn_id, l.ref_name, l.linked_to, l.tid, l.pos_id, String(l.amount)]
       .some((v) => (v || '').toLowerCase().includes(q))
   })
 })
 
-const linkCount = (f) => logs.value.filter((l) => linkMatch(l, f)).length
+const linkCount = (f) => logs.value.filter((l) => posMatch(l) && linkMatch(l, f)).length
 
 function resultClass(result) {
   if (result === 'matched' || result === 'recorded') return 'bg-[var(--color-success)]'
