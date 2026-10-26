@@ -19,6 +19,64 @@
     <div class="flex flex-1 overflow-hidden">
       <!-- LEFT: payments Paytm reported for orders the system did not create -->
       <aside class="flex w-[456px] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
+        <div class="flex gap-1 border-b border-[var(--color-border)] p-2">
+          <button
+            v-for="v in views"
+            :key="v.id"
+            @click="setView(v.id)"
+            class="flex-1 rounded-md px-2 py-1 text-[0.95rem] font-bold uppercase"
+            :class="view === v.id
+              ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]'
+              : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]'"
+          >{{ v.label }}</button>
+        </div>
+
+        <template v-if="view === 'log'">
+          <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[1.05rem] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Every webhook hit</span>
+              <button
+                @click="loadLogs"
+                class="rounded-md px-2 py-0.5 text-[1.05rem] hover:bg-[var(--color-midlight)]"
+                :disabled="logsLoading"
+              >{{ logsLoading ? 'Loading…' : '↻ Refresh' }}</button>
+            </div>
+            <input
+              v-model="logSearch"
+              placeholder="Search order / ref / txn id / result / amount"
+              class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+            />
+          </div>
+
+          <div class="flex-1 overflow-y-auto custom-scrollbar">
+            <div v-if="!filteredLogs.length" class="p-6 text-center text-[1.05rem] text-[var(--color-text-muted)]">
+              {{ logsLoading ? 'Loading…' : 'No webhook hits yet' }}
+            </div>
+            <div
+              v-for="l in filteredLogs"
+              :key="l.name"
+              @click="selectLog(l)"
+              class="flex cursor-pointer flex-col gap-1 border-b border-[var(--color-border)] px-3 py-2 transition-colors"
+              :class="selectedLog?.name === l.name
+                ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]'
+                : 'hover:bg-[var(--color-midlight)]'"
+            >
+              <div class="flex items-center justify-between gap-2">
+                <span class="flex min-w-0 items-center gap-1.5">
+                  <span v-if="l.pay_method" class="shrink-0 rounded border border-current px-1 text-[12px] font-bold uppercase opacity-75">{{ l.pay_method }}</span>
+                  <span class="truncate font-mono text-[1.05rem]">{{ l.rrn || l.paytm_txn_id || l.order_id || '—' }}</span>
+                </span>
+                <span class="shrink-0 font-mono text-[1.2rem] font-bold">₹{{ fmt(l.amount) }}</span>
+              </div>
+              <div class="flex items-center justify-between gap-2 text-[0.9rem]">
+                <span class="truncate opacity-75">{{ fmtDate(l.received_at) }} · {{ l.ref_name || l.order_id || l.name }}</span>
+                <span class="shrink-0 rounded px-1.5 py-0.5 font-bold uppercase text-white" :class="resultClass(l.result)">{{ l.result }}</span>
+              </div>
+            </div>
+          </div>
+        </template>
+
+        <template v-else>
         <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3">
           <div class="flex items-center justify-between">
             <span class="text-[1.05rem] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Unknown Payments</span>
@@ -87,10 +145,77 @@
             </div>
           </div>
         </div>
+        </template>
       </aside>
 
       <!-- RIGHT: receipt for the selected payment -->
       <main class="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <template v-if="view === 'log'">
+          <div v-if="!selectedLog" class="flex h-full items-center justify-center text-center text-[var(--color-text-muted)]">
+            <div>
+              <div class="text-lg font-bold uppercase">Select a webhook hit</div>
+              <div class="text-sm">Every notification Paytm sent to the webhook, whether it matched a system order or not.</div>
+            </div>
+          </div>
+
+          <div v-else class="mx-auto flex max-w-2xl flex-col gap-6">
+            <section class="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-5">
+              <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0">
+                  <div class="text-xs font-bold uppercase text-[var(--color-text-muted)]">Webhook · {{ selectedLog.name }}</div>
+                  <div class="truncate font-mono text-xl font-bold">{{ selectedLog.rrn || selectedLog.paytm_txn_id || selectedLog.order_id || '—' }}</div>
+                  <div class="text-sm text-[var(--color-text-muted)]">Received {{ fmtDate(selectedLog.received_at) }}</div>
+                </div>
+                <div class="flex flex-col items-end gap-1">
+                  <span class="font-mono text-3xl font-black">₹{{ fmt(selectedLog.amount) }}</span>
+                  <span class="rounded px-2 py-0.5 text-sm font-bold uppercase text-white" :class="resultClass(selectedLog.result)">{{ selectedLog.result }}</span>
+                </div>
+              </div>
+
+              <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                <dt class="text-[var(--color-text-muted)]">What happened</dt><dd>{{ resultText(selectedLog.result) }}</dd>
+                <dt class="text-[var(--color-text-muted)]">Paytm status</dt><dd>{{ selectedLog.paytm_status || '—' }}</dd>
+                <dt class="text-[var(--color-text-muted)]">Order id</dt><dd class="font-mono break-all">{{ selectedLog.order_id || '—' }}</dd>
+                <dt class="text-[var(--color-text-muted)]">Bank ref (RRN)</dt><dd class="font-mono">{{ selectedLog.rrn || '—' }}</dd>
+                <dt class="text-[var(--color-text-muted)]">Paytm txn id</dt><dd class="font-mono break-all">{{ selectedLog.paytm_txn_id || '—' }}</dd>
+                <template v-if="selectedLog.tid">
+                  <dt class="text-[var(--color-text-muted)]">Machine TID</dt><dd class="font-mono">{{ selectedLog.tid }}</dd>
+                </template>
+                <dt class="text-[var(--color-text-muted)]">Linked record</dt>
+                <dd>
+                  <a
+                    v-if="selectedLog.ref_name"
+                    :href="`/app/${slug(selectedLog.ref_doctype)}/${selectedLog.ref_name}`"
+                    target="_blank"
+                    class="font-bold text-[var(--color-info)] underline"
+                  >{{ selectedLog.ref_name }}</a>
+                  <span v-else>—</span>
+                  <span v-if="selectedLog.ref_doctype" class="opacity-60"> ({{ selectedLog.ref_doctype }})</span>
+                </dd>
+              </dl>
+
+              <div class="flex flex-wrap justify-end gap-2">
+                <button
+                  v-if="selectedLog.ref_doctype === 'SSPL Paytm Unknown Payment' && selectedLog.ref_name"
+                  @click="openUnknown(selectedLog.ref_name)"
+                  class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white"
+                >Open unknown payment</button>
+                <button
+                  @click="toggleLogPayload"
+                  class="rounded-lg border border-[var(--color-border)] px-4 py-2 font-bold hover:bg-[var(--color-midlight)]"
+                >{{ showLogPayload ? 'Hide' : 'Show' }} Paytm payload</button>
+              </div>
+              <pre
+                v-if="showLogPayload"
+                class="max-h-96 overflow-auto rounded-lg bg-[var(--color-surface)] p-3 font-mono text-xs custom-scrollbar"
+              >{{ logPayloadText }}</pre>
+            </section>
+
+            <div v-if="error" class="rounded-lg bg-[var(--color-danger)]/15 px-3 py-2 text-sm font-bold text-[var(--color-danger)]">{{ error }}</div>
+          </div>
+        </template>
+
+        <template v-else>
         <div v-if="!selected" class="flex h-full items-center justify-center text-center text-[var(--color-text-muted)]">
           <div>
             <div class="text-lg font-bold uppercase">Select a payment</div>
@@ -253,6 +378,7 @@
 
           <div v-if="error" class="rounded-lg bg-[var(--color-danger)]/15 px-3 py-2 text-sm font-bold text-[var(--color-danger)]">{{ error }}</div>
         </div>
+        </template>
       </main>
     </div>
 
@@ -303,6 +429,26 @@ const payloadText = ref('')
 const showSearch = ref(false)
 const searchTarget = ref('from')
 
+// Webhook Log view: every notification payment_webhook() received
+const views = [{ id: 'unknown', label: 'Unknown Payments' }, { id: 'log', label: 'Webhook Log' }]
+const view = ref('unknown')
+const logs = ref([])
+const logsLoading = ref(false)
+const logSearch = ref('')
+const selectedLog = ref(null)
+const showLogPayload = ref(false)
+const logPayloadText = ref('')
+const RESULT_TEXT = {
+  matched: 'Matched a system order (EDC / QR / link); its status was re-read from Paytm',
+  recorded: 'Not a system order: kept as an unknown payment',
+  duplicate: 'Same payment already kept as an unknown payment',
+  known: 'Payment of a system order, matched by txn id / RRN',
+  'not paid': 'Paytm reports the payment as not successful: ignored',
+  rejected: 'MID or checksum mismatch: ignored (see Error Log)',
+  unreadable: 'No amount or reference in the payload: ignored (see Error Log)',
+  error: 'Failed while recording (see Error Log)',
+}
+
 const fromInput = ref(null)
 const toInput = ref(null)
 const refInput = ref(null)
@@ -320,6 +466,76 @@ const filteredRows = computed(() => {
       .some((v) => (v || '').toLowerCase().includes(q))
   })
 })
+
+const filteredLogs = computed(() => {
+  const q = logSearch.value.trim().toLowerCase()
+  if (!q) return logs.value
+  return logs.value.filter((l) =>
+    [l.name, l.result, l.order_id, l.rrn, l.paytm_txn_id, l.ref_name, l.tid, String(l.amount)]
+      .some((v) => (v || '').toLowerCase().includes(q)))
+})
+
+function resultClass(result) {
+  if (result === 'matched' || result === 'recorded') return 'bg-[var(--color-success)]'
+  if (result === 'duplicate' || result === 'known') return 'bg-[var(--color-info)]'
+  if (result === 'not paid') return 'bg-[var(--color-warning)]'
+  return 'bg-[var(--color-danger)]'
+}
+const resultText = (result) => RESULT_TEXT[result] || result || '—'
+const slug = (doctype) => (doctype || '').toLowerCase().replace(/ /g, '-')
+
+async function loadLogs() {
+  logsLoading.value = true
+  try {
+    logs.value = (await frappeGet(`${API}.get_webhook_logs`, { limit: 500 })) || []
+    if (selectedLog.value) selectedLog.value = logs.value.find((l) => l.name === selectedLog.value.name) || null
+  } catch (e) {
+    error.value = e.message
+  } finally {
+    logsLoading.value = false
+  }
+}
+
+function setView(v) {
+  if (view.value === v) return
+  view.value = v
+  error.value = ''
+  if (v === 'log') loadLogs()
+  else loadRows()
+}
+
+function selectLog(l) {
+  if (selectedLog.value?.name === l.name) return
+  error.value = ''
+  showLogPayload.value = false
+  logPayloadText.value = ''
+  selectedLog.value = l
+}
+
+async function toggleLogPayload() {
+  showLogPayload.value = !showLogPayload.value
+  if (!showLogPayload.value || logPayloadText.value) return
+  try {
+    const doc = await frappeGet(`${API}.get_webhook_log`, { name: selectedLog.value.name })
+    try {
+      logPayloadText.value = JSON.stringify(JSON.parse(doc.payload), null, 2)
+    } catch {
+      logPayloadText.value = doc.payload || '(empty)'
+    }
+  } catch (e) {
+    error.value = e.message
+  }
+}
+
+async function openUnknown(name) {
+  view.value = 'unknown'
+  error.value = ''
+  statusFilter.value = 'All'
+  await loadRows()
+  const r = rows.value.find((x) => x.name === name)
+  if (r) selectRow(r)
+  else error.value = `${name} is no longer listed (deleted?)`
+}
 
 function statusCount(s) {
   return s === 'All' ? rows.value.length : rows.value.filter((r) => r.status === s).length
@@ -471,6 +687,13 @@ let pollTimer = null
 function onSocket() {
   loadRows()
 }
+function onLogSocket() {
+  if (view.value === 'log') loadLogs()
+}
+function refresh() {
+  if (view.value === 'log') loadLogs()
+  else loadRows()
+}
 
 function onKeydown(e) {
   if (showSearch.value) return
@@ -483,13 +706,15 @@ function onKeydown(e) {
 onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
   getFrappeSocket()?.on('paytm_unknown_payment', onSocket)
+  getFrappeSocket()?.on('paytm_webhook_log', onLogSocket)
   await loadRows()
-  pollTimer = setInterval(() => { if (!document.hidden) loadRows() }, POLL_MS)
+  pollTimer = setInterval(() => { if (!document.hidden) refresh() }, POLL_MS)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', onKeydown)
   getFrappeSocket()?.off('paytm_unknown_payment', onSocket)
+  getFrappeSocket()?.off('paytm_webhook_log', onLogSocket)
   clearInterval(pollTimer)
 })
 </script>

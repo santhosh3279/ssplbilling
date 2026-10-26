@@ -24,6 +24,7 @@ from ssplbilling.api.paytm_api import (
 )
 
 DOCTYPE = "SSPL Paytm Unknown Payment"
+LOG_DOCTYPE = "SSPL Paytm Webhook Log"
 SUCCESS_STATUSES = ("TXN_SUCCESS", "SUCCESS", "S")
 LIST_FIELDS = [
 	"name",
@@ -224,6 +225,81 @@ def _record(raw, data, body):
 	doc.insert(ignore_permissions=True)
 	frappe.publish_realtime("paytm_unknown_payment", {"name": doc.name}, after_commit=True)
 	return "recorded"
+
+
+def log_webhook(raw, data, body, result, txn=None):
+	"""Keep every notification payment_webhook() receives, with what it did with it, for the
+	Webhook Log view. Never raises and commits on its own: a log failure must not cost a payment."""
+	try:
+		fields = _parse(body)
+		ref_doctype, ref_name = None, None
+		if txn:
+			ref_doctype, ref_name = "SSPL Paytm Transaction", txn.name
+			fields["amount"] = flt(txn.amount) or fields["amount"]
+			fields["status"] = txn.status
+		elif result in ("recorded", "duplicate"):
+			ref_doctype, ref_name = DOCTYPE, _existing(fields)
+		elif result == "known":
+			for field in ("paytm_txn_id", "rrn"):
+				if fields.get(field):
+					ref_name = frappe.db.get_value("SSPL Paytm Transaction", {field: fields[field]}, "name")
+					if ref_name:
+						ref_doctype = "SSPL Paytm Transaction"
+						break
+		doc = frappe.get_doc(
+			{
+				"doctype": LOG_DOCTYPE,
+				"received_at": now_datetime(),
+				"result": result,
+				"amount": fields["amount"],
+				"paytm_status": fields["status"],
+				"order_id": fields["paytm_order_id"],
+				"paytm_txn_id": fields["paytm_txn_id"],
+				"rrn": fields["rrn"],
+				"pay_method": fields["pay_method"],
+				"tid": fields["tid"],
+				"ref_doctype": ref_doctype if ref_name else None,
+				"ref_name": ref_name,
+				"payload": (raw if raw.strip().startswith("{") else json.dumps(data, indent=1, default=str))[:60000],
+			}
+		)
+		doc.insert(ignore_permissions=True)
+		frappe.db.commit()
+		frappe.publish_realtime("paytm_webhook_log", {"name": doc.name})
+	except Exception:
+		frappe.db.rollback()
+		frappe.log_error(title="Paytm webhook log not saved", message=frappe.get_traceback())
+
+
+@frappe.whitelist()
+def get_webhook_logs(limit=500):
+	"""Every webhook hit, newest first, for the Webhook Log view."""
+	_require_desk_user()
+	return frappe.get_all(
+		LOG_DOCTYPE,
+		fields=[
+			"name",
+			"received_at",
+			"result",
+			"amount",
+			"paytm_status",
+			"order_id",
+			"paytm_txn_id",
+			"rrn",
+			"pay_method",
+			"tid",
+			"ref_doctype",
+			"ref_name",
+		],
+		order_by="creation desc",
+		limit_page_length=frappe.utils.cint(limit) or 500,
+	)
+
+
+@frappe.whitelist()
+def get_webhook_log(name):
+	_require_desk_user()
+	return frappe.get_doc(LOG_DOCTYPE, name).as_dict()
 
 
 @frappe.whitelist()

@@ -1038,10 +1038,11 @@ def payment_webhook():
 	if not order_id or not frappe.db.exists("SSPL Paytm Transaction", order_id):
 		# a payment the system did not start (static QR, soundbox, dashboard link): kept for the
 		# Paytm Unknown Payments page. Always 200, so Paytm does not keep retrying it.
-		from ssplbilling.api.paytm_unknown_api import record_unknown_payment
+		from ssplbilling.api.paytm_unknown_api import log_webhook, record_unknown_payment
 
 		result = record_unknown_payment(raw, data, body)
 		frappe.db.commit()
+		log_webhook(raw, data, body, result)
 		return {"status": result}
 
 	settings = frappe.get_cached_doc("SSPL Paytm Settings")
@@ -1074,6 +1075,9 @@ def payment_webhook():
 				"stopped waiting. Check the invoice is not paid twice.",
 			)
 	frappe.db.commit()
+	from ssplbilling.api.paytm_unknown_api import log_webhook
+
+	log_webhook(raw, data, body, "matched", txn)
 	return {"status": "ok"}
 
 
