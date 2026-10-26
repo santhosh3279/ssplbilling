@@ -481,6 +481,14 @@ def make_sales_invoice_from_order(order_name, naming_series):
 
 	# ERPNext maps only the qty not yet invoiced and throws if nothing is left
 	si = make_sales_invoice(order_name, ignore_permissions=True)
+
+	# Carry the order's tax template and tax rows over as-is (incl. included_in_print_rate),
+	# so the invoice is taxed exactly like the order rather than by party/tax-category defaults
+	so = frappe.get_doc("Sales Order", order_name)
+	si.taxes_and_charges = so.taxes_and_charges
+	si.set("taxes", [t.as_dict(no_default_fields=True) for t in so.taxes])
+	si.calculate_taxes_and_totals()
+
 	si.naming_series = naming_series
 	si.posting_date = frappe.utils.today()
 	si.set_posting_time = 1
