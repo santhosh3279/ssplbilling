@@ -1328,7 +1328,6 @@ async function submitVariantLink() {
   isLinkingVariant.value = true
   try {
     await linkItemAsVariant(props.editItemCode, code, linkDraft.value)
-    alert(`${code} is now a variant of ${props.editItemCode}`)
     if (!variantsLock.value) variantsLock.value = 'Variants already created from this template'
     showVariantLink.value = false
     resetVariantLink()
