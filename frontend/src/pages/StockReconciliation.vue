@@ -99,6 +99,7 @@
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-8">#</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-48">Item Code</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)]">Item Name</th>
+          <th v-if="showBatchColumn" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-px whitespace-nowrap">Batch</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Curr Qty</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">New Qty</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Curr Rate</th>
@@ -126,6 +127,18 @@
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)]">
             <div class="text-4xl font-medium" :class="tone(index, 'text-[var(--color-text)]')" :title="item.item_name">{{ item.item_name || '--' }}</div>
+          </td>
+          <td v-if="showBatchColumn" class="px-2 py-1 border-r border-[var(--color-border)] whitespace-nowrap">
+            <button
+              v-if="item.batch_no || itemHasBatch(item.item_code)"
+              type="button"
+              tabindex="-1"
+              :disabled="isReadOnly"
+              @click.stop="openBatchView({ type: 'row', index })"
+              class="rounded px-2 text-3xl font-mono font-bold disabled:cursor-default"
+              :class="item.batch_no ? 'bg-[var(--color-info)]/20 text-[var(--color-info)]' : 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]'"
+              :title="isReadOnly ? 'Batch' : 'Change batch'"
+            >{{ item.batch_no || 'No batch' }}</button>
           </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl" :class="tone(index, 'text-[var(--color-text-muted)]')">
             {{ item.current_qty }}
@@ -183,6 +196,9 @@
           <td class="px-2 py-1 border-r border-[var(--color-border)]">
             <div class="text-[var(--color-text)] text-4xl">{{ newPending.item_name }}</div>
           </td>
+          <td v-if="showBatchColumn" class="px-2 py-1 border-r border-[var(--color-border)] whitespace-nowrap">
+            <span v-if="newPending.batch_no" class="rounded px-2 text-3xl font-mono font-bold bg-[var(--color-info)]/20 text-[var(--color-info)]">{{ newPending.batch_no }}</span>
+          </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right text-[var(--color-text-muted)] font-mono text-4xl">
             {{ newPending.current_qty }}
           </td>
@@ -233,7 +249,7 @@
               @keydown="handleNewCodeKeydown"
             />
           </td>
-          <td colspan="7" class="px-2 text-[var(--color-text-muted)] italic text-2xl">Enter item code / barcode &nbsp;·&nbsp; &rarr; search &nbsp;·&nbsp; &uarr; rows</td>
+          <td :colspan="showBatchColumn ? 8 : 7" class="px-2 text-[var(--color-text-muted)] italic text-2xl">Enter item code / barcode &nbsp;·&nbsp; &rarr; search &nbsp;·&nbsp; &uarr; rows</td>
         </tr>
       </template>
 
@@ -263,6 +279,18 @@
     @select="onItemSearchSelect"
   />
 
+  <!-- Batch picker: batch items are counted one batch per row -->
+  <BatchView
+    v-if="showBatchView && batchTargetItem"
+    :show="showBatchView"
+    :item-code="batchTargetItem.item_code"
+    :item-name="batchTargetItem.item_name"
+    :warehouse="warehouse"
+    :selected="batchTargetItem.batch_no || ''"
+    @select="onBatchSelected"
+    @close="closeBatchView"
+  />
+
   <!-- Quick Item Search -->
   <QuickItemSearch
     ref="quickSearchRef"
@@ -288,7 +316,8 @@ import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import ItemSearch from '../components/ItemSearch.vue'
 import Stock_Template from '../components/Stock_Template.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
-import { useItemCache, uomLabel } from '../services/itemCache.js'
+import BatchView from '../components/BatchView.vue'
+import { useItemCache, uomLabel, itemHasBatch } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
@@ -328,7 +357,7 @@ const isDraft = ref(false)
 const newItemCode = ref('')
 const newQty = ref(0)
 const newRate = ref(0)
-const newPending = ref({ item_name: '', uom: '', stock_uom: '', current_qty: 0, valuation_rate: 0 })
+const newPending = ref({ item_name: '', uom: '', stock_uom: '', current_qty: 0, valuation_rate: 0, batch_no: '' })
 const showItemSearch = ref(false)
 
 const quickSearchResults = ref([])
@@ -599,20 +628,88 @@ function stockUomOf(itemCode, fallback) {
 
 // Pending row for an item: `uom` is the entry UOM (a scanned barcode's UOM), and the qty
 // box starts at the current stock expressed in that UOM so Diff reads 0 until changed.
-function setNewPending({ item_name, uom, stock_uom, current_qty, valuation_rate }) {
-  // Stock Reconciliation can't hold an item twice: go to its row and edit the qty there,
+// A batch item first goes through the batch picker; returns true while that picker is open.
+function setNewPending({ item_name, uom, stock_uom, current_qty, valuation_rate, batch_no = '' }) {
+  if (!batch_no && itemHasBatch(newItemCode.value)) {
+    pendingBatchArgs = { item_name, uom, stock_uom, current_qty, valuation_rate }
+    openBatchView({ type: 'pending' })
+    return true
+  }
+  // Stock Reconciliation can't hold an item (batch) twice: go to its row and edit the qty there,
   // in the scanned barcode's UOM.
-  const existing = items.value.findIndex(i => i.item_code === newItemCode.value)
+  const existing = items.value.findIndex(i => i.item_code === newItemCode.value && (i.batch_no || '') === batch_no)
   if (existing !== -1) {
     clearPending()
     startRowEdit(existing, null, uom)
-    return
+    return false
   }
   // A UOM without a known conversion factor would be counted as stock units; enter in stock UOM.
   const entryUom = uom && uomFactor(newItemCode.value, uom, stock_uom) ? uom : stock_uom
-  newPending.value = { item_name: item_name || newItemCode.value, uom: entryUom, stock_uom, current_qty, valuation_rate }
+  newPending.value = { item_name: item_name || newItemCode.value, uom: entryUom, stock_uom, current_qty, valuation_rate, batch_no }
   newQty.value = roundQty(current_qty / newFactor.value)
   newRate.value = valuation_rate
+  return false
+}
+
+// ==================== BATCH ====================
+const showBatchView = ref(false)
+const batchTarget = ref(null) // { type: 'pending' } | { type: 'row', index }
+// Item details of the scanned batch item, waiting for its batch
+let pendingBatchArgs = null
+
+const showBatchColumn = computed(() =>
+  items.value.some(i => i.batch_no || itemHasBatch(i.item_code)) || !!newPending.value.batch_no)
+
+const batchTargetItem = computed(() => {
+  const t = batchTarget.value
+  if (!t) return null
+  if (t.type === 'pending') return { item_code: newItemCode.value, item_name: pendingBatchArgs?.item_name || newItemCode.value, batch_no: '' }
+  return items.value[t.index]
+})
+
+function openBatchView(target) {
+  batchTarget.value = target
+  showBatchView.value = true
+}
+
+// Closing without a pick drops the scanned item: a batch item cannot be counted without one
+function closeBatchView() {
+  const t = batchTarget.value
+  showBatchView.value = false
+  batchTarget.value = null
+  if (t?.type === 'pending') {
+    pendingBatchArgs = null
+    cancelPending()
+  } else if (t?.type === 'row') {
+    focusRow(t.index)
+  }
+}
+
+// Current qty is the batch's own stock, so Diff only moves that batch
+function onBatchSelected(batchNo, batch) {
+  const t = batchTarget.value
+  const batchQty = roundQty(Number(batch?.qty) || 0)
+  showBatchView.value = false
+  batchTarget.value = null
+  if (t?.type === 'pending') {
+    const args = pendingBatchArgs
+    pendingBatchArgs = null
+    if (!args) return cancelPending()
+    setNewPending({ ...args, current_qty: batchQty, batch_no: batchNo })
+    if (newPending.value.item_name) focusNewQty()
+    return
+  }
+  const row = t && items.value[t.index]
+  if (!row) return
+  const dup = items.value.findIndex((i, idx) => idx !== t.index && i.item_code === row.item_code && i.batch_no === batchNo)
+  if (dup !== -1) {
+    alert(`Batch ${batchNo} is already on row ${dup + 1}`)
+    focusRow(dup)
+    return
+  }
+  row.batch_no = batchNo
+  row.current_qty = batchQty
+  focusRow(t.index)
 }
 
 function roundQty(v) { return Math.round((v || 0) * 1000) / 1000 }
@@ -621,7 +718,7 @@ function clearPending() {
   newItemCode.value = ''
   newQty.value = 0
   newRate.value = 0
-  newPending.value = { item_name: '', uom: '', stock_uom: '', current_qty: 0, valuation_rate: 0 }
+  newPending.value = { item_name: '', uom: '', stock_uom: '', current_qty: 0, valuation_rate: 0, batch_no: '' }
   quickSearchResults.value = []
 }
 
@@ -661,9 +758,9 @@ async function onNewCodeEnter() {
     const r = await lookupItem(code)
     if (r && r.found) {
       newItemCode.value = r.item_code || code
-      setNewPending({ item_name: r.item_name, uom: r.uom, stock_uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.rate })
+      const picking = setNewPending({ item_name: r.item_name, uom: r.uom, stock_uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.rate })
       quickSearchResults.value = []
-      focusNewQty()
+      if (!picking) focusNewQty()
     } else {
       showItemSearch.value = true
     }
@@ -714,7 +811,7 @@ function onQuickSearchSelect(item) {
   const barcodeMatch = lookupItemInCache(newItemCode.value.trim())
   const finalItem = (barcodeMatch && barcodeMatch.item_code === item.item_code) ? barcodeMatch : item
   newItemCode.value = finalItem.item_code
-  setNewPending({
+  const picking = setNewPending({
     item_name: finalItem.item_name,
     uom: finalItem.uom,
     stock_uom: stockUomOf(finalItem.item_code, finalItem.uom),
@@ -722,7 +819,7 @@ function onQuickSearchSelect(item) {
     valuation_rate: finalItem.valuation_rate || 0
   })
   quickSearchResults.value = []
-  nextTick(() => focusNewQty())
+  if (!picking) nextTick(() => focusNewQty())
 }
 
 function onQuickSearchRefresh() {
@@ -735,13 +832,14 @@ async function onItemSearchSelect(item) {
   showItemSearch.value = false
   newItemCode.value = item.item_code
   const r = await lookupItem(item.item_code)
+  let picking
   if (r && r.found) {
-    setNewPending({ item_name: r.item_name, uom: r.uom, stock_uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.rate })
+    picking = setNewPending({ item_name: r.item_name, uom: r.uom, stock_uom: r.uom, current_qty: r.stock_qty, valuation_rate: r.rate })
   } else {
     const stockUom = stockUomOf(item.item_code, item.uom)
-    setNewPending({ item_name: item.item_name, uom: stockUom, stock_uom: stockUom, current_qty: 0, valuation_rate: 0 })
+    picking = setNewPending({ item_name: item.item_name, uom: stockUom, stock_uom: stockUom, current_qty: 0, valuation_rate: 0 })
   }
-  nextTick(() => focusNewQty())
+  if (!picking) nextTick(() => focusNewQty())
 }
 
 function addNewItem() {
@@ -755,7 +853,8 @@ function addNewItem() {
     current_qty: newPending.value.current_qty,
     qty: roundQty((newQty.value || 0) * newFactor.value),
     valuation_rate: newRate.value || newPending.value.valuation_rate,
-    current_valuation_rate: newPending.value.valuation_rate
+    current_valuation_rate: newPending.value.valuation_rate,
+    batch_no: newPending.value.batch_no || '',
   })
 
   clearPending()
@@ -828,6 +927,13 @@ async function saveEntry() {
   if (!warehouse.value) { alert('Select warehouse'); return }
   if (!items.value.length) { alert('No items to save'); return }
   if (editingRow.value !== -1) commitRowEdit(editingRow.value)
+  // ERPNext refuses a batch item row with no batch ("Please add Serial and Batch Bundle")
+  const noBatchIdx = items.value.findIndex(i => Math.abs(i.qty - i.current_qty) > 0.0001 && !i.batch_no && itemHasBatch(i.item_code))
+  if (noBatchIdx !== -1) {
+    alert(`Select a batch for ${items.value[noBatchIdx].item_code} (row ${noBatchIdx + 1})`)
+    openBatchView({ type: 'row', index: noBatchIdx })
+    return
+  }
 
   const payload = {
     company: localStorage.getItem('wb-company') || null,
@@ -839,7 +945,8 @@ async function saveEntry() {
       item_code: i.item_code,
       warehouse: i.warehouse || warehouse.value,
       qty: i.qty,
-      valuation_rate: i.valuation_rate || i.current_valuation_rate
+      valuation_rate: i.valuation_rate || i.current_valuation_rate,
+      batch_no: i.batch_no || '',
     }))
   }
 

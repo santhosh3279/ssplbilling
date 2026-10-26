@@ -7,6 +7,7 @@
       :doc-number="transferNo"
       :doc-date="transferDate"
       :items="items"
+      :show-batch-column="showBatchColumn"
       :total-amount="totalAmount"
       :item-count="items.length"
       :sidebar-date="sidebarDate"
@@ -105,6 +106,16 @@
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-3xl font-mono text-center">+</td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-4xl font-mono">{{ pendingItem.item_code }}</td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-medium">{{ pendingItem.item_name }}</td>
+            <td v-if="showBatchColumn" class="px-2 py-1 border-r border-[var(--color-border)] whitespace-nowrap">
+              <button
+                v-if="itemHasBatch(pendingItem.item_code)"
+                type="button"
+                @click="openBatchView({ type: 'pending' })"
+                class="rounded px-2 text-3xl font-mono font-bold"
+                :class="pendingItem.batch_no ? 'bg-[var(--color-info)]/20 text-[var(--color-info)]' : 'bg-[var(--color-warning)]/20 text-[var(--color-warning)]'"
+                :title="pendingItem.batch_no ? 'Change batch' : 'No batch: oldest stock is picked on submit'"
+              >{{ pendingItem.batch_no || 'Auto' }}</button>
+            </td>
             <td class="p-0 border-r border-[var(--color-border)]">
               <input
                 ref="pendingQtyInput"
@@ -136,7 +147,7 @@
               @keydown="handleBarcodeKeydown"
             />
           </td>
-          <td colspan="6" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to transfer</td>
+          <td :colspan="showBatchColumn ? 7 : 6" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to transfer</td>
         </tr>
       </template>
 
@@ -167,6 +178,18 @@
           </td>
 
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.item_name }}</td>
+
+          <td v-if="showBatchColumn" class="px-2 py-1 border-r border-[var(--color-border)] whitespace-nowrap">
+            <button
+              v-if="item.batch_no || itemHasBatch(item.item_code)"
+              type="button"
+              :disabled="isReadOnly"
+              @click.stop="openBatchView({ type: 'row', index })"
+              class="rounded px-2 text-3xl font-mono font-bold disabled:cursor-default"
+              :class="item.batch_no ? 'bg-[var(--color-info)]/20 text-[var(--color-info)]' : 'bg-[var(--color-warning)]/20 text-[var(--color-warning)]'"
+              :title="item.batch_no ? (isReadOnly ? 'Batch' : 'Change batch') : 'No batch: oldest stock is picked on submit'"
+            >{{ item.batch_no || 'Auto' }}</button>
+          </td>
           
           <td class="p-0 border-r border-[var(--color-border)]">
             <input v-if="!isReadOnly && editingRowIdx === index && editingField === 'qty'"
@@ -281,6 +304,20 @@
       @select-multiple="handleItemSelectMultiple"
     />
 
+    <!-- Batch picker: only batches holding stock in the source warehouse can move -->
+    <BatchView
+      v-if="showBatchView && batchTargetItem"
+      :show="showBatchView"
+      :item-code="batchTargetItem.item_code"
+      :item-name="batchTargetItem.item_name"
+      :warehouse="fromWarehouse"
+      :selected="batchTargetItem.batch_no || ''"
+      :allow-create="false"
+      in-stock-only
+      @select="onBatchSelected"
+      @close="closeBatchView"
+    />
+
     <!-- Exit Warning Modal -->
     <Warning
       :show="showExitWarning"
@@ -321,8 +358,9 @@ import QuickItemSearch from '../components/QuickItemSearch.vue'
 import Warning from '../components/Warning.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
+import BatchView from '../components/BatchView.vue'
 import { frappePost } from '../api'
-import { useItemCache, uomLabel, searchBillableItems } from '../services/itemCache.js'
+import { useItemCache, uomLabel, searchBillableItems, itemHasBatch } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
@@ -476,7 +514,13 @@ function format(val) {
   return isNaN(num) ? '0.00' : num.toFixed(2)
 }
 
+// Item code a row had when its code edit began; the input rewrites item_code while typing
+let editOriginalCode = ''
+
 function focusEditField(field, idx) {
+  if (field === 'code' && (editingRowIdx.value !== idx || editingField.value !== 'code')) {
+    editOriginalCode = items.value[idx]?.item_code || ''
+  }
   editingRowIdx.value = idx
   editingField.value = field
   selectedRowIdx.value = idx
@@ -542,11 +586,12 @@ async function onEditCodeKeydown(e, idx) {
     const code = (items.value[idx]?.item_code || '').trim()
     const res = await getItemDetailsFromServer(code)
     if (res && res.found) {
+      const changed = res.item_code !== editOriginalCode
       items.value[idx].item_code = res.item_code
       items.value[idx].item_name = res.item_name
       items.value[idx].uom = res.uom
       items.value[idx].rate = res.rate || 0
-      focusEditField('qty', idx)
+      if (!(changed && resetRowBatch(idx))) focusEditField('qty', idx)
     } else {
       focusEditField('qty', idx)
     }
@@ -647,7 +692,7 @@ async function onQuickSearchSelect(item) {
     items.value[idx].uom = finalItem.uom || finalItem.stock_uom || 'Nos'
     items.value[idx].rate = finalItem.rate || finalItem.valuation_rate || 0
     quickSearchResults.value = []
-    focusEditField('qty', idx)
+    if (!(finalItem.item_code !== editOriginalCode && resetRowBatch(idx))) focusEditField('qty', idx)
   } else {
     setPendingItem(finalItem)
     barcodeQuery.value = ''
@@ -692,7 +737,8 @@ async function handleItemSelectMultiple(entries) {
       item_name: entry.item_name,
       qty: entry.qty,
       uom,
-      rate
+      rate,
+      batch_no: '',
     })
   }
 
@@ -707,12 +753,63 @@ function setPendingItem(details) {
     item_name: details.item_name,
     qty: 0,
     uom: details.uom,
-    rate: details.rate || details.valuation_rate || 0
+    rate: details.rate || details.valuation_rate || 0,
+    batch_no: '',
+  }
+  // The batch picker returns focus to qty when it closes
+  if (itemHasBatch(details.item_code)) {
+    openBatchView({ type: 'pending' })
+    return
   }
   nextTick(() => {
     pendingQtyInput.value?.focus()
     pendingQtyInput.value?.select()
   })
+}
+
+// ─── Batch selection ─────────────────────────────────────────────────────────
+// Optional here: a row with no batch is filled from the oldest stock on submit.
+const showBatchView = ref(false)
+const batchTarget = ref(null) // { type: 'pending' } | { type: 'row', index }
+
+const showBatchColumn = computed(() =>
+  items.value.some(i => i.batch_no || itemHasBatch(i.item_code))
+  || !!(pendingItem.value && itemHasBatch(pendingItem.value.item_code)))
+
+const batchTargetItem = computed(() => {
+  const t = batchTarget.value
+  if (!t) return null
+  return t.type === 'pending' ? pendingItem.value : items.value[t.index]
+})
+
+function openBatchView(target) {
+  batchTarget.value = target
+  showBatchView.value = true
+}
+
+function closeBatchView() {
+  const t = batchTarget.value
+  showBatchView.value = false
+  batchTarget.value = null
+  if (t?.type === 'pending') {
+    nextTick(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() })
+  } else if (t?.type === 'row') {
+    focusEditField('qty', t.index)
+  }
+}
+
+function onBatchSelected(batchNo) {
+  if (batchTargetItem.value) batchTargetItem.value.batch_no = batchNo
+  closeBatchView()
+}
+
+// A row switched to another item drops its batch; true when the picker took over focus
+function resetRowBatch(idx) {
+  const row = items.value[idx]
+  row.batch_no = ''
+  if (!itemHasBatch(row.item_code)) return false
+  openBatchView({ type: 'row', index: idx })
+  return true
 }
 
 function confirmPendingItem() {
@@ -725,7 +822,8 @@ function confirmPendingItem() {
     item_name: p.item_name,
     qty: p.qty,
     uom: p.uom,
-    rate: p.rate || 0
+    rate: p.rate || 0,
+    batch_no: p.batch_no || '',
   })
   
   pendingItem.value = null
@@ -881,7 +979,8 @@ async function handleSelectSidebarItem(item) {
     item_name: i.item_name,
     qty: i.qty,
     uom: i.uom,
-    rate: i.basic_rate
+    rate: i.basic_rate,
+    batch_no: i.batch_no || '',
   }))
   isReadOnly.value = true
   isDraft.value = details.docstatus === 0

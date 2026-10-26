@@ -36,14 +36,19 @@ def save_store_transfer(data):
 
     se.items = []
     for row in data.get("items") or []:
-        se.append("items", {
+        item = {
             "item_code": row.get("item_code"),
             "qty": float(row.get("qty") or 0),
             "uom": row.get("uom"),
             "s_warehouse": row.get("s_warehouse") or se.from_warehouse,
             "t_warehouse": row.get("t_warehouse") or se.to_warehouse,
             "basic_rate": float(row.get("rate") or 0)
-        })
+        }
+        if row.get("batch_no"):
+            # Batch fields instead of a bundle: ERPNext builds the bundle on submit
+            item["batch_no"] = row["batch_no"]
+            item["use_serial_batch_fields"] = 1
+        se.append("items", item)
 
     if name:
         se.save()

@@ -35,8 +35,47 @@ def get_items_for_reconciliation(warehouse=None):
         item.current_valuation_rate = flt(item.current_valuation_rate)
         item.qty = item.current_qty  # Default target qty to current qty
         item.valuation_rate = item.current_valuation_rate  # Default target rate to current valuation rate
-    
-    return items
+
+    return _split_by_batch(items, warehouse)
+
+
+def _split_by_batch(items, warehouse):
+    """Batch items are counted per batch, so each batch with stock gets its own row."""
+    from erpnext.stock.doctype.batch.batch import get_batch_qty
+
+    batch_items = set(frappe.get_all(
+        "Item", filters={"name": ["in", [i.item_code for i in items]], "has_batch_no": 1}, pluck="name"
+    )) if items else set()
+    out = []
+    for item in items:
+        if item.item_code not in batch_items:
+            out.append(item)
+            continue
+        qty = {}
+        for row in get_batch_qty(item_code=item.item_code, warehouse=warehouse, for_stock_levels=True) or []:
+            qty[row.get("batch_no")] = qty.get(row.get("batch_no"), 0) + flt(row.get("qty"))
+        for batch_no, batch_qty in sorted(qty.items()):
+            if not batch_qty:
+                continue
+            row = frappe._dict(item)
+            row.batch_no = batch_no
+            row.current_qty = row.qty = batch_qty
+            out.append(row)
+    return out
+
+
+def _append_item(sr, item, warehouse, valuation_rate):
+    row = {
+        "item_code": item["item_code"],
+        "warehouse": item.get("warehouse") or warehouse,
+        "qty": flt(item["qty"]),
+        "valuation_rate": valuation_rate,
+    }
+    if item.get("batch_no"):
+        # Batch fields instead of a bundle: ERPNext builds the bundle on submit
+        row["batch_no"] = item["batch_no"]
+        row["use_serial_batch_fields"] = 1
+    sr.append("items", row)
 
 @frappe.whitelist()
 def create_stock_reconciliation(data=None, **kwargs):
@@ -57,12 +96,7 @@ def create_stock_reconciliation(data=None, **kwargs):
     sr.set_posting_time = 1
 
     for item in data["items"]:
-        sr.append("items", {
-            "item_code": item["item_code"],
-            "warehouse": item.get("warehouse") or data.get("warehouse"),
-            "qty": flt(item["qty"]),
-            "valuation_rate": flt(item.get("valuation_rate") or item.get("current_valuation_rate") or 0)
-        })
+        _append_item(sr, item, data.get("warehouse"), flt(item.get("valuation_rate") or item.get("current_valuation_rate") or 0))
 
     sr.insert()
     return {
@@ -94,12 +128,7 @@ def update_stock_reconciliation(data=None, **kwargs):
     
     sr.items = []
     for item in data["items"]:
-        sr.append("items", {
-            "item_code": item["item_code"],
-            "warehouse": item.get("warehouse") or data.get("warehouse"),
-            "qty": flt(item["qty"]),
-            "valuation_rate": flt(item.get("valuation_rate") or 0)
-        })
+        _append_item(sr, item, data.get("warehouse"), flt(item.get("valuation_rate") or 0))
     
     sr.save()
     return {"name": sr.name, "status": "Draft"}
@@ -153,7 +182,8 @@ def get_stock_reconciliation(name):
     sr = doc[0]
     items = frappe.get_all("Stock Reconciliation Item",
         filters={"parent": name},
-        fields=["item_code", "item_name", "warehouse", "stock_uom", "qty", "valuation_rate", "current_qty", "current_valuation_rate"]
+        fields=["item_code", "item_name", "warehouse", "stock_uom", "qty", "valuation_rate", "current_qty", "current_valuation_rate", "batch_no"],
+        order_by="idx asc"
     )
 
     return {
@@ -172,6 +202,7 @@ def get_stock_reconciliation(name):
                 "valuation_rate": flt(item.valuation_rate),
                 "current_qty": flt(item.current_qty),
                 "current_valuation_rate": flt(item.current_valuation_rate),
+                "batch_no": item.batch_no or "",
             }
             for item in items
         ],

@@ -166,8 +166,9 @@ function chooseHighlighted() {
   if (b) choose(b)
 }
 
+// The batch row rides along so callers can use its stock (e.g. reconciliation's current qty)
 function choose(b) {
-  emit('select', b.batch_no)
+  emit('select', b.batch_no, b)
 }
 
 function openCreator() {
@@ -184,7 +185,7 @@ function closeCreator() {
 function onBatchCreated(batch) {
   showCreator.value = false
   batches.value = [batch, ...batches.value]
-  emit('select', batch.batch_no)
+  emit('select', batch.batch_no, batch)
 }
 
 async function load() {

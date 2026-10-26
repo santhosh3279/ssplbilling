@@ -343,6 +343,11 @@ function lookupExact(code) {
   return null
 }
 
+// Batch-tracked items need a batch picked on stock rows (has_batch_no rides the item sync)
+export function itemHasBatch(code) {
+  return !!Number(lookupItemInCache(code)?.has_batch_no)
+}
+
 // Variant templates cannot be billed or transacted: a scanned/typed template code resolves to
 // nothing (so entry falls through to Item Search) and templates never show in quick search.
 export function lookupBillableItem(code) {

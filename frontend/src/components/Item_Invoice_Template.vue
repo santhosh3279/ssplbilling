@@ -332,6 +332,7 @@
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-8">#</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-32">Barcode</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)]">Item Name</th>
+                <th v-if="showBatchColumn" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-px whitespace-nowrap">Batch</th>
                 <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-16">Qty</th>
                 <th v-if="doctype === 'Purchase Order'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Curr Stock</th>
                 <th v-if="doctype === 'Purchase Order'" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Safety Stock</th>
@@ -360,6 +361,7 @@
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">{{ idx + 1 }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-4xl font-mono">{{ item.item_code }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-medium">{{ item.item_name }}</td>
+                    <td v-if="showBatchColumn" class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-info)] text-3xl font-mono whitespace-nowrap">{{ item.batch_no || '' }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-6xl font-mono text-right tabular-nums">{{ formatQty(item.qty, item.uom) }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom || 'Nos' }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ format2p(item.rate) }}</td>
@@ -767,7 +769,9 @@ const props = defineProps({
   isReadOnly: { type: Boolean, default: false },
   showSubmitButton: { type: Boolean, default: false },
   isDraft: { type: Boolean, default: false },
-  doctype: { type: String, default: 'Sales Invoice' }
+  doctype: { type: String, default: 'Sales Invoice' },
+  // Batch column after Item Name; pages with their own #row add the matching cell
+  showBatchColumn: { type: Boolean, default: false }
 })
 
 const showTotalUpToLine = computed(() => {

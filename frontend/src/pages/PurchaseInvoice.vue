@@ -17,6 +17,7 @@
       @party-refreshed="handlePartyRefreshed"
       :doc-date="invoiceDate"
       :items="items"
+      :show-batch-column="showBatchColumn"
       :selected-row-index="selectedRowIdx"
       :subtotal="subtotal"
       :item-discount-total="itemDiscountTotal"
@@ -382,17 +383,20 @@
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index && !item.deleted && !item._is_free ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
             {{ item.item_name }}
             <span v-if="item._is_free" class="ml-1 rounded bg-[var(--color-success)] text-[var(--color-text-on-highlight)] px-1 text-[10px] font-bold uppercase leading-tight">Free</span>
+          </td>
+
+          <td v-if="showBatchColumn" class="px-2 py-1 border-r border-[var(--color-border)] whitespace-nowrap">
             <button
               v-if="!item.deleted && (item.batch_no || itemHasBatch(item.item_code))"
               type="button"
               :disabled="isReadOnly"
               @click.stop="openBatchView({ type: 'row', index })"
-              class="ml-2 rounded px-2 align-middle text-xl font-mono font-bold disabled:cursor-default"
+              class="rounded px-2 text-3xl font-mono font-bold disabled:cursor-default"
               :class="item.batch_no
                 ? 'bg-[var(--color-info)]/20 text-[var(--color-info)]'
                 : 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]'"
               :title="isReadOnly ? 'Batch' : 'Change batch'"
-            >{{ item.batch_no ? `Batch ${item.batch_no}` : 'No batch' }}</button>
+            >{{ item.batch_no || 'No batch' }}</button>
           </td>
 
           <!-- qty -->
@@ -712,16 +716,18 @@
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-2xl font-mono">{{ pendingItem.item_code }}</td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-2xl">
               {{ pendingItem.item_name }}
+            </td>
+            <td v-if="showBatchColumn" class="px-2 py-1 border-r border-[var(--color-border)] whitespace-nowrap">
               <button
                 v-if="pendingItem.batch_no || itemHasBatch(pendingItem.item_code)"
                 type="button"
                 @click="openBatchView({ type: 'pending' })"
-                class="ml-2 rounded px-2 align-middle text-xl font-mono font-bold"
+                class="rounded px-2 text-2xl font-mono font-bold"
                 :class="pendingItem.batch_no
                   ? 'bg-[var(--color-info)]/20 text-[var(--color-info)]'
                   : 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]'"
                 title="Change batch"
-              >{{ pendingItem.batch_no ? `Batch ${pendingItem.batch_no}` : 'No batch' }}</button>
+              >{{ pendingItem.batch_no || 'No batch' }}</button>
             </td>
             <td class="p-0 border-r border-[var(--color-border)]">
               <input
@@ -795,7 +801,7 @@
                 @keydown="handleNewCodeKeydown"
               />
             </td>
-            <td colspan="9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to invoice</td>
+            <td :colspan="showBatchColumn ? 10 : 9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to invoice</td>
           </tr>
         </template>
       </template>
@@ -1021,7 +1027,7 @@ import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
 import BatchView from '../components/BatchView.vue'
 
-import { useItemCache, lookupItemInCache, lookupBillableItem, searchBillableItems, uomLabel } from '../services/itemCache.js'
+import { useItemCache, lookupItemInCache, lookupBillableItem, searchBillableItems, uomLabel, itemHasBatch } from '../services/itemCache.js'
 import { patchLedgerInCache } from '../services/ledgerCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice, getFloatPrecision } from '../encryption.js'
@@ -2476,9 +2482,10 @@ function applyItemToRow(rowIdx, item) {
 const showBatchView = ref(false)
 const batchTarget = ref(null) // { type: 'pending' } | { type: 'row', index }
 
-function itemHasBatch(itemCode) {
-  return !!Number(lookupItemInCache(itemCode)?.has_batch_no)
-}
+// Column only while the bill has a batch item, so ordinary bills keep their width
+const showBatchColumn = computed(() =>
+  items.value.some(i => !i.deleted && (i.batch_no || itemHasBatch(i.item_code)))
+  || !!(pendingItem.value && (pendingItem.value.batch_no || itemHasBatch(pendingItem.value.item_code))))
 
 // Without auto-create, ERPNext needs the batch named on the row
 function batchRequired(itemCode) {
