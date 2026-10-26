@@ -100,7 +100,9 @@
               class="flex cursor-pointer flex-col gap-1 border-b border-[var(--color-border)] px-3 py-2 transition-colors"
               :class="selectedLog?.name === l.name
                 ? 'bg-[var(--color-focus)] text-[var(--color-text-on-focus)]'
-                : 'hover:bg-[var(--color-midlight)]'"
+                : isCancelled(l)
+                  ? 'bg-[var(--color-danger)]/10 hover:bg-[var(--color-danger)]/20'
+                  : 'hover:bg-[var(--color-midlight)]'"
             >
               <div class="flex items-center justify-between gap-2">
                 <span class="flex min-w-0 items-center gap-1.5">
@@ -121,7 +123,7 @@
                     class="rounded px-1.5 py-0.5 font-bold uppercase text-white"
                     :class="l.linked ? 'bg-[var(--color-success)]' : 'bg-[var(--color-warning)]'"
                   >{{ l.linked ? '✓ Booked' : 'To book' }}</span>
-                  <span class="rounded px-1.5 py-0.5 font-bold uppercase text-white" :class="resultClass(l.result)">{{ l.result }}</span>
+                  <span class="rounded px-1.5 py-0.5 font-bold uppercase text-white" :class="logBadge(l).cls">{{ logBadge(l).text }}</span>
                 </span>
               </div>
               <div v-if="l.linked_to" class="truncate text-[0.9rem] opacity-75">{{ l.linked_doctype }} {{ l.linked_to }}</div>
@@ -226,7 +228,7 @@
                       v-if="selectedLog.txn_status === 'Cancelled'"
                       class="rounded bg-[var(--color-danger)] px-2 py-0.5 text-sm font-bold uppercase text-white"
                     >Cancelled</span>
-                    <span class="rounded px-2 py-0.5 text-sm font-bold uppercase text-white" :class="resultClass(selectedLog.result)">{{ selectedLog.result }}</span>
+                    <span class="rounded px-2 py-0.5 text-sm font-bold uppercase text-white" :class="logBadge(selectedLog).cls">{{ logBadge(selectedLog).text }}</span>
                   </span>
                 </div>
               </div>
@@ -590,6 +592,10 @@ function resultClass(result) {
   if (result === 'not paid') return 'bg-[var(--color-warning)]'
   return 'bg-[var(--color-danger)]'
 }
+// A hit on an order the cashier cancelled reads as Failed, whatever the webhook result was
+const isCancelled = (l) => l.txn_status === 'Cancelled'
+const logBadge = (l) =>
+  isCancelled(l) ? { text: 'Failed', cls: 'bg-[var(--color-danger)]' } : { text: l.result, cls: resultClass(l.result) }
 const resultText = (result) => RESULT_TEXT[result] || result || '—'
 const slug = (doctype) => (doctype || '').toLowerCase().replace(/ /g, '-')
 
