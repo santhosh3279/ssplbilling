@@ -14,7 +14,7 @@ import json
 
 import frappe
 from frappe import _
-from frappe.utils import flt, now_datetime
+from frappe.utils import flt, getdate, now_datetime
 
 from ssplbilling.api.paytm_api import (
 	PG_STATUS_PATH,
@@ -272,12 +272,17 @@ def log_webhook(raw, data, body, result, txn=None):
 
 
 @frappe.whitelist()
-def get_webhook_logs(limit=500):
+def get_webhook_logs(limit=500, date=None):
 	"""Every webhook hit, newest first, for the Webhook Log view, each marked with whether its
-	money is already booked (see _mark_linked)."""
+	money is already booked (see _mark_linked). date (YYYY-MM-DD) limits it to hits received that day."""
 	_require_desk_user()
+	filters = {}
+	if date:
+		day = getdate(date)
+		filters["received_at"] = ("between", [f"{day} 00:00:00", f"{day} 23:59:59.999999"])
 	rows = frappe.get_all(
 		LOG_DOCTYPE,
+		filters=filters,
 		fields=[
 			"name",
 			"received_at",

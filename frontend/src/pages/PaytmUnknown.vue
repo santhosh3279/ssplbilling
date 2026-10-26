@@ -41,6 +41,29 @@
                 :disabled="logsLoading"
               >{{ logsLoading ? 'Loading…' : '↻ Refresh' }}</button>
             </div>
+            <div class="flex items-center gap-1">
+              <button
+                @click="shiftLogDate(-1)"
+                title="Previous day"
+                class="rounded-md bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] font-bold hover:bg-[var(--color-midlight)]"
+              >◀</button>
+              <input
+                type="date"
+                :value="logDate"
+                @change="setLogDate($event.target.value)"
+                class="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-center text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              />
+              <button
+                @click="shiftLogDate(1)"
+                title="Next day"
+                class="rounded-md bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] font-bold hover:bg-[var(--color-midlight)]"
+              >▶</button>
+              <button
+                @click="setLogDate(today())"
+                :disabled="logDate === today()"
+                class="rounded-md bg-[var(--color-surface-raised)] px-2 py-1.5 text-[0.9rem] font-bold uppercase hover:bg-[var(--color-midlight)] disabled:opacity-50"
+              >Today</button>
+            </div>
             <input
               v-model="logSearch"
               placeholder="Search order / ref / txn id / result / amount"
@@ -68,7 +91,7 @@
 
           <div class="flex-1 overflow-y-auto custom-scrollbar">
             <div v-if="!filteredLogs.length" class="p-6 text-center text-[1.05rem] text-[var(--color-text-muted)]">
-              {{ logsLoading ? 'Loading…' : 'No webhook hits yet' }}
+              {{ logsLoading ? 'Loading…' : 'No webhook hits on this day' }}
             </div>
             <div
               v-for="l in filteredLogs"
@@ -489,6 +512,10 @@ const view = ref('unknown')
 const logs = ref([])
 const logsLoading = ref(false)
 const logSearch = ref('')
+// Local YYYY-MM-DD (toISOString would shift to UTC)
+const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+const today = () => ymd(new Date())
+const logDate = ref(today())
 // linked: 1 booked (submitted invoice / receipt), 0 paid but not booked yet, null no payment to book
 const linkFilters = [
   { id: 'all', label: 'All' },
@@ -569,13 +596,25 @@ const slug = (doctype) => (doctype || '').toLowerCase().replace(/ /g, '-')
 async function loadLogs() {
   logsLoading.value = true
   try {
-    logs.value = (await frappeGet(`${API}.get_webhook_logs`, { limit: 500 })) || []
+    logs.value = (await frappeGet(`${API}.get_webhook_logs`, { limit: 500, date: logDate.value })) || []
     if (selectedLog.value) selectedLog.value = logs.value.find((l) => l.name === selectedLog.value.name) || null
   } catch (e) {
     error.value = e.message
   } finally {
     logsLoading.value = false
   }
+}
+
+function setLogDate(d) {
+  if (!d || d === logDate.value) return
+  logDate.value = d
+  posFilter.value = ''
+  loadLogs()
+}
+
+function shiftLogDate(days) {
+  const [y, m, d] = logDate.value.split('-').map(Number)
+  setLogDate(ymd(new Date(y, m - 1, d + days)))
 }
 
 function setView(v) {
