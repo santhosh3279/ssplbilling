@@ -189,7 +189,7 @@
                       @keydown.down.prevent="onRowItemDown(idx)"
                       @keydown.up.prevent="onRowItemUp(idx)"
                       @keydown.escape="onRowItemEscape"
-                      @keydown.ctrl.delete.prevent="removeRow(idx)"
+                      @keydown.ctrl="onRowCtrlKey($event, idx)"
                     />
                     <div
                       v-if="itemDropdownIdx === idx && rowItemResults.length"
@@ -222,7 +222,7 @@
                       @keydown.enter.prevent="focusField('qty', idx)"
                       @keydown.down.prevent="moveRow('item_name', idx, 1)"
                       @keydown.up.prevent="moveRow('item_name', idx, -1)"
-                      @keydown.ctrl.delete.prevent="removeRow(idx)"
+                      @keydown.ctrl="onRowCtrlKey($event, idx)"
                     />
                   </td>
 
@@ -242,7 +242,7 @@
                       @keydown.enter.prevent="focusField('rate', idx)"
                       @keydown.down.prevent="moveRow('qty', idx, 1)"
                       @keydown.up.prevent="moveRow('qty', idx, -1)"
-                      @keydown.ctrl.delete.prevent="removeRow(idx)"
+                      @keydown.ctrl="onRowCtrlKey($event, idx)"
                     />
                   </td>
 
@@ -262,7 +262,7 @@
                       @keydown.enter.prevent="goToNextRow(idx)"
                       @keydown.down.prevent="moveRow('rate', idx, 1)"
                       @keydown.up.prevent="moveRow('rate', idx, -1)"
-                      @keydown.ctrl.delete.prevent="removeRow(idx)"
+                      @keydown.ctrl="onRowCtrlKey($event, idx)"
                     />
                   </td>
 
@@ -608,6 +608,11 @@ function removeRow(idx) {
   activeRow.value = -1
   if (idx < rows.value.length) focusField('item', idx)
   else focusNewItem()
+}
+
+// Exact key check: Vue's .delete modifier also matches Backspace, and Ctrl+Backspace is delete-word
+function onRowCtrlKey(e, idx) {
+  if (e.key === 'Delete') { e.preventDefault(); removeRow(idx) }
 }
 
 // ── CUSTOMER SEARCH ──────────────────────────────────────────────────
