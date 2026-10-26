@@ -462,23 +462,15 @@ def submit_sales_order(order_name):
 @frappe.whitelist()
 @_system_user_only
 def make_sales_invoice_from_order(order_name, naming_series, defaults=None):
-	"""Create a draft Sales Invoice from a submitted Sales Order in one of the user's allowed series."""
+	"""Create a draft Sales Invoice from a submitted Sales Order in the series picked on the client."""
 	from erpnext.selling.doctype.sales_order.sales_order import make_sales_invoice
 
-	from ssplbilling.api.dashboard_api import get_allowed_series
 	from ssplbilling.api.SaleEntry_api import _apply_tax_template
 
 	if not order_name or not frappe.db.exists("Sales Order", order_name):
 		frappe.throw("Sales Order not found")
 	if frappe.db.get_value("Sales Order", order_name, "docstatus") != 1:
 		frappe.throw("Submit the Sales Order before creating a Sales Invoice")
-
-	def prefix(s):
-		return (s or "").split(".")[0].strip().upper()
-
-	allowed = (get_allowed_series("Sales Invoice") or {}).get("allowed_series") or []
-	if prefix(naming_series) not in {prefix(s) for s in allowed}:
-		frappe.throw(f"Series {naming_series} is not allowed for your user", frappe.PermissionError)
 
 	# ERPNext maps only the qty not yet invoiced and throws if nothing is left
 	si = make_sales_invoice(order_name, ignore_permissions=True)
