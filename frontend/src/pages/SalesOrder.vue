@@ -1500,9 +1500,23 @@ async function createInvoiceFromOrder(series) {
   if (!isSubmitted.value || creatingInvoice.value) return
   creatingInvoice.value = true
   try {
+    // Same cached settings the Sales Invoice page uses when a series is picked
+    let cached = null
+    try { cached = JSON.parse(localStorage.getItem('wb-settings-v2') || 'null') } catch { /* no cache */ }
+    const seriesEntry = cached?.data?.billing_series?.find(bs => bs.series === series) || {}
+    const userDefaults = cached?.data?.user_defaults || {}
+    const defaults = {
+      price_list: seriesEntry.price_list || '',
+      tax_template: seriesEntry.tax_template || '',
+      tax_type_incl: seriesEntry.tax_type_incl ? 1 : 0,
+      warehouse: userDefaults.warehouse || localStorage.getItem('wb-warehouse') || '',
+      cost_center: userDefaults.cost_center || localStorage.getItem('wb-cost-center') || '',
+      income_account: userDefaults.income_account || localStorage.getItem('wb-income-account') || '',
+    }
     const res = await frappePost('ssplbilling.api.sales_order_api.make_sales_invoice_from_order', {
       order_name: invoiceNo.value,
       naming_series: series,
+      defaults: JSON.stringify(defaults),
     })
     router.push({ path: '/sales', query: { invoice: res.invoice_name } })
   } catch (e) {

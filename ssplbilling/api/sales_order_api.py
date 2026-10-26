@@ -461,7 +461,7 @@ def submit_sales_order(order_name):
 
 @frappe.whitelist()
 @_system_user_only
-def make_sales_invoice_from_order(order_name, naming_series):
+def make_sales_invoice_from_order(order_name, naming_series, defaults=None):
 	"""Create a draft Sales Invoice from a submitted Sales Order in one of the user's allowed series."""
 	from erpnext.selling.doctype.sales_order.sales_order import make_sales_invoice
 
@@ -483,19 +483,17 @@ def make_sales_invoice_from_order(order_name, naming_series):
 	# ERPNext maps only the qty not yet invoiced and throws if nothing is left
 	si = make_sales_invoice(order_name, ignore_permissions=True)
 
-	# Set up like a bill made in this series by this user (as on the Sales Invoice page):
-	# series → price list + tax template (and inclusive flag); user → warehouse, cost center,
-	# income account. Anything not configured keeps what was mapped from the order.
-	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
-	series_row = next((r for r in settings.billing_series if r.series == naming_series), None)
-	user_row = next((r for r in settings.user_series if r.user == frappe.session.user), None)
+	# Set up like a bill made in this series by this user. The client sends the series'
+	# price list / tax template / inclusive flag and the user's warehouse / cost center /
+	# income account from its cached settings; anything missing keeps the order's value.
+	d = (json.loads(defaults) if isinstance(defaults, str) else defaults) or {}
 
-	if series_row and series_row.price_list:
-		si.selling_price_list = series_row.price_list
+	if d.get("price_list"):
+		si.selling_price_list = d["price_list"]
 
-	warehouse = user_row.warehouse if user_row else None
-	cost_center = user_row.cost_center if user_row else None
-	income_account = user_row.income_account if user_row else None
+	warehouse = d.get("warehouse")
+	cost_center = d.get("cost_center")
+	income_account = d.get("income_account")
 	if warehouse:
 		si.set_warehouse = warehouse
 	if cost_center:
@@ -508,13 +506,13 @@ def make_sales_invoice_from_order(order_name, naming_series):
 		if income_account:
 			item.income_account = income_account
 
-	if series_row and series_row.tax_template:
+	if d.get("tax_template"):
 		_apply_tax_template(
 			si,
-			series_row.tax_template,
+			d["tax_template"],
 			"Sales Taxes and Charges Template",
 			cost_center or "",
-			is_inclusive=series_row.tax_type_incl,
+			is_inclusive=d.get("tax_type_incl"),
 		)
 	si.calculate_taxes_and_totals()
 
