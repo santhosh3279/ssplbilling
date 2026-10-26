@@ -1504,7 +1504,7 @@ async function createInvoiceFromOrder(series) {
       order_name: invoiceNo.value,
       naming_series: series,
     })
-    alert(`Draft Sales Invoice ${res.invoice_name} created.`)
+    router.push({ path: '/sales', query: { invoice: res.invoice_name } })
   } catch (e) {
     console.error('Failed to create sales invoice:', e)
     alert(e.message || 'Failed to create sales invoice.')

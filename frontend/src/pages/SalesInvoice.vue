@@ -846,7 +846,7 @@ import { scrollInvoiceRowIntoView } from '../utils/invoiceScroll.js'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick, toRaw } from 'vue'
 import { onBillPanelUpdate } from '../composables/useBillPanelSync.js'
 import { loadCachedPanel, saveCachedPanel, applyPanelEvent } from '../services/billPanelCache.js'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { frappeGet, frappePost } from '../api'
 import Item_Invoice_Template from '../components/Item_Invoice_Template.vue'
 import { filterTaxTemplates, matchingTaxTemplate } from '../utils/gstTaxTemplates'
@@ -895,6 +895,7 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const router = useRouter()
+const route = useRoute()
 
 const inheritedUser = computed(() => {
   const inherited = localStorage.getItem('wb-inherited-user')
@@ -1936,6 +1937,12 @@ function handleDiscountPctKeydown(e) {
 
 function handleDiscountAmtKeydown(e) {
   if (e.key === 'End') { e.preventDefault(); saveBtnRef.value?.focus() }
+}
+
+async function openInvoiceForModify(name) {
+  // drop the query so a refresh doesn't re-open and re-lock the bill
+  router.replace({ query: {} })
+  if (await handleSelectSidebarItem({ name })) await handleModify()
 }
 
 async function handleModify() {
@@ -3596,6 +3603,12 @@ onMounted(() => {
   }
   if (props.isSubwindow && props.invoiceName) {
     handleSelectSidebarItem({ name: props.invoiceName })
+  } else if (route.query.invoice) {
+    // Opened from another page (e.g. Sales Order → Create Sales Invoice): load straight into modify mode
+    fetchAllowedSeries('Sales Invoice').then((series) => {
+      if (!series?.length) fetchRecentInvoices()
+    })
+    openInvoiceForModify(String(route.query.invoice))
   } else {
     // Resolve the series first: the sidebarSeries watcher fires the (cache-first)
     // list fetch once, instead of an unfiltered fetch that gets thrown away.
