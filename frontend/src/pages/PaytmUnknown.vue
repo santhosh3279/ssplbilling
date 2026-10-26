@@ -536,12 +536,14 @@ const linkMatch = (l, f) =>
   f === 'all' || (f === 'booked' ? l.linked === 1 : f === 'todo' ? l.linked === 0 : l.linked == null)
 // pos_id: the system order's posId, else the machine's (SSPL Paytm Device) by TID
 const NO_POS = '__none__'
-const posFilter = ref('')
-const rowPosFilter = ref('')
+// Both filters start on the POS ID assigned to this user (user defaults, synced to wb-posid)
+const myPos = localStorage.getItem('wb-posid') || ''
+const posFilter = ref(myPos)
+const rowPosFilter = ref(myPos)
 const posIs = (x, f) => !f || (x.pos_id || NO_POS) === f
 const posMatch = (l) => posIs(l, posFilter.value)
 const posOptions = (list) => {
-  const counts = {}
+  const counts = myPos ? { [myPos]: 0 } : {}
   for (const x of list) {
     const id = x.pos_id || NO_POS
     counts[id] = (counts[id] || 0) + 1
@@ -624,8 +626,8 @@ async function loadLogs() {
 function setDay(d) {
   if (!d || d === day.value) return
   day.value = d
-  posFilter.value = ''
-  rowPosFilter.value = ''
+  posFilter.value = myPos
+  rowPosFilter.value = myPos
   refresh()
 }
 
