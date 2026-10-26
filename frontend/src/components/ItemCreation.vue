@@ -73,6 +73,7 @@
         >
           {{ tab.label }}
           <span v-if="tab.id === 'variants' && form.has_variants" class="ml-[6px] opacity-80">({{ form.attributes.length }})</span>
+          <span v-if="tab.id === 'batch' && form.has_batch_no" class="ml-[6px] opacity-80">(On)</span>
         </button>
       </div>
 
@@ -628,6 +629,91 @@
             </div>
           </div>
         </div>
+
+        <!-- Batch: ERPNext batch tracking for this item -->
+        <div class="[grid-area:1/1] self-start space-y-[16px] max-w-[1200px]" :class="{ invisible: activeTab !== 'batch' }">
+          <label
+            v-if="canToggleBatch"
+            class="flex items-center gap-[12px] px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)] cursor-pointer"
+          >
+            <input
+              v-model="form.has_batch_no"
+              @change="onHasBatchChange"
+              type="checkbox"
+              :true-value="1"
+              :false-value="0"
+              class="h-6 w-6 accent-[var(--color-info)]"
+            />
+            <span>Has Batch No</span>
+            <span class="text-xl font-normal text-[var(--color-text-muted)]">
+              Track this item in batches — every stock transaction then needs a batch
+            </span>
+          </label>
+          <p v-else class="px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)]">
+            {{ form.has_batch_no ? 'Batch item' : 'Not batch tracked' }}
+            <span class="text-xl font-normal text-[var(--color-text-muted)]">— Has Batch No cannot be changed: {{ batchLock }}</span>
+          </p>
+
+          <fieldset v-if="form.has_batch_no" :disabled="!!form.variant_of" class="space-y-[16px] disabled:opacity-60">
+            <label class="flex items-center gap-[12px] px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)] cursor-pointer">
+              <input
+                v-model="form.create_new_batch"
+                type="checkbox"
+                :true-value="1"
+                :false-value="0"
+                class="h-6 w-6 accent-[var(--color-info)]"
+              />
+              <span>Automatically Create New Batch</span>
+              <span class="text-xl font-normal text-[var(--color-text-muted)]">
+                When a transaction does not name a batch
+              </span>
+            </label>
+
+            <div v-if="form.create_new_batch" class="space-y-[4px] max-w-[600px]">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Batch Number Series</label>
+              <input
+                v-model="form.batch_number_series"
+                type="text"
+                class="w-full rounded-xl border bg-[var(--color-surface)] px-[20px] py-[12px] font-mono text-3xl text-[var(--color-text)] outline-none transition-all"
+                :class="batchSeriesError
+                  ? 'border-[var(--color-danger)] border-2 focus:border-[var(--color-danger)]'
+                  : 'border-[var(--color-border)] focus:border-[var(--color-info)]'"
+                placeholder="e.g. ABCD.#####"
+              />
+              <p v-if="batchSeriesError" class="px-[20px] text-2xl font-bold text-[var(--color-danger)]">{{ batchSeriesError }}</p>
+              <p v-else class="px-[20px] text-xl text-[var(--color-text-muted)]">Blank uses the Stock Settings prefix</p>
+            </div>
+
+            <label class="flex items-center gap-[12px] px-[20px] py-[12px] text-2xl font-bold text-[var(--color-text)] cursor-pointer">
+              <input
+                v-model="form.has_expiry_date"
+                type="checkbox"
+                :true-value="1"
+                :false-value="0"
+                class="h-6 w-6 accent-[var(--color-info)]"
+              />
+              <span>Has Expiry Date</span>
+            </label>
+
+            <div v-if="form.has_expiry_date" class="space-y-[4px] max-w-[600px]">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Shelf Life In Days *</label>
+              <input
+                v-model.number="form.shelf_life_in_days"
+                type="number"
+                min="1"
+                step="1"
+                class="w-full rounded-xl border bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none transition-all"
+                :class="shelfLifeMissing
+                  ? 'border-[var(--color-danger)] border-2 focus:border-[var(--color-danger)]'
+                  : 'border-[var(--color-border)] focus:border-[var(--color-info)]'"
+              />
+              <p v-if="shelfLifeMissing" class="px-[20px] text-2xl font-bold text-[var(--color-danger)]">Required when Has Expiry Date is set</p>
+            </div>
+          </fieldset>
+          <p v-if="form.has_batch_no && form.variant_of" class="px-[20px] text-xl text-[var(--color-text-muted)]">
+            Batch settings come from template {{ form.variant_of }}
+          </p>
+        </div>
         </div>
       </div>
 
@@ -766,6 +852,12 @@ function _applyItemData(data, itemCode) {
   variantsLock.value         = data.has_variants_lock || ''
   savedTemplate.value        = Number(data.has_variants) === 1 && !data.variant_of
   savedAttributes.value      = (data.attributes || []).map(a => a.attribute).filter(Boolean)
+  form.value.has_batch_no        = Number(data.has_batch_no) === 1 ? 1 : 0
+  form.value.create_new_batch    = Number(data.create_new_batch) === 1 ? 1 : 0
+  form.value.batch_number_series = data.batch_number_series || ''
+  form.value.has_expiry_date     = Number(data.has_expiry_date) === 1 ? 1 : 0
+  form.value.shelf_life_in_days  = Number(data.shelf_life_in_days) || 0
+  batchLock.value                = data.has_batch_lock || ''
   itemDisabled.value = Number(data.disabled) === 1
   autoBarcode.value = ''
   isBarcodeManual.value = true
@@ -843,6 +935,11 @@ const form = ref({
   has_variants: 0,
   variant_of: '',
   attributes: [],
+  has_batch_no: 0,
+  create_new_batch: 0,
+  batch_number_series: '',
+  has_expiry_date: 0,
+  shelf_life_in_days: 0,
 })
 
 // Why Has Variants cannot be toggled on the item being edited ('' = eligible). Always
@@ -853,11 +950,31 @@ const canToggleVariants = computed(() => !isEditMode.value || !variantsLock.valu
 const tabs = [
   { id: 'details', label: 'Details' },
   { id: 'variants', label: 'Variants' },
+  { id: 'batch', label: 'Batch' },
 ]
 // Variants tab only when the box can be ticked, or the item already is a template
 const visibleTabs = computed(() =>
   tabs.filter(t => t.id !== 'variants' || canToggleVariants.value || form.value.has_variants))
 const activeTab = ref('details')
+
+// Why Has Batch No cannot be toggled on the item being edited ('' = eligible); same idea as variantsLock
+const batchLock = ref('')
+const canToggleBatch = computed(() => !isEditMode.value || !batchLock.value)
+
+// ERPNext rejects a series with '#' but no '.' (validate_naming_series)
+const batchSeriesError = computed(() => {
+  const s = (form.value.batch_number_series || '').trim()
+  return form.value.has_batch_no && form.value.create_new_batch && s.includes('#') && !s.includes('.')
+    ? 'Series needs a "." before the #s, e.g. ABCD.#####'
+    : ''
+})
+const shelfLifeMissing = computed(() =>
+  !!(form.value.has_batch_no && form.value.has_expiry_date && !(Number(form.value.shelf_life_in_days) > 0)))
+
+// Ticking Has Batch No turns on auto-create, so purchases need not name a batch each time
+function onHasBatchChange() {
+  if (form.value.has_batch_no) form.value.create_new_batch = 1
+}
 
 const fileInput = ref(null)
 const isUploadingImage = ref(false)
@@ -1222,6 +1339,7 @@ const canSubmit = computed(() => {
   return form.value.item_name.trim() && form.value.item_group && form.value.stock_uom && form.value.item_tax_template
     && !duplicateItemName.value && !isCheckingItemName.value
     && (!form.value.has_variants || form.value.attributes.some(a => a.attribute))
+    && !batchSeriesError.value && !shelfLifeMissing.value
 })
 
 async function loadMetadata() {
@@ -1357,6 +1475,11 @@ function resetForm(blank = false) {
     has_variants: 0,
     variant_of: '',
     attributes: [],
+    has_batch_no: 0,
+    create_new_batch: 0,
+    batch_number_series: '',
+    has_expiry_date: 0,
+    shelf_life_in_days: 0,
   }
   startFreshBarcode()
 }
@@ -1378,6 +1501,7 @@ function startNewFromCurrent() {
   form.value.barcode = ''
   form.value.extra_barcodes = []
   form.value.variant_of = ''
+  batchLock.value = ''
   savedTemplate.value = false
   variants.value = []
   cancelVariantEdit()
@@ -1391,6 +1515,7 @@ watch(() => props.show, async (newVal) => {
     forceCreate.value = false
     activeTab.value = 'details'
     variantsLock.value = ''
+    batchLock.value = ''
     savedTemplate.value = false
     savedAttributes.value = []
     variants.value = []

@@ -178,6 +178,45 @@ def _has_variants_lock(item):
 	return ""
 
 
+def _has_batch_lock(item):
+	"""Why Has Batch No cannot be toggled on this item ("" when it can), per ERPNext's rules: shown
+	only on stock items, copied to variants from the template (Item Variant Settings), and
+	frozen by cant_change once submitted transactions exist."""
+	if not item.is_stock_item:
+		return "Not a stock item"
+	if item.is_new():
+		return ""
+	if item.variant_of:
+		return f"Copied from template {item.variant_of}"
+	if item._get_linked_submitted_documents(["has_batch_no"]):
+		return "Submitted transactions exist for this item"
+	return ""
+
+
+def _set_batch_fields(item, data):
+	"""Apply the batch settings. Has Batch No is left as is when locked, the rest only while it is on."""
+	if "has_batch_no" not in data:
+		return
+	if not _has_batch_lock(item):
+		item.has_batch_no = 1 if frappe.utils.cint(data.get("has_batch_no")) else 0
+	if not item.has_batch_no:
+		item.create_new_batch = 0
+		item.batch_number_series = None
+		item.has_expiry_date = 0
+		item.shelf_life_in_days = 0
+		return
+	if item.variant_of:
+		return
+	item.create_new_batch = 1 if frappe.utils.cint(data.get("create_new_batch")) else 0
+	series = (data.get("batch_number_series") or "").strip()
+	item.batch_number_series = series if item.create_new_batch and series else None
+	item.has_expiry_date = 1 if frappe.utils.cint(data.get("has_expiry_date")) else 0
+	shelf_life = frappe.utils.cint(data.get("shelf_life_in_days"))
+	if item.has_expiry_date and shelf_life <= 0:
+		frappe.throw("Shelf Life In Days is required when Has Expiry Date is set")
+	item.shelf_life_in_days = shelf_life if item.has_expiry_date else 0
+
+
 def _set_variant_attributes(item, data):
 	"""Apply has_variants and the template's attribute rows. Rows for attributes that stay are
 	kept as they are; numeric ranges are copied from the Item Attribute (no fetch_from on them)."""
@@ -283,6 +322,7 @@ def create_item(data):
 		item.image = data.get("image")
 
 	_set_variant_attributes(item, data)
+	_set_batch_fields(item, data)
 	
 	# Add to barcodes child table
 	item.append("barcodes", {"barcode": barcode, "uom": item.stock_uom})
@@ -417,6 +457,12 @@ def get_item_for_edit(item_code):
 		"variant_of": item.variant_of or "",
 		"has_variants_lock": _has_variants_lock(item),
 		"attributes": [{"attribute": row.attribute} for row in item.attributes if not item.variant_of],
+		"has_batch_no": frappe.utils.cint(item.has_batch_no),
+		"create_new_batch": frappe.utils.cint(item.create_new_batch),
+		"batch_number_series": item.batch_number_series or "",
+		"has_expiry_date": frappe.utils.cint(item.has_expiry_date),
+		"shelf_life_in_days": frappe.utils.cint(item.shelf_life_in_days),
+		"has_batch_lock": _has_batch_lock(item),
 	}
 
 
@@ -461,6 +507,7 @@ def update_item(data):
 	if "image" in data:
 		item.image = data.get("image")
 	_set_variant_attributes(item, data)
+	_set_batch_fields(item, data)
 
 	# Update barcodes (primary may be changed, extras replaced)
 	current_primary = (item.barcodes[0].barcode if item.barcodes else "") or item.item_code
