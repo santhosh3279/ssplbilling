@@ -448,6 +448,7 @@ def get_sales_invoice(invoice_name, include_customer_details=0):
                 "cost_center": item.cost_center or "",
                 "tax_rate": _get_item_tax_rate(item.item_code),
                 "is_free_item": frappe.utils.cint(item.get("is_free_item")),
+                "batch_no": item.batch_no or "",
                 "deleted": False,
             }
             for item in si.items

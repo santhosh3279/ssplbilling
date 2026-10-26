@@ -206,6 +206,10 @@ def _apply_payload_to_doc(doc, payload):
         }
         if frappe.utils.cint(item.get("is_free_item")) == 1:
             item_row["is_free_item"] = 1
+        if item.get("batch_no"):
+            # Batch fields instead of a bundle: ERPNext builds the bundle on submit
+            item_row["batch_no"] = item["batch_no"]
+            item_row["use_serial_batch_fields"] = 1
         if frappe.get_meta("Sales Invoice Item").has_field("allow_zero_valuation_rate"):
             item_row["allow_zero_valuation_rate"] = 1
         doc.append("items", item_row)

@@ -22,6 +22,7 @@
       @reprice-prices="applyCustomerPricingToRows"
       :doc-date="invoiceDate"
       :items="items"
+      :show-batch-column="showBatchColumn"
       :selected-row-index="selectedRowIdx"
       :subtotal="subtotal"
       :item-discount-total="itemDiscountTotal"
@@ -216,6 +217,18 @@
               class="ml-1 rounded border border-[var(--color-success)]/60 px-1.5 text-[20px] font-bold uppercase leading-tight text-[var(--color-success)]"
               :title="freeRowRule(item)"
             >{{ freeRowRule(item) }}</span>
+          </td>
+
+          <td v-if="showBatchColumn" class="px-2 py-1 border-r border-[var(--color-border)] whitespace-nowrap">
+            <button
+              v-if="!item.deleted && !item._is_free && (item.batch_no || itemHasBatch(item.item_code))"
+              type="button"
+              :disabled="isReadOnly"
+              @click.stop="openBatchView({ type: 'row', index })"
+              class="rounded px-2 text-3xl font-mono font-bold disabled:cursor-default"
+              :class="item.batch_no ? 'bg-[var(--color-info)]/20 text-[var(--color-info)]' : 'bg-[var(--color-warning)]/20 text-[var(--color-warning)]'"
+              :title="item.batch_no ? (isReadOnly ? 'Batch' : 'Change batch') : 'No batch: oldest stock is picked on submit'"
+            >{{ item.batch_no || 'Auto' }}</button>
           </td>
 
           <!-- qty -->
@@ -530,6 +543,16 @@
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-xl font-mono text-center">+</td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-2xl font-mono">{{ pendingItem.item_code }}</td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-2xl">{{ pendingItem.item_name }}</td>
+            <td v-if="showBatchColumn" class="px-2 py-1 border-r border-[var(--color-border)] whitespace-nowrap">
+              <button
+                v-if="itemHasBatch(pendingItem.item_code)"
+                type="button"
+                @click="openBatchView({ type: 'pending' })"
+                class="rounded px-2 text-2xl font-mono font-bold"
+                :class="pendingItem.batch_no ? 'bg-[var(--color-info)]/20 text-[var(--color-info)]' : 'bg-[var(--color-warning)]/20 text-[var(--color-warning)]'"
+                :title="pendingItem.batch_no ? 'Change batch' : 'No batch: oldest stock is picked on submit'"
+              >{{ pendingItem.batch_no || 'Auto' }}</button>
+            </td>
             <td class="p-0 border-r border-[var(--color-border)]">
               <input
                 ref="pendingQtyInput"
@@ -573,7 +596,7 @@
                 @keydown="handleNewCodeKeydown"
               />
             </td>
-            <td colspan="9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to invoice</td>
+            <td :colspan="showBatchColumn ? 10 : 9" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to invoice</td>
           </tr>
         </template>
       </template>
@@ -735,6 +758,20 @@
       @cancelled="handleEWayBillCancelled"
     />
 
+    <!-- Batch picker: sales take stock from a batch held in the warehouse -->
+    <BatchView
+      v-if="showBatchView && batchTargetItem"
+      :show="showBatchView"
+      :item-code="batchTargetItem.item_code"
+      :item-name="batchTargetItem.item_name"
+      :warehouse="warehouse !== 'None' ? warehouse : ''"
+      :selected="batchTargetItem.batch_no || ''"
+      :allow-create="false"
+      :in-stock-only="!isReturn"
+      @select="onBatchSelected"
+      @close="closeBatchView"
+    />
+
     <Warning
       :show="showRepriceChoice"
       title="Party Changed"
@@ -829,9 +866,10 @@ import JumpToRowModal from '../components/JumpToRowModal.vue'
 import CustomInvoiceModal from '../components/CustomInvoiceModal.vue'
 import CustomAddress from '../components/CustomAddress.vue'
 import Warning from '../components/Warning.vue'
+import BatchView from '../components/BatchView.vue'
 import EWayBillModal from '../components/EWayBillModal.vue'
 import EWayBillOptionsModal from '../components/EWayBillOptionsModal.vue'
-import { useItemCache, lookupItemInCache, lookupBillableItem, searchBillableItems, uomLabel } from '../services/itemCache.js'
+import { useItemCache, lookupItemInCache, lookupBillableItem, searchBillableItems, uomLabel, itemHasBatch } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { encryptPrice, getFloatPrecision } from '../encryption.js'
 
@@ -1291,6 +1329,7 @@ async function loadInvoice(invoiceName) {
         discount,
         uom: i.uom || 'Nos',
         tax_rate: i.tax_rate || 0,
+        batch_no: i.batch_no || '',
         deleted: false,
         _is_free: i.is_free_item === 1 || (effectiveRate === 0 && discount === 0),
         amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(precision)),
@@ -1769,6 +1808,16 @@ async function handleSave() {
   
   if (!customerId.value) { alert('Please select a customer first.'); return; }
   if (!selectedSeries.value) { alert('Please select a series first.'); return; }
+  // Sales out are batch-picked oldest-first on submit; a return coming back in needs a named
+  // batch unless the item creates batches itself
+  if (isReturn.value) {
+    const needsBatchIdx = items.value.findIndex(i => !i.deleted && !i._is_free && !i.batch_no && batchRequired(i.item_code))
+    if (needsBatchIdx >= 0) {
+      alert(`Select a batch for ${items.value[needsBatchIdx].item_code} on this return.`)
+      openBatchView({ type: 'row', index: needsBatchIdx })
+      return
+    }
+  }
 
   submitting.value = true
 
@@ -1833,7 +1882,8 @@ async function handleSave() {
       gross_rate: i.rate || 0,
       price_list_rate: i._base_rate || i.price_list_rate || i.rate,
       discount: getDiscPrecision(i.discount),
-      is_free_item: i._is_free ? 1 : 0
+      is_free_item: i._is_free ? 1 : 0,
+      batch_no: i.batch_no || '',
     }))
   }
 
@@ -2707,7 +2757,7 @@ function onQuickSearchSelect(item) {
   if (editQuickSearchRowIdx.value !== null) {
     const rowIdx = editQuickSearchRowIdx.value
     editQuickSearchRowIdx.value = null
-    applyItemToRow(rowIdx, finalItem)
+    if (applyItemToRow(rowIdx, finalItem)) return
     if (getItemUoms(finalItem.item_code).length > 1) {
       focusEditField('uom', rowIdx)
     } else {
@@ -2810,8 +2860,57 @@ function applyItemToRow(rowIdx, item) {
       row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
       // row.discount is handled by useDiscountRules watcher
     }
+    // A batch belongs to one item
+    row.batch_no = ''
   }
   recalcAmount(rowIdx)
+  // True when the batch picker took over; it hands focus back to the row's qty itself
+  if (!isSameItem && itemHasBatch(item.item_code)) {
+    openBatchView({ type: 'row', index: rowIdx })
+    return true
+  }
+  return false
+}
+
+// ─── Batch selection ─────────────────────────────────────────────────────────
+const showBatchView = ref(false)
+const batchTarget = ref(null) // { type: 'pending' } | { type: 'row', index }
+
+function batchRequired(itemCode) {
+  const cached = lookupItemInCache(itemCode)
+  return !!Number(cached?.has_batch_no) && !Number(cached?.create_new_batch)
+}
+
+// Column only while the bill has a batch item, so ordinary bills keep their width
+const showBatchColumn = computed(() =>
+  items.value.some(i => !i.deleted && (i.batch_no || itemHasBatch(i.item_code)))
+  || !!(pendingItem.value && itemHasBatch(pendingItem.value.item_code)))
+
+const batchTargetItem = computed(() => {
+  const t = batchTarget.value
+  if (!t) return null
+  return t.type === 'pending' ? pendingItem.value : items.value[t.index]
+})
+
+function openBatchView(target) {
+  batchTarget.value = target
+  showBatchView.value = true
+}
+
+function closeBatchView() {
+  const t = batchTarget.value
+  showBatchView.value = false
+  batchTarget.value = null
+  if (t?.type === 'pending') {
+    nextTick(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() })
+  } else if (t?.type === 'row') {
+    focusEditField('qty', t.index)
+  }
+}
+
+function onBatchSelected(batchNo) {
+  if (batchTargetItem.value) batchTargetItem.value.batch_no = batchNo
+  closeBatchView()
 }
 
 function openItemSearch(query, targetRowIdx = null) {
@@ -2845,8 +2944,7 @@ function onItemSearchSelect(item) {
   const finalItem = (barcodeMatch && barcodeMatch.item_code === item.item_code) ? barcodeMatch : item
 
   if (rowIdx !== null) {
-    applyItemToRow(rowIdx, finalItem)
-    focusEditField('qty', rowIdx)
+    if (!applyItemToRow(rowIdx, finalItem)) focusEditField('qty', rowIdx)
     return
   }
   newItemCode.value = ''
@@ -2932,7 +3030,7 @@ function onEditCodeKeydown(e, rowIdx) {
     const code = (items.value[rowIdx]?.item_code || '').trim()
     const match = lookupBillableItem(code)
     if (match) {
-      applyItemToRow(rowIdx, match)
+      if (applyItemToRow(rowIdx, match)) return
       if (getItemUoms(match.item_code).length > 1) {
         focusEditField('uom', rowIdx)
       } else {
@@ -3195,7 +3293,13 @@ function setPendingItem(item) {
     item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
     item.discount = 0
   }
+  item.batch_no = item.batch_no || ''
   pendingItem.value = item
+  // The batch picker returns focus to qty when it closes
+  if (itemHasBatch(item.item_code)) {
+    openBatchView({ type: 'pending' })
+    return
+  }
   nextTick(() => {
     pendingQtyInput.value?.focus()
     pendingQtyInput.value?.select()
@@ -3212,6 +3316,7 @@ function confirmPendingItem() {
     rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0, _cp_applied: !!p._cp_applied,
     discount: p.discount || 0, tax_rate: p.tax_rate || 0,
     amount: parseFloat((qty * (p.rate || 0)).toFixed(precision)),
+    batch_no: p.batch_no || '',
     deleted: false, _rowKey: makeRowKey()
   }
   if (isReturn.value && p.discount != null) {
