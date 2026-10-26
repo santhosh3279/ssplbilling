@@ -483,18 +483,40 @@ def make_sales_invoice_from_order(order_name, naming_series):
 	# ERPNext maps only the qty not yet invoiced and throws if nothing is left
 	si = make_sales_invoice(order_name, ignore_permissions=True)
 
-	# Tax like a bill made in this series: use the series' tax template (and inclusive flag)
-	# from SSPL Billing Settings; a series without one keeps the order's taxes
+	# Set up like a bill made in this series by this user (as on the Sales Invoice page):
+	# series → price list + tax template (and inclusive flag); user → warehouse, cost center,
+	# income account. Anything not configured keeps what was mapped from the order.
 	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
 	series_row = next((r for r in settings.billing_series if r.series == naming_series), None)
+	user_row = next((r for r in settings.user_series if r.user == frappe.session.user), None)
+
+	if series_row and series_row.price_list:
+		si.selling_price_list = series_row.price_list
+
+	warehouse = user_row.warehouse if user_row else None
+	cost_center = user_row.cost_center if user_row else None
+	income_account = user_row.income_account if user_row else None
+	if warehouse:
+		si.set_warehouse = warehouse
+	if cost_center:
+		si.cost_center = cost_center
+	for item in si.items:
+		if warehouse:
+			item.warehouse = warehouse
+		if cost_center:
+			item.cost_center = cost_center
+		if income_account:
+			item.income_account = income_account
+
 	if series_row and series_row.tax_template:
 		_apply_tax_template(
 			si,
 			series_row.tax_template,
 			"Sales Taxes and Charges Template",
+			cost_center or "",
 			is_inclusive=series_row.tax_type_incl,
 		)
-		si.calculate_taxes_and_totals()
+	si.calculate_taxes_and_totals()
 
 	si.naming_series = naming_series
 	si.posting_date = frappe.utils.today()
