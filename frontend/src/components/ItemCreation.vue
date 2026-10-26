@@ -523,6 +523,27 @@
 
           <!-- Variants of the saved template: list + create from attribute value combinations -->
           <div v-if="canManageVariants" class="space-y-[4px]">
+            <!-- Item Variant Settings (global): template saves copy their fields onto every variant unless this is on -->
+            <label
+              class="flex items-center gap-[12px] px-[20px] py-[6px] text-xl select-none"
+              :class="variantUpdate.can_edit ? 'cursor-pointer' : 'opacity-60'"
+              :title="variantUpdate.can_edit ? '' : 'No permission to change Item Variant Settings'"
+            >
+              <input
+                type="checkbox"
+                :checked="!!variantUpdate.do_not_update_variants"
+                :disabled="!variantUpdate.can_edit || isSavingVariantUpdate"
+                @change="toggleVariantUpdate($event)"
+                class="w-[20px] h-[20px] accent-[var(--color-info)]"
+              />
+              <span class="font-bold text-[var(--color-text)]">Do not update variants on save</span>
+              <span class="text-[var(--color-text-muted)]">
+                {{ variantUpdate.do_not_update_variants
+                  ? 'Saving a template leaves its variants as they are'
+                  : 'Saving a template copies its HSN, taxes, item group, disabled, etc. onto every variant' }}
+                · applies to all templates
+              </span>
+            </label>
             <div class="flex items-center justify-between px-[20px]">
               <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider">Variants ({{ variants.length }})</label>
               <div class="flex items-center gap-[20px]">
@@ -821,7 +842,7 @@
 
 <script setup>
 import { ref, onMounted, computed, nextTick, watch } from 'vue'
-import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, setItemDisabled, getItemVariants, createItemVariants, updateVariantAttributes, searchLinkableItems, linkItemAsVariant, frappeGet, uploadFile } from '../api.js'
+import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, setItemDisabled, getItemVariants, createItemVariants, updateVariantAttributes, searchLinkableItems, linkItemAsVariant, getVariantUpdateSetting, setVariantUpdateSetting, frappeGet, uploadFile } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { useItemAttributeCache } from '../services/itemAttributeCache.js'
 
@@ -1196,7 +1217,34 @@ async function saveVariantAttributes(v) {
   }
 }
 
+// Item Variant Settings' do_not_update_variants, shared by all templates
+const variantUpdate = ref({ do_not_update_variants: 0, can_edit: false })
+const isSavingVariantUpdate = ref(false)
+
+async function loadVariantUpdateSetting() {
+  try {
+    variantUpdate.value = (await getVariantUpdateSetting()) || variantUpdate.value
+  } catch (e) {
+    console.error('[ItemCreation] getVariantUpdateSetting failed:', e)
+  }
+}
+
+async function toggleVariantUpdate(event) {
+  if (isSavingVariantUpdate.value) return
+  isSavingVariantUpdate.value = true
+  try {
+    const res = await setVariantUpdateSetting(event.target.checked)
+    variantUpdate.value = { ...variantUpdate.value, do_not_update_variants: Number(res?.do_not_update_variants) ? 1 : 0 }
+  } catch (e) {
+    event.target.checked = !!variantUpdate.value.do_not_update_variants
+    alert('Failed to change variant update setting: ' + e.message)
+  } finally {
+    isSavingVariantUpdate.value = false
+  }
+}
+
 async function loadVariants() {
+  loadVariantUpdateSetting()
   variantsLoading.value = true
   try {
     variants.value = (await getItemVariants(props.editItemCode)) || []

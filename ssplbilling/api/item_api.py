@@ -180,6 +180,32 @@ def search_linkable_items(template, txt=""):
 _VARIANT_MATCH_FIELDS = ("is_stock_item", "has_batch_no", "has_serial_no")
 
 
+def _valuation_method(item):
+	"""Item's valuation method, an empty one meaning the Stock Settings default (as cant_change reads it)."""
+	return item.valuation_method or frappe.get_single_value("Stock Settings", "valuation_method") or "FIFO"
+
+
+@frappe.whitelist()
+def get_variant_update_setting():
+	"""Item Variant Settings' "Do not update variants on save" (global) and whether this user may change it."""
+	return {
+		"do_not_update_variants": frappe.utils.cint(
+			frappe.db.get_single_value("Item Variant Settings", "do_not_update_variants")
+		),
+		"can_edit": frappe.has_permission("Item Variant Settings", ptype="write"),
+	}
+
+
+@frappe.whitelist()
+def set_variant_update_setting(do_not_update_variants):
+	"""Turn copying template fields onto variants on every template save off (1) or on (0), for all templates."""
+	settings = frappe.get_doc("Item Variant Settings")
+	settings.check_permission("write")
+	settings.do_not_update_variants = 1 if frappe.utils.cint(do_not_update_variants) else 0
+	settings.save()
+	return {"do_not_update_variants": settings.do_not_update_variants}
+
+
 @frappe.whitelist()
 def link_item_as_variant(template, item_code, attributes):
 	"""Make an existing normal item a variant of the template with the given values ({attribute: value}).
@@ -208,6 +234,11 @@ def link_item_as_variant(template, item_code, attributes):
 		if frappe.utils.cint(doc.get(field)) != frappe.utils.cint(tmpl.get(field)):
 			label = doc.meta.get_label(field)
 			frappe.throw(f"{label} differs between {item_code} and template {template}")
+	if doc.is_stock_item and _valuation_method(doc) != _valuation_method(tmpl):
+		frappe.throw(
+			f"Valuation Method of {item_code} ({_valuation_method(doc)}) must match"
+			f" template {template} ({_valuation_method(tmpl)})"
+		)
 	if doc.stock_uom != tmpl.stock_uom and not frappe.db.get_single_value(
 		"Item Variant Settings", "allow_different_uom"
 	):

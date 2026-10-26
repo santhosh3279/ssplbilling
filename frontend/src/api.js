@@ -787,6 +787,15 @@ export async function searchLinkableItems(template, txt) {
   return frappeGet("ssplbilling.api.item_api.search_linkable_items", { template, txt });
 }
 
+/** Item Variant Settings' "Do not update variants on save" (global): { do_not_update_variants, can_edit } */
+export async function getVariantUpdateSetting() {
+  return frappeGet("ssplbilling.api.item_api.get_variant_update_setting");
+}
+
+export async function setVariantUpdateSetting(doNotUpdate) {
+  return frappePost("ssplbilling.api.item_api.set_variant_update_setting", { do_not_update_variants: doNotUpdate ? 1 : 0 });
+}
+
 /** attributes: { attribute: value } — an existing normal item becomes a variant, keeping its code and stock. */
 export async function linkItemAsVariant(template, itemCode, attributes) {
   return frappePost("ssplbilling.api.item_api.link_item_as_variant", { template, item_code: itemCode, attributes: JSON.stringify(attributes) });
