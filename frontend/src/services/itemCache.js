@@ -5,7 +5,7 @@ import { session } from '../session'
 import { readItemSnapshot, writeItemSnapshot, applyPriceList, mergeItemDelta } from './itemCacheStore'
 
 // Must match ITEM_SYNC_SCHEMA in ssplbilling/api/itemsearch_api.py.
-const SYNC_SCHEMA = 3
+const SYNC_SCHEMA = 4
 const SYNC_METHOD = 'ssplbilling.api.itemsearch_api.get_items_sync'
 
 // Global reactive state for items

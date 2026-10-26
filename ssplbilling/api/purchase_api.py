@@ -403,6 +403,10 @@ def create_purchase_invoice(data=None, **kwargs):
             row["cost_center"] = cost_center
         if item.get("expense_account"):
             row["expense_account"] = item["expense_account"]
+        if item.get("batch_no"):
+            # Batch fields instead of a bundle: ERPNext builds the bundle on submit
+            row["batch_no"] = item["batch_no"]
+            row["use_serial_batch_fields"] = 1
         pi.append("items", row)
 
     if data.get("tax_template"):
@@ -642,6 +646,7 @@ def get_purchase_invoice(invoice_name):
                 "warehouse": item.warehouse or "",
                 "cost_center": item.cost_center or "",
                 "tax_rate": _get_item_tax_rate(item.item_code),
+                "batch_no": item.batch_no or "",
                 "deleted": False,
             }
             for item in pi.items
@@ -729,6 +734,10 @@ def update_purchase_invoice(data=None, **kwargs):
             row["cost_center"] = cost_center
         if item.get("expense_account"):
             row["expense_account"] = item["expense_account"]
+        if item.get("batch_no"):
+            # Batch fields instead of a bundle: ERPNext builds the bundle on submit
+            row["batch_no"] = item["batch_no"]
+            row["use_serial_batch_fields"] = 1
         pi.append("items", row)
 
     # Append extra charge rows from taxes key (freight, packing, loading, other)

@@ -227,6 +227,10 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 		mapped_expense = resolve_target_account(item.expense_account, allowed_accounts, target_company)
 		if mapped_expense:
 			row["expense_account"] = mapped_expense
+		if item.batch_no:
+			# Batches are not per company, so the mirror receives into the same batch
+			row["batch_no"] = item.batch_no
+			row["use_serial_batch_fields"] = 1
 		mpi.append("items", row)
 
 	if pi.taxes_and_charges:

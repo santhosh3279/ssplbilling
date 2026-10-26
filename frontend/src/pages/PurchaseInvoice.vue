@@ -382,6 +382,17 @@
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index && !item.deleted && !item._is_free ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
             {{ item.item_name }}
             <span v-if="item._is_free" class="ml-1 rounded bg-[var(--color-success)] text-[var(--color-text-on-highlight)] px-1 text-[10px] font-bold uppercase leading-tight">Free</span>
+            <button
+              v-if="!item.deleted && (item.batch_no || itemHasBatch(item.item_code))"
+              type="button"
+              :disabled="isReadOnly"
+              @click.stop="openBatchView({ type: 'row', index })"
+              class="ml-2 rounded px-2 align-middle text-xl font-mono font-bold disabled:cursor-default"
+              :class="item.batch_no
+                ? 'bg-[var(--color-info)]/20 text-[var(--color-info)]'
+                : 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]'"
+              :title="isReadOnly ? 'Batch' : 'Change batch'"
+            >{{ item.batch_no ? `Batch ${item.batch_no}` : 'No batch' }}</button>
           </td>
 
           <!-- qty -->
@@ -699,7 +710,19 @@
           <tr class="border-b border-[var(--color-border)] bg-[var(--color-highlight)]/10">
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-xl font-mono text-center">+</td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-2xl font-mono">{{ pendingItem.item_code }}</td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-2xl">{{ pendingItem.item_name }}</td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-2xl">
+              {{ pendingItem.item_name }}
+              <button
+                v-if="pendingItem.batch_no || itemHasBatch(pendingItem.item_code)"
+                type="button"
+                @click="openBatchView({ type: 'pending' })"
+                class="ml-2 rounded px-2 align-middle text-xl font-mono font-bold"
+                :class="pendingItem.batch_no
+                  ? 'bg-[var(--color-info)]/20 text-[var(--color-info)]'
+                  : 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]'"
+                title="Change batch"
+              >{{ pendingItem.batch_no ? `Batch ${pendingItem.batch_no}` : 'No batch' }}</button>
+            </td>
             <td class="p-0 border-r border-[var(--color-border)]">
               <input
                 ref="pendingQtyInput"
@@ -897,6 +920,21 @@
       @saved="onPriceListUpdateSaved"
     />
 
+    <!-- Batch picker for batch-tracked items (pending item or a row) -->
+    <BatchView
+      v-if="showBatchView && batchTargetItem"
+      :show="showBatchView"
+      :item-code="batchTargetItem.item_code"
+      :item-name="batchTargetItem.item_name"
+      :warehouse="warehouse !== 'None' ? warehouse : ''"
+      :supplier="supplierId"
+      :selected="batchTargetItem.batch_no || ''"
+      :allow-create="!isReturn"
+      :in-stock-only="isReturn"
+      @select="onBatchSelected"
+      @close="closeBatchView"
+    />
+
     <!-- Barcode Print Subwindow -->
     <BarcodePrintPage
       v-if="showBarcodeModal"
@@ -981,6 +1019,7 @@ import { clearQuickQtyMap } from '../services/quickQty.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import Warning from '../components/Warning.vue'
+import BatchView from '../components/BatchView.vue'
 
 import { useItemCache, lookupItemInCache, lookupBillableItem, searchBillableItems, uomLabel } from '../services/itemCache.js'
 import { patchLedgerInCache } from '../services/ledgerCache.js'
@@ -1424,6 +1463,7 @@ async function handleSelectSidebarItem(item) {
         discount,
         uom: i.uom || 'Nos',
         tax_rate: i.tax_rate || 0,
+        batch_no: i.batch_no || '',
         deleted: false,
         _is_free: effectiveRate === 0,
         amount: parseFloat(((i.qty || 0) * effectiveRate).toFixed(precision)),
@@ -1893,6 +1933,13 @@ async function handleSave() {
   if (!supplierId.value) { alert('Please select a supplier first.'); return }
   if (!supplierInvoiceNo.value.trim()) { alert('Supplier Invoice No is mandatory.'); return }
   if (!selectedSeries.value) { alert('Please select a series first.'); return }
+  // ERPNext refuses to submit a batch item with no batch unless the item numbers batches itself
+  const needsBatchIdx = items.value.findIndex(i => !i.deleted && !i.batch_no && batchRequired(i.item_code))
+  if (needsBatchIdx >= 0) {
+    alert(`Select a batch for ${items.value[needsBatchIdx].item_code} — it does not create batches automatically.`)
+    openBatchView({ type: 'row', index: needsBatchIdx })
+    return
+  }
 
   submitting.value = true
 
@@ -1965,6 +2012,7 @@ async function handleSave() {
       // must reflect the price entered on this invoice rather than the cached list price.
       price_list_rate: i.rate || 0,
       discount_percentage: i.discount || 0,
+      batch_no: i.batch_no || '',
     }))
   }
 
@@ -2385,8 +2433,7 @@ function onQuickSearchSelect(item) {
   if (editQuickSearchRowIdx.value !== null) {
     const rowIdx = editQuickSearchRowIdx.value
     editQuickSearchRowIdx.value = null
-    applyItemToRow(rowIdx, finalItem)
-    focusEditField('qty', rowIdx)
+    if (!applyItemToRow(rowIdx, finalItem)) focusEditField('qty', rowIdx)
     return
   }
   newItemCode.value = ''
@@ -2413,8 +2460,57 @@ function applyItemToRow(rowIdx, item) {
     row._base_rate = base
     row.rate = base
     row.discount = 0
+    // A batch belongs to one item
+    row.batch_no = ''
   }
   recalcAmount(rowIdx)
+  // True when the batch picker took over; it hands focus back to the row's qty itself
+  if (!isSameItem && itemHasBatch(item.item_code)) {
+    openBatchView({ type: 'row', index: rowIdx })
+    return true
+  }
+  return false
+}
+
+// ─── Batch selection ─────────────────────────────────────────────────────────
+const showBatchView = ref(false)
+const batchTarget = ref(null) // { type: 'pending' } | { type: 'row', index }
+
+function itemHasBatch(itemCode) {
+  return !!Number(lookupItemInCache(itemCode)?.has_batch_no)
+}
+
+// Without auto-create, ERPNext needs the batch named on the row
+function batchRequired(itemCode) {
+  const cached = lookupItemInCache(itemCode)
+  return !!Number(cached?.has_batch_no) && !Number(cached?.create_new_batch)
+}
+
+const batchTargetItem = computed(() => {
+  const t = batchTarget.value
+  if (!t) return null
+  return t.type === 'pending' ? pendingItem.value : items.value[t.index]
+})
+
+function openBatchView(target) {
+  batchTarget.value = target
+  showBatchView.value = true
+}
+
+function closeBatchView() {
+  const t = batchTarget.value
+  showBatchView.value = false
+  batchTarget.value = null
+  if (t?.type === 'pending') {
+    nextTick(() => { pendingQtyInput.value?.focus(); pendingQtyInput.value?.select() })
+  } else if (t?.type === 'row') {
+    focusEditField('qty', t.index)
+  }
+}
+
+function onBatchSelected(batchNo) {
+  if (batchTargetItem.value) batchTargetItem.value.batch_no = batchNo
+  closeBatchView()
 }
 
 function openItemSearch(query, targetRowIdx = null) {
@@ -2460,8 +2556,7 @@ function onItemSearchSelect(item) {
   const finalItem = (barcodeMatch && barcodeMatch.item_code === item.item_code) ? barcodeMatch : item
 
   if (rowIdx !== null) {
-    applyItemToRow(rowIdx, finalItem)
-    focusEditField('qty', rowIdx)
+    if (!applyItemToRow(rowIdx, finalItem)) focusEditField('qty', rowIdx)
     return
   }
   newItemCode.value = ''
@@ -2549,8 +2644,7 @@ function onEditCodeKeydown(e, rowIdx) {
     const code = (items.value[rowIdx]?.item_code || '').trim()
     const match = lookupBillableItem(code)
     if (match) {
-      applyItemToRow(rowIdx, match)
-      focusEditField('qty', rowIdx)
+      if (!applyItemToRow(rowIdx, match)) focusEditField('qty', rowIdx)
     } else {
       openItemSearch(code, rowIdx)
     }
@@ -2748,7 +2842,13 @@ function setPendingItem(item) {
   if (!isNaN(globalPct)) {
     item.discount = globalPct
   }
+  item.batch_no = item.batch_no || ''
   pendingItem.value = item
+  // The batch picker returns focus to qty when it closes
+  if (itemHasBatch(item.item_code)) {
+    openBatchView({ type: 'pending' })
+    return
+  }
   nextTick(() => {
     pendingQtyInput.value?.focus()
     pendingQtyInput.value?.select()
@@ -2848,6 +2948,7 @@ function confirmPendingItem() {
     rate: p.rate || 0, _base_rate: p._base_rate ?? p.rate ?? 0,
     discount: itemDiscount, tax_rate: p.tax_rate || 0,
     amount: parseFloat((qty * netRate).toFixed(precision)),
+    batch_no: p.batch_no || '',
     deleted: false,
   }
   items.value.push(newItem)
