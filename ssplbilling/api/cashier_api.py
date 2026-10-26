@@ -500,6 +500,22 @@ def _paytm_refs(invoice_name):
 	return upi_ref, card_ref
 
 
+def _paytm_upi_remarks(invoice_name, ref_no):
+	"""Payment Entry remarks for a UPI ref paid through a Paytm request that went to a phone:
+	the reference plus the mobile it was sent to. None when no such request matches."""
+	if not ref_no:
+		return None
+	for t in frappe.get_all(
+		"SSPL Paytm Transaction",
+		filters={"sales_invoice": invoice_name, "status": "Success", "customer_mobile": ("is", "set")},
+		fields=["rrn", "paytm_txn_id", "auth_code", "order_id", "customer_mobile"],
+		order_by="modified desc",
+	):
+		if ref_no in (t.rrn, t.paytm_txn_id, t.auth_code, t.order_id):
+			return f"UPI Ref {ref_no} · Mobile {t.customer_mobile}"
+	return None
+
+
 @frappe.whitelist()
 def submit_invoice_with_payment(data=None, **kwargs):
 	"""Submit a Sales Invoice and create Payment Entries."""
@@ -661,7 +677,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			"parent",
 		) or "Cash"
 
-	def _create_pe(amount, paid_to_account, ref_no=None):
+	def _create_pe(amount, paid_to_account, ref_no=None, remarks=None):
 		if amount <= 0 or not paid_to_account: return None
 		outstanding = frappe.db.get_value("Sales Invoice", si.name, "outstanding_amount") or 0
 		allocated = min(amount, outstanding)
@@ -680,6 +696,10 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		if ref_no:
 			pe.reference_no = ref_no
 			pe.reference_date = posting_date
+		if remarks:
+			# custom_remarks keeps these instead of ERPNext's generated "Amount INR ... received from ..."
+			pe.remarks = remarks
+			pe.custom_remarks = 1
 		if allocated > 0:
 			pe.append("references", {"reference_doctype": "Sales Invoice", "reference_name": si.name, "allocated_amount": allocated})
 		pe.insert(); pe.submit()
@@ -720,7 +740,9 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			original_cash_pe = pe_name
 
 	if upi_amount > 0.01:
-		pe_name = _create_pe(upi_amount, upi_account, ref_no=upi_ref_no)
+		pe_name = _create_pe(
+			upi_amount, upi_account, ref_no=upi_ref_no, remarks=_paytm_upi_remarks(si.name, upi_ref_no)
+		)
 		if pe_name:
 			payment_entries.append(pe_name)
 			original_upi_pe = pe_name

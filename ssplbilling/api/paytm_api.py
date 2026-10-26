@@ -899,7 +899,8 @@ def _make_receipt(txn):
 				"reference_no": txn.rrn or txn.paytm_txn_id or txn.order_id,
 				"reference_date": frappe.utils.today(),
 				"remarks": f"Paytm {'payment link' if txn.channel == 'Link' else 'UPI QR'} {txn.order_id}: "
-				f"{txn.link_description or ''}".strip(),
+				f"{txn.link_description or ''}".strip()
+				+ (f" · Mobile {txn.customer_mobile}" if txn.customer_mobile else ""),
 			}
 		)
 		txn.payment_entry = pe_name
