@@ -497,7 +497,7 @@ const showItemManager = ref(false)
 const pendingClearAfterPrint = ref(false)
 
 // Every grid cell is an input; the focused one gets a solid fill
-const cellInput = 'w-full bg-transparent px-[1px] text-[var(--color-text)] outline-none leading-none focus:bg-[var(--color-info)] focus:text-[var(--color-text-on-highlight)]'
+const cellInput = 'w-full text-4xl bg-transparent px-[1px] text-[var(--color-text)] outline-none leading-none focus:bg-[var(--color-info)] focus:text-[var(--color-text-on-highlight)]'
 
 // Stable per-row key so refs and inputs survive row deletion
 let rowSeq = 0
