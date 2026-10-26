@@ -104,7 +104,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { frappeGet } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { formatDMY } from '../utils/date'
@@ -135,16 +135,15 @@ const highlightIdx = ref(0)
 const showCreator = ref(false)
 
 // The Enter that picked the item can reach this window's shortcut layer too and would select
-// the first batch at once, so Enter only counts after a keyup since opening.
-let enterArmed = false
-function armEnter() { enterArmed = true }
+// the first batch at once, so only an Enter pressed after opening counts.
+let openedAt = 0
 
 const visibleBatches = computed(() =>
   props.inStockOnly ? batches.value.filter(b => b.qty > 0) : batches.value)
 
 useSubwindowWatcher(computed(() => props.show && !showCreator.value), {
   ESCAPE: () => emit('close'),
-  ENTER: () => { if (enterArmed) chooseHighlighted() },
+  ENTER: (e) => { if (e.timeStamp > openedAt) chooseHighlighted() },
   ARROWDOWN: () => moveHighlight(1),
   ARROWUP: () => moveHighlight(-1),
   F2: () => openCreator(),
@@ -209,16 +208,12 @@ async function load() {
 }
 
 watch(() => props.show, (open) => {
-  window.removeEventListener('keyup', armEnter)
   if (!open) return
-  enterArmed = false
-  window.addEventListener('keyup', armEnter, { once: true })
+  openedAt = performance.now()
   showCreator.value = false
   info.value = {}
   load()
   // Off the opener's input, so its own Enter/arrow handlers stay quiet while this is up
   nextTick(() => panel.value?.focus())
 }, { immediate: true })
-
-onUnmounted(() => window.removeEventListener('keyup', armEnter))
 </script>
