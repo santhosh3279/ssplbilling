@@ -19,6 +19,10 @@ from ssplbilling.api.print_preview_api import (
 	get_party_name,
 	preview_print_template_pdf,
 )
+from ssplbilling.ssplbilling.doctype.sspl_email_settings.sspl_email_settings import (
+	AREA_BILL_SENDING,
+	get_area_template,
+)
 
 
 def get_outgoing_account():
@@ -73,6 +77,34 @@ def save_party_email(party_doctype, party, email):
 	contact.save(ignore_permissions=True)
 
 
+def get_email_content(usage_area, doctype, document_name, sender=None):
+	"""Subject and message for mailing a document from usage_area.
+
+	Rendered from the Email Template set for the area in SSPL Email Settings, with the
+	document's fields at top level ({{ customer_name }}) and as doc ({{ doc.company }}).
+	With no template set, or one that fails to render, the built-in message is used.
+	"""
+	template_name = get_area_template(usage_area)
+	if template_name:
+		try:
+			doc = frappe.get_doc(doctype, document_name)
+			args = {**doc.as_dict(), "doc": doc}
+			return frappe.get_doc("Email Template", template_name).get_formatted_email(args, sender)
+		except Exception:
+			frappe.log_error(frappe.get_traceback(), f"Email Template {template_name} failed")
+
+	party = get_party_name(doctype, document_name)
+	company = ""
+	if frappe.get_meta(doctype).has_field("company"):
+		company = frappe.db.get_value(doctype, document_name, "company")
+	greeting = f"Dear {frappe.utils.escape_html(party)}," if party else "Hello,"
+	signature = f"<br><br>Regards,<br>{frappe.utils.escape_html(company)}" if company else ""
+	return {
+		"subject": f"{doctype} {document_name}",
+		"message": f"{greeting}<br><br>Please find attached {doctype} {document_name}.{signature}",
+	}
+
+
 def _check_document(doctype, document_name):
 	if not doctype or not document_name or not frappe.db.exists(doctype, document_name):
 		frappe.throw("Document not found")
@@ -109,18 +141,13 @@ def send_document_email(doctype, document_name, print_template, email):
 	if not b64:
 		frappe.throw(f'"{print_template}" has no PDF output — pick a PDF template')
 
-	party = get_party_name(doctype, document_name)
-	company = ""
-	if frappe.get_meta(doctype).has_field("company"):
-		company = frappe.db.get_value(doctype, document_name, "company")
-	greeting = f"Dear {frappe.utils.escape_html(party)}," if party else "Hello,"
-	signature = f"<br><br>Regards,<br>{frappe.utils.escape_html(company)}" if company else ""
+	content = get_email_content(AREA_BILL_SENDING, doctype, document_name, account.email_id)
 
 	frappe.sendmail(
 		recipients=[email],
 		sender=account.email_id,
-		subject=f"{doctype} {document_name}",
-		message=f"{greeting}<br><br>Please find attached {doctype} {document_name}.{signature}",
+		subject=content["subject"],
+		message=content["message"],
 		attachments=[
 			{
 				"fname": build_preview_filename(doctype, document_name, print_template),

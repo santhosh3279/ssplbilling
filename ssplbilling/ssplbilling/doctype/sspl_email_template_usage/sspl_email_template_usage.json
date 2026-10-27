@@ -1,0 +1,44 @@
+{
+ "actions": [],
+ "creation": "2026-10-27 12:00:00",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "usage_area",
+  "email_template"
+ ],
+ "fields": [
+  {
+   "fieldname": "usage_area",
+   "fieldtype": "Select",
+   "label": "Usage Area",
+   "in_list_view": 1,
+   "reqd": 1,
+   "columns": 4,
+   "description": "Where the mail is sent from. One row per area, used by every user.",
+   "options": "Bill Sending (Print Window)"
+  },
+  {
+   "fieldname": "email_template",
+   "fieldtype": "Link",
+   "label": "Email Template",
+   "options": "Email Template",
+   "in_list_view": 1,
+   "columns": 6,
+   "description": "Subject and body are rendered with the document's fields, e.g. {{ name }}, {{ customer_name }}, {{ rounded_total }}, or {{ doc.company }}. Blank: the built-in message is sent."
+  }
+ ],
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-27 12:00:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL Email Template Usage",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
