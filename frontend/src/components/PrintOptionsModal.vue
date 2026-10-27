@@ -107,6 +107,30 @@
               </div>
             </form>
 
+            <!-- Email address prompt: the party has no email on file -->
+            <form v-if="mailPrompt" class="space-y-2 rounded-lg bg-[var(--color-info)]/15 p-3" @submit.prevent="submitMailAddress">
+              <div class="text-xs font-semibold text-[var(--color-text)]">
+                No email on file{{ mailPrompt.party ? ` for ${mailPrompt.party}` : '' }}. Enter the address to send this bill to — it is used once and not saved.
+              </div>
+              <div class="flex gap-2">
+                <input
+                  ref="mailInput"
+                  v-model="mailAddress"
+                  type="email"
+                  placeholder="name@example.com"
+                  class="min-w-0 flex-1 rounded-lg bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-text)] outline-none focus:bg-[var(--color-info)]/15"
+                />
+                <button
+                  type="submit"
+                  :disabled="mailing || !mailAddress.trim()"
+                  class="rounded-lg bg-[var(--color-info)] px-3 py-2 text-xs font-bold text-[var(--color-text-on-highlight)] disabled:opacity-50"
+                >
+                  {{ mailing ? 'Sending…' : 'Send' }}
+                </button>
+                <button type="button" class="rounded-lg px-2 text-xs text-[var(--color-text-muted)]" @click="mailPrompt = null">Cancel</button>
+              </div>
+            </form>
+
             <!-- Actions -->
             <div class="flex flex-col gap-3 mt-2">
               <button
@@ -136,16 +160,30 @@
                 <kbd v-if="!previewing" class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text-muted)]">P</kbd>
               </button>
 
-              <button
-                v-if="hasExtension || gatewayReady"
-                @click="sendWhatsApp"
-                :disabled="whatsapping || !templates.length"
-                class="w-full rounded-xl py-3 text-sm font-bold border transition-all flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border-[#25D366] text-[#25D366] bg-[var(--color-surface)] hover:bg-[#25D366]/10"
-              >
-                <span class="text-lg">💬</span>
-                {{ whatsapping ? 'Preparing bill…' : 'Send on WhatsApp' }}
-                <kbd v-if="!whatsapping" class="rounded border border-[#25D366] px-1.5 py-0.5 font-mono text-[10px] text-[#25D366]">W</kbd>
-              </button>
+              <!-- WhatsApp and mail share one row; either takes the full width when it is alone -->
+              <div v-if="hasExtension || gatewayReady || mailReady" class="flex gap-3">
+                <button
+                  v-if="hasExtension || gatewayReady"
+                  @click="sendWhatsApp"
+                  :disabled="whatsapping || !templates.length"
+                  class="flex-1 rounded-xl py-3 text-sm font-bold border transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border-[#25D366] text-[#25D366] bg-[var(--color-surface)] hover:bg-[#25D366]/10"
+                >
+                  <span class="text-lg">💬</span>
+                  {{ whatsapping ? 'Preparing…' : mailReady ? 'WhatsApp' : 'Send on WhatsApp' }}
+                  <kbd v-if="!whatsapping" class="rounded border border-[#25D366] px-1.5 py-0.5 font-mono text-[10px] text-[#25D366]">W</kbd>
+                </button>
+
+                <button
+                  v-if="mailReady"
+                  @click="sendMail"
+                  :disabled="mailing || !templates.length"
+                  class="flex-1 rounded-xl py-3 text-sm font-bold border transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed border-[var(--color-info)] text-[var(--color-info)] bg-[var(--color-surface)] hover:bg-[var(--color-info)]/10"
+                >
+                  <span class="text-lg">✉</span>
+                  {{ mailing ? 'Sending…' : (hasExtension || gatewayReady) ? 'Mail' : 'Send by Mail' }}
+                  <kbd v-if="!mailing" class="rounded border border-[var(--color-info)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-info)]">M</kbd>
+                </button>
+              </div>
             </div>
           </template>
         </div>
@@ -210,6 +248,13 @@ const promptReason   = computed(() => {
   return 'No WhatsApp number on file.'
 })
 const partyLabel     = computed(() => (numberPrompt.value?.partyType || 'party').toLowerCase())
+// An outgoing Email Account exists on the site; without one the mail button stays hidden
+const mailReady      = ref(false)
+const mailing        = ref(false)
+// Asks for an address when the party has no email on file
+const mailPrompt     = ref(null)
+const mailAddress    = ref('')
+const mailInput      = ref(null)
 const refreshing     = ref(false)
 const error          = ref('')
 const success        = ref('')
@@ -364,6 +409,13 @@ function handleKeydown(e) {
     }
     return
   }
+  if (mailPrompt.value && document.activeElement === mailInput.value) {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      mailPrompt.value = null
+    }
+    return
+  }
 
   if (e.key === 'Escape') {
     emit('close')
@@ -398,6 +450,9 @@ function handleKeydown(e) {
   } else if (e.key.toLowerCase() === 'w' && (hasExtension.value || gatewayReady.value)) {
     e.preventDefault()
     sendWhatsApp()
+  } else if (e.key.toLowerCase() === 'm' && mailReady.value) {
+    e.preventDefault()
+    sendMail()
   }
 }
 
@@ -410,6 +465,9 @@ onMounted(() => {
     () => frappeGet('ssplbilling.api.whatsapp_api.get_gateway_state', { session_id: getWhatsAppSessionId() }))
     .then((r) => { gatewayReady.value = !!r?.ready })
     .catch(() => { gatewayReady.value = false })
+  frappeGet('ssplbilling.api.email_api.get_email_state')
+    .then((r) => { mailReady.value = !!r?.ready })
+    .catch(() => { mailReady.value = false })
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
@@ -827,6 +885,62 @@ async function sendWhatsApp() {
     error.value = 'WhatsApp share failed: ' + (e.message || e)
   } finally {
     whatsapping.value = false
+  }
+}
+
+// The server renders the PDF and mails it, so nothing is downloaded or attached here.
+async function sendMail() {
+  if (!selectedTemplate.value || mailing.value) return
+  error.value = ''
+  success.value = ''
+  mailing.value = true
+  let recipient = { party: '', email: '' }
+  try {
+    recipient = await frappeGet('ssplbilling.api.email_api.get_email_recipient', {
+      doctype: props.doctype,
+      document_name: props.invoiceName,
+    })
+  } catch (e) {
+    console.warn('[PrintOptionsModal] Email recipient lookup failed:', e)
+  } finally {
+    mailing.value = false
+  }
+
+  if (!recipient?.email) {
+    mailPrompt.value = { party: recipient?.party || '' }
+    mailAddress.value = ''
+    await nextTick()
+    mailInput.value?.focus()
+    return
+  }
+  await mailBillTo(recipient.email)
+}
+
+async function submitMailAddress() {
+  if (!mailAddress.value.trim()) return
+  if (await mailBillTo(mailAddress.value.trim())) mailPrompt.value = null
+  else mailInput.value?.focus()
+}
+
+async function mailBillTo(email) {
+  if (mailing.value) return false
+  mailing.value = true
+  error.value = ''
+  success.value = ''
+  try {
+    const sent = await frappePost('ssplbilling.api.email_api.send_document_email', {
+      doctype: props.doctype,
+      document_name: props.invoiceName,
+      print_template: selectedTemplate.value,
+      email,
+    }, { silent: true })
+    success.value = `Mailed "${props.invoiceName}" to ${sent?.email || email}`
+    return true
+  } catch (e) {
+    error.value = 'Mail failed: ' + (e.message || e)
+    return false
+  } finally {
+    mailing.value = false
   }
 }
 

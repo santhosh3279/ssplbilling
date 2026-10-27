@@ -1,0 +1,108 @@
+# Copyright (c) 2026, SSPL and contributors
+# For license information, please see license.txt
+
+"""Mail a bill's PDF to its party from the print modal.
+
+The modal only offers the button when an outgoing Email Account is configured, so a
+site without mail never shows an action that can only fail.
+"""
+
+import base64
+
+import frappe
+from frappe.utils import validate_email_address
+
+from ssplbilling.api.print_preview_api import (
+	_party_contact,
+	build_preview_filename,
+	get_party_link,
+	get_party_name,
+	preview_print_template_pdf,
+)
+
+
+def get_outgoing_account():
+	"""The default outgoing Email Account, else any enabled one, or None."""
+	for filters in ({"enable_outgoing": 1, "default_outgoing": 1}, {"enable_outgoing": 1}):
+		name = frappe.db.get_value("Email Account", filters, "name")
+		if name:
+			return frappe.get_cached_doc("Email Account", name)
+	return None
+
+
+@frappe.whitelist()
+def get_email_state():
+	"""Whether bills can be mailed from this site, for showing the Send by Mail button."""
+	return {"ready": bool(get_outgoing_account())}
+
+
+def get_party_email(party_doctype, party):
+	"""The party's email: its own email_id, else its Contact's."""
+	if frappe.get_meta(party_doctype).has_field("email_id"):
+		email = frappe.db.get_value(party_doctype, party, "email_id")
+		if email:
+			return email
+	contact_name = _party_contact(party_doctype, party)
+	if contact_name:
+		return frappe.db.get_value("Contact", contact_name, "email_id") or ""
+	return ""
+
+
+def _check_document(doctype, document_name):
+	if not doctype or not document_name or not frappe.db.exists(doctype, document_name):
+		frappe.throw("Document not found")
+	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
+
+
+@frappe.whitelist()
+def get_email_recipient(doctype, document_name):
+	"""Party name and email for a bill; an empty email makes the modal ask for one."""
+	_check_document(doctype, document_name)
+	party_doctype, party = get_party_link(doctype, document_name)
+	return {
+		"party": get_party_name(doctype, document_name) or party or "",
+		"email": get_party_email(party_doctype, party) if party else "",
+	}
+
+
+@frappe.whitelist(methods=["POST"])
+def send_document_email(doctype, document_name, print_template, email):
+	"""Render the bill with print_template and mail it to email right away.
+
+	Sent with now=True instead of through the Email Queue, so an SMTP failure reaches the
+	operator in the modal instead of sitting unnoticed in the queue.
+	"""
+	_check_document(doctype, document_name)
+	email = validate_email_address((email or "").strip(), throw=True)
+
+	account = get_outgoing_account()
+	if not account:
+		frappe.throw("No outgoing Email Account is configured")
+
+	b64 = preview_print_template_pdf(print_template, document_name)
+	if not b64:
+		frappe.throw(f'"{print_template}" has no PDF output — pick a PDF template')
+
+	party = get_party_name(doctype, document_name)
+	company = ""
+	if frappe.get_meta(doctype).has_field("company"):
+		company = frappe.db.get_value(doctype, document_name, "company")
+	greeting = f"Dear {frappe.utils.escape_html(party)}," if party else "Hello,"
+	signature = f"<br><br>Regards,<br>{frappe.utils.escape_html(company)}" if company else ""
+
+	frappe.sendmail(
+		recipients=[email],
+		sender=account.email_id,
+		subject=f"{doctype} {document_name}",
+		message=f"{greeting}<br><br>Please find attached {doctype} {document_name}.{signature}",
+		attachments=[
+			{
+				"fname": build_preview_filename(doctype, document_name, print_template),
+				"fcontent": base64.b64decode(b64),
+			}
+		],
+		reference_doctype=doctype,
+		reference_name=document_name,
+		now=True,
+	)
+	return {"email": email}
