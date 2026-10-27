@@ -107,10 +107,11 @@
               </div>
             </form>
 
-            <!-- Email address prompt: the party has no email on file -->
+            <!-- Email address: prefilled from the party's Contact, or typed and saved there -->
             <form v-if="mailPrompt" class="space-y-2 rounded-lg bg-[var(--color-info)]/15 p-3" @submit.prevent="submitMailAddress">
               <div class="text-xs font-semibold text-[var(--color-text)]">
-                No email on file{{ mailPrompt.party ? ` for ${mailPrompt.party}` : '' }}. Enter the address to send this bill to — it is used once and not saved.
+                <template v-if="mailPrompt.email">Mail this bill to{{ mailPrompt.party ? ` ${mailPrompt.party}` : '' }} — change the address to send this bill elsewhere.</template>
+                <template v-else>No email on file{{ mailPrompt.party ? ` for ${mailPrompt.party}` : '' }}. Enter one — it is saved to the contact and the bill is sent.</template>
               </div>
               <div class="flex gap-2">
                 <input
@@ -125,7 +126,7 @@
                   :disabled="mailing || !mailAddress.trim()"
                   class="rounded-lg bg-[var(--color-info)] px-3 py-2 text-xs font-bold text-[var(--color-text-on-highlight)] disabled:opacity-50"
                 >
-                  {{ mailing ? 'Sending…' : 'Send' }}
+                  {{ mailing ? 'Sending…' : mailPrompt.email ? 'Send' : 'Save & Send' }}
                 </button>
                 <button type="button" class="rounded-lg px-2 text-xs text-[var(--color-text-muted)]" @click="mailPrompt = null">Cancel</button>
               </div>
@@ -251,7 +252,7 @@ const partyLabel     = computed(() => (numberPrompt.value?.partyType || 'party')
 // An outgoing Email Account exists on the site; without one the mail button stays hidden
 const mailReady      = ref(false)
 const mailing        = ref(false)
-// Asks for an address when the party has no email on file
+// Address field shown on Mail: prefilled with the party's email, empty when there is none
 const mailPrompt     = ref(null)
 const mailAddress    = ref('')
 const mailInput      = ref(null)
@@ -906,14 +907,12 @@ async function sendMail() {
     mailing.value = false
   }
 
-  if (!recipient?.email) {
-    mailPrompt.value = { party: recipient?.party || '' }
-    mailAddress.value = ''
-    await nextTick()
-    mailInput.value?.focus()
-    return
-  }
-  await mailBillTo(recipient.email)
+  // Always confirmed in the field, so the operator sees where the bill goes; Enter sends
+  mailPrompt.value = { party: recipient?.party || '', email: recipient?.email || '' }
+  mailAddress.value = recipient?.email || ''
+  await nextTick()
+  mailInput.value?.focus()
+  mailInput.value?.select()
 }
 
 async function submitMailAddress() {
@@ -934,7 +933,9 @@ async function mailBillTo(email) {
       print_template: selectedTemplate.value,
       email,
     }, { silent: true })
-    success.value = `Mailed "${props.invoiceName}" to ${sent?.email || email}`
+    success.value = sent?.saved
+      ? `Mailed "${props.invoiceName}" to ${sent.email} — saved to the contact`
+      : `Mailed "${props.invoiceName}" to ${sent?.email || email}`
     return true
   } catch (e) {
     error.value = 'Mail failed: ' + (e.message || e)

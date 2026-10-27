@@ -48,6 +48,31 @@ def get_party_email(party_doctype, party):
 	return ""
 
 
+def save_party_email(party_doctype, party, email):
+	"""Store email as the primary email of the party's Contact. A party without a Contact gets one."""
+	contact_name = _party_contact(party_doctype, party)
+	if contact_name:
+		contact = frappe.get_doc("Contact", contact_name)
+	else:
+		name_field = "customer_name" if party_doctype == "Customer" else "supplier_name"
+		contact = frappe.get_doc(
+			{
+				"doctype": "Contact",
+				"first_name": frappe.db.get_value(party_doctype, party, name_field) or party,
+				"links": [{"link_doctype": party_doctype, "link_name": party}],
+			}
+		)
+
+	for row in contact.email_ids:
+		row.is_primary = 0
+	row = next((r for r in contact.email_ids if r.email_id == email), None)
+	if row:
+		row.is_primary = 1
+	else:
+		contact.append("email_ids", {"email_id": email, "is_primary": 1})
+	contact.save(ignore_permissions=True)
+
+
 def _check_document(doctype, document_name):
 	if not doctype or not document_name or not frappe.db.exists(doctype, document_name):
 		frappe.throw("Document not found")
@@ -70,7 +95,8 @@ def send_document_email(doctype, document_name, print_template, email):
 	"""Render the bill with print_template and mail it to email right away.
 
 	Sent with now=True instead of through the Email Queue, so an SMTP failure reaches the
-	operator in the modal instead of sitting unnoticed in the queue.
+	operator in the modal instead of sitting unnoticed in the queue. When the party had no
+	email on file, the address is saved to its Contact so the next bill is prefilled.
 	"""
 	_check_document(doctype, document_name)
 	email = validate_email_address((email or "").strip(), throw=True)
@@ -105,4 +131,12 @@ def send_document_email(doctype, document_name, print_template, email):
 		reference_name=document_name,
 		now=True,
 	)
-	return {"email": email}
+
+	# Only fills a gap: an address typed over an existing one is used for this bill alone
+	saved = False
+	party_doctype, party_link = get_party_link(doctype, document_name)
+	if party_link and not get_party_email(party_doctype, party_link):
+		if frappe.has_permission(party_doctype, "write", doc=party_link):
+			save_party_email(party_doctype, party_link, email)
+			saved = True
+	return {"email": email, "saved": saved}
