@@ -357,6 +357,76 @@ def sync_offer_print_template():
 	).insert(ignore_permissions=True)
 
 
+INVOICE_EMAIL_TEMPLATE = "SSPL Invoice"
+
+# Rendered by email_api.get_email_content with the bill's fields and the bill as doc.
+# doc.get() keeps one template working for every doctype the print window mails.
+INVOICE_EMAIL_SUBJECT = (
+	'{{ doc.doctype }} {{ doc.name }}{% if doc.get("company") %} - {{ doc.get("company") }}{% endif %}'
+)
+
+INVOICE_EMAIL_HTML = """\
+{%- set party = doc.get("customer_name") or doc.get("supplier_name") or doc.get("party_name") -%}
+{%- set date_field = "posting_date" if doc.get("posting_date") else "transaction_date" -%}
+<p>Dear {{ party or "Customer" }},</p>
+<p>
+	Please find attached {{ doc.doctype }} <b>{{ doc.name }}</b>
+	{%- if doc.get(date_field) %} dated {{ doc.get_formatted(date_field) }}{% endif %}.
+</p>
+{%- if doc.get("grand_total") %}
+<table cellpadding="4" style="border-collapse: collapse;">
+	<tr>
+		<td>Bill Amount</td>
+		<td style="text-align: right;"><b>{{ doc.get_formatted("rounded_total" if doc.get("rounded_total") else "grand_total") }}</b></td>
+	</tr>
+	{%- if doc.get("docstatus") == 1 and doc.get("outstanding_amount") %}
+	<tr>
+		<td>Balance Due</td>
+		<td style="text-align: right;"><b>{{ doc.get_formatted("outstanding_amount") }}</b></td>
+	</tr>
+	{%- endif %}
+</table>
+{%- endif %}
+<p>For any query about this bill, reply to this email.</p>
+<p>Thank you for your business.<br>Regards,<br>{{ doc.get("company") or "" }}</p>
+{{ email_signature or "" }}
+"""
+
+
+def sync_invoice_email_template():
+	"""Seed the bill Email Template and make it the Bill Sending template.
+
+	The template is only inserted when missing, so desk edits survive migrations, and
+	is only assigned when Bill Sending has no template yet, so a chosen one is kept.
+	"""
+	from ssplbilling.ssplbilling.doctype.sspl_email_settings.sspl_email_settings import AREA_BILL_SENDING
+
+	if not frappe.db.exists("Email Template", INVOICE_EMAIL_TEMPLATE):
+		frappe.get_doc(
+			{
+				"doctype": "Email Template",
+				"name": INVOICE_EMAIL_TEMPLATE,
+				"subject": INVOICE_EMAIL_SUBJECT,
+				"use_html": 1,
+				"response_html": INVOICE_EMAIL_HTML,
+			}
+		).insert(ignore_permissions=True)
+
+	if not frappe.db.exists("DocType", "SSPL Email Settings"):
+		return
+	settings = frappe.get_single("SSPL Email Settings")
+	row = next((r for r in settings.template_usages if r.usage_area == AREA_BILL_SENDING), None)
+	if row and row.email_template:
+		return
+	if row:
+		row.email_template = INVOICE_EMAIL_TEMPLATE
+	else:
+		settings.append(
+			"template_usages", {"usage_area": AREA_BILL_SENDING, "email_template": INVOICE_EMAIL_TEMPLATE}
+		)
+	settings.save(ignore_permissions=True)
+
+
 def backfill_mirrored_purchase_invoices():
 	"""Set custom_mirrored with mirrored invoice name on existing mirrored purchase invoices."""
 	if not frappe.db.has_column("Purchase Invoice", "custom_mirrored"):
@@ -388,6 +458,7 @@ def after_install():
 	sync_dashboard_tiles()
 	sync_template_usages()
 	sync_offer_print_template()
+	sync_invoice_email_template()
 	backfill_mirrored_purchase_invoices()
 	allow_supplier_bill_no_edit_after_submit()
 
@@ -397,5 +468,6 @@ def after_migrate():
 	sync_dashboard_tiles()
 	sync_template_usages()
 	sync_offer_print_template()
+	sync_invoice_email_template()
 	backfill_mirrored_purchase_invoices()
 	allow_supplier_bill_no_edit_after_submit()
