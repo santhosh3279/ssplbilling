@@ -9,3 +9,4 @@ ssplbilling.patches.v1_0.add_sales_invoice_last_date_index
 ssplbilling.patches.v1_0.migrate_discount_rule_price_list_to_table
 ssplbilling.patches.v1_0.move_whatsapp_session_to_table
 ssplbilling.patches.v1_0.move_whatsapp_session_user_to_table
+ssplbilling.patches.v1_0.import_openwa_templates

@@ -161,11 +161,11 @@ def _inheritable_user(user=None):
 	return frappe.session.user
 
 
-# {{name}} placeholders, as the OpenWA Templates page finds them
+# {{name}} placeholders in an SSPL WhatsApp Template
 TEMPLATE_PLACEHOLDER = re.compile(r"\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}")
 
 # Places that send a WhatsApp message, each a row of SSPL WhatsApp Settings > Template per Usage
-# Area (added on migrate by sync_template_usages) naming its OpenWA template. A new place: add it
+# Area (added on migrate by sync_template_usages) naming its SSPL WhatsApp Template. A new place: add it
 # here and to the Usage Area options of SSPL WhatsApp Template Usage, and look its template up
 # with _area_template.
 AREA_UPI_PAY_LINK = "Cashier Desk - UPI Pay Link"
@@ -221,28 +221,20 @@ def sync_template_usages():
 		frappe.log_error(title="WhatsApp template usage rows not synced", message=frappe.get_traceback())
 
 
-def _render_template(settings, row, template_name, values):
-	"""Text of the OpenWA template named template_name in row's session, rendered the way the
-	OpenWA Templates page previews it: header, body and footer joined by a blank line, each
-	{{placeholder}} filled from values (unknown ones left as written). None when no name is set, or
-	the template is missing or the gateway can't list templates, so the caller sends its own text."""
+def _render_template(template_name, values):
+	"""Message of the SSPL WhatsApp Template named template_name, each {{placeholder}} filled from
+	values (unknown ones left as written). None when no name is set or the template is missing, so
+	the caller sends its own text."""
 	if not template_name:
 		return None
-	try:
-		templates = _call(settings, "GET", f"/sessions/{row.session_id}/templates")
-	except OpenWAError:
-		frappe.log_error(title="OpenWA templates could not be listed", message=frappe.get_traceback())
-		return None
-	tpl = next((t for t in templates or [] if (t.get("name") or "").strip() == template_name), None)
-	if not tpl:
+	message = frappe.db.get_value("SSPL WhatsApp Template", template_name, "message")
+	if not message:
 		frappe.log_error(
-			title="OpenWA template not found",
-			message=f"No template named {template_name!r} in session {row.session_name}",
+			title="WhatsApp template not found", message=f"No SSPL WhatsApp Template {template_name!r}"
 		)
 		return None
-	text = "\n\n".join(p for p in (tpl.get("header"), tpl.get("body"), tpl.get("footer")) if p)
 	return TEMPLATE_PLACEHOLDER.sub(
-		lambda m: str(values[m.group(1)]) if values.get(m.group(1)) not in (None, "") else m.group(0), text
+		lambda m: str(values[m.group(1)]) if values.get(m.group(1)) not in (None, "") else m.group(0), message
 	)
 
 
@@ -436,25 +428,8 @@ def refresh_sessions():
 			if session:
 				_store_session(row, session)
 				row.session_id = session.get("id") or ""
-		return {"templates": _session_templates(settings)}
 
 	return _guarded(run)
-
-
-def _session_templates(settings):
-	"""Template names on the gateway per session name, for the OpenWA Template dropdowns. A session
-	that is not linked, or whose templates cannot be listed, offers none."""
-	templates = {}
-	for row in settings.sessions:
-		names = []
-		if row.session_id:
-			try:
-				found = _call(settings, "GET", f"/sessions/{row.session_id}/templates")
-				names = sorted({(t.get("name") or "").strip() for t in found or []} - {""})
-			except OpenWAError:
-				frappe.log_error(title="OpenWA templates could not be listed", message=frappe.get_traceback())
-		templates[row.session_name] = names
-	return templates
 
 
 @frappe.whitelist()
@@ -735,7 +710,7 @@ def send_mock_pay_link(
 
 
 def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_template=None):
-	"""Build the pay-link message (OpenWA template for the usage area, else the built-in text) and
+	"""Build the pay-link message (WhatsApp template for the usage area, else the built-in text) and
 	send it, as text or as the bill PDF's caption."""
 	is_qr = txn.channel == "QR"
 	settings = _settings()
@@ -755,7 +730,7 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_t
 		text = _("Dear {0}, please pay Rs. {1} to Sundaram and Sons using this Paytm link: {2}").format(
 			customer_name, amount, txn.short_url
 		)
-	# the OpenWA template set for this usage area replaces the built-in text when it can be used;
+	# the WhatsApp template set for this usage area replaces the built-in text when it can be used;
 	# Bill + Link falls back to the plain pay link's template
 	with_bill = frappe.utils.cint(with_bill) and is_qr and txn.sales_invoice
 	if not txn.sales_invoice:
@@ -768,8 +743,6 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_t
 		template_name = _area_template(settings, AREA_UPI_PAY_LINK)
 	text = (
 		_render_template(
-			settings,
-			row,
 			template_name,
 			{
 				# any field of the bill (or of the customer, for a receipt), then the pay link's own
@@ -900,20 +873,13 @@ def _bill_pdf(invoice_name, print_template=None, hide_bill_no=False):
 
 @frappe.whitelist()
 def get_document_caption(doctype, document_name, session_id=None):
-	"""Caption for sending a bill / document on WhatsApp, from the OpenWA template set for Bill
+	"""Caption for sending a bill / document on WhatsApp, from the WhatsApp template set for Bill
 	Sending in SSPL WhatsApp Settings, filled with the document's fields. None when no template is
-	set or usable, so the print modal keeps its built-in caption."""
+	set or usable, so the print modal keeps its built-in caption. session_id is no longer needed and
+	only kept so older clients still call it."""
 	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
-	settings = _settings()
-	template_name = _area_template(settings, AREA_BILL_SENDING)
-	if not template_name:
-		return None
-	try:
-		row = _linked_row(settings, session_id=session_id)
-	except frappe.ValidationError:
-		frappe.clear_messages()
-		return None
-	return _render_template(settings, row, template_name, _doc_values(doctype, document_name))
+	template_name = _area_template(_settings(), AREA_BILL_SENDING)
+	return _render_template(template_name, _doc_values(doctype, document_name))
 
 
 def _bill_body(pdf_base64, filename, caption):

@@ -8,7 +8,6 @@ frappe.ui.form.on("SSPL WhatsApp Settings", {
 		frm.add_custom_button(__("Refresh Status"), () => refresh_session(frm, false));
 		load_session_names(frm);
 		set_user_session_options(frm);
-		set_template_options(frm);
 
 		// Desk reuses this form across visits, so gate on time: each reopen refreshes, while the
 		// reload that follows a refresh (which fires `refresh` again) does not loop
@@ -32,62 +31,6 @@ frappe.ui.form.on("SSPL WhatsApp Session", {
 		set_user_session_options(frm);
 	},
 });
-
-frappe.ui.form.on("SSPL WhatsApp Session User", {
-	session_name(frm) {
-		set_template_options(frm);
-	},
-	user(frm) {
-		set_template_options(frm);
-	},
-});
-
-frappe.ui.form.on("SSPL WhatsApp Template Usage", {
-	user(frm, cdt, cdn) {
-		set_row_template_options(frm, cdn);
-	},
-	form_render(frm, cdt, cdn) {
-		set_row_template_options(frm, cdn);
-	},
-});
-
-// The session a user's sends go through, as _session_row in whatsapp_api.py picks it: the one
-// assigned in Users per Session, else the session no user is assigned to
-function session_of(frm, user) {
-	const assigned = (frm.doc.session_users || []).find((r) => user && r.user === user);
-	if (assigned) return assigned.session_name;
-	const taken = new Set((frm.doc.session_users || []).map((r) => r.session_name));
-	return (frm.doc.sessions || []).find((r) => !taken.has(r.session_name))?.session_name;
-}
-
-// Template names of a row's session, keeping its current value so a template missing from the
-// gateway still shows instead of turning blank
-function row_template_names(frm, row) {
-	const names = new Set((frm.__session_templates || {})[session_of(frm, row.user)] || []);
-	if (row.template_name) names.add(row.template_name);
-	return ["", ...[...names].sort()].join("\n");
-}
-
-// OpenWA Template offers the templates Refresh Status pulled from the gateway: every session's in
-// the grid, narrowed to the row's own session once its user is picked or its form is opened
-function set_template_options(frm) {
-	const names = new Set(Object.values(frm.__session_templates || {}).flat());
-	(frm.doc.template_usages || []).forEach(
-		(row) => row.template_name && names.add(row.template_name)
-	);
-	frm.fields_dict.template_usages.grid.update_docfield_property(
-		"template_name",
-		"options",
-		["", ...[...names].sort()].join("\n")
-	);
-	frm.refresh_field("template_usages");
-}
-
-function set_row_template_options(frm, cdn) {
-	const grid_row = frm.fields_dict.template_usages.grid.get_row(cdn);
-	if (!grid_row) return;
-	grid_row.set_field_property("template_name", "options", row_template_names(frm, grid_row.doc));
-}
 
 // Users per Session offers the sessions listed in the Sessions table above
 function set_user_session_options(frm) {
@@ -156,8 +99,6 @@ function refresh_session(frm, auto) {
 		freeze: !auto,
 		freeze_message: __("Checking OpenWA sessions..."),
 		callback(r) {
-			// Kept on the form, which Desk reuses, so the dropdowns survive the reload below
-			frm.__session_templates = r.message?.templates || {};
 			frm.reload_doc();
 			if (!auto)
 				frappe.show_alert({ message: __("Session status refreshed"), indicator: "green" });

@@ -28,15 +28,16 @@
    "options": "User",
    "in_list_view": 1,
    "columns": 2,
-   "description": "Whose sends use this row; their session (Users per Session) holds the template. Leave empty for everyone without a row of their own."
+   "description": "Whose sends use this row. Leave empty for everyone without a row of their own."
   },
   {
    "fieldname": "template_name",
-   "fieldtype": "Select",
-   "label": "OpenWA Template",
+   "fieldtype": "Link",
+   "label": "WhatsApp Template",
    "in_list_view": 1,
    "columns": 2,
-   "description": "A template on the OpenWA Templates page of the user's session; the list loads on Refresh Status. Blank or not found: the built-in message is sent."
+   "description": "Blank: the built-in message is sent.",
+   "options": "SSPL WhatsApp Template"
   },
   {
    "fieldname": "placeholders",
@@ -49,7 +50,7 @@
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-10-25 16:00:00",
+ "modified": "2026-10-27 13:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL WhatsApp Template Usage",
