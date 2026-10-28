@@ -84,6 +84,17 @@
 
       <!-- Conversation -->
       <main class="flex-1 min-w-0 flex-col" :class="listOpen ? 'hidden md:flex' : 'flex'">
+        <!-- Scope: answers use this company / cost center unless the question names another -->
+        <div class="shrink-0 flex items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2">
+          <select v-model="scope.company" class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-2 py-1.5 text-xs focus:bg-[var(--color-info)]/15 focus:outline-none sm:flex-none sm:w-56" title="Company" @change="onCompanyChange">
+            <option value="">All companies</option>
+            <option v-for="c in boot.companies" :key="c" :value="c">{{ c }}</option>
+          </select>
+          <select v-model="scope.cost_center" class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-2 py-1.5 text-xs focus:bg-[var(--color-info)]/15 focus:outline-none sm:flex-none sm:w-56" title="Cost center">
+            <option value="">All cost centers</option>
+            <option v-for="c in costCenterOptions" :key="c.name" :value="c.name">{{ c.name }}</option>
+          </select>
+        </div>
         <section ref="scroller" class="flex-1 overflow-y-auto px-4 py-4">
           <div class="mx-auto max-w-3xl space-y-4">
             <div v-if="!current && !messages.length" class="py-10 text-center">
@@ -253,6 +264,10 @@ const quickBusy = ref(false)
 const outputBusy = ref('')
 const hasAi = computed(() => !!boot.value?.providers?.length)
 const provider = ref('Claude')
+const scope = reactive({ company: '', cost_center: '' })
+const costCenterOptions = computed(() =>
+  (boot.value?.cost_centers || []).filter((c) => !scope.company || c.company === scope.company)
+)
 const live = reactive({ text: '', tools: [] })
 const scroller = ref(null)
 const inputEl = ref(null)
@@ -280,6 +295,7 @@ onMounted(async () => {
   provider.value = boot.value.providers.includes(saved) ? saved : boot.value.providers[0] || 'Claude'
 
   getFrappeSocket()?.on(EVENT, onEvent)
+  resetScope()
   await loadChats()
   if (route.query.chat) openChat(String(route.query.chat))
   else if (window.innerWidth >= 768) newChat()
@@ -326,6 +342,8 @@ async function openChat(name) {
     const res = await aiChat.messages(name)
     current.value = res.chat
     messages.value = res.messages
+    scope.company = res.chat.company || ''
+    scope.cost_center = res.chat.cost_center || ''
     resetLive()
     running.value = res.chat.status === 'Running'
     router.replace({ query: { chat: name } })
@@ -335,7 +353,18 @@ async function openChat(name) {
   }
 }
 
+// A new chat starts on the user's billing defaults (SSPL Billing Settings → user row).
+function resetScope() {
+  scope.company = boot.value?.default_company || ''
+  scope.cost_center = boot.value?.default_cost_center || ''
+}
+
+function onCompanyChange() {
+  if (!costCenterOptions.value.some((c) => c.name === scope.cost_center)) scope.cost_center = ''
+}
+
 function newChat() {
+  resetScope()
   if (running.value && current.value) return (error.value = 'Wait for the answer or press Stop first.')
   current.value = null
   messages.value = []
@@ -374,7 +403,7 @@ function pickQuick(q) {
 async function runQuick(q, query) {
   quickBusy.value = true
   try {
-    const res = await aiChat.quick(q.action, query, current.value?.name, provider.value)
+    const res = await aiChat.quick(q.action, query, current.value?.name, provider.value, { ...scope })
     if (!current.value) {
       current.value = res.chat
       router.replace({ query: { chat: res.chat.name } })
@@ -407,7 +436,7 @@ async function submit() {
   running.value = true
   scrollDown()
   try {
-    const res = await aiChat.send(text, current.value?.name, provider.value)
+    const res = await aiChat.send(text, current.value?.name, provider.value, { ...scope })
     if (!current.value) {
       current.value = res.chat
       router.replace({ query: { chat: res.chat.name } })

@@ -8,7 +8,13 @@ import time
 import frappe
 from frappe.utils import add_to_date, get_datetime, now_datetime
 
-from ssplbilling.api import ai_chat_export, ai_chat_quick, ai_chat_runner, ai_chat_runner_gemini
+from ssplbilling.api import (
+	ai_chat_export,
+	ai_chat_quick,
+	ai_chat_runner,
+	ai_chat_runner_gemini,
+	ai_chat_tools,
+)
 
 SETTINGS = ai_chat_runner.SETTINGS
 RUNNERS = {"Claude": ai_chat_runner, "Gemini": ai_chat_runner_gemini}
@@ -18,6 +24,7 @@ MESSAGE = "SSPL Assistant Message"
 REALTIME_EVENT = "sspl_assistant_event"
 FLUSH_SECONDS = 0.25
 MAX_PROMPT = 8000
+CHAT_FIELDS = ("name", "title", "provider", "company", "cost_center", "status", "modified")
 MESSAGE_FIELDS = (
 	"name",
 	"role",
@@ -46,6 +53,7 @@ def get_bootstrap():
 		],
 		"providers": _providers(settings) if allowed else [],
 		"default_provider": settings.default_provider or "Claude",
+		**(_scope_options() if allowed else {}),
 	}
 
 
@@ -55,7 +63,7 @@ def list_chats(limit=50):
 	return frappe.get_all(
 		CHAT,
 		filters={"user": frappe.session.user},
-		fields=["name", "title", "provider", "status", "modified"],
+		fields=list(CHAT_FIELDS),
 		order_by="modified desc",
 		limit=min(int(limit), 200),
 	)
@@ -78,7 +86,7 @@ def get_messages(chat):
 
 
 @frappe.whitelist(methods=["POST"])
-def send_message(message, chat=None, provider=None):
+def send_message(message, chat=None, provider=None, company=None, cost_center=None):
 	_check_access()
 	message = (message or "").strip()
 	if not message:
@@ -92,6 +100,7 @@ def send_message(message, chat=None, provider=None):
 	doc = _own_chat(chat) if chat else _new_chat(message, provider)
 	if doc.status == "Running" and not _is_stale(doc):
 		frappe.throw("Still answering the previous message. Wait for it or press Stop.")
+	_set_scope(doc, company, cost_center)
 
 	_insert_message(doc.name, "user", message)
 	frappe.db.set_value(CHAT, doc.name, "status", "Running")
@@ -108,18 +117,30 @@ def send_message(message, chat=None, provider=None):
 
 
 @frappe.whitelist(methods=["POST"])
-def quick_answer(action, query=None, chat=None, provider=None):
+def quick_answer(action, query=None, chat=None, provider=None, company=None, cost_center=None):
 	"""Quick button: answered locally by ai_chat_quick, no AI call and no tokens. Kept in the
 	chat for the user to read, but not in the AI history."""
 	_check_access()
-	label, reply = ai_chat_quick.answer(action, query)
+	label, query = ai_chat_quick.label_for(action, query)
 	doc = _own_chat(chat) if chat else _new_chat(label, provider)
 	if doc.status == "Running" and not _is_stale(doc):
 		frappe.throw("Still answering the previous message. Wait for it or press Stop.")
+	_set_scope(doc, company, cost_center)
+	with ai_chat_tools.scope(doc.company, doc.cost_center):
+		label, reply = ai_chat_quick.answer(action, query)
 	messages = [
 		_insert_message(doc.name, "user", label, quick=True),
 		_insert_message(
-			doc.name, "assistant", reply, quick=True, quick_source={"action": action, "query": query}
+			doc.name,
+			"assistant",
+			reply,
+			quick=True,
+			quick_source={
+				"action": action,
+				"query": query,
+				"company": doc.company,
+				"cost_center": doc.cost_center,
+			},
 		),
 	]
 	frappe.db.set_value(CHAT, doc.name, "modified", frappe.utils.now())
@@ -137,6 +158,17 @@ def quick_output(message, kind):
 		frappe.throw("This answer has no data source to export.")
 	src = json.loads(msg.quick_source)
 	attachments = json.loads(msg.attachments or "[]")
+	# The scope the answer was made with, saved on it, so the file matches what was shown.
+	with ai_chat_tools.scope(src.get("company"), src.get("cost_center")):
+		res = _quick_output(src, kind, attachments)
+	if not res.get("ok"):
+		frappe.throw(res.get("message") or "Nothing to show.")
+	_attach_files(attachments, chat.name)
+	frappe.db.set_value(MESSAGE, msg.name, "attachments", json.dumps(attachments, default=str))
+	return {k: frappe.db.get_value(MESSAGE, msg.name, k) for k in MESSAGE_FIELDS}
+
+
+def _quick_output(src, kind, attachments):
 	if kind == "excel":
 		tool, args, title = ai_chat_quick.export_source(src["action"], src.get("query"))
 		res = ai_chat_export.export_excel(tool, title, args, attachments)
@@ -145,11 +177,7 @@ def quick_output(message, kind):
 		res = ai_chat_export.make_chart(tool, title, chart_type, args, attachments)
 	else:
 		frappe.throw(f"Unknown output: {kind}")
-	if not res.get("ok"):
-		frappe.throw(res.get("message") or "Nothing to show.")
-	_attach_files(attachments, chat.name)
-	frappe.db.set_value(MESSAGE, msg.name, "attachments", json.dumps(attachments, default=str))
-	return {k: frappe.db.get_value(MESSAGE, msg.name, k) for k in MESSAGE_FIELDS}
+	return res
 
 
 @frappe.whitelist()
@@ -219,12 +247,14 @@ def process_turn(chat, prompt):
 
 	publish({"type": "start", "provider": doc.provider})
 	try:
-		result = RUNNERS[doc.provider or "Claude"].run(
-			prompt,
-			json.loads(doc.history) if doc.history else None,
-			on_event=on_event,
-			is_cancelled=lambda: frappe.cache.get_value(_cancel_key(chat)),
-		)
+		# Tool calls that don't name a company / cost center use the chat's.
+		with ai_chat_tools.scope(doc.company, doc.cost_center):
+			result = RUNNERS[doc.provider or "Claude"].run(
+				prompt,
+				json.loads(doc.history) if doc.history else None,
+				on_event=on_event,
+				is_cancelled=lambda: frappe.cache.get_value(_cancel_key(chat)),
+			)
 	except Exception as e:
 		frappe.log_error(title=f"SSPL AI Chat {doc.provider} run failed")
 		result = {"text": "", "tools": [], "error": str(e), "duration_ms": 0}
@@ -272,6 +302,52 @@ def _new_chat(title, provider):
 			"status": "Idle",
 		}
 	).insert(ignore_permissions=True)
+
+
+def _scope_options():
+	"""Companies and cost centers the user can read, plus their billing defaults (SSPL Billing
+	Settings → user row), for the chat page's dropdowns."""
+	companies = frappe.get_list("Company", pluck="name", order_by="name asc", limit=0)
+	cost_centers = frappe.get_list(
+		"Cost Center",
+		filters={"is_group": 0, "disabled": 0, "company": ["in", companies or [""]]},
+		fields=["name", "company"],
+		order_by="name asc",
+		limit=0,
+	)
+	billing = frappe.get_cached_doc("SSPL Billing Settings")
+	row = next((r for r in billing.user_series if r.user == frappe.session.user), None)
+	company = (row and row.company) or frappe.defaults.get_user_default("Company") or ""
+	cost_center = (row and row.cost_center) or ""
+	if company not in companies:
+		company, cost_center = "", ""
+	if cost_center and not any(c.name == cost_center and c.company == company for c in cost_centers):
+		cost_center = ""
+	return {
+		"companies": companies,
+		"cost_centers": cost_centers,
+		"default_company": company,
+		"default_cost_center": cost_center,
+	}
+
+
+def _set_scope(doc, company, cost_center):
+	"""Save the page's company / cost center on the chat ("" = all). None leaves it unchanged."""
+	if company is None and cost_center is None:
+		return
+	company, cost_center = company or "", cost_center or ""
+	if company and company not in frappe.get_list("Company", pluck="name", limit=0):
+		frappe.throw(f"You can't read company {company}.", frappe.PermissionError)
+	if cost_center:
+		cc_company = frappe.db.get_value("Cost Center", cost_center, "company")
+		if not cc_company:
+			frappe.throw(f"No cost center named {cost_center}.")
+		if company and cc_company != company:
+			frappe.throw(f"Cost center {cost_center} belongs to {cc_company}, not {company}.")
+		company = cc_company
+	if (doc.company or "", doc.cost_center or "") != (company, cost_center):
+		frappe.db.set_value(CHAT, doc.name, {"company": company or None, "cost_center": cost_center or None})
+		doc.company, doc.cost_center = company or None, cost_center or None
 
 
 def _check_limits(chat):
@@ -327,7 +403,7 @@ def _own_chat(name):
 
 
 def _chat_dict(doc):
-	return {k: doc.get(k) for k in ("name", "title", "provider", "status", "modified")}
+	return {k: doc.get(k) for k in CHAT_FIELDS}
 
 
 def _insert_message(chat, role, content, result=None, quick=False, quick_source=None):

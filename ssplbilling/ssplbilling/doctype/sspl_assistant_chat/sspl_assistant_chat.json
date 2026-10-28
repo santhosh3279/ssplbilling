@@ -7,6 +7,8 @@
   "title",
   "user",
   "provider",
+  "company",
+  "cost_center",
   "status",
   "history"
  ],
@@ -36,6 +38,23 @@
    "read_only": 1
   },
   {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "read_only": 1,
+   "description": "Blank = all companies. Used when a question names none."
+  },
+  {
+   "fieldname": "cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center",
+   "read_only": 1,
+   "description": "Blank = all cost centers."
+  },
+  {
    "default": "Idle",
    "fieldname": "status",
    "fieldtype": "Select",
@@ -55,7 +74,7 @@
  "autoname": "hash",
  "title_field": "title",
  "links": [],
- "modified": "2026-10-28 15:00:00",
+ "modified": "2026-10-28 22:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Assistant Chat",

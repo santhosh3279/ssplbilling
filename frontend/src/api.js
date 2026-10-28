@@ -1571,10 +1571,11 @@ export const aiChat = {
   bootstrap: () => frappeGet(AI_CHAT + "get_bootstrap"),
   chats: () => frappeGet(AI_CHAT + "list_chats"),
   messages: (chat) => frappeGet(AI_CHAT + "get_messages", { chat }),
-  send: (message, chat, provider) =>
-    frappePost(AI_CHAT + "send_message", { message, chat, provider }, { silent: true }),
-  quick: (action, query, chat, provider) =>
-    frappePost(AI_CHAT + "quick_answer", { action, query, chat, provider }, { silent: true }),
+  // scope: { company, cost_center } from the page dropdowns ("" = all)
+  send: (message, chat, provider, scope) =>
+    frappePost(AI_CHAT + "send_message", { message, chat, provider, ...scope }, { silent: true }),
+  quick: (action, query, chat, provider, scope) =>
+    frappePost(AI_CHAT + "quick_answer", { action, query, chat, provider, ...scope }, { silent: true }),
   output: (message, kind) => frappePost(AI_CHAT + "quick_output", { message, kind }, { silent: true }),
   downloadUrl: (file) => `/api/method/${AI_CHAT}download_export?file=${encodeURIComponent(file)}`,
   cancel: (chat) => frappePost(AI_CHAT + "cancel", { chat }, { silent: true }),

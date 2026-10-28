@@ -22,15 +22,15 @@ ACTIONS = {
 
 def answer(action, query=None):
 	"""Returns (label shown as the user's message, markdown reply)."""
-	label, query = _label(action, query)
+	label, query = label_for(action, query)
 	tool, args, fmt = _source(action, query)
 	data = _tool(tool, **args)
-	return label, data if isinstance(data, str) else fmt(data)
+	return label, data if isinstance(data, str) else _scope_line(data) + fmt(data)
 
 
 def export_source(action, query=None):
 	"""(tool, args, title) for the ⬇ Excel button under a quick answer."""
-	label, query = _label(action, query)
+	label, query = label_for(action, query)
 	tool, args, _fmt = _source(action, query)
 	if tool == "sales_summary":
 		args = {**args, "group_by": "item"}
@@ -39,14 +39,14 @@ def export_source(action, query=None):
 
 def chart_source(action, query=None):
 	"""(tool, args, title, chart_type) for the 📊 Chart button under a quick answer."""
-	label, query = _label(action, query)
+	label, query = label_for(action, query)
 	tool, args, _fmt = _source(action, query)
 	if action == "sales_month":
 		return tool, {**args, "group_by": "day"}, f"{label}: daily", "line"
 	return tool, args, label, "bar"
 
 
-def _label(action, query):
+def label_for(action, query):
 	if action not in ACTIONS:
 		frappe.throw(f"Unknown quick action: {action}")
 	label, needs_query = ACTIONS[action]
@@ -70,6 +70,12 @@ def _source(action, query):
 		"stock_summary": ("item_stock", {}, _stock_summary),
 		"item_stock": ("item_stock", {"item": query, "limit": 10}, _item_stock),
 	}[action]
+
+
+def _scope_line(data):
+	scope = [data.get("company_filter"), data.get("cost_center_filter")]
+	scope = [s for s in scope if s and not s.startswith("all ")]
+	return f"_{' · '.join(scope)}_\n\n" if scope else "_All companies_\n\n"
 
 
 def _tool(name, **args):
