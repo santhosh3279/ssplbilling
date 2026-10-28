@@ -1,0 +1,97 @@
+{
+ "actions": [],
+ "creation": "2026-10-28 12:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "enabled",
+  "allowed_roles",
+  "timeout_seconds",
+  "column_break_main",
+  "anthropic_api_key",
+  "model",
+  "effort",
+  "prompt_section",
+  "system_prompt"
+ ],
+ "fields": [
+  {
+   "default": "0",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "description": "AI Chat tile: answers questions on sales, outstanding and stock with the Claude API. Every query runs as the logged-in user, so ERPNext permissions apply."
+  },
+  {
+   "default": "System Manager\nAccounts Manager\nAccounts User",
+   "fieldname": "allowed_roles",
+   "fieldtype": "Small Text",
+   "label": "Allowed Roles",
+   "description": "One role per line. Users need one of these (Administrator always can)."
+  },
+  {
+   "default": "300",
+   "fieldname": "timeout_seconds",
+   "fieldtype": "Int",
+   "label": "Timeout (seconds)"
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "anthropic_api_key",
+   "fieldtype": "Password",
+   "label": "Anthropic API Key",
+   "length": 255,
+   "description": "From console.anthropic.com. Billed per token."
+  },
+  {
+   "default": "claude-opus-5-5",
+   "fieldname": "model",
+   "fieldtype": "Data",
+   "label": "Model",
+   "description": "claude-opus-5-5 (default), claude-sonnet-5-5, or claude-haiku-5-5 (cheapest)."
+  },
+  {
+   "default": "medium",
+   "fieldname": "effort",
+   "fieldtype": "Select",
+   "label": "Effort",
+   "options": "low\nmedium\nhigh"
+  },
+  {
+   "fieldname": "prompt_section",
+   "fieldtype": "Section Break",
+   "label": "Extra Instructions"
+  },
+  {
+   "fieldname": "system_prompt",
+   "fieldtype": "Long Text",
+   "label": "Extra System Prompt",
+   "description": "Added to the built-in instructions, e.g. business terms or how to name branches."
+  }
+ ],
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-10-28 12:00:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL Assistant Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

@@ -993,7 +993,7 @@ const allTiles = [
   { id: 'hrms',               bucket: 'sspl',   name: 'HRMS Dashboard',        desc: 'Human Resource Management',                icon: '👥', shortcut: ''    },
   { id: 'essl-machines',      bucket: 'sspl',   name: 'eSSL Machines',         desc: 'Attendance devices and their stores',      icon: '🖥️', shortcut: ''    },
   { id: 'create-user',        bucket: 'sspl',   name: 'Create User',           desc: 'Website login for a customer',             icon: '👤', shortcut: ''    },
-  { id: 'ai-chat',            bucket: 'sspl',   name: 'AI Chat',               desc: 'Ask ERPNext data via Claude, Gemini, Codex', icon: '🤖', shortcut: ''    },
+  { id: 'ai-chat',            bucket: 'sspl',   name: 'AI Chat',               desc: 'Ask about sales, outstanding and stock', icon: '🤖', shortcut: ''    },
   { id: 'whatsapp-link',      bucket: 'sspl',   name: 'WhatsApp Link',         desc: 'Link a number to the OpenWA gateway',      icon: '💬', shortcut: ''    },
   { id: 'whatsapp-chat',      bucket: 'sspl',   name: 'WhatsApp Chat',         desc: 'Chat with customers on the business number', icon: '🗨️', shortcut: ''    },
   { id: 'competitive',        bucket: 'sspl',   name: 'Competitive Items',     desc: 'Pricelist percentages per competitive item', icon: '⚖️', shortcut: ''    },
@@ -1304,11 +1304,6 @@ const routeAliases = {
 
 function openModule(id) {
 
-  // AI Chat is its own SPA in the sspl_ai app, outside this router
-  if (id === 'ai-chat') {
-    window.location.href = '/ai-chat'
-    return
-  }
   if (id === 'payment-reconciliation') {
     window.open('/app/payment-reconciliation', '_blank')
     return

@@ -1562,3 +1562,16 @@ export async function renameSubmittedBill(invoiceNo, newName, doctype) {
 export async function getCashflowDetails(filters) {
   return frappeGet("ssplbilling.api.reports_api.get_cashflow_details", filters);
 }
+
+// ── AI Chat (ssplbilling.api.ai_chat_api) ─────────────────────────────────────
+
+const AI_CHAT = "ssplbilling.api.ai_chat_api.";
+
+export const aiChat = {
+  bootstrap: () => frappeGet(AI_CHAT + "get_bootstrap"),
+  chats: () => frappeGet(AI_CHAT + "list_chats"),
+  messages: (chat) => frappeGet(AI_CHAT + "get_messages", { chat }),
+  send: (message, chat) => frappePost(AI_CHAT + "send_message", { message, chat }, { silent: true }),
+  cancel: (chat) => frappePost(AI_CHAT + "cancel", { chat }, { silent: true }),
+  remove: (chat) => frappePost(AI_CHAT + "delete_chat", { chat }, { silent: true }),
+};

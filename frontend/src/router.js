@@ -24,6 +24,7 @@ const PaytmUnknown = () => import('./pages/PaytmUnknown.vue')
 const WhatsAppLink = () => import('./pages/WhatsAppLink.vue')
 const Competitive = () => import('./pages/Competitive.vue')
 const WhatsAppChat = () => import('./pages/WhatsAppChat.vue')
+const AiChat = () => import('./pages/AiChat.vue')
 const JournalContraEntry = () => import('./pages/JournalContraEntry.vue')
 const CashierManagement = () => import('./pages/CashierManagement.vue')
 const PricingRuleSync = () => import('./pages/PricingRuleSync.vue')
@@ -352,6 +353,12 @@ const routes = [
     name: 'WhatsAppChat',
     component: WhatsAppChat,
     meta: { title: 'WhatsApp Chat' },
+  },
+  {
+    path: '/ai-chat',
+    name: 'AiChat',
+    component: AiChat,
+    meta: { title: 'AI Chat' },
   },
   {
     path: '/stock-reconciliation',
