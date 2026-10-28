@@ -74,7 +74,7 @@
               class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
             >
               <option value="">All POS IDs ({{ logs.length }})</option>
-              <option v-for="p in posOptions(logs, posFilter)" :key="p.id" :value="p.id">{{ p.id === NO_POS ? 'No POS ID' : p.id }} ({{ p.count }})</option>
+              <option v-for="p in posOptions(logs, posFilter)" :key="p.id" :value="p.id">{{ posLabel(p.id) }} ({{ p.count }})</option>
             </select>
             <div class="flex flex-wrap gap-1">
               <button
@@ -112,7 +112,7 @@
                 <span class="shrink-0 font-mono text-[1.2rem] font-bold">₹{{ fmt(l.amount) }}</span>
               </div>
               <div class="flex items-center justify-between gap-2 text-[0.9rem]">
-                <span class="truncate opacity-75">{{ fmtDate(l.received_at) }} · {{ l.pos_id ? `${l.pos_id} · ` : '' }}{{ l.ref_name || l.order_id || l.name }}</span>
+                <span class="truncate opacity-75">{{ fmtDate(l.received_at) }} · {{ l.pos_id ? `${posName(l.pos_id)} · ` : '' }}{{ l.ref_name || l.order_id || l.name }}</span>
                 <span class="flex shrink-0 gap-1">
                   <span
                     v-if="l.txn_status === 'Cancelled'"
@@ -150,7 +150,7 @@
             class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
           >
             <option value="">All POS IDs ({{ rows.length }})</option>
-            <option v-for="p in posOptions(rows, rowPosFilter)" :key="p.id" :value="p.id">{{ p.id === NO_POS ? 'No POS ID' : p.id }} ({{ p.count }})</option>
+            <option v-for="p in posOptions(rows, rowPosFilter)" :key="p.id" :value="p.id">{{ posLabel(p.id) }} ({{ p.count }})</option>
           </select>
           <div class="flex flex-wrap gap-1">
             <button
@@ -186,7 +186,7 @@
               <span class="shrink-0 font-mono text-[1.2rem] font-bold">₹{{ fmt(r.amount) }}</span>
             </div>
             <div class="flex items-center justify-between gap-2 text-[0.9rem]">
-              <span class="truncate opacity-75">{{ fmtDate(r.received_at) }} · {{ r.name }}</span>
+              <span class="truncate opacity-75">{{ fmtDate(r.received_at) }} · {{ r.pos_id ? `${posName(r.pos_id)} · ` : '' }}{{ r.name }}</span>
               <span
                 class="shrink-0 rounded px-1.5 py-0.5 font-bold uppercase"
                 :class="r.verified ? 'bg-[var(--color-success)] text-white' : 'bg-[var(--color-danger)] text-white'"
@@ -245,7 +245,8 @@
                 <dt class="text-[var(--color-text-muted)]">Order id</dt><dd class="font-mono break-all">{{ selectedLog.order_id || '—' }}</dd>
                 <dt class="text-[var(--color-text-muted)]">Bank ref (RRN)</dt><dd class="font-mono">{{ selectedLog.rrn || '—' }}</dd>
                 <dt class="text-[var(--color-text-muted)]">Paytm txn id</dt><dd class="font-mono break-all">{{ selectedLog.paytm_txn_id || '—' }}</dd>
-                <dt class="text-[var(--color-text-muted)]">POS ID</dt><dd class="font-mono">{{ selectedLog.pos_id || '—' }}</dd>
+                <dt class="text-[var(--color-text-muted)]">POS ID</dt>
+                <dd><span v-if="posNames[selectedLog.pos_id]">{{ posNames[selectedLog.pos_id] }} · </span><span class="font-mono">{{ selectedLog.pos_id || '—' }}</span></dd>
                 <template v-if="selectedLog.tid">
                   <dt class="text-[var(--color-text-muted)]">Machine TID</dt><dd class="font-mono">{{ selectedLog.tid }}</dd>
                 </template>
@@ -331,6 +332,8 @@
               <dt class="text-[var(--color-text-muted)]">Paytm txn id</dt><dd class="font-mono break-all">{{ selected.paytm_txn_id || '—' }}</dd>
               <dt class="text-[var(--color-text-muted)]">Paytm order id</dt><dd class="font-mono break-all">{{ selected.paytm_order_id || '—' }}</dd>
               <dt class="text-[var(--color-text-muted)]">Paytm txn date</dt><dd>{{ selected.txn_date || '—' }}</dd>
+              <dt class="text-[var(--color-text-muted)]">POS ID</dt>
+              <dd><span v-if="posNames[selected.pos_id]">{{ posNames[selected.pos_id] }} · </span><span class="font-mono">{{ selected.pos_id || '—' }}</span></dd>
               <template v-if="selected.tid">
                 <dt class="text-[var(--color-text-muted)]">Machine TID</dt><dd class="font-mono">{{ selected.tid }}</dd>
               </template>
@@ -542,6 +545,13 @@ const posFilter = ref(myPos)
 const rowPosFilter = ref(myPos)
 const posIs = (x, f) => !f || (x.pos_id || NO_POS) === f
 const posMatch = (l) => posIs(l, posFilter.value)
+// POS ID -> shop's machine name (SSPL Paytm Settings device name), shown in place of the bare number
+const posNames = ref({})
+const posName = (id) => posNames.value[id] || id
+const posLabel = (id) => (id === NO_POS ? 'No POS ID' : posNames.value[id] ? `${posNames.value[id]} (${id})` : id)
+const notePosNames = (list) => {
+  for (const x of list) if (x.pos_id && x.pos_name) posNames.value[x.pos_id] = x.pos_name
+}
 // The chosen POS ID stays listed (count 0) on days it has no hits, so the select never goes blank
 const posOptions = (list, chosen) => {
   const counts = {}
@@ -616,6 +626,7 @@ async function loadLogs() {
   logsLoading.value = true
   try {
     logs.value = (await frappeGet(`${API}.get_webhook_logs`, { limit: 500, date: day.value })) || []
+    notePosNames(logs.value)
     if (selectedLog.value) selectedLog.value = logs.value.find((l) => l.name === selectedLog.value.name) || null
   } catch (e) {
     error.value = e.message
@@ -690,6 +701,7 @@ async function loadRows() {
     const res = await frappeGet(`${API}.get_unknown_payments`, { limit: 500, date: day.value })
     rows.value = res.rows || []
     upiAccount.value = res.upi_account || ''
+    Object.assign(posNames.value, res.pos_names || {})
     if (selected.value) selected.value = rows.value.find((r) => r.name === selected.value.name) || null
   } catch (e) {
     error.value = e.message

@@ -309,9 +309,16 @@ def _day_filter(date):
 
 
 def _device_pos():
-	"""{tid: POS ID} and {device_name: POS ID} of every SSPL Paytm Device (a handful of machines)."""
-	devices = frappe.get_all("SSPL Paytm Device", fields=["tid", "device_name", "pos_id"])
-	return {d.tid: d.pos_id for d in devices if d.pos_id}, {d.device_name: d.pos_id for d in devices if d.pos_id}
+	"""{tid: POS ID}, {device_name: POS ID} and {POS ID: device_name} (the shop's name for the
+	machine, set in SSPL Paytm Settings) of every SSPL Paytm Device (a handful of machines)."""
+	devices = frappe.get_all(
+		"SSPL Paytm Device", filters={"pos_id": ("is", "set")}, fields=["tid", "device_name", "pos_id"]
+	)
+	return (
+		{d.tid: d.pos_id for d in devices if d.tid},
+		{d.device_name: d.pos_id for d in devices if d.device_name},
+		{d.pos_id: d.device_name for d in devices if d.device_name},
+	)
 
 
 def _pos_for(devices, tid, order_id):
@@ -337,7 +344,7 @@ def _mark_linked(rows):
 			fields=["name", "status", "sales_invoice", "payment_entry", "device_name"],
 		)
 	} if txn_names else {}
-	devices, name_pos = _device_pos()
+	devices, name_pos, pos_name = _device_pos()
 	invoices = {t.sales_invoice for t in txns.values() if t.sales_invoice}
 	invoice_status = dict(
 		frappe.get_all(
@@ -359,6 +366,7 @@ def _mark_linked(rows):
 		r.pos_id = (t and (name_pos.get(t.device_name) or t.device_name)) or _pos_for(
 			devices, r.tid, r.order_id
 		)
+		r.pos_name = pos_name.get(r.pos_id)
 		r.txn_status = t.status if t else None
 		if r.result not in ("matched", "recorded", "duplicate", "known"):
 			continue
@@ -400,11 +408,13 @@ def get_unknown_payments(status=None, limit=200, date=None):
 		order_by="creation desc",
 		limit_page_length=frappe.utils.cint(limit) or 200,
 	)
-	devices = _device_pos()[0]
+	devices, _, pos_name = _device_pos()
 	for r in rows:
 		r.pos_id = _pos_for(devices, r.tid, r.paytm_order_id)
+		r.pos_name = pos_name.get(r.pos_id)
 	return {
 		"rows": rows,
+		"pos_names": pos_name,
 		"upi_account": frappe.db.get_single_value("SSPL Paytm Settings", "upi_account"),
 	}
 
