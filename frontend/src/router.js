@@ -21,6 +21,7 @@ const GeneralLedger = () => import('./pages/GeneralLedger.vue')
 const PaymentV2 = () => import('./pages/paymentv2.vue')
 const PaytmLink = () => import('./pages/PaytmLink.vue')
 const PaytmUnknown = () => import('./pages/PaytmUnknown.vue')
+const BankStatement = () => import('./pages/BankStatement.vue')
 const WhatsAppLink = () => import('./pages/WhatsAppLink.vue')
 const Competitive = () => import('./pages/Competitive.vue')
 const WhatsAppChat = () => import('./pages/WhatsAppChat.vue')
@@ -335,6 +336,12 @@ const routes = [
     name: 'PaytmUnknown',
     component: PaytmUnknown,
     meta: { title: 'Paytm Unknown Payments' },
+  },
+  {
+    path: '/bank-statement',
+    name: 'BankStatement',
+    component: BankStatement,
+    meta: { title: 'Bank Statement' },
   },
   {
     path: '/whatsapp-link',

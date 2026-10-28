@@ -966,6 +966,7 @@ const allTiles = [
   { id: 'payment',            bucket: 'accounts', name: 'Payment Receipt',       desc: 'Accounts payment & receipt entry',         icon: '💸', shortcut: 'Shift+F3'  },
   { id: 'paytm-link',         bucket: 'accounts', name: 'Paytm Receipt',         desc: 'UPI QR, auto receipt',                    icon: '🔗', shortcut: ''    },
   { id: 'paytm-unknown',      bucket: 'accounts', name: 'Paytm Unknown Payments', desc: 'Receipt Paytm payments not made here',    icon: '❓', shortcut: ''    },
+  { id: 'bank-statement',     bucket: 'accounts', name: 'Bank Statement',        desc: 'Upload bank Excel, book missing entries',  icon: '🏦', shortcut: ''    },
   { id: 'unreconciled',       bucket: 'accounts', name: 'Unreconciled Entries',  desc: 'View and reconcile ledger entries',        icon: '🔗', shortcut: ''    },
   { id: 'payment-reconciliation', bucket: 'accounts', name: 'Payment Reconciliation', desc: 'Link payments to invoices', icon: '🤝', shortcut: '' },
   { id: 'journal-contra',     bucket: 'accounts', name: 'Journal Contra',        desc: 'General ledger entries',                   icon: '📒', shortcut: 'Shift+F8'  },
@@ -1261,7 +1262,7 @@ function tilesInBucket(bucketId) {
   return filteredTiles.value.filter(t => t.bucket === bucketId)
 }
 
-const readyModules = ['sales', 'mobile-bill', 'quotation', 'purchase-invoice', 'cashier', 'cashier-mobile', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user', 'ai-chat', 'item-barcode', 'paytm-link', 'paytm-unknown', 'whatsapp-link', 'whatsapp-chat', 'competitive']
+const readyModules = ['sales', 'mobile-bill', 'quotation', 'purchase-invoice', 'cashier', 'cashier-mobile', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user', 'ai-chat', 'item-barcode', 'paytm-link', 'paytm-unknown', 'bank-statement', 'whatsapp-link', 'whatsapp-chat', 'competitive']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
