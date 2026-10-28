@@ -6,7 +6,8 @@ import json
 import time
 
 import frappe
-from frappe.utils import add_to_date, cint, get_datetime, now_datetime
+from frappe.query_builder.functions import Sum
+from frappe.utils import add_to_date, cint, get_datetime, get_first_day, now_datetime, today
 
 from ssplbilling.api import (
 	ai_chat_cache,
@@ -55,8 +56,15 @@ def get_bootstrap():
 		],
 		"providers": _providers(settings) if allowed else [],
 		"default_provider": settings.default_provider or "Claude",
+		"usage": _usage() if allowed else None,
 		**(_scope_options() if allowed else {}),
 	}
+
+
+@frappe.whitelist()
+def get_usage():
+	_check_access()
+	return _usage()
 
 
 @frappe.whitelist()
@@ -434,6 +442,26 @@ def _check_limits(chat):
 		frappe.throw(
 			f"This chat has {settings.max_turns} questions; each one re-sends the whole chat. Start a New chat."
 		)
+
+
+def _usage():
+	"""The user's AI tokens today and this month (deleted chats drop out, their messages go with them)."""
+	msg, chat = frappe.qb.DocType(MESSAGE), frappe.qb.DocType(CHAT)
+	day, month = get_datetime(today()), get_datetime(get_first_day(today()))
+
+	def total(since):
+		rows = (
+			frappe.qb.from_(msg)
+			.join(chat)
+			.on(chat.name == msg.chat)
+			.select(Sum(msg.input_tokens), Sum(msg.output_tokens))
+			.where((chat.user == frappe.session.user) & (msg.creation >= since))
+			.run()
+		)
+		inp, out = rows[0] if rows else (0, 0)
+		return {"input": cint(inp), "output": cint(out), "total": cint(inp) + cint(out)}
+
+	return {"today": total(day), "month": total(month)}
 
 
 def _providers(settings):

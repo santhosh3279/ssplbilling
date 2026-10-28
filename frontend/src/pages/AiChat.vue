@@ -9,7 +9,16 @@
           &larr; Back
         </button>
         <div class="min-w-0">
-          <h1 class="text-[21.9px] font-bold uppercase tracking-wider">AI Chat</h1>
+          <div class="flex flex-wrap items-baseline gap-x-3">
+            <h1 class="text-[21.9px] font-bold uppercase tracking-wider">AI Chat</h1>
+            <!-- The user's own AI token usage (quick buttons use none) -->
+            <span v-if="usage" class="text-[15.6px] font-semibold text-[var(--color-text-muted)] tabular-nums">
+              <span :title="usageTitle(usage.today)">Today {{ fmtTokens(usage.today.total) }}</span>
+              ·
+              <span :title="usageTitle(usage.month)">Month {{ fmtTokens(usage.month.total) }}</span>
+              tokens
+            </span>
+          </div>
           <p class="truncate text-[15.6px] text-[var(--color-text-muted)] uppercase tracking-widest font-medium">
             {{ current?.title || 'Sales · Outstanding · Stock — read-only' }}
           </p>
@@ -289,6 +298,7 @@ const messages = ref([])
 const input = ref('')
 const error = ref('')
 const running = ref(false)
+const usage = ref(null)
 const listOpen = ref(true)
 const pendingQuick = ref(null)
 const quickBusy = ref(false)
@@ -317,6 +327,7 @@ const md = (text) => DOMPurify.sanitize(marked.parse(text || ''))
 onMounted(async () => {
   try {
     boot.value = await aiChat.bootstrap()
+    usage.value = boot.value?.usage || null
   } catch (e) {
     error.value = lastLine(e)
   }
@@ -513,7 +524,10 @@ async function removeCurrent() {
 }
 
 function onEvent(ev) {
-  if (ev.type === 'done') loadChats()
+  if (ev.type === 'done') {
+    loadChats()
+    loadUsage()
+  }
   if (!current.value || ev.chat !== current.value.name) return
   if (ev.type === 'start') {
     running.value = true
@@ -636,6 +650,17 @@ function safeSet(k, v) {
     localStorage.setItem(k, v)
   } catch {}
 }
+
+async function loadUsage() {
+  try {
+    usage.value = await aiChat.usage()
+  } catch {
+    // keep the last figures
+  }
+}
+
+const fmtTokens = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${(n / 1e3).toFixed(1)}k` : String(n || 0))
+const usageTitle = (u) => `${(u.input || 0).toLocaleString()} in + ${(u.output || 0).toLocaleString()} out`
 
 function ago(ts) {
   const s = (Date.now() - new Date(String(ts).replace(' ', 'T')).getTime()) / 1000
