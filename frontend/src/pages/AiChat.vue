@@ -194,48 +194,54 @@
         </section>
 
         <footer class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
-          <div class="mx-auto max-w-3xl">
+          <div class="mx-auto max-w-5xl">
             <p v-if="error" class="mb-2 rounded bg-[var(--color-danger)]/15 px-3 py-1.5 text-[15px] text-[var(--color-danger)]">{{ error }}</p>
-            <!-- Quick buttons: answered by the server without the AI -->
-            <div class="mb-2 flex gap-1.5 overflow-x-auto pb-1">
-              <button
-                v-for="q in boot.quick_actions"
-                :key="q.action"
-                class="shrink-0 rounded-full px-3 py-1 text-[13.75px] font-semibold transition-colors disabled:opacity-50"
-                :class="pendingQuick?.action === q.action ? 'bg-[var(--color-success)]/30' : 'bg-[var(--color-bg)] hover:bg-[var(--color-surface-raised)]'"
-                :disabled="running || quickBusy"
-                @click="pickQuick(q)"
+            <div class="flex flex-col gap-2 md:flex-row md:items-stretch">
+              <div class="flex min-w-0 flex-1 items-end gap-2">
+                <textarea
+                  ref="inputEl"
+                  v-model="input"
+                  rows="1"
+                  :placeholder="pendingQuick ? `${pendingQuick.label}: type a name, code or mobile, then Enter` : hasAi ? 'Ask about sales, outstanding, stock…' : 'Use the quick buttons (AI not set up)'"
+                  :class="pendingQuick ? 'bg-[var(--color-success)]/15' : ''"
+                  class="min-w-0 flex-1 resize-none rounded-lg bg-[var(--color-bg)] px-3 py-2 text-[15px] focus:bg-[var(--color-info)]/15 focus:outline-none"
+                  @keydown.enter.exact.prevent="submit"
+                  @keydown.esc="pendingQuick ? (pendingQuick = null) : stop()"
+                  @input="autosize"
+                ></textarea>
+                <button
+                  v-if="running"
+                  class="rounded-lg bg-[var(--color-danger)] px-4 py-2 text-[15px] font-bold text-white"
+                  @click="stop"
+                >
+                  Stop
+                </button>
+                <button
+                  v-else
+                  class="rounded-lg bg-[var(--color-highlight)] px-4 py-2 text-[15px] font-bold text-[var(--color-text-on-highlight)] disabled:opacity-50"
+                  :disabled="!input.trim() || quickBusy || (!pendingQuick && !hasAi)"
+                  @click="submit"
+                >
+                  Send
+                </button>
+              </div>
+              <!-- Quick buttons: answered by the server without the AI -->
+              <div
+                v-if="boot.quick_actions?.length"
+                class="grid max-h-36 shrink-0 grid-cols-2 content-start gap-1.5 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-1.5 md:w-80"
               >
-                ⚡ {{ q.label }}{{ q.needs_query ? '…' : '' }}
-              </button>
-            </div>
-            <div class="flex items-end gap-2">
-              <textarea
-                ref="inputEl"
-                v-model="input"
-                rows="1"
-                :placeholder="pendingQuick ? `${pendingQuick.label}: type a name, code or mobile, then Enter` : hasAi ? 'Ask about sales, outstanding, stock…' : 'Use the quick buttons (AI not set up)'"
-                :class="pendingQuick ? 'bg-[var(--color-success)]/15' : ''"
-                class="min-w-0 flex-1 resize-none rounded-lg bg-[var(--color-bg)] px-3 py-2 text-[15px] focus:bg-[var(--color-info)]/15 focus:outline-none"
-                @keydown.enter.exact.prevent="submit"
-                @keydown.esc="pendingQuick ? (pendingQuick = null) : stop()"
-                @input="autosize"
-              ></textarea>
-              <button
-                v-if="running"
-                class="rounded-lg bg-[var(--color-danger)] px-4 py-2 text-[15px] font-bold text-white"
-                @click="stop"
-              >
-                Stop
-              </button>
-              <button
-                v-else
-                class="rounded-lg bg-[var(--color-highlight)] px-4 py-2 text-[15px] font-bold text-[var(--color-text-on-highlight)] disabled:opacity-50"
-                :disabled="!input.trim() || quickBusy || (!pendingQuick && !hasAi)"
-                @click="submit"
-              >
-                Send
-              </button>
+                <button
+                  v-for="q in boot.quick_actions"
+                  :key="q.action"
+                  class="truncate rounded-md px-2.5 py-1 text-left text-[13.75px] font-semibold transition-colors disabled:opacity-50"
+                  :class="pendingQuick?.action === q.action ? 'bg-[var(--color-success)]/30' : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)]'"
+                  :disabled="running || quickBusy"
+                  :title="q.label"
+                  @click="pickQuick(q)"
+                >
+                  ⚡ {{ q.label }}{{ q.needs_query ? '…' : '' }}
+                </button>
+              </div>
             </div>
             <p class="mt-1 hidden text-[12.5px] text-[var(--color-text-muted)] md:block">Enter to send · Shift+Enter new line · Esc to stop</p>
           </div>
