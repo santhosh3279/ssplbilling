@@ -1,4 +1,5 @@
 """Runs one AI Chat turn on the Claude API (Messages API + the tools in ai_chat_tools.py).
+ai_chat_runner_gemini.py is the same loop on the Gemini API; both emit the same events.
 
 Tools run in-process as the chat user, so ERPNext role and user permissions apply to every
 answer. Streams events through on_event:
@@ -16,7 +17,6 @@ import time
 
 import anthropic
 import frappe
-from frappe.utils import getdate, nowdate
 
 from ssplbilling.api import ai_chat_tools as tools
 
@@ -28,15 +28,6 @@ CANCEL_POLL_SECONDS = 0.5
 # Server-side refusal fallback ("default" routing) is accepted on these models only.
 FALLBACK_MODELS = ("claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5")
 
-INSTRUCTIONS = """You are the business assistant for Sundaram and Sons Private Ltd (SSPL), a wholesale business, answering staff questions from live ERPNext data.
-- Use the tools for every figure; never invent numbers, names or document ids. If no tool covers the question, say what you can answer (sales, receivables, stock).
-- You are read-only. If asked to create or change anything, say so and point to the screen in the app where it is done.
-- Amounts are INR (₹) with Indian grouping (₹1,25,000). Keep answers short; use markdown tables for lists.
-- State the date range and company you used. "Today" means the date given below.
-- Data is per company. An invoice ending in "/" (RTN07075/) is the billing system's mirror of RTN07075 in the other company, so company totals overlap by design: report each company separately and never add companies together unless the user asks.
-- Returns (credit notes) are negative. Pending drafts are sales still waiting at the cashier; mention them separately from submitted sales.
-- If a tool says the user lacks permission, tell them they don't have access to that data."""
-
 
 def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 	settings = settings or frappe.get_cached_doc(SETTINGS)
@@ -44,14 +35,14 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 	if not api_key:
 		frappe.throw(f"Set the Anthropic API key in {SETTINGS}.")
 
-	model = (settings.model or DEFAULT_MODEL).strip()
+	model = (settings.claude_model or DEFAULT_MODEL).strip()
 	params = {
 		"model": model,
 		"max_tokens": MAX_TOKENS,
-		"system": _system_prompt(settings),
+		"system": tools.system_prompt(settings),
 		"tools": tools.TOOLS,
 		"cache_control": {"type": "ephemeral"},
-		"output_config": {"effort": settings.effort or "medium"},
+		"output_config": {"effort": settings.claude_effort or "medium"},
 	}
 	if model in FALLBACK_MODELS:
 		params["betas"] = ["server-side-fallback-2026-07-01"]
@@ -139,21 +130,6 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 	result["history"] = messages
 	result["duration_ms"] = int((time.monotonic() - started) * 1000)
 	return result
-
-
-def _system_prompt(settings):
-	today = getdate(nowdate())
-	companies = ", ".join(frappe.get_all("Company", pluck="name", order_by="name asc"))
-	extra = (settings.system_prompt or "").strip()
-	return "\n\n".join(
-		p
-		for p in (
-			INSTRUCTIONS,
-			f"Today is {today.isoformat()} ({today.strftime('%A')}). Companies: {companies}.",
-			extra,
-		)
-		if p
-	)
 
 
 def _echo_blocks(content):

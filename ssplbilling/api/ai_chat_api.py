@@ -1,6 +1,6 @@
 """AI Chat endpoints (/frontend/ai-chat). A message is answered by a background job that runs
-ai_chat_runner as the chat user and streams events to them over socket.io
-(event: sspl_assistant_event)."""
+the chat's provider (ai_chat_runner for Claude, ai_chat_runner_gemini for Gemini) as the chat
+user and streams events to them over socket.io (event: sspl_assistant_event)."""
 
 import json
 import time
@@ -8,9 +8,11 @@ import time
 import frappe
 from frappe.utils import add_to_date, get_datetime, now_datetime
 
-from ssplbilling.api import ai_chat_runner
+from ssplbilling.api import ai_chat_runner, ai_chat_runner_gemini
 
 SETTINGS = ai_chat_runner.SETTINGS
+RUNNERS = {"Claude": ai_chat_runner, "Gemini": ai_chat_runner_gemini}
+API_KEY_FIELDS = {"Claude": "anthropic_api_key", "Gemini": "google_api_key"}
 CHAT = "SSPL Assistant Chat"
 MESSAGE = "SSPL Assistant Message"
 REALTIME_EVENT = "sspl_assistant_event"
@@ -21,7 +23,13 @@ MAX_PROMPT = 8000
 @frappe.whitelist()
 def get_bootstrap():
 	settings = _settings()
-	return {"enabled": bool(settings.enabled), "allowed": bool(settings.enabled and _user_can_chat())}
+	allowed = bool(settings.enabled and _user_can_chat())
+	return {
+		"enabled": bool(settings.enabled),
+		"allowed": allowed,
+		"providers": _providers(settings) if allowed else [],
+		"default_provider": settings.default_provider or "Claude",
+	}
 
 
 @frappe.whitelist()
@@ -30,7 +38,7 @@ def list_chats(limit=50):
 	return frappe.get_all(
 		CHAT,
 		filters={"user": frappe.session.user},
-		fields=["name", "title", "status", "modified"],
+		fields=["name", "title", "provider", "status", "modified"],
 		order_by="modified desc",
 		limit=min(int(limit), 200),
 	)
@@ -53,7 +61,7 @@ def get_messages(chat):
 
 
 @frappe.whitelist(methods=["POST"])
-def send_message(message, chat=None):
+def send_message(message, chat=None, provider=None):
 	_check_access()
 	message = (message or "").strip()
 	if not message:
@@ -64,8 +72,18 @@ def send_message(message, chat=None):
 	if chat:
 		doc = _own_chat(chat)
 	else:
+		providers = _providers(_settings())
+		if not providers:
+			frappe.throw(f"No AI provider has an API key in {SETTINGS}.")
+		# A chat keeps its provider: each provider's history format is its own.
 		doc = frappe.get_doc(
-			{"doctype": CHAT, "user": frappe.session.user, "title": message[:80], "status": "Idle"}
+			{
+				"doctype": CHAT,
+				"user": frappe.session.user,
+				"provider": provider if provider in providers else providers[0],
+				"title": message[:80],
+				"status": "Idle",
+			}
 		).insert(ignore_permissions=True)
 	if doc.status == "Running" and not _is_stale(doc):
 		frappe.throw("Still answering the previous message. Wait for it or press Stop.")
@@ -133,16 +151,16 @@ def process_turn(chat, prompt):
 		if ev["type"] in ("tool", "tool_result"):
 			publish({k: v for k, v in ev.items() if k != "input"} | {"input": _brief(ev.get("input"))})
 
-	publish({"type": "start"})
+	publish({"type": "start", "provider": doc.provider})
 	try:
-		result = ai_chat_runner.run(
+		result = RUNNERS[doc.provider or "Claude"].run(
 			prompt,
 			json.loads(doc.history) if doc.history else None,
 			on_event=on_event,
 			is_cancelled=lambda: frappe.cache.get_value(_cancel_key(chat)),
 		)
 	except Exception as e:
-		frappe.log_error(title="SSPL AI Chat run failed")
+		frappe.log_error(title=f"SSPL AI Chat {doc.provider} run failed")
 		result = {"text": "", "tools": [], "error": str(e), "duration_ms": 0}
 	flush()
 
@@ -176,6 +194,12 @@ def _settings():
 	return frappe.get_cached_doc(SETTINGS)
 
 
+def _providers(settings):
+	"""Providers with an API key, default first."""
+	have = [p for p, field in API_KEY_FIELDS.items() if settings.get_password(field, raise_exception=False)]
+	return sorted(have, key=lambda p: p != (settings.default_provider or "Claude"))
+
+
 def _user_can_chat(user=None):
 	user = user or frappe.session.user
 	if user == "Administrator":
@@ -201,7 +225,7 @@ def _own_chat(name):
 
 
 def _chat_dict(doc):
-	return {k: doc.get(k) for k in ("name", "title", "status", "modified")}
+	return {k: doc.get(k) for k in ("name", "title", "provider", "status", "modified")}
 
 
 def _insert_message(chat, role, content, result=None):

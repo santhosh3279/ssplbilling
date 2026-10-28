@@ -6,11 +6,18 @@
  "field_order": [
   "enabled",
   "allowed_roles",
-  "timeout_seconds",
   "column_break_main",
+  "default_provider",
+  "timeout_seconds",
+  "claude_section",
   "anthropic_api_key",
-  "model",
-  "effort",
+  "column_break_claude",
+  "claude_model",
+  "claude_effort",
+  "gemini_section",
+  "google_api_key",
+  "column_break_gemini",
+  "gemini_model",
   "prompt_section",
   "system_prompt"
  ],
@@ -20,7 +27,7 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled",
-   "description": "AI Chat tile: answers questions on sales, outstanding and stock with the Claude API. Every query runs as the logged-in user, so ERPNext permissions apply."
+   "description": "AI Chat tile: answers questions on sales, outstanding and stock with Claude or Gemini. Every query runs as the logged-in user, so ERPNext permissions apply."
   },
   {
    "default": "System Manager\nAccounts Manager\nAccounts User",
@@ -30,35 +37,75 @@
    "description": "One role per line. Users need one of these (Administrator always can)."
   },
   {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Claude",
+   "fieldname": "default_provider",
+   "fieldtype": "Select",
+   "label": "Default Provider",
+   "options": "Claude\nGemini",
+   "description": "Pre-selected on the chat page; users can switch per new chat."
+  },
+  {
    "default": "300",
    "fieldname": "timeout_seconds",
    "fieldtype": "Int",
    "label": "Timeout (seconds)"
   },
   {
-   "fieldname": "column_break_main",
-   "fieldtype": "Column Break"
+   "fieldname": "claude_section",
+   "fieldtype": "Section Break",
+   "label": "Claude"
   },
   {
    "fieldname": "anthropic_api_key",
    "fieldtype": "Password",
    "label": "Anthropic API Key",
    "length": 255,
-   "description": "From console.anthropic.com. Billed per token."
+   "description": "From console.anthropic.com. Blank = Claude not offered."
+  },
+  {
+   "fieldname": "column_break_claude",
+   "fieldtype": "Column Break"
   },
   {
    "default": "claude-opus-5-5",
-   "fieldname": "model",
+   "fieldname": "claude_model",
    "fieldtype": "Data",
-   "label": "Model",
+   "label": "Claude Model",
    "description": "claude-opus-5-5 (default), claude-sonnet-5-5, or claude-haiku-5-5 (cheapest)."
   },
   {
    "default": "medium",
-   "fieldname": "effort",
+   "fieldname": "claude_effort",
    "fieldtype": "Select",
-   "label": "Effort",
+   "label": "Claude Effort",
    "options": "low\nmedium\nhigh"
+  },
+  {
+   "fieldname": "gemini_section",
+   "fieldtype": "Section Break",
+   "label": "Gemini"
+  },
+  {
+   "fieldname": "google_api_key",
+   "fieldtype": "Password",
+   "label": "Google API Key",
+   "length": 255,
+   "description": "From aistudio.google.com, on a project with billing turned on: on the free tier Google may use prompts and returned data to improve its models. Blank = Gemini not offered."
+  },
+  {
+   "fieldname": "column_break_gemini",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "gemini-3.8-flash",
+   "fieldname": "gemini_model",
+   "fieldtype": "Data",
+   "label": "Gemini Model",
+   "description": "Model code from ai.google.dev/gemini-api/docs/models, e.g. gemini-3.8-flash."
   },
   {
    "fieldname": "prompt_section",
@@ -74,7 +121,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-28 12:00:00",
+ "modified": "2026-10-28 15:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Assistant Settings",

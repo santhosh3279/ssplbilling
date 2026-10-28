@@ -6,6 +6,7 @@
  "field_order": [
   "title",
   "user",
+  "provider",
   "status",
   "history"
  ],
@@ -23,6 +24,15 @@
    "in_standard_filter": 1,
    "label": "User",
    "options": "User",
+   "read_only": 1
+  },
+  {
+   "default": "Claude",
+   "fieldname": "provider",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Provider",
+   "options": "Claude\nGemini",
    "read_only": 1
   },
   {
@@ -45,7 +55,7 @@
  "autoname": "hash",
  "title_field": "title",
  "links": [],
- "modified": "2026-10-28 12:00:00",
+ "modified": "2026-10-28 15:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Assistant Chat",

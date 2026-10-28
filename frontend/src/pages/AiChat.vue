@@ -15,7 +15,25 @@
           </p>
         </div>
       </div>
-      <div v-if="boot?.allowed" class="flex shrink-0 gap-1">
+      <div v-if="boot?.allowed" class="flex shrink-0 items-center gap-1">
+        <!-- Provider: chosen for a new chat; an open chat keeps the one it started with -->
+        <div v-if="!current && boot.providers.length > 1" class="flex rounded-full bg-[var(--color-bg)] p-0.5">
+          <button
+            v-for="p in boot.providers"
+            :key="p"
+            class="rounded-full px-3 py-1 text-xs font-semibold transition-colors"
+            :class="provider === p ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text-muted)]'"
+            @click="setProvider(p)"
+          >
+            {{ p }}
+          </button>
+        </div>
+        <span
+          v-else-if="current?.provider || boot.providers.length"
+          class="rounded-full bg-[var(--color-bg)] px-3 py-1 text-xs font-semibold text-[var(--color-text-muted)]"
+        >
+          {{ current?.provider || provider }}
+        </span>
         <button
           class="rounded-lg px-3 py-1.5 text-sm font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
           @click="newChat"
@@ -57,6 +75,7 @@
             @click="openChat(c.name)"
           >
             <span class="min-w-0 flex-1 truncate text-sm">{{ c.title || 'Untitled' }}</span>
+            <span class="shrink-0 text-[10px] text-[var(--color-text-muted)]">{{ c.provider }}</span>
             <span v-if="c.status === 'Running'" class="h-2 w-2 shrink-0 rounded-full bg-[var(--color-success)] animate-pulse" title="Answering"></span>
             <span class="shrink-0 text-[10px] text-[var(--color-text-muted)]">{{ ago(c.modified) }}</span>
           </button>
@@ -69,7 +88,7 @@
           <div class="mx-auto max-w-3xl space-y-4">
             <div v-if="!current && !messages.length" class="py-10 text-center">
               <h2 class="text-xl font-bold">Ask about your business</h2>
-              <p class="mt-1 text-sm text-[var(--color-text-muted)]">Live ERPNext data, with your own access rights. Read-only.</p>
+              <p class="mt-1 text-sm text-[var(--color-text-muted)]">Live ERPNext data, with your own access rights. Read-only. Answered by {{ provider }}.</p>
               <div class="mt-6 flex flex-wrap justify-center gap-2">
                 <button
                   v-for="q in suggestions"
@@ -95,6 +114,7 @@
                 </div>
                 <div class="ai-md text-sm" v-html="md(m.content)"></div>
                 <div class="mt-1 flex gap-3 text-[11px] text-[var(--color-text-muted)]">
+                  <span v-if="current?.provider">{{ current.provider }}</span>
                   <span v-if="m.duration_ms">{{ (m.duration_ms / 1000).toFixed(1) }}s</span>
                   <button class="hover:text-[var(--color-text)]" @click="copy(m.content)">Copy</button>
                 </div>
@@ -170,6 +190,7 @@ import { aiChat } from '../api'
 import { getFrappeSocket } from '../services/frappeSocket'
 
 const EVENT = 'sspl_assistant_event'
+const PROVIDER_KEY = 'wb-ai-provider'
 const POLL_MS = 4000
 
 const router = useRouter()
@@ -183,6 +204,7 @@ const input = ref('')
 const error = ref('')
 const running = ref(false)
 const listOpen = ref(true)
+const provider = ref('Claude')
 const live = reactive({ text: '', tools: [] })
 const scroller = ref(null)
 const inputEl = ref(null)
@@ -206,6 +228,12 @@ onMounted(async () => {
   }
   booting.value = false
   if (!boot.value?.allowed) return
+  if (!boot.value.providers.length) {
+    error.value = 'No AI provider has an API key in SSPL Assistant Settings.'
+    return
+  }
+  const saved = safeGet(PROVIDER_KEY)
+  provider.value = boot.value.providers.includes(saved) ? saved : boot.value.providers[0]
 
   getFrappeSocket()?.on(EVENT, onEvent)
   await loadChats()
@@ -275,6 +303,11 @@ function newChat() {
   nextTick(() => inputEl.value?.focus())
 }
 
+function setProvider(p) {
+  provider.value = p
+  safeSet(PROVIDER_KEY, p)
+}
+
 // On a phone the list and the conversation share the screen: Back returns to the list first.
 function goBack() {
   if (!listOpen.value && window.innerWidth < 768) listOpen.value = true
@@ -297,7 +330,7 @@ async function submit() {
   running.value = true
   scrollDown()
   try {
-    const res = await aiChat.send(text, current.value?.name)
+    const res = await aiChat.send(text, current.value?.name, provider.value)
     if (!current.value) {
       current.value = res.chat
       router.replace({ query: { chat: res.chat.name } })
@@ -393,6 +426,20 @@ function copy(text) {
 // frappePost errors carry the HTTP status and the full traceback; show only the message.
 function lastLine(e) {
   return String(e?.message || e).trim().split('\n').pop().replace(/^[\w.]+(Error|Exception): /, '')
+}
+
+function safeGet(k) {
+  try {
+    return localStorage.getItem(k)
+  } catch {
+    return null
+  }
+}
+
+function safeSet(k, v) {
+  try {
+    localStorage.setItem(k, v)
+  } catch {}
 }
 
 function ago(ts) {

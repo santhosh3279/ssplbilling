@@ -17,8 +17,9 @@ dependencies = [
     "pyzk",
     # Request signing for the Paytm EDC card machines (api/paytm_api.py).
     "paytmchecksum~=1.7.0",
-    # Claude API client for the AI Chat tile (api/ai_chat_runner.py).
-    "anthropic>=2.3,<3"
+    # Claude and Gemini API clients for the AI Chat tile (api/ai_chat_runner*.py).
+    "anthropic>=2.3,<3",
+    "google-genai>=2.33,<3"
 ]
 
 [build-system]

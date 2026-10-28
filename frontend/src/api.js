@@ -1571,7 +1571,8 @@ export const aiChat = {
   bootstrap: () => frappeGet(AI_CHAT + "get_bootstrap"),
   chats: () => frappeGet(AI_CHAT + "list_chats"),
   messages: (chat) => frappeGet(AI_CHAT + "get_messages", { chat }),
-  send: (message, chat) => frappePost(AI_CHAT + "send_message", { message, chat }, { silent: true }),
+  send: (message, chat, provider) =>
+    frappePost(AI_CHAT + "send_message", { message, chat, provider }, { silent: true }),
   cancel: (chat) => frappePost(AI_CHAT + "cancel", { chat }, { silent: true }),
   remove: (chat) => frappePost(AI_CHAT + "delete_chat", { chat }, { silent: true }),
 };
