@@ -91,7 +91,7 @@
 
           <div class="flex-1 overflow-y-auto custom-scrollbar">
             <div v-if="!filteredLogs.length" class="p-6 text-center text-[1.05rem] text-[var(--color-text-muted)]">
-              {{ logsLoading ? 'Loading…' : 'No webhook hits on this day' }}
+              {{ logsLoading ? 'Loading…' : 'No Paytm payments on this day' }}
             </div>
             <div
               v-for="l in filteredLogs"
@@ -214,8 +214,8 @@
         <template v-if="view === 'log'">
           <div v-if="!selectedLog" class="flex h-full items-center justify-center text-center text-[var(--color-text-muted)]">
             <div>
-              <div class="text-lg font-bold uppercase">Select a webhook hit</div>
-              <div class="text-sm">Every notification Paytm sent to the webhook, whether it matched a system order or not.</div>
+              <div class="text-lg font-bold uppercase">Select a payment</div>
+              <div class="text-sm">Every payment Paytm notified us of, whether it matched a system order or not.</div>
             </div>
           </div>
 
@@ -223,7 +223,7 @@
             <section class="flex flex-col gap-4 rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-5">
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
-                  <div class="text-xs font-bold uppercase text-[var(--color-text-muted)]">Webhook · {{ selectedLog.name }}</div>
+                  <div class="text-xs font-bold uppercase text-[var(--color-text-muted)]">Paytm Payment · {{ selectedLog.name }}</div>
                   <div class="truncate font-mono text-xl font-bold">{{ selectedLog.rrn || selectedLog.paytm_txn_id || selectedLog.order_id || '—' }}</div>
                   <div class="text-sm text-[var(--color-text-muted)]">Received {{ fmtDate(selectedLog.received_at) }}</div>
                 </div>
@@ -514,8 +514,8 @@ const payloadText = ref('')
 const showSearch = ref(false)
 const searchTarget = ref('from')
 
-// Webhook Log view: every notification payment_webhook() received
-const views = [{ id: 'unknown', label: 'Unknown Payments' }, { id: 'log', label: 'Webhook Log' }]
+// Paytm Payments view: every notification payment_webhook() received
+const views = [{ id: 'unknown', label: 'Unknown Payments' }, { id: 'log', label: 'Paytm Payments' }]
 const view = ref('unknown')
 const logs = ref([])
 const logsLoading = ref(false)
