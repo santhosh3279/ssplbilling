@@ -1,6 +1,7 @@
 """Runs one AI Chat turn on the Gemini API (google-genai, manual function calling with the
 tools in ai_chat_tools.py). Same contract as ai_chat_runner.run: streams the same events
-through on_event and returns {"text", "tools", "error", "history", "duration_ms"}.
+through on_event and returns {"text", "tools", "error", "history", "duration_ms",
+"input_tokens", "output_tokens"}.
 
 "history" holds every Content exactly as Gemini returned it (JSON-dumped, thought signatures
 included): Gemini 3 rejects function-calling history whose signatures were dropped.
@@ -17,7 +18,7 @@ from google.genai import errors, types
 from ssplbilling.api import ai_chat_tools as tools
 
 SETTINGS = "SSPL Assistant Settings"
-DEFAULT_MODEL = "gemini-3.8-flash"
+DEFAULT_MODEL = "gemini-3.5-flash-lite"
 MAX_STEPS = 10
 CANCEL_POLL_SECONDS = 0.5
 
@@ -50,7 +51,7 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 	started = time.monotonic()
 	contents = [types.Content.model_validate(c) for c in history or []]
 	contents.append(types.Content(role="user", parts=[types.Part(text=prompt)]))
-	result = {"text": "", "tools": [], "error": None}
+	result = {"text": "", "tools": [], "error": None, "input_tokens": 0, "output_tokens": 0}
 
 	def emit(ev):
 		if ev["type"] == "text":
@@ -75,8 +76,9 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 		for _ in range(MAX_STEPS):
 			if result["text"] and not result["text"].endswith("\n\n"):
 				emit({"type": "text", "text": "\n\n"})
-			parts, finish, halted = [], None, False
+			parts, finish, halted, usage = [], None, False, None
 			for chunk in client.models.generate_content_stream(model=model, contents=contents, config=config):
+				usage = chunk.usage_metadata or usage
 				candidate = chunk.candidates[0] if chunk.candidates else None
 				if candidate:
 					finish = candidate.finish_reason or finish
@@ -87,6 +89,12 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 				if stopped():
 					halted = True
 					break
+			if usage:
+				# Thinking tokens are billed as output.
+				result["input_tokens"] += usage.prompt_token_count or 0
+				result["output_tokens"] += (usage.candidates_token_count or 0) + (
+					usage.thoughts_token_count or 0
+				)
 			if halted:
 				# The partial reply is shown but not kept: history must hold complete turns only.
 				break

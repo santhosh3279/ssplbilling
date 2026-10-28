@@ -110,7 +110,8 @@ def run_tool(name, args):
 	if not isinstance(args, dict):
 		return "Tool input must be an object.", True
 	try:
-		return json.dumps(fn(**args), default=str, ensure_ascii=False), False
+		# Compact JSON: every byte of a tool result is billed as input on this and later turns.
+		return json.dumps(fn(**args), default=str, ensure_ascii=False, separators=(",", ":")), False
 	except frappe.PermissionError:
 		frappe.clear_last_message()
 		return "The user does not have permission to read this data in ERPNext.", True
@@ -122,7 +123,7 @@ def run_tool(name, args):
 # ── sales ───────────────────────────────────────────────────────────────────
 
 
-def sales_summary(from_date=None, to_date=None, company=None, group_by="none", limit=20):
+def sales_summary(from_date=None, to_date=None, company=None, group_by="none", limit=10):
 	from_date = getdate(from_date or nowdate())
 	to_date = getdate(to_date or from_date)
 	if to_date < from_date:
@@ -224,7 +225,7 @@ def _sales_breakdown(group_by, filters, limit):
 		)
 
 	keys = BREAKDOWN_KEYS[group_by]
-	return frappe.get_list(
+	rows = frappe.get_list(
 		"Sales Invoice",
 		filters={**filters, "docstatus": 1},
 		fields=[*keys, {"COUNT": "*", "as": "invoices"}, {"SUM": "base_grand_total", "as": "grand_total"}],
@@ -232,12 +233,15 @@ def _sales_breakdown(group_by, filters, limit):
 		order_by="posting_date asc" if group_by == "day" else "grand_total desc",
 		limit=limit,
 	)
+	for r in rows:
+		_drop_same_name(r, "customer")
+	return rows
 
 
 # ── receivables ─────────────────────────────────────────────────────────────
 
 
-def customer_outstanding(customer=None, company=None, limit=20):
+def customer_outstanding(customer=None, company=None, limit=10):
 	limit = _limit(limit)
 	if customer:
 		return _one_customer(customer, company, limit)
@@ -268,7 +272,10 @@ def customer_outstanding(customer=None, company=None, limit=20):
 	labels = _customer_names(names)
 	for c in companies.values():
 		c["top"] = [
-			{"customer": r["party"], "customer_name": labels.get(r["party"]), "balance": r["balance"]}
+			_drop_same_name(
+				{"customer": r["party"], "customer_name": labels.get(r["party"]), "balance": r["balance"]},
+				"customer",
+			)
 			for r in c["top"]
 		]
 
@@ -357,7 +364,7 @@ def _customer_names(names):
 # ── stock ───────────────────────────────────────────────────────────────────
 
 
-def item_stock(item=None, warehouse=None, limit=20):
+def item_stock(item=None, warehouse=None, limit=10):
 	limit = _limit(limit)
 	show_value = bool(VALUATION_ROLES & set(frappe.get_roles()))
 	value_fields = ["valuation_rate", "stock_value"] if show_value else []
@@ -390,6 +397,11 @@ def item_stock(item=None, warehouse=None, limit=20):
 			limit=0,
 		)
 		negative = {r.warehouse: r["items"] for r in negative}
+		# A warehouse holding only negative stock has no row in `summary`; still list it.
+		listed = {r.warehouse for r in summary}
+		summary += [
+			frappe._dict(warehouse=w, items_in_stock=0, total_qty=0) for w in negative if w not in listed
+		]
 		for row in summary:
 			row["company"] = company_of.get(row.warehouse)
 			row["items_negative"] = negative.get(row.warehouse, 0)
@@ -449,8 +461,15 @@ def _find_items(search, limit):
 	)
 
 
+def _drop_same_name(row, key):
+	"""Most customers are named by their own name: don't send it twice."""
+	if (row.get("customer_name") or "").casefold() == (row.get(key) or "").casefold():
+		row.pop("customer_name", None)
+	return row
+
+
 def _limit(value):
-	return min(max(cint(value) or 20, 1), MAX_ROWS)
+	return min(max(cint(value) or 10, 1), MAX_ROWS)
 
 
 HANDLERS = {

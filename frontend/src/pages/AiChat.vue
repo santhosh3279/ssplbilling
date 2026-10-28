@@ -88,8 +88,11 @@
           <div class="mx-auto max-w-3xl space-y-4">
             <div v-if="!current && !messages.length" class="py-10 text-center">
               <h2 class="text-xl font-bold">Ask about your business</h2>
-              <p class="mt-1 text-sm text-[var(--color-text-muted)]">Live ERPNext data, with your own access rights. Read-only. Answered by {{ provider }}.</p>
-              <div class="mt-6 flex flex-wrap justify-center gap-2">
+              <p class="mt-1 text-sm text-[var(--color-text-muted)]">
+                Live ERPNext data, with your own access rights. Read-only.<br />
+                The buttons below answer instantly at no cost; typed questions go to {{ hasAi ? provider : 'the AI (no API key set)' }}.
+              </p>
+              <div v-if="hasAi" class="mt-6 flex flex-wrap justify-center gap-2">
                 <button
                   v-for="q in suggestions"
                   :key="q"
@@ -114,8 +117,12 @@
                 </div>
                 <div class="ai-md text-sm" v-html="md(m.content)"></div>
                 <div class="mt-1 flex gap-3 text-[11px] text-[var(--color-text-muted)]">
-                  <span v-if="current?.provider">{{ current.provider }}</span>
-                  <span v-if="m.duration_ms">{{ (m.duration_ms / 1000).toFixed(1) }}s</span>
+                  <span v-if="m.quick">⚡ Answered locally · no AI cost</span>
+                  <template v-else>
+                    <span v-if="current?.provider">{{ current.provider }}</span>
+                    <span v-if="m.duration_ms">{{ (m.duration_ms / 1000).toFixed(1) }}s</span>
+                    <span v-if="m.input_tokens || m.output_tokens">{{ m.input_tokens || 0 }} in · {{ m.output_tokens || 0 }} out tokens</span>
+                  </template>
                   <button class="hover:text-[var(--color-text)]" @click="copy(m.content)">Copy</button>
                 </div>
               </div>
@@ -146,15 +153,29 @@
         <footer class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
           <div class="mx-auto max-w-3xl">
             <p v-if="error" class="mb-2 rounded bg-[var(--color-danger)]/15 px-3 py-1.5 text-sm text-[var(--color-danger)]">{{ error }}</p>
+            <!-- Quick buttons: answered by the server without the AI -->
+            <div class="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+              <button
+                v-for="q in boot.quick_actions"
+                :key="q.action"
+                class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition-colors disabled:opacity-50"
+                :class="pendingQuick?.action === q.action ? 'bg-[var(--color-success)]/30' : 'bg-[var(--color-bg)] hover:bg-[var(--color-surface-raised)]'"
+                :disabled="running || quickBusy"
+                @click="pickQuick(q)"
+              >
+                ⚡ {{ q.label }}{{ q.needs_query ? '…' : '' }}
+              </button>
+            </div>
             <div class="flex items-end gap-2">
               <textarea
                 ref="inputEl"
                 v-model="input"
                 rows="1"
-                placeholder="Ask about sales, outstanding, stock…"
+                :placeholder="pendingQuick ? `${pendingQuick.label}: type a name, code or mobile, then Enter` : hasAi ? 'Ask about sales, outstanding, stock…' : 'Use the quick buttons (AI not set up)'"
+                :class="pendingQuick ? 'bg-[var(--color-success)]/15' : ''"
                 class="min-w-0 flex-1 resize-none rounded-lg bg-[var(--color-bg)] px-3 py-2 text-sm focus:bg-[var(--color-info)]/15 focus:outline-none"
                 @keydown.enter.exact.prevent="submit"
-                @keydown.esc="stop"
+                @keydown.esc="pendingQuick ? (pendingQuick = null) : stop()"
                 @input="autosize"
               ></textarea>
               <button
@@ -167,7 +188,7 @@
               <button
                 v-else
                 class="rounded-lg bg-[var(--color-highlight)] px-4 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] disabled:opacity-50"
-                :disabled="!input.trim()"
+                :disabled="!input.trim() || quickBusy || (!pendingQuick && !hasAi)"
                 @click="submit"
               >
                 Send
@@ -182,7 +203,7 @@
 </template>
 
 <script setup>
-import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
@@ -204,17 +225,20 @@ const input = ref('')
 const error = ref('')
 const running = ref(false)
 const listOpen = ref(true)
+const pendingQuick = ref(null)
+const quickBusy = ref(false)
+const hasAi = computed(() => !!boot.value?.providers?.length)
 const provider = ref('Claude')
 const live = reactive({ text: '', tools: [] })
 const scroller = ref(null)
 const inputEl = ref(null)
 let pollTimer = null
 
+// Questions the quick buttons can't answer; those go to the AI.
 const suggestions = [
-  'Sales today by company',
-  'Top 10 customers by outstanding',
+  'Compare this week’s sales with last week',
   'Top selling items this month',
-  'Stock summary by warehouse',
+  'Which customers owe more than ₹50,000?',
 ]
 
 marked.setOptions({ gfm: true, breaks: true })
@@ -228,12 +252,8 @@ onMounted(async () => {
   }
   booting.value = false
   if (!boot.value?.allowed) return
-  if (!boot.value.providers.length) {
-    error.value = 'No AI provider has an API key in SSPL Assistant Settings.'
-    return
-  }
   const saved = safeGet(PROVIDER_KEY)
-  provider.value = boot.value.providers.includes(saved) ? saved : boot.value.providers[0]
+  provider.value = boot.value.providers.includes(saved) ? saved : boot.value.providers[0] || 'Claude'
 
   getFrappeSocket()?.on(EVENT, onEvent)
   await loadChats()
@@ -319,9 +339,42 @@ function ask(q) {
   submit()
 }
 
+// A quick button with a search (customer / item) waits for the text in the composer.
+function pickQuick(q) {
+  error.value = ''
+  if (!q.needs_query) return runQuick(q)
+  pendingQuick.value = pendingQuick.value?.action === q.action ? null : q
+  nextTick(() => inputEl.value?.focus())
+}
+
+async function runQuick(q, query) {
+  quickBusy.value = true
+  try {
+    const res = await aiChat.quick(q.action, query, current.value?.name, provider.value)
+    if (!current.value) {
+      current.value = res.chat
+      router.replace({ query: { chat: res.chat.name } })
+    }
+    messages.value.push(...res.messages)
+    pendingQuick.value = null
+    loadChats()
+    scrollDown()
+  } catch (e) {
+    error.value = lastLine(e)
+  } finally {
+    quickBusy.value = false
+  }
+}
+
 async function submit() {
   const text = input.value.trim()
-  if (!text || running.value) return
+  if (pendingQuick.value) {
+    if (!text || quickBusy.value) return
+    input.value = ''
+    autosize()
+    return runQuick(pendingQuick.value, text)
+  }
+  if (!text || running.value || !hasAi.value) return
   error.value = ''
   input.value = ''
   autosize()

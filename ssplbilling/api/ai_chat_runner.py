@@ -9,7 +9,7 @@ answer. Streams events through on_event:
 	{"type": "tool_result", "name": ..., "ok": bool}
 	{"type": "error", "message": ...}
 
-and returns {"text", "tools", "error", "history", "duration_ms"}. "history" is the raw message
+and returns {"text", "tools", "error", "history", "duration_ms", "input_tokens", "output_tokens"}. "history" is the raw message
 list to replay next turn, kept verbatim (thinking blocks included) as the API requires.
 """
 
@@ -21,7 +21,7 @@ import frappe
 from ssplbilling.api import ai_chat_tools as tools
 
 SETTINGS = "SSPL Assistant Settings"
-DEFAULT_MODEL = "claude-opus-5-5"
+DEFAULT_MODEL = "claude-haiku-5-5"
 MAX_TOKENS = 32000
 MAX_STEPS = 10
 CANCEL_POLL_SECONDS = 0.5
@@ -42,7 +42,7 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 		"system": tools.system_prompt(settings),
 		"tools": tools.TOOLS,
 		"cache_control": {"type": "ephemeral"},
-		"output_config": {"effort": settings.claude_effort or "medium"},
+		"output_config": {"effort": settings.claude_effort or "low"},
 	}
 	if model in FALLBACK_MODELS:
 		params["betas"] = ["server-side-fallback-2026-07-01"]
@@ -52,7 +52,7 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 	timeout = settings.timeout_seconds or 300
 	started = time.monotonic()
 	messages = [*(history or []), {"role": "user", "content": prompt}]
-	result = {"text": "", "tools": [], "error": None}
+	result = {"text": "", "tools": [], "error": None, "input_tokens": 0, "output_tokens": 0}
 
 	def emit(ev):
 		if ev["type"] == "text":
@@ -87,6 +87,13 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 						break
 				if not halted:
 					response = stream.get_final_message()
+					usage = response.usage
+					result["input_tokens"] += (
+						usage.input_tokens
+						+ (usage.cache_read_input_tokens or 0)
+						+ (usage.cache_creation_input_tokens or 0)
+					)
+					result["output_tokens"] += usage.output_tokens
 			if halted:
 				# The partial reply is shown but not kept: history must hold complete turns only.
 				break

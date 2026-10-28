@@ -1573,6 +1573,8 @@ export const aiChat = {
   messages: (chat) => frappeGet(AI_CHAT + "get_messages", { chat }),
   send: (message, chat, provider) =>
     frappePost(AI_CHAT + "send_message", { message, chat, provider }, { silent: true }),
+  quick: (action, query, chat, provider) =>
+    frappePost(AI_CHAT + "quick_answer", { action, query, chat, provider }, { silent: true }),
   cancel: (chat) => frappePost(AI_CHAT + "cancel", { chat }, { silent: true }),
   remove: (chat) => frappePost(AI_CHAT + "delete_chat", { chat }, { silent: true }),
 };

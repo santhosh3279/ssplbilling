@@ -8,7 +8,7 @@ import time
 import frappe
 from frappe.utils import add_to_date, get_datetime, now_datetime
 
-from ssplbilling.api import ai_chat_runner, ai_chat_runner_gemini
+from ssplbilling.api import ai_chat_quick, ai_chat_runner, ai_chat_runner_gemini
 
 SETTINGS = ai_chat_runner.SETTINGS
 RUNNERS = {"Claude": ai_chat_runner, "Gemini": ai_chat_runner_gemini}
@@ -18,6 +18,17 @@ MESSAGE = "SSPL Assistant Message"
 REALTIME_EVENT = "sspl_assistant_event"
 FLUSH_SECONDS = 0.25
 MAX_PROMPT = 8000
+MESSAGE_FIELDS = (
+	"name",
+	"role",
+	"content",
+	"tools",
+	"duration_ms",
+	"input_tokens",
+	"output_tokens",
+	"quick",
+	"creation",
+)
 
 
 @frappe.whitelist()
@@ -27,6 +38,10 @@ def get_bootstrap():
 	return {
 		"enabled": bool(settings.enabled),
 		"allowed": allowed,
+		"quick_actions": [
+			{"action": a, "label": label, "needs_query": needs}
+			for a, (label, needs) in ai_chat_quick.ACTIONS.items()
+		],
 		"providers": _providers(settings) if allowed else [],
 		"default_provider": settings.default_provider or "Claude",
 	}
@@ -53,7 +68,7 @@ def get_messages(chat):
 		"messages": frappe.get_all(
 			MESSAGE,
 			filters={"chat": doc.name},
-			fields=["name", "role", "content", "tools", "duration_ms", "creation"],
+			fields=list(MESSAGE_FIELDS),
 			order_by="creation asc",
 			limit=500,
 		),
@@ -69,22 +84,10 @@ def send_message(message, chat=None, provider=None):
 	if len(message) > MAX_PROMPT:
 		frappe.throw(f"Message is too long (max {MAX_PROMPT} characters).")
 
-	if chat:
-		doc = _own_chat(chat)
-	else:
-		providers = _providers(_settings())
-		if not providers:
-			frappe.throw(f"No AI provider has an API key in {SETTINGS}.")
-		# A chat keeps its provider: each provider's history format is its own.
-		doc = frappe.get_doc(
-			{
-				"doctype": CHAT,
-				"user": frappe.session.user,
-				"provider": provider if provider in providers else providers[0],
-				"title": message[:80],
-				"status": "Idle",
-			}
-		).insert(ignore_permissions=True)
+	if not _providers(_settings()):
+		frappe.throw(f"No AI provider has an API key in {SETTINGS}. The quick buttons still work.")
+	_check_limits(chat)
+	doc = _own_chat(chat) if chat else _new_chat(message, provider)
 	if doc.status == "Running" and not _is_stale(doc):
 		frappe.throw("Still answering the previous message. Wait for it or press Stop.")
 
@@ -100,6 +103,23 @@ def send_message(message, chat=None, provider=None):
 		prompt=message,
 	)
 	return {"chat": _chat_dict(doc)}
+
+
+@frappe.whitelist(methods=["POST"])
+def quick_answer(action, query=None, chat=None, provider=None):
+	"""Quick button: answered locally by ai_chat_quick, no AI call and no tokens. Kept in the
+	chat for the user to read, but not in the AI history."""
+	_check_access()
+	label, reply = ai_chat_quick.answer(action, query)
+	doc = _own_chat(chat) if chat else _new_chat(label, provider)
+	if doc.status == "Running" and not _is_stale(doc):
+		frappe.throw("Still answering the previous message. Wait for it or press Stop.")
+	messages = [
+		_insert_message(doc.name, "user", label, quick=True),
+		_insert_message(doc.name, "assistant", reply, quick=True),
+	]
+	frappe.db.set_value(CHAT, doc.name, "modified", frappe.utils.now())
+	return {"chat": _chat_dict(doc), "messages": messages}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -194,6 +214,42 @@ def _settings():
 	return frappe.get_cached_doc(SETTINGS)
 
 
+def _new_chat(title, provider):
+	providers = _providers(_settings()) or ["Claude"]
+	# A chat keeps its provider: each provider's history format is its own.
+	return frappe.get_doc(
+		{
+			"doctype": CHAT,
+			"user": frappe.session.user,
+			"provider": provider if provider in providers else providers[0],
+			"title": title[:80],
+			"status": "Idle",
+		}
+	).insert(ignore_permissions=True)
+
+
+def _check_limits(chat):
+	"""AI questions cost tokens; quick buttons don't count."""
+	settings = _settings()
+	asked = {"role": "user", "quick": 0}
+	if settings.daily_question_limit:
+		today = frappe.db.count(
+			MESSAGE, {**asked, "owner": frappe.session.user, "creation": [">=", frappe.utils.today()]}
+		)
+		if today >= settings.daily_question_limit:
+			frappe.throw(
+				f"Daily limit of {settings.daily_question_limit} AI questions reached. The quick buttons still work."
+			)
+	if (
+		chat
+		and settings.max_turns
+		and frappe.db.count(MESSAGE, {**asked, "chat": chat}) >= settings.max_turns
+	):
+		frappe.throw(
+			f"This chat has {settings.max_turns} questions; each one re-sends the whole chat. Start a New chat."
+		)
+
+
 def _providers(settings):
 	"""Providers with an API key, default first."""
 	have = [p for p, field in API_KEY_FIELDS.items() if settings.get_password(field, raise_exception=False)]
@@ -228,7 +284,7 @@ def _chat_dict(doc):
 	return {k: doc.get(k) for k in ("name", "title", "provider", "status", "modified")}
 
 
-def _insert_message(chat, role, content, result=None):
+def _insert_message(chat, role, content, result=None, quick=False):
 	tools = [{"name": t["name"]} for t in (result or {}).get("tools") or []]
 	doc = frappe.get_doc(
 		{
@@ -238,9 +294,12 @@ def _insert_message(chat, role, content, result=None):
 			"content": content,
 			"tools": json.dumps(tools) if tools else None,
 			"duration_ms": (result or {}).get("duration_ms"),
+			"input_tokens": (result or {}).get("input_tokens"),
+			"output_tokens": (result or {}).get("output_tokens"),
+			"quick": int(quick),
 		}
 	).insert(ignore_permissions=True)
-	return {k: doc.get(k) for k in ("name", "role", "content", "tools", "duration_ms", "creation")}
+	return {k: doc.get(k) for k in MESSAGE_FIELDS}
 
 
 def _is_stale(doc):

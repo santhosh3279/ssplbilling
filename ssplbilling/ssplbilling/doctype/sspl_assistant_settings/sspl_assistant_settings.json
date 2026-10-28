@@ -18,6 +18,10 @@
   "google_api_key",
   "column_break_gemini",
   "gemini_model",
+  "usage_section",
+  "daily_question_limit",
+  "column_break_usage",
+  "max_turns",
   "prompt_section",
   "system_prompt"
  ],
@@ -71,18 +75,19 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "claude-opus-5-5",
+   "default": "claude-haiku-5-5",
    "fieldname": "claude_model",
    "fieldtype": "Data",
    "label": "Claude Model",
-   "description": "claude-opus-5-5 (default), claude-sonnet-5-5, or claude-haiku-5-5 (cheapest)."
+   "description": "claude-haiku-5-5 (default, cheapest), claude-sonnet-5-5, or claude-opus-5-5 (most capable, ~40x the cost of Haiku)."
   },
   {
-   "default": "medium",
+   "default": "low",
    "fieldname": "claude_effort",
    "fieldtype": "Select",
    "label": "Claude Effort",
-   "options": "low\nmedium\nhigh"
+   "options": "low\nmedium\nhigh",
+   "description": "How much the model thinks. low is enough for these lookups and uses the fewest tokens."
   },
   {
    "fieldname": "gemini_section",
@@ -101,11 +106,35 @@
    "fieldtype": "Column Break"
   },
   {
-   "default": "gemini-3.8-flash",
+   "default": "gemini-3.5-flash-lite",
    "fieldname": "gemini_model",
    "fieldtype": "Data",
    "label": "Gemini Model",
-   "description": "Model code from ai.google.dev/gemini-api/docs/models, e.g. gemini-3.8-flash."
+   "description": "Model code from ai.google.dev/gemini-api/docs/models: gemini-3.5-flash-lite (default, cheapest) or gemini-3.8-flash."
+  },
+  {
+   "fieldname": "usage_section",
+   "fieldtype": "Section Break",
+   "label": "Usage Limits",
+   "description": "Quick buttons (Sales today, Outstanding, Stock…) are answered locally and never count."
+  },
+  {
+   "default": "30",
+   "fieldname": "daily_question_limit",
+   "fieldtype": "Int",
+   "label": "AI Questions per User per Day",
+   "description": "0 = no limit."
+  },
+  {
+   "fieldname": "column_break_usage",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "10",
+   "fieldname": "max_turns",
+   "fieldtype": "Int",
+   "label": "AI Questions per Chat",
+   "description": "Each question re-sends the whole chat, so long chats cost more. After this, the user is asked to start a new chat. 0 = no limit."
   },
   {
    "fieldname": "prompt_section",
@@ -121,7 +150,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-28 15:00:00",
+ "modified": "2026-10-28 18:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Assistant Settings",
