@@ -3,25 +3,25 @@
     <header class="shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
       <div class="flex min-w-0 items-center gap-4">
         <button
-          class="rounded-lg px-3 py-1.5 text-[15px] font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
+          class="rounded-lg px-3 py-1.5 text-[18.75px] font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
           @click="goBack"
         >
           &larr; Back
         </button>
         <div class="min-w-0">
-          <h1 class="text-[17.5px] font-bold uppercase tracking-wider">AI Chat</h1>
-          <p class="truncate text-[12.5px] text-[var(--color-text-muted)] uppercase tracking-widest font-medium">
+          <h1 class="text-[21.9px] font-bold uppercase tracking-wider">AI Chat</h1>
+          <p class="truncate text-[15.6px] text-[var(--color-text-muted)] uppercase tracking-widest font-medium">
             {{ current?.title || 'Sales · Outstanding · Stock — read-only' }}
           </p>
         </div>
       </div>
       <!-- Scope: answers use this company / cost center unless the question names another -->
       <div v-if="boot?.allowed" class="order-last flex w-full items-center gap-2 md:order-none md:w-auto md:flex-1 md:justify-center">
-        <select v-model="scope.company" class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-2 py-1.5 text-[13.75px] focus:bg-[var(--color-info)]/15 focus:outline-none sm:flex-none sm:w-56" title="Company" @change="onCompanyChange">
+        <select v-model="scope.company" class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-2 py-1.5 text-[17.2px] focus:bg-[var(--color-info)]/15 focus:outline-none sm:flex-none sm:w-56" title="Company" @change="onCompanyChange">
           <option value="">All companies</option>
           <option v-for="c in boot.companies" :key="c" :value="c">{{ c }}</option>
         </select>
-        <select v-model="scope.cost_center" class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-2 py-1.5 text-[13.75px] focus:bg-[var(--color-info)]/15 focus:outline-none sm:flex-none sm:w-56" title="Cost center">
+        <select v-model="scope.cost_center" class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-2 py-1.5 text-[17.2px] focus:bg-[var(--color-info)]/15 focus:outline-none sm:flex-none sm:w-56" title="Cost center">
           <option value="">All cost centers</option>
           <option v-for="c in costCenterOptions" :key="c.name" :value="c.name">{{ c.name }}</option>
         </select>
@@ -32,7 +32,7 @@
           <button
             v-for="p in boot.providers"
             :key="p"
-            class="rounded-full px-3 py-1 text-[13.75px] font-semibold transition-colors"
+            class="rounded-full px-3 py-1 text-[17.2px] font-semibold transition-colors"
             :class="provider === p ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]' : 'text-[var(--color-text-muted)]'"
             @click="setProvider(p)"
           >
@@ -41,19 +41,19 @@
         </div>
         <span
           v-else-if="current?.provider || boot.providers.length"
-          class="rounded-full bg-[var(--color-bg)] px-3 py-1 text-[13.75px] font-semibold text-[var(--color-text-muted)]"
+          class="rounded-full bg-[var(--color-bg)] px-3 py-1 text-[17.2px] font-semibold text-[var(--color-text-muted)]"
         >
           {{ current?.provider || provider }}
         </span>
         <button
-          class="rounded-lg px-3 py-1.5 text-[15px] font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
+          class="rounded-lg px-3 py-1.5 text-[18.75px] font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]"
           @click="newChat"
         >
           + New
         </button>
         <button
           v-if="current"
-          class="rounded-lg px-3 py-1.5 text-[15px] font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/15"
+          class="rounded-lg px-3 py-1.5 text-[18.75px] font-semibold text-[var(--color-danger)] hover:bg-[var(--color-danger)]/15"
           title="Delete conversation"
           @click="removeCurrent"
         >
@@ -62,10 +62,10 @@
       </div>
     </header>
 
-    <div v-if="booting" class="flex flex-1 items-center justify-center text-[15px] text-[var(--color-text-muted)] animate-pulse">Loading…</div>
+    <div v-if="booting" class="flex flex-1 items-center justify-center text-[18.75px] text-[var(--color-text-muted)] animate-pulse">Loading…</div>
 
     <div v-else-if="!boot?.allowed" class="flex flex-1 items-center justify-center p-6 text-center">
-      <p class="text-[15px] text-[var(--color-text-muted)]">
+      <p class="text-[18.75px] text-[var(--color-text-muted)]">
         {{ boot?.enabled === false ? 'AI Chat is turned off in SSPL Assistant Settings.' : error || 'Your user does not have access to AI Chat.' }}
       </p>
     </div>
@@ -77,7 +77,7 @@
         :class="listOpen ? 'flex' : 'hidden md:flex'"
       >
         <div class="flex-1 overflow-y-auto">
-          <div v-if="!chats.length" class="p-6 text-center text-[15px] text-[var(--color-text-muted)]">No conversations yet</div>
+          <div v-if="!chats.length" class="p-6 text-center text-[18.75px] text-[var(--color-text-muted)]">No conversations yet</div>
           <button
             v-for="c in chats"
             :key="c.name"
@@ -85,10 +85,10 @@
             :class="current?.name === c.name ? 'bg-[var(--color-success)]/20' : 'hover:bg-[var(--color-surface-raised)]'"
             @click="openChat(c.name)"
           >
-            <span class="min-w-0 flex-1 truncate text-[15px]">{{ c.title || 'Untitled' }}</span>
-            <span class="shrink-0 text-[12.5px] text-[var(--color-text-muted)]">{{ c.provider }}</span>
+            <span class="min-w-0 flex-1 truncate text-[18.75px]">{{ c.title || 'Untitled' }}</span>
+            <span class="shrink-0 text-[15.6px] text-[var(--color-text-muted)]">{{ c.provider }}</span>
             <span v-if="c.status === 'Running'" class="h-2 w-2 shrink-0 rounded-full bg-[var(--color-success)] animate-pulse" title="Answering"></span>
-            <span class="shrink-0 text-[12.5px] text-[var(--color-text-muted)]">{{ ago(c.modified) }}</span>
+            <span class="shrink-0 text-[15.6px] text-[var(--color-text-muted)]">{{ ago(c.modified) }}</span>
           </button>
         </div>
       </aside>
@@ -96,18 +96,18 @@
       <!-- Conversation -->
       <main class="flex-1 min-w-0 flex-col" :class="listOpen ? 'hidden md:flex' : 'flex'">
         <section ref="scroller" class="flex-1 overflow-y-auto px-4 py-4">
-          <div class="mx-auto max-w-3xl space-y-4">
+          <div class="mx-auto max-w-5xl space-y-4">
             <div v-if="!current && !messages.length" class="py-10 text-center">
-              <h2 class="text-[20px] font-bold">Ask about your business</h2>
-              <p class="mt-1 text-[15px] text-[var(--color-text-muted)]">
+              <h2 class="text-[25px] font-bold">Ask about your business</h2>
+              <p class="mt-1 text-[18.75px] text-[var(--color-text-muted)]">
                 Live ERPNext data, with your own access rights. Read-only.<br />
-                The buttons below answer instantly at no cost; typed questions go to {{ hasAi ? provider : 'the AI (no API key set)' }}.
+                The quick buttons answer instantly at no cost; typed questions go to {{ hasAi ? provider : 'the AI (no API key set)' }}.
               </p>
               <div v-if="hasAi" class="mt-6 flex flex-wrap justify-center gap-2">
                 <button
                   v-for="q in suggestions"
                   :key="q"
-                  class="rounded-full bg-[var(--color-surface)] px-4 py-2 text-[15px] hover:bg-[var(--color-surface-raised)]"
+                  class="rounded-full bg-[var(--color-surface)] px-4 py-2 text-[18.75px] hover:bg-[var(--color-surface-raised)]"
                   @click="ask(q)"
                 >
                   {{ q }}
@@ -116,40 +116,40 @@
             </div>
 
             <article v-for="m in messages" :key="m.name" :class="m.role === 'user' ? 'flex justify-end' : ''">
-              <div v-if="m.role === 'user'" class="max-w-[85%] whitespace-pre-wrap rounded-2xl bg-[var(--color-highlight)] px-4 py-2 text-[15px] text-[var(--color-text-on-highlight)]">
+              <div v-if="m.role === 'user'" class="max-w-[85%] whitespace-pre-wrap rounded-2xl bg-[var(--color-highlight)] px-4 py-2 text-[18.75px] text-[var(--color-text-on-highlight)]">
                 {{ m.content }}
               </div>
-              <div v-else-if="m.role === 'error'" class="rounded-lg bg-[var(--color-danger)]/15 px-4 py-2 text-[15px] text-[var(--color-danger)]">⚠ {{ m.content }}</div>
+              <div v-else-if="m.role === 'error'" class="rounded-lg bg-[var(--color-danger)]/15 px-4 py-2 text-[18.75px] text-[var(--color-danger)]">⚠ {{ m.content }}</div>
               <div v-else>
                 <div v-if="toolsOf(m).length" class="mb-1 flex flex-wrap gap-1">
-                  <span v-for="(t, i) in toolsOf(m)" :key="i" class="rounded-full bg-[var(--color-surface)] px-2 py-0.5 text-[13.75px] text-[var(--color-text-muted)]">
+                  <span v-for="(t, i) in toolsOf(m)" :key="i" class="rounded-full bg-[var(--color-surface)] px-2 py-0.5 text-[17.2px] text-[var(--color-text-muted)]">
                     {{ prettyTool(t.name) }}
                   </span>
                 </div>
-                <div class="ai-md text-[15px]" v-html="md(m.content)"></div>
+                <div class="ai-md text-[18.75px]" v-html="md(m.content)"></div>
                 <div v-for="(a, i) in attachmentsOf(m)" :key="i" class="mt-2">
                   <AiChart v-if="a.type === 'chart'" :spec="a" />
                   <a
                     v-else-if="a.type === 'excel'"
                     :href="aiChat.downloadUrl(a.file)"
-                    class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-success)]/20 px-3 py-2 text-[15px] font-semibold hover:bg-[var(--color-success)]/30"
+                    class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-success)]/20 px-3 py-2 text-[18.75px] font-semibold hover:bg-[var(--color-success)]/30"
                   >
                     ⬇ {{ a.title || a.file_name }}.xlsx
-                    <span class="text-[13.75px] font-normal text-[var(--color-text-muted)]">{{ a.rows }} rows</span>
+                    <span class="text-[17.2px] font-normal text-[var(--color-text-muted)]">{{ a.rows }} rows</span>
                   </a>
                 </div>
                 <div v-if="m.quick && m.quick_source" class="mt-2 flex gap-2">
                   <button
                     v-for="o in [{ kind: 'excel', label: '⬇ Excel' }, { kind: 'chart', label: '📊 Chart' }]"
                     :key="o.kind"
-                    class="rounded-full bg-[var(--color-surface)] px-3 py-1 text-[13.75px] font-semibold hover:bg-[var(--color-surface-raised)] disabled:opacity-50"
+                    class="rounded-full bg-[var(--color-surface)] px-3 py-1 text-[17.2px] font-semibold hover:bg-[var(--color-surface-raised)] disabled:opacity-50"
                     :disabled="outputBusy === m.name + o.kind || hasOutput(m, o.kind)"
                     @click="quickOutput(m, o.kind)"
                   >
                     {{ outputBusy === m.name + o.kind ? '…' : o.label }}
                   </button>
                 </div>
-                <div class="mt-1 flex gap-3 text-[13.75px] text-[var(--color-text-muted)]">
+                <div class="mt-1 flex gap-3 text-[17.2px] text-[var(--color-text-muted)]">
                   <span v-if="m.quick">⚡ Answered locally · no AI cost</span>
                   <template v-else>
                     <span v-if="m.cached_from" title="Same question asked before: its data lookups were re-run for today's figures">
@@ -176,7 +176,7 @@
                 <span
                   v-for="(t, i) in live.tools"
                   :key="i"
-                  class="rounded-full px-2 py-0.5 text-[13.75px]"
+                  class="rounded-full px-2 py-0.5 text-[17.2px]"
                   :class="{
                     'bg-[var(--color-info)]/20 animate-pulse': t.state === 'running',
                     'bg-[var(--color-success)]/20': t.state === 'done',
@@ -187,66 +187,81 @@
                   {{ prettyTool(t.name) }}
                 </span>
               </div>
-              <div v-if="live.text" class="ai-md text-[15px]" v-html="md(live.text)"></div>
-              <div v-else class="text-[15px] text-[var(--color-text-muted)] animate-pulse">Thinking…</div>
+              <div v-if="live.text" class="ai-md text-[18.75px]" v-html="md(live.text)"></div>
+              <div v-else class="text-[18.75px] text-[var(--color-text-muted)] animate-pulse">Thinking…</div>
             </article>
           </div>
         </section>
 
         <footer class="shrink-0 border-t border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
           <div class="mx-auto max-w-5xl">
-            <p v-if="error" class="mb-2 rounded bg-[var(--color-danger)]/15 px-3 py-1.5 text-[15px] text-[var(--color-danger)]">{{ error }}</p>
-            <div class="flex flex-col gap-2 md:flex-row md:items-stretch">
-              <div class="flex min-w-0 flex-1 items-end gap-2">
-                <textarea
-                  ref="inputEl"
-                  v-model="input"
-                  rows="1"
-                  :placeholder="pendingQuick ? `${pendingQuick.label}: type a name, code or mobile, then Enter` : hasAi ? 'Ask about sales, outstanding, stock…' : 'Use the quick buttons (AI not set up)'"
-                  :class="pendingQuick ? 'bg-[var(--color-success)]/15' : ''"
-                  class="min-w-0 flex-1 resize-none rounded-lg bg-[var(--color-bg)] px-3 py-2 text-[15px] focus:bg-[var(--color-info)]/15 focus:outline-none"
-                  @keydown.enter.exact.prevent="submit"
-                  @keydown.esc="pendingQuick ? (pendingQuick = null) : stop()"
-                  @input="autosize"
-                ></textarea>
-                <button
-                  v-if="running"
-                  class="rounded-lg bg-[var(--color-danger)] px-4 py-2 text-[15px] font-bold text-white"
-                  @click="stop"
-                >
-                  Stop
-                </button>
-                <button
-                  v-else
-                  class="rounded-lg bg-[var(--color-highlight)] px-4 py-2 text-[15px] font-bold text-[var(--color-text-on-highlight)] disabled:opacity-50"
-                  :disabled="!input.trim() || quickBusy || (!pendingQuick && !hasAi)"
-                  @click="submit"
-                >
-                  Send
-                </button>
-              </div>
-              <!-- Quick buttons: answered by the server without the AI -->
-              <div
-                v-if="boot.quick_actions?.length"
-                class="grid max-h-36 shrink-0 grid-cols-2 content-start gap-1.5 overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-1.5 md:w-80"
+            <p v-if="error" class="mb-2 rounded bg-[var(--color-danger)]/15 px-3 py-1.5 text-[18.75px] text-[var(--color-danger)]">{{ error }}</p>
+            <!-- Quick buttons on phones (desktop shows them in the right panel) -->
+            <div v-if="boot.quick_actions?.length" class="mb-2 flex gap-1.5 overflow-x-auto pb-1 md:hidden">
+              <button
+                v-for="q in boot.quick_actions"
+                :key="q.action"
+                class="shrink-0 rounded-full px-3 py-1 text-[17.2px] font-semibold transition-colors disabled:opacity-50"
+                :class="pendingQuick?.action === q.action ? 'bg-[var(--color-success)]/30' : 'bg-[var(--color-bg)] hover:bg-[var(--color-surface-raised)]'"
+                :disabled="running || quickBusy"
+                @click="pickQuick(q)"
               >
-                <button
-                  v-for="q in boot.quick_actions"
-                  :key="q.action"
-                  class="truncate rounded-md px-2.5 py-1 text-left text-[13.75px] font-semibold transition-colors disabled:opacity-50"
-                  :class="pendingQuick?.action === q.action ? 'bg-[var(--color-success)]/30' : 'bg-[var(--color-surface)] hover:bg-[var(--color-surface-raised)]'"
-                  :disabled="running || quickBusy"
-                  :title="q.label"
-                  @click="pickQuick(q)"
-                >
-                  ⚡ {{ q.label }}{{ q.needs_query ? '…' : '' }}
-                </button>
-              </div>
+                ⚡ {{ q.label }}{{ q.needs_query ? '…' : '' }}
+              </button>
             </div>
-            <p class="mt-1 hidden text-[12.5px] text-[var(--color-text-muted)] md:block">Enter to send · Shift+Enter new line · Esc to stop</p>
+            <div class="flex items-end gap-2">
+              <textarea
+                ref="inputEl"
+                v-model="input"
+                rows="1"
+                :placeholder="pendingQuick ? `${pendingQuick.label}: type a name, code or mobile, then Enter` : hasAi ? 'Ask about sales, outstanding, stock…' : 'Use the quick buttons (AI not set up)'"
+                :class="pendingQuick ? 'bg-[var(--color-success)]/15' : ''"
+                class="min-w-0 flex-1 resize-none rounded-lg bg-[var(--color-bg)] px-3 py-2 text-[18.75px] focus:bg-[var(--color-info)]/15 focus:outline-none"
+                @keydown.enter.exact.prevent="submit"
+                @keydown.esc="pendingQuick ? (pendingQuick = null) : stop()"
+                @input="autosize"
+              ></textarea>
+              <button
+                v-if="running"
+                class="rounded-lg bg-[var(--color-danger)] px-4 py-2 text-[18.75px] font-bold text-white"
+                @click="stop"
+              >
+                Stop
+              </button>
+              <button
+                v-else
+                class="rounded-lg bg-[var(--color-highlight)] px-4 py-2 text-[18.75px] font-bold text-[var(--color-text-on-highlight)] disabled:opacity-50"
+                :disabled="!input.trim() || quickBusy || (!pendingQuick && !hasAi)"
+                @click="submit"
+              >
+                Send
+              </button>
+            </div>
+            <p class="mt-1 hidden text-[15.6px] text-[var(--color-text-muted)] md:block">Enter to send · Shift+Enter new line · Esc to stop</p>
           </div>
         </footer>
       </main>
+
+      <!-- Quick buttons: answered by the server without the AI -->
+      <aside
+        v-if="boot.quick_actions?.length"
+        class="hidden w-72 shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] md:flex"
+      >
+        <h3 class="px-3 pt-3 pb-1 text-[15.6px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Quick answers</h3>
+        <div class="flex-1 space-y-1.5 overflow-y-auto px-2 pb-3">
+          <button
+            v-for="q in boot.quick_actions"
+            :key="q.action"
+            class="block w-full truncate rounded-md px-3 py-2 text-left text-[17.2px] font-semibold transition-colors disabled:opacity-50"
+            :class="pendingQuick?.action === q.action ? 'bg-[var(--color-success)]/30' : 'bg-[var(--color-bg)] hover:bg-[var(--color-surface-raised)]'"
+            :disabled="running || quickBusy"
+            :title="q.label"
+            @click="pickQuick(q)"
+          >
+            ⚡ {{ q.label }}{{ q.needs_query ? '…' : '' }}
+          </button>
+        </div>
+      </aside>
     </div>
   </div>
 </template>
