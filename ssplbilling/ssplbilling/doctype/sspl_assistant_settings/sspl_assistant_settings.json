@@ -22,6 +22,12 @@
   "daily_question_limit",
   "column_break_usage",
   "max_turns",
+  "cache_section",
+  "enable_query_cache",
+  "cache_reply_mode",
+  "column_break_cache",
+  "cache_match_threshold",
+  "cache_expiry_days",
   "prompt_section",
   "system_prompt"
  ],
@@ -137,6 +143,44 @@
    "description": "Each question re-sends the whole chat, so long chats cost more. After this, the user is asked to start a new chat. 0 = no limit."
   },
   {
+   "fieldname": "cache_section",
+   "fieldtype": "Section Break",
+   "label": "Answer Reuse",
+   "description": "A question asked again (same words, or near-identical with a typo; names, numbers and dates must match) re-runs the earlier answer's data lookups for live figures instead of letting the AI work it out again. Only the first question of a chat is saved, since follow-ups depend on the chat before them."
+  },
+  {
+   "fieldname": "enable_query_cache",
+   "fieldtype": "Check",
+   "label": "Reuse Earlier Answers",
+   "default": "1"
+  },
+  {
+   "fieldname": "cache_reply_mode",
+   "fieldtype": "Select",
+   "label": "Reply On Reuse",
+   "options": "AI Rewrite\nTables Only",
+   "default": "AI Rewrite",
+   "description": "AI Rewrite: the chat's provider writes the answer from the fresh data on its cheapest model, without tools (a fraction of the tokens). Tables Only: the data is shown as tables, no AI call, zero tokens."
+  },
+  {
+   "fieldname": "column_break_cache",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cache_match_threshold",
+   "fieldtype": "Float",
+   "label": "Word Similarity",
+   "default": "0.85",
+   "description": "0–1. Each word must be at least this similar to its partner (0.85 lets 'outstandng' match 'outstanding'). 1 = exact words only."
+  },
+  {
+   "fieldname": "cache_expiry_days",
+   "fieldtype": "Int",
+   "label": "Forget After (days)",
+   "default": "30",
+   "description": "A saved recipe older than this is asked to the AI again and refreshed. 0 = never."
+  },
+  {
    "fieldname": "prompt_section",
    "fieldtype": "Section Break",
    "label": "Extra Instructions"
@@ -150,7 +194,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-28 18:00:00",
+ "modified": "2026-10-28 23:30:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Assistant Settings",

@@ -30,21 +30,24 @@ CANCEL_POLL_SECONDS = 0.5
 FALLBACK_MODELS = ("claude-fable-5-1", "claude-opus-5-5", "claude-opus-5", "claude-sonnet-5-5")
 
 
-def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
+def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None, use_tools=True, model=None):
+	"""use_tools=False is one plain reply, used to word an answer from data the query cache
+	already fetched; `model` overrides the settings' model for it."""
 	settings = settings or frappe.get_cached_doc(SETTINGS)
 	api_key = settings.get_password("anthropic_api_key", raise_exception=False)
 	if not api_key:
 		frappe.throw(f"Set the Anthropic API key in {SETTINGS}.")
 
-	model = (settings.claude_model or DEFAULT_MODEL).strip()
+	model = (model or settings.claude_model or DEFAULT_MODEL).strip()
 	params = {
 		"model": model,
 		"max_tokens": MAX_TOKENS,
 		"system": tools.system_prompt(settings),
-		"tools": tools.TOOLS,
 		"cache_control": {"type": "ephemeral"},
 		"output_config": {"effort": settings.claude_effort or "low"},
 	}
+	if use_tools:
+		params["tools"] = tools.TOOLS
 	if model in FALLBACK_MODELS:
 		params["betas"] = ["server-side-fallback-2026-07-01"]
 		params["fallbacks"] = "default"
@@ -145,6 +148,14 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 	result["history"] = messages
 	result["duration_ms"] = int((time.monotonic() - started) * 1000)
 	return result
+
+
+def text_history(prompt, reply):
+	"""History for a turn answered without the API (query cache, tables only)."""
+	return [
+		{"role": "user", "content": prompt},
+		{"role": "assistant", "content": [{"type": "text", "text": reply}]},
+	]
 
 
 def _echo_blocks(content):

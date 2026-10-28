@@ -13,7 +13,8 @@
   "input_tokens",
   "output_tokens",
   "quick_source",
-  "attachments"
+  "attachments",
+  "cached_from"
  ],
  "fields": [
   {
@@ -87,11 +88,19 @@
    "label": "Attachments",
    "read_only": 1,
    "description": "Excel files and charts made for this reply (JSON)."
+  },
+  {
+   "fieldname": "cached_from",
+   "fieldtype": "Link",
+   "label": "Reused From",
+   "options": "SSPL Assistant Query Cache",
+   "read_only": 1,
+   "description": "Answered by re-running a saved recipe."
   }
  ],
  "autoname": "hash",
  "links": [],
- "modified": "2026-10-28 20:00:00",
+ "modified": "2026-10-28 23:30:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Assistant Message",

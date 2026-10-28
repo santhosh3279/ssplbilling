@@ -23,25 +23,23 @@ MAX_STEPS = 10
 CANCEL_POLL_SECONDS = 0.5
 
 
-def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
+def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None, use_tools=True, model=None):
+	"""use_tools / model: as in ai_chat_runner.run."""
 	settings = settings or frappe.get_cached_doc(SETTINGS)
 	api_key = settings.get_password("google_api_key", raise_exception=False)
 	if not api_key:
 		frappe.throw(f"Set the Google API key in {SETTINGS}.")
 
-	model = (settings.gemini_model or DEFAULT_MODEL).strip()
+	model = (model or settings.gemini_model or DEFAULT_MODEL).strip()
+	declarations = [
+		types.FunctionDeclaration(
+			name=t["name"], description=t["description"], parameters_json_schema=t["input_schema"]
+		)
+		for t in tools.TOOLS
+	]
 	config = types.GenerateContentConfig(
 		system_instruction=tools.system_prompt(settings),
-		tools=[
-			types.Tool(
-				function_declarations=[
-					types.FunctionDeclaration(
-						name=t["name"], description=t["description"], parameters_json_schema=t["input_schema"]
-					)
-					for t in tools.TOOLS
-				]
-			)
-		],
+		tools=[types.Tool(function_declarations=declarations)] if use_tools else None,
 		# We run the tools ourselves, as the chat user, and stream progress to the page.
 		automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
 	)
@@ -153,3 +151,11 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 	result["history"] = [c.model_dump(mode="json", exclude_none=True) for c in contents]
 	result["duration_ms"] = int((time.monotonic() - started) * 1000)
 	return result
+
+
+def text_history(prompt, reply):
+	"""History for a turn answered without the API (query cache, tables only)."""
+	return [
+		{"role": "user", "parts": [{"text": prompt}]},
+		{"role": "model", "parts": [{"text": reply}]},
+	]

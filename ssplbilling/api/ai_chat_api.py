@@ -6,9 +6,10 @@ import json
 import time
 
 import frappe
-from frappe.utils import add_to_date, get_datetime, now_datetime
+from frappe.utils import add_to_date, cint, get_datetime, now_datetime
 
 from ssplbilling.api import (
+	ai_chat_cache,
 	ai_chat_export,
 	ai_chat_quick,
 	ai_chat_runner,
@@ -36,6 +37,7 @@ MESSAGE_FIELDS = (
 	"quick",
 	"quick_source",
 	"attachments",
+	"cached_from",
 	"creation",
 )
 
@@ -86,7 +88,8 @@ def get_messages(chat):
 
 
 @frappe.whitelist(methods=["POST"])
-def send_message(message, chat=None, provider=None, company=None, cost_center=None):
+def send_message(message, chat=None, provider=None, company=None, cost_center=None, fresh=0):
+	"""fresh=1 skips the query cache and saves a new recipe ("Ask AI fresh" under a reused answer)."""
 	_check_access()
 	message = (message or "").strip()
 	if not message:
@@ -101,6 +104,10 @@ def send_message(message, chat=None, provider=None, company=None, cost_center=No
 	if doc.status == "Running" and not _is_stale(doc):
 		frappe.throw("Still answering the previous message. Wait for it or press Stop.")
 	_set_scope(doc, company, cost_center)
+	settings = _settings()
+	cached = None
+	if not cint(fresh) and settings.enable_query_cache and not doc.history:
+		cached = ai_chat_cache.find(message, doc.company, doc.cost_center, settings)
 
 	_insert_message(doc.name, "user", message)
 	frappe.db.set_value(CHAT, doc.name, "status", "Running")
@@ -112,6 +119,8 @@ def send_message(message, chat=None, provider=None, company=None, cost_center=No
 		enqueue_after_commit=True,
 		chat=doc.name,
 		prompt=message,
+		cached=cached,
+		fresh=cint(fresh),
 	)
 	return {"chat": _chat_dict(doc)}
 
@@ -217,14 +226,18 @@ def delete_chat(chat):
 	return {"ok": True}
 
 
-def process_turn(chat, prompt):
-	"""Background job: run Claude as the chat user, stream to them, store the reply."""
+def process_turn(chat, prompt, cached=None, fresh=0):
+	"""Background job: run the AI as the chat user, stream to them, store the reply. `cached`
+	is a saved recipe to re-run instead (ai_chat_cache); fresh ignores the chat's history,
+	since it re-asks the question just before it."""
 	doc = frappe.get_doc(CHAT, chat)
 	user = doc.user
 	# Tools query ERPNext in-process, so they must run with the chat user's permissions.
 	frappe.set_user(user)
 	frappe.cache.delete_value(_cancel_key(chat))
 	pending = {"text": "", "at": time.monotonic()}
+	calls = []  # tool calls with their outcome, for the query cache
+	history = None if cint(fresh) or not doc.history else json.loads(doc.history)
 
 	def publish(payload):
 		frappe.publish_realtime(REALTIME_EVENT, {"chat": chat, **payload}, user=user, after_commit=False)
@@ -236,6 +249,12 @@ def process_turn(chat, prompt):
 		pending["at"] = time.monotonic()
 
 	def on_event(ev):
+		if ev["type"] == "tool":
+			calls.append({"name": ev["name"], "input": ev.get("input"), "ok": None})
+		elif ev["type"] == "tool_result":
+			call = next((c for c in reversed(calls) if c["name"] == ev["name"] and c["ok"] is None), None)
+			if call:
+				call["ok"] = ev["ok"]
 		if ev["type"] == "text":
 			pending["text"] += ev["text"]
 			if time.monotonic() - pending["at"] >= FLUSH_SECONDS:
@@ -249,12 +268,13 @@ def process_turn(chat, prompt):
 	try:
 		# Tool calls that don't name a company / cost center use the chat's.
 		with ai_chat_tools.scope(doc.company, doc.cost_center):
-			result = RUNNERS[doc.provider or "Claude"].run(
-				prompt,
-				json.loads(doc.history) if doc.history else None,
-				on_event=on_event,
-				is_cancelled=lambda: frappe.cache.get_value(_cancel_key(chat)),
-			)
+			is_cancelled = lambda: frappe.cache.get_value(_cancel_key(chat))  # noqa: E731
+			if cached:
+				result = _reuse(doc, prompt, cached, on_event, is_cancelled)
+			else:
+				result = RUNNERS[doc.provider or "Claude"].run(
+					prompt, history, on_event=on_event, is_cancelled=is_cancelled
+				)
 	except Exception as e:
 		frappe.log_error(title=f"SSPL AI Chat {doc.provider} run failed")
 		result = {"text": "", "tools": [], "error": str(e), "duration_ms": 0}
@@ -266,8 +286,16 @@ def process_turn(chat, prompt):
 		result["error"] = None
 		result["text"] = (result["text"] + "\n\n_(stopped)_").strip()
 
+	# Only a chat's first question is saved: a follow-up depends on the chat before it.
+	savable = not (cached or history or cancelled or result["error"])
+	if savable and result["text"] and _settings().enable_query_cache:
+		try:
+			ai_chat_cache.save(prompt, doc.company, doc.cost_center, doc.provider, calls, result["text"])
+		except Exception:
+			frappe.log_error(title="SSPL AI Chat query cache save failed")
+
 	if result["text"]:
-		msg = _insert_message(chat, "assistant", result["text"], result)
+		msg = _insert_message(chat, "assistant", result["text"], result, cached_from=cached)
 	else:
 		msg = _insert_message(chat, "error", result["error"] or "No answer.", result)
 	if result["error"] and result["text"]:
@@ -281,6 +309,42 @@ def process_turn(chat, prompt):
 
 	publish({"type": "done", "message": msg})
 	return msg
+
+
+def _reuse(doc, prompt, cached, on_event, is_cancelled):
+	"""Answer from a saved recipe: re-run its tool calls for live figures, then word the reply
+	on the provider's cheapest model without tools, or as plain tables (no AI call). Falls
+	back to tables when the AI gives no text."""
+	started = time.monotonic()
+	attachments = []
+	calls = ai_chat_cache.replay(cached, attachments, on_event)
+	runner = RUNNERS[doc.provider or "Claude"]
+	result = None
+	if _settings().cache_reply_mode != ai_chat_cache.MODE_TABLES and _providers(_settings()):
+		result = runner.run(
+			ai_chat_cache.data_prompt(prompt, calls),
+			on_event=on_event,
+			is_cancelled=is_cancelled,
+			use_tools=False,
+			model=runner.DEFAULT_MODEL,
+		)
+		if not result["text"]:
+			frappe.log_error(title="SSPL AI Chat reuse rewrite failed", message=result["error"])
+			result = None
+	if result is None:
+		text = ai_chat_cache.tables(calls)
+		on_event({"type": "text", "text": text})
+		result = {
+			"text": text,
+			"error": None,
+			"input_tokens": 0,
+			"output_tokens": 0,
+			"history": runner.text_history(prompt, text),
+		}
+	result["tools"] = [{"name": c["name"], "input": c["input"]} for c in calls]
+	result["attachments"] = attachments
+	result["duration_ms"] = int((time.monotonic() - started) * 1000)
+	return result
 
 
 # ── helpers ─────────────────────────────────────────────────────────────────
@@ -406,7 +470,7 @@ def _chat_dict(doc):
 	return {k: doc.get(k) for k in CHAT_FIELDS}
 
 
-def _insert_message(chat, role, content, result=None, quick=False, quick_source=None):
+def _insert_message(chat, role, content, result=None, quick=False, quick_source=None, cached_from=None):
 	tools = [{"name": t["name"]} for t in (result or {}).get("tools") or []]
 	attachments = (result or {}).get("attachments") or []
 	_attach_files(attachments, chat)
@@ -423,6 +487,7 @@ def _insert_message(chat, role, content, result=None, quick=False, quick_source=
 			"quick": int(quick),
 			"quick_source": json.dumps(quick_source) if quick_source else None,
 			"attachments": json.dumps(attachments, default=str) if attachments else None,
+			"cached_from": cached_from,
 		}
 	).insert(ignore_permissions=True)
 	return {k: doc.get(k) for k in MESSAGE_FIELDS}

@@ -1572,8 +1572,9 @@ export const aiChat = {
   chats: () => frappeGet(AI_CHAT + "list_chats"),
   messages: (chat) => frappeGet(AI_CHAT + "get_messages", { chat }),
   // scope: { company, cost_center } from the page dropdowns ("" = all)
-  send: (message, chat, provider, scope) =>
-    frappePost(AI_CHAT + "send_message", { message, chat, provider, ...scope }, { silent: true }),
+  // fresh: skip the saved answer for this question and ask the AI again
+  send: (message, chat, provider, scope, fresh = false) =>
+    frappePost(AI_CHAT + "send_message", { message, chat, provider, ...scope, fresh: fresh ? 1 : 0 }, { silent: true }),
   quick: (action, query, chat, provider, scope) =>
     frappePost(AI_CHAT + "quick_answer", { action, query, chat, provider, ...scope }, { silent: true }),
   output: (message, kind) => frappePost(AI_CHAT + "quick_output", { message, kind }, { silent: true }),

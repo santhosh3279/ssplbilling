@@ -152,11 +152,21 @@
                 <div class="mt-1 flex gap-3 text-[13.75px] text-[var(--color-text-muted)]">
                   <span v-if="m.quick">⚡ Answered locally · no AI cost</span>
                   <template v-else>
+                    <span v-if="m.cached_from" title="Same question asked before: its data lookups were re-run for today's figures">
+                      ♻ Reused earlier answer{{ m.output_tokens ? '' : ' · no AI cost' }}
+                    </span>
                     <span v-if="current?.provider">{{ current.provider }}</span>
                     <span v-if="m.duration_ms">{{ (m.duration_ms / 1000).toFixed(1) }}s</span>
                     <span v-if="m.input_tokens || m.output_tokens">{{ m.input_tokens || 0 }} in · {{ m.output_tokens || 0 }} out tokens</span>
                   </template>
                   <button class="hover:text-[var(--color-text)]" @click="copy(m.content)">Copy</button>
+                  <button
+                    v-if="m.cached_from && m === messages[messages.length - 1] && !running"
+                    class="hover:text-[var(--color-text)]"
+                    @click="askFresh(m)"
+                  >
+                    Ask AI fresh
+                  </button>
                 </div>
               </div>
             </article>
@@ -428,15 +438,26 @@ async function submit() {
     return runQuick(pendingQuick.value, text)
   }
   if (!text || running.value || !hasAi.value) return
-  error.value = ''
   input.value = ''
   autosize()
+  sendText(text)
+}
+
+// Re-ask the question behind a reused answer, skipping the saved recipe.
+function askFresh(m) {
+  const i = messages.value.indexOf(m)
+  const q = messages.value.slice(0, i).reverse().find((x) => x.role === 'user')
+  if (q && !running.value) sendText(q.content, true)
+}
+
+async function sendText(text, fresh = false) {
+  error.value = ''
   messages.value.push({ name: 'local-' + Date.now(), role: 'user', content: text })
   resetLive()
   running.value = true
   scrollDown()
   try {
-    const res = await aiChat.send(text, current.value?.name, provider.value, { ...scope })
+    const res = await aiChat.send(text, current.value?.name, provider.value, { ...scope }, fresh)
     if (!current.value) {
       current.value = res.chat
       router.replace({ query: { chat: res.chat.name } })
