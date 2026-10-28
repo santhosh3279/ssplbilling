@@ -7,6 +7,7 @@ billing system mirrors invoices into the other company (RTN07075 / RTN07075/).
 """
 
 import json
+import re
 from contextlib import contextmanager
 
 import frappe
@@ -17,7 +18,20 @@ MAX_ROWS = 100
 EXPORT_ROWS = 5000
 _row_cap = {"max": MAX_ROWS}
 _scope = {"company": None, "cost_center": None}
-DATA_TOOLS = ("sales_summary", "customer_outstanding", "item_stock", "account_ledger")
+DATA_TOOLS = (
+	"sales_summary",
+	"purchase_summary",
+	"customer_outstanding",
+	"supplier_outstanding",
+	"customer_activity",
+	"item_stock",
+	"item_movement",
+	"account_ledger",
+	"cash_bank_position",
+	"profit_loss",
+	"gst_summary",
+	"payments_summary",
+)
 # Cost price is ciphered on screen in the billing app; only these roles see valuation.
 VALUATION_ROLES = {"System Manager", "Stock Manager", "Accounts Manager"}
 
@@ -136,9 +150,171 @@ TOOLS = [
 	},
 ]
 
+_COMPANY = {
+	"type": "string",
+	"description": 'Exact company name. Omit to use the company selected on the chat page; "all" for every company.',
+}
+_COST_CENTER = {
+	"type": "string",
+	"description": 'Exact cost center name (branch). Omit to use the one selected on the chat page; "all" for every cost center.',
+}
+_FROM = {"type": "string", "description": "YYYY-MM-DD. Defaults to the 1st of this month."}
+_TO = {"type": "string", "description": "YYYY-MM-DD. Defaults to today."}
+_LIMIT = {"type": "integer", "description": f"Rows to return (max {MAX_ROWS})."}
+
+TOOLS += [
+	{
+		"name": "purchase_summary",
+		"description": (
+			"Purchase totals for a date range from submitted Purchase Invoices, per company: purchases, "
+			"returns (negative), net and drafts. Optional breakdown by supplier, item, day, month or series."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"from_date": {"type": "string", "description": "YYYY-MM-DD. Defaults to today."},
+				"to_date": {"type": "string", "description": "YYYY-MM-DD. Defaults to from_date."},
+				"company": _COMPANY,
+				"cost_center": _COST_CENTER,
+				"group_by": {
+					"type": "string",
+					"enum": ["none", "supplier", "item", "day", "month", "series"],
+				},
+				"limit": _LIMIT,
+			},
+		},
+	},
+	{
+		"name": "supplier_outstanding",
+		"description": (
+			"What we owe suppliers, from the General Ledger, per company (positive = we owe). Without "
+			"`supplier`: totals and the suppliers owed most. With `supplier`: balance and unpaid bills."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"supplier": {"type": "string", "description": "Supplier name, code or mobile."},
+				"company": _COMPANY,
+				"cost_center": _COST_CENTER,
+				"limit": _LIMIT,
+			},
+		},
+	},
+	{
+		"name": "customer_activity",
+		"description": (
+			"Buying pattern. With `customer`: first / last invoice, days since last, average gap, monthly "
+			"totals for 12 months. Without: customers who bought in the last year but not in `days` days."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"customer": {"type": "string", "description": "Customer name, code or mobile."},
+				"days": {
+					"type": "integer",
+					"description": "Lapsed = no purchase in this many days. Default 60.",
+				},
+				"company": _COMPANY,
+				"cost_center": _COST_CENTER,
+				"limit": _LIMIT,
+			},
+		},
+	},
+	{
+		"name": "item_movement",
+		"description": (
+			"Stock movement from the stock ledger. movement: one item's opening, in, out, closing per "
+			"warehouse by voucher type. fast: most sold items by qty. not_sold: items in stock with no sale in `days` days."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"item": {"type": "string", "description": "Item code, name or barcode (for movement)."},
+				"view": {"type": "string", "enum": ["movement", "fast", "not_sold"]},
+				"from_date": _FROM,
+				"to_date": _TO,
+				"days": {"type": "integer", "description": "For not_sold. Default 90."},
+				"warehouse": {"type": "string", "description": "Warehouse name or part of it."},
+				"company": _COMPANY,
+				"limit": _LIMIT,
+			},
+		},
+	},
+	{
+		"name": "cash_bank_position",
+		"description": (
+			"Balances of every cash, coin, bank and UPI / card account as of a date, per company, "
+			"grouped (Cash In Hand, Bank Accounts, UPI...). Use for 'cash in hand', 'bank balance'."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"as_of": {"type": "string", "description": "YYYY-MM-DD. Defaults to today."},
+				"account": {
+					"type": "string",
+					"description": "Only accounts or groups whose name contains this.",
+				},
+				"company": _COMPANY,
+			},
+		},
+	},
+	{
+		"name": "profit_loss",
+		"description": (
+			"Profit and loss from the General Ledger for a date range, per company: income, expense, net "
+			"profit, totals per group (Direct / Indirect Income / Expenses) and the biggest accounts."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"from_date": _FROM,
+				"to_date": _TO,
+				"company": _COMPANY,
+				"cost_center": _COST_CENTER,
+				"limit": _LIMIT,
+			},
+		},
+	},
+	{
+		"name": "gst_summary",
+		"description": (
+			"GST collected (output) vs paid (input credit) from the GST accounts, per company, by CGST / "
+			"SGST / IGST, net payable, reverse charge apart, plus taxable sales and purchase value."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"from_date": _FROM,
+				"to_date": _TO,
+				"group_by": {"type": "string", "enum": ["none", "month"]},
+				"company": _COMPANY,
+				"cost_center": _COST_CENTER,
+			},
+		},
+	},
+	{
+		"name": "payments_summary",
+		"description": (
+			"Money received and paid through Payment Entries for a date range, per company, broken down "
+			"by account (cash, bank, each UPI), mode, day or party, plus internal transfers."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"from_date": {"type": "string", "description": "YYYY-MM-DD. Defaults to today."},
+				"to_date": {"type": "string", "description": "YYYY-MM-DD. Defaults to from_date."},
+				"group_by": {"type": "string", "enum": ["account", "mode", "day", "party"]},
+				"company": _COMPANY,
+				"cost_center": _COST_CENTER,
+				"limit": _LIMIT,
+			},
+		},
+	},
+]
+
 
 INSTRUCTIONS = """You are the business assistant for Sundaram and Sons Private Ltd (SSPL), a wholesale business, answering staff questions from live ERPNext data.
-- Use the tools for every figure; never invent numbers, names or document ids. If no tool covers the question, say what you can answer (sales, receivables, stock, account ledgers).
+- Use the tools for every figure; never invent numbers, names or document ids. If no tool covers the question, say what you can answer (sales, purchases, receivables, payables, customer activity, stock and item movement, account ledgers, cash and bank, profit and loss, GST, payments).
 - You are read-only. If asked to create or change anything, say so and point to the screen in the app where it is done.
 - Amounts are INR (₹) with Indian grouping (₹1,25,000). Keep answers short; use markdown tables for lists.
 - State the date range, company and cost center you used (each tool result says which it applied). "Today" means the date given below.
@@ -228,18 +404,32 @@ def run_tool(name, args, attachments=None):
 		return f"Invalid request: {e}", True
 
 
-# ── sales ───────────────────────────────────────────────────────────────────
+# ── sales / purchases ───────────────────────────────────────────────────────
+
+# Sales and purchase summaries share one shape; only these keys differ.
+INVOICES = {
+	"Sales Invoice": {"party": "customer", "total": "sales", "net": "net_sales"},
+	"Purchase Invoice": {"party": "supplier", "total": "purchases", "net": "net_purchases"},
+}
 
 
 def sales_summary(from_date=None, to_date=None, company=None, cost_center=None, group_by="none", limit=10):
+	return _invoice_summary("Sales Invoice", from_date, to_date, company, cost_center, group_by, limit)
+
+
+def purchase_summary(from_date=None, to_date=None, company=None, cost_center=None, group_by="none", limit=10):
+	return _invoice_summary("Purchase Invoice", from_date, to_date, company, cost_center, group_by, limit)
+
+
+def _invoice_summary(doctype, from_date, to_date, company, cost_center, group_by, limit):
+	cfg = INVOICES[doctype]
 	from_date = getdate(from_date or nowdate())
 	to_date = getdate(to_date or from_date)
 	if to_date < from_date:
 		raise ValueError("to_date is before from_date")
-	if group_by not in (None, "none", *BREAKDOWN_KEYS, "item", "month"):
-		raise ValueError(
-			f"group_by must be one of none, customer, item, day, month, series; got {group_by!r}"
-		)
+	options = ("none", cfg["party"], "item", "day", "month", "series")
+	if group_by not in (None, *options):
+		raise ValueError(f"group_by must be one of {', '.join(options)}; got {group_by!r}")
 	limit = _limit(limit)
 	company, cost_center = _scoped(company, cost_center)
 	filters = {"posting_date": ["between", [from_date, to_date]]}
@@ -249,7 +439,7 @@ def sales_summary(from_date=None, to_date=None, company=None, cost_center=None, 
 		filters["cost_center"] = cost_center
 
 	submitted = frappe.get_list(
-		"Sales Invoice",
+		doctype,
 		filters={**filters, "docstatus": 1},
 		fields=[
 			"company",
@@ -262,7 +452,7 @@ def sales_summary(from_date=None, to_date=None, company=None, cost_center=None, 
 		limit=0,
 	)
 	drafts = frappe.get_list(
-		"Sales Invoice",
+		doctype,
 		filters={**filters, "docstatus": 0},
 		fields=[
 			"company",
@@ -275,24 +465,24 @@ def sales_summary(from_date=None, to_date=None, company=None, cost_center=None, 
 
 	companies = {}
 	for row in submitted:
-		c = companies.setdefault(row.company, _empty_sales())
-		key = "returns" if row.is_return else "sales"
+		c = companies.setdefault(row.company, _empty_invoices(cfg["total"]))
+		key = "returns" if row.is_return else cfg["total"]
 		c[key] = {
 			"invoices": row.invoices,
 			"net_total": flt(row.net_total, 2),
 			"grand_total": flt(row.grand_total, 2),
 		}
 	for row in drafts:
-		companies.setdefault(row.company, _empty_sales())["pending_drafts"] = {
+		companies.setdefault(row.company, _empty_invoices(cfg["total"]))["pending_drafts"] = {
 			"invoices": row.invoices,
 			"grand_total": flt(row.grand_total, 2),
 		}
 	for c in companies.values():
-		c["net_sales"] = flt(c["sales"]["grand_total"] + c["returns"]["grand_total"], 2)
+		c[cfg["net"]] = flt(c[cfg["total"]]["grand_total"] + c["returns"]["grand_total"], 2)
 
 	if group_by and group_by != "none":
 		for name, c in companies.items():
-			c[f"by_{group_by}"] = _sales_breakdown(group_by, {**filters, "company": name}, limit)
+			c[f"by_{group_by}"] = _breakdown(doctype, group_by, {**filters, "company": name}, limit)
 
 	return {
 		"from_date": from_date,
@@ -303,23 +493,21 @@ def sales_summary(from_date=None, to_date=None, company=None, cost_center=None, 
 	}
 
 
-def _empty_sales():
+def _empty_invoices(total_key):
 	zero = {"invoices": 0, "net_total": 0.0, "grand_total": 0.0}
-	return {"sales": dict(zero), "returns": dict(zero), "pending_drafts": {"invoices": 0, "grand_total": 0.0}}
+	return {
+		total_key: dict(zero),
+		"returns": dict(zero),
+		"pending_drafts": {"invoices": 0, "grand_total": 0.0},
+	}
 
 
-BREAKDOWN_KEYS = {
-	"customer": ["customer", "customer_name"],
-	"day": ["posting_date"],
-	"series": ["naming_series"],
-}
-
-
-def _sales_breakdown(group_by, filters, limit):
+def _breakdown(doctype, group_by, filters, limit):
+	"""Top rows of submitted invoices (returns netted in) for one company."""
 	if group_by == "month":
 		# Fold the daily rows: every day is needed, whatever the row limit.
 		months = {}
-		for day in _sales_breakdown("day", filters, EXPORT_ROWS):
+		for day in _breakdown(doctype, "day", filters, EXPORT_ROWS):
 			m = months.setdefault(
 				str(day.posting_date)[:7],
 				{"month": str(day.posting_date)[:7], "invoices": 0, "grand_total": 0.0},
@@ -327,15 +515,12 @@ def _sales_breakdown(group_by, filters, limit):
 			m["invoices"] += day.invoices
 			m["grand_total"] = flt(m["grand_total"] + flt(day.grand_total), 2)
 		return list(months.values())
-	"""Top rows of submitted invoices (returns netted in) for one company."""
 	if group_by == "item":
-		parent_filters = [
-			["Sales Invoice", k, *(v if isinstance(v, list) else ["=", v])] for k, v in filters.items()
-		]
-		parent_filters.append(["Sales Invoice", "docstatus", "=", 1])
+		parent_filters = [[doctype, k, *(v if isinstance(v, list) else ["=", v])] for k, v in filters.items()]
+		parent_filters.append([doctype, "docstatus", "=", 1])
 		return frappe.get_list(
-			"Sales Invoice Item",
-			parent_doctype="Sales Invoice",
+			f"{doctype} Item",
+			parent_doctype=doctype,
 			filters=parent_filters,
 			fields=[
 				"item_code",
@@ -349,30 +534,64 @@ def _sales_breakdown(group_by, filters, limit):
 			limit=limit,
 		)
 
-	keys = BREAKDOWN_KEYS[group_by]
+	keys = {"day": ["posting_date"], "series": ["naming_series"]}.get(group_by) or [
+		group_by,
+		f"{group_by}_name",
+	]
 	rows = frappe.get_list(
-		"Sales Invoice",
+		doctype,
 		filters={**filters, "docstatus": 1},
 		fields=[*keys, {"COUNT": "*", "as": "invoices"}, {"SUM": "base_grand_total", "as": "grand_total"}],
 		group_by=", ".join(keys),
 		order_by="posting_date asc" if group_by == "day" else "grand_total desc",
 		limit=limit,
 	)
-	for r in rows:
-		_drop_same_name(r, "customer")
+	if group_by in ("customer", "supplier"):
+		for r in rows:
+			_drop_same_name(r, group_by)
 	return rows
 
 
-# ── receivables ─────────────────────────────────────────────────────────────
+# ── receivables / payables ──────────────────────────────────────────────────
+
+# sign turns the GL's debit - credit into "owed" for that side: customers owe us, we owe suppliers.
+PARTIES = {
+	"Customer": {
+		"invoice": "Sales Invoice",
+		"key": "customer",
+		"sign": 1,
+		"total": "receivable",
+		"count": "customers_owing",
+		"note": "receivable = sum of positive balances; advances = customers in credit (negative)",
+	},
+	"Supplier": {
+		"invoice": "Purchase Invoice",
+		"key": "supplier",
+		"sign": -1,
+		"total": "payable",
+		"count": "suppliers_owed",
+		"note": "payable = what we owe suppliers (sum of positive balances); advances = suppliers we paid ahead (negative)",
+	},
+}
 
 
 def customer_outstanding(customer=None, company=None, cost_center=None, limit=10):
+	return _party_outstanding("Customer", customer, company, cost_center, limit)
+
+
+def supplier_outstanding(supplier=None, company=None, cost_center=None, limit=10):
+	return _party_outstanding("Supplier", supplier, company, cost_center, limit)
+
+
+def _party_outstanding(party_type, search, company, cost_center, limit):
+	cfg = PARTIES[party_type]
+	key = cfg["key"]
 	limit = _limit(limit)
 	company, cost_center = _scoped(company, cost_center)
-	if customer:
-		return _one_customer(customer, company, cost_center, limit)
+	if search:
+		return _one_party(party_type, search, company, cost_center, limit)
 
-	filters = {"party_type": "Customer", "is_cancelled": 0}
+	filters = {"party_type": party_type, "is_cancelled": 0}
 	if company:
 		filters["company"] = company
 	if cost_center:
@@ -382,27 +601,28 @@ def customer_outstanding(customer=None, company=None, cost_center=None, limit=10
 	companies = {}
 	for row in balances:
 		c = companies.setdefault(
-			row["company"], {"receivable": 0.0, "advances": 0.0, "customers_owing": 0, "top": []}
+			row["company"], {cfg["total"]: 0.0, "advances": 0.0, cfg["count"]: 0, "top": []}
 		)
-		if row["balance"] > 0:
-			c["receivable"] += row["balance"]
-			c["customers_owing"] += 1
-			c["top"].append(row)
-		elif row["balance"] < 0:
-			c["advances"] += row["balance"]
+		balance = cfg["sign"] * row["balance"]
+		if balance > 0:
+			c[cfg["total"]] += balance
+			c[cfg["count"]] += 1
+			c["top"].append({**row, "balance": balance})
+		elif balance < 0:
+			c["advances"] += balance
 
 	names = set()
 	for c in companies.values():
-		c["receivable"] = flt(c["receivable"], 2)
+		c[cfg["total"]] = flt(c[cfg["total"]], 2)
 		c["advances"] = flt(c["advances"], 2)
 		c["top"] = sorted(c["top"], key=lambda r: r["balance"], reverse=True)[:limit]
 		names.update(r["party"] for r in c["top"])
-	labels = _customer_names(names)
+	labels = _party_names(party_type, names)
 	for c in companies.values():
 		c["top"] = [
 			_drop_same_name(
-				{"customer": r["party"], "customer_name": labels.get(r["party"]), "balance": r["balance"]},
-				"customer",
+				{key: r["party"], f"{key}_name": labels.get(r["party"]), "balance": r["balance"]},
+				key,
 			)
 			for r in c["top"]
 		]
@@ -410,36 +630,42 @@ def customer_outstanding(customer=None, company=None, cost_center=None, limit=10
 	return {
 		"as_of": nowdate(),
 		**_scope_note(company, cost_center),
-		"note": "receivable = sum of positive balances; advances = customers in credit (negative)",
+		"note": cfg["note"],
 		"companies": companies,
 	}
 
 
-def _one_customer(search, company, cost_center, limit):
-	matches = _find_customers(search)
-	if not matches:
-		return {"found": False, "message": f"No customer matches '{search}'."}
-	exact = [m for m in matches if search.lower() in (m.name.lower(), (m.customer_name or "").lower())]
-	if len(matches) > 1 and len(exact) != 1:
-		return {"found": False, "message": "Several customers match; ask which one.", "candidates": matches}
-	cust = exact[0] if exact else matches[0]
+def _one_party(party_type, search, company, cost_center, limit):
+	cfg = PARTIES[party_type]
+	key = cfg["key"]
+	party = _pick_party(party_type, search)
+	if party.get("found") is False:
+		return party
 
-	filters = {"party_type": "Customer", "party": cust.name, "is_cancelled": 0}
+	filters = {"party_type": party_type, "party": party.name, "is_cancelled": 0}
 	if company:
 		filters["company"] = company
 	if cost_center:
 		filters["cost_center"] = cost_center
-	balances = {r["company"]: r["balance"] for r in _gl_balances(filters, ["company"])}
+	balances = {r["company"]: cfg["sign"] * r["balance"] for r in _gl_balances(filters, ["company"])}
 
-	inv_filters = {"customer": cust.name, "docstatus": 1, "outstanding_amount": ["!=", 0]}
+	inv_filters = {key: party.name, "docstatus": 1, "outstanding_amount": ["!=", 0]}
 	if company:
 		inv_filters["company"] = company
 	if cost_center:
 		inv_filters["cost_center"] = cost_center
 	invoices = frappe.get_list(
-		"Sales Invoice",
+		cfg["invoice"],
 		filters=inv_filters,
-		fields=["name", "company", "posting_date", "due_date", "grand_total", "outstanding_amount"],
+		fields=[
+			"name",
+			*(["bill_no"] if party_type == "Supplier" else []),
+			"company",
+			"posting_date",
+			"due_date",
+			"grand_total",
+			"outstanding_amount",
+		],
 		order_by="posting_date asc",
 		limit=limit,
 	)
@@ -449,9 +675,9 @@ def _one_customer(search, company, cost_center, limit):
 
 	return {
 		"found": True,
-		"customer": cust.name,
-		"customer_name": cust.customer_name,
-		"mobile_no": cust.mobile_no,
+		key: party.name,
+		f"{key}_name": party.get(f"{key}_name"),
+		"mobile_no": party.mobile_no,
 		"as_of": nowdate(),
 		**_scope_note(company, cost_center),
 		"balance_by_company": balances,
@@ -476,23 +702,36 @@ def _gl_balances(filters, keys):
 	return out
 
 
-def _find_customers(search):
+def _pick_party(party_type, search):
+	"""The one customer / supplier `search` names, or {"found": False, ...} to ask the user."""
+	label = f"{PARTIES[party_type]['key']}_name"
+	noun = party_type.lower()
+	matches = _find_parties(party_type, search)
+	if not matches:
+		return {"found": False, "message": f"No {noun} matches '{search}'."}
+	exact = [m for m in matches if search.lower() in (m.name.lower(), (m.get(label) or "").lower())]
+	if len(matches) > 1 and len(exact) != 1:
+		return {"found": False, "message": f"Several {noun}s match; ask which one.", "candidates": matches}
+	return exact[0] if exact else matches[0]
+
+
+def _find_parties(party_type, search):
+	label = f"{PARTIES[party_type]['key']}_name"
 	like = f"%{search}%"
 	return frappe.get_list(
-		"Customer",
-		or_filters={"name": ["like", like], "customer_name": ["like", like], "mobile_no": ["like", like]},
-		fields=["name", "customer_name", "mobile_no"],
+		party_type,
+		or_filters={"name": ["like", like], label: ["like", like], "mobile_no": ["like", like]},
+		fields=["name", label, "mobile_no"],
 		limit=10,
 	)
 
 
-def _customer_names(names):
+def _party_names(party_type, names):
 	if not names:
 		return {}
-	rows = frappe.get_list(
-		"Customer", filters={"name": ["in", list(names)]}, fields=["name", "customer_name"], limit=0
-	)
-	return {r.name: r.customer_name for r in rows}
+	label = f"{PARTIES[party_type]['key']}_name"
+	rows = frappe.get_list(party_type, filters={"name": ["in", list(names)]}, fields=["name", label], limit=0)
+	return {r.name: r[label] for r in rows}
 
 
 # ── ledger ──────────────────────────────────────────────────────────────────
@@ -738,6 +977,399 @@ def _ledger_entries(filters, vouchers, contra, opening, limit):
 	return out
 
 
+# ── cash and bank ───────────────────────────────────────────────────────────
+
+# Groups holding money accounts that ERPNext doesn't type as Cash / Bank (UPI wallets, card).
+MONEY_GROUP = re.compile(r"\b(UPI|CARD|WALLET|PAYTM)\b", re.IGNORECASE)
+
+
+def cash_bank_position(as_of=None, account=None, company=None):
+	as_of = getdate(as_of or nowdate())
+	company, _cost_center = _scoped(company, None)
+	accounts = _money_accounts(company)
+	if account:
+		needle = account.casefold()
+		accounts = {a: g for a, g in accounts.items() if needle in a.casefold() or needle in g.casefold()}
+		if not accounts:
+			return {"found": False, "message": f"No cash, bank or UPI account matches '{account}'."}
+	balances = _gl_balances(
+		{"account": ["in", list(accounts) or [""]], "is_cancelled": 0, "posting_date": ["<=", as_of]},
+		["company", "account"],
+	)
+	companies = {}
+	for r in balances:
+		c = companies.setdefault(r["company"], {"total": 0.0, "by_group": {}, "accounts": []})
+		group = accounts[r["account"]]
+		c["total"] += r["balance"]
+		c["by_group"][group] = c["by_group"].get(group, 0.0) + r["balance"]
+		c["accounts"].append({"account": r["account"], "group": group, "balance": r["balance"]})
+	for c in companies.values():
+		c["total"] = flt(c["total"], 2)
+		c["by_group"] = [{"group": g, "balance": flt(b, 2)} for g, b in c["by_group"].items()]
+		c["accounts"].sort(key=lambda r: (r["group"], -r["balance"]))
+	return {
+		"as_of": as_of,
+		**_scope_note(company, None),
+		"note": "balance as per the ledger (Dr positive). Cash, bank and UPI accounts are per branch by name, so the cost center filter does not apply; accounts with a zero balance are left out.",
+		"companies": companies,
+	}
+
+
+def _money_accounts(company):
+	"""{leaf account: its group's name} for cash, bank, coin and UPI accounts.
+
+	Typed Cash / Bank asset accounts, plus every leaf under the groups that hold them (Cash In
+	Hand, Coins, Bank Accounts) or that are named like a wallet (UPI). Broad groups directly
+	under the root (Current Assets) are skipped so debtors and stock never come in."""
+	rows = frappe.get_list(
+		"Account",
+		filters={"company": company} if company else {},
+		fields=[
+			"name",
+			"account_name",
+			"parent_account",
+			"account_type",
+			"root_type",
+			"is_group",
+			"lft",
+			"rgt",
+		],
+		limit=0,
+	)
+	by_name = {r.name: r for r in rows}
+
+	def under_root(group):
+		parent = by_name.get(group.parent_account)
+		return not parent or not parent.parent_account
+
+	holders = set()
+	for r in rows:
+		if r.is_group:
+			if r.root_type == "Asset" and MONEY_GROUP.search(r.account_name or ""):
+				holders.add(r.name)
+		elif r.account_type in ("Cash", "Bank") and r.root_type == "Asset":
+			parent = by_name.get(r.parent_account)
+			if parent and not under_root(parent):
+				holders.add(parent.name)
+	ranges = [(by_name[h].lft, by_name[h].rgt) for h in holders]
+
+	out = {}
+	for r in rows:
+		if r.is_group or r.root_type != "Asset":
+			continue
+		typed = r.account_type in ("Cash", "Bank")
+		if typed or any(lft < r.lft and r.rgt < rgt for lft, rgt in ranges):
+			parent = by_name.get(r.parent_account)
+			out[r.name] = ((parent.account_name if parent else "") or "").strip()
+	return out
+
+
+# ── profit and loss ─────────────────────────────────────────────────────────
+
+
+def profit_loss(from_date=None, to_date=None, company=None, cost_center=None, limit=10):
+	from_date = getdate(from_date or get_first_day(nowdate()))
+	to_date = getdate(to_date or nowdate())
+	if to_date < from_date:
+		raise ValueError("to_date is before from_date")
+	limit = _limit(limit)
+	company, cost_center = _scoped(company, cost_center)
+	accounts = frappe.get_list(
+		"Account",
+		filters={"root_type": ["in", ["Income", "Expense"]], **({"company": company} if company else {})},
+		fields=["name", "account_name", "parent_account", "root_type", "is_group"],
+		limit=0,
+	)
+	by_name = {a.name: a for a in accounts}
+
+	def head(name):
+		"""The account's group just below the root: Direct / Indirect Income / Expenses."""
+		a = by_name[name]
+		while a.parent_account in by_name and by_name[a.parent_account].parent_account:
+			a = by_name[a.parent_account]
+		return a.account_name
+
+	filters = {
+		"account": ["in", [a.name for a in accounts if not a.is_group] or [""]],
+		"is_cancelled": 0,
+		"posting_date": ["between", [from_date, to_date]],
+		# Year-end closing moves P&L to equity; it would zero the period out.
+		"voucher_type": ["!=", "Period Closing Voucher"],
+	}
+	if company:
+		filters["company"] = company
+	if cost_center:
+		filters["cost_center"] = cost_center
+	rows = frappe.get_list(
+		"GL Entry",
+		filters=filters,
+		fields=["company", "account", {"SUM": "debit", "as": "debit"}, {"SUM": "credit", "as": "credit"}],
+		group_by="company, account",
+		limit=0,
+	)
+
+	companies = {}
+	for r in rows:
+		acc = by_name[r.account]
+		income = acc.root_type == "Income"
+		amount = flt(flt(r.credit) - flt(r.debit) if income else flt(r.debit) - flt(r.credit), 2)
+		if not amount:
+			continue
+		c = companies.setdefault(r.company, {"income": 0.0, "expense": 0.0, "by_group": {}, "accounts": []})
+		c["income" if income else "expense"] += amount
+		group = head(r.account)
+		g = c["by_group"].setdefault(group, {"group": group, "type": acc.root_type, "amount": 0.0})
+		g["amount"] = flt(g["amount"] + amount, 2)
+		c["accounts"].append({"account": r.account, "type": acc.root_type, "amount": amount})
+	for c in companies.values():
+		c["income"] = flt(c["income"], 2)
+		c["expense"] = flt(c["expense"], 2)
+		c["net_profit"] = flt(c["income"] - c["expense"], 2)
+		c["by_group"] = list(c["by_group"].values())
+		c["top_accounts"] = sorted(c.pop("accounts"), key=lambda a: a["amount"], reverse=True)[:limit]
+	return {
+		"from_date": from_date,
+		"to_date": to_date,
+		**_scope_note(company, cost_center),
+		"note": "from the General Ledger: income = credit - debit, expense = debit - credit; cost of goods sold is the stock expense posted with each sale",
+		"companies": companies,
+	}
+
+
+# ── GST ─────────────────────────────────────────────────────────────────────
+
+# GST Settings → GST Accounts: which rows are tax collected and which are tax paid.
+GST_KINDS = {
+	"Output": "output",
+	"Input": "input",
+	"Sales Reverse Charge": "rcm_output",
+	"Purchase Reverse Charge": "rcm_input",
+}
+
+
+def gst_summary(from_date=None, to_date=None, company=None, cost_center=None, group_by="none"):
+	from_date = getdate(from_date or get_first_day(nowdate()))
+	to_date = getdate(to_date or nowdate())
+	if to_date < from_date:
+		raise ValueError("to_date is before from_date")
+	if group_by not in (None, "none", "month"):
+		raise ValueError(f"group_by must be none or month; got {group_by!r}")
+	company, cost_center = _scoped(company, cost_center)
+	accounts = _gst_accounts(company)
+	if not accounts:
+		return {"found": False, "message": "No GST accounts are set in GST Settings for this company."}
+
+	filters = {
+		"account": ["in", list(accounts)],
+		"is_cancelled": 0,
+		"posting_date": ["between", [from_date, to_date]],
+	}
+	if company:
+		filters["company"] = company
+	if cost_center:
+		filters["cost_center"] = cost_center
+	rows = frappe.get_list(
+		"GL Entry",
+		filters=filters,
+		fields=[
+			"company",
+			"account",
+			"posting_date",
+			{"SUM": "debit", "as": "debit"},
+			{"SUM": "credit", "as": "credit"},
+		],
+		group_by="company, account, posting_date",
+		limit=0,
+	)
+
+	companies = {}
+	for r in rows:
+		kind, tax = accounts[r.account]
+		# Tax collected sits on the credit side, tax paid (input credit) on the debit side.
+		amount = (
+			flt(r.credit) - flt(r.debit) if kind in ("output", "rcm_output") else flt(r.debit) - flt(r.credit)
+		)
+		c = companies.setdefault(r.company, _empty_gst())
+		c[kind] += amount
+		if kind in ("output", "input"):
+			by_tax = c[f"{kind}_by_tax"]
+			by_tax[tax] = by_tax.get(tax, 0.0) + amount
+		if group_by == "month":
+			month = str(r.posting_date)[:7]
+			m = c["by_month"].setdefault(month, {"month": month, "output": 0.0, "input": 0.0})
+			if kind in ("output", "input"):
+				m[kind] += amount
+
+	for name, c in companies.items():
+		for kind in GST_KINDS.values():
+			c[kind] = flt(c[kind], 2)
+		for kind in ("output", "input"):
+			c[f"{kind}_by_tax"] = {t: flt(v, 2) for t, v in c[f"{kind}_by_tax"].items()}
+		c["net_payable"] = flt(c["output"] - c["input"], 2)
+		if group_by == "month":
+			c["by_month"] = [
+				{
+					**m,
+					"output": flt(m["output"], 2),
+					"input": flt(m["input"], 2),
+					"net": flt(m["output"] - m["input"], 2),
+				}
+				for m in sorted(c["by_month"].values(), key=lambda m: m["month"])
+			]
+		else:
+			c.pop("by_month")
+		c.update(_taxable_values(name, cost_center, from_date, to_date))
+	return {
+		"from_date": from_date,
+		"to_date": to_date,
+		**_scope_note(company, cost_center),
+		"note": "output = GST collected, input = GST paid (input credit), net_payable = output - input before reverse charge (rcm_* shown apart). From the ledger: check GSTR-1 / GSTR-3B before filing.",
+		"companies": companies,
+	}
+
+
+def _empty_gst():
+	return {
+		**dict.fromkeys(GST_KINDS.values(), 0.0),
+		"output_by_tax": {},
+		"input_by_tax": {},
+		"by_month": {},
+	}
+
+
+def _gst_accounts(company):
+	"""{account: (kind, "CGST" | "SGST" | ...)} from GST Settings (configuration, not business data)."""
+	meta = frappe.get_meta("GST Account")
+	fields = [f.fieldname for f in meta.fields if f.fieldname.endswith("_account")]
+	rows = frappe.get_all(
+		"GST Account",
+		filters={"parent": "GST Settings", **({"company": company} if company else {})},
+		fields=["account_type", *fields],
+	)
+	out = {}
+	for r in rows:
+		kind = GST_KINDS.get(r.account_type)
+		for f in fields:
+			if kind and r[f]:
+				out[r[f]] = (kind, f.removesuffix("_account").replace("_", " ").upper())
+	return out
+
+
+def _taxable_values(company, cost_center, from_date, to_date):
+	"""Net (pre-tax) value of submitted sales and purchases, returns netted in."""
+	out = {}
+	for doctype, key in (
+		("Sales Invoice", "sales_taxable_value"),
+		("Purchase Invoice", "purchase_taxable_value"),
+	):
+		filters = {"company": company, "docstatus": 1, "posting_date": ["between", [from_date, to_date]]}
+		if cost_center:
+			filters["cost_center"] = cost_center
+		row = frappe.get_list(
+			doctype, filters=filters, fields=[{"SUM": "base_net_total", "as": "total"}], limit=1
+		)
+		out[key] = flt(row[0].total if row else 0, 2)
+	return out
+
+
+# ── payments ────────────────────────────────────────────────────────────────
+
+PAYMENT_GROUPS = ("account", "mode", "day", "party")
+
+
+def payments_summary(
+	from_date=None, to_date=None, company=None, cost_center=None, group_by="account", limit=10
+):
+	from_date = getdate(from_date or nowdate())
+	to_date = getdate(to_date or from_date)
+	if to_date < from_date:
+		raise ValueError("to_date is before from_date")
+	group_by = group_by or "account"
+	if group_by not in PAYMENT_GROUPS:
+		raise ValueError(f"group_by must be one of {', '.join(PAYMENT_GROUPS)}; got {group_by!r}")
+	limit = _limit(limit)
+	company, cost_center = _scoped(company, cost_center)
+	filters = {"docstatus": 1, "posting_date": ["between", [from_date, to_date]]}
+	if company:
+		filters["company"] = company
+	if cost_center:
+		filters["cost_center"] = cost_center
+
+	companies = {}
+	# UPI, card and Paytm all use mode "Bank": the account they land in is what tells them apart.
+	for payment_type, side, account, amount in (
+		("Receive", "received", "paid_to", "base_received_amount"),
+		("Pay", "paid", "paid_from", "base_paid_amount"),
+	):
+		keys = {
+			"account": [account],
+			"mode": ["mode_of_payment"],
+			"day": ["posting_date"],
+			"party": ["party_type", "party", "party_name"],
+		}[group_by]
+		rows = frappe.get_list(
+			"Payment Entry",
+			filters={**filters, "payment_type": payment_type},
+			fields=[
+				"company",
+				*keys,
+				{"COUNT": "*", "as": "entries"},
+				{"SUM": amount, "as": "amount"},
+			],
+			group_by=", ".join(["company", *keys]),
+			limit=0,
+		)
+		for r in rows:
+			c = companies.setdefault(r.pop("company"), _empty_payments(group_by))
+			s = c[side]
+			s["total"] = flt(s["total"] + flt(r.amount), 2)
+			s["entries"] += r.entries
+			r["amount"] = flt(r.amount, 2)
+			if group_by == "account":
+				r["account"] = r.pop(account)
+			if group_by == "party" and (r.get("party_name") or "") == (r.get("party") or ""):
+				r.pop("party_name", None)
+			s[f"by_{group_by}"].append(r)
+
+	transfers = frappe.get_list(
+		"Payment Entry",
+		filters={**filters, "payment_type": "Internal Transfer"},
+		fields=["company", {"COUNT": "*", "as": "entries"}, {"SUM": "base_paid_amount", "as": "amount"}],
+		group_by="company",
+		limit=0,
+	)
+	for r in transfers:
+		companies.setdefault(r.company, _empty_payments(group_by))["internal_transfers"] = {
+			"entries": r.entries,
+			"total": flt(r.amount, 2),
+		}
+
+	for c in companies.values():
+		c["net"] = flt(c["received"]["total"] - c["paid"]["total"], 2)
+		for side in ("received", "paid"):
+			rows = c[side].pop(f"by_{group_by}")
+			if group_by == "day":
+				rows = sorted(rows, key=lambda r: r["posting_date"])[-limit:]
+			else:
+				rows = sorted(rows, key=lambda r: r["amount"], reverse=True)[:limit]
+			c[side][f"by_{group_by}"] = rows
+	return {
+		"from_date": from_date,
+		"to_date": to_date,
+		**_scope_note(company, cost_center),
+		"note": "Payment Entries only (receipts, payments, internal transfers between own accounts); journal entries are not included, use account_ledger for an account's full movement.",
+		"companies": companies,
+	}
+
+
+def _empty_payments(group_by):
+	return {
+		"received": {"total": 0.0, "entries": 0, f"by_{group_by}": []},
+		"paid": {"total": 0.0, "entries": 0, f"by_{group_by}": []},
+		"internal_transfers": {"entries": 0, "total": 0.0},
+	}
+
+
 # ── stock ───────────────────────────────────────────────────────────────────
 
 
@@ -747,18 +1379,8 @@ def item_stock(item=None, warehouse=None, company=None, limit=10):
 	show_value = bool(VALUATION_ROLES & set(frappe.get_roles()))
 	value_fields = ["valuation_rate", "stock_value"] if show_value else []
 	# Each company keeps its own warehouses (mirrored billing), so totals are per company.
-	company_of = dict(frappe.get_list("Warehouse", fields=["name", "company"], as_list=True, limit=0))
-	bin_filters = {}
-	if company or warehouse:
-		bin_filters["warehouse"] = [
-			"in",
-			[
-				w
-				for w, c in company_of.items()
-				if (not company or c == company) and (not warehouse or warehouse.lower() in w.lower())
-			]
-			or [""],
-		]
+	company_of, warehouses = _warehouses(company, warehouse)
+	bin_filters = {"warehouse": ["in", warehouses]} if warehouses is not None else {}
 
 	if not item:
 		fields = [
@@ -858,10 +1480,349 @@ def _find_items(search, limit):
 	)
 
 
+# ── item movement ───────────────────────────────────────────────────────────
+
+MOVEMENT_VIEWS = ("movement", "fast", "not_sold")
+# How far back not_sold looks for an item's last sale.
+LAST_SALE_LOOKBACK = 730
+
+
+def item_movement(
+	item=None, from_date=None, to_date=None, warehouse=None, company=None, view=None, days=90, limit=10
+):
+	view = view or ("movement" if item else "fast")
+	if view not in MOVEMENT_VIEWS:
+		raise ValueError(f"view must be one of {', '.join(MOVEMENT_VIEWS)}; got {view!r}")
+	from_date = getdate(from_date or get_first_day(nowdate()))
+	to_date = getdate(to_date or nowdate())
+	if to_date < from_date:
+		raise ValueError("to_date is before from_date")
+	limit = _limit(limit)
+	company, _cost_center = _scoped(company, None)
+	company_of, warehouses = _warehouses(company, warehouse)
+	sle = {"is_cancelled": 0}
+	if warehouses is not None:
+		sle["warehouse"] = ["in", warehouses]
+	base = {**_scope_note(company, None), "warehouse_filter": warehouse or "all warehouses"}
+
+	if view == "movement":
+		if not item:
+			raise ValueError("item is required for view 'movement'")
+		found = _pick_item(item)
+		if found.get("found") is False:
+			return found
+		return {
+			**found,
+			"from_date": from_date,
+			"to_date": to_date,
+			**base,
+			**_movement({**sle, "item_code": found["item_code"]}, from_date, to_date, company_of),
+		}
+
+	if view == "fast":
+		rows = frappe.get_list(
+			"Stock Ledger Entry",
+			filters={
+				**sle,
+				"voucher_type": "Sales Invoice",
+				"posting_date": ["between", [from_date, to_date]],
+			},
+			fields=["item_code", {"SUM": "actual_qty", "as": "qty"}],
+			group_by="item_code",
+			order_by="qty asc",
+			limit=limit,
+		)
+		names = _item_names([r.item_code for r in rows])
+		return {
+			"from_date": from_date,
+			"to_date": to_date,
+			**base,
+			"note": "qty sold = stock out on sales invoices, returns netted in",
+			"items": [
+				{"item_code": r.item_code, **names.get(r.item_code, {}), "qty_sold": flt(-r.qty, 3)}
+				for r in rows
+				if flt(r.qty) < 0
+			],
+		}
+
+	# not_sold: in stock now, no sale in the last `days` days.
+	days = max(cint(days) or 90, 1)
+	today = getdate(nowdate())
+	cutoff = frappe.utils.add_days(today, -days)
+	show_value = bool(VALUATION_ROLES & set(frappe.get_roles()))
+	bin_filters = {"actual_qty": [">", 0]}
+	if warehouses is not None:
+		bin_filters["warehouse"] = ["in", warehouses]
+	stock = frappe.get_list(
+		"Bin",
+		filters=bin_filters,
+		fields=[
+			"item_code",
+			{"SUM": "actual_qty", "as": "qty"},
+			*([{"SUM": "stock_value", "as": "stock_value"}] if show_value else []),
+		],
+		group_by="item_code",
+		limit=0,
+	)
+	last_sale = dict(
+		frappe.get_list(
+			"Stock Ledger Entry",
+			filters={
+				**sle,
+				"voucher_type": "Sales Invoice",
+				"actual_qty": ["<", 0],
+				"posting_date": [">=", frappe.utils.add_days(today, -LAST_SALE_LOOKBACK)],
+			},
+			fields=["item_code", {"MAX": "posting_date", "as": "last_sold"}],
+			group_by="item_code",
+			as_list=True,
+			limit=0,
+		)
+	)
+	idle = [s for s in stock if not last_sale.get(s.item_code) or getdate(last_sale[s.item_code]) < cutoff]
+	key = "stock_value" if show_value else "qty"
+	idle.sort(key=lambda s: flt(s[key]), reverse=True)
+	names = _item_names([s.item_code for s in idle[:limit]])
+	items = []
+	for s in idle[:limit]:
+		last = last_sale.get(s.item_code)
+		items.append(
+			{
+				"item_code": s.item_code,
+				**names.get(s.item_code, {}),
+				"qty": flt(s.qty, 3),
+				**({"stock_value": flt(s.stock_value, 2)} if show_value else {}),
+				"last_sold": last,
+				"days_since_sale": date_diff(today, last) if last else None,
+			}
+		)
+	return {
+		"as_of": today,
+		**base,
+		"days": days,
+		"note": f"items in stock with no sale in the last {days} days; last_sold empty = no sale in {LAST_SALE_LOOKBACK} days",
+		"valuation_shown": show_value,
+		"items_not_sold": len(idle),
+		**({"value_not_sold": flt(sum(flt(s.stock_value) for s in idle), 2)} if show_value else {}),
+		"items": items,
+	}
+
+
+def _movement(filters, from_date, to_date, company_of):
+	"""Opening, in, out and closing qty per warehouse, and the in / out per voucher type."""
+	opening = frappe.get_list(
+		"Stock Ledger Entry",
+		filters={**filters, "posting_date": ["<", from_date]},
+		fields=["warehouse", {"SUM": "actual_qty", "as": "qty"}],
+		group_by="warehouse",
+		limit=0,
+	)
+	period = {**filters, "posting_date": ["between", [from_date, to_date]]}
+	moves = {}
+	for side, sign in (("in_qty", [">", 0]), ("out_qty", ["<", 0])):
+		for r in frappe.get_list(
+			"Stock Ledger Entry",
+			filters={**period, "actual_qty": sign},
+			fields=["warehouse", "voucher_type", {"SUM": "actual_qty", "as": "qty"}],
+			group_by="warehouse, voucher_type",
+			limit=0,
+		):
+			m = moves.setdefault(
+				(r.warehouse, r.voucher_type),
+				{"warehouse": r.warehouse, "voucher_type": r.voucher_type, "in_qty": 0.0, "out_qty": 0.0},
+			)
+			m[side] = flt(abs(flt(r.qty)), 3)
+
+	warehouses = {}
+	for r in opening:
+		warehouses[r.warehouse] = {"opening": flt(r.qty, 3), "in_qty": 0.0, "out_qty": 0.0}
+	for m in moves.values():
+		w = warehouses.setdefault(m["warehouse"], {"opening": 0.0, "in_qty": 0.0, "out_qty": 0.0})
+		w["in_qty"] = flt(w["in_qty"] + m["in_qty"], 3)
+		w["out_qty"] = flt(w["out_qty"] + m["out_qty"], 3)
+	rows = []
+	for name, w in sorted(warehouses.items()):
+		closing = flt(w["opening"] + w["in_qty"] - w["out_qty"], 3)
+		if w["opening"] or w["in_qty"] or w["out_qty"] or closing:
+			rows.append({"warehouse": name, "company": company_of.get(name), **w, "closing": closing})
+	return {
+		"note": "qty in stock UOM; in/out per voucher type in `movements`",
+		"warehouses": rows,
+		"movements": sorted(moves.values(), key=lambda m: (m["warehouse"], m["voucher_type"])),
+	}
+
+
+def _pick_item(search):
+	barcode_hits = frappe.get_list(
+		"Item Barcode", parent_doctype="Item", filters={"barcode": search}, pluck="parent", limit=5
+	)
+	# An exact code, barcode or name wins over the fuzzy matches (item "82" vs "Clay Lamp 182").
+	exact = frappe.get_list(
+		"Item",
+		or_filters={"name": ["in", [search, *barcode_hits]], "item_name": search},
+		fields=["name", "item_name", "stock_uom"],
+		limit=2,
+	)
+	items = exact if len(exact) == 1 else _find_items(search, 10)
+	if not items:
+		return {"found": False, "message": f"No item matches '{search}'."}
+	needle = search.casefold()
+	exact = [i for i in items if needle in (i.name.casefold(), (i.item_name or "").casefold())]
+	if len(items) > 1 and len(exact) != 1:
+		return {
+			"found": False,
+			"message": "Several items match; ask which one.",
+			"candidates": [{"item_code": i.name, "item_name": i.item_name} for i in items],
+		}
+	i = exact[0] if exact else items[0]
+	return {"found": True, "item_code": i.name, "item_name": i.item_name, "uom": i.stock_uom}
+
+
+def _item_names(codes):
+	if not codes:
+		return {}
+	rows = frappe.get_list(
+		"Item", filters={"name": ["in", codes]}, fields=["name", "item_name", "stock_uom"], limit=0
+	)
+	return {r.name: {"item_name": r.item_name, "uom": r.stock_uom} for r in rows}
+
+
+def _warehouses(company, warehouse):
+	"""({warehouse: company}, the warehouses to filter on or None for all)."""
+	company_of = dict(frappe.get_list("Warehouse", fields=["name", "company"], as_list=True, limit=0))
+	if not company and not warehouse:
+		return company_of, None
+	names = [
+		w
+		for w, c in company_of.items()
+		if (not company or c == company) and (not warehouse or warehouse.lower() in w.lower())
+	]
+	return company_of, names or [""]
+
+
+# ── customer activity ───────────────────────────────────────────────────────
+
+
+def customer_activity(customer=None, days=60, company=None, cost_center=None, limit=10):
+	days = max(cint(days) or 60, 1)
+	limit = _limit(limit)
+	company, cost_center = _scoped(company, cost_center)
+	today = getdate(nowdate())
+	year_ago = frappe.utils.add_days(today, -365)
+	filters = {"docstatus": 1, "is_return": 0}
+	if company:
+		filters["company"] = company
+	if cost_center:
+		filters["cost_center"] = cost_center
+
+	if customer:
+		cust = _pick_party("Customer", customer)
+		if cust.get("found") is False:
+			return cust
+		filters["customer"] = cust.name
+		totals = frappe.get_list(
+			"Sales Invoice",
+			filters=filters,
+			fields=[
+				"company",
+				{"MIN": "posting_date", "as": "first_invoice"},
+				{"MAX": "posting_date", "as": "last_invoice"},
+				{"COUNT": "*", "as": "invoices"},
+				{"SUM": "base_grand_total", "as": "total"},
+			],
+			group_by="company",
+			limit=0,
+		)
+		days_rows = frappe.get_list(
+			"Sales Invoice",
+			filters={**filters, "posting_date": [">=", year_ago]},
+			fields=["company", "posting_date", {"SUM": "base_grand_total", "as": "total"}],
+			group_by="company, posting_date",
+			limit=0,
+		)
+		companies = {}
+		for t in totals:
+			gap = date_diff(t.last_invoice, t.first_invoice) / (t.invoices - 1) if t.invoices > 1 else None
+			companies[t.company] = {
+				"first_invoice": t.first_invoice,
+				"last_invoice": t.last_invoice,
+				"days_since_last": date_diff(today, t.last_invoice),
+				"invoices": t.invoices,
+				"total": flt(t.total, 2),
+				"avg_days_between": round(gap) if gap is not None else None,
+				"by_month": {},
+			}
+		for d in days_rows:
+			months = companies[d.company]["by_month"]
+			m = str(d.posting_date)[:7]
+			months[m] = flt(months.get(m, 0) + flt(d.total), 2)
+		for c in companies.values():
+			c["by_month"] = [{"month": m, "total": t} for m, t in sorted(c["by_month"].items())]
+		return {
+			"found": True,
+			"customer": cust.name,
+			"customer_name": cust.customer_name,
+			"mobile_no": cust.mobile_no,
+			"as_of": today,
+			**_scope_note(company, cost_center),
+			"note": "submitted sales invoices, returns excluded; total is all time, by_month the last 12 months",
+			"companies": companies,
+		}
+
+	rows = frappe.get_list(
+		"Sales Invoice",
+		filters={**filters, "posting_date": [">=", year_ago]},
+		fields=[
+			"company",
+			"customer",
+			"customer_name",
+			{"MAX": "posting_date", "as": "last_purchase"},
+			{"COUNT": "*", "as": "invoices"},
+			{"SUM": "base_grand_total", "as": "total"},
+		],
+		group_by="company, customer, customer_name",
+		limit=0,
+	)
+	cutoff = frappe.utils.add_days(today, -days)
+	companies = {}
+	for r in rows:
+		c = companies.setdefault(r.company, {"active_customers": 0, "lapsed_customers": 0, "lapsed": []})
+		if getdate(r.last_purchase) >= getdate(cutoff):
+			c["active_customers"] += 1
+			continue
+		c["lapsed_customers"] += 1
+		c["lapsed"].append(
+			_drop_same_name(
+				{
+					"customer": r.customer,
+					"customer_name": r.customer_name,
+					"last_purchase": r.last_purchase,
+					"days_since": date_diff(today, r.last_purchase),
+					"invoices": r.invoices,
+					"total": flt(r.total, 2),
+				},
+				"customer",
+			)
+		)
+	for c in companies.values():
+		c["lapsed"] = sorted(c["lapsed"], key=lambda r: r["total"], reverse=True)[:limit]
+	return {
+		"as_of": today,
+		**_scope_note(company, cost_center),
+		"days": days,
+		"note": f"customers who bought in the last 12 months but not in the last {days} days, biggest buyers first; invoices / total cover the last 12 months",
+		"companies": companies,
+	}
+
+
+# ── helpers ─────────────────────────────────────────────────────────────────
+
+
 def _drop_same_name(row, key):
-	"""Most customers are named by their own name: don't send it twice."""
-	if (row.get("customer_name") or "").casefold() == (row.get(key) or "").casefold():
-		row.pop("customer_name", None)
+	"""Most customers and suppliers are named by their own name: don't send it twice."""
+	label = f"{key}_name"
+	if (row.get(label) or "").casefold() == (row.get(key) or "").casefold():
+		row.pop(label, None)
 	return row
 
 
@@ -923,4 +1884,12 @@ HANDLERS = {
 	"customer_outstanding": customer_outstanding,
 	"item_stock": item_stock,
 	"account_ledger": account_ledger,
+	"purchase_summary": purchase_summary,
+	"supplier_outstanding": supplier_outstanding,
+	"customer_activity": customer_activity,
+	"item_movement": item_movement,
+	"cash_bank_position": cash_bank_position,
+	"profit_loss": profit_loss,
+	"gst_summary": gst_summary,
+	"payments_summary": payments_summary,
 }
