@@ -396,7 +396,8 @@ def get_webhook_log(name):
 @frappe.whitelist()
 def get_unknown_payments(status=None, limit=200, date=None):
 	"""Rows for the left panel, newest first, plus the default To ledger (Paytm UPI account).
-	date (YYYY-MM-DD) limits it to payments received that day; each row gets its machine's pos_id (by TID, else order id)."""
+	date (YYYY-MM-DD) limits it to payments received that day; each row gets its machine's pos_id
+	(by TID, else order id) and pos_name."""
 	_require_desk_user()
 	filters = _day_filter(date)
 	if status:
