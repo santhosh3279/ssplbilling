@@ -6,6 +6,7 @@
  "field_order": [
   "enabled",
   "allowed_roles",
+  "full_read_access",
   "column_break_main",
   "default_provider",
   "timeout_seconds",
@@ -37,7 +38,7 @@
    "fieldname": "enabled",
    "fieldtype": "Check",
    "label": "Enabled",
-   "description": "AI Chat tile: answers questions on sales, outstanding and stock with Claude or Gemini. Every query runs as the logged-in user, so ERPNext permissions apply."
+   "description": "AI Chat tile: answers questions from live ERPNext data with Claude or Gemini, read-only. Queries run as the logged-in user, so ERPNext permissions apply unless Full Read Access is on."
   },
   {
    "default": "System Manager\nAccounts Manager\nAccounts User",
@@ -45,6 +46,13 @@
    "fieldtype": "Small Text",
    "label": "Allowed Roles",
    "description": "One role per line. Users need one of these (Administrator always can)."
+  },
+  {
+   "default": "0",
+   "fieldname": "full_read_access",
+   "fieldtype": "Check",
+   "label": "Full Read Access",
+   "description": "The AI reads every record regardless of the user's own ERPNext permissions (other branches, cost and valuation, HR and payroll). Anyone in Allowed Roles can then see all of it through AI Chat. Off = each user sees only what they can read in the desk."
   },
   {
    "fieldname": "column_break_main",
@@ -194,7 +202,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-10-28 23:30:00",
+ "modified": "2026-10-28 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Assistant Settings",

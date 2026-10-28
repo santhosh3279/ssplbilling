@@ -1,8 +1,8 @@
 """Read-only business tools (and the shared instructions) the AI Chat gives Claude or Gemini.
 
-Every query goes through frappe.get_list, so it runs with the chat user's own role and user
-permissions: a user who can't read Sales Invoice or GL Entry in the desk can't read it here
-either. Results are grouped per company and never summed across companies, because the
+Every query goes through _get_list, which runs frappe.get_list with the chat user's own role and
+user permissions (a user who can't read Sales Invoice in the desk can't read it here either), or
+ignores them when Full Read Access is on in SSPL Assistant Settings. Results are grouped per company and never summed across companies, because the
 billing system mirrors invoices into the other company (RTN07075 / RTN07075/).
 """
 
@@ -31,9 +31,53 @@ DATA_TOOLS = (
 	"profit_loss",
 	"gst_summary",
 	"payments_summary",
+	"query_records",
 )
 # Cost price is ciphered on screen in the billing app; only these roles see valuation.
 VALUATION_ROLES = {"System Manager", "Stock Manager", "Accounts Manager"}
+# Modules query_records / describe_doctype may read; the specific tools above cover the rest.
+QUERY_MODULES = {
+	# ERPNext
+	"Accounts",
+	"Assets",
+	"Buying",
+	"CRM",
+	"Maintenance",
+	"Manufacturing",
+	"Projects",
+	"Quality Management",
+	"Regional",
+	"Selling",
+	"Setup",
+	"Stock",
+	"Subcontracting",
+	"Support",
+	# HRMS, India Compliance, this app, addresses / contacts
+	"HR",
+	"Payroll",
+	"GST India",
+	"Income Tax India",
+	"Ssplbilling",
+	"Contacts",
+}
+# The assistant's own chats and settings (API keys) are never open to it.
+QUERY_DENIED_PREFIX = "SSPL Assistant"
+QUERY_HIDDEN_FIELDTYPES = {"Password", "Attach", "Attach Image", "Code", "Signature"}
+QUERY_OPERATORS = {
+	"=",
+	"!=",
+	">",
+	"<",
+	">=",
+	"<=",
+	"like",
+	"not like",
+	"in",
+	"not in",
+	"between",
+	"is",
+}
+QUERY_AGGREGATES = {"sum": "SUM", "count": "COUNT", "avg": "AVG", "min": "MIN", "max": "MAX"}
 
 TOOLS = [
 	{
@@ -313,14 +357,14 @@ TOOLS += [
 
 
 INSTRUCTIONS = """You are the business assistant for Sundaram and Sons Private Ltd (SSPL), a wholesale business, answering staff questions from live ERPNext data.
-- Use the tools for every figure; never invent numbers, names or document ids. If no tool covers the question, say what you can answer (sales, purchases, receivables, payables, customer activity, stock and item movement, account ledgers, cash and bank, profit and loss, GST, payments).
+- Use the tools for every figure; never invent numbers, names or document ids. Prefer the specific tools (sales, purchases, receivables, payables, customer activity, stock and item movement, account ledgers, cash and bank, profit and loss, GST, payments). For anything else (orders, quotations, delivery notes, bank charges, journal entries, employees, assets, any other record) use describe_doctype to find the doctype and its fields, then query_records. Never tell the user you can't access something before trying these.
 - You are read-only. If asked to create or change anything, say so and point to the screen in the app where it is done.
 - Amounts are INR (₹) with Indian grouping (₹1,25,000). Keep answers short; use markdown tables for lists.
 - State the date range, company and cost center you used (each tool result says which it applied). "Today" means the date given below.
 - The user picks a company and cost center on the chat page; the tools use them when you omit company / cost_center. Only pass them when the user names another one, or "all" when they ask for every company or branch.
 - Data is per company. An invoice ending in "/" (RTN07075/) is the billing system's mirror of RTN07075 in the other company, so company totals overlap by design: report each company separately and never add companies together unless the user asks.
 - Returns (credit notes) are negative. Pending drafts are sales still waiting at the cashier; mention them separately from submitted sales.
-- If a tool says the user lacks permission, tell them they don't have access to that data.
+- Only if a tool itself says the user lacks permission, tell them they don't have access to that data.
 - For "Excel", "download" or "export", call export_excel; for "chart", "graph" or "trend", call make_chart. Pass the same tool and args you would use to answer. The file or chart is attached to your reply automatically: don't repeat its rows in text, just say what it contains."""
 
 
@@ -338,6 +382,72 @@ def system_prompt(settings):
 		)
 		if p
 	)
+
+
+TOOLS += [
+	{
+		"name": "describe_doctype",
+		"description": (
+			"Find ERPNext doctypes and their fields, for questions the other tools don't cover. With search "
+			"(e.g. 'order', 'journal', 'employee') lists matching doctypes; with doctype lists its fields "
+			"(fieldname, label, type, linked doctype) and its child tables. Call before query_records."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"search": {"type": "string", "description": "Words in the doctype name."},
+				"doctype": {"type": "string", "description": "Exact doctype name, e.g. 'Sales Order'."},
+			},
+		},
+	},
+	{
+		"name": "query_records",
+		"description": (
+			"Read any ERPNext records: a list of rows, or totals with aggregates and group_by. Does not "
+			"apply the chat page's company / cost center: filter on company yourself when the doctype has "
+			"it. docstatus 1 = submitted, 0 = draft, 2 = cancelled; filter docstatus 1 for real totals. "
+			"Child tables (e.g. Sales Invoice Item) filter on parent = the document name."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"doctype": {"type": "string", "description": "Exact doctype name."},
+				"fields": {
+					"type": "array",
+					"items": {"type": "string"},
+					"description": "Fieldnames to return. Defaults to name plus the list-view fields.",
+				},
+				"filters": {
+					"type": "array",
+					"items": {"type": "array"},
+					"description": (
+						f"[[fieldname, operator, value], ...]. Operators: {', '.join(sorted(QUERY_OPERATORS))}. "
+						'e.g. [["posting_date", "between", ["2026-10-01", "2026-10-31"]], ["docstatus", "=", 1]]'
+					),
+				},
+				"aggregates": {
+					"type": "array",
+					"items": {
+						"type": "object",
+						"properties": {
+							"fn": {"type": "string", "enum": list(QUERY_AGGREGATES)},
+							"field": {"type": "string"},
+						},
+						"required": ["fn"],
+					},
+					"description": "Totals, returned as <fn>_<field>, e.g. sum_grand_total, count_name.",
+				},
+				"group_by": {"type": "string", "description": "Fieldname to group the aggregates by."},
+				"order_by": {
+					"type": "string",
+					"description": "Fieldname or aggregate name, optionally followed by asc / desc.",
+				},
+				"limit": _LIMIT,
+			},
+			"required": ["doctype"],
+		},
+	},
+]
 
 
 OUTPUT_TOOLS = ("export_excel", "make_chart")
@@ -437,7 +547,7 @@ def _invoice_summary(doctype, from_date, to_date, company, cost_center, group_by
 	if cost_center:
 		filters["cost_center"] = cost_center
 
-	submitted = frappe.get_list(
+	submitted = _get_list(
 		doctype,
 		filters={**filters, "docstatus": 1},
 		fields=[
@@ -450,7 +560,7 @@ def _invoice_summary(doctype, from_date, to_date, company, cost_center, group_by
 		group_by="company, is_return",
 		limit=0,
 	)
-	drafts = frappe.get_list(
+	drafts = _get_list(
 		doctype,
 		filters={**filters, "docstatus": 0},
 		fields=[
@@ -517,7 +627,7 @@ def _breakdown(doctype, group_by, filters, limit):
 	if group_by == "item":
 		parent_filters = [[doctype, k, *(v if isinstance(v, list) else ["=", v])] for k, v in filters.items()]
 		parent_filters.append([doctype, "docstatus", "=", 1])
-		return frappe.get_list(
+		return _get_list(
 			f"{doctype} Item",
 			parent_doctype=doctype,
 			filters=parent_filters,
@@ -537,7 +647,7 @@ def _breakdown(doctype, group_by, filters, limit):
 		group_by,
 		f"{group_by}_name",
 	]
-	rows = frappe.get_list(
+	rows = _get_list(
 		doctype,
 		filters={**filters, "docstatus": 1},
 		fields=[*keys, {"COUNT": "*", "as": "invoices"}, {"SUM": "base_grand_total", "as": "grand_total"}],
@@ -653,7 +763,7 @@ def _one_party(party_type, search, company, cost_center, limit):
 		inv_filters["company"] = company
 	if cost_center:
 		inv_filters["cost_center"] = cost_center
-	invoices = frappe.get_list(
+	invoices = _get_list(
 		cfg["invoice"],
 		filters=inv_filters,
 		fields=[
@@ -686,7 +796,7 @@ def _one_party(party_type, search, company, cost_center, limit):
 
 
 def _gl_balances(filters, keys):
-	rows = frappe.get_list(
+	rows = _get_list(
 		"GL Entry",
 		filters=filters,
 		fields=[*keys, {"SUM": "debit", "as": "debit"}, {"SUM": "credit", "as": "credit"}],
@@ -717,7 +827,7 @@ def _pick_party(party_type, search):
 def _find_parties(party_type, search):
 	label = f"{PARTIES[party_type]['key']}_name"
 	like = f"%{search}%"
-	return frappe.get_list(
+	return _get_list(
 		party_type,
 		or_filters={"name": ["like", like], label: ["like", like], "mobile_no": ["like", like]},
 		fields=["name", label, "mobile_no"],
@@ -729,7 +839,7 @@ def _party_names(party_type, names):
 	if not names:
 		return {}
 	label = f"{PARTIES[party_type]['key']}_name"
-	rows = frappe.get_list(party_type, filters={"name": ["in", list(names)]}, fields=["name", label], limit=0)
+	rows = _get_list(party_type, filters={"name": ["in", list(names)]}, fields=["name", label], limit=0)
 	return {r.name: r[label] for r in rows}
 
 
@@ -771,7 +881,7 @@ def account_ledger(
 		base["cost_center"] = cost_center
 
 	# One row per voucher: everything below is built from these.
-	vouchers = frappe.get_list(
+	vouchers = _get_list(
 		"GL Entry",
 		filters={**base, "posting_date": ["between", [from_date, to_date]]},
 		fields=[
@@ -858,7 +968,7 @@ def _find_account(search, company):
 	"""The account (or group of accounts) to read, or {"found": False, ...} to ask the user."""
 	filters = {"company": company} if company else {}
 	like = f"%{search}%"
-	matches = frappe.get_list(
+	matches = _get_list(
 		"Account",
 		filters=filters,
 		or_filters={"name": ["like", like], "account_name": ["like", like], "account_number": ["like", like]},
@@ -882,7 +992,7 @@ def _find_account(search, company):
 		}
 	accounts = [acc.name]
 	if acc.is_group:
-		accounts = frappe.get_list(
+		accounts = _get_list(
 			"Account",
 			filters={"company": acc.company, "lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0},
 			pluck="name",
@@ -910,7 +1020,7 @@ def _contra(vouchers, accounts):
 	out = {}
 	for vtype, names in by_type.items():
 		for i in range(0, len(names), _CHUNK):
-			rows = frappe.get_list(
+			rows = _get_list(
 				"GL Entry",
 				filters={
 					"voucher_type": vtype,
@@ -939,7 +1049,7 @@ def _ledger_entries(filters, vouchers, contra, opening, limit):
 	With `contra` (an `against` filter) only the matching vouchers, and no running balance."""
 	if contra is not None:
 		filters = {**filters, "voucher_no": ["in", [v.voucher_no for v in vouchers] or [""]]}
-	rows = frappe.get_list(
+	rows = _get_list(
 		"GL Entry",
 		filters=filters,
 		fields=[
@@ -1020,7 +1130,7 @@ def _money_accounts(company):
 	Typed Cash / Bank asset accounts, plus every leaf under the groups that hold them (Cash In
 	Hand, Coins, Bank Accounts) or that are named like a wallet (UPI). Broad groups directly
 	under the root (Current Assets) are skipped so debtors and stock never come in."""
-	rows = frappe.get_list(
+	rows = _get_list(
 		"Account",
 		filters={"company": company} if company else {},
 		fields=[
@@ -1073,7 +1183,7 @@ def profit_loss(from_date=None, to_date=None, company=None, cost_center=None, li
 		raise ValueError("to_date is before from_date")
 	limit = _limit(limit)
 	company, cost_center = _scoped(company, cost_center)
-	accounts = frappe.get_list(
+	accounts = _get_list(
 		"Account",
 		filters={"root_type": ["in", ["Income", "Expense"]], **({"company": company} if company else {})},
 		fields=["name", "account_name", "parent_account", "root_type", "is_group"],
@@ -1099,7 +1209,7 @@ def profit_loss(from_date=None, to_date=None, company=None, cost_center=None, li
 		filters["company"] = company
 	if cost_center:
 		filters["cost_center"] = cost_center
-	rows = frappe.get_list(
+	rows = _get_list(
 		"GL Entry",
 		filters=filters,
 		fields=["company", "account", {"SUM": "debit", "as": "debit"}, {"SUM": "credit", "as": "credit"}],
@@ -1166,7 +1276,7 @@ def gst_summary(from_date=None, to_date=None, company=None, group_by="none"):
 	}
 	if company:
 		filters["company"] = company
-	rows = frappe.get_list(
+	rows = _get_list(
 		"GL Entry",
 		filters=filters,
 		fields=[
@@ -1261,9 +1371,7 @@ def _taxable_values(company, from_date, to_date):
 		("Purchase Invoice", "purchase_taxable_value"),
 	):
 		filters = {"company": company, "docstatus": 1, "posting_date": ["between", [from_date, to_date]]}
-		row = frappe.get_list(
-			doctype, filters=filters, fields=[{"SUM": "base_net_total", "as": "total"}], limit=1
-		)
+		row = _get_list(doctype, filters=filters, fields=[{"SUM": "base_net_total", "as": "total"}], limit=1)
 		out[key] = flt(row[0].total if row else 0, 2)
 	return out
 
@@ -1303,7 +1411,7 @@ def payments_summary(
 			"day": ["posting_date"],
 			"party": ["party_type", "party", "party_name"],
 		}[group_by]
-		rows = frappe.get_list(
+		rows = _get_list(
 			"Payment Entry",
 			filters={**filters, "payment_type": payment_type},
 			fields=[
@@ -1327,7 +1435,7 @@ def payments_summary(
 				r.pop("party_name", None)
 			s[f"by_{group_by}"].append(r)
 
-	transfers = frappe.get_list(
+	transfers = _get_list(
 		"Payment Entry",
 		filters={**filters, "payment_type": "Internal Transfer"},
 		fields=["company", {"COUNT": "*", "as": "entries"}, {"SUM": "base_paid_amount", "as": "amount"}],
@@ -1372,7 +1480,7 @@ def _empty_payments(group_by):
 def item_stock(item=None, warehouse=None, company=None, limit=10):
 	limit = _limit(limit)
 	company, _cost_center = _scoped(company, None)
-	show_value = bool(VALUATION_ROLES & set(frappe.get_roles()))
+	show_value = _full_read() or bool(VALUATION_ROLES & set(frappe.get_roles()))
 	value_fields = ["valuation_rate", "stock_value"] if show_value else []
 	# Each company keeps its own warehouses (mirrored billing), so totals are per company.
 	company_of, warehouses = _warehouses(company, warehouse)
@@ -1386,14 +1494,14 @@ def item_stock(item=None, warehouse=None, company=None, limit=10):
 		]
 		if show_value:
 			fields.append({"SUM": "stock_value", "as": "stock_value"})
-		summary = frappe.get_list(
+		summary = _get_list(
 			"Bin",
 			filters={**bin_filters, "actual_qty": [">", 0]},
 			fields=fields,
 			group_by="warehouse",
 			limit=0,
 		)
-		negative = frappe.get_list(
+		negative = _get_list(
 			"Bin",
 			filters={**bin_filters, "actual_qty": ["<", 0]},
 			fields=["warehouse", {"COUNT": "*", "as": "items"}],
@@ -1419,7 +1527,7 @@ def item_stock(item=None, warehouse=None, company=None, limit=10):
 	items = _find_items(item, limit)
 	if not items:
 		return {"found": False, "message": f"No item matches '{item}'."}
-	bins = frappe.get_list(
+	bins = _get_list(
 		"Bin",
 		filters={**bin_filters, "item_code": ["in", [i.name for i in items]]},
 		fields=["item_code", "warehouse", "actual_qty", "reserved_qty", "projected_qty", *value_fields],
@@ -1458,11 +1566,11 @@ def item_stock(item=None, warehouse=None, company=None, limit=10):
 
 
 def _find_items(search, limit):
-	barcode_hits = frappe.get_list(
+	barcode_hits = _get_list(
 		"Item Barcode", parent_doctype="Item", filters={"barcode": search}, pluck="parent", limit=5
 	)
 	like = f"%{search}%"
-	return frappe.get_list(
+	return _get_list(
 		"Item",
 		filters={"is_stock_item": 1},
 		or_filters={
@@ -1517,7 +1625,7 @@ def item_movement(
 
 	if view == "fast":
 		# Per company: mirrored invoices sell the same stock in both companies.
-		rows = frappe.get_list(
+		rows = _get_list(
 			"Stock Ledger Entry",
 			filters={
 				**sle,
@@ -1546,11 +1654,11 @@ def item_movement(
 	days = max(cint(days) or 90, 1)
 	today = getdate(nowdate())
 	cutoff = getdate(frappe.utils.add_days(today, -days))
-	show_value = bool(VALUATION_ROLES & set(frappe.get_roles()))
+	show_value = _full_read() or bool(VALUATION_ROLES & set(frappe.get_roles()))
 	bin_filters = {"actual_qty": [">", 0]}
 	if warehouses is not None:
 		bin_filters["warehouse"] = ["in", warehouses]
-	bins = frappe.get_list(
+	bins = _get_list(
 		"Bin",
 		filters=bin_filters,
 		fields=[
@@ -1569,7 +1677,7 @@ def item_movement(
 		s["stock_value"] += flt(b.get("stock_value"))
 	last_sale = {
 		(r.company, r.item_code): getdate(r.last_sold)
-		for r in frappe.get_list(
+		for r in _get_list(
 			"Stock Ledger Entry",
 			filters={
 				**sle,
@@ -1626,7 +1734,7 @@ def _add_item_names(companies):
 
 def _movement(filters, from_date, to_date, company_of):
 	"""Opening, in, out and closing qty per warehouse, and the in / out per voucher type."""
-	opening = frappe.get_list(
+	opening = _get_list(
 		"Stock Ledger Entry",
 		filters={**filters, "posting_date": ["<", from_date]},
 		fields=["warehouse", {"SUM": "actual_qty", "as": "qty"}],
@@ -1636,7 +1744,7 @@ def _movement(filters, from_date, to_date, company_of):
 	period = {**filters, "posting_date": ["between", [from_date, to_date]]}
 	moves = {}
 	for side, sign in (("in_qty", [">", 0]), ("out_qty", ["<", 0])):
-		for r in frappe.get_list(
+		for r in _get_list(
 			"Stock Ledger Entry",
 			filters={**period, "actual_qty": sign},
 			fields=["warehouse", "voucher_type", {"SUM": "actual_qty", "as": "qty"}],
@@ -1669,11 +1777,11 @@ def _movement(filters, from_date, to_date, company_of):
 
 
 def _pick_item(search):
-	barcode_hits = frappe.get_list(
+	barcode_hits = _get_list(
 		"Item Barcode", parent_doctype="Item", filters={"barcode": search}, pluck="parent", limit=5
 	)
 	# An exact code, barcode or name wins over the fuzzy matches (item "82" vs "Clay Lamp 182").
-	exact = frappe.get_list(
+	exact = _get_list(
 		"Item",
 		or_filters={"name": ["in", [search, *barcode_hits]], "item_name": search},
 		fields=["name", "item_name", "stock_uom"],
@@ -1697,7 +1805,7 @@ def _pick_item(search):
 def _item_names(codes):
 	if not codes:
 		return {}
-	rows = frappe.get_list(
+	rows = _get_list(
 		"Item", filters={"name": ["in", codes]}, fields=["name", "item_name", "stock_uom"], limit=0
 	)
 	return {r.name: {"item_name": r.item_name, "uom": r.stock_uom} for r in rows}
@@ -1705,7 +1813,7 @@ def _item_names(codes):
 
 def _warehouses(company, warehouse):
 	"""({warehouse: company}, the warehouses to filter on or None for all)."""
-	company_of = dict(frappe.get_list("Warehouse", fields=["name", "company"], as_list=True, limit=0))
+	company_of = dict(_get_list("Warehouse", fields=["name", "company"], as_list=True, limit=0))
 	if not company and not warehouse:
 		return company_of, None
 	names = [
@@ -1736,7 +1844,7 @@ def customer_activity(customer=None, days=60, company=None, cost_center=None, li
 		if cust.get("found") is False:
 			return cust
 		filters["customer"] = cust.name
-		totals = frappe.get_list(
+		totals = _get_list(
 			"Sales Invoice",
 			filters=filters,
 			fields=[
@@ -1749,7 +1857,7 @@ def customer_activity(customer=None, days=60, company=None, cost_center=None, li
 			group_by="company",
 			limit=0,
 		)
-		days_rows = frappe.get_list(
+		days_rows = _get_list(
 			"Sales Invoice",
 			filters={**filters, "posting_date": [">=", year_ago]},
 			fields=["company", "posting_date", {"SUM": "base_grand_total", "as": "total"}],
@@ -1785,7 +1893,7 @@ def customer_activity(customer=None, days=60, company=None, cost_center=None, li
 			"companies": companies,
 		}
 
-	rows = frappe.get_list(
+	rows = _get_list(
 		"Sales Invoice",
 		filters={**filters, "posting_date": [">=", year_ago]},
 		fields=[
@@ -1844,6 +1952,147 @@ def _drop_same_name(row, key):
 
 def _limit(value):
 	return min(max(cint(value) or 10, 1), _row_cap["max"])
+
+
+# ── any record ──────────────────────────────────────────────────────────────
+
+
+def describe_doctype(search=None, doctype=None):
+	if doctype:
+		meta = _queryable(doctype)
+		fields = [
+			{
+				"fieldname": f.fieldname,
+				"label": f.label,
+				"type": f.fieldtype,
+				**(
+					{"options": f.options} if f.fieldtype in ("Link", "Select", "Table") and f.options else {}
+				),
+			}
+			for f in meta.fields
+			if f.fieldname in _query_columns(meta) or f.fieldtype in ("Table", "Table MultiSelect")
+		]
+		return {"doctype": meta.name, "is_child_table": bool(meta.istable), "fields": fields}
+	words = [w for w in re.split(r"\W+", search or "") if w]
+	if not words:
+		raise ValueError("Pass search words or an exact doctype.")
+	names = frappe.get_all(
+		"DocType",
+		filters=[["name", "like", f"%{w}%"] for w in words]
+		+ [["module", "in", list(QUERY_MODULES)], ["issingle", "=", 0], ["is_virtual", "=", 0]],
+		pluck="name",
+		order_by="istable asc, name asc",
+		limit=40,
+	)
+	return {"doctypes": [n for n in names if not n.startswith(QUERY_DENIED_PREFIX)]}
+
+
+def query_records(
+	doctype, fields=None, filters=None, aggregates=None, group_by=None, order_by=None, limit=20
+):
+	meta = _queryable(doctype)
+	columns = _query_columns(meta)
+
+	def column(name):
+		if name not in columns:
+			raise ValueError(f"{meta.name} has no readable field {name!r}. Call describe_doctype.")
+		return name
+
+	select = []
+	aliases = set()
+	for agg in aggregates or []:
+		fn = str(agg.get("fn", "")).lower() if isinstance(agg, dict) else ""
+		if fn not in QUERY_AGGREGATES:
+			raise ValueError(f"Aggregate fn must be one of {', '.join(QUERY_AGGREGATES)}.")
+		field = column(agg.get("field") or "name")
+		alias = f"{fn}_{field}"
+		select.append({QUERY_AGGREGATES[fn]: field, "as": alias})
+		aliases.add(alias)
+	if group_by:
+		select.insert(0, column(group_by))
+	if not aggregates:
+		select = [column(f) for f in fields or []] or _default_fields(meta, columns)
+
+	order = None
+	if order_by:
+		parts = str(order_by).split()
+		direction = parts[1].lower() if len(parts) > 1 else "desc"
+		if len(parts) > 2 or direction not in ("asc", "desc"):
+			raise ValueError("order_by is a fieldname, optionally followed by asc or desc.")
+		order = f"{parts[0] if parts[0] in aliases else column(parts[0])} {direction}"
+	elif not aggregates and "modified" in columns:
+		order = "modified desc"
+
+	limit = _limit(limit)
+	kwargs = {}
+	if meta.istable:
+		parent = frappe.get_all(
+			"DocField", filters={"options": meta.name, "fieldtype": "Table"}, pluck="parent", limit=1
+		)
+		if parent:
+			kwargs["parent_doctype"] = parent[0]
+	rows = _get_list(
+		meta.name,
+		fields=select,
+		filters=_query_filters(filters, column),
+		group_by=group_by or None,
+		order_by=order,
+		limit=limit,
+		**kwargs,
+	)
+	return {"doctype": meta.name, "rows": rows, "more_rows": len(rows) == limit}
+
+
+def _queryable(doctype):
+	if not isinstance(doctype, str) or not frappe.db.exists("DocType", doctype):
+		raise ValueError(f"No doctype named {doctype!r}. Call describe_doctype with search words.")
+	meta = frappe.get_meta(doctype)
+	if (
+		meta.module not in QUERY_MODULES
+		or meta.name.startswith(QUERY_DENIED_PREFIX)
+		or meta.issingle
+		or meta.is_virtual
+	):
+		raise ValueError(f"{meta.name} is not open to AI Chat.")
+	return meta
+
+
+def _query_columns(meta):
+	hidden = {f.fieldname for f in meta.fields if f.fieldtype in QUERY_HIDDEN_FIELDTYPES}
+	return set(meta.get_valid_columns()) - hidden
+
+
+def _default_fields(meta, columns):
+	wanted = ["name", meta.title_field] + [f.fieldname for f in meta.fields if f.in_list_view]
+	wanted += ["parent"] if meta.istable else ["docstatus"]
+	return list(dict.fromkeys(f for f in wanted if f and f in columns))[:12]
+
+
+def _query_filters(filters, column):
+	if not filters:
+		return []
+	if isinstance(filters, dict):
+		filters = [[k, *(v if isinstance(v, list) else ["=", v])] for k, v in filters.items()]
+	out = []
+	for f in filters:
+		if not isinstance(f, list | tuple) or len(f) != 3:
+			raise ValueError("Each filter is [fieldname, operator, value].")
+		op = str(f[1]).lower()
+		if op not in QUERY_OPERATORS:
+			raise ValueError(f"Operator must be one of {', '.join(sorted(QUERY_OPERATORS))}.")
+		out.append([column(f[0]), op, f[2]])
+	return out
+
+
+def _get_list(*args, **kwargs):
+	"""frappe.get_list as the chat user, or every record when Full Read Access is on."""
+	if _full_read():
+		kwargs["ignore_permissions"] = True
+	return frappe.get_list(*args, **kwargs)
+
+
+def _full_read():
+	return bool(frappe.get_cached_doc("SSPL Assistant Settings").get("full_read_access"))
 
 
 @contextmanager
@@ -1908,4 +2157,6 @@ HANDLERS = {
 	"profit_loss": profit_loss,
 	"gst_summary": gst_summary,
 	"payments_summary": payments_summary,
+	"describe_doctype": describe_doctype,
+	"query_records": query_records,
 }
