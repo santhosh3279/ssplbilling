@@ -308,14 +308,19 @@ def _day_filter(date):
 	return {"received_at": ("between", [f"{day} 00:00:00", f"{day} 23:59:59.999999"])}
 
 
-def _tid_pos(rows):
-	"""{tid: POS ID} of the SSPL Paytm Devices the rows' card machines are set up as."""
-	tids = {r.tid for r in rows if r.tid}
-	return dict(
-		frappe.get_all(
-			"SSPL Paytm Device", filters={"tid": ("in", list(tids))}, fields=["tid", "pos_id"], as_list=True
-		)
-	) if tids else {}
+def _device_pos():
+	"""{tid: POS ID} and {device_name: POS ID} of every SSPL Paytm Device (a handful of machines)."""
+	devices = frappe.get_all("SSPL Paytm Device", fields=["tid", "device_name", "pos_id"])
+	return {d.tid: d.pos_id for d in devices if d.pos_id}, {d.device_name: d.pos_id for d in devices if d.pos_id}
+
+
+def _pos_for(devices, tid, order_id):
+	"""POS ID of a payment: its machine's by TID, else the POS ID its Paytm order id ends with
+	(static QR / soundbox orders are <yyyymmddhhmmss><seq><POS ID>)."""
+	if tid and devices.get(tid):
+		return devices[tid]
+	order_id = order_id or ""
+	return next((p for p in set(devices.values()) if order_id.endswith(p)), None)
 
 
 def _mark_linked(rows):
@@ -332,7 +337,7 @@ def _mark_linked(rows):
 			fields=["name", "status", "sales_invoice", "payment_entry", "device_name"],
 		)
 	} if txn_names else {}
-	tid_pos = _tid_pos(rows)
+	devices, name_pos = _device_pos()
 	invoices = {t.sales_invoice for t in txns.values() if t.sales_invoice}
 	invoice_status = dict(
 		frappe.get_all(
@@ -349,8 +354,11 @@ def _mark_linked(rows):
 	for r in rows:
 		r.linked, r.linked_doctype, r.linked_to = None, None, None
 		t = txns.get(r.ref_name) if r.ref_doctype == "SSPL Paytm Transaction" else None
-		# POS ID the hit came from: the system order's posId, else the machine's by TID
-		r.pos_id = (t and t.device_name) or tid_pos.get(r.tid) or None
+		# POS ID the hit came from: the system order's posId (EDC orders keep the machine's name),
+		# else the machine's by TID / order id
+		r.pos_id = (t and (name_pos.get(t.device_name) or t.device_name)) or _pos_for(
+			devices, r.tid, r.order_id
+		)
 		r.txn_status = t.status if t else None
 		if r.result not in ("matched", "recorded", "duplicate", "known"):
 			continue
@@ -380,7 +388,7 @@ def get_webhook_log(name):
 @frappe.whitelist()
 def get_unknown_payments(status=None, limit=200, date=None):
 	"""Rows for the left panel, newest first, plus the default To ledger (Paytm UPI account).
-	date (YYYY-MM-DD) limits it to payments received that day; each row gets its machine's pos_id."""
+	date (YYYY-MM-DD) limits it to payments received that day; each row gets its machine's pos_id (by TID, else order id)."""
 	_require_desk_user()
 	filters = _day_filter(date)
 	if status:
@@ -392,9 +400,9 @@ def get_unknown_payments(status=None, limit=200, date=None):
 		order_by="creation desc",
 		limit_page_length=frappe.utils.cint(limit) or 200,
 	)
-	tid_pos = _tid_pos(rows)
+	devices = _device_pos()[0]
 	for r in rows:
-		r.pos_id = tid_pos.get(r.tid)
+		r.pos_id = _pos_for(devices, r.tid, r.paytm_order_id)
 	return {
 		"rows": rows,
 		"upi_account": frappe.db.get_single_value("SSPL Paytm Settings", "upi_account"),
