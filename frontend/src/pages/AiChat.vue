@@ -206,7 +206,7 @@
           <div class="mx-auto max-w-5xl">
             <p v-if="error" class="mb-2 rounded bg-[var(--color-danger)]/15 px-3 py-1.5 text-[18.75px] text-[var(--color-danger)]">{{ error }}</p>
             <!-- Quick buttons on phones (desktop shows them in the right panel) -->
-            <div v-if="boot.quick_actions?.length" class="mb-2 flex gap-1.5 overflow-x-auto pb-1 md:hidden">
+            <div v-if="boot.quick_actions?.length || savedQs.length" class="mb-2 flex gap-1.5 overflow-x-auto pb-1 md:hidden">
               <button
                 v-for="q in boot.quick_actions"
                 :key="q.action"
@@ -217,17 +217,27 @@
               >
                 ⚡ {{ q.label }}{{ q.needs_query ? '…' : '' }}
               </button>
+              <button
+                v-for="s in savedQs"
+                :key="s.name"
+                class="max-w-[16rem] shrink-0 truncate rounded-full px-3 py-1 text-[17.2px] font-semibold transition-colors disabled:opacity-50"
+                :class="pendingSaved?.item.name === s.name ? 'bg-[var(--color-success)]/30' : 'bg-[var(--color-bg)] hover:bg-[var(--color-surface-raised)]'"
+                :disabled="running || quickBusy || !hasAi"
+                @click="pickSaved(s)"
+              >
+                ↻ {{ s.question }}{{ s.params.length ? '…' : '' }}
+              </button>
             </div>
             <div class="flex items-end gap-2">
               <textarea
                 ref="inputEl"
                 v-model="input"
                 rows="1"
-                :placeholder="pendingQuick ? `${pendingQuick.label}: type a name, code or mobile, then Enter` : hasAi ? 'Ask about sales, outstanding, stock…' : 'Use the quick buttons (AI not set up)'"
-                :class="pendingQuick ? 'bg-[var(--color-success)]/15' : ''"
+                :placeholder="savedParam ? `${savedParam.label} for “${pendingSaved.item.question}” (was ${savedParam.was}), then Enter` : pendingQuick ? `${pendingQuick.label}: type a name, code or mobile, then Enter` : hasAi ? 'Ask about sales, outstanding, stock…' : 'Use the quick buttons (AI not set up)'"
+                :class="pendingQuick || pendingSaved ? 'bg-[var(--color-success)]/15' : ''"
                 class="min-w-0 flex-1 resize-none rounded-lg bg-[var(--color-bg)] px-3 py-2 text-[18.75px] focus:bg-[var(--color-info)]/15 focus:outline-none"
                 @keydown.enter.exact.prevent="submit"
-                @keydown.esc="pendingQuick ? (pendingQuick = null) : stop()"
+                @keydown.esc="pendingSaved ? (pendingSaved = null) : pendingQuick ? (pendingQuick = null) : stop()"
                 @input="autosize"
               ></textarea>
               <button
@@ -253,11 +263,11 @@
 
       <!-- Quick buttons: answered by the server without the AI -->
       <aside
-        v-if="boot.quick_actions?.length"
-        class="hidden w-72 shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] md:flex"
+        v-if="boot.quick_actions?.length || savedQs.length"
+        class="hidden w-72 shrink-0 flex-col overflow-y-auto border-l border-[var(--color-border)] bg-[var(--color-surface)] md:flex"
       >
         <h3 class="px-3 pt-3 pb-1 text-[15.6px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Quick answers</h3>
-        <div class="flex-1 space-y-1.5 overflow-y-auto px-2 pb-3">
+        <div class="space-y-1.5 px-2 pb-3">
           <button
             v-for="q in boot.quick_actions"
             :key="q.action"
@@ -270,6 +280,23 @@
             ⚡ {{ q.label }}{{ q.needs_query ? '…' : '' }}
           </button>
         </div>
+        <!-- Saved questions: an earlier AI answer's tool calls, re-run with values asked in the chat box -->
+        <template v-if="savedQs.length">
+          <h3 class="border-t border-[var(--color-border)] px-3 pt-3 pb-1 text-[15.6px] font-bold uppercase tracking-wide text-[var(--color-text-muted)]">Saved questions</h3>
+          <div class="space-y-1.5 px-2 pb-3">
+            <button
+              v-for="s in savedQs"
+              :key="s.name"
+              class="block w-full truncate rounded-md px-3 py-2 text-left text-[17.2px] font-semibold transition-colors disabled:opacity-50"
+              :class="pendingSaved?.item.name === s.name ? 'bg-[var(--color-success)]/30' : 'bg-[var(--color-bg)] hover:bg-[var(--color-surface-raised)]'"
+              :disabled="running || quickBusy || !hasAi"
+              :title="s.question"
+              @click="pickSaved(s)"
+            >
+              ↻ {{ s.question }}{{ s.params.length ? '…' : '' }}
+            </button>
+          </div>
+        </template>
       </aside>
     </div>
   </div>
@@ -301,6 +328,10 @@ const running = ref(false)
 const usage = ref(null)
 const listOpen = ref(true)
 const pendingQuick = ref(null)
+// Saved question waiting for its values: { item: {name, question, params}, values }
+const pendingSaved = ref(null)
+const savedQs = ref([])
+const savedParam = computed(() => pendingSaved.value?.item.params[Object.keys(pendingSaved.value.values).length])
 const quickBusy = ref(false)
 const outputBusy = ref('')
 const hasAi = computed(() => !!boot.value?.providers?.length)
@@ -337,6 +368,7 @@ onMounted(async () => {
   provider.value = boot.value.providers.includes(saved) ? saved : boot.value.providers[0] || 'Claude'
 
   getFrappeSocket()?.on(EVENT, onEvent)
+  loadSaved()
   resetScope()
   await loadChats()
   if (route.query.chat) openChat(String(route.query.chat))
@@ -437,6 +469,7 @@ function ask(q) {
 // A quick button with a search (customer / item) waits for the text in the composer.
 function pickQuick(q) {
   error.value = ''
+  pendingSaved.value = null
   if (!q.needs_query) return runQuick(q)
   pendingQuick.value = pendingQuick.value?.action === q.action ? null : q
   nextTick(() => inputEl.value?.focus())
@@ -463,6 +496,14 @@ async function runQuick(q, query) {
 
 async function submit() {
   const text = input.value.trim()
+  if (pendingSaved.value) {
+    if (!text || running.value) return
+    input.value = ''
+    autosize()
+    pendingSaved.value.values[savedParam.value.key] = text
+    if (!savedParam.value) runSaved(pendingSaved.value.item, pendingSaved.value.values)
+    return
+  }
   if (pendingQuick.value) {
     if (!text || quickBusy.value) return
     input.value = ''
@@ -527,6 +568,7 @@ function onEvent(ev) {
   if (ev.type === 'done') {
     loadChats()
     loadUsage()
+    loadSaved() // the answer may have been saved as a new question
   }
   if (!current.value || ev.chat !== current.value.name) return
   if (ev.type === 'start') {
@@ -649,6 +691,44 @@ function safeSet(k, v) {
   try {
     localStorage.setItem(k, v)
   } catch {}
+}
+
+async function loadSaved() {
+  try {
+    savedQs.value = await aiChat.saved()
+  } catch {
+    // keep the last list
+  }
+}
+
+function pickSaved(s) {
+  error.value = ''
+  pendingQuick.value = null
+  if (running.value) return
+  if (!s.params.length) return runSaved(s, {})
+  pendingSaved.value = pendingSaved.value?.item.name === s.name ? null : { item: s, values: {} }
+  nextTick(() => inputEl.value?.focus())
+}
+
+// Always a new chat: a reused answer replaces the chat's AI history. Keeps the picked company / cost center.
+async function runSaved(s, values) {
+  pendingSaved.value = null
+  current.value = null
+  messages.value = [{ name: 'local-' + Date.now(), role: 'user', content: s.question }]
+  resetLive()
+  running.value = true
+  listOpen.value = false
+  try {
+    const res = await aiChat.askSaved(s.name, values, provider.value, { ...scope })
+    messages.value[0].content = res.message
+    current.value = res.chat
+    router.replace({ query: { chat: res.chat.name } })
+    loadChats()
+  } catch (e) {
+    running.value = false
+    error.value = lastLine(e)
+  }
+  scrollDown()
 }
 
 async function loadUsage() {

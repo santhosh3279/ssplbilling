@@ -23,6 +23,7 @@ RUNNERS = {"Claude": ai_chat_runner, "Gemini": ai_chat_runner_gemini}
 API_KEY_FIELDS = {"Claude": "anthropic_api_key", "Gemini": "google_api_key"}
 CHAT = "SSPL Assistant Chat"
 MESSAGE = "SSPL Assistant Message"
+CACHE = ai_chat_cache.CACHE
 REALTIME_EVENT = "sspl_assistant_event"
 FLUSH_SECONDS = 0.25
 MAX_PROMPT = 8000
@@ -108,13 +109,48 @@ def send_message(message, chat=None, provider=None, company=None, cost_center=No
 	if not _providers(_settings()):
 		frappe.throw(f"No AI provider has an API key in {SETTINGS}. The quick buttons still work.")
 	_check_limits(chat)
+	return _start_turn(message, chat, provider, company, cost_center, fresh=fresh)
+
+
+@frappe.whitelist()
+def list_saved():
+	"""Saved questions for the side panel; each re-runs its recipe with fresh values."""
+	_check_access()
+	return ai_chat_cache.saved_questions(_settings())
+
+
+@frappe.whitelist(methods=["POST"])
+def ask_saved(saved, values=None, provider=None, company=None, cost_center=None):
+	"""A saved question from the side panel, in a new chat: its recipe re-runs with the values the
+	user typed in the chat box (customer, item… see ai_chat_cache.params), without the AI picking
+	tools. Always a new chat, since a reused answer replaces the chat's AI history."""
+	_check_access()
+	settings = _settings()
+	if not settings.enable_query_cache:
+		frappe.throw(f"Reuse Earlier Answers is off in {SETTINGS}.")
+	row = frappe.db.get_value(CACHE, {"name": saved, "enabled": 1}, ["question", "recipe"], as_dict=True)
+	if not row:
+		frappe.throw("This saved question is no longer available. Ask it in the chat box.")
+	if not _providers(settings):
+		frappe.throw(f"No AI provider has an API key in {SETTINGS}. The quick buttons still work.")
+	_check_limits(None)
+	asked = {p["key"]: p for p in ai_chat_cache.params(row.question, json.loads(row.recipe or "[]"))}
+	values = frappe.parse_json(values) if isinstance(values, str) else (values or {})
+	values = {k: str(v).strip() for k, v in values.items() if k in asked and str(v or "").strip()}
+	message = ai_chat_cache.retitle(row.question, asked, values)
+	return {
+		**_start_turn(message, None, provider, company, cost_center, cached=saved, values=values),
+		"message": message,
+	}
+
+
+def _start_turn(message, chat, provider, company, cost_center, fresh=0, cached=None, values=None):
 	doc = _own_chat(chat) if chat else _new_chat(message, provider)
 	if doc.status == "Running" and not _is_stale(doc):
 		frappe.throw("Still answering the previous message. Wait for it or press Stop.")
 	_set_scope(doc, company, cost_center)
 	settings = _settings()
-	cached = None
-	if not cint(fresh) and settings.enable_query_cache and not doc.history:
+	if not cached and not cint(fresh) and settings.enable_query_cache and not doc.history:
 		cached = ai_chat_cache.find(message, doc.company, doc.cost_center, settings)
 
 	_insert_message(doc.name, "user", message)
@@ -129,6 +165,7 @@ def send_message(message, chat=None, provider=None, company=None, cost_center=No
 		prompt=message,
 		cached=cached,
 		fresh=cint(fresh),
+		values=values,
 	)
 	return {"chat": _chat_dict(doc)}
 
@@ -234,10 +271,10 @@ def delete_chat(chat):
 	return {"ok": True}
 
 
-def process_turn(chat, prompt, cached=None, fresh=0):
+def process_turn(chat, prompt, cached=None, fresh=0, values=None):
 	"""Background job: run the AI as the chat user, stream to them, store the reply. `cached`
 	is a saved recipe to re-run instead (ai_chat_cache); fresh ignores the chat's history,
-	since it re-asks the question just before it."""
+	since it re-asks the question just before it. values: the side panel's (ask_saved)."""
 	doc = frappe.get_doc(CHAT, chat)
 	user = doc.user
 	# Tools query ERPNext in-process, so they must run with the chat user's permissions.
@@ -278,7 +315,7 @@ def process_turn(chat, prompt, cached=None, fresh=0):
 		with ai_chat_tools.scope(doc.company, doc.cost_center):
 			is_cancelled = lambda: frappe.cache.get_value(_cancel_key(chat))  # noqa: E731
 			if cached:
-				result = _reuse(doc, prompt, cached, on_event, is_cancelled)
+				result = _reuse(doc, prompt, cached, on_event, is_cancelled, values)
 			else:
 				result = RUNNERS[doc.provider or "Claude"].run(
 					prompt, history, on_event=on_event, is_cancelled=is_cancelled
@@ -319,13 +356,13 @@ def process_turn(chat, prompt, cached=None, fresh=0):
 	return msg
 
 
-def _reuse(doc, prompt, cached, on_event, is_cancelled):
+def _reuse(doc, prompt, cached, on_event, is_cancelled, values=None):
 	"""Answer from a saved recipe: re-run its tool calls for live figures, then word the reply
 	on the provider's cheapest model without tools, or as plain tables (no AI call). Falls
 	back to tables when the AI gives no text."""
 	started = time.monotonic()
 	attachments = []
-	calls = ai_chat_cache.replay(cached, attachments, on_event)
+	calls = ai_chat_cache.replay(cached, attachments, on_event, values)
 	runner = RUNNERS[doc.provider or "Claude"]
 	result = None
 	if _settings().cache_reply_mode != ai_chat_cache.MODE_TABLES and _providers(_settings()):

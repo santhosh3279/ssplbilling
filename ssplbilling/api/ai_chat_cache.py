@@ -48,6 +48,20 @@ FIXED_DATE = re.compile(
 	re.IGNORECASE,
 )
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+# Tool args naming one party / item / account: a saved question asks for them again when
+# re-run from the side panel. Dates too, when the question named a fixed date.
+PARAM_KEYS = {
+	"customer": "Customer",
+	"supplier": "Supplier",
+	"item": "Item",
+	"account": "Account",
+	"warehouse": "Warehouse",
+}
+DATE_KEYS = {
+	"from_date": "From date (YYYY-MM-DD)",
+	"to_date": "To date (YYYY-MM-DD)",
+	"as_of": "As of (YYYY-MM-DD)",
+}
 MONEY_KEY = re.compile(
 	r"amount|total|balance|value|sales|outstanding|receivable|payable|advance|profit|income|"
 	r"expense|tax|paid|received|net|debit|credit|opening|closing|cash|bank|price|rate",
@@ -157,8 +171,9 @@ def save(question, company, cost_center, provider, calls, answer):
 # ── replay ──────────────────────────────────────────────────────────────────
 
 
-def replay(name, attachments, on_event=None):
-	"""Re-run a saved recipe as the current user. Returns [{name, input, content, is_error}]."""
+def replay(name, attachments, on_event=None, values=None):
+	"""Re-run a saved recipe as the current user. Returns [{name, input, content, is_error}].
+	values: {param key: new value} from the side panel, put in after the dates move to today."""
 	doc = frappe.get_doc(CACHE, name)
 	frappe.db.set_value(
 		CACHE, name, {"hits": cint(doc.hits) + 1, "last_used": now_datetime()}, update_modified=False
@@ -168,6 +183,8 @@ def replay(name, attachments, on_event=None):
 	out = []
 	for call in json.loads(doc.recipe or "[]"):
 		args = call["input"] if fixed else rebase_dates(call["input"], asked, today)
+		if values:
+			args = _apply(args, values)
 		if on_event:
 			on_event({"type": "tool", "name": call["name"], "input": args})
 		content, is_error = ai_chat_tools.run_tool(call["name"], dict(args), attachments)
@@ -175,6 +192,80 @@ def replay(name, attachments, on_event=None):
 			on_event({"type": "tool_result", "name": call["name"], "ok": not is_error})
 		out.append({"name": call["name"], "input": args, "content": content, "is_error": is_error})
 	return out
+
+
+# ── saved questions (side panel) ────────────────────────────────────────────
+
+
+def saved_questions(settings, limit=30):
+	"""Enabled, unexpired recipes as side-panel buttons: [{name, question, params}], most reused
+	first. Every user's questions are offered, like the reuse itself."""
+	if not settings.enable_query_cache:
+		return []
+	filters = {"enabled": 1}
+	if cint(settings.cache_expiry_days):
+		filters["modified"] = [">=", add_to_date(now_datetime(), days=-cint(settings.cache_expiry_days))]
+	out, seen = [], set()
+	for row in frappe.get_all(
+		CACHE,
+		filters=filters,
+		fields=["name", "question", "recipe"],
+		order_by="hits desc, modified desc",
+		limit=200,
+	):
+		key = (row.question or "").strip().casefold()
+		if not key or key in seen:
+			continue
+		seen.add(key)
+		out.append(
+			{
+				"name": row.name,
+				"question": row.question,
+				"params": params(row.question, json.loads(row.recipe or "[]")),
+			}
+		)
+		if len(out) >= limit:
+			break
+	return out
+
+
+def params(question, recipe):
+	"""What a saved question asks for before it re-runs: [{key, label, was}], first value per key."""
+	keys = {**PARAM_KEYS, **(DATE_KEYS if FIXED_DATE.search(question or "") else {})}
+	found = {}
+	for call in recipe:
+		_collect(call.get("input"), keys, found)
+	return [{"key": k, "label": keys[k], "was": v} for k, v in found.items()]
+
+
+def _collect(args, keys, found):
+	if not isinstance(args, dict):
+		return
+	for k, v in args.items():
+		if isinstance(v, dict):
+			_collect(v, keys, found)
+		elif k in keys and isinstance(v, str) and v.strip() and v.strip().lower() != "all":
+			found.setdefault(k, v)
+
+
+def _apply(args, values):
+	"""Swap the user's values into the recipe's args, nested ones (make_chart's args) included."""
+	if not isinstance(args, dict):
+		return args
+	return {k: _apply(v, values) if isinstance(v, dict) else values.get(k, v) for k, v in args.items()}
+
+
+def retitle(question, asked, values):
+	"""The saved question with the user's values in place of the old ones, for the chat and the
+	AI Rewrite reply. A value the question didn't spell out is added in brackets."""
+	extra = []
+	for key, value in values.items():
+		was = asked[key]["was"]
+		swapped = re.sub(re.escape(was), lambda _m: value, question, flags=re.IGNORECASE)
+		if swapped == question:
+			extra.append(f"{asked[key]['label'].split(' (')[0]}: {value}")
+		question = swapped
+	return f"{question} ({', '.join(extra)})" if extra else question
 
 
 def rebase_dates(args, asked, today):

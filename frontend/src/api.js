@@ -1571,6 +1571,10 @@ export const aiChat = {
   bootstrap: () => frappeGet(AI_CHAT + "get_bootstrap"),
   chats: () => frappeGet(AI_CHAT + "list_chats"),
   usage: () => frappeGet(AI_CHAT + "get_usage"),
+  saved: () => frappeGet(AI_CHAT + "list_saved"),
+  // values: { customer, item, … } typed in the chat box for the saved question's params
+  askSaved: (saved, values, provider, scope) =>
+    frappePost(AI_CHAT + "ask_saved", { saved, values: JSON.stringify(values), provider, ...scope }, { silent: true }),
   messages: (chat) => frappeGet(AI_CHAT + "get_messages", { chat }),
   // scope: { company, cost_center } from the page dropdowns ("" = all)
   // fresh: skip the saved answer for this question and ask the AI again
