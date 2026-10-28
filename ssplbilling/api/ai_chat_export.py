@@ -551,15 +551,15 @@ def build_series(tool, args=None, chart_type="bar"):
 			return [r["warehouse"] for r in rows], [
 				{"name": "Closing qty", "values": [r["closing"] for r in rows]}
 			]
-		key = (
-			"qty_sold"
-			if "qty_sold" in (data["items"][0] if data["items"] else {})
-			else ("stock_value" if data.get("valuation_shown") else "qty")
+		# fast has a period (qty sold); not_sold is as of today (stock value, or qty without valuation).
+		key = "qty_sold" if data.get("from_date") else "stock_value" if data.get("valuation_shown") else "qty"
+		return _align(
+			{
+				co: {_label(r, "item_name"): flt(r.get(key), 2) for r in c["items"]}
+				for co, c in data["companies"].items()
+			},
+			points,
 		)
-		rows = data["items"][:points]
-		return [_label(r, "item_name") for r in rows], [
-			{"name": key.replace("_", " ").capitalize(), "values": [flt(r.get(key), 2) for r in rows]}
-		]
 
 	if tool == "customer_activity":
 		if data.get("customer"):

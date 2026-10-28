@@ -279,7 +279,7 @@ TOOLS += [
 		"name": "gst_summary",
 		"description": (
 			"GST collected (output) vs paid (input credit) from the GST accounts, per company, by CGST / "
-			"SGST / IGST, net payable, reverse charge apart, plus taxable sales and purchase value."
+			"SGST / IGST, net payable, reverse charge apart, plus taxable sales and purchase value. Whole company, not per branch."
 		),
 		"input_schema": {
 			"type": "object",
@@ -288,7 +288,6 @@ TOOLS += [
 				"to_date": _TO,
 				"group_by": {"type": "string", "enum": ["none", "month"]},
 				"company": _COMPANY,
-				"cost_center": _COST_CENTER,
 			},
 		},
 	},
@@ -1147,14 +1146,15 @@ GST_KINDS = {
 }
 
 
-def gst_summary(from_date=None, to_date=None, company=None, cost_center=None, group_by="none"):
+def gst_summary(from_date=None, to_date=None, company=None, group_by="none"):
 	from_date = getdate(from_date or get_first_day(nowdate()))
 	to_date = getdate(to_date or nowdate())
 	if to_date < from_date:
 		raise ValueError("to_date is before from_date")
 	if group_by not in (None, "none", "month"):
 		raise ValueError(f"group_by must be none or month; got {group_by!r}")
-	company, cost_center = _scoped(company, cost_center)
+	# GST is filed per company (GSTIN), and tax lines don't carry the branch cost center.
+	company, _cost_center = _scoped(company, None)
 	accounts = _gst_accounts(company)
 	if not accounts:
 		return {"found": False, "message": "No GST accounts are set in GST Settings for this company."}
@@ -1166,8 +1166,6 @@ def gst_summary(from_date=None, to_date=None, company=None, cost_center=None, gr
 	}
 	if company:
 		filters["company"] = company
-	if cost_center:
-		filters["cost_center"] = cost_center
 	rows = frappe.get_list(
 		"GL Entry",
 		filters=filters,
@@ -1218,11 +1216,11 @@ def gst_summary(from_date=None, to_date=None, company=None, cost_center=None, gr
 			]
 		else:
 			c.pop("by_month")
-		c.update(_taxable_values(name, cost_center, from_date, to_date))
+		c.update(_taxable_values(name, from_date, to_date))
 	return {
 		"from_date": from_date,
 		"to_date": to_date,
-		**_scope_note(company, cost_center),
+		**_scope_note(company, None),
 		"note": "output = GST collected, input = GST paid (input credit), net_payable = output - input before reverse charge (rcm_* shown apart). From the ledger: check GSTR-1 / GSTR-3B before filing.",
 		"companies": companies,
 	}
@@ -1255,7 +1253,7 @@ def _gst_accounts(company):
 	return out
 
 
-def _taxable_values(company, cost_center, from_date, to_date):
+def _taxable_values(company, from_date, to_date):
 	"""Net (pre-tax) value of submitted sales and purchases, returns netted in."""
 	out = {}
 	for doctype, key in (
@@ -1263,8 +1261,6 @@ def _taxable_values(company, cost_center, from_date, to_date):
 		("Purchase Invoice", "purchase_taxable_value"),
 	):
 		filters = {"company": company, "docstatus": 1, "posting_date": ["between", [from_date, to_date]]}
-		if cost_center:
-			filters["cost_center"] = cost_center
 		row = frappe.get_list(
 			doctype, filters=filters, fields=[{"SUM": "base_net_total", "as": "total"}], limit=1
 		)
@@ -1520,6 +1516,7 @@ def item_movement(
 		}
 
 	if view == "fast":
+		# Per company: mirrored invoices sell the same stock in both companies.
 		rows = frappe.get_list(
 			"Stock Ledger Entry",
 			filters={
@@ -1527,45 +1524,52 @@ def item_movement(
 				"voucher_type": "Sales Invoice",
 				"posting_date": ["between", [from_date, to_date]],
 			},
-			fields=["item_code", {"SUM": "actual_qty", "as": "qty"}],
-			group_by="item_code",
-			order_by="qty asc",
-			limit=limit,
+			fields=["company", "item_code", {"SUM": "actual_qty", "as": "qty"}],
+			group_by="company, item_code",
+			limit=0,
 		)
-		names = _item_names([r.item_code for r in rows])
+		companies = {}
+		for r in sorted(rows, key=lambda r: flt(r.qty)):
+			top = companies.setdefault(r.company, {"items": []})["items"]
+			if flt(r.qty) < 0 and len(top) < limit:
+				top.append({"item_code": r.item_code, "qty_sold": flt(-r.qty, 3)})
+		_add_item_names(companies)
 		return {
 			"from_date": from_date,
 			"to_date": to_date,
 			**base,
 			"note": "qty sold = stock out on sales invoices, returns netted in",
-			"items": [
-				{"item_code": r.item_code, **names.get(r.item_code, {}), "qty_sold": flt(-r.qty, 3)}
-				for r in rows
-				if flt(r.qty) < 0
-			],
+			"companies": companies,
 		}
 
 	# not_sold: in stock now, no sale in the last `days` days.
 	days = max(cint(days) or 90, 1)
 	today = getdate(nowdate())
-	cutoff = frappe.utils.add_days(today, -days)
+	cutoff = getdate(frappe.utils.add_days(today, -days))
 	show_value = bool(VALUATION_ROLES & set(frappe.get_roles()))
 	bin_filters = {"actual_qty": [">", 0]}
 	if warehouses is not None:
 		bin_filters["warehouse"] = ["in", warehouses]
-	stock = frappe.get_list(
+	bins = frappe.get_list(
 		"Bin",
 		filters=bin_filters,
 		fields=[
+			"warehouse",
 			"item_code",
 			{"SUM": "actual_qty", "as": "qty"},
 			*([{"SUM": "stock_value", "as": "stock_value"}] if show_value else []),
 		],
-		group_by="item_code",
+		group_by="warehouse, item_code",
 		limit=0,
 	)
-	last_sale = dict(
-		frappe.get_list(
+	stock = {}
+	for b in bins:
+		s = stock.setdefault((company_of.get(b.warehouse), b.item_code), {"qty": 0.0, "stock_value": 0.0})
+		s["qty"] += flt(b.qty)
+		s["stock_value"] += flt(b.get("stock_value"))
+	last_sale = {
+		(r.company, r.item_code): getdate(r.last_sold)
+		for r in frappe.get_list(
 			"Stock Ledger Entry",
 			filters={
 				**sle,
@@ -1573,39 +1577,51 @@ def item_movement(
 				"actual_qty": ["<", 0],
 				"posting_date": [">=", frappe.utils.add_days(today, -LAST_SALE_LOOKBACK)],
 			},
-			fields=["item_code", {"MAX": "posting_date", "as": "last_sold"}],
-			group_by="item_code",
-			as_list=True,
+			fields=["company", "item_code", {"MAX": "posting_date", "as": "last_sold"}],
+			group_by="company, item_code",
 			limit=0,
 		)
-	)
-	idle = [s for s in stock if not last_sale.get(s.item_code) or getdate(last_sale[s.item_code]) < cutoff]
+	}
 	key = "stock_value" if show_value else "qty"
-	idle.sort(key=lambda s: flt(s[key]), reverse=True)
-	names = _item_names([s.item_code for s in idle[:limit]])
-	items = []
-	for s in idle[:limit]:
-		last = last_sale.get(s.item_code)
-		items.append(
-			{
-				"item_code": s.item_code,
-				**names.get(s.item_code, {}),
-				"qty": flt(s.qty, 3),
-				**({"stock_value": flt(s.stock_value, 2)} if show_value else {}),
-				"last_sold": last,
-				"days_since_sale": date_diff(today, last) if last else None,
-			}
-		)
+	companies = {}
+	for (co, code), s in sorted(stock.items(), key=lambda kv: kv[1][key], reverse=True):
+		last = last_sale.get((co, code))
+		if last and last >= cutoff:
+			continue
+		c = companies.setdefault(co, {"items_not_sold": 0, "value_not_sold": 0.0, "items": []})
+		c["items_not_sold"] += 1
+		c["value_not_sold"] += s["stock_value"]
+		if len(c["items"]) < limit:
+			c["items"].append(
+				{
+					"item_code": code,
+					"qty": flt(s["qty"], 3),
+					**({"stock_value": flt(s["stock_value"], 2)} if show_value else {}),
+					"last_sold": last,
+					"days_since_sale": date_diff(today, last) if last else None,
+				}
+			)
+	for c in companies.values():
+		if show_value:
+			c["value_not_sold"] = flt(c["value_not_sold"], 2)
+		else:
+			c.pop("value_not_sold")
+	_add_item_names(companies)
 	return {
 		"as_of": today,
 		**base,
 		"days": days,
 		"note": f"items in stock with no sale in the last {days} days; last_sold empty = no sale in {LAST_SALE_LOOKBACK} days",
 		"valuation_shown": show_value,
-		"items_not_sold": len(idle),
-		**({"value_not_sold": flt(sum(flt(s.stock_value) for s in idle), 2)} if show_value else {}),
-		"items": items,
+		"companies": companies,
 	}
+
+
+def _add_item_names(companies):
+	"""Put item_name / uom right after item_code in every company's item rows."""
+	names = _item_names(list({i["item_code"] for c in companies.values() for i in c["items"]}))
+	for c in companies.values():
+		c["items"] = [{"item_code": i["item_code"], **names.get(i["item_code"], {}), **i} for i in c["items"]]
 
 
 def _movement(filters, from_date, to_date, company_of):
