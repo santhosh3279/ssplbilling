@@ -64,6 +64,11 @@ def _ref_key(value):
 	return re.sub(r"[^0-9A-Z]", "", str(value or "").upper()).lstrip("0")
 
 
+def _ref_tokens(text):
+	"""Words of a remark as reference keys, so a ref matches a whole token, never digits of an amount."""
+	return {_ref_key(t) for t in re.split(r"[^0-9A-Za-z]+", text or "") if t}
+
+
 def _marker(name):
 	return f"[{name}]"
 
@@ -78,16 +83,13 @@ def _bank_account(bank_account):
 
 
 def _dedupe_key(bank_account, row, occurrence):
-	parts = [
-		bank_account,
-		str(row["posting_date"]),
-		f"{flt(row['withdrawal'], 2):.2f}",
-		f"{flt(row['deposit'], 2):.2f}",
-		_text(row["reference_no"]).upper(),
-		_text(row["description"]).upper(),
-	]
-	# The running balance tells two identical lines of one day apart; without it, their order does
-	parts.append(f"{flt(row['balance'], 2):.2f}" if row["balance"] is not None else f"#{occurrence}")
+	"""With a running balance, date + amounts + balance pin the line, whatever the narration export
+	looked like; without one, narration and ref tell lines apart, and identical lines their order."""
+	parts = [bank_account, str(row["posting_date"]), f"{row['withdrawal']:.2f}", f"{row['deposit']:.2f}"]
+	if row["balance"] is not None:
+		parts.append(f"{row['balance']:.2f}")
+	else:
+		parts += [row["reference_no"].upper(), row["description"].upper(), f"#{occurrence}"]
 	return hashlib.sha1("|".join(parts).encode()).hexdigest()
 
 
@@ -202,7 +204,8 @@ def get_entries(bank_account, from_date=None, to_date=None, status=None, limit=2
 		DOCTYPE,
 		filters=filters,
 		fields=LIST_FIELDS,
-		order_by="posting_date asc, creation asc",
+		# newest first, so the limit drops the oldest lines; the page shows them oldest first
+		order_by="posting_date desc, creation desc",
 		limit_page_length=cint(limit) or 2000,
 	)
 
@@ -269,6 +272,7 @@ def _bank_vouchers(bank_account, from_date, to_date):
 			"net": net,
 			"ref": _ref_key(refs.get(key)),
 			"remarks": r.remarks or "",
+			"tokens": _ref_tokens(r.remarks),
 		}
 	return vouchers
 
@@ -370,7 +374,7 @@ def _match(bank_account, from_date, to_date, window=DEFAULT_WINDOW):
 			(days(p, v), k)
 			for k, v in candidates(p)
 			if days(p, v) <= REF_WINDOW
-			and (v["ref"] == p.ref or p.ref in _ref_key(v["remarks"]))
+			and (v["ref"] == p.ref or p.ref in v["tokens"])
 		]
 		if hits:
 			claim(p, min(hits)[1], "Reference no")

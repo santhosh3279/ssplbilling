@@ -502,7 +502,7 @@ async function loadEntries() {
   try {
     const params = { bank_account: bankAccount.value }
     if (fromDate.value && toDate.value) Object.assign(params, { from_date: fromDate.value, to_date: toDate.value })
-    rows.value = (await frappeGet(`${API}.get_entries`, params)) || []
+    rows.value = ((await frappeGet(`${API}.get_entries`, params)) || []).reverse()
     if (selected.value) selected.value = rows.value.find((r) => r.name === selected.value.name) || null
   } catch (e) {
     error.value = e.message
