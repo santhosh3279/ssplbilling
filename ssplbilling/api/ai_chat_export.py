@@ -62,6 +62,22 @@ LABELS = {
 	"net_sales": "Net Sales (₹)",
 	"draft_invoices": "Draft Invoices",
 	"draft_total": "Draft Total (₹)",
+	"account": "Account",
+	"voucher_type": "Voucher Type",
+	"voucher_no": "Voucher",
+	"party": "Party",
+	"against": "Against",
+	"remarks": "Remarks",
+	"day": "Date",
+	"vouchers": "Vouchers",
+	"debit": "Debit (₹)",
+	"credit": "Credit (₹)",
+	"net": "Net (₹)",
+	"amount": "Amount (₹)",
+	"opening_balance": "Opening (₹)",
+	"closing_balance": "Closing (₹)",
+	"against_total": "Against Total (₹)",
+	"against_amount": "Against Amount (₹)",
 }
 MONEY = {
 	"net_amount",
@@ -76,9 +92,23 @@ MONEY = {
 	"returns",
 	"net_sales",
 	"draft_total",
+	"debit",
+	"credit",
+	"net",
+	"amount",
+	"opening_balance",
+	"closing_balance",
+	"against_total",
+	"against_amount",
 }
 QTY = {"qty", "total_qty", "actual_qty", "reserved_qty", "projected_qty"}
 DATES = {"posting_date", "due_date"}
+LEDGER_SHEETS = {
+	"by_against": "Against Accounts",
+	"entries": "Entries",
+	"by_day": "By Day",
+	"by_month": "By Month",
+}
 FORMATS = {"money": "#,##0.00", "qty": "#,##0.###", "date": "DD-MM-YYYY"}
 
 
@@ -179,6 +209,23 @@ def build_sheets(tool, args=None):
 		return [{"name": "Summary", "rows": summary}] + [
 			{"name": company, "rows": c["top"]} for company, c in data["companies"].items()
 		]
+
+	if tool == "account_ledger":
+		keys = (
+			"account",
+			"company",
+			"opening_balance",
+			"debit",
+			"credit",
+			"closing_balance",
+			"against_total",
+		)
+		summary = {k: data[k] for k in keys if data.get(k) is not None}
+		sheets = [{"name": "Summary", "rows": [summary]}]
+		for key, name in LEDGER_SHEETS.items():
+			if data.get(key):
+				sheets.append({"name": name, "rows": data[key]})
+		return sheets
 
 	if "warehouses" in data:
 		return [{"name": "Warehouses", "rows": data["warehouses"]}]
@@ -309,6 +356,19 @@ def build_series(tool, args=None, chart_type="bar"):
 			for company, c in data["companies"].items()
 		}
 		return _align(per_company, points)
+
+	if tool == "account_ledger":
+		if data.get("by_against") is not None:
+			rows = data["by_against"]
+			return [r["account"] for r in rows], [{"name": "Amount", "values": [r["amount"] for r in rows]}]
+		if data.get("entries") is not None:
+			rows = data["entries"]
+			key, name = ("against_amount", "Amount") if data.get("against_filter") else ("balance", "Balance")
+			return [r["voucher_no"] for r in rows], [{"name": name, "values": [r.get(key, 0) for r in rows]}]
+		period = "day" if "by_day" in data else "month"
+		rows = data[f"by_{period}"]
+		key, name = ("amount", data["against_filter"]) if data.get("against_filter") else ("net", "Net")
+		return [r[period] for r in rows], [{"name": name, "values": [r.get(key, 0) for r in rows]}]
 
 	if "warehouses" in data:
 		rows = data["warehouses"][:points]

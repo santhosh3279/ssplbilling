@@ -10,14 +10,14 @@ import json
 from contextlib import contextmanager
 
 import frappe
-from frappe.utils import cint, date_diff, flt, getdate, nowdate
+from frappe.utils import cint, date_diff, flt, get_first_day, getdate, nowdate
 
 MAX_ROWS = 100
 # Excel exports re-run a tool with this cap instead; the rows go to the file, not the model.
 EXPORT_ROWS = 5000
 _row_cap = {"max": MAX_ROWS}
 _scope = {"company": None, "cost_center": None}
-DATA_TOOLS = ("sales_summary", "customer_outstanding", "item_stock")
+DATA_TOOLS = ("sales_summary", "customer_outstanding", "item_stock", "account_ledger")
 # Cost price is ciphered on screen in the billing app; only these roles see valuation.
 VALUATION_ROLES = {"System Manager", "Stock Manager", "Accounts Manager"}
 
@@ -97,11 +97,48 @@ TOOLS = [
 			},
 		},
 	},
+	{
+		"name": "account_ledger",
+		"description": (
+			"General Ledger of one account (bank, UPI wallet, cash, expense, income, or a group account "
+			"with all its children) for a date range: opening, debit, credit, closing, and where the money "
+			"went or came from (the other accounts in the same vouchers). Use `against` to pick out one "
+			"kind of contra entry, e.g. account='PAYTM NCK UPI', against='bank charges' answers 'bank "
+			"charges in Paytm NCK UPI this month'. view: summary (totals + contra accounts), entries "
+			"(voucher lines with running balance), day or month (period totals)."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"account": {"type": "string", "description": "Account name, part of it, or account number."},
+				"from_date": {
+					"type": "string",
+					"description": "YYYY-MM-DD. Defaults to the 1st of this month.",
+				},
+				"to_date": {"type": "string", "description": "YYYY-MM-DD. Defaults to today."},
+				"against": {
+					"type": "string",
+					"description": "Only count the vouchers that also hit an account whose name contains this text, e.g. 'bank charges', 'hdfc'.",
+				},
+				"view": {"type": "string", "enum": ["summary", "entries", "day", "month"]},
+				"company": {
+					"type": "string",
+					"description": 'Exact company name. Omit to use the company selected on the chat page; "all" for every company.',
+				},
+				"cost_center": {
+					"type": "string",
+					"description": 'Exact cost center name (branch). Omit to use the one selected on the chat page; "all" for every cost center.',
+				},
+				"limit": {"type": "integer", "description": f"Rows to return (max {MAX_ROWS})."},
+			},
+			"required": ["account"],
+		},
+	},
 ]
 
 
 INSTRUCTIONS = """You are the business assistant for Sundaram and Sons Private Ltd (SSPL), a wholesale business, answering staff questions from live ERPNext data.
-- Use the tools for every figure; never invent numbers, names or document ids. If no tool covers the question, say what you can answer (sales, receivables, stock).
+- Use the tools for every figure; never invent numbers, names or document ids. If no tool covers the question, say what you can answer (sales, receivables, stock, account ledgers).
 - You are read-only. If asked to create or change anything, say so and point to the screen in the app where it is done.
 - Amounts are INR (₹) with Indian grouping (₹1,25,000). Keep answers short; use markdown tables for lists.
 - State the date range, company and cost center you used (each tool result says which it applied). "Today" means the date given below.
@@ -458,6 +495,249 @@ def _customer_names(names):
 	return {r.name: r.customer_name for r in rows}
 
 
+# ── ledger ──────────────────────────────────────────────────────────────────
+
+BALANCE_SHEET = ("Asset", "Liability", "Equity")
+LEDGER_VIEWS = ("summary", "entries", "day", "month")
+_CHUNK = 500
+
+
+def account_ledger(
+	account=None,
+	from_date=None,
+	to_date=None,
+	against=None,
+	company=None,
+	cost_center=None,
+	view="summary",
+	limit=10,
+):
+	if not account:
+		raise ValueError("account is required, e.g. 'PAYTM NCK UPI' or 'bank charges'")
+	view = view or "summary"
+	if view not in LEDGER_VIEWS:
+		raise ValueError(f"view must be one of {', '.join(LEDGER_VIEWS)}; got {view!r}")
+	from_date = getdate(from_date or get_first_day(nowdate()))
+	to_date = getdate(to_date or nowdate())
+	if to_date < from_date:
+		raise ValueError("to_date is before from_date")
+	limit = _limit(limit)
+	company, cost_center = _scoped(company, cost_center)
+
+	acc = _find_account(account, company)
+	if acc.get("found") is False:
+		return acc
+	accounts = acc.pop("accounts")
+	base = {"account": ["in", accounts], "is_cancelled": 0}
+	if cost_center:
+		base["cost_center"] = cost_center
+
+	# One row per voucher: everything below is built from these.
+	vouchers = frappe.get_list(
+		"GL Entry",
+		filters={**base, "posting_date": ["between", [from_date, to_date]]},
+		fields=[
+			"voucher_type",
+			"voucher_no",
+			"posting_date",
+			{"SUM": "debit", "as": "debit"},
+			{"SUM": "credit", "as": "credit"},
+		],
+		group_by="voucher_type, voucher_no, posting_date",
+		order_by="posting_date asc",
+		limit=0,
+	)
+	opening = None
+	if acc["root_type"] in BALANCE_SHEET:
+		opening = sum(
+			r["balance"] for r in _gl_balances({**base, "posting_date": ["<", from_date]}, ["company"])
+		)
+	debit = flt(sum(flt(v.debit) for v in vouchers), 2)
+	credit = flt(sum(flt(v.credit) for v in vouchers), 2)
+
+	result = {
+		**acc,
+		"from_date": from_date,
+		"to_date": to_date,
+		**_scope_note(acc["company"], cost_center),
+		"sign": "amounts are debit - credit: positive = Dr, negative = Cr",
+		"opening_balance": None if opening is None else flt(opening, 2),
+		"debit": debit,
+		"credit": credit,
+		"net": flt(debit - credit, 2),
+		"closing_balance": None if opening is None else flt(opening + debit - credit, 2),
+		"vouchers": len(vouchers),
+	}
+	if opening is None:
+		result["note"] = "income/expense account: no opening balance, net is the period total"
+
+	contra = _contra(vouchers, accounts) if view == "summary" or against else {}
+	if against:
+		needle = against.casefold()
+		contra = {
+			key: {a: amt for a, amt in by_acc.items() if needle in a.casefold()}
+			for key, by_acc in contra.items()
+		}
+		contra = {key: by_acc for key, by_acc in contra.items() if by_acc}
+		vouchers = [v for v in vouchers if (v.voucher_type, v.voucher_no) in contra]
+		result["against_filter"] = against
+		result["against_total"] = flt(sum(sum(by_acc.values()) for by_acc in contra.values()), 2)
+		result["against_vouchers"] = len(vouchers)
+		result["against_note"] = (
+			"against_total is what the matching accounts were debited (+) or credited (-)"
+		)
+
+	if view == "summary":
+		totals = {}
+		for by_acc in contra.values():
+			for a, amt in by_acc.items():
+				t = totals.setdefault(a, {"account": a, "amount": 0.0, "vouchers": 0})
+				t["amount"] = flt(t["amount"] + amt, 2)
+				t["vouchers"] += 1
+		result["by_against"] = sorted(totals.values(), key=lambda t: abs(t["amount"]), reverse=True)[:limit]
+	elif view == "entries":
+		period = {**base, "posting_date": ["between", [from_date, to_date]]}
+		result["entries"] = _ledger_entries(period, vouchers, contra if against else None, opening, limit)
+	else:
+		periods = {}
+		for v in vouchers:
+			key = str(v.posting_date)[:7] if view == "month" else str(v.posting_date)
+			p = periods.setdefault(key, {view: key, "debit": 0.0, "credit": 0.0, "vouchers": 0})
+			p["debit"] = flt(p["debit"] + flt(v.debit), 2)
+			p["credit"] = flt(p["credit"] + flt(v.credit), 2)
+			p["vouchers"] += 1
+			if against:
+				p["amount"] = flt(
+					p.get("amount", 0) + sum(contra[(v.voucher_type, v.voucher_no)].values()), 2
+				)
+		for p in periods.values():
+			p["net"] = flt(p["debit"] - p["credit"], 2)
+		result[f"by_{view}"] = list(periods.values())[-limit:]
+	return result
+
+
+def _find_account(search, company):
+	"""The account (or group of accounts) to read, or {"found": False, ...} to ask the user."""
+	filters = {"company": company} if company else {}
+	like = f"%{search}%"
+	matches = frappe.get_list(
+		"Account",
+		filters=filters,
+		or_filters={"name": ["like", like], "account_name": ["like", like], "account_number": ["like", like]},
+		fields=["name", "account_name", "company", "root_type", "is_group", "lft", "rgt"],
+		order_by="is_group asc, name asc",
+		limit=20,
+	)
+	if not matches:
+		return {"found": False, "message": f"No account matches '{search}'."}
+	needle = search.casefold()
+	exact = [m for m in matches if needle in (m.name.casefold(), (m.account_name or "").casefold())]
+	if len(exact) == 1:
+		acc = exact[0]
+	elif len(matches) == 1:
+		acc = matches[0]
+	else:
+		return {
+			"found": False,
+			"message": "Several accounts match; ask which one.",
+			"candidates": [m.name for m in (exact or matches)],
+		}
+	accounts = [acc.name]
+	if acc.is_group:
+		accounts = frappe.get_list(
+			"Account",
+			filters={"company": acc.company, "lft": [">=", acc.lft], "rgt": ["<=", acc.rgt], "is_group": 0},
+			pluck="name",
+			limit=0,
+		) or [""]
+	return {
+		"found": True,
+		"account": acc.name,
+		"is_group": bool(acc.is_group),
+		"child_accounts": len(accounts) if acc.is_group else None,
+		"root_type": acc.root_type,
+		"company": acc.company,
+		"accounts": accounts,
+	}
+
+
+def _contra(vouchers, accounts):
+	"""{(voucher_type, voucher_no): {other account: debit - credit}} for the given vouchers.
+
+	The other lines of a voucher are where the account's money went or came from. In a voucher
+	with several lines on both sides this is the whole other side, not a per-line split."""
+	by_type = {}
+	for v in vouchers:
+		by_type.setdefault(v.voucher_type, []).append(v.voucher_no)
+	out = {}
+	for vtype, names in by_type.items():
+		for i in range(0, len(names), _CHUNK):
+			rows = frappe.get_list(
+				"GL Entry",
+				filters={
+					"voucher_type": vtype,
+					"voucher_no": ["in", names[i : i + _CHUNK]],
+					"account": ["not in", accounts],
+					"is_cancelled": 0,
+				},
+				fields=[
+					"voucher_no",
+					"account",
+					{"SUM": "debit", "as": "debit"},
+					{"SUM": "credit", "as": "credit"},
+				],
+				group_by="voucher_no, account",
+				limit=0,
+			)
+			for r in rows:
+				amount = flt(flt(r.debit) - flt(r.credit), 2)
+				if amount:
+					out.setdefault((vtype, r.voucher_no), {})[r.account] = amount
+	return out
+
+
+def _ledger_entries(filters, vouchers, contra, opening, limit):
+	"""Voucher lines in date order with a running balance (from the opening, when there is one).
+	With `contra` (an `against` filter) only the matching vouchers, and no running balance."""
+	if contra is not None:
+		filters = {**filters, "voucher_no": ["in", [v.voucher_no for v in vouchers] or [""]]}
+	rows = frappe.get_list(
+		"GL Entry",
+		filters=filters,
+		fields=[
+			"posting_date",
+			"voucher_type",
+			"voucher_no",
+			"party",
+			"debit",
+			"credit",
+			"against",
+			"remarks",
+		],
+		order_by="posting_date asc, creation asc",
+		limit=limit,
+	)
+	balance = opening or 0.0
+	out = []
+	for r in rows:
+		balance = flt(balance + flt(r.debit) - flt(r.credit), 2)
+		row = {
+			"posting_date": r.posting_date,
+			"voucher_type": r.voucher_type,
+			"voucher_no": r.voucher_no,
+			"debit": flt(r.debit, 2),
+			"credit": flt(r.credit, 2),
+			"balance": balance if contra is None else None,
+			"against": (r.against or "")[:80],
+			"party": r.party,
+			"remarks": (r.remarks or "")[:80] or None,
+		}
+		if contra is not None:
+			row["against_amount"] = flt(sum(contra.get((r.voucher_type, r.voucher_no), {}).values()), 2)
+		out.append({k: v for k, v in row.items() if v not in (None, "")})
+	return out
+
+
 # ── stock ───────────────────────────────────────────────────────────────────
 
 
@@ -642,4 +922,5 @@ HANDLERS = {
 	"sales_summary": sales_summary,
 	"customer_outstanding": customer_outstanding,
 	"item_stock": item_stock,
+	"account_ledger": account_ledger,
 }

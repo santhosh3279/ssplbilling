@@ -540,6 +540,7 @@ const TOOL_LABELS = {
   sales_summary: 'Sales',
   customer_outstanding: 'Outstanding',
   item_stock: 'Stock',
+  account_ledger: 'Ledger',
   export_excel: 'Excel',
   make_chart: 'Chart',
 }
