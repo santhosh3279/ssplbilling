@@ -1,6 +1,6 @@
 <template>
   <div class="flex h-screen flex-col bg-[var(--color-bg)] overflow-hidden text-[var(--color-text)]">
-    <header class="shrink-0 flex items-center justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
+    <header class="shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3">
       <div class="flex min-w-0 items-center gap-4">
         <button
           class="rounded-lg px-3 py-1.5 text-[15px] font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
@@ -14,6 +14,17 @@
             {{ current?.title || 'Sales · Outstanding · Stock — read-only' }}
           </p>
         </div>
+      </div>
+      <!-- Scope: answers use this company / cost center unless the question names another -->
+      <div v-if="boot?.allowed" class="order-last flex w-full items-center gap-2 md:order-none md:w-auto md:flex-1 md:justify-center">
+        <select v-model="scope.company" class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-2 py-1.5 text-[13.75px] focus:bg-[var(--color-info)]/15 focus:outline-none sm:flex-none sm:w-56" title="Company" @change="onCompanyChange">
+          <option value="">All companies</option>
+          <option v-for="c in boot.companies" :key="c" :value="c">{{ c }}</option>
+        </select>
+        <select v-model="scope.cost_center" class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-2 py-1.5 text-[13.75px] focus:bg-[var(--color-info)]/15 focus:outline-none sm:flex-none sm:w-56" title="Cost center">
+          <option value="">All cost centers</option>
+          <option v-for="c in costCenterOptions" :key="c.name" :value="c.name">{{ c.name }}</option>
+        </select>
       </div>
       <div v-if="boot?.allowed" class="flex shrink-0 items-center gap-1">
         <!-- Provider: chosen for a new chat; an open chat keeps the one it started with -->
@@ -84,17 +95,6 @@
 
       <!-- Conversation -->
       <main class="flex-1 min-w-0 flex-col" :class="listOpen ? 'hidden md:flex' : 'flex'">
-        <!-- Scope: answers use this company / cost center unless the question names another -->
-        <div class="shrink-0 flex items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2">
-          <select v-model="scope.company" class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-2 py-1.5 text-[13.75px] focus:bg-[var(--color-info)]/15 focus:outline-none sm:flex-none sm:w-56" title="Company" @change="onCompanyChange">
-            <option value="">All companies</option>
-            <option v-for="c in boot.companies" :key="c" :value="c">{{ c }}</option>
-          </select>
-          <select v-model="scope.cost_center" class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-2 py-1.5 text-[13.75px] focus:bg-[var(--color-info)]/15 focus:outline-none sm:flex-none sm:w-56" title="Cost center">
-            <option value="">All cost centers</option>
-            <option v-for="c in costCenterOptions" :key="c.name" :value="c.name">{{ c.name }}</option>
-          </select>
-        </div>
         <section ref="scroller" class="flex-1 overflow-y-auto px-4 py-4">
           <div class="mx-auto max-w-3xl space-y-4">
             <div v-if="!current && !messages.length" class="py-10 text-center">
