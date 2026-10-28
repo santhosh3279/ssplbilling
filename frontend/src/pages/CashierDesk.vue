@@ -631,7 +631,7 @@
                       v-if="paytm.qrEnabled && !upiLocked && !upiWaiting"
                       @click="openPaytmQr"
                       type="button"
-                      title="Send the UPI pay link for this amount to the customer's WhatsApp"
+                      title="Send the UPI pay QR for this amount to the customer's WhatsApp"
                       class="px-2 py-1 rounded-lg bg-[var(--color-info)] text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-[var(--color-info)] active:scale-95 transition-all shadow-sm"
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -934,9 +934,9 @@
               {{ paytmQr.waSending ? `Sending to +91 ${paytmQr.phone}…` : paytmQr.waText || `+91 ${paytmQr.phone}` }}
             </span>
           </div>
-          <!-- print template of the bill PDF that Bill + Link sends; defaults to the bill series' -->
+          <!-- print template of the bill PDF that Bill + QR sends; defaults to the bill series' -->
           <div v-if="!paytmQr.orderId && !paytmQr.sending && billFormat.list.length" class="space-y-1">
-            <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Bill format · for Bill + Link</label>
+            <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Bill format · for Bill + QR</label>
             <select
               v-model="billFormat.selected"
               class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-4 text-[14px] font-bold text-[var(--color-text)] focus:border-[var(--color-info)] outline-none transition-all"
@@ -969,15 +969,15 @@
               <button
                 @click="createPaytmQr(true)"
                 :disabled="paytmQr.sending || !paytmQr.phone"
-                title="Send the bill PDF with the pay link as its caption"
+                title="Send the bill PDF, then the pay QR picture"
                 class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-              >{{ paytmQr.sending && paytmQr.withBill ? 'Creating…' : 'Bill + Link' }}</button>
+              >{{ paytmQr.sending && paytmQr.withBill ? 'Creating…' : 'Bill + QR' }}</button>
               <button
                 @click="createPaytmQr(false)"
                 :disabled="paytmQr.sending"
-                :title="paytmQr.phone ? 'Send only the pay link (Enter)' : 'Show the QR without sending'"
+                :title="paytmQr.phone ? 'Send only the pay QR picture (Enter)' : 'Show the QR without sending'"
                 class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-success)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-              >{{ paytmQr.sending && !paytmQr.withBill ? 'Creating…' : paytmQr.phone ? 'Only Link' : 'Show QR' }}</button>
+              >{{ paytmQr.sending && !paytmQr.withBill ? 'Creating…' : paytmQr.phone ? 'Only QR' : 'Show QR' }}</button>
             </template>
             <button
               v-if="paytmQr.orderId && paytmQr.status === 'Pending'"
@@ -1200,9 +1200,9 @@ const paytm = ref({ enabled: false, qrEnabled: false, devices: [], show: false, 
 let paytmPollTimer = null
 const paytmPhoneInput = ref(null)
 // Paytm dynamic UPI QR: same wait-for-result flow, but the QR is shown on this screen
-// phone: WhatsApp number the QR's pay link is sent to; waOk undefined = not sent yet
+// phone: WhatsApp number the pay QR is sent to; waOk undefined = not sent yet
 // withBill: the link goes as the caption of the bill PDF; tid/posId: the machine the QR is made for
-// PDF print templates Bill + Link can send the bill in, and the one picked (see openPaytmQr)
+// PDF print templates Bill + QR can send the bill in, and the one picked (see openPaytmQr)
 const billFormat = ref({ list: [], selected: '' })
 const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', sending: false, phone: '', withBill: false, tid: '', posId: '', waSending: false, waOk: undefined, waText: '' })
 let paytmQrPollTimer = null
@@ -2163,7 +2163,7 @@ async function closePaytmModal() {
   Object.assign(p, { show: false, orderId: '', status: '', message: '' })
 }
 
-// Phone button by the UPI box: ask for the WhatsApp number, then Send makes the QR and sends its pay link
+// Phone button by the UPI box: ask for the WhatsApp number, then Send makes the QR and sends it
 async function openPaytmQr() {
   errorMsg.value = ''
   const amount = Number(payments.value.upi) || 0
@@ -2239,7 +2239,7 @@ async function sendPaytmQrLink() {
       with_bill: q.withBill ? 1 : 0,
       print_template: q.withBill ? billFormat.value.selected || undefined : undefined,
     }, { silent: true })
-    if (paytmQr.value.orderId === orderId) Object.assign(q, { waOk: true, waText: `${q.withBill ? 'Bill + link' : 'Link'} sent to +${sent.phone}` })
+    if (paytmQr.value.orderId === orderId) Object.assign(q, { waOk: true, waText: `${q.withBill ? 'Bill + QR' : 'QR'} sent to +${sent.phone}` })
   } catch (e) {
     if (paytmQr.value.orderId === orderId) Object.assign(q, { waOk: false, waText: `Not sent: ${e.message || e}` })
   } finally {

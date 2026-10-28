@@ -711,7 +711,9 @@ def send_mock_pay_link(
 
 def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_template=None):
 	"""Build the pay-link message (WhatsApp template for the usage area, else the built-in text) and
-	send it, as text or as the bill PDF's caption."""
+	send it. A QR goes as its picture with the message as caption, after the bill PDF for Bill + QR:
+	UPI apps refuse an unsigned upi:// link opened from a chat but pay the same QR scanned from the
+	gallery. A payment request goes as text with its Paytm link."""
 	is_qr = txn.channel == "QR"
 	settings = _settings()
 	row = _linked_row(settings, session_id=session_id)
@@ -720,12 +722,12 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_t
 	hide_bill_no = bool(txn.sales_invoice) and _hide_bill_no(txn.sales_invoice)
 	if is_qr and txn.sales_invoice and not hide_bill_no:
 		text = _(
-			"Dear {0}, please pay Rs. {1} for bill {2} to Sundaram and Sons using this link (valid for {3} minutes): {4}"
-		).format(customer_name, amount, txn.sales_invoice, max(1, minutes_left), txn.qr_data)
+			"Dear {0}, please pay Rs. {1} for bill {2} to Sundaram and Sons by scanning this QR in any UPI app (valid for {3} minutes)"
+		).format(customer_name, amount, txn.sales_invoice, max(1, minutes_left))
 	elif is_qr:
 		text = _(
-			"Dear {0}, please pay Rs. {1} to Sundaram and Sons using this link (valid for {2} minutes): {3}"
-		).format(customer_name, amount, max(1, minutes_left), txn.qr_data)
+			"Dear {0}, please pay Rs. {1} to Sundaram and Sons by scanning this QR in any UPI app (valid for {2} minutes)"
+		).format(customer_name, amount, max(1, minutes_left))
 	else:
 		text = _("Dear {0}, please pay Rs. {1} to Sundaram and Sons using this Paytm link: {2}").format(
 			customer_name, amount, txn.short_url
@@ -765,11 +767,28 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_t
 	if with_bill:
 		frappe.has_permission("Sales Invoice", "read", doc=txn.sales_invoice, throw=True)
 		pdf_base64, filename = _bill_pdf(txn.sales_invoice, print_template, hide_bill_no)
-		return _send(
+		_send(
 			txn.customer_mobile,
 			"Document",
 			"send-document",
-			_bill_body(pdf_base64, filename, text),
+			_bill_body(pdf_base64, filename, ""),
+			filename,
+			reference=reference,
+			row=row,
+		)
+	if is_qr:
+		from ssplbilling.api.paytm_api import _qr_png
+
+		return _send(
+			txn.customer_mobile,
+			"Image",
+			"send-image",
+			{
+				"base64": _qr_png(txn.qr_data),
+				"mimetype": "image/png",
+				"filename": f"pay-qr-{txn.order_id}.png",
+				"caption": text[:1024],
+			},
 			text,
 			reference=reference,
 			row=row,

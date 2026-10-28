@@ -219,9 +219,9 @@
                         v-if="selected.customer_mobile"
                         @click="sendPayLink(selected)"
                         :disabled="waSending[selected.order_id]"
-                        title="Sends the pay link to the customer's WhatsApp through OpenWA"
+                        :title="selected.channel === 'QR' ? 'Sends the pay QR picture to the customer\'s WhatsApp through OpenWA' : 'Sends the pay link to the customer\'s WhatsApp through OpenWA'"
                         class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white disabled:opacity-50"
-                      >{{ waSending[selected.order_id] ? 'Sending…' : waResult[selected.order_id]?.ok ? 'Send Link Again' : 'Send Link on WhatsApp' }}</button>
+                      >{{ waSending[selected.order_id] ? 'Sending…' : waResult[selected.order_id]?.ok ? 'Send Again' : selected.channel === 'QR' ? 'Send QR on WhatsApp' : 'Send Link on WhatsApp' }}</button>
                     </template>
                     <template v-if="selected.channel === 'QR' && selected.status === 'Pending' && qrSecondsLeft(selected) > 0">
                       <button v-if="canShareFiles" @click="shareQr(selected)" class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white">Share QR</button>
@@ -284,7 +284,7 @@
               <div class="flex min-w-0 flex-col gap-1 text-sm">
                 <span v-if="!qrEnabled" class="font-bold text-[var(--color-danger)]">Dynamic QR is disabled in SSPL Paytm Settings</span>
                 <span v-else class="text-[var(--color-text-muted)]">Paytm keeps the QR payable for 10 minutes; once paid it cannot be paid again.</span>
-                <span class="text-[var(--color-text-muted)]">Send Request: makes the QR and sends its UPI payment link to the customer's WhatsApp.</span>
+                <span class="text-[var(--color-text-muted)]">Send Request: makes the QR and sends the QR picture to the customer's WhatsApp.</span>
                 <span v-if="formError" class="rounded-lg bg-[var(--color-danger)]/15 px-3 py-1.5 font-bold text-[var(--color-danger)]">{{ formError }}</span>
               </div>
             </div>
@@ -580,7 +580,7 @@ async function sendPayLink(l) {
       order_id: l.order_id,
       session_id: getWhatsAppSessionId(),
     }, { silent: true })
-    waResult[l.order_id] = { ok: true, text: `Link sent to +${sent.phone}` }
+    waResult[l.order_id] = { ok: true, text: `${l.channel === 'QR' ? 'QR' : 'Link'} sent to +${sent.phone}` }
   } catch (e) {
     waResult[l.order_id] = { ok: false, text: `Not sent: ${e.message || e}` }
   } finally {
