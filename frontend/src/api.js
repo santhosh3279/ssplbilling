@@ -1575,6 +1575,8 @@ export const aiChat = {
     frappePost(AI_CHAT + "send_message", { message, chat, provider }, { silent: true }),
   quick: (action, query, chat, provider) =>
     frappePost(AI_CHAT + "quick_answer", { action, query, chat, provider }, { silent: true }),
+  output: (message, kind) => frappePost(AI_CHAT + "quick_output", { message, kind }, { silent: true }),
+  downloadUrl: (file) => `/api/method/${AI_CHAT}download_export?file=${encodeURIComponent(file)}`,
   cancel: (chat) => frappePost(AI_CHAT + "cancel", { chat }, { silent: true }),
   remove: (chat) => frappePost(AI_CHAT + "delete_chat", { chat }, { silent: true }),
 };

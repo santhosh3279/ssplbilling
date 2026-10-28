@@ -1,6 +1,6 @@
 """Runs one AI Chat turn on the Gemini API (google-genai, manual function calling with the
 tools in ai_chat_tools.py). Same contract as ai_chat_runner.run: streams the same events
-through on_event and returns {"text", "tools", "error", "history", "duration_ms",
+through on_event and returns {"text", "tools", "attachments", "error", "history", "duration_ms",
 "input_tokens", "output_tokens"}.
 
 "history" holds every Content exactly as Gemini returned it (JSON-dumped, thought signatures
@@ -51,7 +51,14 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 	started = time.monotonic()
 	contents = [types.Content.model_validate(c) for c in history or []]
 	contents.append(types.Content(role="user", parts=[types.Part(text=prompt)]))
-	result = {"text": "", "tools": [], "error": None, "input_tokens": 0, "output_tokens": 0}
+	result = {
+		"text": "",
+		"tools": [],
+		"attachments": [],
+		"error": None,
+		"input_tokens": 0,
+		"output_tokens": 0,
+	}
 
 	def emit(ev):
 		if ev["type"] == "text":
@@ -114,7 +121,7 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 			for call in calls:
 				args = dict(call.args or {})
 				emit({"type": "tool", "name": call.name, "input": args})
-				content, is_error = tools.run_tool(call.name, args)
+				content, is_error = tools.run_tool(call.name, args, result["attachments"])
 				emit({"type": "tool_result", "name": call.name, "ok": not is_error})
 				response = {"error": content} if is_error else {"output": json.loads(content)}
 				responses.append(

@@ -9,7 +9,8 @@ answer. Streams events through on_event:
 	{"type": "tool_result", "name": ..., "ok": bool}
 	{"type": "error", "message": ...}
 
-and returns {"text", "tools", "error", "history", "duration_ms", "input_tokens", "output_tokens"}. "history" is the raw message
+and returns {"text", "tools", "attachments", "error", "history", "duration_ms", "input_tokens",
+"output_tokens"}. "history" is the raw message
 list to replay next turn, kept verbatim (thinking blocks included) as the API requires.
 """
 
@@ -52,7 +53,14 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 	timeout = settings.timeout_seconds or 300
 	started = time.monotonic()
 	messages = [*(history or []), {"role": "user", "content": prompt}]
-	result = {"text": "", "tools": [], "error": None, "input_tokens": 0, "output_tokens": 0}
+	result = {
+		"text": "",
+		"tools": [],
+		"attachments": [],
+		"error": None,
+		"input_tokens": 0,
+		"output_tokens": 0,
+	}
 
 	def emit(ev):
 		if ev["type"] == "text":
@@ -114,7 +122,7 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None):
 			results = []
 			for block in tool_uses:
 				emit({"type": "tool", "name": block.name, "input": block.input})
-				content, is_error = tools.run_tool(block.name, block.input)
+				content, is_error = tools.run_tool(block.name, block.input, result["attachments"])
 				emit({"type": "tool_result", "name": block.name, "ok": not is_error})
 				results.append(
 					{"type": "tool_result", "tool_use_id": block.id, "content": content, "is_error": is_error}

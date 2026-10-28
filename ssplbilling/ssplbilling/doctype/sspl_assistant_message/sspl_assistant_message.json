@@ -11,7 +11,9 @@
   "duration_ms",
   "quick",
   "input_tokens",
-  "output_tokens"
+  "output_tokens",
+  "quick_source",
+  "attachments"
  ],
  "fields": [
   {
@@ -71,11 +73,25 @@
    "in_list_view": 1,
    "label": "Output Tokens",
    "read_only": 1
+  },
+  {
+   "fieldname": "quick_source",
+   "fieldtype": "Small Text",
+   "hidden": 1,
+   "label": "Quick Source",
+   "read_only": 1
+  },
+  {
+   "fieldname": "attachments",
+   "fieldtype": "Long Text",
+   "label": "Attachments",
+   "read_only": 1,
+   "description": "Excel files and charts made for this reply (JSON)."
   }
  ],
  "autoname": "hash",
  "links": [],
- "modified": "2026-10-28 18:00:00",
+ "modified": "2026-10-28 20:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Assistant Message",

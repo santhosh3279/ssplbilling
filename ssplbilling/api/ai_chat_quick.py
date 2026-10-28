@@ -22,33 +22,54 @@ ACTIONS = {
 
 def answer(action, query=None):
 	"""Returns (label shown as the user's message, markdown reply)."""
+	label, query = _label(action, query)
+	tool, args, fmt = _source(action, query)
+	data = _tool(tool, **args)
+	return label, data if isinstance(data, str) else fmt(data)
+
+
+def export_source(action, query=None):
+	"""(tool, args, title) for the ⬇ Excel button under a quick answer."""
+	label, query = _label(action, query)
+	tool, args, _fmt = _source(action, query)
+	if tool == "sales_summary":
+		args = {**args, "group_by": "item"}
+	return tool, args, label
+
+
+def chart_source(action, query=None):
+	"""(tool, args, title, chart_type) for the 📊 Chart button under a quick answer."""
+	label, query = _label(action, query)
+	tool, args, _fmt = _source(action, query)
+	if action == "sales_month":
+		return tool, {**args, "group_by": "day"}, f"{label}: daily", "line"
+	return tool, args, label, "bar"
+
+
+def _label(action, query):
 	if action not in ACTIONS:
 		frappe.throw(f"Unknown quick action: {action}")
 	label, needs_query = ACTIONS[action]
 	query = (query or "").strip()
 	if needs_query and not query:
 		frappe.throw(f"{label}: type a name, code or mobile first.")
-	if query:
-		label = f"{label}: {query}"
+	return (f"{label}: {query}" if query else label), query
 
+
+def _source(action, query):
 	today = getdate(nowdate())
-	if action == "sales_today":
-		data = _tool("sales_summary", from_date=today)
-		return label, data if isinstance(data, str) else _sales(data)
-	if action == "sales_month":
-		data = _tool("sales_summary", from_date=get_first_day(today), to_date=today)
-		return label, data if isinstance(data, str) else _sales(data)
-	if action == "top_outstanding":
-		data = _tool("customer_outstanding", limit=10)
-		return label, data if isinstance(data, str) else _top_outstanding(data)
-	if action == "customer_outstanding":
-		data = _tool("customer_outstanding", customer=query, limit=20)
-		return label, data if isinstance(data, str) else _customer(data)
-	if action == "stock_summary":
-		data = _tool("item_stock")
-		return label, data if isinstance(data, str) else _stock_summary(data)
-	data = _tool("item_stock", item=query, limit=10)
-	return label, data if isinstance(data, str) else _item_stock(data)
+	return {
+		"sales_today": ("sales_summary", {"from_date": str(today)}, _sales),
+		"sales_month": (
+			"sales_summary",
+			{"from_date": str(get_first_day(today)), "to_date": str(today)},
+			_sales,
+		),
+		"top_outstanding": ("customer_outstanding", {"limit": 10}, _top_outstanding),
+		"customer_outstanding": ("customer_outstanding", {"customer": query, "limit": 20}, _customer),
+		"stock_summary": ("item_stock", {}, _stock_summary),
+		"item_stock": ("item_stock", {"item": query, "limit": 10}, _item_stock),
+	}[action]
 
 
 def _tool(name, **args):

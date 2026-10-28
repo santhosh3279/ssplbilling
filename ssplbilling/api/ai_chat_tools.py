@@ -7,11 +7,16 @@ billing system mirrors invoices into the other company (RTN07075 / RTN07075/).
 """
 
 import json
+from contextlib import contextmanager
 
 import frappe
 from frappe.utils import cint, date_diff, flt, getdate, nowdate
 
 MAX_ROWS = 100
+# Excel exports re-run a tool with this cap instead; the rows go to the file, not the model.
+EXPORT_ROWS = 5000
+_row_cap = {"max": MAX_ROWS}
+DATA_TOOLS = ("sales_summary", "customer_outstanding", "item_stock")
 # Cost price is ciphered on screen in the billing app; only these roles see valuation.
 VALUATION_ROLES = {"System Manager", "Stock Manager", "Accounts Manager"}
 
@@ -32,7 +37,7 @@ TOOLS = [
 				"company": {"type": "string", "description": "Exact company name. Omit for all companies."},
 				"group_by": {
 					"type": "string",
-					"enum": ["none", "customer", "item", "day", "series"],
+					"enum": ["none", "customer", "item", "day", "month", "series"],
 					"description": "Breakdown to add. 'none' returns totals only.",
 				},
 				"limit": {"type": "integer", "description": f"Breakdown rows per company (max {MAX_ROWS})."},
@@ -82,7 +87,8 @@ INSTRUCTIONS = """You are the business assistant for Sundaram and Sons Private L
 - State the date range and company you used. "Today" means the date given below.
 - Data is per company. An invoice ending in "/" (RTN07075/) is the billing system's mirror of RTN07075 in the other company, so company totals overlap by design: report each company separately and never add companies together unless the user asks.
 - Returns (credit notes) are negative. Pending drafts are sales still waiting at the cashier; mention them separately from submitted sales.
-- If a tool says the user lacks permission, tell them they don't have access to that data."""
+- If a tool says the user lacks permission, tell them they don't have access to that data.
+- For "Excel", "download" or "export", call export_excel; for "chart", "graph" or "trend", call make_chart. Pass the same tool and args you would use to answer. The file or chart is attached to your reply automatically: don't repeat its rows in text, just say what it contains."""
 
 
 def system_prompt(settings):
@@ -101,10 +107,54 @@ def system_prompt(settings):
 	)
 
 
-def run_tool(name, args):
+OUTPUT_TOOLS = ("export_excel", "make_chart")
+_SOURCE = {
+	"tool": {
+		"type": "string",
+		"enum": list(DATA_TOOLS),
+		"description": "Which data tool to take the data from.",
+	},
+	"args": {
+		"type": "object",
+		"description": 'Arguments for that tool, as you would pass them to it directly (e.g. {"from_date": "2026-10-01", "group_by": "item"}).',
+	},
+	"title": {"type": "string", "description": "Short title, e.g. 'Sales by item, October 2026'."},
+}
+TOOLS += [
+	{
+		"name": "export_excel",
+		"description": (
+			f"Make a downloadable Excel file from one of the data tools, with up to {EXPORT_ROWS} rows (not the "
+			"short list the tool returns to you), one sheet per company. The rows go straight into the file."
+		),
+		"input_schema": {"type": "object", "properties": _SOURCE, "required": ["tool", "title"]},
+	},
+	{
+		"name": "make_chart",
+		"description": (
+			"Show a chart in the chat built from one of the data tools. Use line for sales by day or month, "
+			"bar for comparing customers, items, warehouses or companies, pie only for a few shares of one total."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {**_SOURCE, "chart_type": {"type": "string", "enum": ["bar", "line", "pie"]}},
+			"required": ["tool", "title", "chart_type"],
+		},
+	},
+]
+
+
+def run_tool(name, args, attachments=None):
 	"""Returns (content, is_error). Permission and validation errors go back to the model as
-	tool errors so it can explain them instead of failing the turn."""
-	fn = HANDLERS.get(name)
+	tool errors so it can explain them instead of failing the turn. export_excel / make_chart
+	append the file or chart to `attachments`, which the runner saves on the reply."""
+	if name in OUTPUT_TOOLS:
+		from ssplbilling.api import ai_chat_export
+
+		fn = getattr(ai_chat_export, name)
+		args = {**(args if isinstance(args, dict) else {}), "attachments": attachments}
+	else:
+		fn = HANDLERS.get(name)
 	if not fn:
 		return f"Unknown tool: {name}", True
 	if not isinstance(args, dict):
@@ -128,8 +178,10 @@ def sales_summary(from_date=None, to_date=None, company=None, group_by="none", l
 	to_date = getdate(to_date or from_date)
 	if to_date < from_date:
 		raise ValueError("to_date is before from_date")
-	if group_by not in (None, "none", *BREAKDOWN_KEYS, "item"):
-		raise ValueError(f"group_by must be one of none, customer, item, day, series; got {group_by!r}")
+	if group_by not in (None, "none", *BREAKDOWN_KEYS, "item", "month"):
+		raise ValueError(
+			f"group_by must be one of none, customer, item, day, month, series; got {group_by!r}"
+		)
 	limit = _limit(limit)
 	filters = {"posting_date": ["between", [from_date, to_date]]}
 	if company:
@@ -202,6 +254,17 @@ BREAKDOWN_KEYS = {
 
 
 def _sales_breakdown(group_by, filters, limit):
+	if group_by == "month":
+		# Fold the daily rows: every day is needed, whatever the row limit.
+		months = {}
+		for day in _sales_breakdown("day", filters, EXPORT_ROWS):
+			m = months.setdefault(
+				str(day.posting_date)[:7],
+				{"month": str(day.posting_date)[:7], "invoices": 0, "grand_total": 0.0},
+			)
+			m["invoices"] += day.invoices
+			m["grand_total"] = flt(m["grand_total"] + flt(day.grand_total), 2)
+		return list(months.values())
 	"""Top rows of submitted invoices (returns netted in) for one company."""
 	if group_by == "item":
 		parent_filters = [
@@ -469,7 +532,17 @@ def _drop_same_name(row, key):
 
 
 def _limit(value):
-	return min(max(cint(value) or 10, 1), MAX_ROWS)
+	return min(max(cint(value) or 10, 1), _row_cap["max"])
+
+
+@contextmanager
+def export_rows():
+	"""Raise the row cap while a tool is re-run for a file or a chart."""
+	_row_cap["max"] = EXPORT_ROWS
+	try:
+		yield
+	finally:
+		_row_cap["max"] = MAX_ROWS
 
 
 HANDLERS = {

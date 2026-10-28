@@ -358,7 +358,9 @@ scheduler_events = {
 		"ssplbilling.api.mqtt_api.ensure_mqtt_connected"
 	],
 	"daily": [
-		"ssplbilling.ssplbilling.doctype.version_purge_settings.version_purge_settings.daily_purge"
+		"ssplbilling.ssplbilling.doctype.version_purge_settings.version_purge_settings.daily_purge",
+		# AI Chat Excel exports are kept a week
+		"ssplbilling.api.ai_chat_export.delete_old_exports",
 	],
 	"cron": {
 		# Pull the eSSL attendance devices and create Employee Checkin / Attendance.

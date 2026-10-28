@@ -116,6 +116,28 @@
                   </span>
                 </div>
                 <div class="ai-md text-sm" v-html="md(m.content)"></div>
+                <div v-for="(a, i) in attachmentsOf(m)" :key="i" class="mt-2">
+                  <AiChart v-if="a.type === 'chart'" :spec="a" />
+                  <a
+                    v-else-if="a.type === 'excel'"
+                    :href="aiChat.downloadUrl(a.file)"
+                    class="inline-flex items-center gap-2 rounded-lg bg-[var(--color-success)]/20 px-3 py-2 text-sm font-semibold hover:bg-[var(--color-success)]/30"
+                  >
+                    ⬇ {{ a.title || a.file_name }}.xlsx
+                    <span class="text-xs font-normal text-[var(--color-text-muted)]">{{ a.rows }} rows</span>
+                  </a>
+                </div>
+                <div v-if="m.quick && m.quick_source" class="mt-2 flex gap-2">
+                  <button
+                    v-for="o in [{ kind: 'excel', label: '⬇ Excel' }, { kind: 'chart', label: '📊 Chart' }]"
+                    :key="o.kind"
+                    class="rounded-full bg-[var(--color-surface)] px-3 py-1 text-xs font-semibold hover:bg-[var(--color-surface-raised)] disabled:opacity-50"
+                    :disabled="outputBusy === m.name + o.kind || hasOutput(m, o.kind)"
+                    @click="quickOutput(m, o.kind)"
+                  >
+                    {{ outputBusy === m.name + o.kind ? '…' : o.label }}
+                  </button>
+                </div>
                 <div class="mt-1 flex gap-3 text-[11px] text-[var(--color-text-muted)]">
                   <span v-if="m.quick">⚡ Answered locally · no AI cost</span>
                   <template v-else>
@@ -208,6 +230,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { aiChat } from '../api'
+import AiChart from '../components/AiChart.vue'
 import { getFrappeSocket } from '../services/frappeSocket'
 
 const EVENT = 'sspl_assistant_event'
@@ -227,6 +250,7 @@ const running = ref(false)
 const listOpen = ref(true)
 const pendingQuick = ref(null)
 const quickBusy = ref(false)
+const outputBusy = ref('')
 const hasAi = computed(() => !!boot.value?.providers?.length)
 const provider = ref('Claude')
 const live = reactive({ text: '', tools: [] })
@@ -237,8 +261,8 @@ let pollTimer = null
 // Questions the quick buttons can't answer; those go to the AI.
 const suggestions = [
   'Compare this week’s sales with last week',
-  'Top selling items this month',
-  'Which customers owe more than ₹50,000?',
+  'Chart of monthly sales this year',
+  'Excel of sales by item this month',
 ]
 
 marked.setOptions({ gfm: true, breaks: true })
@@ -443,6 +467,38 @@ function resetLive() {
   live.tools = []
 }
 
+function attachmentsOf(m) {
+  try {
+    return m.attachments ? JSON.parse(m.attachments) : []
+  } catch {
+    return []
+  }
+}
+
+function hasOutput(m, kind) {
+  return attachmentsOf(m).some((a) => a.type === kind)
+}
+
+// ⬇ Excel / 📊 Chart under a quick answer: built on the server, no AI call.
+async function quickOutput(m, kind) {
+  outputBusy.value = m.name + kind
+  error.value = ''
+  try {
+    const updated = await aiChat.output(m.name, kind)
+    const i = messages.value.findIndex((x) => x.name === m.name)
+    if (i >= 0) messages.value[i] = updated
+    if (kind === 'excel') {
+      const file = attachmentsOf(updated).filter((a) => a.type === 'excel').pop()
+      if (file) window.location.href = aiChat.downloadUrl(file.file)
+    }
+    scrollDown()
+  } catch (e) {
+    error.value = lastLine(e)
+  } finally {
+    outputBusy.value = ''
+  }
+}
+
 function toolsOf(m) {
   try {
     return m.tools ? JSON.parse(m.tools) : []
@@ -451,7 +507,13 @@ function toolsOf(m) {
   }
 }
 
-const TOOL_LABELS = { sales_summary: 'Sales', customer_outstanding: 'Outstanding', item_stock: 'Stock' }
+const TOOL_LABELS = {
+  sales_summary: 'Sales',
+  customer_outstanding: 'Outstanding',
+  item_stock: 'Stock',
+  export_excel: 'Excel',
+  make_chart: 'Chart',
+}
 function prettyTool(name) {
   return TOOL_LABELS[name] || (name || 'tool').replace(/_/g, ' ')
 }
