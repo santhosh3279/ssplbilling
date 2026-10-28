@@ -59,7 +59,8 @@
     { "id": "item-sales-summary", "name": "Item Sales Summary" },
     { "id": "store-wise-item-sales", "name": "Store Wise Item Sales" },
     { "id": "fast-moving-items", "name": "Fast Moving Items" },
-    { "id": "material-transfer-report", "name": "Material Transfer Report" }
+    { "id": "material-transfer-report", "name": "Material Transfer Report" },
+    { "id": "ai-chat", "name": "AI Chat" }
   ],
   "Incentives": [
     { "id": "incentive-ledger", "name": "Incentive Ledger" },

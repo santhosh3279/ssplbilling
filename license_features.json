@@ -4,18 +4,20 @@
     "Put the ids from 'features' into the 'features' array of sites/<site>/license.json;",
     "granting one id unlocks every page listed under it in 'pages_by_feature'.",
     "A page whose feature is null is never checked against the licence.",
+    "Some tiles ride on another feature (Mobile Bill→sales, Cashier Mobile→cashier, Item Barcodes→barcode-print, Paytm Receipt/Unknown→payment, Create User→offer-display) and some are free with every licence (Stock Check, WhatsApp Link/Chat, Competitive Items) — see LICENSE_FEATURE_ALIAS / LICENSE_FREE_TILES in usePermission.js.",
     "Generated from frontend/src/router.js, frontend/src/composables/usePermission.js",
     "and DASHBOARD_TILES in ssplbilling/setup.py — regenerate after adding a page.",
     "Use [\"*\"] to grant everything, including pages added later.",
     "features_by_category groups the same ids in \"features\" for licence picking; \"features\" itself stays a flat sorted array because the signature is computed over it."
   ],
   "wildcard": "*",
-  "page_count": 64,
-  "feature_count": 51,
+  "page_count": 78,
+  "feature_count": 52,
   "category_count": 8,
   "features": [
     "Cashier-Management",
     "account-tree",
+    "ai-chat",
     "barcode-print",
     "batch-reports",
     "cancellation",
@@ -72,7 +74,8 @@
         "id": "sales",
         "name": "Sales Invoice",
         "pages": [
-          "SalesInvoice"
+          "SalesInvoice",
+          "MobileBill"
         ]
       },
       {
@@ -114,7 +117,8 @@
         "id": "offer-display",
         "name": "Offer Display",
         "pages": [
-          "OfferDisplay"
+          "OfferDisplay",
+          "UserCreation"
         ]
       },
       {
@@ -192,7 +196,8 @@
         "id": "cashier",
         "name": "Cashier Desk",
         "pages": [
-          "CashierDesk"
+          "CashierDesk",
+          "CashierMobile"
         ]
       },
       {
@@ -220,7 +225,9 @@
         "id": "payment",
         "name": "Payment Receipt",
         "pages": [
-          "Payment"
+          "Payment",
+          "PaytmLink",
+          "PaytmUnknown"
         ]
       },
       {
@@ -299,7 +306,8 @@
         "id": "barcode-print",
         "name": "Print Barcodes",
         "pages": [
-          "BarcodePrintPage"
+          "BarcodePrintPage",
+          "ItemBarcode"
         ]
       },
       {
@@ -408,6 +416,13 @@
         "name": "Batch Reports",
         "pages": [
           "BatchReports"
+        ]
+      },
+      {
+        "id": "ai-chat",
+        "name": "AI Chat",
+        "pages": [
+          "AiChat"
         ]
       }
     ],
@@ -553,6 +568,17 @@
       "category": "Sales & Customers"
     },
     {
+      "page": "UserCreation",
+      "path": "/create-user",
+      "title": "Create Customer User",
+      "feature": "offer-display",
+      "feature_label": "Offer Display",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true,
+      "category": "Sales & Customers",
+      "note": "Create User tile is licensed under 'offer-display'"
+    },
+    {
       "page": "Expense",
       "path": "/expense",
       "title": "Expense Entry",
@@ -689,6 +715,17 @@
       "category": "Sales & Customers"
     },
     {
+      "page": "MobileBill",
+      "path": "/mobile-bill",
+      "title": "Mobile Bill",
+      "feature": "sales",
+      "feature_label": "Sales Invoice",
+      "bucket": "Sale",
+      "has_dashboard_tile": true,
+      "category": "Sales & Customers",
+      "note": "Mobile Bill tile is licensed under 'sales'"
+    },
+    {
       "page": "Quotation",
       "path": "/quotation",
       "title": "Quotation",
@@ -729,6 +766,17 @@
       "category": "Inventory & Stock"
     },
     {
+      "page": "ItemBarcode",
+      "path": "/item-barcode",
+      "title": "Item Barcodes",
+      "feature": "barcode-print",
+      "feature_label": "Print Barcodes",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true,
+      "category": "Inventory & Stock",
+      "note": "Item Barcodes tile is licensed under 'barcode-print'"
+    },
+    {
       "page": "CashierDesk",
       "path": "/cashier",
       "title": "Cashier",
@@ -737,6 +785,17 @@
       "bucket": "Sale",
       "has_dashboard_tile": true,
       "category": "Cashier & Financials"
+    },
+    {
+      "page": "CashierMobile",
+      "path": "/cashier-mobile",
+      "title": "Cashier Mobile",
+      "feature": "cashier",
+      "feature_label": "Cashier Desk",
+      "bucket": "Sale",
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials",
+      "note": "Cashier Mobile tile is licensed under 'cashier'"
     },
     {
       "page": "PurchaseSubmit",
@@ -777,6 +836,28 @@
       "bucket": "Accounts",
       "has_dashboard_tile": true,
       "category": "Cashier & Financials"
+    },
+    {
+      "page": "PaytmLink",
+      "path": "/paytm-link",
+      "title": "Paytm Receipt",
+      "feature": "payment",
+      "feature_label": "Payment Receipt",
+      "bucket": "Accounts",
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials",
+      "note": "Paytm Receipt tile is licensed under 'payment'"
+    },
+    {
+      "page": "PaytmUnknown",
+      "path": "/paytm-unknown",
+      "title": "Paytm Unknown Payments",
+      "feature": "payment",
+      "feature_label": "Payment Receipt",
+      "bucket": "Accounts",
+      "has_dashboard_tile": true,
+      "category": "Cashier & Financials",
+      "note": "Paytm Unknown Payments tile is licensed under 'payment'"
     },
     {
       "page": "StockReconciliation",
@@ -1010,7 +1091,7 @@
     },
     {
       "page": "OfferPage",
-      "path": "/offer/:pageaddress",
+      "path": "/catalogue/:pageaddress",
       "title": "Offers",
       "feature": null,
       "note": "Not licence gated (role / tile access only)",
@@ -1085,6 +1166,72 @@
       "bucket": "SSPL Special",
       "has_dashboard_tile": false,
       "category": "Sales & Customers"
+    },
+    {
+      "page": "AiChat",
+      "path": "/ai-chat",
+      "title": "AI Chat",
+      "feature": "ai-chat",
+      "feature_label": "AI Chat",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true,
+      "category": "Tax & Reporting"
+    },
+    {
+      "page": "MobileDashboard",
+      "path": "/mobile-dashboard",
+      "title": "Dashboard",
+      "feature": null,
+      "note": "Always available — no licence check",
+      "category": null
+    },
+    {
+      "page": "StockCheck",
+      "path": "/stock-check",
+      "title": "Stock Check",
+      "feature": null,
+      "note": "Free with every licence (LICENSE_FREE_TILES) — role / tile access only",
+      "category": null
+    },
+    {
+      "page": "WhatsAppLink",
+      "path": "/whatsapp-link",
+      "title": "WhatsApp Link",
+      "feature": null,
+      "note": "Free with every licence (LICENSE_FREE_TILES) — role / tile access only",
+      "category": null
+    },
+    {
+      "page": "WhatsAppChat",
+      "path": "/whatsapp-chat",
+      "title": "WhatsApp Chat",
+      "feature": null,
+      "note": "Free with every licence (LICENSE_FREE_TILES) — role / tile access only",
+      "category": null
+    },
+    {
+      "page": "Competitive",
+      "path": "/competitive",
+      "title": "Competitive Items",
+      "feature": null,
+      "note": "Free with every licence (LICENSE_FREE_TILES) — role / tile access only",
+      "category": null
+    },
+    {
+      "page": "CatalogueCart",
+      "path": "/catalogue-cart",
+      "title": "Catalogue Cart",
+      "feature": null,
+      "note": "Not licence gated (public catalogue page)",
+      "category": null
+    },
+    {
+      "page": "CatalogueCheckout",
+      "path": "/catalogue-checkout",
+      "title": "Catalogue Checkout",
+      "feature": null,
+      "note": "Not licence gated (public catalogue page)",
+      "category": null
     }
   ],
   "pages_by_feature": {
@@ -1095,7 +1242,8 @@
       "AccountTree"
     ],
     "barcode-print": [
-      "BarcodePrintPage"
+      "BarcodePrintPage",
+      "ItemBarcode"
     ],
     "batch-reports": [
       "BatchReports"
@@ -1104,7 +1252,8 @@
       "Cancellation"
     ],
     "cashier": [
-      "CashierDesk"
+      "CashierDesk",
+      "CashierMobile"
     ],
     "catalogueviewer": [
       "CatalogueViewer",
@@ -1184,7 +1333,8 @@
       "NamingSettings"
     ],
     "offer-display": [
-      "OfferDisplay"
+      "OfferDisplay",
+      "UserCreation"
     ],
     "outstanding-customers-report": [
       "OutstandingCustomersReport"
@@ -1193,7 +1343,9 @@
       "ParcelAddress"
     ],
     "payment": [
-      "Payment"
+      "Payment",
+      "PaytmLink",
+      "PaytmUnknown"
     ],
     "pricing-rules": [
       "DiscountRule"
@@ -1219,7 +1371,8 @@
       "CashflowReport"
     ],
     "sales": [
-      "SalesInvoice"
+      "SalesInvoice",
+      "MobileBill"
     ],
     "sales-order": [
       "SalesOrderEntry"
@@ -1250,12 +1403,22 @@
     ],
     "unreconciled": [
       "Unreconciled"
+    ],
+    "ai-chat": [
+      "AiChat"
     ]
   },
   "ungated_pages": [
     "Login",
     "Dashboard",
-    "OfferPage"
+    "OfferPage",
+    "MobileDashboard",
+    "StockCheck",
+    "WhatsAppLink",
+    "WhatsAppChat",
+    "Competitive",
+    "CatalogueCart",
+    "CatalogueCheckout"
   ],
   "license_template": {
     "site": "erp.example.com",
