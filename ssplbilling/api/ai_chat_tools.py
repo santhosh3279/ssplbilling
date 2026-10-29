@@ -625,6 +625,31 @@ def _breakdown(doctype, group_by, filters, limit):
 			m["grand_total"] = flt(m["grand_total"] + flt(day.grand_total), 2)
 		return list(months.values())
 	if group_by == "item":
+		return _item_breakdown(doctype, filters, limit)
+
+	keys = {"day": ["posting_date"], "series": ["naming_series"]}.get(group_by) or [
+		group_by,
+		f"{group_by}_name",
+	]
+	rows = _get_list(
+		doctype,
+		filters={**filters, "docstatus": 1},
+		fields=[*keys, {"COUNT": "*", "as": "invoices"}, {"SUM": "base_grand_total", "as": "grand_total"}],
+		group_by=", ".join(keys),
+		order_by="posting_date asc" if group_by == "day" else "grand_total desc",
+		limit=limit,
+	)
+	if group_by in ("customer", "supplier"):
+		for r in rows:
+			_drop_same_name(r, group_by)
+	return rows
+
+
+def _item_breakdown(doctype, filters, limit):
+	"""Top items of submitted invoices, filtered on the parent invoice. frappe.get_list joins the
+	parent only while applying permissions, so with Full Read Access (ignore_permissions) its
+	filters would name a table missing from the query (1054 Unknown column); join it here."""
+	if not _full_read():
 		parent_filters = [[doctype, k, *(v if isinstance(v, list) else ["=", v])] for k, v in filters.items()]
 		parent_filters.append([doctype, "docstatus", "=", 1])
 		return _get_list(
@@ -643,22 +668,39 @@ def _breakdown(doctype, group_by, filters, limit):
 			limit=limit,
 		)
 
-	keys = {"day": ["posting_date"], "series": ["naming_series"]}.get(group_by) or [
-		group_by,
-		f"{group_by}_name",
-	]
-	rows = _get_list(
-		doctype,
-		filters={**filters, "docstatus": 1},
-		fields=[*keys, {"COUNT": "*", "as": "invoices"}, {"SUM": "base_grand_total", "as": "grand_total"}],
-		group_by=", ".join(keys),
-		order_by="posting_date asc" if group_by == "day" else "grand_total desc",
-		limit=limit,
+	from frappe.query_builder import Order
+	from frappe.query_builder.functions import Sum
+
+	inv, item = frappe.qb.DocType(doctype), frappe.qb.DocType(f"{doctype} Item")
+	net_amount = Sum(item.base_net_amount)
+	query = (
+		frappe.qb.from_(item)
+		.join(inv)
+		.on(inv.name == item.parent)
+		.select(
+			item.item_code,
+			item.item_name,
+			item.stock_uom,
+			Sum(item.stock_qty).as_("qty"),
+			net_amount.as_("net_amount"),
+		)
+		.where((item.parenttype == doctype) & (inv.docstatus == 1))
+		.groupby(item.item_code, item.item_name, item.stock_uom)
+		.orderby(net_amount, order=Order.desc)
 	)
-	if group_by in ("customer", "supplier"):
-		for r in rows:
-			_drop_same_name(r, group_by)
-	return rows
+	for field, value in filters.items():
+		op, val = value if isinstance(value, list) else ["=", value]
+		if op == "between":
+			query = query.where(inv[field][val[0] : val[1]])
+		elif op == "=":
+			query = query.where(inv[field] == val)
+		elif op == "in":
+			query = query.where(inv[field].isin(val))
+		else:
+			raise ValueError(f"Unsupported invoice filter {field} {op}")
+	if limit:
+		query = query.limit(limit)
+	return query.run(as_dict=True)
 
 
 # ── receivables / payables ──────────────────────────────────────────────────
