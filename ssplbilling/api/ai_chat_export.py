@@ -465,6 +465,15 @@ def build_series(tool, args=None, chart_type="bar"):
 		}
 		return _align(per_company, points, sort=group in ("day", "month"))
 
+	if tool == "top_items":
+		return _align(
+			{
+				co: {_label(r, "item_name"): r["net_amount"] for r in c["items"]}
+				for co, c in data["companies"].items()
+			},
+			points,
+		)
+
 	if tool in PARTY_TOOLS:
 		key = tools.PARTIES[PARTY_TOOLS[tool]]["key"]
 		if data.get(key):

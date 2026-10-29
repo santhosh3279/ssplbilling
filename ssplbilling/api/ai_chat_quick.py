@@ -13,11 +13,14 @@ from ssplbilling.api import ai_chat_tools as tools
 ACTIONS = {
 	"sales_today": ("Sales today", False),
 	"sales_month": ("Sales this month", False),
+	"top_items": ("Top items (80% of sales)", False),
 	"top_outstanding": ("Top outstanding", False),
 	"customer_outstanding": ("Customer outstanding", True),
 	"stock_summary": ("Stock summary", False),
 	"item_stock": ("Item stock", True),
 }
+# Top items shown in the chat; ⬇ Excel has the full list.
+QUICK_TOP_ITEMS = 50
 
 
 def answer(action, query=None):
@@ -65,6 +68,11 @@ def _source(action, query):
 			{"from_date": str(get_first_day(today)), "to_date": str(today)},
 			_sales,
 		),
+		"top_items": (
+			"top_items",
+			{"from_date": str(get_first_day(today)), "to_date": str(today), "limit": QUICK_TOP_ITEMS},
+			_top_items,
+		),
 		"top_outstanding": ("customer_outstanding", {"limit": 10}, _top_outstanding),
 		"customer_outstanding": ("customer_outstanding", {"customer": query, "limit": 20}, _customer),
 		"stock_summary": ("item_stock", {}, _stock_summary),
@@ -107,6 +115,38 @@ def _sales(data):
 	return f"**Sales {period}** (incl. tax)\n\n" + _table(
 		["Company", "Invoices", "Sales", "Returns", "Net", "Pending drafts"], rows
 	)
+
+
+def _top_items(data):
+	period = _period(data["from_date"], data["to_date"])
+	if not data["companies"]:
+		return f"No item sales {period}."
+	out = [f"**Items making {data['share_target_pct']:g}% of net sales {period}** (excl. tax)"]
+	for company, c in data["companies"].items():
+		out.append(
+			f"**{company}** — {c['top_items']} of {c['items_sold']} items sold "
+			f"({c['top_items_pct_of_items']:g}%) make {inr(c['top_items_net_sales'])} "
+			f"of {inr(c['net_sales'])}"
+		)
+		out.append(
+			_table(
+				["#", "Item", "Qty", "Net sales", "Share", "Cumulative"],
+				[
+					[
+						i["rank"],
+						f"{i['item_name'] or i['item_code']} ({i['item_code']})",
+						f"{qty(i['qty'])} {i['uom'] or ''}".strip(),
+						inr(i["net_amount"]),
+						f"{i['share_pct']:.1f}%",
+						f"{i['cumulative_pct']:.1f}%",
+					]
+					for i in c["items"]
+				],
+			)
+		)
+		if c["more_rows"]:
+			out.append(f"_First {len(c['items'])} of {c['top_items']} shown. ⬇ Excel has them all._")
+	return "\n\n".join(out)
 
 
 def _top_outstanding(data):

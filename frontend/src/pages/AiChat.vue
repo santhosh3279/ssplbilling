@@ -636,6 +636,7 @@ function toolsOf(m) {
 
 const TOOL_LABELS = {
   sales_summary: 'Sales',
+  top_items: 'Top items',
   customer_outstanding: 'Outstanding',
   item_stock: 'Stock',
   account_ledger: 'Ledger',

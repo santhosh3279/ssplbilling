@@ -20,6 +20,7 @@ _row_cap = {"max": MAX_ROWS}
 _scope = {"company": None, "cost_center": None}
 DATA_TOOLS = (
 	"sales_summary",
+	"top_items",
 	"purchase_summary",
 	"customer_outstanding",
 	"supplier_outstanding",
@@ -107,6 +108,35 @@ TOOLS = [
 					"description": "Breakdown to add. 'none' returns totals only.",
 				},
 				"limit": {"type": "integer", "description": f"Breakdown rows per company (max {MAX_ROWS})."},
+			},
+		},
+	},
+	{
+		"name": "top_items",
+		"description": (
+			"Pareto / ABC of item-wise sales: ranks the items sold by net sales (returns netted in) and "
+			"returns the top items that together make `share` percent (default 80) of the period's net "
+			"sales, per company, with each item's share and cumulative share, plus how many items that "
+			"is out of all items sold. Use for 'top 20% items', 'items making 80% of sales', 'A-class items'."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"from_date": {"type": "string", "description": "YYYY-MM-DD. Defaults to the 1st of this month."},
+				"to_date": {"type": "string", "description": "YYYY-MM-DD. Defaults to today."},
+				"company": {
+					"type": "string",
+					"description": 'Exact company name. Omit to use the company selected on the chat page; "all" for every company.',
+				},
+				"cost_center": {
+					"type": "string",
+					"description": 'Exact cost center name (branch). Omit to use the one selected on the chat page; "all" for every cost center.',
+				},
+				"share": {
+					"type": "number",
+					"description": "Cumulative percent of net sales the top items must reach (1-100). Default 80.",
+				},
+				"limit": {"type": "integer", "description": f"Item rows per company (max {MAX_ROWS})."},
 			},
 		},
 	},
@@ -701,6 +731,69 @@ def _item_breakdown(doctype, filters, limit):
 	if limit:
 		query = query.limit(limit)
 	return query.run(as_dict=True)
+
+
+def top_items(from_date=None, to_date=None, company=None, cost_center=None, share=80, limit=None):
+	"""Pareto of item-wise sales: the top items that together reach `share`% of net sales."""
+	today = getdate(nowdate())
+	from_date = getdate(from_date or get_first_day(today))
+	to_date = getdate(to_date or today)
+	if to_date < from_date:
+		raise ValueError("to_date is before from_date")
+	share = flt(share) or 80
+	if not 0 < share <= 100:
+		raise ValueError("share is a percent between 1 and 100")
+	limit = _limit(limit or _row_cap["max"])
+	company, cost_center = _scoped(company, cost_center)
+	filters = {"posting_date": ["between", [from_date, to_date]]}
+	if company:
+		filters["company"] = company
+	if cost_center:
+		filters["cost_center"] = cost_center
+
+	companies = {}
+	for name in _get_list("Sales Invoice", filters={**filters, "docstatus": 1}, pluck="company", distinct=True):
+		# Every item sold is needed to rank them; items netting to zero or below (returned) are left out.
+		rows = _item_breakdown("Sales Invoice", {**filters, "company": name}, 0)
+		rows = [r for r in rows if flt(r.net_amount) > 0]
+		total = sum(flt(r.net_amount) for r in rows)
+		if not total:
+			continue
+		top, running = [], 0.0
+		for r in rows:
+			running += flt(r.net_amount)
+			top.append(
+				{
+					"rank": len(top) + 1,
+					"item_code": r.item_code,
+					"item_name": r.item_name,
+					"uom": r.stock_uom,
+					"qty": flt(r.qty, 3),
+					"net_amount": flt(r.net_amount, 2),
+					"share_pct": flt(flt(r.net_amount) * 100 / total, 2),
+					"cumulative_pct": flt(running * 100 / total, 2),
+				}
+			)
+			if running * 100 / total >= share:
+				break
+		companies[name] = {
+			"items_sold": len(rows),
+			"top_items": len(top),
+			"top_items_pct_of_items": flt(len(top) * 100 / len(rows), 1),
+			"top_items_net_sales": flt(running, 2),
+			"net_sales": flt(total, 2),
+			"items": top[:limit],
+			"more_rows": len(top) > limit,
+		}
+
+	return {
+		"from_date": from_date,
+		"to_date": to_date,
+		**_scope_note(company, cost_center),
+		"share_target_pct": share,
+		"amounts": "INR, net of tax, returns netted in",
+		"companies": companies,
+	}
 
 
 # ── receivables / payables ──────────────────────────────────────────────────
@@ -2188,6 +2281,7 @@ def export_rows():
 
 HANDLERS = {
 	"sales_summary": sales_summary,
+	"top_items": top_items,
 	"customer_outstanding": customer_outstanding,
 	"item_stock": item_stock,
 	"account_ledger": account_ledger,
