@@ -2052,6 +2052,8 @@ async function closePrintModal() {
   showPrintModal.value = false
   if (!pendingClearAfterPrint.value) return
   pendingClearAfterPrint.value = false
+  // POS: the paid bill was read-only (and maybe a credit / return draft), so reset it fully
+  if (props.posMode) return clearBill()
 
   // Clear bill for next entry (keep customer)
   items.value = []
@@ -2079,8 +2081,7 @@ async function closePrintModal() {
   nextTick(() => { newCodeInput.value?.focus() })
 }
 
-// POS screen: once the bill is paid, print it and clear for the next one
-// (same clear path as the print popup after a normal save)
+// POS screen: once the bill is paid, print it; closing the print popup clears for the next one
 function printAndClear() {
   fetchRecentInvoices()
   pendingClearAfterPrint.value = true
