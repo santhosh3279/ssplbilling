@@ -754,6 +754,10 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			payment_entries.append(pe_name)
 			original_card_pe = pe_name
 
+	from ssplbilling.api.paytm_api import expire_bill_links
+
+	expire_bill_links(si.name)
+
 	# Source documents are committed before the worker reads or mirrors them.
 	mirror_queued = _queue_cashier_mirror(si, {
 		"cash_amount": cash_amount,

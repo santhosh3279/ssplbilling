@@ -1038,6 +1038,33 @@ def cancel(order_id):
 	return _txn_result(txn)
 
 
+def expire_bill_links(invoice_name):
+	"""Expire the bill's unpaid Paytm pay links once the bill is submitted: unlike a QR, a link
+	stays payable for days. One paid meanwhile is kept and logged, as a late payment is. Never
+	raises, so the submit it follows is not undone."""
+	for order_id in frappe.get_all(
+		"SSPL Paytm Transaction",
+		filters={"sales_invoice": invoice_name, "channel": "Link", "status": "Pending"},
+		pluck="name",
+	):
+		try:
+			txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
+			_refresh_from_paytm(txn)
+			if txn.status == "Pending" and txn.link_id:
+				_expire_link(txn)
+				_refresh_from_paytm(txn)
+			if txn.status == "Pending":
+				txn.db_set("status", "Cancelled")
+			elif txn.status == "Success":
+				frappe.log_error(
+					title="Paytm late payment on submitted bill",
+					message=f"{txn.order_id} ({invoice_name}): Rs {txn.amount} paid through the pay link "
+					"while the bill was submitted. Check the invoice is not paid twice.",
+				)
+		except Exception:
+			frappe.log_error(title="Paytm bill link expire failed", message=frappe.get_traceback())
+
+
 def _void_on_machine(txn):
 	settings = _settings()
 	body = {
@@ -1177,6 +1204,9 @@ def _refresh_qr(txn):
 	elif status == "TXN_FAILURE" and info.get("resultCode") == PG_ORDER_CLOSED and _is_receipt(txn):
 		# Paytm closed the unpaid order at QR expiry: nothing failed, the customer just did not pay
 		new_status, message = "Cancelled", _("QR expired unpaid")
+	elif status == "TXN_FAILURE" and rb.get("txnId") and txn.channel == "Link" and txn.sales_invoice:
+		# a bill's pay link can be tried again on the same order: keep waiting, show why it failed
+		new_status = "Pending"
 	elif status == "TXN_FAILURE" and rb.get("txnId"):
 		new_status = "Failed"
 	else:
