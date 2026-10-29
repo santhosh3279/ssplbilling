@@ -23,6 +23,8 @@ from ssplbilling.api import ai_chat_tools as tools
 FILE_PREFIX = "ai-chat-"
 BAR_POINTS = 30
 LINE_POINTS = 400
+# A pie shows this many biggest slices; the rest is one "Others" slice.
+PIE_SLICES = 8
 
 LABELS = {
 	"company": "Company",
@@ -194,7 +196,10 @@ def export_excel(tool, title, args=None, attachments=None):
 def make_chart(tool, title, chart_type="bar", args=None, attachments=None):
 	if chart_type not in ("bar", "line", "pie"):
 		raise ValueError(f"chart_type must be bar, line or pie; got {chart_type!r}")
-	labels, datasets = build_series(tool, args, chart_type)
+	if chart_type == "pie":
+		labels, datasets = build_pie(tool, args)
+	else:
+		labels, datasets = build_series(tool, args, chart_type)
 	if not labels:
 		return {"ok": False, "message": "No data to chart."}
 	if attachments is not None:
@@ -423,10 +428,33 @@ def _sheet_title(name, used):
 # ── charts ──────────────────────────────────────────────────────────────────
 
 
-def build_series(tool, args=None, chart_type="bar"):
+def build_pie(tool, args=None):
+	"""(labels, [one dataset]) for a pie: companies summed per label, only positive amounts, the
+	PIE_SLICES biggest and the rest as Others. Every row is fetched so Others is the true rest."""
+	args = dict(args or {})
+	if tool == "top_items":
+		args["share"] = 100  # every item sold, not only those making 80%
+	args["limit"] = tools.EXPORT_ROWS
+	with tools.export_rows():
+		labels, datasets = build_series(tool, args, "pie", points=tools.EXPORT_ROWS)
+	totals = {}
+	for d in datasets:
+		for label, value in zip(labels, d["values"], strict=False):
+			totals[label] = totals.get(label, 0.0) + flt(value)
+	slices = sorted(((k, v) for k, v in totals.items() if v > 0), key=lambda kv: kv[1], reverse=True)
+	if not slices:
+		return [], []
+	top, rest = slices[:PIE_SLICES], slices[PIE_SLICES:]
+	if rest:
+		top.append(("Others", sum(v for _k, v in rest)))
+	name = datasets[0]["name"] if len(datasets) == 1 else "All companies"
+	return [k for k, _v in top], [{"name": name, "values": [flt(v, 2) for _k, v in top]}]
+
+
+def build_series(tool, args=None, chart_type="bar", points=None):
 	"""(labels, [{"name", "values"}]) for a chart, one dataset per company where it splits."""
 	args = dict(args or {})
-	points = LINE_POINTS if chart_type == "line" else BAR_POINTS
+	points = points or (LINE_POINTS if chart_type == "line" else BAR_POINTS)
 	# A line (trend) needs every point; a bar or pie shows the top N the user asked for.
 	limit = points if chart_type == "line" else min(cint(args.get("limit")) or 10, points)
 	data = _run(tool, args, limit)
@@ -460,7 +488,7 @@ def build_series(tool, args=None, chart_type="bar"):
 		}[group]
 		value_key = "net_amount" if group == "item" else "grand_total"
 		per_company = {
-			company: {_label(r, label_key): r[value_key] for r in c.get(f"by_{group}", [])}
+			company: _sum_by(c.get(f"by_{group}", []), label_key, value_key)
 			for company, c in data["companies"].items()
 		}
 		return _align(per_company, points, sort=group in ("day", "month"))
@@ -468,7 +496,7 @@ def build_series(tool, args=None, chart_type="bar"):
 	if tool == "top_items":
 		return _align(
 			{
-				co: {_label(r, "item_name"): r["net_amount"] for r in c["items"]}
+				co: _sum_by(c["items"], "item_name", "net_amount")
 				for co, c in data["companies"].items()
 			},
 			points,
@@ -595,6 +623,15 @@ def _abbr(company):
 def _label(row, key):
 	value = row.get(key) or row.get("customer") or row.get("supplier") or row.get("item_code")
 	return str(value)
+
+
+def _sum_by(rows, label_key, value_key):
+	"""{label: value}, adding up rows that share a label (two items with the same name)."""
+	out = {}
+	for r in rows:
+		label = _label(r, label_key)
+		out[label] = out.get(label, 0.0) + flt(r[value_key])
+	return out
 
 
 def _align(per_company, points, sort=False):

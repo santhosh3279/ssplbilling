@@ -49,6 +49,15 @@ def chart_source(action, query=None):
 	return tool, args, label, "bar"
 
 
+def pie_source(action, query=None):
+	"""(tool, args, title) for the 🥧 Pie button under a quick answer."""
+	label, query = label_for(action, query)
+	tool, args, _fmt = _source(action, query)
+	if tool == "sales_summary":
+		return tool, {**args, "group_by": "item"}, f"{label}: share by item"
+	return tool, args, f"{label}: share"
+
+
 def label_for(action, query):
 	if action not in ACTIONS:
 		frappe.throw(f"Unknown quick action: {action}")

@@ -149,7 +149,7 @@
                 </div>
                 <div v-if="m.quick && m.quick_source" class="mt-2 flex gap-2">
                   <button
-                    v-for="o in [{ kind: 'excel', label: '⬇ Excel' }, { kind: 'chart', label: '📊 Chart' }]"
+                    v-for="o in [{ kind: 'excel', label: '⬇ Excel' }, { kind: 'chart', label: '📊 Chart' }, { kind: 'pie', label: '🥧 Pie' }]"
                     :key="o.kind"
                     class="rounded-full bg-[var(--color-surface)] px-3 py-1 text-[17.2px] font-semibold hover:bg-[var(--color-surface-raised)] disabled:opacity-50"
                     :disabled="outputBusy === m.name + o.kind || hasOutput(m, o.kind)"
@@ -602,8 +602,13 @@ function attachmentsOf(m) {
   }
 }
 
+// Pie and bar/line both attach as type 'chart'; chart_type tells them apart.
 function hasOutput(m, kind) {
-  return attachmentsOf(m).some((a) => a.type === kind)
+  return attachmentsOf(m).some((a) =>
+    kind === 'pie' ? a.type === 'chart' && a.chart_type === 'pie'
+      : kind === 'chart' ? a.type === 'chart' && a.chart_type !== 'pie'
+        : a.type === kind,
+  )
 }
 
 // ⬇ Excel / 📊 Chart under a quick answer: built on the server, no AI call.

@@ -506,7 +506,8 @@ TOOLS += [
 		"name": "make_chart",
 		"description": (
 			"Show a chart in the chat built from one of the data tools. Use line for sales by day or month, "
-			"bar for comparing customers, items, warehouses or companies, pie only for a few shares of one total."
+			"bar for comparing customers, items, warehouses or companies, pie for shares of one total "
+			"(the 8 biggest slices plus Others)."
 		),
 		"input_schema": {
 			"type": "object",

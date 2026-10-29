@@ -203,7 +203,7 @@ def quick_answer(action, query=None, chat=None, provider=None, company=None, cos
 
 @frappe.whitelist(methods=["POST"])
 def quick_output(message, kind):
-	"""⬇ Excel / 📊 Chart under a quick answer: built locally from the same data, no AI call.
+	"""⬇ Excel / 📊 Chart / 🥧 Pie under a quick answer: built locally from the same data, no AI call.
 	The result is added to that message's attachments and the updated message returned."""
 	_check_access()
 	msg = frappe.get_doc(MESSAGE, message)
@@ -214,7 +214,10 @@ def quick_output(message, kind):
 	attachments = json.loads(msg.attachments or "[]")
 	# The scope the answer was made with, saved on it, so the file matches what was shown.
 	with ai_chat_tools.scope(src.get("company"), src.get("cost_center")):
-		res = _quick_output(src, kind, attachments)
+		try:
+			res = _quick_output(src, kind, attachments)
+		except ValueError as e:  # nothing found / ambiguous search: a message, not a server error
+			frappe.throw(str(e))
 	if not res.get("ok"):
 		frappe.throw(res.get("message") or "Nothing to show.")
 	_attach_files(attachments, chat.name)
@@ -229,6 +232,9 @@ def _quick_output(src, kind, attachments):
 	elif kind == "chart":
 		tool, args, title, chart_type = ai_chat_quick.chart_source(src["action"], src.get("query"))
 		res = ai_chat_export.make_chart(tool, title, chart_type, args, attachments)
+	elif kind == "pie":
+		tool, args, title = ai_chat_quick.pie_source(src["action"], src.get("query"))
+		res = ai_chat_export.make_chart(tool, title, "pie", args, attachments)
 	else:
 		frappe.throw(f"Unknown output: {kind}")
 	return res
