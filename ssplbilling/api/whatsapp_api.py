@@ -644,10 +644,10 @@ def send_document(doctype, document_name, pdf_base64, filename, caption="", sess
 
 @frappe.whitelist(methods=["POST"])
 def send_receipt_pay_link(order_id, session_id=None, with_bill=0, print_template=None):
-	"""Send a pending Paytm receipt's pay link to the customer's WhatsApp as a text: a receipt QR's
-	UPI string (what scanning the QR gives, upi://pay?...) or a payment request's Paytm paymentUrl.
-	with_bill sends a bill QR's link as the caption of the bill PDF instead, rendered with
-	print_template when given (see _bill_pdf).
+	"""Send a pending Paytm receipt's pay link to the customer's WhatsApp: a receipt or bill QR's
+	picture, a payment request's Paytm paymentUrl, or a bill's Paytm payment link (create_qr
+	as_link). with_bill sends the bill PDF first, rendered with print_template when given (see
+	_bill_pdf).
 
 	The number and link are read from the row, never taken from the caller, so this can only
 	message the number the receipt was made for."""
@@ -664,9 +664,12 @@ def send_receipt_pay_link(order_id, session_id=None, with_bill=0, print_template
 		as_dict=True,
 	)
 	is_qr = bool(txn) and txn.channel == "QR"
-	is_request = bool(txn) and txn.channel == "Link" and txn.order_id.startswith(PAYMENT_REQUEST_PREFIX)
-	# a bill's QR (cashier desk) carries the invoice instead of the customer
-	if txn and is_qr and txn.sales_invoice:
+	is_bill_link = bool(txn) and txn.channel == "Link" and bool(txn.sales_invoice)
+	is_request = is_bill_link or (
+		bool(txn) and txn.channel == "Link" and txn.order_id.startswith(PAYMENT_REQUEST_PREFIX)
+	)
+	# a bill's QR or pay link (cashier desk) carries the invoice instead of the customer
+	if txn and (is_qr or is_bill_link) and txn.sales_invoice:
 		txn.customer = frappe.db.get_value("Sales Invoice", txn.sales_invoice, "customer")
 	elif txn and txn.sales_invoice:
 		txn.customer = None
@@ -713,7 +716,8 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_t
 	"""Build the pay-link message (WhatsApp template for the usage area, else the built-in text) and
 	send it. A QR goes as its picture with the message as caption, after the bill PDF for Bill + QR:
 	UPI apps refuse an unsigned upi:// link opened from a chat but pay the same QR scanned from the
-	gallery. A payment request goes as text with its Paytm link."""
+	gallery (only up to Rs 2000). A payment request or bill pay link goes as text with its https
+	Paytm link, which opens Paytm's page to pay in any UPI app, after the bill PDF for Bill + Link."""
 	is_qr = txn.channel == "QR"
 	settings = _settings()
 	row = _linked_row(settings, session_id=session_id)
@@ -728,13 +732,17 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_t
 		text = _(
 			"Dear {0}, please pay Rs. {1} to Sundaram and Sons by scanning this QR in any UPI app (valid for {2} minutes)"
 		).format(customer_name, amount, max(1, minutes_left))
+	elif txn.sales_invoice and not hide_bill_no:
+		text = _("Dear {0}, please pay Rs. {1} for bill {2} to Sundaram and Sons using this link: {3}").format(
+			customer_name, amount, txn.sales_invoice, txn.short_url
+		)
 	else:
 		text = _("Dear {0}, please pay Rs. {1} to Sundaram and Sons using this Paytm link: {2}").format(
 			customer_name, amount, txn.short_url
 		)
 	# the WhatsApp template set for this usage area replaces the built-in text when it can be used;
 	# Bill + Link falls back to the plain pay link's template
-	with_bill = frappe.utils.cint(with_bill) and is_qr and txn.sales_invoice
+	with_bill = frappe.utils.cint(with_bill) and txn.sales_invoice
 	if not txn.sales_invoice:
 		template_name = _area_template(settings, AREA_RECEIPT_PAY_LINK)
 	elif with_bill:
@@ -763,6 +771,9 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_t
 		)
 		or text
 	)
+	# a template written for the QR picture may leave the link out; a link message needs it
+	if not is_qr and txn.short_url not in text:
+		text = f"{text}\n{txn.short_url}"
 	reference = ("Sales Invoice", txn.sales_invoice) if test else ("SSPL Paytm Transaction", txn.order_id)
 	if with_bill:
 		frappe.has_permission("Sales Invoice", "read", doc=txn.sales_invoice, throw=True)

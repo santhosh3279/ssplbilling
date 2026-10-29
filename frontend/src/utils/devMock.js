@@ -169,8 +169,9 @@ async function mockPaytm(method, args, invoiceInfo) {
     case 'ssplbilling.api.paytm_api.send_to_device':
       return { order_id: newOrder('EDC', args).order_id, device_name: DEVICE.device_name, status: 'Pending' }
     case 'ssplbilling.api.paytm_api.create_qr': {
-      const o = newOrder('QR', args)
-      return { order_id: o.order_id, status: 'Pending', qr_image: QR_IMAGE, pos_id: DEVICE.pos_id, tid: DEVICE.tid }
+      const asLink = !!(Number(args.as_link) && args.mobile)
+      const o = newOrder(asLink ? 'Link' : 'QR', args)
+      return { order_id: o.order_id, status: 'Pending', qr_image: QR_IMAGE, channel: o.channel, pos_id: DEVICE.pos_id, tid: DEVICE.tid }
     }
     case 'ssplbilling.api.paytm_api.get_status':
     case 'ssplbilling.api.paytm_api.cancel': {
@@ -184,7 +185,7 @@ async function mockPaytm(method, args, invoiceInfo) {
     }
     case 'ssplbilling.api.paytm_api.get_invoice_qr': {
       const o = orders.get(args.order_id)
-      if (!o || o.channel !== 'QR') throw new Error(`No mock QR for ${args.order_id}`)
+      if (!o || o.channel === 'EDC') throw new Error(`No mock QR for ${args.order_id}`)
       return { ...result(o), qr_image: QR_IMAGE, pos_id: DEVICE.pos_id, tid: DEVICE.tid }
     }
     case 'ssplbilling.api.paytm_api.get_qr_queue':

@@ -482,7 +482,7 @@ def get_sales_invoice(invoice_name, include_customer_details=0):
 def _paytm_refs(invoice_name):
 	"""(upi_ref, card_ref) from this bill's latest successful Paytm payments, so the Payment Entry
 	keeps the Paytm reference even when the cashier page lost it (reload, re-selecting the bill)."""
-	from ssplbilling.api.paytm_api import CARD_PAY_METHODS
+	from ssplbilling.api.paytm_api import CARD_PAY_METHODS, PG_CHANNELS
 
 	upi_ref = card_ref = None
 	for t in frappe.get_all(
@@ -492,7 +492,8 @@ def _paytm_refs(invoice_name):
 		order_by="modified desc",
 	):
 		ref = t.rrn or t.paytm_txn_id or t.auth_code or t.order_id
-		is_card = t.channel != "QR" and (t.pay_method or "").upper() in CARD_PAY_METHODS
+		# a QR or pay link payment fills the UPI box, whatever the customer paid with
+		is_card = t.channel not in PG_CHANNELS and (t.pay_method or "").upper() in CARD_PAY_METHODS
 		if is_card:
 			card_ref = card_ref or ref
 		else:

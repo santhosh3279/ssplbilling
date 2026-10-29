@@ -359,11 +359,16 @@ def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None, phone=No
 
 
 @frappe.whitelist()
-def create_qr(invoice_name, amount, mobile=None, user=None):
+def create_qr(invoice_name, amount, mobile=None, user=None, as_link=0):
 	"""Create a Paytm dynamic UPI QR for the amount; returns the QR image and the order id to poll.
 	mobile is the customer's WhatsApp number when the cashier sends the QR's pay link to them.
 	posId is the POS ID of the cashier's machine (SSPL Paytm Device), else QR POS ID, else the
-	user id; that machine's TID is kept on the row."""
+	user id; that machine's TID is kept on the row.
+
+	as_link (with a mobile) makes a Paytm payment link for the bill instead: an https link the
+	customer taps in WhatsApp to pay in any UPI app, without the Rs 2000 cap UPI apps put on a
+	QR picture scanned from the gallery. Its QR image is the link's, so it still scans at the
+	counter. When Paytm refuses the link, a dynamic QR is made as before."""
 	settings = _settings()
 	if not settings.qr_enabled:
 		frappe.throw(_("Dynamic QR is disabled in SSPL Paytm Settings"))
@@ -383,20 +388,25 @@ def create_qr(invoice_name, amount, mobile=None, user=None):
 		or re.sub(r"[^A-Za-z0-9_]", "_", frappe.session.user)[:20]
 	)
 
-	txn = frappe.get_doc(
-		{
-			"doctype": "SSPL Paytm Transaction",
-			"order_id": order_id,
-			"sales_invoice": invoice_name,
-			"amount": amount,
-			"status": "Pending",
-			"channel": "QR",
-			"customer_mobile": _valid_phone(mobile) or None,
-			"device_name": pos_id,
-			"tid": device.tid if device else None,
-			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
-		}
-	).insert(ignore_permissions=True)
+	row = {
+		"doctype": "SSPL Paytm Transaction",
+		"order_id": order_id,
+		"sales_invoice": invoice_name,
+		"amount": amount,
+		"status": "Pending",
+		"channel": "QR",
+		"customer_mobile": _valid_phone(mobile) or None,
+		"device_name": pos_id,
+		"tid": device.tid if device else None,
+		"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
+	}
+	if frappe.utils.cint(as_link) and row["customer_mobile"]:
+		link = _bill_link(settings, frappe.get_doc({**row, "channel": "Link"}).insert(ignore_permissions=True))
+		if link:
+			return link
+		# the failed link keeps its order id
+		order_id = row["order_id"] = f"{order_id[:46]}-Q"
+	txn = frappe.get_doc(row).insert(ignore_permissions=True)
 
 	rb = _request_qr(settings, txn)
 	return {
@@ -404,9 +414,72 @@ def create_qr(invoice_name, amount, mobile=None, user=None):
 		"status": "Pending",
 		"qr_image": rb.get("image") or _qr_png(rb.get("qrData")),
 		"qr_data": rb.get("qrData"),
+		"channel": "QR",
 		"pos_id": pos_id,
 		"tid": txn.tid,
 	}
+
+
+def _bill_link(settings, txn):
+	"""Get the Paytm payment link of a new bill Link row (its order id is the linkOrderId) and
+	return create_qr's answer for it, or None (row marked Failed) when Paytm will not make it."""
+	inv = frappe.db.get_value("Sales Invoice", txn.sales_invoice, ["customer", "customer_name"], as_dict=True)
+	txn.link_description = "Payment to Sundaram and Sons"
+	try:
+		_request_link(settings, txn, inv.customer_name or inv.customer)
+	except frappe.ValidationError:
+		frappe.clear_messages()
+		frappe.log_error(title="Paytm bill link failed, sending a QR", message=frappe.get_traceback())
+		return None
+	return {
+		"order_id": txn.order_id,
+		"status": "Pending",
+		"qr_image": _qr_png(txn.short_url),
+		"short_url": txn.short_url,
+		"channel": "Link",
+		"pos_id": txn.device_name,
+		"tid": txn.tid,
+	}
+
+
+def _request_link(settings, txn, customer_name, send_sms=False):
+	"""Ask Paytm for a fixed-amount payment link for a new Link row, bound to its order id
+	(linkOrderId) so the PG status API and the webhook find it. Marks the row Failed (committed)
+	and throws when Paytm refuses; sets link_id and short_url on success."""
+	body = {
+		"mid": settings.merchant_id,
+		"linkType": "FIXED",
+		"linkName": re.sub(r"[^A-Za-z0-9]", "", customer_name or "")[:64] or "Payment",
+		"linkDescription": txn.link_description,
+		"amount": flt(txn.amount, 2),
+		"linkOrderId": txn.order_id,
+		"singleTransactionOnly": True,
+		"sendSms": bool(send_sms),
+		"sendEmail": False,
+	}
+	if settings.payment_notification_url:
+		body["statusCallbackUrl"] = settings.payment_notification_url
+	if txn.customer_mobile:
+		body["customerContact"] = {"customerName": customer_name, "customerMobile": txn.customer_mobile}
+	try:
+		res = _post_link(settings, LINK_CREATE_PATH, body)
+	except Exception as e:
+		_update_txn(txn, "Failed", {"error": str(e)}, str(e))
+		frappe.db.commit()
+		frappe.log_error(title="Paytm link create failed", message=frappe.get_traceback())
+		frappe.throw(_("Could not reach Paytm: {0}").format(e))
+
+	rb = res.get("body") or {}
+	info = rb.get("resultInfo") or {}
+	if (info.get("resultStatus") or "").upper() != "SUCCESS" or not rb.get("shortUrl"):
+		msg = info.get("resultMessage") or info.get("resultMsg") or "no link returned"
+		_update_txn(txn, "Failed", res, msg)
+		frappe.db.commit()
+		frappe.throw(_("Paytm could not create the link: {0}").format(msg))
+
+	txn.link_id = str(rb.get("linkId") or "")
+	txn.short_url = rb["shortUrl"]
+	_update_txn(txn, "Pending", res, info.get("resultMessage"))
 
 
 def _request_qr(settings, txn):
@@ -491,40 +564,7 @@ def create_payment_link(customer, amount, description=None, mobile=None, send_sm
 		}
 	).insert(ignore_permissions=True)
 
-	body = {
-		"mid": settings.merchant_id,
-		"linkType": "FIXED",
-		"linkName": re.sub(r"[^A-Za-z0-9]", "", customer_name)[:64] or "Payment",
-		"linkDescription": description,
-		"amount": amount,
-		"linkOrderId": order_id,
-		"singleTransactionOnly": True,
-		"sendSms": bool(frappe.utils.cint(send_sms)),
-		"sendEmail": False,
-	}
-	if settings.payment_notification_url:
-		body["statusCallbackUrl"] = settings.payment_notification_url
-	if mobile:
-		body["customerContact"] = {"customerName": customer_name, "customerMobile": mobile}
-	try:
-		res = _post_link(settings, LINK_CREATE_PATH, body)
-	except Exception as e:
-		_update_txn(txn, "Failed", {"error": str(e)}, str(e))
-		frappe.db.commit()
-		frappe.log_error(title="Paytm link create failed", message=frappe.get_traceback())
-		frappe.throw(_("Could not reach Paytm: {0}").format(e))
-
-	rb = res.get("body") or {}
-	info = rb.get("resultInfo") or {}
-	if (info.get("resultStatus") or "").upper() != "SUCCESS" or not rb.get("shortUrl"):
-		msg = info.get("resultMessage") or info.get("resultMsg") or "no link returned"
-		_update_txn(txn, "Failed", res, msg)
-		frappe.db.commit()
-		frappe.throw(_("Paytm could not create the link: {0}").format(msg))
-
-	txn.link_id = str(rb.get("linkId") or "")
-	txn.short_url = rb["shortUrl"]
-	_update_txn(txn, "Pending", res, info.get("resultMessage"))
+	_request_link(settings, txn, customer_name, send_sms=frappe.utils.cint(send_sms))
 	return _txn_result(txn)
 
 
@@ -702,9 +742,10 @@ def get_invoice_qr(order_id):
 	"""QR image of a bill's unpaid QR, to show it again when the cashier opens it from the queue."""
 	_require_desk_user()
 	txn = frappe.get_doc("SSPL Paytm Transaction", order_id)
-	if not txn.sales_invoice or txn.channel != "QR" or not txn.qr_data:
+	data = txn.qr_data if txn.channel == "QR" else txn.short_url if txn.channel == "Link" else None
+	if not txn.sales_invoice or not data:
 		frappe.throw(_("No QR stored for {0}").format(order_id))
-	return {**_txn_result(txn), "qr_image": _qr_png(txn.qr_data), "pos_id": txn.device_name, "tid": txn.tid}
+	return {**_txn_result(txn), "qr_image": _qr_png(data), "pos_id": txn.device_name, "tid": txn.tid}
 
 
 def _validate_receipt_accounts(upi_account, company, cost_center):
@@ -939,7 +980,7 @@ def get_qr_queue():
 	names = frappe.get_all(
 		"SSPL Paytm Transaction",
 		filters={
-			"channel": ("in", ("QR", "EDC")),
+			"channel": ("in", ("QR", "EDC", "Link")),
 			"sales_invoice": ("is", "set"),
 			"owner": frappe.session.user,
 			"status": ("in", ("Pending", "Success")),
@@ -961,7 +1002,7 @@ def get_qr_queue():
 		if txn.status == "Pending":
 			_refresh_from_paytm(txn)
 			age = (now_datetime() - frappe.utils.get_datetime(txn.creation)).total_seconds()
-			if txn.status == "Pending" and age > QR_EXPIRY_SECONDS:
+			if txn.status == "Pending" and txn.channel != "Link" and age > QR_EXPIRY_SECONDS:
 				continue
 		if txn.status not in ("Pending", "Success"):
 			continue
