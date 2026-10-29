@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen bg-[var(--color-bg)] overflow-hidden">
+  <div class="bg-[var(--color-bg)] overflow-hidden" :class="posMode ? 'h-full' : 'h-screen'">
     <Item_Invoice_Template
       ref="invoiceTemplateRef"
       title="SALES INVOICE"
@@ -889,10 +889,13 @@ import { formatDMY } from '../utils/date'
 import { serverToday, serverNow, toLocalISO, parseCalendarDate } from '../services/serverTime'
 const props = defineProps({
   isSubwindow: Boolean,
-  invoiceName: String
+  invoiceName: String,
+  // POS screen: payment is taken beside the bill, so save skips the print popup
+  // and the bill in view is reported through active-bill
+  posMode: Boolean
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'active-bill', 'focus-payment'])
 
 const router = useRouter()
 const route = useRoute()
@@ -1366,6 +1369,7 @@ async function loadInvoice(invoiceName) {
     isSubmitted.value = data.docstatus === 1
     linkedPayments.value = data.payments || []
     fetchCustomerSalesHistory(data.customer)
+    if (props.posMode) emit('active-bill', data.name, 'loaded')
     return true
   } catch (e) {
     console.error('Failed to load invoice:', e)
@@ -1723,6 +1727,7 @@ async function clearBill() {
     }
   }
 
+  if (props.posMode) emit('active-bill', null)
   nextTick(() => { newCodeInput.value?.focus() })
 }
 
@@ -1912,13 +1917,21 @@ async function handleSave() {
         isSaved.value = true
         fetchRecentInvoices()
         pendingClearAfterPrint.value = false
-        showPrintModal.value = true
+        if (props.posMode) emit('active-bill', invoiceNo.value, 'saved')
+        else showPrintModal.value = true
       } else {
         invoiceNo.value = res.name
         customInvoiceNo.value = ''
         fetchRecentInvoices()
-        pendingClearAfterPrint.value = true
-        showPrintModal.value = true
+        if (props.posMode) {
+          // stays on screen while paid; printAndClear() prints and clears it after
+          isReadOnly.value = true
+          isSaved.value = true
+          emit('active-bill', res.name, 'saved')
+        } else {
+          pendingClearAfterPrint.value = true
+          showPrintModal.value = true
+        }
       }
     }
   } catch (error) {
@@ -2062,8 +2075,19 @@ async function closePrintModal() {
   customInvoiceNo.value = ''
   invoiceNo.value = getNextInvoiceNoFromPanel(selectedSeries.value, 'NEW')
 
+  if (props.posMode) emit('active-bill', null)
   nextTick(() => { newCodeInput.value?.focus() })
 }
+
+// POS screen: once the bill is paid, print it and clear for the next one
+// (same clear path as the print popup after a normal save)
+function printAndClear() {
+  fetchRecentInvoices()
+  pendingClearAfterPrint.value = true
+  showPrintModal.value = true
+}
+
+defineExpose({ printAndClear, focusBarcodeInput })
 
 function handleCancel() {
   const hasParty = customerId.value;
@@ -3463,6 +3487,7 @@ useShortcuts(salesInvoiceShortcuts({
   deleteNonGstItems: () => deleteNonGstItems(),
   openBillMirror:     () => handleOpenBillMirror(),
   retryMirrorBill:    () => handleRetryMirrorBill(),
+  focusPayment:       () => { if (props.posMode) emit('focus-payment') },
 }), props.isSubwindow ? 'subwindow' : 'local')
 
 function handleSeriesTripleClick() {

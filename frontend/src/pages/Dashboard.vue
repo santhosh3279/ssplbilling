@@ -946,6 +946,7 @@ const allTiles = [
   { id: 'quotation',          bucket: 'sale',     name: 'Quotation',             desc: 'Create quotations',                        icon: '📄', shortcut: 'Shift+F10' },
   { id: 'cashier',            bucket: 'sale',     name: 'Cashier Desk',          desc: 'Modern payment desk',                      icon: '🏧', shortcut: 'Shift+F5'  },
   { id: 'cashier-mobile',     bucket: 'sale',     name: 'Cashier Mobile',        desc: 'Phone payment desk',                       icon: '📲', shortcut: ''  },
+  { id: 'pos',                bucket: 'sale',     name: 'POS Billing',           desc: 'Bill and take payment on one screen',      icon: '🧾', shortcut: ''  },
   { id: 'sales-order',        bucket: 'sale',     name: 'Sales Order',           desc: 'Create & manage sales orders',             icon: '📝', shortcut: ''    },
   { id: 'Cashier-Management', bucket: 'sale',     name: 'Cashier Management',    desc: 'Daily reconciliation & denominations',     icon: '📓', shortcut: ''    },
   { id: 'cancellation',       bucket: 'sale',     name: 'Cancellation',          desc: 'Cancel & amend submitted bills',           icon: '🚫', shortcut: ''    },
@@ -1038,6 +1039,7 @@ const tiles = computed(() => {
 const draftCounts = ref({})
 const draftTileFilters = {
   cashier: { doctype: 'Sales Invoice', byWarehouse: true },
+  pos: { doctype: 'Sales Invoice', byWarehouse: true },
   quotation: { doctype: 'Quotation', quotation_to: 'Customer' },
   'sales-order': { doctype: 'Sales Order' },
   'purchase-submit': { doctype: 'Purchase Invoice', byWarehouse: true },
@@ -1262,7 +1264,7 @@ function tilesInBucket(bucketId) {
   return filteredTiles.value.filter(t => t.bucket === bucketId)
 }
 
-const readyModules = ['sales', 'mobile-bill', 'quotation', 'purchase-invoice', 'cashier', 'cashier-mobile', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user', 'ai-chat', 'item-barcode', 'paytm-link', 'paytm-unknown', 'bank-statement', 'whatsapp-link', 'whatsapp-chat', 'competitive']
+const readyModules = ['sales', 'mobile-bill', 'quotation', 'purchase-invoice', 'cashier', 'cashier-mobile', 'pos', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user', 'ai-chat', 'item-barcode', 'paytm-link', 'paytm-unknown', 'bank-statement', 'whatsapp-link', 'whatsapp-chat', 'competitive']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {

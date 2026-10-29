@@ -13,6 +13,7 @@ export const salesInvoiceShortcuts = (handlers) => ({
   'P':       handlers.print            || (() => {}),
   'F6':      handlers.openParcelAddress|| (() => {}),
   'F8':      handlers.save             || (() => {}),
+  'F9':      handlers.focusPayment     || (() => {}),
   'CTRL+S':  handlers.save             || (() => {}),
   'PAGEUP':  handlers.pageUp           || (() => {}),
   'ESCAPE':  handlers.cancel           || (() => {}),

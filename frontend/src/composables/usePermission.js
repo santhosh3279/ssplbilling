@@ -63,6 +63,7 @@ export const BILLER_ROUTES = new Set([
 export const CASHIER_EXTRA_ROUTES = new Set([
   'CashierDesk',
   'CashierMobile',
+  'PosBilling',
   'PurchaseSubmit',
   'CustomerLedger',
   'JournalContraEntry',
@@ -257,7 +258,8 @@ const LICENSE_FREE_TILES = new Set(['stock-check', 'whatsapp-link', 'whatsapp-ch
 // Paytm Unknown Payments receipts payments from the same Paytm account, so it rides there too.
 // Bank Statement books the receipts / payments a bank statement shows, so it rides there too.
 // Cashier Mobile is the phone front end for the Cashier Desk, so it rides on the Cashier licence.
-const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display', 'mobile-bill': 'sales', 'item-barcode': 'barcode-print', 'paytm-link': 'payment', 'paytm-unknown': 'payment', 'bank-statement': 'payment', 'cashier-mobile': 'cashier' }
+// POS Billing settles bills like the Cashier Desk, so it rides on the Cashier licence too.
+const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display', 'mobile-bill': 'sales', 'item-barcode': 'barcode-print', 'paytm-link': 'payment', 'paytm-unknown': 'payment', 'bank-statement': 'payment', 'cashier-mobile': 'cashier', 'pos': 'cashier' }
 
 function isLicensedFeature(features, tileId) {
   const feature = LICENSE_FEATURE_ALIAS[tileId] || tileId
@@ -374,6 +376,7 @@ const TILE_ROUTE_MAP = {
   'sales-order':       'SalesOrderEntry',
   'cashier':           'CashierDesk',
   'cashier-mobile':    'CashierMobile',
+  'pos':               'PosBilling',
   'purchase-submit':   'PurchaseSubmit',
   'ledger':            'CustomerLedger',
   'general-ledger':    'GeneralLedger',
