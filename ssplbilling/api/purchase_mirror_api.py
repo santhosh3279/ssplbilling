@@ -149,8 +149,16 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 	if pi.get("custom_mirrored") and frappe.db.exists("Purchase Invoice", pi.custom_mirrored):
 		return frappe.get_doc("Purchase Invoice", pi.custom_mirrored)
 
+	# PG.##### and PG0.#### render the same names (PG + 00124 == PG0 + 0124), so a same-number
+	# bill in the alternate company is only this bill's mirror if it is unlinked or links back here.
 	old_mirror_name = pi.name[:-1] if pi.name.endswith("/") else f"{pi.name}/"
-	if frappe.db.exists("Purchase Invoice", {"name": old_mirror_name, "company": automatic_entries.alternative_company}):
+	has_mirror_field = frappe.get_meta("Purchase Invoice").has_field("custom_mirrored")
+	old_mirror = frappe.get_all(
+		"Purchase Invoice",
+		filters={"name": old_mirror_name, "company": automatic_entries.alternative_company},
+		fields=["name", "custom_mirrored"] if has_mirror_field else ["name"],
+	)
+	if old_mirror and (old_mirror[0].get("custom_mirrored") or "") in ("", pi.name):
 		mpi = frappe.get_doc("Purchase Invoice", old_mirror_name)
 		if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
 			frappe.db.set_value("Purchase Invoice", pi.name, "custom_mirrored", mpi.name)

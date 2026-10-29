@@ -496,10 +496,30 @@ def get_next_bill_no(naming_series="PINV-.YY.-"):
         from ssplbilling.api.automatic_entries_api import get_automatic_entries
         from ssplbilling.api.purchase_mirror_api import should_mirror_purchase_invoice
         if next_no and not next_no.endswith("/") and should_mirror_purchase_invoice(naming_series, get_automatic_entries()):
-            next_no = f"{next_no}/"
+            next_no = _peek_free_mirrored_name(naming_series)
     except Exception:
         pass
     return next_no
+
+
+def _peek_free_mirrored_name(naming_series):
+    """Next free slashed name in a mirrored series, skipping taken numbers like
+    set_suffix_for_original_purchase_invoice does, without consuming the counter."""
+    from frappe.model.naming import parse_naming_series
+
+    offset = 0
+
+    def read_only_counter(key, digits):
+        current = frappe.db.sql("SELECT current FROM `tabSeries` WHERE name = %s", (key,))
+        current = frappe.utils.cint(current[0][0]) if current else 0
+        return ("%0" + str(digits) + "d") % (current + 1 + offset)
+
+    for _ in range(1000):
+        name = parse_naming_series(naming_series, number_generator=read_only_counter).rstrip("/") + "/"
+        if not frappe.db.exists("Purchase Invoice", name):
+            break
+        offset += 1
+    return name
 
 
 @frappe.whitelist()
@@ -1157,5 +1177,10 @@ def set_suffix_for_original_purchase_invoice(doc, method=None, ae=None):
 	# uses the same series or a different one.
 	from frappe.model.naming import make_autoname
 
-	generated_name = make_autoname(naming_series, doc=doc)
-	doc.name = generated_name if generated_name.endswith("/") else f"{generated_name}/"
+	# The series counter can fall behind bills already saved, so skip numbers that are taken.
+	for _ in range(1000):
+		generated_name = make_autoname(naming_series, doc=doc)
+		name = generated_name if generated_name.endswith("/") else f"{generated_name}/"
+		if not frappe.db.exists("Purchase Invoice", name):
+			break
+	doc.name = name
