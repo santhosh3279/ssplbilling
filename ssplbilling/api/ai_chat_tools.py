@@ -17,7 +17,9 @@ MAX_ROWS = 100
 # Excel exports re-run a tool with this cap instead; the rows go to the file, not the model.
 EXPORT_ROWS = 5000
 _row_cap = {"max": MAX_ROWS}
-_scope = {"company": None, "cost_center": None}
+_scope = {"company": None, "cost_center": None, "question": None, "guarded": []}
+# Words in the user's question that let the AI leave the chat's company / cost center.
+BROAD_WORDS = re.compile(r"\b(all|both|every|each|other|another|companies|branches)\b")
 DATA_TOOLS = (
 	"sales_summary",
 	"top_items",
@@ -547,9 +549,18 @@ def run_tool(name, args, attachments=None):
 		return f"Unknown tool: {name}", True
 	if not isinstance(args, dict):
 		return "Tool input must be an object.", True
+	_scope["guarded"] = []
 	try:
+		data = fn(**args)
+		if _scope["guarded"] and isinstance(data, dict):
+			selection = " / ".join(filter(None, (_scope["company"], _scope["cost_center"])))
+			data["scope_guard"] = (
+				f"Kept to the chat's selection ({selection}): the user's question did not ask for "
+				f"{', '.join(_scope['guarded'])}. Answer for the selection; they can ask for all "
+				"companies or name the other company."
+			)
 		# Compact JSON: every byte of a tool result is billed as input on this and later turns.
-		return json.dumps(fn(**args), default=str, ensure_ascii=False, separators=(",", ":")), False
+		return json.dumps(data, default=str, ensure_ascii=False, separators=(",", ":")), False
 	except frappe.PermissionError:
 		frappe.clear_last_message()
 		return "The user does not have permission to read this data in ERPNext.", True
@@ -2195,17 +2206,20 @@ def query_records(
 	named = {f[0]: f for f in filters}
 	scoped = {}  # what the rows are limited to, for the scope note
 	if not meta.istable:
+		# A company / cost center filter counts as asking for it (and goes through the guard);
+		# a chat branch of another company is dropped.
 		if "company" in named and not company:
-			# A company filter replaces the chat's company; a chat branch of another company is dropped.
 			f = named["company"]
 			company = f[2] if f[1] == "=" else "all"
 			if f[1] != "=" and not cost_center:
 				cost_center = "all"
+		if "cost_center" in named and not cost_center:
+			f = named["cost_center"]
+			cost_center = f[2] if f[1] == "=" else "all"
 		company, cost_center = _scoped(company, cost_center)
 		for field, value in (("company", company), ("cost_center", cost_center)):
 			if value and field in columns:
-				if field not in named:
-					filters.append([field, "=", value])
+				filters = [f for f in filters if f[0] != field] + [[field, "=", value]]
 				scoped[field] = value
 	rows = _get_list(
 		meta.name,
@@ -2277,22 +2291,71 @@ def _full_read():
 
 
 @contextmanager
-def scope(company=None, cost_center=None):
-	"""The company / cost center picked on the chat page, used when a tool call omits them."""
-	_scope.update(company=company or None, cost_center=cost_center or None)
+def scope(company=None, cost_center=None, question=None):
+	"""The company / cost center picked on the chat page, used when a tool call omits them.
+	`question` (the user's words, on AI turns) turns on the guard in _guard."""
+	_scope.update(
+		company=company or None,
+		cost_center=cost_center or None,
+		question=(question or "").lower() or None,
+		guarded=[],
+	)
 	try:
 		yield
 	finally:
-		_scope.update(company=None, cost_center=None)
+		_scope.update(company=None, cost_center=None, question=None, guarded=[])
+
+
+def _guard(company, cost_center):
+	"""The AI may leave the chat's company / cost center only when the user's question asks for
+	it: "all", "both", "every", "other"..., or names that company / branch. Otherwise the call
+	is kept to the chat's selection and run_tool tells the AI so."""
+	question = _scope["question"]
+	if not question or BROAD_WORDS.search(question):
+		return company, cost_center
+	if (
+		_scope["company"]
+		and company not in (None, "", _scope["company"])
+		and not _named(company, "Company", question)
+	):
+		_scope["guarded"].append(f"company {company}")
+		company = None
+	if (
+		_scope["cost_center"]
+		and cost_center not in (None, "", _scope["cost_center"])
+		and not _named(cost_center, "Cost Center", question)
+	):
+		_scope["guarded"].append(f"cost center {cost_center}")
+		cost_center = None
+	return company, cost_center
+
+
+def _named(value, doctype, question):
+	"""Whether the question mentions this company / cost center: full name, first word ("sundaram"),
+	the part before " - " ("nck" of "NCK - SSPL"), or for a company its abbreviation and initials
+	("sspl" of "SUNDARAM AND SONS PRIVATE LIMITED")."""
+	value = str(value)
+	if value.lower() == "all":
+		return False
+	names = {value, value.split(" - ")[0], value.split()[0]}
+	if doctype == "Company":
+		names.add(frappe.get_cached_value("Company", value, "abbr") or "")
+		names.add("".join(w[0] for w in value.split() if w.lower() not in ("and", "of", "the", "&")))
+	return any(
+		re.search(rf"\b{re.escape(n.lower())}\b", question) for n in names if len(n.strip()) >= 2
+	)
 
 
 def _scoped(company, cost_center):
 	"""Resolve a tool's company / cost_center args against the chat scope. "all" clears it."""
+	company, cost_center = _guard(company, cost_center)
 	if company in (None, ""):
 		company = _scope["company"]
+	all_companies = str(company).lower() == "all"
 	if cost_center in (None, ""):
-		cost_center = _scope["cost_center"]
-	company = None if str(company).lower() == "all" else company
+		# "all" companies drops the chat's branch too; it would narrow the answer to its company.
+		cost_center = None if all_companies else _scope["cost_center"]
+	company = None if all_companies else company
 	cost_center = None if str(cost_center).lower() == "all" else cost_center
 	if cost_center:
 		cc_company = frappe.db.get_value("Cost Center", cost_center, "company")

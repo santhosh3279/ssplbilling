@@ -318,7 +318,8 @@ def process_turn(chat, prompt, cached=None, fresh=0, values=None):
 	publish({"type": "start", "provider": doc.provider})
 	try:
 		# Tool calls that don't name a company / cost center use the chat's.
-		with ai_chat_tools.scope(doc.company, doc.cost_center):
+		# The user's last questions let the guard tell "all companies" asked for from the AI's own idea.
+		with ai_chat_tools.scope(doc.company, doc.cost_center, question=_recent_questions(chat)):
 			is_cancelled = lambda: frappe.cache.get_value(_cancel_key(chat))  # noqa: E731
 			if cached:
 				result = _reuse(doc, prompt, cached, on_event, is_cancelled, values)
@@ -444,6 +445,20 @@ def _scope_options():
 		"default_company": company,
 		"default_cost_center": cost_center,
 	}
+
+
+def _recent_questions(chat):
+	"""This turn's question and the one before it (a follow-up like "and last month?" keeps the
+	earlier "both companies")."""
+	return "\n".join(
+		frappe.get_all(
+			MESSAGE,
+			filters={"chat": chat, "role": "user", "quick": 0},
+			pluck="content",
+			order_by="creation desc",
+			limit=2,
+		)
+	)
 
 
 def _set_scope(doc, company, cost_center):
