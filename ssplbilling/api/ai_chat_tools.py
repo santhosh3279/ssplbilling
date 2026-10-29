@@ -226,11 +226,17 @@ TOOLS = [
 
 _COMPANY = {
 	"type": "string",
-	"description": 'Exact company name. Omit to use the company selected on the chat page; "all" for every company.',
+	"description": (
+		"Exact company name. Omit it to use the company selected on the chat page (the default). Pass "
+		'it only when the user names another company; "all" only when they ask for all / both companies.'
+	),
 }
 _COST_CENTER = {
 	"type": "string",
-	"description": 'Exact cost center name (branch). Omit to use the one selected on the chat page; "all" for every cost center.',
+	"description": (
+		"Exact cost center name (branch). Omit it to use the one selected on the chat page (the default). "
+		'Pass it only when the user names another branch; "all" only when they ask for every branch.'
+	),
 }
 _FROM = {"type": "string", "description": "YYYY-MM-DD. Defaults to the 1st of this month."}
 _TO = {"type": "string", "description": "YYYY-MM-DD. Defaults to today."}
@@ -391,8 +397,8 @@ INSTRUCTIONS = """You are the business assistant for Sundaram and Sons Private L
 - You are read-only. If asked to create or change anything, say so and point to the screen in the app where it is done.
 - Amounts are INR (₹) with Indian grouping (₹1,25,000). Keep answers short; use markdown tables for lists.
 - State the date range, company and cost center you used (each tool result says which it applied). "Today" means the date given below.
-- The user picks a company and cost center on the chat page; the tools use them when you omit company / cost_center. Only pass them when the user names another one, or "all" when they ask for every company or branch.
-- Data is per company. An invoice ending in "/" (RTN07075/) is the billing system's mirror of RTN07075 in the other company, so company totals overlap by design: report each company separately and never add companies together unless the user asks.
+- The user picks a company and cost center on the chat page (named below); the tools use them when you omit company / cost_center. Answer for that selection only: omit company / cost_center in every call. Pass another company or branch only when the user names it, and "all" only when they ask for all / both companies or every branch. A vague question ("total sales", "upi receipts") is about the selection, not every company.
+- Data is per company. An invoice ending in "/" (RTN07075/) is the billing system's mirror of RTN07075 in the other company, so company totals overlap by design: when the user asks for several companies, report each separately and never add them together unless asked.
 - Returns (credit notes) are negative. Pending drafts are sales still waiting at the cashier; mention them separately from submitted sales.
 - Only if a tool itself says the user lacks permission, tell them they don't have access to that data.
 - For "Excel", "download" or "export", call export_excel; for "chart", "graph" or "trend", call make_chart. Pass the same tool and args you would use to answer. The file or chart is attached to your reply automatically: don't repeat its rows in text, just say what it contains."""
@@ -408,6 +414,11 @@ def system_prompt(settings):
 		for p in (
 			INSTRUCTIONS,
 			f"Today is {today.isoformat()} ({today.strftime('%A')}). Companies: {companies}.",
+			"Selected on the chat page: company: "
+			+ (_scope["company"] or "all companies")
+			+ "; cost center: "
+			+ (_scope["cost_center"] or "all cost centers (every branch)")
+			+ ".",
 			extra,
 		)
 		if p
@@ -433,9 +444,10 @@ TOOLS += [
 	{
 		"name": "query_records",
 		"description": (
-			"Read any ERPNext records: a list of rows, or totals with aggregates and group_by. Does not "
-			"apply the chat page's company / cost center: filter on company yourself when the doctype has "
-			"it. docstatus 1 = submitted, 0 = draft, 2 = cancelled; filter docstatus 1 for real totals. "
+			"Read any ERPNext records: a list of rows, or totals with aggregates and group_by. Like the "
+			"other tools it applies the chat page's company / cost center when the doctype has those "
+			"fields and no filter names them. docstatus 1 = submitted, 0 = draft, 2 = cancelled; filter "
+			"docstatus 1 for real totals. "
 			"Child tables (e.g. Sales Invoice Item) filter on parent = the document name."
 		),
 		"input_schema": {
@@ -472,6 +484,8 @@ TOOLS += [
 					"type": "string",
 					"description": "Fieldname or aggregate name, optionally followed by asc / desc.",
 				},
+				"company": _COMPANY,
+				"cost_center": _COST_CENTER,
 				"limit": _LIMIT,
 			},
 			"required": ["doctype"],
@@ -2124,7 +2138,15 @@ def describe_doctype(search=None, doctype=None):
 
 
 def query_records(
-	doctype, fields=None, filters=None, aggregates=None, group_by=None, order_by=None, limit=20
+	doctype,
+	fields=None,
+	filters=None,
+	aggregates=None,
+	group_by=None,
+	order_by=None,
+	limit=20,
+	company=None,
+	cost_center=None,
 ):
 	meta = _queryable(doctype)
 	columns = _query_columns(meta)
@@ -2167,16 +2189,39 @@ def query_records(
 		)
 		if parent:
 			kwargs["parent_doctype"] = parent[0]
+	filters = _query_filters(filters, column)
+	# The chat's company / cost center, as the other tools apply it, unless a filter names them.
+	# Child tables are left alone: their company is on the parent document.
+	named = {f[0]: f for f in filters}
+	scoped = {}  # what the rows are limited to, for the scope note
+	if not meta.istable:
+		if "company" in named and not company:
+			# A company filter replaces the chat's company; a chat branch of another company is dropped.
+			f = named["company"]
+			company = f[2] if f[1] == "=" else "all"
+			if f[1] != "=" and not cost_center:
+				cost_center = "all"
+		company, cost_center = _scoped(company, cost_center)
+		for field, value in (("company", company), ("cost_center", cost_center)):
+			if value and field in columns:
+				if field not in named:
+					filters.append([field, "=", value])
+				scoped[field] = value
 	rows = _get_list(
 		meta.name,
 		fields=select,
-		filters=_query_filters(filters, column),
+		filters=filters,
 		group_by=group_by or None,
 		order_by=order,
 		limit=limit,
 		**kwargs,
 	)
-	return {"doctype": meta.name, "rows": rows, "more_rows": len(rows) == limit}
+	return {
+		"doctype": meta.name,
+		**_scope_note(scoped.get("company"), scoped.get("cost_center")),
+		"rows": rows,
+		"more_rows": len(rows) == limit,
+	}
 
 
 def _queryable(doctype):
