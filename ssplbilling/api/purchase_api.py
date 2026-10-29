@@ -372,7 +372,7 @@ def create_purchase_invoice(data=None, **kwargs):
         pi.cost_center = data["cost_center"]
 
     pi.custom_remarks = data.get("custom_remarks") or ""
-    if "custom_mirrored" in data:
+    if "custom_mirrored" in data and not _in_mirrored_series(pi):
         pi.custom_mirrored = data.get("custom_mirrored") or ""
 
     _apply_bill_discount(pi, data)
@@ -440,10 +440,15 @@ def create_purchase_invoice(data=None, **kwargs):
         if data.get("incentive_system"):
             pi.save(ignore_permissions=True)
 
+    from ssplbilling.api.purchase_mirror_api import create_purchase_mirror_draft
+
+    mpi = create_purchase_mirror_draft(pi)
+
     return {
         "invoice_name": pi.name,
         "grand_total": float(pi.grand_total),
         "status": "Draft",
+        "mirrored_invoice": mpi.name if mpi else None,
     }
 
 
@@ -683,6 +688,7 @@ def update_purchase_invoice(data=None, **kwargs):
 
     invoice_name = data.get("invoice_name")
     pi = frappe.get_doc("Purchase Invoice", invoice_name)
+    _block_mirror_bill(pi, "Edit")
     if data.get("company"):
         pi.company = data["company"]
     
@@ -701,7 +707,8 @@ def update_purchase_invoice(data=None, **kwargs):
     _apply_due_date(pi)
 
     pi.custom_remarks = data.get("custom_remarks") or ""
-    if "custom_mirrored" in data:
+    # The mirror draft is left as it is here; submit_purchase_mirror brings it up to date.
+    if "custom_mirrored" in data and not _in_mirrored_series(pi):
         pi.custom_mirrored = data.get("custom_mirrored") or ""
 
     # Do not overwrite posting_time if it's already set on existing document,
@@ -854,25 +861,28 @@ def submit_purchase_invoice(invoice_name):
 
 	pi = frappe.get_doc("Purchase Invoice", invoice_name)
 	if pi.docstatus == 0:
+		_block_mirror_bill(pi, "Submit")
 		pi.submit()
-		is_mirror_series = False
+		is_mirror_series = _in_mirrored_series(pi)
 		mpi = None
-		try:
-			from ssplbilling.api.automatic_entries_api import get_automatic_entries
-			from ssplbilling.api.purchase_mirror_api import mirror_purchase_bill, should_mirror_purchase_invoice
-
-			ae = get_automatic_entries()
-			is_mirror_series = bool(
-				should_mirror_purchase_invoice(pi.naming_series, ae)
-				or (pi.name and should_mirror_purchase_invoice(pi.name, ae))
-			)
-			if is_mirror_series:
+		if is_mirror_series:
+			try:
 				item_codes = list({item.item_code for item in pi.items if item.item_code})
 				if item_codes:
 					map_items_as_gst_item(item_codes)
-			mpi = mirror_purchase_bill(pi)
-		except Exception:
-			frappe.log_error(title="Automatic Entries: mirror purchase bill failed", message=frappe.get_traceback())
+			except Exception:
+				frappe.log_error(title="Purchase mirror: map items as GST items failed", message=frappe.get_traceback())
+
+			from ssplbilling.api.purchase_mirror_api import submit_purchase_mirror
+
+			# A failed mirror raises, so the request rolls back and neither bill is submitted.
+			try:
+				mpi = submit_purchase_mirror(pi)
+			except Exception as e:
+				frappe.throw(
+					f"Mirror bill for {pi.name} could not be submitted, so {pi.name} was not submitted either: "
+					f"{frappe.utils.strip_html(str(e))}"
+				)
 		return {
 			"name": pi.name,
 			"status": "Submitted",
@@ -890,9 +900,34 @@ def submit_purchase_invoice(invoice_name):
 
 @frappe.whitelist()
 def delete_purchase_invoice(invoice_name):
-    """Delete a Draft Purchase Invoice."""
+    """Delete a Draft Purchase Invoice, and its draft mirror with it."""
+    pi = frappe.get_doc("Purchase Invoice", invoice_name)
+    _block_mirror_bill(pi, "Delete")
+    if pi.docstatus == 0:
+        from ssplbilling.api.purchase_mirror_api import delete_purchase_mirror_draft
+
+        delete_purchase_mirror_draft(pi)
     frappe.delete_doc("Purchase Invoice", invoice_name)
     return {"status": "Deleted"}
+
+
+def _in_mirrored_series(pi):
+    """Whether `pi` is an original bill whose series is set for purchase mirroring."""
+    from ssplbilling.api.automatic_entries_api import get_automatic_entries
+    from ssplbilling.api.purchase_mirror_api import _mirrors_purchase_bill
+
+    return _mirrors_purchase_bill(pi, get_automatic_entries())
+
+
+def _block_mirror_bill(pi, action):
+    """Mirror bills change only through their original bill."""
+    from ssplbilling.api.purchase_mirror_api import is_purchase_mirror
+
+    if pi.docstatus == 0 and is_purchase_mirror(pi):
+        frappe.throw(
+            f"{pi.name} is the mirror of {pi.custom_mirrored} and follows it. "
+            f"{action} {pi.custom_mirrored} instead."
+        )
 
 
 @frappe.whitelist()

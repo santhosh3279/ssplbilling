@@ -120,7 +120,10 @@ def get_available_purchase_mirror_name(naming_series, target_company):
 	)
 	max_company_num = 0
 	for n in existing_names:
-		clean = n[len(prefix):].rstrip("/")
+		# Slashed names are original bills, not mirrors, so they never set the next number.
+		if n.endswith("/"):
+			continue
+		clean = n[len(prefix):]
 		if clean.isdigit():
 			digits = max(digits, len(clean))
 			val = int(clean)
@@ -141,41 +144,62 @@ def get_available_purchase_mirror_name(naming_series, target_company):
 	return candidate
 
 
-def create_mirror_purchase_invoice(pi, automatic_entries):
-	"""Create + submit a mirror Purchase Invoice for `pi` in the alternate company,
-	using the next available number in the AE company for the configured mirroring series,
-	posted against the Automatic Entries warehouse with accounts substituted via resolve_target_account.
-	"""
-	if pi.get("custom_mirrored") and frappe.db.exists("Purchase Invoice", pi.custom_mirrored):
-		return frappe.get_doc("Purchase Invoice", pi.custom_mirrored)
-
-	# PG.##### and PG0.#### render the same names (PG + 00124 == PG0 + 0124), so a same-number
-	# bill in the alternate company is only this bill's mirror if it is unlinked or links back here.
-	old_mirror_name = pi.name[:-1] if pi.name.endswith("/") else f"{pi.name}/"
-	has_mirror_field = frappe.get_meta("Purchase Invoice").has_field("custom_mirrored")
-	old_mirror = frappe.get_all(
-		"Purchase Invoice",
-		filters={"name": old_mirror_name, "company": automatic_entries.alternative_company},
-		fields=["name", "custom_mirrored"] if has_mirror_field else ["name"],
+def _mirrors_purchase_bill(pi, automatic_entries):
+	"""Whether `pi` is an original bill in a series set for purchase mirroring.
+	Bills in the alternate company are mirrors themselves and are never mirrored again."""
+	if not automatic_entries.alternative_company or pi.company == automatic_entries.alternative_company:
+		return False
+	return bool(
+		should_mirror_purchase_invoice(pi.naming_series, automatic_entries)
+		or (pi.name and should_mirror_purchase_invoice(pi.name, automatic_entries))
 	)
-	if old_mirror and (old_mirror[0].get("custom_mirrored") or "") in ("", pi.name):
-		mpi = frappe.get_doc("Purchase Invoice", old_mirror_name)
-		if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
-			frappe.db.set_value("Purchase Invoice", pi.name, "custom_mirrored", mpi.name)
-			pi.custom_mirrored = mpi.name
-		return mpi
 
+
+def is_purchase_mirror(doc, automatic_entries=None):
+	"""Whether `doc` is the alternate-company mirror of another bill that links back to it."""
+	ae = automatic_entries or get_automatic_entries()
+	if not ae.alternative_company or doc.company != ae.alternative_company or not doc.get("custom_mirrored"):
+		return False
+	partner = frappe.db.get_value("Purchase Invoice", doc.custom_mirrored, ["company", "custom_mirrored"], as_dict=True)
+	return bool(partner and partner.company != ae.alternative_company and partner.custom_mirrored == doc.name)
+
+
+def find_purchase_mirror(pi, automatic_entries):
+	"""The non-cancelled alternate-company bill paired with `pi`, as {name, docstatus}, or None.
+
+	PG.##### and PG0.#### render the same names (PG + 00124 == PG0 + 0124), so a bill found by
+	the slash-toggled name only counts if it is unlinked or already links back to `pi`."""
+	has_mirror_field = frappe.get_meta("Purchase Invoice").has_field("custom_mirrored")
+	old_mirror_name = pi.name[:-1] if pi.name.endswith("/") else f"{pi.name}/"
+	for name in (pi.get("custom_mirrored"), old_mirror_name):
+		if not name:
+			continue
+		rows = frappe.get_all(
+			"Purchase Invoice",
+			filters={"name": name, "company": automatic_entries.alternative_company, "docstatus": ["<", 2]},
+			fields=["name", "docstatus", "custom_mirrored"] if has_mirror_field else ["name", "docstatus"],
+		)
+		if rows and (rows[0].get("custom_mirrored") or "") in ("", pi.name):
+			return rows[0]
+	return None
+
+
+def _link_purchase_pair(pi, mpi):
+	"""Point the original and its mirror at each other without touching `modified`,
+	so the in-memory docs can still be saved or submitted in the same request."""
+	if not frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
+		return
+	for doc, partner in ((pi, mpi), (mpi, pi)):
+		if doc.get("custom_mirrored") != partner.name:
+			frappe.db.set_value("Purchase Invoice", doc.name, "custom_mirrored", partner.name, update_modified=False)
+			doc.custom_mirrored = partner.name
+
+
+def _fill_mirror_from_parent(mpi, pi, automatic_entries):
+	"""Copy `pi`'s supplier, bill details, warehouse, discount, items and taxes onto mirror `mpi`,
+	replacing whatever rows it had, with warehouses, cost centers, accounts and tax templates
+	moved into the alternate company."""
 	target_company = automatic_entries.alternative_company
-	mapping = get_purchase_mirror_mapping(pi.naming_series, automatic_entries)
-	if not mapping and pi.name:
-		mapping = get_purchase_mirror_mapping(pi.name, automatic_entries)
-
-	if mapping and mapping.get("mirroring_series"):
-		target_naming_series = resolve_purchase_naming_series(mapping["mirroring_series"])
-	else:
-		target_naming_series = pi.naming_series
-
-	mirror_name = get_available_purchase_mirror_name(target_naming_series, target_company)
 
 	source_warehouse = pi.set_warehouse or (pi.items[0].warehouse if pi.items else None)
 	target_warehouse = ensure_warehouse_in_company(source_warehouse, target_company) or automatic_entries.warehouse
@@ -185,10 +209,7 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 
 	allowed_accounts = _allowed_accounts(automatic_entries)
 
-	mpi = frappe.new_doc("Purchase Invoice")
-	mpi.company = target_company
 	mpi.supplier = pi.supplier
-	mpi.naming_series = target_naming_series
 	mpi.bill_no = pi.bill_no
 	mpi.bill_date = pi.bill_date
 	mpi.posting_date = pi.posting_date
@@ -196,8 +217,6 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 	mpi.set_posting_time = 1
 	mpi.is_return = pi.is_return
 	mpi.update_stock = pi.update_stock
-	if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
-		mpi.custom_mirrored = pi.name
 
 	if pi.set_warehouse:
 		mpi.set_warehouse = ensure_warehouse_in_company(pi.set_warehouse, target_company) or target_warehouse
@@ -212,6 +231,7 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 	mpi.additional_discount_percentage = pi.additional_discount_percentage
 	mpi.discount_amount = pi.discount_amount
 
+	mpi.set("items", [])
 	for item in pi.items:
 		item_wh = ensure_warehouse_in_company(item.warehouse, target_company) or target_warehouse
 		item_cc = ensure_cost_center_in_company(item.cost_center, target_company) or mpi.cost_center
@@ -241,8 +261,8 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 			row["use_serial_batch_fields"] = 1
 		mpi.append("items", row)
 
-	if pi.taxes_and_charges:
-		mpi.taxes_and_charges = pi.taxes_and_charges
+	mpi.taxes_and_charges = pi.taxes_and_charges
+	mpi.set("taxes", [])
 	for tax in pi.taxes:
 		tax_row = {
 			"charge_type": tax.charge_type,
@@ -255,42 +275,91 @@ def create_mirror_purchase_invoice(pi, automatic_entries):
 			tax_row["cost_center"] = ensure_cost_center_in_company(tax.cost_center, target_company)
 		mpi.append("taxes", tax_row)
 
+
+def create_mirror_purchase_invoice(pi, automatic_entries):
+	"""Create the draft mirror of `pi` in the alternate company, named with the next number of the
+	configured mirroring series among that company's bills, and link the two bills."""
+	target_company = automatic_entries.alternative_company
+	mapping = get_purchase_mirror_mapping(pi.naming_series, automatic_entries)
+	if not mapping and pi.name:
+		mapping = get_purchase_mirror_mapping(pi.name, automatic_entries)
+
+	if mapping and mapping.get("mirroring_series"):
+		target_naming_series = resolve_purchase_naming_series(mapping["mirroring_series"])
+	else:
+		target_naming_series = pi.naming_series
+
+	mirror_name = get_available_purchase_mirror_name(target_naming_series, target_company)
+
+	mpi = frappe.new_doc("Purchase Invoice")
+	mpi.company = target_company
+	mpi.naming_series = target_naming_series
+	if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
+		mpi.custom_mirrored = pi.name
+	_fill_mirror_from_parent(mpi, pi, automatic_entries)
+
 	mpi.flags.ignore_permissions = True
 	mpi.insert(set_name=mirror_name)
-	mpi.submit()
+	_link_purchase_pair(pi, mpi)
 	return mpi
 
 
-def mirror_purchase_bill(pi):
-	"""Create the mirror Purchase Invoice if `pi`'s naming series is configured
-	for cross-company mirroring. Returns the mirror doc, or None.
-	Isolated with a savepoint so a failure here never rolls back pi's own submission.
-	"""
+def create_purchase_mirror_draft(pi):
+	"""On the first save of `pi`, create its draft mirror if its series is set for mirroring.
+	A failure is logged and never blocks the save; submit_purchase_mirror creates it again."""
 	ae = get_automatic_entries()
-	if not (should_mirror_purchase_invoice(pi.naming_series, ae) or (pi.name and should_mirror_purchase_invoice(pi.name, ae))):
+	if not _mirrors_purchase_bill(pi, ae):
 		return None
 
 	sp = "sp_" + frappe.generate_hash(length=10)
 	frappe.db.savepoint(sp)
-	from ssplbilling.api.mirror_error_log import resolve_mirror_errors
+	from ssplbilling.api.mirror_error_log import log_mirror_error, resolve_mirror_errors
 
 	try:
-		mpi = create_mirror_purchase_invoice(pi, ae)
+		found = find_purchase_mirror(pi, ae)
+		mpi = frappe.get_doc("Purchase Invoice", found.name) if found else create_mirror_purchase_invoice(pi, ae)
+		_link_purchase_pair(pi, mpi)
 		frappe.db.release_savepoint(sp)
-		if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored") and mpi:
-			frappe.db.set_value("Purchase Invoice", pi.name, "custom_mirrored", mpi.name)
-			pi.custom_mirrored = mpi.name
-			frappe.clear_document_cache("Purchase Invoice", pi.name)
-			if frappe.db.exists("Purchase Invoice", mpi.name):
-				frappe.db.set_value("Purchase Invoice", mpi.name, "custom_mirrored", pi.name)
-				mpi.custom_mirrored = pi.name
-				frappe.clear_document_cache("Purchase Invoice", mpi.name)
 		resolve_mirror_errors("Purchase Mirror Bill", "Purchase Invoice", pi.name)
 		return mpi
 	except Exception:
 		frappe.db.rollback(save_point=sp)
-		frappe.log_error(frappe.get_traceback(), "Automatic Entries: mirror purchase bill failed")
-		from ssplbilling.api.mirror_error_log import log_mirror_error
-
+		frappe.log_error(frappe.get_traceback(), "Automatic Entries: mirror purchase draft failed")
 		log_mirror_error("Purchase Mirror Bill", "Purchase Invoice", pi.name, None, ae.alternative_company)
 		return None
+
+
+def submit_purchase_mirror(pi):
+	"""After `pi` is submitted, bring its mirror up to date with it and submit the mirror,
+	creating the mirror first if it has none. Raises on failure so the caller's transaction,
+	including `pi`'s own submit, rolls back and neither bill is submitted."""
+	ae = get_automatic_entries()
+	if not _mirrors_purchase_bill(pi, ae):
+		return None
+
+	found = find_purchase_mirror(pi, ae)
+	if found and found.docstatus == 1:
+		mpi = frappe.get_doc("Purchase Invoice", found.name)
+		_link_purchase_pair(pi, mpi)
+		return mpi
+
+	mpi = frappe.get_doc("Purchase Invoice", found.name) if found else create_mirror_purchase_invoice(pi, ae)
+	_fill_mirror_from_parent(mpi, pi, ae)
+	mpi.flags.ignore_permissions = True
+	mpi.submit()
+	_link_purchase_pair(pi, mpi)
+
+	from ssplbilling.api.mirror_error_log import resolve_mirror_errors
+
+	resolve_mirror_errors("Purchase Mirror Bill", "Purchase Invoice", pi.name)
+	return mpi
+
+
+def delete_purchase_mirror_draft(pi):
+	"""Delete the draft mirror of draft `pi`, before `pi` itself is deleted."""
+	ae = get_automatic_entries()
+	if not ae.alternative_company:
+		return
+	found = find_purchase_mirror(pi, ae)
+	if found and found.docstatus == 0:
+		frappe.delete_doc("Purchase Invoice", found.name, ignore_permissions=True)
