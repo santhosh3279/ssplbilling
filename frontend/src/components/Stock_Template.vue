@@ -9,10 +9,10 @@
         
         <!-- Date Filter -->
         <div class="flex items-center gap-1 border-b border-[var(--color-border)] p-0 bg-[var(--color-bg)]">
-          <button @click="$emit('sidebar-date-change', -1)" class="rounded p-2 text-xl text-[var(--color-text-muted)]">&larr;</button>
+          <button @click="$emit('sidebar-date-change', -1)" title="Previous day" aria-label="Previous day" class="rounded p-2 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]">&larr;</button>
           <div class="flex-1 text-center font-bold text-[var(--color-text)] text-lg">{{ formatDate(sidebarDate) }}</div>
           <DatePickerButton :model-value="sidebarDate" label="Choose sidebar date" @update:model-value="value => { if (value) $emit('sidebar-date-change', Math.round((Date.parse(value) - Date.parse(sidebarDate)) / 86400000)) }" />
-          <button @click="$emit('sidebar-date-change', 1)" class="rounded p-2 text-xl text-[var(--color-text-muted)]">&rarr;</button>
+          <button @click="$emit('sidebar-date-change', 1)" title="Next day" aria-label="Next day" class="rounded p-2 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)]">&rarr;</button>
         </div>
 
         <!-- Search & Series Filters -->
@@ -28,41 +28,46 @@
             />
             <svg class="absolute left-3.5 top-2.5 text-[var(--color-text-muted)] group-focus-within:text-[var(--color-info)] transition-colors" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
-          <div v-if="availableSeries && availableSeries.length" class="relative series-dropdown-container">
+          <div v-if="availableSeries && availableSeries.length" ref="seriesDropdownRef" class="relative" @keydown.esc.stop="showSeriesDropdown = false">
             <button
               @click="showSeriesDropdown = !showSeriesDropdown"
+              :aria-expanded="showSeriesDropdown"
+              aria-haspopup="listbox"
               class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-1.5 px-3 text-[15px] font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)] transition-all text-left flex justify-between items-center h-9"
             >
-              <span class="truncate">{{ sidebarSeries.length === availableSeries.length ? 'All Series' : (sidebarSeries.length > 0 ? sidebarSeries[0] + (sidebarSeries.length > 1 ? '..' : '') : 'None') }}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" :class="{'rotate-180': showSeriesDropdown}" class="transition-transform"><path d="m6 9 6 6 6-6"/></svg>
+              <span class="truncate">{{ seriesLabel }}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" :class="{'rotate-180': showSeriesDropdown}" class="shrink-0 transition-transform"><path d="m6 9 6 6 6-6"/></svg>
             </button>
-            
+
             <!-- Dropdown Menu -->
-            <div v-if="showSeriesDropdown" class="absolute top-full left-0 mt-1 w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl z-50 py-2 max-h-64 overflow-y-auto custom-scrollbar">
-              <div class="px-3 py-1.5 border-b border-[var(--color-border)] mb-1 flex items-center gap-2 cursor-pointer select-none" @click="toggleAllSeries">
-                <input 
-                  type="checkbox" 
-                  :checked="sidebarSeries.length === availableSeries.length" 
-                  class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-focus)] h-3 w-3 pointer-events-none" 
+            <div v-if="showSeriesDropdown" role="listbox" aria-multiselectable="true" class="absolute top-full left-0 mt-1 w-full bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl shadow-2xl z-50 py-2 max-h-64 overflow-y-auto custom-scrollbar">
+              <label class="px-3 py-1.5 border-b border-[var(--color-border)] mb-1 flex items-center gap-2 cursor-pointer select-none hover:bg-[var(--color-surface-raised)]">
+                <input
+                  type="checkbox"
+                  :checked="allSeriesSelected"
+                  @change="toggleAllSeries"
+                  class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-focus)] h-4 w-4"
                 />
                 <span class="text-[13px] font-bold uppercase tracking-wider">All Series</span>
-              </div>
-              <div v-for="s in availableSeries" :key="s" class="px-3 py-1.5 flex items-center gap-2 cursor-pointer select-none" @click="toggleSeries(s)">
-                <input 
-                  type="checkbox" 
-                  :checked="isSeriesSelected(s)" 
-                  class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-focus)] h-3 w-3 pointer-events-none" 
+              </label>
+              <label v-for="s in availableSeries" :key="s" class="px-3 py-1.5 flex items-center gap-2 cursor-pointer select-none hover:bg-[var(--color-surface-raised)]">
+                <input
+                  type="checkbox"
+                  :checked="isSeriesSelected(s)"
+                  @change="toggleSeries(s)"
+                  class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-focus)] h-4 w-4"
                 />
                 <span class="text-[13px] font-bold uppercase tracking-wider">{{ s }}</span>
-              </div>
+              </label>
             </div>
           </div>
           <button
             @click="$emit('toggle-draft-only')"
-            class="w-full rounded-xl border py-1.5 text-[10px] font-bold uppercase transition-all"
-            :class="draftOnly ? 'bg-[var(--color-warning)]/40 border-[var(--color-warning)] text-[var(--color-warning)] shadow-sm' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)]'"
+            :aria-pressed="draftOnly"
+            class="w-full rounded-xl border py-1.5 text-sm font-bold uppercase transition-all"
+            :class="draftOnly ? 'bg-[var(--color-warning)]/40 border-[var(--color-warning)] text-[var(--color-warning)] shadow-sm' : 'bg-[var(--color-surface)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
           >
-            {{ draftOnly ? 'Drafts Only' : 'All Items' }}
+            {{ draftOnly ? 'Drafts Only' : 'All Entries' }}
           </button>
         </div>
 
@@ -70,7 +75,7 @@
         <div ref="sidebarListRef" class="flex-1 overflow-y-auto scrollbar-none">
           <slot name="sidebar-list">
             <div v-if="sidebarLoading" class="p-4 text-center text-lg text-[var(--color-text-muted)]">Loading...</div>
-            <div v-else-if="!sidebarItems.length" class="p-4 text-center text-lg text-[var(--color-text-muted)] italic">No items found</div>
+            <div v-else-if="!sidebarItems.length" class="p-4 text-center text-lg text-[var(--color-text-muted)] italic">No entries found</div>
             <div
               v-for="(inv, idx) in sidebarItems"
               :key="inv.name"
@@ -85,11 +90,11 @@
             >
               <div class="flex items-center justify-between gap-1">
                 <div class="flex items-center gap-1.5 truncate min-w-0">
-                  <span class="h-2 w-2 shrink-0 rounded-full" :class="inv.docstatus === 0 ? 'bg-[var(--color-success)]' : 'bg-[var(--color-danger)]'"></span>
-                  <span class="truncate font-mono text-2xl group-focus:text-[var(--color-text-on-focus)] group-focus:font-bold" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)] font-bold' : 'text-[var(--color-highlight)]'">{{ inv.name }}</span>
+                  <span class="h-2 w-2 shrink-0 rounded-full" :title="statusLabel(inv.docstatus)" :class="statusDotClass(inv.docstatus)"></span>
+                  <span class="truncate font-mono text-2xl group-focus:text-[var(--color-text-on-focus)] group-focus:font-bold" :title="inv.name" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)] font-bold' : 'text-[var(--color-highlight)]'">{{ inv.name }}</span>
                 </div>
-                <span v-if="inv.grand_total !== undefined || inv.total_qty !== undefined" class="shrink-0 font-mono font-normal text-4xl tabular-nums group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
-                  {{ inv.grand_total !== undefined ? '₹' + Number(inv.grand_total).toFixed(2) : inv.total_qty }}
+                <span v-if="inv.grand_total != null || inv.total_qty != null" class="shrink-0 font-mono font-normal text-2xl tabular-nums group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
+                  {{ inv.grand_total != null ? '₹' + formatMoney(inv.grand_total) : formatNumber(inv.total_qty) }}
                 </span>
               </div>
               <div v-if="inv.customer_name || inv.posting_date" class="truncate text-2xl group-focus:text-[var(--color-text-on-focus)]" :class="selectedSidebarItemName === inv.name ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
@@ -143,10 +148,10 @@
               <div v-if="docDate" class="flex items-center gap-3 border-l border-[var(--color-border)] pl-6 whitespace-nowrap ml-auto">
                 <label class="text-xl font-bold uppercase text-[var(--color-text-muted)]">Date</label>
                 <div class="flex items-center gap-1">
-                  <button v-if="canModifyDate()" @click="$emit('doc-date-change', -1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&larr;</button>
+                  <button v-if="canModifyDate()" :disabled="isReadOnly" @click="$emit('doc-date-change', -1)" title="Previous day" aria-label="Previous day" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center disabled:opacity-40 disabled:pointer-events-none">&larr;</button>
                   <div class="text-3xl text-[var(--color-text)] tabular-nums">{{ formatDate(docDate) }}</div>
                   <DatePickerButton v-if="canModifyDate()" :model-value="docDate" :disabled="isReadOnly" label="Choose document date" @update:model-value="value => { if (value) $emit('doc-date-change', Math.round((Date.parse(value) - Date.parse(docDate)) / 86400000)) }" />
-                  <button v-if="canModifyDate()" @click="$emit('doc-date-change', 1)" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center">&rarr;</button>
+                  <button v-if="canModifyDate()" :disabled="isReadOnly" @click="$emit('doc-date-change', 1)" title="Next day" aria-label="Next day" class="rounded p-0.5 text-3xl text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] leading-none flex items-center disabled:opacity-40 disabled:pointer-events-none">&rarr;</button>
                 </div>
               </div>
             </div>
@@ -182,9 +187,9 @@
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-6xl font-mono text-right tabular-nums">{{ formatQty(item.qty, item.uom) }}</td>
                     <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom || 'Nos' }}</td>
                     <td v-if="showRate" class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ item.rate }}</td>
-                    <td v-if="showAmount" class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ item.amount || (item.qty * item.rate).toFixed(2) }}</td>
+                    <td v-if="showAmount" class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right tabular-nums">{{ item.amount || formatMoney((Number(item.qty) || 0) * (Number(item.rate) || 0)) }}</td>
                     <td class="px-2 py-1 text-center">
-                      <button class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]" @click="$emit('delete-item', idx)">&times;</button>
+                      <button v-if="!isReadOnly" title="Remove row" aria-label="Remove row" class="rounded px-2 py-0.5 text-3xl leading-none text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]" @click="$emit('delete-item', idx)">&times;</button>
                     </td>
                   </tr>
                 </slot>
@@ -228,7 +233,7 @@
                   </div>
                 </div>
                 <div v-if="itemCount !== null" class="text-2xl font-bold text-[var(--color-text-muted)] px-2">
-                  Total {{ itemCount }} items
+                  Total {{ itemCount }} {{ Number(itemCount) === 1 ? 'item' : 'items' }}
                 </div>
               </div>
 
@@ -258,7 +263,8 @@
                   <button 
                     v-else-if="showPrintButton"
                     :disabled="!isReadOnly"
-                    @click="$emit('print')" 
+                    :title="isReadOnly ? 'Print' : 'Save the entry before printing'"
+                    @click="$emit('print')"
                     class="flex-1 rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] py-4 text-center text-3xl font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-all shadow-lg active:scale-[0.98] disabled:opacity-50"
                   >
                     Print
@@ -280,12 +286,18 @@ import DatePickerButton from './DatePickerButton.vue'
  * A reusable UI template component for stock-related documents (Store Transfer, Reconciliation, etc.)
  */
 
-import { ref, watch, nextTick, computed } from 'vue'
+import { ref, watch, nextTick, computed, onMounted, onBeforeUnmount } from 'vue'
 import { session } from '../session'
 import { canModifyDate } from '../composables/usePermission'
 
 import { formatDMY } from '../utils/date'
-const inheritedUser = computed(() => localStorage.getItem('wb-inherited-user'))
+const inheritedUser = computed(() => {
+  try {
+    return localStorage.getItem('wb-inherited-user')
+  } catch {
+    return null
+  }
+})
 
 const props = defineProps({
   title: { type: String, default: 'Stock Entry' },
@@ -337,16 +349,47 @@ const emit = defineEmits([
 const sidebarSearchRef = ref(null)
 const sidebarListRef = ref(null)
 const showSeriesDropdown = ref(false)
+const seriesDropdownRef = ref(null)
 const saveBtnRef = ref(null)
 const sidebarItemRefs = new Map()
+
+const allSeriesSelected = computed(() =>
+  props.availableSeries.length > 0 && props.availableSeries.every(s => props.sidebarSeries.includes(s))
+)
+
+const seriesLabel = computed(() => {
+  const selected = props.sidebarSeries
+  if (allSeriesSelected.value) return 'All Series'
+  if (!selected.length) return 'No Series'
+  return selected.length > 1 ? `${selected[0]} +${selected.length - 1}` : selected[0]
+})
+
+// Close the series dropdown on any click outside it
+function onDocumentClick(e) {
+  if (showSeriesDropdown.value && !seriesDropdownRef.value?.contains(e.target)) {
+    showSeriesDropdown.value = false
+  }
+}
+onMounted(() => document.addEventListener('mousedown', onDocumentClick))
+onBeforeUnmount(() => document.removeEventListener('mousedown', onDocumentClick))
 
 function setSidebarItemRef(el, idx) {
   if (el) sidebarItemRefs.set(idx, el)
   else sidebarItemRefs.delete(idx)
 }
 
+function statusLabel(docstatus) {
+  return docstatus === 0 ? 'Draft' : docstatus === 2 ? 'Cancelled' : 'Submitted'
+}
+
+function statusDotClass(docstatus) {
+  if (docstatus === 0) return 'bg-[var(--color-success)]'
+  if (docstatus === 2) return 'bg-[var(--color-text-muted)]'
+  return 'bg-[var(--color-danger)]'
+}
+
 function toggleAllSeries() {
-  if (props.sidebarSeries.length === props.availableSeries.length) {
+  if (allSeriesSelected.value) {
     emit('update:sidebarSeries', [])
   } else {
     emit('update:sidebarSeries', [...props.availableSeries])
@@ -398,6 +441,17 @@ defineExpose({
 
 function formatDate(dateString) {
   return formatDMY(dateString, 'Select Date')
+}
+
+function formatMoney(val) {
+  const num = Number(val)
+  return (isNaN(num) ? 0 : num).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
+function formatNumber(val) {
+  const num = Number(val)
+  if (isNaN(num)) return val
+  return Number.isInteger(num) ? String(num) : num.toFixed(2)
 }
 
 function formatQty(val, uom) {
