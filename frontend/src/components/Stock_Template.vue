@@ -424,11 +424,8 @@ watch(() => props.selectedSidebarItemName, (newVal) => {
   nextTick(() => {
     const idx = props.sidebarItems.findIndex(inv => inv.name === newVal)
     if (idx !== -1) {
-      const el = sidebarItemRefs.get(idx)
-      if (el) {
-        el.focus({ preventScroll: true })
-        el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
-      }
+      // Scroll only — don't steal focus from the entry form
+      sidebarItemRefs.get(idx)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     }
   })
 })
