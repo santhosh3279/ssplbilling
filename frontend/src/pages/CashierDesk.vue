@@ -934,9 +934,9 @@
               {{ paytmQr.waSending ? `Sending to +91 ${paytmQr.phone}…` : paytmQr.waText || `+91 ${paytmQr.phone}` }}
             </span>
           </div>
-          <!-- print template of the bill PDF that Bill + Link sends; defaults to the bill series' -->
+          <!-- print template of the bill PDF that Bill + QR sends; defaults to the bill series' -->
           <div v-if="!paytmQr.orderId && !paytmQr.sending && billFormat.list.length" class="space-y-1">
-            <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Bill format · for Bill + Link</label>
+            <label class="text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Bill format · for Bill + QR</label>
             <select
               v-model="billFormat.selected"
               class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2 px-4 text-[14px] font-bold text-[var(--color-text)] focus:border-[var(--color-info)] outline-none transition-all"
@@ -969,15 +969,15 @@
               <button
                 @click="createPaytmQr(true)"
                 :disabled="paytmQr.sending || !paytmQr.phone"
-                title="Send the bill PDF, then the Paytm pay link"
+                title="Send the bill PDF, then the pay QR picture"
                 class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-info)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-              >{{ paytmQr.sending && paytmQr.withBill ? 'Creating…' : 'Bill + Link' }}</button>
+              >{{ paytmQr.sending && paytmQr.withBill ? 'Creating…' : 'Bill + QR' }}</button>
               <button
                 @click="createPaytmQr(false)"
                 :disabled="paytmQr.sending"
-                :title="paytmQr.phone ? 'Send only the Paytm pay link: the customer taps it to pay in any UPI app (Enter)' : 'Show the QR without sending'"
+                :title="paytmQr.phone ? 'Send only the pay QR picture (Enter)' : 'Show the QR without sending'"
                 class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] bg-[var(--color-success)] transition-all active:scale-95 disabled:opacity-40 disabled:pointer-events-none"
-              >{{ paytmQr.sending && !paytmQr.withBill ? 'Creating…' : paytmQr.phone ? 'Only Link' : 'Show QR' }}</button>
+              >{{ paytmQr.sending && !paytmQr.withBill ? 'Creating…' : paytmQr.phone ? 'Only QR' : 'Show QR' }}</button>
             </template>
             <button
               v-if="paytmQr.orderId && paytmQr.status === 'Pending'"
@@ -2214,15 +2214,8 @@ async function createPaytmQr(withBill = paytmQr.value.withBill) {
       amount: q.amount,
       mobile: q.phone,
       user: paytmMachineUser(),
-      // to a phone: a tappable Paytm pay link (a QR picture from the gallery pays only up to ₹2000)
-      as_link: q.phone ? 1 : 0,
     }, { silent: true })
-    const isLink = res.channel === 'Link'
-    Object.assign(q, {
-      orderId: res.order_id, image: res.qr_image, link: isLink, tid: res.tid || '', posId: res.pos_id || q.posId, status: 'Pending',
-      message: isLink ? 'Waiting for the customer to pay through the link…'
-        : q.phone ? 'Paytm pay link not available: sending the QR. Waiting for payment…' : 'Waiting for the customer to scan and pay…',
-    })
+    Object.assign(q, { orderId: res.order_id, image: res.qr_image, link: false, tid: res.tid || '', posId: res.pos_id || q.posId, status: 'Pending', message: 'Waiting for the customer to scan and pay…' })
     if (q.phone) sendPaytmQrLink()
     startPaytmQrPolling()
   } catch (e) {
