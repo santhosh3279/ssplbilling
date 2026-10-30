@@ -682,12 +682,9 @@ async function loadInvoice(name) {
     if (seq !== loadSeq) return
     // submit writes the box back to custom_remarks, so start from the saved remark
     payments.value.remarks = details.custom_remarks || ''
+    // cash box starts empty: the cashier types the amount tendered
     if (details.is_return || isSecondaryParty.value || details.mop === 'Credit') {
       isCredit.value = true
-    } else if (!alreadySettled.value) {
-      // the common case is a full cash payment: Enter on the cash box goes straight to post
-      payments.value.cash = amountToCollect.value
-      cashAuto.value = true
     }
     loading.value = false
     resumeQueued(name)
