@@ -2088,7 +2088,12 @@ function printAndClear() {
   showPrintModal.value = true
 }
 
-defineExpose({ printAndClear, focusBarcodeInput })
+// POS: a UPI queue row on the payment panel opens its bill, as a pick from the bill list would
+function openBill(name) {
+  return handleSelectSidebarItem({ name })
+}
+
+defineExpose({ printAndClear, focusBarcodeInput, openBill })
 
 function handleCancel() {
   const hasParty = customerId.value;

@@ -12,6 +12,39 @@
         <span class="ml-auto font-mono normal-case tracking-normal text-[11px]">F9</span>
       </h3>
 
+      <!-- UPI queue: this user's screen QR, phone pay link and machine requests, waiting or paid; click
+           opens the bill, whose popup is the only place a waiting request is cancelled -->
+      <div v-if="qrQueue.length" class="space-y-1">
+        <div class="flex items-center justify-between px-1 text-[11px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+          <span>UPI Queue</span>
+          <span>{{ qrQueue.filter(q => q.status === 'Pending').length }} waiting</span>
+        </div>
+        <div class="max-h-48 space-y-1 overflow-y-auto">
+          <button
+            v-for="q in qrQueue"
+            :key="q.order_id"
+            type="button"
+            tabindex="-1"
+            @click="openQueuedBill(q)"
+            class="flex w-full min-w-0 items-center justify-between gap-2 rounded-lg border px-2 py-1 text-left transition-all active:scale-[0.98]"
+            :class="q.status === 'Success'
+              ? 'bg-[var(--color-success)]/30 border-[var(--color-success)]/50 text-[var(--color-text)]'
+              : invoice?.name === q.sales_invoice
+                ? 'bg-[var(--color-info)]/20 border-[var(--color-info)]/40 text-[var(--color-text)]'
+                : 'bg-[var(--color-bg)] border-[var(--color-border)] text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
+          >
+            <div class="min-w-0">
+              <div class="truncate text-[13px] font-black">{{ q.customer_name || q.customer }}</div>
+              <div class="truncate text-[10px] font-bold opacity-70">{{ q.sales_invoice }} · {{ q.customer_mobile || (q.channel === 'EDC' ? 'Machine' : 'Screen QR') }}</div>
+            </div>
+            <div class="shrink-0 text-right">
+              <div class="font-mono text-[15px] font-black">₹{{ fmt(q.amount) }}</div>
+              <div class="text-[9px] font-black uppercase tracking-widest" :class="q.status === 'Success' ? 'text-[var(--color-success)]' : 'text-[var(--color-warning)]'">{{ q.status === 'Success' ? 'Paid' : 'Waiting' }}</div>
+            </div>
+          </button>
+        </div>
+      </div>
+
       <!-- Last settled bill stays visible until the next one comes in -->
       <div
         v-if="lastSettled && !invoice"
@@ -119,7 +152,15 @@
               <div :ref="bindUpiOverlay" class="absolute left-4 top-1/2 z-10 flex -translate-y-1/2 items-center gap-2 whitespace-nowrap">
                 <span class="text-[16px] font-black uppercase text-[var(--color-text-muted)]">{{ upiLabel }}</span>
                 <button
-                  v-if="hasPaytmMachine && !upiLocked"
+                  v-if="upiWaiting"
+                  @click="openQueuedBill(upiWaiting)"
+                  type="button"
+                  tabindex="-1"
+                  title="Open the waiting UPI request; cancel it there to change the UPI amount"
+                  class="rounded-lg bg-[var(--color-warning)] px-2 py-1 text-[13px] font-black uppercase tracking-wider text-white shadow-sm hover:opacity-90 active:scale-95"
+                >Waiting</button>
+                <button
+                  v-if="hasPaytmMachine && !upiLocked && !upiWaiting"
                   @click="openPaytmModal('QR')"
                   type="button"
                   tabindex="-1"
@@ -127,7 +168,7 @@
                   class="rounded-lg bg-[var(--color-success)] px-2 py-1 text-[13px] font-black uppercase tracking-wider text-white shadow-sm hover:opacity-90 active:scale-95"
                 >UPI</button>
                 <button
-                  v-if="paytm.qrEnabled && !upiLocked"
+                  v-if="paytm.qrEnabled && !upiLocked && !upiWaiting"
                   @click="openPaytmQr"
                   type="button"
                   tabindex="-1"
@@ -140,8 +181,8 @@
                 type="number"
                 step="0.01"
                 v-model="payments.upi"
-                :readonly="upiLocked"
-                :title="upiLocked ? 'Received through Paytm — locked' : ''"
+                :readonly="upiLocked || !!upiWaiting"
+                :title="upiLocked ? 'Received through Paytm — locked' : upiWaiting ? 'Waiting for the UPI QR — cancel it to change' : ''"
                 @focus="$event.target.select()"
                 class="w-full rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg)] py-2.5 pr-4 text-right font-mono text-[22px] font-black text-[var(--color-text)] read-only:cursor-not-allowed read-only:border-[var(--color-success)]/50 read-only:bg-[var(--color-success)]/10 focus:border-[var(--color-success)] focus:ring-4 focus:ring-[var(--color-success)]/20"
                 :style="{ paddingLeft: `${upiInputPad}px` }"
@@ -151,7 +192,7 @@
             <input
               v-if="Number(payments.upi) > 0"
               v-model.trim="upiRefNo"
-              :readonly="upiLocked"
+              :readonly="upiLocked || !!upiWaiting"
               type="text"
               tabindex="-1"
               placeholder="UPI Ref No (optional)"
@@ -269,7 +310,7 @@
       <div class="w-full max-w-md overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl">
         <div class="flex items-center justify-between border-b border-[var(--color-border)] p-5">
           <h3 class="text-sm font-bold uppercase tracking-widest text-[var(--color-text)]">Paytm Machine · {{ paytm.payMode === 'CARD' ? 'Card' : 'UPI' }}</h3>
-          <button @click="closePaytmModal" title="Close" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+          <button @click="dismissPaytmModal" :title="paytm.orderId && paytm.status === 'Pending' && paytm.payMode === 'QR' ? 'Keep waiting in the UPI queue' : 'Close'" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
         </div>
         <div class="space-y-5 p-6">
           <div class="flex items-center justify-between">
@@ -310,6 +351,12 @@
                 : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-border)]'"
             >{{ paytm.orderId && paytm.status === 'Pending' ? 'Cancel' : 'Close' }}</button>
             <button
+              v-if="paytm.orderId && paytm.status === 'Pending' && paytm.payMode === 'QR'"
+              @click="queuePaytmMachine"
+              title="Keep waiting in the UPI queue and take the next bill"
+              class="flex-1 rounded-xl bg-[var(--color-info)] py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all active:scale-95"
+            >Queue</button>
+            <button
               v-if="paytm.status === 'Failed' || (paytm.askPhone && !paytm.orderId)"
               @click="sendToPaytm"
               :disabled="paytm.sending"
@@ -325,7 +372,7 @@
       <div class="w-full max-w-md overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-2xl">
         <div class="flex items-center justify-between border-b border-[var(--color-border)] p-5">
           <h3 class="text-sm font-bold uppercase tracking-widest text-[var(--color-text)]">Paytm UPI QR</h3>
-          <button @click="closePaytmQr" title="Close" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+          <button @click="dismissPaytmQr" :title="paytmQr.orderId && paytmQr.status === 'Pending' ? 'Keep waiting in the UPI queue' : 'Close'" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)]"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
         </div>
         <div class="space-y-5 p-6">
           <div class="flex items-center justify-between">
@@ -376,7 +423,8 @@
           >{{ paytmQr.message }}</div>
           <div class="flex gap-3">
             <button
-              @click="closePaytmQr"
+              @click="paytmQr.orderId && paytmQr.status === 'Pending' ? closePaytmQr() : dismissPaytmQr()"
+              :title="paytmQr.orderId && paytmQr.status === 'Pending' ? 'Cancel this QR and free the bill' : ''"
               class="flex-1 rounded-xl py-3 text-xs font-bold uppercase tracking-widest transition-all active:scale-95"
               :class="paytmQr.orderId && paytmQr.status === 'Pending'
                 ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)] hover:bg-[var(--color-danger)]/25'
@@ -396,6 +444,12 @@
                 class="flex-1 rounded-xl bg-[var(--color-success)] py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all active:scale-95 disabled:pointer-events-none disabled:opacity-40"
               >{{ paytmQr.sending && !paytmQr.withBill ? 'Creating…' : paytmQr.phone ? 'Only QR' : 'Show QR' }}</button>
             </template>
+            <button
+              v-if="paytmQr.orderId && paytmQr.status === 'Pending'"
+              @click="queuePaytmQr"
+              title="Keep waiting in the UPI queue and take the next bill"
+              class="flex-1 rounded-xl bg-[var(--color-info)] py-3 text-xs font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all active:scale-95"
+            >Queue</button>
             <button
               v-if="paytmQr.orderId && paytmQr.status === 'Pending' && paytmQr.phone && paytmQr.waOk !== undefined"
               @click="sendPaytmQrLink"
@@ -424,6 +478,7 @@
           </div>
           <div class="font-mono text-[40px] font-black leading-none text-[var(--color-success)]">₹{{ fmt(paidTick.amount) }}</div>
           <div class="text-[18px] font-black uppercase tracking-widest text-[var(--color-text)]">Received by {{ paidTick.mode === 'card' ? 'Card' : 'UPI' }}</div>
+          <div v-if="paidTick.label" class="text-[16px] font-bold text-[var(--color-text-muted)]">{{ paidTick.label }}</div>
         </div>
       </div>
     </transition>
@@ -463,7 +518,8 @@ const props = defineProps({
   reloadKey: { type: Number, default: 0 },
 })
 
-const emit = defineEmits(['settled', 'back', 'loaded'])
+// open-bill: a UPI queue row asks the page to bring its bill into view
+const emit = defineEmits(['settled', 'back', 'loaded', 'open-bill'])
 
 const invoice = ref(null)
 const loading = ref(false)
@@ -634,6 +690,7 @@ async function loadInvoice(name) {
       cashAuto.value = true
     }
     loading.value = false
+    resumeQueued(name)
     emit('loaded', name)
   } catch (e) {
     if (seq === loadSeq) {
@@ -762,6 +819,7 @@ async function processPayment() {
     })
     lastSettled.value = { name, change }
     invoice.value = null
+    qrQueue.value = qrQueue.value.filter(q => q.sales_invoice !== name)
     emit('settled', name)
   } catch (e) {
     errorMsg.value = e.message
@@ -782,8 +840,8 @@ function handleKeydown(e) {
     e.stopPropagation()
     if (e.key === 'Escape') {
       e.preventDefault()
-      if (paytm.value.show) closePaytmModal()
-      else closePaytmQr()
+      if (paytm.value.show) dismissPaytmModal()
+      else dismissPaytmQr()
     }
     return
   }
@@ -821,8 +879,8 @@ function handleKeydown(e) {
 // ---- Paytm (same calls as the Cashier Desk) ----
 // Machine: push the UPI (QR) or Card box amount to the EDC machine and wait for the result
 // (socket event from the webhook, with polling as fallback). Phone: a dynamic UPI QR shown here
-// and sent to the customer's WhatsApp. There is no bill list to queue to on this screen, so
-// closing a waiting request cancels it.
+// and sent to the customer's WhatsApp. A waiting UPI request can be queued (Queue or X) while the
+// next bill is taken; Cancel stops it.
 const paytm = ref({ enabled: false, qrEnabled: false, devices: [], show: false, payMode: 'QR', tid: '', deviceName: '', customerName: '', phone: '', askPhone: false, amount: 0, orderId: '', status: '', message: '', sending: false })
 const paytmQr = ref({ show: false, amount: 0, orderId: '', status: '', message: '', image: '', link: false, sending: false, phone: '', withBill: false, tid: '', posId: '', waSending: false, waOk: undefined, waText: '' })
 const billFormat = ref({ list: [], selected: '' })
@@ -851,6 +909,10 @@ function statusClass(status) {
 const paytmLock = ref({ invoice: '', upi: null, upiRef: '', card: null, cardRef: '' })
 const upiLocked = computed(() => paytmLock.value.upi != null && paytmLock.value.invoice === invoice.value?.name)
 const cardLocked = computed(() => paytmLock.value.card != null && paytmLock.value.invoice === invoice.value?.name)
+const qrQueue = ref([])
+// A UPI request waiting in the queue holds this bill's UPI box at the requested amount until it is
+// paid or cancelled from its popup
+const upiWaiting = computed(() => qrQueue.value.find(q => q.sales_invoice === invoice.value?.name && q.status === 'Pending'))
 function lockPaytmPayment(mode, amount, refNo) {
   const lock = paytmLock.value.invoice === invoice.value?.name
     ? paytmLock.value
@@ -860,8 +922,12 @@ function lockPaytmPayment(mode, amount, refNo) {
   paytmLock.value = { ...lock }
 }
 // Every reset of the payment boxes (bill reload, credit flip…) puts locked values back
-watch([payments, upiRefNo, cardRefNo], () => {
+watch([payments, upiRefNo, cardRefNo, upiWaiting], () => {
   const lock = paytmLock.value
+  if (upiWaiting.value && !upiLocked.value) {
+    if (Number(payments.value.upi) !== upiWaiting.value.amount) payments.value.upi = upiWaiting.value.amount
+    if (upiRefNo.value) upiRefNo.value = ''
+  }
   if (upiLocked.value) {
     if (Number(payments.value.upi) !== lock.upi) payments.value.upi = lock.upi
     if (upiRefNo.value !== lock.upiRef) upiRefNo.value = lock.upiRef
@@ -873,11 +939,11 @@ watch([payments, upiRefNo, cardRefNo], () => {
 }, { deep: true })
 
 // Full-screen tick flashed when Paytm confirms a payment
-const paidTick = ref({ show: false, amount: 0, mode: 'upi' })
+const paidTick = ref({ show: false, amount: 0, mode: 'upi', label: '' })
 let paidTickTimer = null
-function showPaidTick(amount, mode) {
+function showPaidTick(amount, mode, label = '') {
   if (paidTickTimer) clearTimeout(paidTickTimer)
-  paidTick.value = { show: true, amount, mode }
+  paidTick.value = { show: true, amount, mode, label }
   paidTickTimer = setTimeout(() => { paidTick.value.show = false }, 1000)
 }
 
@@ -959,6 +1025,10 @@ async function sendToPaytm() {
   const p = paytm.value
   Object.assign(p, { sending: true, orderId: '', status: '', message: 'Sending to the machine…' })
   try {
+    if (await replaceQueuedRequest()) {
+      p.show = false
+      return
+    }
     const res = await paytmPost('ssplbilling.api.paytm_api.send_to_device', {
       invoice_name: invoice.value.name,
       amount: p.amount,
@@ -1078,6 +1148,10 @@ async function createPaytmQr(withBill = paytmQr.value.withBill) {
   }
   Object.assign(q, { sending: true, orderId: '', status: '', message: '', image: '', waOk: undefined, waText: '' })
   try {
+    if (await replaceQueuedRequest()) {
+      q.show = false
+      return
+    }
     const res = await paytmPost('ssplbilling.api.paytm_api.create_qr', {
       invoice_name: invoice.value.name,
       amount: q.amount,
@@ -1154,6 +1228,189 @@ async function closePaytmQr() {
 function onPaytmSocket(r) {
   applyPaytmResult(r)
   applyPaytmQrResult(r)
+  applyQrQueueResult(r)
+}
+
+// UPI queue (same as the Cashier Desk): a waiting Paytm request can be moved out of its popup so the
+// next bill is taken. The queue keeps checking; a paid one shows the tick and fills UPI (locked) when
+// its bill is opened, then it is posted. Rows come from the server, so they survive a reload.
+let qrQueueTimer = null
+let qrQueueLoading = false
+// order to reopen in its popup once the page has brought its bill into view
+let pendingQueuedOrder = ''
+
+function startQrQueue() {
+  if (!paytm.value.enabled && !paytm.value.qrEnabled) return
+  loadQrQueue()
+  if (qrQueueTimer) return
+  qrQueueTimer = setInterval(() => {
+    if (qrQueue.value.some(q => q.status === 'Pending')) loadQrQueue()
+  }, 5000)
+}
+
+async function loadQrQueue() {
+  if (qrQueueLoading) return
+  qrQueueLoading = true
+  try {
+    const rows = await paytmPost('ssplbilling.api.paytm_api.get_qr_queue', {}, { silent: true })
+    // requests still open in a popup are handled there
+    const active = [paytmQr.value.orderId, paytm.value.orderId].filter(Boolean)
+    const prev = qrQueue.value
+    qrQueue.value = (rows || []).filter(r => !active.includes(r.order_id))
+    for (const r of qrQueue.value) {
+      if (r.status === 'Success' && prev.find(p => p.order_id === r.order_id)?.status === 'Pending') onQrQueuePaid(r)
+    }
+  } catch (e) { /* next round retries */ } finally {
+    qrQueueLoading = false
+  }
+}
+
+function applyQrQueueResult(r) {
+  const q = qrQueue.value.find(x => x.order_id === r?.order_id)
+  if (!q || q.status !== 'Pending' || r.status === 'Pending') return
+  if (r.status !== 'Success') {
+    qrQueue.value = qrQueue.value.filter(x => x !== q)
+    return
+  }
+  Object.assign(q, { status: 'Success', amount: r.amount, reference_no: r.reference_no, mode: r.mode })
+  onQrQueuePaid(q)
+}
+
+function onQrQueuePaid(q) {
+  fireConfetti({ count: 800, spread: 1.6 })
+  // another bill may be in view: name the one that got paid
+  showPaidTick(q.amount, q.mode === 'card' ? 'card' : 'upi', `${q.customer_name || q.customer || ''} · ${q.sales_invoice}`)
+  applyQueuedPayment(q)
+}
+
+// Fill and lock UPI (or Card, when paid by card on the machine) from a paid queue row, only while
+// its bill is the one in view
+function applyQueuedPayment(q) {
+  if (q.status !== 'Success' || invoice.value?.name !== q.sales_invoice || isCredit.value) return
+  if (q.mode === 'card') {
+    if (cardLocked.value && paytmLock.value.cardRef === q.reference_no) return
+    cashAuto.value = true
+    payments.value.card = q.amount
+    cardRefNo.value = q.reference_no
+    lockPaytmPayment('card', q.amount, q.reference_no)
+  } else {
+    if (upiLocked.value && paytmLock.value.upiRef === q.reference_no) return
+    cashAuto.value = true
+    payments.value.upi = q.amount
+    upiRefNo.value = q.reference_no
+    lockPaytmPayment('upi', q.amount, q.reference_no)
+  }
+  nextTick(() => postButton.value?.focus())
+}
+
+function addToQueue(orderId, channel, amount, phone) {
+  const inv = invoice.value
+  qrQueue.value = [...qrQueue.value.filter(x => x.sales_invoice !== inv.name), {
+    order_id: orderId,
+    channel,
+    sales_invoice: inv.name,
+    customer: inv.customer,
+    customer_name: inv.customer_name,
+    customer_mobile: phone || '',
+    amount,
+    status: 'Pending',
+    mode: 'upi',
+    reference_no: '',
+  }]
+  startQrQueue()
+}
+
+function queuePaytmQr() {
+  const q = paytmQr.value
+  if (!q.orderId || q.status !== 'Pending' || !invoice.value) return
+  stopPaytmQrPolling()
+  addToQueue(q.orderId, q.link ? 'Link' : 'QR', q.amount, q.phone)
+  resetPaytmQr()
+}
+
+// Machine UPI: the request stays on the machine while the next bill is taken
+function queuePaytmMachine() {
+  const p = paytm.value
+  if (!p.orderId || p.status !== 'Pending' || !invoice.value) return
+  stopPaytmPolling()
+  addToQueue(p.orderId, 'EDC', p.amount, '')
+  Object.assign(p, { show: false, orderId: '', status: '', message: '' })
+}
+
+// A new request replaces this bill's queued one; true when that one got paid meanwhile
+async function replaceQueuedRequest() {
+  const name = invoice.value?.name
+  const queued = qrQueue.value.find(x => x.sales_invoice === name && x.status === 'Pending')
+  if (queued) await cancelQueuedQr(queued)
+  return qrQueue.value.some(x => x.sales_invoice === name && x.status === 'Success')
+}
+
+// The page loads the row's bill (emit), then resumeQueued fills a paid row or reopens a waiting popup
+function openQueuedBill(q) {
+  if (invoice.value?.name === q.sales_invoice && !loading.value) {
+    pendingQueuedOrder = q.order_id
+    return resumeQueued(q.sales_invoice)
+  }
+  pendingQueuedOrder = q.order_id
+  emit('open-bill', q.sales_invoice)
+}
+
+async function resumeQueued(name) {
+  const paid = qrQueue.value.find(x => x.sales_invoice === name && x.status === 'Success')
+  if (paid) applyQueuedPayment(paid)
+  const q = qrQueue.value.find(x => x.order_id === pendingQueuedOrder && x.sales_invoice === name)
+  pendingQueuedOrder = ''
+  if (!q || q.status !== 'Pending' || paytm.value.show || paytmQr.value.show) return
+  if (q.channel === 'EDC') {
+    qrQueue.value = qrQueue.value.filter(x => x !== q)
+    Object.assign(paytm.value, {
+      show: true, payMode: 'QR', amount: q.amount, orderId: q.order_id, status: 'Pending', sending: false,
+      deviceName: q.device_name || '', tid: q.tid || '', customerName: q.customer_name || '', phone: '', askPhone: false,
+      message: `Waiting for payment on ${q.device_name || 'the machine'}…`,
+    })
+    paytmPollTimer = startPolling(paytmPollTimer, () => paytm.value.orderId, applyPaytmResult)
+    return
+  }
+  try {
+    const res = await paytmPost('ssplbilling.api.paytm_api.get_invoice_qr', { order_id: q.order_id }, { silent: true })
+    // paid or cancelled while the QR was fetched, or another bill came into view: leave it to the queue
+    if (!qrQueue.value.includes(q) || q.status !== 'Pending' || invoice.value?.name !== name) return
+    qrQueue.value = qrQueue.value.filter(x => x !== q)
+    waSessionName.value = getWhatsAppSessionName()
+    Object.assign(paytmQr.value, {
+      show: true, amount: q.amount, orderId: q.order_id, status: 'Pending', sending: false, withBill: false,
+      message: 'Waiting for the customer to scan and pay…', image: res.qr_image, link: q.channel === 'Link', tid: res.tid || '', posId: res.pos_id || '',
+      phone: q.customer_mobile || '', waSending: false,
+      waOk: q.customer_mobile ? true : undefined, waText: q.customer_mobile ? `QR sent to ${q.customer_mobile}` : '',
+    })
+    paytmQrPollTimer = startPolling(paytmQrPollTimer, () => paytmQr.value.orderId, applyPaytmQrResult)
+  } catch (e) {
+    errorMsg.value = e.message || 'Could not load the Paytm QR.'
+  }
+}
+
+async function cancelQueuedQr(q) {
+  try {
+    const r = await paytmPost('ssplbilling.api.paytm_api.cancel', { order_id: q.order_id }, { silent: true })
+    // Paid just before it was given up — keep the payment
+    if (r?.status === 'Success') return applyQrQueueResult(r)
+  } catch (e) { /* drop it anyway */ }
+  qrQueue.value = qrQueue.value.filter(x => x.order_id !== q.order_id)
+}
+
+// Closing a waiting machine UPI request keeps it in the UPI queue; a card request cannot be
+// queued, so its X still stops it
+function dismissPaytmModal() {
+  const p = paytm.value
+  if (p.orderId && p.status === 'Pending' && p.payMode === 'QR' && invoice.value) return queuePaytmMachine()
+  closePaytmModal()
+}
+
+// Closing a waiting QR keeps it in the UPI queue; only Cancel QR stops it
+function dismissPaytmQr() {
+  const q = paytmQr.value
+  if (q.orderId && q.status === 'Pending' && invoice.value) return queuePaytmQr()
+  closePaytmQr()
 }
 
 // Dev-only: walk the Paytm QR modal through Pending → Success without calling Paytm. The
@@ -1177,8 +1434,10 @@ async function togglePaytmMock() {
   stopPaytmQrPolling()
   Object.assign(paytm.value, { show: false, orderId: '', status: '', message: '' })
   resetPaytmQr()
+  qrQueue.value = []
   setPaytmMock(!paytmMockOn.value)
   await loadPaytmDevices()
+  startQrQueue()
 }
 
 // Mock mode: settle the newest waiting mock order (machine or QR) as if Paytm answered
@@ -1190,12 +1449,13 @@ function settleMock(status) {
 }
 
 onMounted(() => {
-  loadPaytmDevices()
+  loadPaytmDevices().then(startQrQueue)
   getFrappeSocket()?.on('paytm_payment_update', onPaytmSocket)
 })
 
 onUnmounted(() => {
   stopPaytmPolling()
+  if (qrQueueTimer) clearInterval(qrQueueTimer)
   stopPaytmQrPolling()
   if (paidTickTimer) clearTimeout(paidTickTimer)
   bindUpiOverlay(null)

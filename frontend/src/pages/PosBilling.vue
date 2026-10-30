@@ -17,6 +17,7 @@
       @loaded="onPaymentLoaded"
       @settled="salesRef?.printAndClear()"
       @back="salesRef?.focusBarcodeInput()"
+      @open-bill="salesRef?.openBill($event)"
     />
   </div>
 </template>
