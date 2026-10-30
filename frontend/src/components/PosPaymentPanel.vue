@@ -427,11 +427,22 @@
         </div>
       </div>
     </transition>
+
+    <component
+      :is="ConfettiTester"
+      v-if="ConfettiTester"
+      :paytm-mock="paytmMockOn"
+      :whatsapp-mock="whatsappMockOn"
+      @mock-upi="settleMock('Success')"
+      @mock-fail="settleMock('Failed')"
+      @toggle-paytm-mock="togglePaytmMock"
+      @toggle-whatsapp-mock="setWhatsAppMock(!whatsappMockOn)"
+    />
   </aside>
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import DatePickerButton from './DatePickerButton.vue'
 import { getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet, frappePost } from '../api.js'
 import { useLedgerCache } from '../services/ledgerCache'
@@ -439,9 +450,11 @@ import { useSubwindowWatcher } from '../services/shortcutManager'
 import { session, getWhatsAppSessionId, getWhatsAppSessionName } from '../session'
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { fireConfetti } from '../utils/confetti'
-import { devCall } from '../utils/devMock'
+import { paytmMockOn, whatsappMockOn, setPaytmMock, setWhatsAppMock, devCall, settleMockOrder } from '../utils/devMock'
 import { canModifyDate } from '../composables/usePermission'
 import { serverToday, serverCalendarDate } from '../services/serverTime'
+
+const ConfettiTester = import.meta.env.DEV ? defineAsyncComponent(() => import('./ConfettiTester.vue')) : null
 
 const props = defineProps({
   // bill in view on the POS screen; null when a new bill is being entered
@@ -1148,6 +1161,39 @@ async function closePaytmQr() {
 function onPaytmSocket(r) {
   applyPaytmResult(r)
   applyPaytmQrResult(r)
+}
+
+// Dev-only: walk the Paytm QR modal through Pending → Success without calling Paytm. The
+// MOCK- reference it locks in is refused by processPayment, so nothing real can be posted.
+function mockPaytmQrSuccess() {
+  if (!invoice.value) {
+    errorMsg.value = 'Save the bill (F8) or pick a draft before a mock payment.'
+    return
+  }
+  const amount = Number(payments.value.upi) || invoice.value.rounded_total || invoice.value.grand_total || 100
+  const orderId = `MOCK-${Date.now()}`
+  stopPaytmQrPolling()
+  Object.assign(paytmQr.value, { show: true, amount, orderId, status: 'Pending', message: 'Waiting for the customer to scan and pay… (mock)', image: '', sending: false })
+  setTimeout(() => applyPaytmQrResult({ order_id: orderId, status: 'Success', amount, mode: 'upi', reference_no: orderId }), 2000)
+}
+
+// Dev Paytm mock: Paytm calls are answered in the browser (utils/devMock.js); switching it
+// drops whatever was waiting so mock and real orders never mix
+async function togglePaytmMock() {
+  stopPaytmPolling()
+  stopPaytmQrPolling()
+  Object.assign(paytm.value, { show: false, orderId: '', status: '', message: '' })
+  resetPaytmQr()
+  setPaytmMock(!paytmMockOn.value)
+  await loadPaytmDevices()
+}
+
+// Mock mode: settle the newest waiting mock order (machine or QR) as if Paytm answered
+function settleMock(status) {
+  if (!paytmMockOn.value) return status === 'Success' ? mockPaytmQrSuccess() : undefined
+  const r = settleMockOrder(status)
+  if (r) onPaytmSocket(r)
+  else errorMsg.value = 'No mock Paytm order is waiting.'
 }
 
 onMounted(() => {

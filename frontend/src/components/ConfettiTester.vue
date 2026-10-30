@@ -65,7 +65,8 @@
 </template>
 
 <script setup>
-// Dev-only playground for tuning fireConfetti(); CashierDesk loads it only when import.meta.env.DEV
+// Dev-only playground for tuning fireConfetti() + Paytm/WhatsApp mocks; CashierDesk and the POS
+// payment panel load it only when import.meta.env.DEV
 import { ref, reactive, computed } from 'vue'
 import { fireConfetti } from '../utils/confetti'
 
