@@ -3645,8 +3645,15 @@ onMounted(() => {
     // list fetch once, instead of an unfiltered fetch that gets thrown away.
     fetchAllowedSeries('Sales Invoice').then((series) => {
       if (!series?.length) fetchRecentInvoices()
+      // POS: a user with a single allowed series skips the pick and goes straight to the party
+      if (props.posMode && series?.length === 1) {
+        localStorage.setItem('wb-series', series[0])
+        handleSeriesSelected(series[0])
+      } else if (props.posMode) {
+        showSeriesModal.value = true
+      }
     })
-    showSeriesModal.value = true
+    if (!props.posMode) showSeriesModal.value = true
   }
 
   if (!cachedItems.value.length || (serverNow().getTime() - lastSync.value) > 5 * 60 * 1000) {
