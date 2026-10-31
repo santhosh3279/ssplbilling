@@ -142,6 +142,97 @@ def get_bank_accounts():
 
 
 @frappe.whitelist(methods=["POST"])
+def read_pdf(content, password=None):
+	"""The rows of a PDF statement's tables as a grid of cell text, for the page's column mapping.
+
+	content is the file as base64 (a data: URL is fine). Ruled tables are read as drawn; when none
+	of them has a date column, words are placed under the column titles by position (_pdf_text_grid).
+	Totals and repeated column titles come through too and are dropped by the page's mapping like
+	Excel ones.
+	"""
+	import base64
+	import io
+
+	import pdfplumber
+	from pdfminer.pdfdocument import PDFPasswordIncorrect
+	from pdfplumber.utils.exceptions import PdfminerException
+
+	_require_desk_user()
+	data = base64.b64decode(content.split(",", 1)[-1])
+	try:
+		with pdfplumber.open(io.BytesIO(data), password=password or "") as pdf:
+			grid = _pdf_grid(pdf, {})
+			if not any(any("date" in c.lower() for c in row) for row in grid):
+				grid = _pdf_text_grid(pdf)
+	except PdfminerException as e:
+		if e.args and isinstance(e.args[0], PDFPasswordIncorrect):
+			frappe.throw(_("Wrong PDF password") if password else _("PDF password required"))
+		frappe.throw(_("Could not read the PDF: {0}").format(e))
+	if not grid:
+		frappe.throw(_("No table found in the PDF (a scanned statement has no text to read)"))
+	return grid
+
+
+def _pdf_grid(pdf, settings):
+	grid = []
+	for page in pdf.pages:
+		for table in page.extract_tables(settings):
+			grid.extend([re.sub(r"\s+", " ", c or "").strip() for c in row] for row in table)
+	return [row for row in grid if any(row)]
+
+
+def _pdf_lines(page):
+	"""The page's words grouped into printed lines, top to bottom, each line left to right."""
+	lines = []
+	for w in sorted(page.extract_words(), key=lambda w: (round(w["top"]), w["x0"])):
+		if lines and abs(lines[-1][0]["top"] - w["top"]) < 3:
+			lines[-1].append(w)
+		else:
+			lines.append([w])
+	return [sorted(line, key=lambda w: w["x0"]) for line in lines]
+
+
+def _pdf_header_cells(line):
+	"""Column titles of a header line: words closer than about a space apart form one title."""
+	cells = []
+	for w in line:
+		if cells and w["x0"] - cells[-1]["x1"] < (w["bottom"] - w["top"]) * 0.6:
+			cells[-1].update(x1=w["x1"], text=f"{cells[-1]['text']} {w['text']}")
+		else:
+			cells.append({"x0": w["x0"], "x1": w["x1"], "text": w["text"]})
+	return cells
+
+
+def _pdf_text_grid(pdf):
+	"""Grid of a statement printed without table lines.
+
+	Each page's line holding a "date" title and at least three titles gives the columns (a page
+	without one keeps the last page's); every later word goes to the column whose title it overlaps
+	most (right-aligned amounts), or else the last title starting left of it (left-aligned text). Lines above the first header (bank address, account details) are left out.
+	"""
+	grid, cols = [], None
+	for page in pdf.pages:
+		for line in _pdf_lines(page):
+			cells = _pdf_header_cells(line)
+			if len(cells) >= 3 and any(re.search(r"date", c["text"], re.I) for c in cells):
+				cols = cells
+				grid.append([c["text"] for c in cols])
+				continue
+			if not cols:
+				continue
+			row = [""] * len(cols)
+			for w in line:
+				overlap = [min(w["x1"], c["x1"]) - max(w["x0"], c["x0"]) for c in cols]
+				best = max(range(len(cols)), key=lambda i: overlap[i])
+				if overlap[best] <= 0:
+					# Between titles: text columns are left-aligned, so the last title starting to its left
+					best = max([i for i, c in enumerate(cols) if c["x0"] <= w["x0"]] or [0])
+				row[best] = f"{row[best]} {w['text']}".strip()
+			grid.append(row)
+	return grid
+
+
+@frappe.whitelist(methods=["POST"])
 def import_statement(bank_account, rows, file_name=None, window=DEFAULT_WINDOW):
 	"""Keep each new statement line, skip lines already imported, then match the whole date range."""
 	_require_desk_user()

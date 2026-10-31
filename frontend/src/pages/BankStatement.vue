@@ -47,12 +47,18 @@
           class="rounded-lg bg-[var(--color-highlight)] px-4 py-1.5 text-[1.05rem] font-bold uppercase text-[var(--color-text-on-highlight)] disabled:opacity-50"
         >Upload Excel</button>
         <button
+          @click="pdfInput?.click()"
+          :disabled="!bankAccount || busy"
+          class="rounded-lg bg-[var(--color-highlight)] px-4 py-1.5 text-[1.05rem] font-bold uppercase text-[var(--color-text-on-highlight)] disabled:opacity-50"
+        >{{ readingPdf ? 'Reading…' : 'Upload PDF' }}</button>
+        <button
           @click="runRematch"
           :disabled="!bankAccount || busy"
           title="Match Pending lines again (e.g. after vouchers were booked elsewhere)"
           class="rounded-lg bg-[var(--color-surface-raised)] px-3 py-1.5 text-[1.05rem] font-bold hover:bg-[var(--color-midlight)] disabled:opacity-50"
         >↻ Re-match</button>
         <input ref="fileInput" type="file" accept=".xlsx,.xls,.csv" class="hidden" @change="onFile" />
+        <input ref="pdfInput" type="file" accept=".pdf,application/pdf" class="hidden" @change="onPdf" />
       </div>
       <div class="w-full text-right text-sm text-[var(--color-text-muted)] xl:w-auto">Esc back · ↑↓ line · F2 counter ledger · Ctrl+Enter post</div>
     </header>
@@ -274,7 +280,7 @@
           <div class="max-w-md">
             <div class="text-lg font-bold uppercase">{{ bankAccount ? 'Select a statement line' : 'Select a bank ledger' }}</div>
             <div class="text-sm">
-              Upload the bank's Excel: lines already in the ledger are matched to their voucher, the rest stay
+              Upload the bank's Excel or PDF: lines already in the ledger are matched to their voucher, the rest stay
               Pending until you post them against a counter ledger.
             </div>
           </div>
@@ -443,6 +449,8 @@ const selected = ref(null)
 const form = reactive({ type: '', counter: '', label: '', remarks: '' })
 const showSearch = ref(false)
 const fileInput = ref(null)
+const pdfInput = ref(null)
+const readingPdf = ref(false)
 const counterInput = ref(null)
 const remarksInput = ref(null)
 const listEl = ref(null)
@@ -721,8 +729,18 @@ const parsed = computed(() => {
   const u = upload.value
   if (!u || !mapReady.value) return out
   const mapped = new Set(FIELDS.filter((f) => !f.mode || f.mode === map.mode).map((f) => map[f.id]).filter((i) => i >= 0))
+  const textCols = new Set([map.description, map.reference].filter((i) => i >= 0))
+  const headerKey = u.headers.join('|')
   for (const line of u.grid.slice(u.headerRow)) {
     if (!line.some((c) => cellText(c))) continue
+    // PDF narration wraps onto rows of its own: text only in narration / ref joins the line above
+    const prev = out.valid[out.valid.length - 1]
+    if (u.pdf && prev && line.map(cellText).join('|') !== headerKey
+      && line.every((c, i) => !cellText(c) || textCols.has(i))) {
+      if (map.description >= 0 && cellText(line[map.description])) prev.description = `${prev.description} ${cellText(line[map.description])}`.trim()
+      if (map.reference >= 0 && cellText(line[map.reference])) prev.reference_no = `${prev.reference_no}${cellText(line[map.reference])}`
+      continue
+    }
     const date = parseDate(line[map.date])
     let withdrawal = 0
     let deposit = 0
@@ -779,9 +797,49 @@ async function onFile(e) {
   }
 }
 
+// A PDF's tables are read on the server (pdfplumber); its grid of cell text then maps like a sheet
+async function onPdf(e) {
+  const file = e.target.files?.[0]
+  e.target.value = ''
+  if (!file) return
+  error.value = ''
+  readingPdf.value = true
+  try {
+    const content = await new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result)
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(file)
+    })
+    let password = ''
+    let grid = null
+    while (!grid) {
+      try {
+        grid = await frappePost(`${API}.read_pdf`, { content, password }, { silent: true })
+      } catch (err) {
+        // Bank PDFs are often locked (DOB / customer id): ask until right or cancelled
+        if (!/PDF password/i.test(err.message)) throw err
+        password = prompt(`${/wrong/i.test(err.message) ? 'Wrong password. ' : ''}Password for ${file.name}:`, '')
+        if (password == null) return
+      }
+    }
+    upload.value = { fileName: file.name, pdf: true, wb: null, sheetNames: [], sheet: '', grid: [], headers: [], headerRow: 1 }
+    setGrid(grid)
+  } catch (err) {
+    error.value = `Could not read ${file.name}: ${err.message.split('\n').pop()}`
+  } finally {
+    readingPdf.value = false
+  }
+}
+
 function loadSheet() {
   const u = upload.value
-  u.grid = XLSX.utils.sheet_to_json(u.wb.Sheets[u.sheet], { header: 1, raw: true, defval: '' })
+  setGrid(XLSX.utils.sheet_to_json(u.wb.Sheets[u.sheet], { header: 1, raw: true, defval: '' }))
+}
+
+function setGrid(grid) {
+  const u = upload.value
+  u.grid = grid
   u.headerRow = detectHeaderRow(u.grid)
   applyHeaderRow(true)
 }
