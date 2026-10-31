@@ -682,7 +682,8 @@ async function sendPayLink(l) {
 async function createQr(args, { sendLink = false } = {}) {
   creating.value = true
   try {
-    const r = await frappePost(`${API}.create_receipt_qr`, { ...args, ...accountArgs() }, { silent: true })
+    // posId from the user's card machine, as the cashier desk's create_qr
+    const r = await frappePost(`${API}.create_receipt_qr`, { ...args, ...accountArgs(), user: machineUser() }, { silent: true })
     qrImages[r.order_id] = r.qr_image
     setDeadline(r.order_id, r.expires_in)
     resetForm()

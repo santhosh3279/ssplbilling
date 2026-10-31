@@ -693,13 +693,18 @@ def get_customer_whatsapp(customer):
 
 
 @frappe.whitelist(methods=["POST"])
-def create_receipt_qr(customer, amount, description=None, mobile=None, company=None, cost_center=None, upi_account=None):
+def create_receipt_qr(
+	customer, amount, description=None, mobile=None, company=None, cost_center=None, upi_account=None, user=None
+):
 	"""Dynamic UPI QR for a customer receipt (no invoice), shown on screen or shared with the
 	customer. Valid for QR_EXPIRY_SECONDS; once paid it gets its Receipt Payment Entry like a link.
 
 	company, cost_center and upi_account are the operator's defaults (wb-company, wb-cost-center,
 	wb-upi). They are stored on the row because the Payment Entry is made later, by the webhook or
-	the page's polling; upi_account falls back to the UPI Account in SSPL Paytm Settings."""
+	the page's polling; upi_account falls back to the UPI Account in SSPL Paytm Settings.
+
+	posId is chosen as in create_qr (cashier desk): the POS ID of the user's machine (SSPL Paytm
+	Device), else QR POS ID, else the user id; that machine's TID is kept on the row."""
 	_require_desk_user()
 	settings = _settings()
 	if not settings.qr_enabled:
@@ -713,6 +718,12 @@ def create_receipt_qr(customer, amount, description=None, mobile=None, company=N
 	if not upi_account:
 		frappe.throw(_("Set the UPI Account in SSPL Paytm Settings; QR receipts are received into it"))
 	_validate_receipt_accounts(upi_account, company, cost_center)
+	device = next(iter(_user_devices(settings, user)), None)
+	pos_id = (
+		(device and device.pos_id)
+		or settings.qr_pos_id
+		or re.sub(r"[^A-Za-z0-9_]", "_", frappe.session.user)[:20]
+	)
 
 	now = now_datetime()
 	txn = frappe.get_doc(
@@ -729,12 +740,18 @@ def create_receipt_qr(customer, amount, description=None, mobile=None, company=N
 			"upi_account": upi_account,
 			"company": company or None,
 			"cost_center": cost_center or None,
-			"device_name": settings.qr_pos_id or re.sub(r"[^A-Za-z0-9_]", "_", frappe.session.user)[:20],
+			"device_name": pos_id,
+			"tid": device.tid if device else None,
 			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
 		}
 	).insert(ignore_permissions=True)
 	rb = _request_qr(settings, txn)
-	return {**_txn_result(txn), "qr_image": rb.get("image") or _qr_png(rb.get("qrData"))}
+	return {
+		**_txn_result(txn),
+		"qr_image": rb.get("image") or _qr_png(rb.get("qrData")),
+		"pos_id": pos_id,
+		"tid": txn.tid,
+	}
 
 
 @frappe.whitelist()
