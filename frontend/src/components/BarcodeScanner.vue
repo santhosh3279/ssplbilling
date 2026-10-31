@@ -129,6 +129,7 @@
       </div>
       <MobileSearchKeyboard
         v-if="showKeys"
+        numpad
         @key="k => { typed += k }"
         @backspace="typed = typed.slice(0, -1)"
         @clear="typed = ''"
