@@ -152,7 +152,7 @@
       @enter="runSearch()"
     />
 
-    <BarcodeScanner v-if="showScanner" :verify="codeExists" @detected="onScanned" @close="closeScanner" />
+    <BarcodeScanner v-if="showScanner" @detected="onScanned" @close="closeScanner" />
 
     <!-- Full-size photo -->
     <div
@@ -337,23 +337,6 @@ function onPageKeydown(e) {
   } else if (e.key.length === 1) {
     e.preventDefault()
     typeKey(e.key)
-  }
-}
-
-// OCR readings are guesses: accept one only when it is an exact item code or barcode.
-// Any code seen in a cached search answers without the server; misses are cached too.
-async function codeExists(code) {
-  const key = code.toLowerCase()
-  for (const entry of Object.values(cache)) {
-    if (entry.rows.some(r => isExact(r, key))) return true
-  }
-  const cached = cache[normalize(code)]
-  if (cached && Date.now() - cached.t < CACHE_TTL) return false
-  try {
-    const entry = await fetchRows(code)
-    return entry.rows.some(r => isExact(r, key))
-  } catch (e) {
-    return false
   }
 }
 

@@ -60,7 +60,6 @@
           {{ starting ? 'Starting camera…' : foundCode ? 'Found!' : hint }}
         </div>
         <div v-if="!starting && !foundCode" class="text-xs text-white/75">Hold 15–20 cm away · tap the screen to focus</div>
-        <div v-if="ocrNote && !foundCode" class="font-mono text-xs text-sky-200">{{ ocrNote }}</div>
         <div v-if="status" class="mx-auto inline-flex items-center gap-1.5 rounded-lg bg-black/55 px-2 py-1 font-mono text-[11px] text-white/85">
           <span class="h-2 w-2 rounded-full" :class="alive ? 'bg-emerald-400' : 'bg-red-500'"></span>
           {{ status }}
@@ -143,12 +142,12 @@
  * Full-screen camera barcode scanner.
  * Every frame the aiming box is cropped out of the video and decoded by the native
  * BarcodeDetector (when present) and by ZXing, so a phone whose native detector
- * silently returns nothing still scans. The printed code under the bars is read by
- * OCR as a fallback; OCR candidates are only accepted once `verify(text)` confirms
- * the code exists. Emits `detected` once with the decoded text.
+ * silently returns nothing still scans. Only the bars are decoded: the number printed
+ * under them is never read, so a label whose bars will not decode is entered by hand
+ * below. Emits `detected` once with the decoded text.
  *
  * Feedback: a live frame rate (red dot = scan loop stalled), brightness/sharpness
- * hints, OCR progress, and a green box with the code before closing. The main back
+ * hints, and a green box with the code before closing. The main back
  * camera is always used (see pickPrimaryCamera); zoom and tap-to-focus help phones
  * whose camera cannot focus up close.
  *
@@ -160,8 +159,6 @@ import MobileSearchKeyboard from './MobileSearchKeyboard.vue'
 import { cipherPrice } from '../encryption.js'
 
 const props = defineProps({
-  // async (text) => boolean — confirms an OCR reading before it is accepted
-  verify: { type: Function, default: null },
   // (text) => [{ code, name, price, barcodes }] — items matching the typed text, listed as
   // name · code · price (cipher); `code` is emitted on pick. A card whose code or one of
   // its `barcodes` equals the typed text blinks
@@ -177,9 +174,8 @@ const starting = ref(true)
 const status = ref('')
 const torchAvailable = ref(false)
 const torchOn = ref(false)
-const hint = ref('Fit the barcode or its printed number inside the box')
+const hint = ref('Fit the barcode inside the box')
 const hintWarn = ref(false)
-const ocrNote = ref('')
 const foundCode = ref('')
 const alive = ref(true)
 const zoomLevels = ref([])
@@ -228,10 +224,6 @@ function submitTyped() {
 // 1D formats only: item labels carry linear barcodes, and each extra format costs decode time
 const NATIVE_FORMATS = ['code_128', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_39', 'code_93', 'codabar', 'itf']
 const SCAN_INTERVAL = 150
-const OCR_INTERVAL = 1200
-// OCR (Tesseract WASM + language data) starts only if the bars have not read by then,
-// so it doesn't compete with the camera start-up and the bar decoders
-const OCR_START_DELAY = 2500
 const FOUND_DELAY = 150
 // Decoding a smaller copy of the aiming box is several times faster and still
 // leaves enough pixels per bar for labels filling the box
@@ -247,15 +239,9 @@ let stream = null
 let track = null
 let nativeDetector = null
 let zxingReader = null
-let ocrWorker = null
-let ocrBusy = false
-let lastOcrAt = 0
-let lastOcrTokens = []
-const rejectedOcr = new Set()
 let scanTimer = null
 let foundTimer = null
 let focusTimer = null
-let ocrStartTimer = null
 let tickCount = 0
 let lastTickAt = 0
 let fpsWindowStart = 0
@@ -265,7 +251,6 @@ let brightness = null
 let sharpness = null
 let done = false
 const scanCanvas = document.createElement('canvas')
-const ocrCanvas = document.createElement('canvas')
 const qualityCanvas = document.createElement('canvas')
 
 const boxClass = computed(() => {
@@ -300,8 +285,8 @@ function found(text) {
   }, FOUND_DELAY)
 }
 
-/** Aiming box in video pixels, accounting for object-cover scaling. `extraBelow` grows it downwards. */
-function boxInVideo(extraBelow = 0) {
+/** Aiming box in video pixels, accounting for object-cover scaling. */
+function boxInVideo() {
   const video = videoRef.value
   const vw = video.videoWidth, vh = video.videoHeight
   const view = viewRef.value.getBoundingClientRect()
@@ -312,12 +297,12 @@ function boxInVideo(extraBelow = 0) {
   const x = Math.max(0, (box.left - view.left + offX) / scale)
   const y = Math.max(0, (box.top - view.top + offY) / scale)
   const w = Math.min(vw - x, box.width / scale)
-  const h = Math.min(vh - y, (box.height * (1 + extraBelow)) / scale)
+  const h = Math.min(vh - y, box.height / scale)
   return { x, y, w, h }
 }
 
-function drawCrop(canvas, r, maxWidth, minWidth = 0) {
-  const s = Math.min(maxWidth / r.w, Math.max(1, minWidth / r.w))
+function drawCrop(canvas, r, maxWidth) {
+  const s = Math.min(maxWidth / r.w, 1)
   canvas.width = Math.round(r.w * s)
   canvas.height = Math.round(r.h * s)
   const ctx = canvas.getContext('2d', { willReadFrequently: true })
@@ -382,22 +367,6 @@ async function initZxing() {
   zxingReader = new BrowserMultiFormatReader(hints)
 }
 
-async function initOcr() {
-  const { createWorker } = await import('tesseract.js')
-  const base = new URL(import.meta.env.BASE_URL + 'ocr/', location.href).href
-  const worker = await createWorker('eng', 1, {
-    workerPath: base + 'worker.min.js',
-    corePath: base,
-    langPath: base,
-  })
-  await worker.setParameters({
-    tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-',
-    tessedit_pageseg_mode: '6', // uniform block: sparse modes (11/12) misread the bars as letters
-  })
-  if (done) { worker.terminate(); return }
-  ocrWorker = worker
-}
-
 function updateStatus() {
   const bars = [nativeDetector && 'native', zxingReader && 'zxing'].filter(Boolean).join('+') || 'loading'
   const video = videoRef.value
@@ -406,7 +375,6 @@ function updateStatus() {
     track?.label ? track.label.replace(/,?\s*facing back/i, '') : '',
     `${fps} fps`,
     `bars: ${bars}`,
-    `text: ${ocrWorker ? 'on' : 'loading'}`,
     video?.videoWidth ? `${video.videoWidth}×${video.videoHeight}` : '',
     settings.zoom ? `zoom ${Number(settings.zoom.toFixed(1))}×` : '',
     settings.focusMode ? `focus ${settings.focusMode}` : '',
@@ -432,42 +400,6 @@ async function decodeBars(canvas) {
   return ''
 }
 
-/** Tokens that could be a printed item code: no OCR noise from the bars themselves. */
-function ocrTokens(text) {
-  return [...new Set(
-    (text || '').toUpperCase().split(/\s+/)
-      .map(t => t.replace(/^-+|-+$/g, ''))
-      .filter(t => t.length >= 3 && t.length <= 20 && !/^(.)\1+$/.test(t)),
-  )]
-}
-
-async function readText() {
-  ocrBusy = true
-  lastOcrAt = Date.now()
-  try {
-    const canvas = drawCrop(ocrCanvas, boxInVideo(0.25), 1400, 900)
-    const { data } = await ocrWorker.recognize(canvas)
-    if (done) return
-    const tokens = ocrTokens(data?.text)
-    ocrNote.value = tokens.length ? `Text seen: ${tokens.slice(0, 4).join(' ')}` : 'Text: nothing readable yet'
-    // Accept only a token seen in two reads in a row, then confirm it with the server
-    const stable = tokens.filter(t => lastOcrTokens.includes(t) && !rejectedOcr.has(t))
-    lastOcrTokens = tokens
-    for (const t of stable) {
-      ocrNote.value = `Checking ${t}…`
-      const ok = props.verify ? await props.verify(t) : true
-      if (done) return
-      if (ok) return found(t)
-      rejectedOcr.add(t)
-      ocrNote.value = `${t} is not an item code`
-    }
-  } catch (e) {
-    console.warn('[BarcodeScanner] OCR', e)
-  } finally {
-    ocrBusy = false
-  }
-}
-
 function countFrame() {
   const now = Date.now()
   lastTickAt = now
@@ -491,7 +423,6 @@ async function tick() {
       if (tickCount % 4 === 0) measureQuality(canvas)
       const code = await decodeBars(canvas)
       if (code) return found(code)
-      if (ocrWorker && !ocrBusy && Date.now() - lastOcrAt > OCR_INTERVAL) readText()
     }
   } catch (e) {
     // Never let one bad frame end the scan loop
@@ -687,9 +618,6 @@ async function start() {
   watchAlive()
   tick()
   initZxing().then(updateStatus).catch(e => console.error('[BarcodeScanner] ZXing', e))
-  ocrStartTimer = setTimeout(() => {
-    if (!done) initOcr().then(updateStatus).catch(e => console.error('[BarcodeScanner] OCR', e))
-  }, OCR_START_DELAY)
 }
 
 function stopStream() {
@@ -702,11 +630,8 @@ function stop() {
   clearTimeout(scanTimer)
   scanTimer = null
   clearTimeout(focusTimer)
-  clearTimeout(ocrStartTimer)
   clearInterval(aliveTimer)
   stopStream()
-  ocrWorker?.terminate()
-  ocrWorker = null
 }
 
 function close() {

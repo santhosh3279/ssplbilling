@@ -195,7 +195,6 @@
 
     <BarcodeScanner
       v-if="scanFor"
-      :verify="scanFor === 'find' ? itemExists : null"
       :search="scanFor === 'find' ? scannerSearch : null"
       @detected="onScanned"
       @close="closeScanner"
@@ -255,17 +254,6 @@ function flash(msg) {
 // ── Find item ──
 async function fetchResults(q) {
   return (await frappeGet(`${API}.search_items_for_barcode`, { query: q })) || []
-}
-
-// OCR readings in "find" mode are accepted only when they are a real item code / barcode
-async function itemExists(code) {
-  if (lookupItemInCache(code)) return true
-  try {
-    const rows = await fetchResults(code)
-    return rows.some(r => r.exact)
-  } catch {
-    return false
-  }
 }
 
 async function openItem(code) {
