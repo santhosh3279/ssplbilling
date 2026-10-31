@@ -304,6 +304,15 @@
     @close="quickSearchResults = []"
     @refresh="onQuickSearchRefresh"
   />
+
+  <!-- Exit Warning Modal -->
+  <Warning
+    :show="showExitWarning"
+    title="Exit Page"
+    message="Are you sure you want to exit? Unsaved changes will be lost."
+    @close="showExitWarning = false"
+    @confirm="showExitWarning = false; router.push('/')"
+  />
 </template>
 
 <script setup>
@@ -317,6 +326,7 @@ import ItemSearch from '../components/ItemSearch.vue'
 import Stock_Template from '../components/Stock_Template.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import BatchView from '../components/BatchView.vue'
+import Warning from '../components/Warning.vue'
 import { useItemCache, uomLabel, itemHasBatch } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
 
@@ -325,6 +335,7 @@ import { scrollInvoiceRowIntoView } from '../utils/invoiceScroll.js'
 import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import { getCachedList } from '../services/masterCache.js'
 const router = useRouter()
+const showExitWarning = ref(false)
 const API = 'ssplbilling.api.stock_reconciliation_api'
 const { allowedSeries: availableSeries, fetchAllowedSeries } = useAllowedSeries()
 const { refreshItemCache, lookupItemInCache, searchItemsInCache } = useItemCache()
@@ -1019,9 +1030,12 @@ async function loadEntry(name) {
 }
 
 // ==================== SHORTCUTS ====================
+// In edit mode (new entry or draft being edited) with rows entered, ask before leaving
 function handleBack() {
-  if (items.value.length && !entryName.value) {
-    if (!confirm('Discard unsaved reconciliation?')) return
+  if (showExitWarning.value) return
+  if (!isReadOnly.value && (items.value.length || newItemCode.value)) {
+    showExitWarning.value = true
+    return
   }
   router.push('/')
 }
