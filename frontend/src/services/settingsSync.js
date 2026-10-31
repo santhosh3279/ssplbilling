@@ -161,10 +161,13 @@ async function syncBillingSettings(targetUser, force) {
     if (settings && settings.user_defaults) {
       const defaults = settings.user_defaults
       if (defaults.default_printer) localStorage.setItem('wb-printer', defaults.default_printer)
-      if (defaults.warehouse) localStorage.setItem('wb-warehouse', defaults.warehouse)
-      if (defaults.cost_center) localStorage.setItem('wb-cost-center', defaults.cost_center)
-      if (defaults.income_account) localStorage.setItem('wb-income-account', defaults.income_account)
-      if (defaults.company) localStorage.setItem('wb-company', defaults.company)
+      // Cleared when the user's row leaves them blank, so the previous user's never carry over
+      ;[
+        ['wb-warehouse', defaults.warehouse],
+        ['wb-cost-center', defaults.cost_center],
+        ['wb-income-account', defaults.income_account],
+        ['wb-company', defaults.company],
+      ].forEach(([k, v]) => (v ? localStorage.setItem(k, v) : localStorage.removeItem(k)))
       // Paytm card machine assigned to this user; cleared when the assignment is removed
       ;[['wb-tid', defaults.paytm_tid], ['wb-posid', defaults.paytm_pos_id]]
         .forEach(([k, v]) => (v ? localStorage.setItem(k, v) : localStorage.removeItem(k)))

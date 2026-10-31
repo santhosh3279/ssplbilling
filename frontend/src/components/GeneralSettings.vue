@@ -459,10 +459,13 @@ function applyToLocalStorage(settings, targetUserArg) {
   if (settings.user_defaults?.card)           localStorage.setItem('wb-card',           settings.user_defaults.card)
   if (settings.user_defaults?.bank)           localStorage.setItem('wb-bank',           settings.user_defaults.bank)
   if (settings.user_defaults?.upi)            localStorage.setItem('wb-upi',            settings.user_defaults.upi)
-  if (settings.user_defaults?.warehouse)      localStorage.setItem('wb-warehouse',      settings.user_defaults.warehouse)
-  if (settings.user_defaults?.cost_center)    localStorage.setItem('wb-cost-center',    settings.user_defaults.cost_center)
-  if (settings.user_defaults?.income_account) localStorage.setItem('wb-income-account', settings.user_defaults.income_account)
-  if (settings.user_defaults?.company)        localStorage.setItem('wb-company',        settings.user_defaults.company)
+  // Cleared when the user's row leaves them blank, so the previous user's never carry over
+  ;[
+    ['wb-warehouse', settings.user_defaults?.warehouse],
+    ['wb-cost-center', settings.user_defaults?.cost_center],
+    ['wb-income-account', settings.user_defaults?.income_account],
+    ['wb-company', settings.user_defaults?.company],
+  ].forEach(([k, v]) => (v ? localStorage.setItem(k, v) : localStorage.removeItem(k)))
   if (settings.user_defaults?.default_printer) localStorage.setItem('wb-default-printer', settings.user_defaults.default_printer)
   // Paytm card machine assigned to this user; cleared when the assignment is removed
   ;[['wb-tid', settings.user_defaults?.paytm_tid], ['wb-posid', settings.user_defaults?.paytm_pos_id]]

@@ -11,7 +11,18 @@
             <span v-else-if="invoiceName" class="ml-1 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Draft</span>
             <span v-if="isReturn" class="ml-1 rounded bg-[var(--color-danger)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-danger)]">Return</span>
           </h1>
-          <div class="truncate text-[11px] text-[var(--color-text-muted)]">{{ priceList || 'No price list' }} · {{ warehouse || 'No warehouse' }}</div>
+          <!-- Tap for the company and accounts the bill posts to -->
+          <button
+            type="button"
+            :aria-expanded="showAccounting"
+            class="block w-full truncate text-left text-[11px] text-[var(--color-text-muted)]"
+            @click="showAccounting = !showAccounting"
+          >{{ priceList || 'No price list' }} · {{ warehouse || 'Default warehouse' }} {{ showAccounting ? '▴' : '▾' }}</button>
+          <div v-if="showAccounting" class="space-y-0.5 text-[11px] text-[var(--color-text-muted)]">
+            <div class="truncate">{{ company || 'Default company' }}</div>
+            <div class="truncate">Cost center: {{ costCenter || 'Default' }}</div>
+            <div class="truncate">Income: {{ incomeAccount || 'Default' }}</div>
+          </div>
         </div>
         <select
           v-model="selectedSeries"
@@ -403,7 +414,10 @@ function readSettings() {
 }
 const settings = readSettings()
 const userDefaults = settings.user_defaults || {}
-const company = localStorage.getItem('wb-company') || userDefaults.company || ''
+// Company, warehouse, cost center and income account come only from the billing user's own row
+// (the inherited user's for an admin). A blank field stays blank so ERPNext's default applies;
+// the wb-* keys could still hold the previous user's values on a shared phone.
+const company = userDefaults.company || ''
 
 const { allowedSeries: seriesOptions, fetchAllowedSeries } = useAllowedSeries()
 const selectedSeries = ref('')
@@ -412,9 +426,10 @@ const taxTemplate = ref('')
 const isInclusive = ref(false)
 const isReturn = ref(false)
 const printTemplate = ref('')
-const warehouse = ref(userDefaults.warehouse || localStorage.getItem('wb-warehouse') || '')
-const costCenter = ref(userDefaults.cost_center || localStorage.getItem('wb-cost-center') || '')
-const incomeAccount = ref(userDefaults.income_account || localStorage.getItem('wb-income-account') || '')
+const warehouse = ref(userDefaults.warehouse || '')
+const costCenter = ref(userDefaults.cost_center || '')
+const incomeAccount = ref(userDefaults.income_account || '')
+const showAccounting = ref(false)
 
 // Same rules as SalesInvoice.handleSeriesSelected: the series row decides price list,
 // tax and return; the user's row decides warehouse, cost center and income account.
@@ -1045,9 +1060,9 @@ async function newBill(confirmDiscard = true) {
   ignoreModifier.value = false
   _loadedExtras = null
   await setCustomer('', '')
-  warehouse.value = userDefaults.warehouse || localStorage.getItem('wb-warehouse') || ''
-  costCenter.value = userDefaults.cost_center || localStorage.getItem('wb-cost-center') || ''
-  incomeAccount.value = userDefaults.income_account || localStorage.getItem('wb-income-account') || ''
+  warehouse.value = userDefaults.warehouse || ''
+  costCenter.value = userDefaults.cost_center || ''
+  incomeAccount.value = userDefaults.income_account || ''
   if (selectedSeries.value) applySeriesDefaults(selectedSeries.value)
 }
 
