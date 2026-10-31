@@ -10,7 +10,7 @@
           @pointerdown.prevent="emit('key', k)"
         >{{ k }}</button>
         <button
-          v-if="r === rows.length - 1"
+          v-if="!numpad && r === rows.length - 1"
           type="button"
           aria-label="Backspace"
           class="key flex-[1.6] bg-[var(--color-surface)] text-[var(--color-danger)]"
