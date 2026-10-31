@@ -27,6 +27,7 @@ const WhatsAppLink = () => import('./pages/WhatsAppLink.vue')
 const Competitive = () => import('./pages/Competitive.vue')
 const WhatsAppChat = () => import('./pages/WhatsAppChat.vue')
 const AiChat = () => import('./pages/AiChat.vue')
+const AiChatMobile = () => import('./pages/AiChatMobile.vue')
 const JournalContraEntry = () => import('./pages/JournalContraEntry.vue')
 const CashierManagement = () => import('./pages/CashierManagement.vue')
 const PricingRuleSync = () => import('./pages/PricingRuleSync.vue')
@@ -375,6 +376,13 @@ const routes = [
     meta: { title: 'AI Chat' },
   },
   {
+    // Phone front end for AI Chat; phones opening /ai-chat land here (see beforeEach)
+    path: '/ai-chat-mobile',
+    name: 'AiChatMobile',
+    component: AiChatMobile,
+    meta: { title: 'AI Chat' },
+  },
+  {
     path: '/stock-reconciliation',
     name: 'StockReconciliation',
     component: StockReconciliation,
@@ -617,6 +625,11 @@ router.beforeEach(async (to, from, next) => {
     // access-denied redirects); "Desktop view" on the mobile dashboard opts out for this browser session.
     if (to.name === 'Dashboard' && isMobileDevice() && !sessionStorage.getItem(DESKTOP_VIEW_KEY)) {
       next({ name: 'MobileDashboard' })
+      return
+    }
+    // The AI Chat tile opens the phone layout on phones (same "Desktop view" opt-out)
+    if (to.name === 'AiChat' && isMobileDevice() && !sessionStorage.getItem(DESKTOP_VIEW_KEY)) {
+      next({ name: 'AiChatMobile', query: to.query })
       return
     }
     next()

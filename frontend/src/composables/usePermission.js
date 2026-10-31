@@ -291,6 +291,8 @@ function getTileIdForRoute(routeName) {
 export function canAccessRoute(routeName) {
   if (!routeName || ['Dashboard', 'MobileDashboard', 'Login'].includes(routeName)) return true
   if (routeName === 'CatalougePage') return canAccessRoute('CatalogueViewer')
+  // Phone layout of AI Chat: no tile of its own, rides on the 'ai-chat' tile / licence / role
+  if (routeName === 'AiChatMobile') return canAccessRoute('AiChat')
   if (PUBLIC_HRMS_ROUTES.includes(routeName)) return true
 
   if (routeName === 'PriceListUpdate') {

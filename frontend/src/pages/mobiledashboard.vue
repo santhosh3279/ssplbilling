@@ -85,6 +85,7 @@ const MOBILE_TILES = [
   { id: 'cashier-mobile', route: 'CashierMobile', path: '/cashier-mobile', name: 'Cashier', desc: 'Settle draft bills', icon: '🏧' },
   { id: 'item-barcode', route: 'ItemBarcode', path: '/item-barcode', name: 'Item Barcodes', desc: 'Scan & add barcodes to items', icon: '🏷️' },
   { id: 'stock-check', route: 'StockCheck', path: '/stock-check', name: 'Stock Check', desc: 'Stock & selling price lookup', icon: '🔍' },
+  { id: 'ai-chat', route: 'AiChat', path: '/ai-chat-mobile', name: 'AI Chat', desc: 'Ask about sales & stock', icon: '🤖' },
 ]
 
 // canAccessRoute reads the role / tile-access / license keys from localStorage,
