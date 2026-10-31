@@ -111,8 +111,12 @@
 
       <template #row="{ item, index }">
         <tr 
-          class="border-b border-[var(--color-border)] hover:bg-[var(--color-surface-raised)]/50 outline-none"
+          :ref="el => { if (el) rowRefs[index] = el }"
+          class="border-b border-[var(--color-border)] outline-none cursor-pointer"
+          :class="!isReadOnly && selectedRowIdx === index ? 'bg-[var(--color-success)]/25' : 'hover:bg-[var(--color-surface-raised)]/50'"
           :tabindex="isReadOnly ? -1 : 0"
+          @focusin="!isReadOnly && (selectedRowIdx = index)"
+          @click="!isReadOnly && (selectedRowIdx = index)"
           @keydown="handleRowKeydown($event, index)"
         >
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">{{ index + 1 }}</td>
@@ -121,12 +125,15 @@
           <td class="p-0 border-r border-[var(--color-border)]">
             <input 
               v-if="!isReadOnly"
+              :ref="el => setQtyRef(el, index)"
               v-model.number="item.qty"
               type="number"
               class="w-full bg-transparent px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @focus="e => e.target.select()"
               @keydown.up.prevent
               @keydown.down.prevent
               @keydown.enter.prevent="focusType(index)"
+              @keydown.esc.prevent.stop="focusRow(index)"
             />
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums">{{ item.qty }}</span>
           </td>
@@ -144,7 +151,9 @@
               class="w-full bg-transparent px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               @keydown.up.prevent
               @keydown.down.prevent
+              @focus="e => e.target.select()"
               @keydown.enter.prevent="handleRateEnter(index)"
+              @keydown.esc.prevent.stop="focusRow(index)"
             />
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums">{{ formatRate(item.rate) }}</span>
           </td>
@@ -163,6 +172,7 @@
               class="bg-transparent border border-[var(--color-border)] rounded px-2 py-0.5 font-bold text-2xl outline-none focus:border-[var(--color-focus)]"
               :class="item.type === 'Consume' ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'"
               @keydown.enter.prevent="handleTypeEnter(index)"
+              @keydown.esc.prevent.stop="focusRow(index)"
             >
               <option value="Consume" class="text-[var(--color-danger)] bg-[var(--color-surface)]">Consume</option>
               <option value="Produce" class="text-[var(--color-success)] bg-[var(--color-surface)]">Produce</option>
@@ -332,6 +342,9 @@ const pendingQtyInput = ref(null)
 const pendingTypeInput = ref(null)
 const typeRefs = ref([])
 const rateRefs = ref([])
+const qtyRefs = ref([])
+const rowRefs = ref([])
+const selectedRowIdx = ref(-1)
 const priceListUpdateItem = ref(null)
 
 const sidebarDate = ref(serverToday())
@@ -503,6 +516,7 @@ async function fetchRecentRepacks() {
 }
 
 function focusBarcodeInput() {
+  selectedRowIdx.value = -1
   nextTick(() => barcodeInput.value?.focus())
 }
 
@@ -529,6 +543,9 @@ function handleBarcodeKeydown(e) {
 
   if (e.key === 'Enter') {
     handleBarcodeEnter()
+  } else if (e.key === 'ArrowUp' && items.value.length) {
+    e.preventDefault()
+    focusRow(items.value.length - 1)
   }
 }
 
@@ -657,6 +674,31 @@ function focusType(idx) {
   })
 }
 
+function setQtyRef(el, idx) {
+  if (el) {
+    qtyRefs.value[idx] = el
+  }
+}
+
+function focusRow(idx) {
+  selectedRowIdx.value = idx
+  nextTick(() => {
+    const el = rowRefs.value[idx]
+    if (el) {
+      el.focus({ preventScroll: true })
+      el.scrollIntoView({ block: 'nearest' })
+    }
+  })
+}
+
+function focusQty(idx) {
+  selectedRowIdx.value = idx
+  nextTick(() => {
+    qtyRefs.value[idx]?.focus()
+    qtyRefs.value[idx]?.select()
+  })
+}
+
 function setRateRef(el, idx) {
   if (el) {
     rateRefs.value[idx] = el
@@ -691,12 +733,31 @@ function closePriceListUpdate() {
 
 function removeItem(index) {
   items.value.splice(index, 1)
+  qtyRefs.value.length = typeRefs.value.length = rateRefs.value.length = rowRefs.value.length = items.value.length
+  if (!items.value.length) {
+    selectedRowIdx.value = -1
+    focusBarcodeInput()
+  } else {
+    focusRow(Math.min(index, items.value.length - 1))
+  }
 }
 
 function handleRowKeydown(e, idx) {
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return
+  if (isReadOnly.value) return
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') return
   if (e.key === 'ArrowDown') {
     e.preventDefault()
+    if (idx < items.value.length - 1) focusRow(idx + 1)
+    else focusBarcodeInput()
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (idx > 0) focusRow(idx - 1)
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    focusQty(idx)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
     focusBarcodeInput()
   } else if (e.key === 'Delete' || e.key === 'Backspace') {
     e.preventDefault()
@@ -761,6 +822,7 @@ function resetForm() {
   repackName.value = ''
   repackTime.value = ''
   items.value = []
+  selectedRowIdx.value = -1
   if (availableSeries.value.length) selectedSeries.value = availableSeries.value[0]
   isReadOnly.value = false
   isDraft.value = false
