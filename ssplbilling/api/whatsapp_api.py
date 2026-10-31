@@ -27,7 +27,7 @@ from urllib.parse import quote
 import frappe
 import requests
 from frappe import _
-from frappe.utils import now_datetime
+from frappe.utils import get_datetime, now_datetime
 
 from ssplbilling.api.dashboard_api import get_allowed_tiles
 from ssplbilling.api.print_preview_api import (
@@ -74,6 +74,13 @@ GATEWAY_RECONNECTING = "Reconnecting after a dropped connection"
 STALE_DISCONNECT = timedelta(minutes=10)
 # Start returns once the browser engine has launched
 START_TIMEOUT = 60
+# Wait after the 1st, 2nd, ... restart in a row that did not bring the session back. Once these run
+# out the session is left down for a person to look at, so a crash loop never becomes a stream of
+# logins WhatsApp could flag. A session that has stayed ready for STABLE_FOR starts over.
+RESTART_BACKOFF = (timedelta(minutes=5), timedelta(minutes=15), timedelta(minutes=30), timedelta(minutes=60))
+MAX_RESTARTS = len(RESTART_BACKOFF) + 1
+STABLE_FOR = timedelta(hours=1)
+RESTARTS_CACHE_KEY = "sspl_whatsapp_restarts"
 
 
 class OpenWAError(frappe.ValidationError):
@@ -482,9 +489,42 @@ def auto_reconnect_sessions():
 			continue
 		try:
 			session = _fetch_session(settings, row)
+			restarts = frappe.cache.hget(RESTARTS_CACHE_KEY, row.session_name)
+			# Up for a while since the last restart: back from a one-off, not flapping
+			if (
+				restarts
+				and (session or {}).get("status") == READY
+				and now_datetime() - get_datetime(restarts["last"]) > STABLE_FOR
+			):
+				frappe.cache.hdel(RESTARTS_CACHE_KEY, row.session_name)
+				restarts = None
 			if not _needs_restart(session):
 				continue
-			logger.info(f"Restarting WhatsApp session {row.session_name} ({session.get('status')})")
+
+			restarts = restarts or {"count": 0, "next": None}
+			if restarts["count"] >= MAX_RESTARTS:
+				continue
+			if restarts["next"] and now_datetime() < get_datetime(restarts["next"]):
+				continue
+			restarts["count"] += 1
+			restarts["last"] = str(now_datetime())
+			if restarts["count"] < MAX_RESTARTS:
+				restarts["next"] = str(now_datetime() + RESTART_BACKOFF[restarts["count"] - 1])
+			else:
+				frappe.log_error(
+					title=_("WhatsApp session {0} keeps going offline").format(row.session_name),
+					message=_(
+						"Auto Reconnect has now restarted it {0} times without it staying up, and stops "
+						"trying after this one. Check the session on the OpenWA dashboard; once it has "
+						"been ready for an hour Auto Reconnect resumes."
+					).format(MAX_RESTARTS),
+				)
+			frappe.cache.hset(RESTARTS_CACHE_KEY, row.session_name, restarts)
+
+			logger.info(
+				f"Restarting WhatsApp session {row.session_name} ({session.get('status')}), "
+				f"attempt {restarts['count']} of {MAX_RESTARTS}"
+			)
 			try:
 				session = _call(settings, "POST", f"/sessions/{session['id']}/start", timeout=START_TIMEOUT)
 			except OpenWAError as e:
