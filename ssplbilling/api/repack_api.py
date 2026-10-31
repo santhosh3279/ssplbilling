@@ -108,10 +108,13 @@ def submit_repack(name):
     return {"status": "Submitted"}
 
 @frappe.whitelist()
-def get_metadata():
+def get_metadata(company=None):
     """Fetch metadata for Repack."""
+    filters = {"is_group": 0}
+    if company:
+        filters["company"] = company
     return {
-        "warehouses": frappe.get_all("Warehouse", filters={"is_group": 0}, fields=["name"]),
+        "warehouses": frappe.get_all("Warehouse", filters=filters, fields=["name"]),
         "naming_series": get_naming_series()
     }
 

@@ -454,7 +454,9 @@ onMounted(async () => {
 })
 
 async function fetchMetadata() {
-  const res = await frappePost('ssplbilling.api.repack_api.get_metadata')
+  const res = await frappePost('ssplbilling.api.repack_api.get_metadata', {
+    company: localStorage.getItem('wb-company') || null
+  })
   warehouses.value = res.warehouses
   availableSeries.value = res.naming_series
   if (availableSeries.value.length) selectedSeries.value = availableSeries.value[0]
