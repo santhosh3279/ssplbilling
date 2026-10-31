@@ -110,76 +110,87 @@
       </template>
 
       <template #row="{ item, index }">
-        <tr 
+        <tr
           :ref="el => { if (el) rowRefs[index] = el }"
-          class="border-b border-[var(--color-border)] outline-none cursor-pointer"
-          :class="!isReadOnly && selectedRowIdx === index ? 'bg-[var(--color-success)]/25' : 'hover:bg-[var(--color-surface-raised)]/50'"
           :tabindex="isReadOnly ? -1 : 0"
-          @focusin="!isReadOnly && (selectedRowIdx = index)"
-          @click="!isReadOnly && (selectedRowIdx = index)"
-          @keydown="handleRowKeydown($event, index)"
+          class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-all"
+          :class="{
+            'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)] font-bold !text-[var(--color-text-on-focus)]': !isReadOnly && (selectedRowIdx === index || editingRowIdx === index),
+            'hover:bg-[var(--color-surface-raised)]/50': isReadOnly || (selectedRowIdx !== index && editingRowIdx !== index)
+          }"
+          @focus="!isReadOnly && (selectedRowIdx = index)"
+          @keydown="!isReadOnly && handleRowKeydown($event, index)"
         >
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl font-mono text-center">{{ index + 1 }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-highlight)] text-4xl font-mono">{{ item.item_code }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-4xl font-medium">{{ item.item_name }}</td>
-          <td class="p-0 border-r border-[var(--color-border)]">
-            <input 
-              v-if="!isReadOnly"
-              :ref="el => setQtyRef(el, index)"
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl font-mono text-center" :class="isSelected(index) ? 'text-black' : 'text-[var(--color-text-muted)]'">{{ index + 1 }}</td>
+
+          <!-- item_code -->
+          <td class="p-0 border-r border-[var(--color-border)]" @click="startCellEdit(index, 'code')">
+            <input v-if="editingRowIdx === index && editingField === 'code'"
+              ref="editCodeInput"
+              v-model="item.item_code"
+              class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @focus="e => e.target.select()"
+              @input="onEditCodeInput(index)"
+              @keydown="onEditCodeKeydown($event, index)"
+            />
+            <span v-else class="block px-2 py-1 text-4xl font-mono" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
+          </td>
+
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.item_name }}</td>
+
+          <!-- qty -->
+          <td class="p-0 border-r border-[var(--color-border)]" @click="startCellEdit(index, 'qty')">
+            <input v-if="editingRowIdx === index && editingField === 'qty'"
+              ref="editQtyInput"
               v-model.number="item.qty"
               type="number"
-              class="w-full bg-transparent px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
-              @focus="e => e.target.select()"
-              @keydown.up.prevent
-              @keydown.down.prevent
-              @keydown.enter.prevent="focusType(index)"
-              @keydown.esc.prevent.stop="focusRow(index)"
+              step="0.001"
+              class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @keydown="onEditQtyKeydown($event, index)"
             />
-            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums">{{ item.qty }}</span>
+            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ item.uom }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl text-[var(--color-text)]/80 tabular-nums bg-transparent">
+
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.uom }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl tabular-nums" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]/80'">
             {{ formatRate(getPriceListRate(item, 'Buying')) }}
           </td>
-          <td class="p-0 border-r border-[var(--color-border)]">
-            <input 
-              v-if="!isReadOnly"
-              :ref="el => setRateRef(el, index)"
+
+          <!-- rate -->
+          <td class="p-0 border-r border-[var(--color-border)]" @click="startCellEdit(index, 'rate')">
+            <input v-if="editingRowIdx === index && editingField === 'rate'"
+              ref="editRateInput"
               v-model.number="item.rate"
               type="number"
               step="0.01"
-              class="w-full bg-transparent px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
-              @keydown.up.prevent
-              @keydown.down.prevent
-              @focus="e => e.target.select()"
-              @keydown.enter.prevent="handleRateEnter(index)"
-              @keydown.esc.prevent.stop="focusRow(index)"
+              class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @keydown="onEditRateKeydown($event, index)"
             />
-            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums">{{ formatRate(item.rate) }}</span>
+            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatRate(item.rate) }}</span>
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-center">
-            <span 
-              v-if="isReadOnly"
+
+          <!-- type -->
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-center" @click="startCellEdit(index, 'type')">
+            <select v-if="editingRowIdx === index && editingField === 'type'"
+              ref="editTypeSelect"
+              v-model="item.type"
+              class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-2 py-0.5 font-bold text-2xl outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              :class="item.type === 'Consume' ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'"
+              @keydown="onEditTypeKeydown($event, index)"
+            >
+              <option value="Consume" class="text-[var(--color-danger)] bg-[var(--color-surface)]">Consume</option>
+              <option value="Produce" class="text-[var(--color-success)] bg-[var(--color-surface)]">Produce</option>
+            </select>
+            <span
+              v-else
               class="inline-block px-3 py-1 rounded text-2xl font-bold uppercase tracking-wider"
               :class="item.type === 'Consume' ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]' : 'bg-[var(--color-success)]/15 text-[var(--color-success)]'"
             >
               {{ item.type }}
             </span>
-            <select 
-              v-else
-              :ref="el => setTypeRef(el, index)"
-              v-model="item.type"
-              class="bg-transparent border border-[var(--color-border)] rounded px-2 py-0.5 font-bold text-2xl outline-none focus:border-[var(--color-focus)]"
-              :class="item.type === 'Consume' ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'"
-              @keydown.enter.prevent="handleTypeEnter(index)"
-              @keydown.esc.prevent.stop="focusRow(index)"
-            >
-              <option value="Consume" class="text-[var(--color-danger)] bg-[var(--color-surface)]">Consume</option>
-              <option value="Produce" class="text-[var(--color-success)] bg-[var(--color-surface)]">Produce</option>
-            </select>
           </td>
           <td class="px-2 py-1 text-center">
-            <button v-if="!isReadOnly" class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]" @click="removeItem(index)">&times;</button>
+            <button v-if="!isReadOnly" tabindex="-1" class="rounded px-1 py-0.5 hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)]" :class="isSelected(index) ? 'text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'" @click.stop="removeItem(index)">&times;</button>
           </td>
         </tr>
       </template>
@@ -254,13 +265,13 @@
     <QuickItemSearch
       ref="quickSearchRef"
       :results="quickSearchResults"
-      :query="barcodeQuery"
+      :query="editQuickSearchRowIdx !== null ? (items[editQuickSearchRowIdx]?.item_code || '') : barcodeQuery"
       search-type="Stock"
       :warehouse="fromWarehouse"
       :anchor-el="quickSearchAnchor"
       :last-item-code="items[items.length - 1]?.item_code"
       @select="onQuickSearchSelect"
-      @close="quickSearchResults = []"
+      @close="quickSearchResults = []; editQuickSearchRowIdx = null"
       @refresh="onQuickSearchRefresh"
     />
 
@@ -270,7 +281,7 @@
       :show="showItemSearch"
       :initial-query="itemSearchInitialQuery"
       :skip-date-filter="true"
-      @close="showItemSearch = false"
+      @close="closeItemSearch"
       @select="handleItemSelect"
     />
 
@@ -340,11 +351,18 @@ const quickSearchAnchor = ref(null)
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
 const pendingTypeInput = ref(null)
-const typeRefs = ref([])
-const rateRefs = ref([])
-const qtyRefs = ref([])
 const rowRefs = ref([])
 const selectedRowIdx = ref(-1)
+// Row edit mode, as in Sales Invoice: one cell of one row is editable at a time
+const editingRowIdx = ref(-1)
+const editingField = ref(null) // 'code' | 'qty' | 'type' | 'rate'
+const editCodeInput = ref(null)
+const editQtyInput = ref(null)
+const editTypeSelect = ref(null)
+const editRateInput = ref(null)
+const originalRowCode = ref('')
+const editQuickSearchRowIdx = ref(null) // null = barcode entry, number = row code edit
+const itemSearchRowIdx = ref(null) // row the Item Search modal is picking for
 const priceListUpdateItem = ref(null)
 
 const sidebarDate = ref(serverToday())
@@ -517,6 +535,8 @@ async function fetchRecentRepacks() {
 
 function focusBarcodeInput() {
   selectedRowIdx.value = -1
+  editingRowIdx.value = -1
+  editingField.value = null
   nextTick(() => barcodeInput.value?.focus())
 }
 
@@ -576,27 +596,52 @@ async function handleBarcodeEnter() {
 }
 
 function onQuickSearchRefresh() {
-  if (barcodeQuery.value) {
-    quickSearchResults.value = searchItemsInCache(barcodeQuery.value)
+  const query = editQuickSearchRowIdx.value !== null
+    ? (items.value[editQuickSearchRowIdx.value]?.item_code || '').trim()
+    : barcodeQuery.value
+  if (query) {
+    quickSearchResults.value = searchItemsInCache(query)
   }
 }
 
 function onQuickSearchSelect(item) {
+  if (!item) return
+  quickSearchResults.value = []
+  if (editQuickSearchRowIdx.value !== null) {
+    const rowIdx = editQuickSearchRowIdx.value
+    editQuickSearchRowIdx.value = null
+    applyItemToRow(rowIdx, item)
+    return
+  }
   setPendingItem(item)
   barcodeQuery.value = ''
-  quickSearchResults.value = []
 }
 
-function openItemSearch(query) {
+function openItemSearch(query, rowIdx = null) {
+  itemSearchRowIdx.value = rowIdx
   itemSearchInitialQuery.value = query || ''
   showItemSearch.value = true
 }
 
+function closeItemSearch() {
+  showItemSearch.value = false
+  const rowIdx = itemSearchRowIdx.value
+  itemSearchRowIdx.value = null
+  if (rowIdx !== null && items.value[rowIdx]) focusEditField('code', rowIdx)
+  else focusBarcodeInput()
+}
+
 function handleItemSelect(item) {
+  showItemSearch.value = false
+  quickSearchResults.value = []
+  const rowIdx = itemSearchRowIdx.value
+  itemSearchRowIdx.value = null
+  if (rowIdx !== null && items.value[rowIdx]) {
+    applyItemToRow(rowIdx, item)
+    return
+  }
   setPendingItem(item)
   barcodeQuery.value = ''
-  quickSearchResults.value = []
-  showItemSearch.value = false
 }
 
 function setPendingItem(details) {
@@ -636,7 +681,7 @@ function confirmPendingItem() {
   
   pendingItem.value = null
   // Produce rows go on to the rate, then the price list update
-  if (p.type === 'Produce') focusRate(idx)
+  if (p.type === 'Produce') focusEditField('rate', idx)
   else focusBarcodeInput()
 }
 
@@ -662,22 +707,8 @@ function handlePendingTypeKeydown(e) {
   }
 }
 
-function setTypeRef(el, idx) {
-  if (el) {
-    typeRefs.value[idx] = el
-  }
-}
-
-function focusType(idx) {
-  nextTick(() => {
-    typeRefs.value[idx]?.focus()
-  })
-}
-
-function setQtyRef(el, idx) {
-  if (el) {
-    qtyRefs.value[idx] = el
-  }
+function isSelected(idx) {
+  return !isReadOnly.value && (selectedRowIdx.value === idx || editingRowIdx.value === idx)
 }
 
 function focusRow(idx) {
@@ -691,38 +722,181 @@ function focusRow(idx) {
   })
 }
 
-function focusQty(idx) {
-  selectedRowIdx.value = idx
-  nextTick(() => {
-    qtyRefs.value[idx]?.focus()
-    qtyRefs.value[idx]?.select()
-  })
-}
+const EDIT_FIELDS = ['code', 'qty', 'type', 'rate']
 
-function setRateRef(el, idx) {
-  if (el) {
-    rateRefs.value[idx] = el
+function focusEditField(field, idx) {
+  if (isReadOnly.value || !items.value[idx]) return
+  if (editingRowIdx.value !== idx) {
+    originalRowCode.value = items.value[idx].item_code
   }
-}
-
-function focusRate(idx) {
+  editingRowIdx.value = idx
+  editingField.value = field
+  selectedRowIdx.value = idx
+  const inputMap = { code: editCodeInput, qty: editQtyInput, type: editTypeSelect, rate: editRateInput }
   nextTick(() => {
-    rateRefs.value[idx]?.focus()
-    rateRefs.value[idx]?.select()
+    const el = inputMap[field]?.value
+    if (!el) return
+    el.focus({ preventScroll: true })
+    if (el.select) el.select()
+    rowRefs.value[idx]?.scrollIntoView({ block: 'nearest' })
   })
 }
 
-function handleTypeEnter(idx) {
-  if (items.value[idx]?.type === 'Produce') focusRate(idx)
+function startCellEdit(idx, field) {
+  if (isReadOnly.value) return
+  if (editingRowIdx.value === idx && editingField.value === field) return
+  focusEditField(field, idx)
+}
+
+function exitEditMode(idx, cancel = false) {
+  const item = items.value[idx]
+  // An unapplied code edit falls back to the row's item
+  if (cancel && item && editingField.value === 'code') item.item_code = originalRowCode.value
+  editingRowIdx.value = -1
+  editingField.value = null
+  quickSearchResults.value = []
+  editQuickSearchRowIdx.value = null
+  focusRow(idx)
+}
+
+// Close the row edit and move on to the next row, or the barcode input after the last one
+function finishRowEdit(idx) {
+  editingRowIdx.value = -1
+  editingField.value = null
+  if (idx < items.value.length - 1) focusRow(idx + 1)
   else focusBarcodeInput()
 }
 
-function handleRateEnter(idx) {
-  const item = items.value[idx]
-  if (item?.type === 'Produce' && item.item_code) {
-    priceListUpdateItem.value = { ...item }
+// ArrowLeft / ArrowRight move between the editable cells of a row
+function handleCellNavigation(e, idx, field) {
+  const pos = EDIT_FIELDS.indexOf(field)
+  if (e.key === 'ArrowLeft' && pos > 0) {
+    if (e.target.type === 'text' && e.target.selectionStart !== 0) return false
+    e.preventDefault()
+    focusEditField(EDIT_FIELDS[pos - 1], idx)
+    return true
+  }
+  if (e.key === 'ArrowRight' && pos < EDIT_FIELDS.length - 1) {
+    if (e.target.type === 'text' && e.target.selectionStart !== e.target.value.length) return false
+    e.preventDefault()
+    focusEditField(EDIT_FIELDS[pos + 1], idx)
+    return true
+  }
+  return false
+}
+
+function applyItemToRow(idx, details) {
+  const row = items.value[idx]
+  if (!row || !details) return
+  row.item_code = details.item_code
+  row.item_name = details.item_name
+  row.uom = details.uom || details.stock_uom || row.uom
+  // Produce rates are recalculated from the consumed items
+  if (row.type === 'Consume') row.rate = details.valuation_rate || details.rate || 0
+  originalRowCode.value = row.item_code
+  focusEditField('qty', idx)
+}
+
+function onEditCodeInput(idx) {
+  const code = (items.value[idx]?.item_code || '').trim()
+  if (code.length >= 2) {
+    quickSearchResults.value = searchItemsInCache(code)
+    quickSearchAnchor.value = editCodeInput.value
+    editQuickSearchRowIdx.value = idx
   } else {
-    focusBarcodeInput()
+    quickSearchResults.value = []
+    editQuickSearchRowIdx.value = null
+  }
+}
+
+async function onEditCodeKeydown(e, idx) {
+  if (quickSearchResults.value.length > 0 && quickSearchRef.value) {
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'Enter') {
+      e.preventDefault()
+      quickSearchRef.value.handleQuickSearchKeydown(e)
+      return
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      e.stopPropagation()
+      quickSearchResults.value = []
+      editQuickSearchRowIdx.value = null
+      return
+    }
+  }
+
+  if (handleCellNavigation(e, idx, 'code')) return
+
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    const code = (items.value[idx]?.item_code || '').trim()
+    if (!code || code === originalRowCode.value) {
+      items.value[idx].item_code = originalRowCode.value
+      focusEditField('qty', idx)
+      return
+    }
+    const match = lookupItemInCache(code)
+    if (match) {
+      applyItemToRow(idx, match)
+      return
+    }
+    const res = await frappePost('ssplbilling.api.storetransfer_api.get_item_details', {
+      item_code: code,
+      warehouse: fromWarehouse.value
+    })
+    if (res?.found) applyItemToRow(idx, res)
+    else openItemSearch(code, idx)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
+    exitEditMode(idx, true)
+  }
+}
+
+function onEditQtyKeydown(e, idx) {
+  if (handleCellNavigation(e, idx, 'qty')) return
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.preventDefault()
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    if (items.value[idx]?.qty > 0) focusEditField('type', idx)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
+    exitEditMode(idx)
+  }
+}
+
+function onEditTypeKeydown(e, idx) {
+  if (handleCellNavigation(e, idx, 'type')) return
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    if (items.value[idx]?.type === 'Produce') focusEditField('rate', idx)
+    else finishRowEdit(idx)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
+    exitEditMode(idx)
+  }
+}
+
+function onEditRateKeydown(e, idx) {
+  if (handleCellNavigation(e, idx, 'rate')) return
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.preventDefault()
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    const item = items.value[idx]
+    if (item?.type === 'Produce' && item.item_code) {
+      editingRowIdx.value = -1
+      editingField.value = null
+      priceListUpdateItem.value = { ...item }
+    } else {
+      finishRowEdit(idx)
+    }
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    e.stopPropagation()
+    exitEditMode(idx)
   }
 }
 
@@ -733,9 +907,10 @@ function closePriceListUpdate() {
 
 function removeItem(index) {
   items.value.splice(index, 1)
-  qtyRefs.value.length = typeRefs.value.length = rateRefs.value.length = rowRefs.value.length = items.value.length
+  rowRefs.value.length = items.value.length
+  editingRowIdx.value = -1
+  editingField.value = null
   if (!items.value.length) {
-    selectedRowIdx.value = -1
     focusBarcodeInput()
   } else {
     focusRow(Math.min(index, items.value.length - 1))
@@ -743,24 +918,34 @@ function removeItem(index) {
 }
 
 function handleRowKeydown(e, idx) {
-  if (isReadOnly.value) return
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') return
-  if (e.key === 'ArrowDown') {
+  if (e.target !== e.currentTarget) return
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    focusEditField('code', idx)
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault()
+    openItemSearch(items.value[idx]?.item_code, idx)
+  } else if (e.key === 'ArrowDown') {
     e.preventDefault()
     if (idx < items.value.length - 1) focusRow(idx + 1)
     else focusBarcodeInput()
   } else if (e.key === 'ArrowUp') {
     e.preventDefault()
     if (idx > 0) focusRow(idx - 1)
-  } else if (e.key === 'Enter') {
+  } else if (e.key === 'Home') {
     e.preventDefault()
-    focusQty(idx)
+    focusRow(0)
+  } else if (e.key === 'End') {
+    e.preventDefault()
+    if (idx === items.value.length - 1) focusBarcodeInput()
+    else focusRow(items.value.length - 1)
   } else if (e.key === 'Escape') {
     e.preventDefault()
     e.stopPropagation()
     focusBarcodeInput()
   } else if (e.key === 'Delete' || e.key === 'Backspace') {
     e.preventDefault()
+    e.stopPropagation()
     removeItem(idx)
   }
 }
@@ -823,6 +1008,8 @@ function resetForm() {
   repackTime.value = ''
   items.value = []
   selectedRowIdx.value = -1
+  editingRowIdx.value = -1
+  editingField.value = null
   if (availableSeries.value.length) selectedSeries.value = availableSeries.value[0]
   isReadOnly.value = false
   isDraft.value = false
