@@ -338,6 +338,22 @@
       </div>
     </div>
 
+    <!-- PAYMENT RECEIVED BIG TICK (same as the POS payment panel) -->
+    <transition name="fade">
+      <div v-if="paidTick.show" class="pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-[var(--color-bg)]/60 backdrop-blur-sm">
+        <div class="paid-tick-pop flex flex-col items-center gap-4">
+          <div class="flex h-56 w-56 items-center justify-center rounded-full bg-[var(--color-success)] shadow-2xl shadow-[var(--color-success)]/40">
+            <svg viewBox="0 0 52 52" class="h-36 w-36 text-white" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+              <path class="paid-tick-path" d="M14 27 l8 8 l16 -18" />
+            </svg>
+          </div>
+          <div class="font-mono text-[40px] font-black leading-none text-[var(--color-success)]">₹{{ fmt(paidTick.amount) }}</div>
+          <div class="text-[18px] font-black uppercase tracking-widest text-[var(--color-text)]">Received by {{ paidTick.mode === 'card' ? 'Card' : 'UPI' }}</div>
+          <div v-if="paidTick.label" class="text-[16px] font-bold text-[var(--color-text-muted)]">{{ paidTick.label }}</div>
+        </div>
+      </div>
+    </transition>
+
     <CustomerSearchModal
       :show="showCustomerSearch"
       title="Select Customer"
@@ -360,6 +376,7 @@ import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { serverToday } from '../services/serverTime'
 import { session, getWhatsAppSessionId } from '../session.js'
+import { fireConfetti } from '../utils/confetti'
 
 const router = useRouter()
 const API = 'ssplbilling.api.paytm_api'
@@ -478,11 +495,25 @@ async function loadLinks() {
   }
 }
 
+// Full-screen tick flashed, with confetti, when Paytm confirms a payment
+const paidTick = ref({ show: false, amount: 0, mode: 'upi', label: '' })
+let paidTickTimer = null
+function showPaidTick(amount, mode, label = '') {
+  if (paidTickTimer) clearTimeout(paidTickTimer)
+  paidTick.value = { show: true, amount, mode, label }
+  paidTickTimer = setTimeout(() => { paidTick.value.show = false }, 1500)
+}
+
+// The server submits the receipt's Payment Entry as soon as it sees the payment; when that
+// failed, it is tried once more from here before the operator has to press Create Receipt
+const receiptRetried = new Set()
+
 // Merge a get_status / socket result into the list row (result keys differ from list fields)
 function applyResult(r) {
   if (!r?.order_id) return
   const row = links.value.find((l) => l.order_id === r.order_id)
   if (!row) return loadLinks()
+  const justPaid = row.status !== 'Success' && r.status === 'Success'
   Object.assign(row, {
     status: r.status,
     amount: r.amount,
@@ -492,6 +523,13 @@ function applyResult(r) {
     short_url: r.short_url || row.short_url,
   })
   if (r.reference_no && r.reference_no !== r.order_id) row.rrn = r.reference_no
+  if (!justPaid) return
+  fireConfetti({ count: 800, spread: 1.6 })
+  showPaidTick(r.amount, r.mode, row.customer)
+  if (!row.payment_entry && !receiptRetried.has(row.order_id)) {
+    receiptRetried.add(row.order_id)
+    retryReceipt(row)
+  }
 }
 
 async function selectLink(l) {
@@ -817,10 +855,32 @@ onUnmounted(() => {
   clearInterval(pollTimer)
   clearInterval(qrPollTimer)
   clearInterval(tickTimer)
+  clearTimeout(paidTickTimer)
 })
 </script>
 
 <style scoped>
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+.paid-tick-pop {
+  animation: paid-tick-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.paid-tick-path {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: paid-tick-draw 0.4s ease-out 0.3s forwards;
+}
+@keyframes paid-tick-pop {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes paid-tick-draw {
+  to { stroke-dashoffset: 0; }
+}
 input::-webkit-outer-spin-button,
 input::-webkit-inner-spin-button {
   -webkit-appearance: none;
