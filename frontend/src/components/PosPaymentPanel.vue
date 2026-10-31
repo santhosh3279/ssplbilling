@@ -854,10 +854,12 @@ function handleKeydown(e) {
     emit('back')
     return
   }
-  // Up / Down walk the boxes (and the Post button) instead of stepping number values
+  // Up / Down walk the boxes (and the Post button) instead of stepping number values;
+  // read-only boxes (UPI / Card locked by Paytm or a waiting request) are skipped
   if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
     e.stopPropagation()
     const fields = [...inputOrder(), ...(canSubmit.value ? [postButton.value] : [])]
+      .filter(el => el === e.target || !el.readOnly)
     const idx = fields.indexOf(e.target)
     if (idx === -1) return
     e.preventDefault()
