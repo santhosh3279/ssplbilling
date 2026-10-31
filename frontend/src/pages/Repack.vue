@@ -289,6 +289,7 @@ const { refreshItemCache, lookupItemInCache, searchItemsInCache, items: cachedIt
 
 const repackNo = ref('')
 const repackDate = ref(serverToday())
+const repackTime = ref('')
 const fromWarehouse = ref('')
 const toWarehouse = ref('')
 const items = ref([])
@@ -661,6 +662,7 @@ async function handleSave() {
         name: repackName.value || undefined,
         naming_series: selectedSeries.value,
         posting_date: repackDate.value,
+        posting_time: repackTime.value || undefined,
         from_warehouse: fromWarehouse.value,
         to_warehouse: toWarehouse.value,
         items: items.value
@@ -669,6 +671,7 @@ async function handleSave() {
     
     repackNo.value = res.name
     repackName.value = res.name
+    repackTime.value = res.posting_time
     isReadOnly.value = true
     isDraft.value = true
     await fetchRecentRepacks()
@@ -693,6 +696,7 @@ async function handleSubmit() {
 function resetForm() {
   repackNo.value = ''
   repackName.value = ''
+  repackTime.value = ''
   items.value = []
   if (availableSeries.value.length) selectedSeries.value = availableSeries.value[0]
   isReadOnly.value = false
@@ -723,6 +727,7 @@ async function handleSelectSidebarItem(item) {
   repackNo.value = details.name
   repackName.value = details.name
   repackDate.value = details.posting_date
+  repackTime.value = details.posting_time
   fromWarehouse.value = details.from_warehouse
   toWarehouse.value = details.to_warehouse
   selectedSeries.value = details.naming_series

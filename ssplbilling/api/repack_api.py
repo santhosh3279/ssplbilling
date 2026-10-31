@@ -48,6 +48,9 @@ def save_repack(data):
     if data.get("company"):
         se.company = data["company"]
     se.posting_date = data.get("posting_date") or frappe.utils.today()
+    se.posting_time = data.get("posting_time") or se.posting_time or frappe.utils.nowtime()
+    # Without this, ERPNext's validate_posting_time resets date/time to now on every save
+    se.set_posting_time = 1
     se.from_warehouse = data.get("from_warehouse")  # Default Source
     se.to_warehouse = data.get("to_warehouse")      # Default Destination
 
@@ -88,6 +91,7 @@ def save_repack(data):
 
     return {
         "name": se.name,
+        "posting_time": str(se.posting_time),
         "status": "Draft"
     }
 
