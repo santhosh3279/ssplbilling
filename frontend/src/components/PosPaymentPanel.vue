@@ -854,6 +854,16 @@ function handleKeydown(e) {
     emit('back')
     return
   }
+  // Up / Down walk the boxes (and the Post button) instead of stepping number values
+  if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+    e.stopPropagation()
+    const fields = [...inputOrder(), ...(canSubmit.value ? [postButton.value] : [])]
+    const idx = fields.indexOf(e.target)
+    if (idx === -1) return
+    e.preventDefault()
+    fields[idx + (e.key === 'ArrowDown' ? 1 : -1)]?.focus()
+    return
+  }
   if (e.key === 'Enter') {
     e.stopPropagation()
     const fields = inputOrder()
