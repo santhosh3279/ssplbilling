@@ -1,5 +1,5 @@
 import { serverNow, serverToday } from './serverTime'
-import { ref, toRaw } from 'vue'
+import { ref, computed, toRaw } from 'vue'
 import { frappeGet, frappePost } from '../api.js'
 import { session } from '../session'
 import { readItemSnapshot, writeItemSnapshot, applyPriceList, mergeItemDelta } from './itemCacheStore'
@@ -312,26 +312,41 @@ export function uomLabel(itemCode, uom) {
   return cf > 0 && cf !== 1 ? `${uom}(${parseFloat(cf.toFixed(3))})` : uom
 }
 
+// Lowercased item_code / barcode → cached item, rebuilt only when the active list changes.
+// Bill rows look items up several times per render (UOM options and labels), so a linear
+// scan of the ~12k-item list made every arrow-key move through a long bill lag.
+// First match wins, like the find() scans this replaced.
+const lookupIndex = computed(() => {
+  const byCode = new Map()
+  const byBarcode = new Map()
+  for (const i of items.value) {
+    const itemCode = (i.item_code || '').toLowerCase()
+    if (!byCode.has(itemCode)) byCode.set(itemCode, i)
+    for (const b of i.barcodes_detailed || []) {
+      const barcode = (b.barcode || '').toLowerCase()
+      if (!byBarcode.has(barcode)) byBarcode.set(barcode, { item: i, match: b })
+    }
+  }
+  return { byCode, byBarcode }
+})
+
 function lookupExact(code) {
   if (!code) return null
   const cleanCode = code.trim().toLowerCase()
-  
+  const { byCode, byBarcode } = lookupIndex.value
+
   // 1. Check direct item_code match
-  let found = items.value.find(i => (i.item_code || '').toLowerCase() === cleanCode)
+  const found = byCode.get(cleanCode)
   if (found) {
     const item = { ...found }
     return item
   }
 
   // 2. Check barcode match
-  found = items.value.find(i => {
-    const detailed = i.barcodes_detailed || []
-    return detailed.some(b => (b.barcode || '').toLowerCase() === cleanCode)
-  })
-
-  if (found) {
-    const item = { ...found }
-    const match = item.barcodes_detailed.find(b => (b.barcode || '').toLowerCase() === cleanCode)
+  const hit = byBarcode.get(cleanCode)
+  if (hit) {
+    const item = { ...hit.item }
+    const match = hit.match
     if (match && match.uom) {
       item.uom = match.uom // Use the UOM linked to this specific barcode
       item._from_barcode = true
