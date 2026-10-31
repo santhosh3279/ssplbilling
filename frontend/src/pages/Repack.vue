@@ -137,12 +137,14 @@
           <td class="p-0 border-r border-[var(--color-border)]">
             <input 
               v-if="!isReadOnly"
+              :ref="el => setRateRef(el, index)"
               v-model.number="item.rate"
               type="number"
               step="0.01"
               class="w-full bg-transparent px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               @keydown.up.prevent
               @keydown.down.prevent
+              @keydown.enter.prevent="handleRateEnter(index)"
             />
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums">{{ formatRate(item.rate) }}</span>
           </td>
@@ -160,7 +162,7 @@
               v-model="item.type"
               class="bg-transparent border border-[var(--color-border)] rounded px-2 py-0.5 font-bold text-2xl outline-none focus:border-[var(--color-focus)]"
               :class="item.type === 'Consume' ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'"
-              @keydown.enter.prevent="focusBarcodeInput"
+              @keydown.enter.prevent="handleTypeEnter(index)"
             >
               <option value="Consume" class="text-[var(--color-danger)] bg-[var(--color-surface)]">Consume</option>
               <option value="Produce" class="text-[var(--color-success)] bg-[var(--color-surface)]">Produce</option>
@@ -261,6 +263,19 @@
       @close="showItemSearch = false"
       @select="handleItemSelect"
     />
+
+    <!-- Price List Update for produced items -->
+    <PriceListUpdate
+      v-if="priceListUpdateItem"
+      :is-sub-window="true"
+      :item-code="priceListUpdateItem.item_code"
+      :selected-price-list="buyingPriceList"
+      :initial-rate="Number(priceListUpdateItem.rate) || 0"
+      :initial-uom="priceListUpdateItem.uom || ''"
+      :initial-qty="Number(priceListUpdateItem.qty) || 0"
+      @close="closePriceListUpdate"
+      @saved="closePriceListUpdate"
+    />
   </div>
 </template>
 
@@ -272,6 +287,7 @@ import { useShortcuts } from '../services/shortcutManager'
 import Stock_Template from '../components/Stock_Template.vue'
 import ItemSearch from '../components/ItemSearch.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
+import PriceListUpdate from './PriceListUpdate.vue'
 import { frappePost } from '../api'
 import { useItemCache } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
@@ -315,6 +331,8 @@ const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
 const pendingTypeInput = ref(null)
 const typeRefs = ref([])
+const rateRefs = ref([])
+const priceListUpdateItem = ref(null)
 
 const sidebarDate = ref(serverToday())
 const recentRepacks = ref([])
@@ -342,6 +360,13 @@ try {
 } catch {
   priceLists.value = []
 }
+
+// Buying price list the produced item's cost rate is entered into
+const buyingPriceList = computed(() =>
+  priceLists.value.find(p => p === 'Buying')
+  || priceLists.value.find(p => String(p).toLowerCase().includes('buying'))
+  || 'Buying'
+)
 
 function getPriceListRate(item, priceListName) {
   if (!item) return 0.0
@@ -564,7 +589,8 @@ function setPendingItem(details) {
     qty: 0,
     uom: details.uom,
     rate: details.valuation_rate || details.rate || 0,
-    type: 'Consume'
+    // Second row is the produced item by default
+    type: items.value.length === 1 ? 'Produce' : 'Consume'
   }
   nextTick(() => {
     pendingQtyInput.value?.focus()
@@ -576,10 +602,11 @@ function confirmPendingItem() {
   if (!pendingItem.value || pendingItem.value.qty <= 0) return
   const p = pendingItem.value
   
-  const existing = items.value.find(i => i.item_code === p.item_code && i.type === p.type)
-  if (existing) {
-    existing.qty += p.qty
+  let idx = items.value.findIndex(i => i.item_code === p.item_code && i.type === p.type)
+  if (idx !== -1) {
+    items.value[idx].qty += p.qty
   } else {
+    idx = items.value.length
     items.value.push({
       item_code: p.item_code,
       item_name: p.item_name,
@@ -591,7 +618,9 @@ function confirmPendingItem() {
   }
   
   pendingItem.value = null
-  focusBarcodeInput()
+  // Produce rows go on to the rate, then the price list update
+  if (p.type === 'Produce') focusRate(idx)
+  else focusBarcodeInput()
 }
 
 function handlePendingQtyKeydown(e) {
@@ -626,6 +655,38 @@ function focusType(idx) {
   nextTick(() => {
     typeRefs.value[idx]?.focus()
   })
+}
+
+function setRateRef(el, idx) {
+  if (el) {
+    rateRefs.value[idx] = el
+  }
+}
+
+function focusRate(idx) {
+  nextTick(() => {
+    rateRefs.value[idx]?.focus()
+    rateRefs.value[idx]?.select()
+  })
+}
+
+function handleTypeEnter(idx) {
+  if (items.value[idx]?.type === 'Produce') focusRate(idx)
+  else focusBarcodeInput()
+}
+
+function handleRateEnter(idx) {
+  const item = items.value[idx]
+  if (item?.type === 'Produce' && item.item_code) {
+    priceListUpdateItem.value = { ...item }
+  } else {
+    focusBarcodeInput()
+  }
+}
+
+function closePriceListUpdate() {
+  priceListUpdateItem.value = null
+  focusBarcodeInput()
 }
 
 function removeItem(index) {
