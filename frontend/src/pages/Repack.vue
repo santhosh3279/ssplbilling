@@ -162,11 +162,11 @@
               ref="editRateInput"
               v-model.number="item.rate"
               type="number"
-              step="0.01"
+              step="0.001"
               class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               @keydown="onEditRateKeydown($event, index)"
             />
-            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatRate(item.rate) }}</span>
+            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatRate(item.rate, item.type === 'Produce' ? PRODUCE_RATE_PRECISION : 2) }}</span>
           </td>
 
           <!-- type -->
@@ -221,7 +221,7 @@
               <input
                 v-model.number="pendingItem.rate"
                 type="number"
-                step="0.01"
+                step="0.001"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                 @keydown.up.prevent
                 @keydown.down.prevent
@@ -436,9 +436,12 @@ function getPriceListRate(item, priceListName) {
   return 0.0
 }
 
-function formatRate(val) {
+// Produced item rates are kept and shown to 3 decimals
+const PRODUCE_RATE_PRECISION = 3
+
+function formatRate(val, digits = 2) {
   const num = parseFloat(val)
-  return isNaN(num) ? '0.00' : num.toFixed(2)
+  return (isNaN(num) ? 0 : num).toFixed(digits)
 }
 
 function autoCalculateProduceRates() {
@@ -465,7 +468,7 @@ function autoCalculateProduceRates() {
   
   // Distribute the valuation
   const ratePerQty = totalConsumedValuation / totalProduceQty
-  const newRate = parseFloat(ratePerQty.toFixed(4))
+  const newRate = parseFloat(ratePerQty.toFixed(PRODUCE_RATE_PRECISION))
   for (const item of produceItems) {
     if (item.rate !== newRate) {
       item.rate = newRate
