@@ -30,11 +30,11 @@
     <div ref="viewRef" class="relative flex-1 overflow-hidden" @pointerdown="tapToFocus">
       <video ref="videoRef" class="h-full w-full object-cover" playsinline muted autoplay></video>
 
-      <!-- Aiming guide: only this area is decoded. Border colour shows scan state. -->
-      <div v-if="!error" class="pointer-events-none absolute inset-0 flex items-center justify-center">
+      <!-- Scan area: the whole camera view (inset a little) is decoded. Border colour shows scan state. -->
+      <div v-if="!error" class="pointer-events-none absolute inset-0 p-2">
         <div
           ref="boxRef"
-          class="relative h-44 w-[85%] max-w-md rounded-2xl border-[3px] shadow-[0_0_0_9999px_rgba(0,0,0,0.45)] transition-colors duration-200"
+          class="relative h-full w-full rounded-2xl border-[3px] transition-colors duration-200"
           :class="boxClass"
         >
           <div v-if="!foundCode" class="scan-line absolute inset-x-3 h-0.5 bg-red-500/90"></div>
@@ -140,7 +140,7 @@
 <script setup>
 /**
  * Full-screen camera barcode scanner.
- * Every frame the aiming box is cropped out of the video and decoded by the native
+ * Every frame the scan area (the whole camera view) is cropped out of the video and decoded by the native
  * BarcodeDetector (when present) and by ZXing, so a phone whose native detector
  * silently returns nothing still scans. Only the bars are decoded: the number printed
  * under them is never read, so a label whose bars will not decode is entered by hand
@@ -174,7 +174,7 @@ const starting = ref(true)
 const status = ref('')
 const torchAvailable = ref(false)
 const torchOn = ref(false)
-const hint = ref('Fit the barcode inside the box')
+const hint = ref('Point the camera at the barcode')
 const hintWarn = ref(false)
 const foundCode = ref('')
 const alive = ref(true)
@@ -225,8 +225,8 @@ function submitTyped() {
 const NATIVE_FORMATS = ['code_128', 'ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_39', 'code_93', 'codabar', 'itf']
 const SCAN_INTERVAL = 150
 const FOUND_DELAY = 150
-// Decoding a smaller copy of the aiming box is several times faster and still
-// leaves enough pixels per bar for labels filling the box
+// Decoding a smaller copy of the scan area is several times faster and still
+// leaves enough pixels per bar for a label held 15–20 cm away
 const DECODE_WIDTH = 800
 // deviceId of the main back camera, so later scans open it without a second camera start
 const LENS_KEY = 'bs-primary-lens'
@@ -285,7 +285,7 @@ function found(text) {
   }, FOUND_DELAY)
 }
 
-/** Aiming box in video pixels, accounting for object-cover scaling. */
+/** Scan area in video pixels, accounting for object-cover scaling. */
 function boxInVideo() {
   const video = videoRef.value
   const vw = video.videoWidth, vh = video.videoHeight
