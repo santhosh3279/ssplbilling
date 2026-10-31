@@ -26,6 +26,11 @@ def get_repack_details(name):
         items.append(item_dict)
         
     doc_dict["items"] = items
+    # ERPNext clears header warehouses on Repack save; recover them from the rows
+    if not doc_dict.get("from_warehouse"):
+        doc_dict["from_warehouse"] = next((i.s_warehouse for i in doc.items if i.s_warehouse), None)
+    if not doc_dict.get("to_warehouse"):
+        doc_dict["to_warehouse"] = next((i.t_warehouse for i in doc.items if i.t_warehouse), None)
     return doc_dict
 
 @frappe.whitelist()
