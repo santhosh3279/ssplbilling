@@ -469,7 +469,7 @@
 
     <!-- PAYMENT RECEIVED BIG TICK (UPI / CARD) -->
     <transition name="fade">
-      <div v-if="paidTick.show" class="pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-[var(--color-bg)]/60 backdrop-blur-sm">
+      <div v-if="paidTick.show" class="pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-[var(--color-bg)]/60">
         <div class="paid-tick-pop flex flex-col items-center gap-4">
           <div class="flex h-56 w-56 items-center justify-center rounded-full bg-[var(--color-success)] shadow-2xl shadow-[var(--color-success)]/40">
             <svg viewBox="0 0 52 52" class="h-36 w-36 text-white" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">

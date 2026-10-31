@@ -21,7 +21,6 @@ export function fireConfetti({
   const h = window.innerHeight
   canvas.width = w * dpr
   canvas.height = h * dpr
-  ctx.scale(dpr, dpr)
 
   // Two cannons from the bottom corners, aimed up and inward
   const pieces = Array.from({ length: count }, (_, i) => {
@@ -40,25 +39,30 @@ export function fireConfetti({
     }
   })
 
+  // Per frame: one setTransform per piece instead of save/translate/rotate/restore, and pieces
+  // that fell below the screen are dropped. Runs at 800 pieces on cashier PCs, beside a Vue update.
   const start = performance.now()
+  let live = pieces
   function frame(now) {
     const elapsed = now - start
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, w, h)
     ctx.globalAlpha = Math.max(0, 1 - Math.max(0, elapsed - duration * 0.6) / (duration * 0.4))
-    for (const p of pieces) {
+    live = live.filter(p => {
       p.vy += gravity
       p.vx *= drag
       p.x += p.vx
       p.y += p.vy
       p.rot += p.vrot
-      ctx.save()
-      ctx.translate(p.x, p.y)
-      ctx.rotate(p.rot)
+      if (p.y - p.size > h && p.vy > 0) return false
+      const cos = Math.cos(p.rot) * dpr
+      const sin = Math.sin(p.rot) * dpr
+      ctx.setTransform(cos, sin, -sin, cos, p.x * dpr, p.y * dpr)
       ctx.fillStyle = p.color
       ctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2)
-      ctx.restore()
-    }
-    if (elapsed < duration) requestAnimationFrame(frame)
+      return true
+    })
+    if (elapsed < duration && live.length) requestAnimationFrame(frame)
     else canvas.remove()
   }
   requestAnimationFrame(frame)

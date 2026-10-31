@@ -118,14 +118,26 @@ def _queue_ledger_balances(parties, accounts):
 
 
 def _flush_ledger_balances():
-	# Balances are computed here so the SUM reads the final committed state for submit and cancel.
+	# Runs after commit, so the worker's SUM reads the final committed state for submit and cancel.
+	# The SUM itself is left to a worker: for a counter customer it scans tens of thousands of GL
+	# rows (~2s), and in an after-commit callback it held up the cashier's submit response.
 	state = getattr(frappe.local, "_sspl_ledger_balances_pending", None)
 	frappe.local._sspl_ledger_balances_pending = None
 	if not state or not (state["parties"] or state["accounts"]):
 		return
+	frappe.enqueue(
+		"ssplbilling.api.ledger_utils.publish_ledger_balances",
+		queue="short",
+		parties=list(state["parties"]),
+		accounts=list(state["accounts"]),
+	)
+
+
+def publish_ledger_balances(parties, accounts):
+	"""Worker: compute the balances and push one ledger_balances message."""
 	frappe.publish_realtime(
 		"ledger_balances",
-		{"ts": time.time(), "ledgers": get_ledger_balance_snapshots(state["parties"], state["accounts"])},
+		{"ts": time.time(), "ledgers": get_ledger_balance_snapshots(set(parties), set(accounts))},
 		after_commit=False,
 	)
 
