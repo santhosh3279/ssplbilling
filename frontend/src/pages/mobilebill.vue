@@ -47,7 +47,17 @@
         <div class="flex items-center gap-2">
           <span class="line-no shrink-0">{{ pendingLineNo }}</span>
           <MarqueeText manual :text="pending.item_name" class="min-w-0 flex-1 text-[1.3125rem] font-bold leading-tight" />
-          <span class="shrink-0 rounded bg-[var(--color-bg)] px-1.5 py-0.5 text-xs font-bold uppercase text-[var(--color-text-muted)]">{{ pending.uom }}</span>
+          <!-- Multi-UOM item: pick the unit the qty is entered in; the rate follows the price list for that unit -->
+          <select
+            v-if="pendingUoms.length > 1"
+            v-model="pending.uom"
+            :aria-label="`Unit of ${pending.item_name}`"
+            class="shrink-0 rounded-lg border-2 border-[var(--color-info)] bg-[var(--color-bg)] px-1.5 py-1 text-sm font-bold uppercase text-[var(--color-text)] outline-none"
+            @change="onPendingUomChange"
+          >
+            <option v-for="u in pendingUoms" :key="u" :value="u">{{ uomLabel(pending.item_code, u) }}</option>
+          </select>
+          <span v-else class="shrink-0 rounded bg-[var(--color-bg)] px-1.5 py-0.5 text-xs font-bold uppercase text-[var(--color-text-muted)]">{{ pending.uom }}</span>
           <span v-if="pending.target !== 'new'" class="shrink-0 rounded bg-[var(--color-warning)]/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-[var(--color-warning)]">Edit</span>
           <button
             v-if="itemHasBatch(pending.item_code)"
@@ -370,7 +380,7 @@ import BarcodeScanner from '../components/BarcodeScanner.vue'
 import MarqueeText from '../components/MarqueeText.vue'
 import MobileSearchKeyboard from '../components/MobileSearchKeyboard.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
-import { useItemCache, lookupItemInCache, refreshItemCache, refreshDiscountRuleCache, itemHasBatch } from '../services/itemCache.js'
+import { useItemCache, lookupItemInCache, refreshItemCache, refreshDiscountRuleCache, itemHasBatch, uomLabel } from '../services/itemCache.js'
 import { useLedgerCache, ledgerCacheReady } from '../services/ledgerCache.js'
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
 import { useDiscountRules } from '../composables/useDiscountRules.js'
@@ -560,6 +570,31 @@ const pendingAmount = computed(() => {
   return round((parseFloat(p.qty) || 0) * (parseFloat(p.rate) || 0) * (1 - disc / 100))
 })
 
+// UOMs the staged item can be sold in (stock UOM + its conversion rows)
+const pendingUoms = computed(() => {
+  const p = pending.value
+  if (!p) return []
+  const cached = lookupItemInCache(p.item_code)
+  const list = (cached?.uoms || []).map(u => u.uom).filter(Boolean)
+  if (cached?.uom && !list.includes(cached.uom)) list.unshift(cached.uom)
+  if (p.uom && !list.includes(p.uom)) list.push(p.uom)
+  return list
+})
+
+// A new unit takes that unit's price list rate; a rate typed earlier is replaced
+function onPendingUomChange() {
+  const p = pending.value
+  const cached = p && lookupItemInCache(p.item_code)
+  if (!cached) return
+  const base = baseRateFor(cached, p.uom)
+  const rate = round(base * combinedFactor(p.item_code))
+  p.baseRate = base
+  p.computedRate = rate
+  p.rate = String(rate)
+  p.field = 'qty'
+  p.fresh = true
+}
+
 function openPending(entry) {
   // Keep the system keyboard closed so the keypad is not covered
   document.activeElement?.blur?.()
@@ -723,7 +758,15 @@ function commitPending() {
       delete row._loaded_free_qty
       delete row._loaded_paid_qty
     }
-    if (rate !== round(row.rate)) {
+    const uomChanged = !!p.uom && p.uom !== row.uom
+    if (uomChanged) {
+      // Unit switched on the keypad: the line carries that unit's price list rate again
+      row.uom = p.uom
+      row._base_rate = p.baseRate
+      row.price_list_rate = p.baseRate
+      row.rate = rate
+      row._rate_overridden = rate !== p.computedRate
+    } else if (rate !== round(row.rate)) {
       row.rate = rate
       row._rate_overridden = true
     }
@@ -732,7 +775,7 @@ function commitPending() {
       row._rule_discount = null // typed by hand, not set by a discount rule
     }
     row.batch_no = p.batch_no || ''
-    if (qtyChanged) reapplyAllDiscountRules()
+    if (qtyChanged || uomChanged) reapplyAllDiscountRules()
     return
   }
 
