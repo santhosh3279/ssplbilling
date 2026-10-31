@@ -84,7 +84,8 @@ def save_repack(data):
             "t_warehouse": t_wh,
             "basic_rate": float(row.get("rate") or 0)
         }
-        if not is_consume and fg_count > 1:
+        # Several produced rows, or a rate typed by the user, must not be recalculated by ERPNext
+        if not is_consume and (fg_count > 1 or row.get("rate_manual")):
             item_doc["set_basic_rate_manually"] = 1
         
         se.append("items", item_doc)

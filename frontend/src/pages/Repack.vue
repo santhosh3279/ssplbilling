@@ -164,9 +164,15 @@
               type="number"
               step="0.001"
               class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              @input="onRateInput(item)"
               @keydown="onEditRateKeydown($event, index)"
             />
-            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatRate(item.rate, item.type === 'Produce' ? PRODUCE_RATE_PRECISION : 2) }}</span>
+            <span
+              v-else
+              class="block px-2 py-1 text-6xl font-mono text-right tabular-nums"
+              :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : item.rate_manual ? 'text-[var(--color-warning)]' : 'text-[var(--color-text)]'"
+              :title="item.rate_manual ? 'Manual rate (clear it to recalculate)' : ''"
+            >{{ formatRate(item.rate, item.type === 'Produce' ? PRODUCE_RATE_PRECISION : 2) }}</span>
           </td>
 
           <!-- type -->
@@ -176,6 +182,7 @@
               v-model="item.type"
               class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-2 py-0.5 font-bold text-2xl outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               :class="item.type === 'Consume' ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'"
+              @change="onTypeChange(item)"
               @keydown="onEditTypeKeydown($event, index)"
             >
               <option value="Consume" class="text-[var(--color-danger)] bg-[var(--color-surface)]">Consume</option>
@@ -222,6 +229,7 @@
                 v-model.number="pendingItem.rate"
                 type="number"
                 step="0.001"
+                @input="onRateInput(pendingItem)"
                 class="w-full bg-[var(--color-highlight)]/20 px-2 py-1 text-6xl font-mono text-[var(--color-text)] text-right outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
                 @keydown.up.prevent
                 @keydown.down.prevent
@@ -444,35 +452,57 @@ function formatRate(val, digits = 2) {
   return (isNaN(num) ? 0 : num).toFixed(digits)
 }
 
+function consumedValuation(rows) {
+  return rows
+    .filter(i => i.type === 'Consume')
+    .reduce((sum, item) => sum + (item.qty * (item.rate || getPriceListRate(item, 'Buying') || 0)), 0)
+}
+
+// Produce rows share the consumed valuation left after the manually rated ones
 function autoCalculateProduceRates() {
-  const consumeItems = items.value.filter(i => i.type === 'Consume')
   const produceItems = items.value.filter(i => i.type === 'Produce')
-  
-  if (!produceItems.length) return
-  
-  // Calculate total consumed valuation
-  const totalConsumedValuation = consumeItems.reduce((sum, item) => {
-    const rate = item.rate || getPriceListRate(item, 'Buying') || 0
-    return sum + (item.qty * rate)
-  }, 0)
-  
-  // Calculate total produced quantity
-  const totalProduceQty = produceItems.reduce((sum, item) => sum + item.qty, 0)
-  
-  if (totalProduceQty <= 0) {
-    for (const item of produceItems) {
-      if (item.rate !== 0) item.rate = 0
-    }
-    return
-  }
-  
-  // Distribute the valuation
-  const ratePerQty = totalConsumedValuation / totalProduceQty
+  const autoItems = produceItems.filter(i => !i.rate_manual)
+  if (!autoItems.length) return
+
+  const manualValuation = produceItems
+    .filter(i => i.rate_manual)
+    .reduce((sum, item) => sum + (item.qty * (Number(item.rate) || 0)), 0)
+  const autoQty = autoItems.reduce((sum, item) => sum + item.qty, 0)
+
+  const ratePerQty = autoQty > 0 ? Math.max(0, (consumedValuation(items.value) - manualValuation) / autoQty) : 0
   const newRate = parseFloat(ratePerQty.toFixed(PRODUCE_RATE_PRECISION))
-  for (const item of produceItems) {
+  for (const item of autoItems) {
     if (item.rate !== newRate) {
       item.rate = newRate
     }
+  }
+}
+
+// A typed rate on a Produce row sticks; clearing the field hands it back to the auto calculation
+function onRateInput(item) {
+  if (item?.type !== 'Produce') return
+  item.rate_manual = item.rate !== '' && item.rate != null
+  if (!item.rate_manual) item.rate = 0
+}
+
+function onTypeChange(item) {
+  if (item.type !== 'Produce') item.rate_manual = false
+}
+
+// Saved entries carry no manual marker of their own: a single produced row is manual when
+// set_basic_rate_manually is on, several are manual when their rate differs from an even split
+function markLoadedManualRates(serverRows) {
+  const produceRows = items.value.filter(i => i.type === 'Produce')
+  if (produceRows.length === 1) {
+    const idx = items.value.indexOf(produceRows[0])
+    produceRows[0].rate_manual = !!serverRows[idx]?.set_basic_rate_manually
+    return
+  }
+  const totalQty = produceRows.reduce((sum, item) => sum + item.qty, 0)
+  if (totalQty <= 0) return
+  const even = consumedValuation(items.value) / totalQty
+  for (const item of produceRows) {
+    item.rate_manual = Math.abs((Number(item.rate) || 0) - even) > 0.0005
   }
 }
 
@@ -678,7 +708,8 @@ function confirmPendingItem() {
       qty: p.qty,
       uom: p.uom,
       rate: p.rate || 0,
-      type: p.type
+      type: p.type,
+      rate_manual: p.type === 'Produce' && !!p.rate_manual
     })
   }
   
@@ -1052,8 +1083,10 @@ async function handleSelectSidebarItem(item) {
     qty: i.qty,
     uom: i.uom,
     rate: i.rate,
-    type: i.type
+    type: i.type,
+    rate_manual: false
   }))
+  markLoadedManualRates(details.items)
   isReadOnly.value = true
   isDraft.value = details.docstatus === 0
 }
