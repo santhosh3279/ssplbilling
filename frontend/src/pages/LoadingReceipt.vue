@@ -524,6 +524,7 @@ const rowItemResults = ref([])
 const rowItemHighlight = ref(0)
 const itemDropdownIdx = ref(null)
 let rowItemTimer = null
+let rowItemPending = false // typed but debounced search not yet returned
 
 // refs
 const inputRefs = {}
@@ -626,22 +627,40 @@ function onCustomerSelected(c) {
   focusNewItem()
 }
 
+// Immediate lookup for Enter pressed before the debounced search returns:
+// exact item code wins, else the first hit (what the dropdown would highlight)
+async function lookupItem(q) {
+  try {
+    const res = (await frappePost(`${API}.search_loading_items`, { query: q })) || []
+    const lq = q.toLowerCase()
+    return res.find(it => (it.item_code || '').toLowerCase() === lq) || res[0] || null
+  } catch { return null }
+}
+
 // ── ITEM SEARCH (new row) ────────────────────────────────────────────
 function onNewItemInput() {
   clearTimeout(newItemTimer)
   newItemHighlight.value = 0
   newItem.value.item_name = ''
-  if (!newItem.value.item.trim()) { newItemResults.value = []; return }
+  const q = newItem.value.item.trim()
+  if (!q) { newItemResults.value = []; return }
   newItemTimer = setTimeout(async () => {
     try {
-      const res = await frappePost(`${API}.search_loading_items`, { query: newItem.value.item })
-      newItemResults.value = res || []
+      const res = await frappePost(`${API}.search_loading_items`, { query: q })
+      // ignore stale results: text changed or item already picked via fast Enter
+      if (newItem.value.item.trim() === q && !newItem.value.item_name) newItemResults.value = res || []
     } catch { newItemResults.value = [] }
   }, 250)
 }
 
-function onNewItemEnter() {
-  if (newItemResults.value.length) pickNewItem(newItemResults.value[newItemHighlight.value])
+async function onNewItemEnter() {
+  if (newItemResults.value.length) { pickNewItem(newItemResults.value[newItemHighlight.value]); return }
+  const q = newItem.value.item.trim()
+  if (!q || newItem.value.item_name) { focusNewQty(); return }
+  clearTimeout(newItemTimer)
+  const it = await lookupItem(q)
+  if (newItem.value.item.trim() !== q) return
+  if (it) pickNewItem(it)
   else focusNewQty()
 }
 
@@ -693,18 +712,21 @@ function onRowItemInput(idx) {
   rowItemHighlight.value = 0
   itemDropdownIdx.value = idx
   const q = rows.value[idx].item.trim()
-  if (!q) { rowItemResults.value = []; return }
+  if (!q) { rowItemResults.value = []; rowItemPending = false; return }
+  rowItemPending = true
   rowItemTimer = setTimeout(async () => {
     try {
       const res = await frappePost(`${API}.search_loading_items`, { query: q })
       // ignore results that arrive after the user left this cell
       if (itemDropdownIdx.value === idx) rowItemResults.value = res || []
     } catch { rowItemResults.value = [] }
+    finally { rowItemPending = false }
   }, 250)
 }
 
 function closeRowDropdown() {
   clearTimeout(rowItemTimer)
+  rowItemPending = false
   rowItemResults.value = []
   itemDropdownIdx.value = null
 }
@@ -713,8 +735,15 @@ function rowDropdownOpen(idx) {
   return itemDropdownIdx.value === idx && rowItemResults.value.length > 0
 }
 
-function onRowItemEnter(idx) {
-  if (rowDropdownOpen(idx)) pickRowItem(idx, rowItemResults.value[rowItemHighlight.value])
+async function onRowItemEnter(idx) {
+  if (rowDropdownOpen(idx)) { pickRowItem(idx, rowItemResults.value[rowItemHighlight.value]); return }
+  const row = rows.value[idx]
+  const q = row.item.trim()
+  if (!rowItemPending || !q) { focusField('item_name', idx); return }
+  closeRowDropdown()
+  const it = await lookupItem(q)
+  if (rows.value[idx] !== row || row.item.trim() !== q) return
+  if (it) pickRowItem(idx, it)
   else focusField('item_name', idx)
 }
 
