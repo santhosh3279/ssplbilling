@@ -76,6 +76,7 @@
         <!-- Item name (first 25 characters) | item code | price (cipher), all one size; code and price columns
              are as wide as the longest value in the list (monospace, so divider lines line up on every row),
              the name gets the rest and wraps.
+             Rows are 1.25× the single-line height (11px vertical padding) for an easier tap.
              Alternate rows shaded, exact code / barcode match blinks -->
         <button
           v-for="(m, i) in manualResults"
@@ -86,9 +87,9 @@
           :style="{ gridTemplateColumns: resultColumns }"
           @click="found(m.code)"
         >
-          <div class="min-w-0 self-center break-words px-2 py-1.5">{{ shortName(m.name) }}</div>
-          <div class="flex items-center whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-1.5 font-mono text-[var(--color-text-muted)]">{{ m.code }}</div>
-          <div class="flex items-center justify-end whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-1.5 font-mono">{{ cipherPrice(m.price) }}</div>
+          <div class="min-w-0 self-center break-words px-2 py-[0.6875rem]">{{ shortName(m.name) }}</div>
+          <div class="flex items-center whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-[0.6875rem] font-mono text-[var(--color-text-muted)]">{{ m.code }}</div>
+          <div class="flex items-center justify-end whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-[0.6875rem] font-mono">{{ cipherPrice(m.price) }}</div>
         </button>
       </div>
       <div class="flex gap-2 px-2 py-2" :class="showKeys ? '' : 'pb-[max(0.5rem,env(safe-area-inset-bottom))]'">
