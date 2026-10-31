@@ -21,11 +21,13 @@
         >⌫</button>
       </div>
       <div class="flex gap-1">
-        <button type="button" class="key flex-[1.4] bg-[var(--color-surface)] text-sm text-[var(--color-text-muted)]" @pointerdown.prevent="emit('clear')">Clear</button>
+        <button type="button" class="key flex-[1.4] bg-[var(--color-surface)] text-sm text-[var(--color-text-muted)]" aria-label="Clear" @pointerdown.prevent="emit('clear')">CLS</button>
         <button type="button" class="key flex-1 bg-[var(--color-surface)]" @pointerdown.prevent="emit('key', '-')">-</button>
         <button type="button" class="key flex-[4] bg-[var(--color-surface)] text-sm text-[var(--color-text-muted)]" @pointerdown.prevent="emit('key', ' ')">space</button>
         <button type="button" class="key flex-1 bg-[var(--color-surface)]" @pointerdown.prevent="emit('key', '.')">.</button>
-        <button type="button" class="key flex-[1.8] bg-[var(--color-info)] text-sm font-bold text-white" @pointerdown.prevent="emit('enter')">Search</button>
+        <button type="button" aria-label="Search" class="key flex flex-[1.8] items-center justify-center bg-[var(--color-info)] text-white" @pointerdown.prevent="emit('enter')">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="M15.5 15.5 21 21" /></svg>
+        </button>
       </div>
     </div>
     <!-- Number pad on the right: replaces the digit row so codes and barcodes are typed like on a calculator -->
