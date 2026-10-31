@@ -1374,7 +1374,9 @@ async function loadInvoice(invoiceName) {
     isSubmitted.value = data.docstatus === 1
     linkedPayments.value = data.payments || []
     fetchCustomerSalesHistory(data.customer)
-    if (props.posMode) emit('active-bill', data.name, 'loaded')
+    // POS: a draft picked from the list is ready to collect, so the cashier side takes focus;
+    // a reload for Modify keeps focus in the bill
+    if (props.posMode) emit('active-bill', data.name, data.docstatus === 0 && !modifying.value ? 'draft' : 'loaded')
     return true
   } catch (e) {
     console.error('Failed to load invoice:', e)

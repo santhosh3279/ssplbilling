@@ -31,11 +31,11 @@ const salesRef = ref(null)
 const paymentRef = ref(null)
 const activeBill = ref(null)
 const reloadKey = ref(0)
-// a just-saved bill goes straight to payment; one picked from the list leaves focus in the bill
+// a just-saved bill or a draft picked from the list goes straight to Cash; a paid bill leaves focus in the bill
 const focusOnLoad = ref(false)
 
 function onActiveBill(name, reason) {
-  focusOnLoad.value = reason === 'saved'
+  focusOnLoad.value = reason === 'saved' || reason === 'draft'
   // saved again after a modify: same bill, new totals, so load it afresh
   if (name && name === activeBill.value) reloadKey.value++
   activeBill.value = name
