@@ -1043,7 +1043,10 @@ def update_customer_details(customer=None, data=None):
 
 @frappe.whitelist()
 def get_customer_billing_details(customer):
-	"""Return mobile number, pricelist multiplication factor, ledger balance, last inv date, and GST ledger balance."""
+	"""Return mobile number, pricelist multiplication factor, last inv date, and GST ledger balance.
+
+	No GL ledger balance: summing GL Entry for a counter customer (tens of thousands of
+	rows) took ~2s on every bill open/modify, and no caller displays it."""
 	if not customer:
 		return {}
 
@@ -1052,16 +1055,6 @@ def get_customer_billing_details(customer):
 		"Customer",
 		customer,
 		["mobile_no", "pricelist_multiplication_factor"],
-		as_dict=True
-	)
-
-	balance_row = frappe.db.sql(
-		"""
-		SELECT COALESCE(SUM(debit) - SUM(credit), 0) AS balance
-		FROM `tabGL Entry`
-		WHERE party_type = 'Customer' AND party = %s AND is_cancelled = 0
-		""",
-		(customer,),
 		as_dict=True
 	)
 
@@ -1091,7 +1084,6 @@ def get_customer_billing_details(customer):
 	return {
 		"mobile_no": (cust_data.mobile_no or "") if cust_data else "",
 		"pricelist_multiplication_factor": float(cust_data.pricelist_multiplication_factor or 1.0) if cust_data else 1.0,
-		"balance": float(balance_row[0].balance or 0) if balance_row else 0.0,
 		"gst_balance": gst_balance,
 		"last_invoice_date": str(last_inv[0].posting_date) if last_inv else None
 	}
