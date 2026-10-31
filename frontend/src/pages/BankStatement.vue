@@ -67,6 +67,10 @@
       <span>{{ notice }}</span>
       <button @click="notice = ''" class="opacity-60 hover:opacity-100">✕</button>
     </div>
+    <div v-if="error" class="flex items-center justify-between gap-4 border-b border-[var(--color-border)] bg-[var(--color-danger)]/15 px-6 py-2 text-sm font-bold text-[var(--color-danger)]">
+      <span class="whitespace-pre-wrap">{{ error }}</span>
+      <button @click="error = ''" class="opacity-60 hover:opacity-100">✕</button>
+    </div>
 
     <!-- Column mapping for an uploaded file -->
     <main v-if="upload" class="flex-1 overflow-y-auto p-6 custom-scrollbar">
@@ -184,7 +188,6 @@
             <div v-if="parsed.valid.length > 200" class="p-2 text-center text-sm text-[var(--color-text-muted)]">… {{ parsed.valid.length - 200 }} more</div>
           </div>
         </section>
-        <div v-if="error" class="rounded-lg bg-[var(--color-danger)]/15 px-3 py-2 text-sm font-bold text-[var(--color-danger)]">{{ error }}</div>
       </div>
     </main>
 
@@ -396,7 +399,6 @@
               >{{ posting ? 'Posting…' : 'Post' }}</button>
             </div>
           </section>
-          <div v-if="error" class="rounded-lg bg-[var(--color-danger)]/15 px-3 py-2 text-sm font-bold text-[var(--color-danger)]">{{ error }}</div>
         </div>
       </main>
     </div>
