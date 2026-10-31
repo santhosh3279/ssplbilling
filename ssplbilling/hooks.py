@@ -369,7 +369,11 @@ scheduler_events = {
 			"ssplbilling.api.essl_attendance_api.run_auto_sync",
 			# Paytm payment links are often paid long after the page is closed
 			"ssplbilling.api.paytm_api.refresh_pending_links",
-		]
+		],
+		# Restart WhatsApp sessions the OpenWA gateway left failed / disconnected
+		"*/5 * * * *": [
+			"ssplbilling.api.whatsapp_api.auto_reconnect_sessions",
+		],
 	}
 }
 

@@ -21,6 +21,7 @@ users whose SSPL Dashboard Tile Access grants the whatsapp-chat tile.
 import base64
 import binascii
 import re
+from datetime import datetime, timedelta, timezone
 from urllib.parse import quote
 
 import frappe
@@ -64,6 +65,15 @@ STATUS_DOCTYPES = ("Customer", "Supplier")
 # OpenWA wire values for session status (lowercase)
 READY = "ready"
 QR_READY = "qr_ready"
+DISCONNECTED = "disconnected"
+FAILED = "failed"
+
+# auto_reconnect_sessions: OpenWA's lastError while it is still retrying a dropped connection itself
+GATEWAY_RECONNECTING = "Reconnecting after a dropped connection"
+# Longer than the gateway's 5-minute backoff cap, so its own retries get first go
+STALE_DISCONNECT = timedelta(minutes=10)
+# Start returns once the browser engine has launched
+START_TIMEOUT = 60
 
 
 class OpenWAError(frappe.ValidationError):
@@ -430,6 +440,61 @@ def refresh_sessions():
 				row.session_id = session.get("id") or ""
 
 	return _guarded(run)
+
+
+def _down_long_enough(session):
+	"""A disconnected session the gateway has given up on, not one mid-way through its own backoff
+	(which writes `disconnected` too, and waits up to 5 minutes between tries)."""
+	if (session.get("lastError") or "").startswith(GATEWAY_RECONNECTING):
+		return False
+	updated = session.get("updatedAt")
+	if not updated:
+		return True
+	since = datetime.now(timezone.utc) - datetime.fromisoformat(updated.replace("Z", "+00:00"))
+	return since > STALE_DISCONNECT
+
+
+def _needs_restart(session):
+	"""Only a linked session the gateway has stopped trying with. `action_required`, a restriction or
+	an unlinked session (no number) needs a person on the OpenWA dashboard, not a restart."""
+	if not session or not session.get("phone") or session.get("restriction"):
+		return False
+	if session.get("engineLoaded"):
+		return False
+	status = session.get("status")
+	return status == FAILED or (status == DISCONNECTED and _down_long_enough(session))
+
+
+def auto_reconnect_sessions():
+	"""Scheduler: restart sessions that went offline and stayed there.
+
+	OpenWA retries a dropped connection by itself, but a session whose browser engine crashed
+	(`failed`) or whose retries ran out (`disconnected`) stays down until someone presses Start.
+	A deliberate Stop on the dashboard also reads `disconnected`, so untick Auto Reconnect on a row
+	to keep it stopped."""
+	settings = _settings()
+	if not settings.base_url or not settings.get_password("api_key", raise_exception=False):
+		return
+
+	logger = frappe.logger("whatsapp")
+	for row in settings.sessions:
+		if not row.auto_reconnect:
+			continue
+		try:
+			session = _fetch_session(settings, row)
+			if not _needs_restart(session):
+				continue
+			logger.info(f"Restarting WhatsApp session {row.session_name} ({session.get('status')})")
+			try:
+				session = _call(settings, "POST", f"/sessions/{session['id']}/start", timeout=START_TIMEOUT)
+			except OpenWAError as e:
+				# The gateway answers once the engine is up; a slow launch still carries on there
+				if not isinstance(e.__cause__, requests.Timeout):
+					raise
+				continue
+			_store_session(row, session)
+		except OpenWAError as e:
+			logger.warning(f"WhatsApp session {row.session_name} could not be restarted: {e}")
 
 
 @frappe.whitelist()
