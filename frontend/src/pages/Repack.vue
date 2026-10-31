@@ -997,6 +997,9 @@ async function handleSave() {
   }
   if (isReadOnly.value && isDraft.value) {
     isReadOnly.value = false
+    // Start editing from the first row
+    if (items.value.length) focusRow(0)
+    else focusBarcodeInput()
     return
   }
 
