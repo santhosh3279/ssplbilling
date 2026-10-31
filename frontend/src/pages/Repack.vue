@@ -299,7 +299,7 @@
       :is-sub-window="true"
       :item-code="priceListUpdateItem.item_code"
       :selected-price-list="buyingPriceList"
-      :initial-rate="Number(priceListUpdateItem.rate) || 0"
+      :initial-rate="roundProduceRate(priceListUpdateItem.rate)"
       :initial-uom="priceListUpdateItem.uom || ''"
       :initial-qty="Number(priceListUpdateItem.qty) || 0"
       @close="closePriceListUpdate"
@@ -483,6 +483,10 @@ function onRateInput(item) {
   if (item?.type !== 'Produce') return
   item.rate_manual = item.rate !== '' && item.rate != null
   if (!item.rate_manual) item.rate = 0
+}
+
+function roundProduceRate(val) {
+  return parseFloat((Number(val) || 0).toFixed(PRODUCE_RATE_PRECISION))
 }
 
 function onTypeChange(item) {
@@ -920,6 +924,7 @@ function onEditRateKeydown(e, idx) {
   } else if (e.key === 'Enter') {
     e.preventDefault()
     const item = items.value[idx]
+    if (item?.type === 'Produce') item.rate = roundProduceRate(item.rate)
     if (item?.type === 'Produce' && item.item_code) {
       editingRowIdx.value = -1
       editingField.value = null
@@ -1008,7 +1013,7 @@ async function handleSave() {
         posting_time: repackTime.value || undefined,
         from_warehouse: fromWarehouse.value,
         to_warehouse: toWarehouse.value,
-        items: items.value
+        items: items.value.map(i => (i.type === 'Produce' ? { ...i, rate: roundProduceRate(i.rate) } : i))
       }
     })
     

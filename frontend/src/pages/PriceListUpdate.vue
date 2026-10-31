@@ -195,13 +195,13 @@
                   >
                     <div class="flex items-center justify-end gap-2">
                       <span class="text-[14px] font-mono italic opacity-100 pointer-events-none select-none text-[var(--color-text-muted)]">
-                        {{ (p.original_uom_rates[u.uom] || 0).toFixed(2) }}
+                        {{ (p.original_uom_rates[u.uom] || 0).toFixed(RATE_PRECISION) }}
                       </span>
                       <input
                         :ref="el => inputRefs[`rate-${idx}-${uidx}`] = el"
                         type="number"
                         v-model.number="p.uom_rates[u.uom]"
-                        step="0.01"
+                        step="0.001"
                         :disabled="isCellLocked(idx, uidx)"
                         :title="isLocked(idx) ? 'Buying price is locked for a submitted bill' : isDerived(idx, u.uom) ? `Derived from ${buyingUom} × factor` : ''"
                         class="disabled:opacity-50 disabled:cursor-not-allowed w-44 rounded border bg-[var(--color-surface)] px-1 py-1 text-right font-mono font-bold text-[var(--color-text)] text-[20px] outline-none focus:ring-1 transition-colors"
@@ -229,13 +229,13 @@
                       p.price_list === selectedPriceList ? 'bg-[var(--color-info)]/5 border-x-2 border-[var(--color-info)]' : '',
                       idx !== 0 ? 'cursor-pointer hover:underline decoration-dotted' : ''
                     ]"
-                    @click="idx !== 0 && !isCellLocked(idx, uidx) && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2)))"
+                    @click="idx !== 0 && !isCellLocked(idx, uidx) && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(RATE_PRECISION)))"
                     :title="idx !== 0 ? 'Click to apply to proposed' : ''"
                   >
                     <template v-if="idx === 0 && buyingNetByUom[u.uom] !== undefined">
-                      {{ buyingNetByUom[u.uom].toFixed(2) }} + {{ props.taxRate }}% = {{ ((calculatedRatesByUom[u.uom] || [])[0] || 0).toFixed(2) }}
+                      {{ buyingNetByUom[u.uom].toFixed(RATE_PRECISION) }} + {{ props.taxRate }}% = {{ ((calculatedRatesByUom[u.uom] || [])[0] || 0).toFixed(RATE_PRECISION) }}
                     </template>
-                    <template v-else>{{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(2) }}</template>
+                    <template v-else>{{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(RATE_PRECISION) }}</template>
                   </td>
                 </tr>
               </template>
@@ -270,7 +270,7 @@
                     <td class="py-2 pr-2 leading-none truncate max-w-[120px]" :title="h.name">{{ h.name }}</td>
                     <td class="py-2 px-2 leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
                     <td class="py-2 px-2 text-right leading-none">{{ h.qty }}</td>
-                    <td class="py-2 px-2 text-right leading-none font-bold text-[var(--color-success)]">{{ h.rate.toFixed(2) }}</td>
+                    <td class="py-2 px-2 text-right leading-none font-bold text-[var(--color-success)]">{{ h.rate.toFixed(RATE_PRECISION) }}</td>
                     <td class="py-2 pl-2 text-right leading-none text-[var(--color-warning)]">{{ h.discount || 0 }}%</td>
                   </tr>
                 </tbody>
@@ -304,7 +304,7 @@
                     <td class="py-2 px-2 leading-none truncate max-w-[120px]" :title="h.name">{{ h.name }}</td>
                     <td class="py-2 px-2 leading-none whitespace-nowrap">{{ formatDateShort(h.date) }}</td>
                     <td class="py-2 px-2 text-right leading-none">{{ h.qty }}</td>
-                    <td class="py-2 pl-2 text-right leading-none font-bold text-[var(--color-success)]">{{ h.rate.toFixed(2) }}</td>
+                    <td class="py-2 pl-2 text-right leading-none font-bold text-[var(--color-success)]">{{ h.rate.toFixed(RATE_PRECISION) }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -399,6 +399,9 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'saved'])
+
+// Price list rates are entered, calculated and shown to 3 decimals
+const RATE_PRECISION = 3
 
 if (props.isSubWindow) useSubwindow()
 
@@ -600,7 +603,7 @@ function deriveBuyingRates(p) {
   const perStock = (Number(p.uom_rates[entered.uom]) || 0) / entered.conversion_factor
   for (const u of uoms.value) {
     if (u.uom === entered.uom) continue
-    const derived = Number((perStock * u.conversion_factor).toFixed(2))
+    const derived = Number((perStock * u.conversion_factor).toFixed(RATE_PRECISION))
     if (p.uom_rates[u.uom] !== derived) p.uom_rates[u.uom] = derived
   }
 }
@@ -858,9 +861,10 @@ async function loadPrices(code) {
 
       // Apply initial rate from props if provided for this price list and UOM
       if (!(props.lockBuying && res.buying) && props.selectedPriceList && p.price_list === props.selectedPriceList && props.initialRate && props.initialUom) {
-        res.uom_rates[props.initialUom] = props.initialRate
+        const initialRate = Number(props.initialRate.toFixed(RATE_PRECISION))
+        res.uom_rates[props.initialUom] = initialRate
         if (props.initialUom === stockUom.value) {
-          res.rate = props.initialRate
+          res.rate = initialRate
         }
       }
       return res
@@ -897,7 +901,7 @@ async function loadPrices(code) {
 function applyCalc(p, idx) {
   p.rate = (calculatedRatesByUom.value[stockUom.value] || [])[idx] || 0
   for (const u of uoms.value) {
-    p.uom_rates[u.uom] = Number(((calculatedRatesByUom.value[u.uom] || [])[idx] || 0).toFixed(2))
+    p.uom_rates[u.uom] = Number(((calculatedRatesByUom.value[u.uom] || [])[idx] || 0).toFixed(RATE_PRECISION))
   }
 }
 
