@@ -879,6 +879,7 @@ function getDiscPrecision(val) {
 }
 import { useDiscountRules, ruleMatchesPriceList } from '../composables/useDiscountRules.js'
 import { useAllowedSeries } from '../composables/useAllowedSeries.js'
+import { useLayout } from '../composables/useLayout.js'
 import { useShortcuts } from '../services/shortcutManager'
 import { session } from '../session'
 import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
@@ -1063,7 +1064,11 @@ watch(availableSeries, (newVal) => {
     sidebarSeries.value = [...newVal]
   }
 }, { immediate: true })
-const draftOnly = ref(false)
+// POS: the bill list starts hidden and showing drafts only; the shared collapse flag is restored on leave
+const draftOnly = ref(props.posMode)
+const { isSidebarCollapsed } = useLayout()
+const sidebarWasCollapsed = isSidebarCollapsed.value
+if (props.posMode) isSidebarCollapsed.value = true
 const sidebarLoading = ref(false)
 const isLoadingBill = ref(false)
 
@@ -3670,6 +3675,7 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
   releaseLock()
   _billPanelCleanup?.()
+  if (props.posMode) isSidebarCollapsed.value = sidebarWasCollapsed
 })
 </script>
 
