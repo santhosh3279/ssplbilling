@@ -108,9 +108,9 @@ def _queue_ledger_balances(parties, accounts):
 	A cashier submit posts the invoice, one Payment Entry per mode and a discount Journal Entry
 	in one request; each used to send its own message with the same customer recomputed. Nothing
 	is sent on rollback."""
-	state = getattr(frappe.local, "_sspl_ledger_pending", None)
+	state = getattr(frappe.local, "_sspl_ledger_balances_pending", None)
 	if state is None:
-		state = frappe.local._sspl_ledger_pending = {"parties": set(), "accounts": set()}
+		state = frappe.local._sspl_ledger_balances_pending = {"parties": set(), "accounts": set()}
 		frappe.db.after_commit.add(_flush_ledger_balances)
 		frappe.db.after_rollback.add(_discard_ledger_balances)
 	state["parties"].update(parties)
@@ -119,8 +119,8 @@ def _queue_ledger_balances(parties, accounts):
 
 def _flush_ledger_balances():
 	# Balances are computed here so the SUM reads the final committed state for submit and cancel.
-	state = getattr(frappe.local, "_sspl_ledger_pending", None)
-	frappe.local._sspl_ledger_pending = None
+	state = getattr(frappe.local, "_sspl_ledger_balances_pending", None)
+	frappe.local._sspl_ledger_balances_pending = None
 	if not state or not (state["parties"] or state["accounts"]):
 		return
 	frappe.publish_realtime(
@@ -131,4 +131,4 @@ def _flush_ledger_balances():
 
 
 def _discard_ledger_balances():
-	frappe.local._sspl_ledger_pending = None
+	frappe.local._sspl_ledger_balances_pending = None
