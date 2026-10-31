@@ -153,7 +153,12 @@
             @click="focusPendingField(f.key)"
           >{{ f.label }}</button>
         </div>
-        <button type="button" class="ml-auto rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-bold" @click="showKeypad = false">Hide ▾</button>
+        <!-- Bill total as it will be once the item being typed is added / updated -->
+        <div class="ml-auto min-w-0 truncate text-right">
+          <span class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">Bill</span>
+          <span class="ml-1 font-mono text-xl font-black tabular-nums">{{ money(billWithPending) }}</span>
+        </div>
+        <button type="button" class="shrink-0 rounded-lg border border-[var(--color-border)] px-2.5 py-1.5 text-xs font-bold" @click="showKeypad = false">Hide ▾</button>
       </div>
 
       <div class="mb-1 grid grid-cols-6 gap-1">
@@ -568,6 +573,15 @@ const pendingAmount = computed(() => {
   if (!p) return 0
   const disc = Math.min(100, parseFloat(p.discount) || 0)
   return round((parseFloat(p.qty) || 0) * (parseFloat(p.rate) || 0) * (1 - disc / 100))
+})
+
+// Bill total counting the staged item: a new item adds its amount, a re-edited line
+// replaces its saved amount with the one being typed
+const billWithPending = computed(() => {
+  const p = pending.value
+  if (!p) return subTotal.value
+  const current = p.target === 'new' ? 0 : rowAmount(p.target)
+  return round(subTotal.value - current + pendingAmount.value)
 })
 
 // UOMs the staged item can be sold in (stock UOM + its conversion rows)
