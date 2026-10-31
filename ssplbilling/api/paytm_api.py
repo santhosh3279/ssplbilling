@@ -15,7 +15,9 @@ Customer receipts (no invoice) on the Paytm receipt page:
 - receipt QR link: the QR's own UPI string (upi://pay?...), sent to the customer's WhatsApp;
 - payment request (channel "Link", order id PRQ...): send_payment_request() has Paytm send a
   payment request for our order id (merchantOrderId) to the customer's phone from the operator's
-  POS ID, and returns its payment URL; the same PG order status API and webhook confirm it.
+  POS ID, and returns its payment URL; the same PG order status API and webhook confirm it;
+- machine receipt (channel "EDC" with a customer): send_receipt_to_device() pushes the amount to
+  the operator's card machine, which opens on its UPI QR; the EDC status API and webhook confirm it.
 Unlike the cashier's EDC/QR payments, which submit_invoice_with_payment() enters, a successful
 receipt creates and submits its own Receipt Payment Entry against the customer (_make_receipt).
 """
@@ -69,6 +71,9 @@ PAYMENT_REQUEST_PREFIX = "PRQ"
 
 CARD_PAY_METHODS = ("CARD", "CREDIT_CARD", "DEBIT_CARD", "EMI", "CC", "DC")
 PG_CHANNELS = ("QR", "Link")
+# customer receipts (no invoice): payment link / request, receipt QR, card machine
+RECEIPT_CHANNELS = ("QR", "Link", "EDC")
+RECEIPT_LABELS = {"Link": "payment link", "QR": "UPI QR", "EDC": "card machine"}
 # The scheduler keeps asking Paytm about unpaid links this many days old
 LINK_REFRESH_DAYS = 15
 # Paytm expires a dynamic QR order 10 minutes after it is created (longer needs Paytm to enable it);
@@ -324,18 +329,24 @@ def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None, phone=No
 		}
 	).insert(ignore_permissions=True)
 
+	customer_name, bill_phone = _invoice_contact(invoice_name)
+	_push_to_device(settings, txn, bill_no, pay_mode, customer_name, _valid_phone(phone) or bill_phone)
+	return {"order_id": order_id, "device_name": device.device_name, "status": "Pending"}
+
+
+def _push_to_device(settings, txn, reference_no, pay_mode, customer_name=None, phone=None):
+	"""Send a new EDC row's amount to its card machine; marks the row Failed (committed) and throws
+	when Paytm cannot be reached or refuses. The payment itself is still pending afterwards."""
 	body = {
 		"paytmMid": settings.merchant_id,
-		"paytmTid": tid,
-		"transactionDateTime": txn_datetime,
-		"merchantTransactionId": order_id,
-		"merchantReferenceNo": bill_no,
-		"transactionAmount": str(int(round(amount * 100))),  # paise
+		"paytmTid": txn.tid,
+		"transactionDateTime": txn.transaction_datetime,
+		"merchantTransactionId": txn.order_id,
+		"merchantReferenceNo": reference_no,
+		"transactionAmount": str(round(flt(txn.amount) * 100)),  # paise
 		"merchantExtendedInfo": {**EDC_EXTENDED_INFO, "paymentMode": pay_mode},
 	}
-	customer_name, bill_phone = _invoice_contact(invoice_name)
-	extend_info = {"customerName": customer_name, "phoneNumber": _valid_phone(phone) or bill_phone}
-	extend_info = {k: v for k, v in extend_info.items() if v}
+	extend_info = {k: v for k, v in {"customerName": customer_name, "phoneNumber": phone}.items() if v}
 	if extend_info:
 		body["extendInfo"] = extend_info
 	try:
@@ -355,7 +366,6 @@ def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None, phone=No
 		frappe.throw(_("Paytm rejected the request: {0}").format(info.get("resultMsg") or status))
 
 	_update_txn(txn, "Pending", res, info.get("resultMsg"))
-	return {"order_id": order_id, "device_name": device.device_name, "status": "Pending"}
 
 
 @frappe.whitelist()
@@ -737,6 +747,66 @@ def get_receipt_qr(order_id):
 	return {**_txn_result(txn), "qr_image": _qr_png(txn.qr_data)}
 
 
+@frappe.whitelist(methods=["POST"])
+def send_receipt_to_device(
+	customer,
+	amount,
+	tid=None,
+	description=None,
+	mobile=None,
+	company=None,
+	cost_center=None,
+	upi_account=None,
+	user=None,
+):
+	"""Customer receipt (no invoice) paid on the card machine: the amount goes to the user's machine,
+	which opens on its UPI QR. Once paid it gets its Receipt Payment Entry like a receipt QR.
+	tid defaults to the user's first assigned machine; the accounts are as in create_receipt_qr."""
+	_require_desk_user()
+	settings = _settings()
+	amount = flt(amount, 2)
+	if amount <= 0:
+		frappe.throw(_("Amount must be greater than 0"))
+	if not frappe.db.exists("Customer", customer):
+		frappe.throw(_("Customer {0} not found").format(customer))
+	if not tid:
+		device = next(iter(_user_devices(settings, user)), None)
+		if not device:
+			frappe.throw(_("No card machine is assigned to you in SSPL Paytm Settings"))
+		tid = device.tid
+	device = _device_for(settings, tid, user)
+	upi_account = upi_account or settings.upi_account
+	if not upi_account:
+		frappe.throw(_("Set the UPI Account in SSPL Paytm Settings; machine receipts are received into it"))
+	_validate_receipt_accounts(upi_account, company, cost_center)
+
+	now = now_datetime()
+	# ECR ids are plain alphanumeric
+	order_id = f"REC{now.strftime('%y%m%d%H%M%S%f')[:16]}"
+	phone = _valid_phone(mobile) or _valid_phone(frappe.db.get_value("Customer", customer, "mobile_no"))
+	txn = frappe.get_doc(
+		{
+			"doctype": "SSPL Paytm Transaction",
+			"order_id": order_id,
+			"amount": amount,
+			"status": "Pending",
+			"channel": "EDC",
+			"customer": customer,
+			"customer_mobile": phone,
+			"link_description": (description or "").strip()[:140],
+			"upi_account": upi_account,
+			"company": company or None,
+			"cost_center": cost_center or None,
+			"device_name": device.device_name,
+			"tid": tid,
+			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
+		}
+	).insert(ignore_permissions=True)
+	customer_name = frappe.db.get_value("Customer", customer, "customer_name") or customer
+	_push_to_device(settings, txn, order_id, "QR", customer_name, phone)
+	return _txn_result(txn)
+
+
 @frappe.whitelist()
 def get_invoice_qr(order_id):
 	"""QR image of a bill's unpaid QR, to show it again when the cashier opens it from the queue."""
@@ -780,9 +850,14 @@ def _qr_expires_in(channel, status, creation):
 
 @frappe.whitelist()
 def get_payment_links(limit=100, status=None):
-	"""Payment links and receipt QRs, newest first, for the left panel of the Paytm receipt page."""
+	"""Payment links, receipt QRs and machine receipts, newest first, for the left panel of the
+	Paytm receipt page."""
 	_require_desk_user()
-	filters = {"channel": ("in", PG_CHANNELS), "customer": ("is", "set"), "sales_invoice": ("is", "not set")}
+	filters = {
+		"channel": ("in", RECEIPT_CHANNELS),
+		"customer": ("is", "set"),
+		"sales_invoice": ("is", "not set"),
+	}
 	if status:
 		filters["status"] = status
 	rows = frappe.get_all(
@@ -806,6 +881,7 @@ def get_payment_links(limit=100, status=None):
 			"transaction_datetime",
 			"owner",
 			"qr_data",
+			"device_name",
 		],
 		order_by="creation desc",
 		limit_page_length=frappe.utils.cint(limit) or 100,
@@ -847,7 +923,7 @@ def refresh_pending_links():
 	rows = frappe.get_all(
 		"SSPL Paytm Transaction",
 		filters={
-			"channel": ("in", PG_CHANNELS),
+			"channel": ("in", RECEIPT_CHANNELS),
 			"customer": ("is", "set"),
 			"sales_invoice": ("is", "not set"),
 			"status": "Pending",
@@ -939,7 +1015,7 @@ def _make_receipt(txn):
 				or "Cash",
 				"reference_no": txn.rrn or txn.paytm_txn_id or txn.order_id,
 				"reference_date": frappe.utils.today(),
-				"remarks": f"Paytm {'payment link' if txn.channel == 'Link' else 'UPI QR'} {txn.order_id}: "
+				"remarks": f"Paytm {RECEIPT_LABELS.get(txn.channel, 'UPI QR')} {txn.order_id}: "
 				f"{txn.link_description or ''}".strip()
 				+ (f" · Mobile {txn.customer_mobile}" if txn.customer_mobile else ""),
 			}

@@ -15,7 +15,7 @@
       </div>
       <div class="text-sm text-[var(--color-text-muted)]">
         <span v-if="!paytmEnabled" class="font-bold text-[var(--color-danger)]">Paytm is disabled in SSPL Paytm Settings</span>
-        <span v-else>Esc back · F2 customer · Ctrl+Enter generate QR · F8 send request</span>
+        <span v-else>Esc back · F2 customer · Ctrl+Enter send to machine · F8 send request</span>
       </div>
     </header>
 
@@ -64,7 +64,7 @@
           >
             <div class="flex items-center justify-between gap-2">
               <span class="flex min-w-0 items-center gap-1.5">
-                <span class="shrink-0 rounded border border-current px-1 text-[10px] font-bold uppercase opacity-75">{{ isRequest(l) ? 'Req' : 'QR' }}</span>
+                <span class="shrink-0 rounded border border-current px-1 text-[10px] font-bold uppercase opacity-75">{{ isRequest(l) ? 'Req' : isMachine(l) ? 'POS' : 'QR' }}</span>
                 <span class="truncate font-bold">{{ l.customer || '—' }}</span>
               </span>
               <span class="shrink-0 font-mono font-bold">₹{{ fmt(l.amount) }}</span>
@@ -151,7 +151,7 @@
             >
               <div class="flex items-start justify-between gap-4">
                 <div class="min-w-0">
-                  <div class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">{{ isRequest(selected) ? 'Payment Request' : 'UPI QR' }} · {{ selected.order_id }}</div>
+                  <div class="text-xs font-black uppercase tracking-widest text-[var(--color-text-muted)]">{{ isRequest(selected) ? 'Payment Request' : isMachine(selected) ? 'Card Machine' : 'UPI QR' }} · {{ selected.order_id }}</div>
                   <div class="truncate text-4xl font-normal">{{ selected.customer }}</div>
                   <div class="text-sm text-[var(--color-text-muted)]">{{ selected.link_description }}</div>
                 </div>
@@ -173,6 +173,11 @@
                     <div class="font-mono text-lg">+91 {{ selected.customer_mobile }}</div>
                     <div class="mt-1 text-xs text-[var(--color-text-muted)]">Waiting for the customer to pay in their UPI app</div>
                   </div>
+                  <div v-else-if="isMachine(selected) && selected.status === 'Pending'" class="w-full rounded-2xl bg-[var(--color-info)]/15 px-4 py-10 text-center">
+                    <div class="text-2xl font-black uppercase">Sent to machine</div>
+                    <div class="font-mono text-lg">{{ selected.device_name }}</div>
+                    <div class="mt-1 text-xs text-[var(--color-text-muted)]">Waiting for the customer to scan and pay on the machine</div>
+                  </div>
                   <div v-else-if="selected.status === 'Pending' && qrSecondsLeft(selected) > 0" class="flex flex-col items-center gap-3">
                     <div class="rounded-2xl bg-white p-3 shadow">
                       <img v-if="qrImages[selected.order_id]" :src="`data:image/png;base64,${qrImages[selected.order_id]}`" alt="UPI QR" class="h-64 w-64" />
@@ -185,7 +190,7 @@
                   </div>
                   <div v-else class="w-full rounded-2xl bg-[var(--color-midlight)] py-10 text-center">
                     <div class="text-2xl font-bold uppercase">{{ qrExpired(selected) ? 'QR expired' : selected.status === 'Cancelled' ? 'Stopped waiting' : 'Payment failed' }}</div>
-                    <div class="text-sm text-[var(--color-text-muted)]">Not paid. {{ isRequest(selected) ? 'Send a new request' : 'Generate a new QR' }} for the customer.</div>
+                    <div class="text-sm text-[var(--color-text-muted)]">Not paid. {{ isRequest(selected) ? 'Send a new request' : isMachine(selected) ? 'Send it to the machine again' : 'Generate a new QR' }} for the customer.</div>
                   </div>
                 </div>
 
@@ -194,6 +199,9 @@
                   <dl class="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1.5 text-lg">
                     <dt class="text-[var(--color-text-muted)]">Created</dt><dd>{{ selected.transaction_datetime }} · {{ selected.owner }}</dd>
                     <dt class="text-[var(--color-text-muted)]">Mobile</dt><dd>{{ selected.customer_mobile || '—' }}</dd>
+                    <template v-if="isMachine(selected)">
+                      <dt class="text-[var(--color-text-muted)]">Machine</dt><dd>{{ selected.device_name || '—' }}</dd>
+                    </template>
                     <template v-if="selected.status === 'Success'">
                       <dt class="text-[var(--color-text-muted)]">Paid via</dt><dd>{{ selected.pay_method || '—' }}</dd>
                       <dt class="text-[var(--color-text-muted)]">Bank ref</dt><dd class="font-mono">{{ selected.rrn || selected.paytm_txn_id || '—' }}</dd>
@@ -240,11 +248,17 @@
                       class="rounded-lg bg-[var(--color-danger)] px-4 py-2 font-bold text-white disabled:opacity-50"
                     >Stop Waiting</button>
                     <button
-                      v-if="!isRequest(selected) && selected.status !== 'Success' && qrSecondsLeft(selected) === 0"
+                      v-if="selected.channel === 'QR' && selected.status !== 'Success' && qrSecondsLeft(selected) === 0"
                       @click="regenerateQr(selected)"
                       :disabled="creating"
                       class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white disabled:opacity-50"
                     >New QR</button>
+                    <button
+                      v-if="isMachine(selected) && !['Pending', 'Success'].includes(selected.status)"
+                      @click="resendToMachine(selected)"
+                      :disabled="creating || !machines.length"
+                      class="rounded-lg bg-[var(--color-success)] px-4 py-2 font-bold text-white disabled:opacity-50"
+                    >Send Again</button>
                     <button
                       v-if="selected.status === 'Success' && !selected.payment_entry"
                       @click="retryReceipt(selected)"
@@ -282,9 +296,10 @@
                 ></textarea>
               </div>
               <div class="flex min-w-0 flex-col gap-1 text-sm">
+                <span v-if="!machines.length" class="font-bold text-[var(--color-danger)]">No card machine is assigned to you in SSPL Paytm Settings</span>
+                <span v-else class="text-[var(--color-text-muted)]">Send to Machine: the amount goes to {{ machines[0].device_name }}, which shows its UPI QR.</span>
                 <span v-if="!qrEnabled" class="font-bold text-[var(--color-danger)]">Dynamic QR is disabled in SSPL Paytm Settings</span>
-                <span v-else class="text-[var(--color-text-muted)]">Paytm keeps the QR payable for 10 minutes; once paid it cannot be paid again.</span>
-                <span class="text-[var(--color-text-muted)]">Send Request: makes the QR and sends the QR picture to the customer's WhatsApp.</span>
+                <span v-else class="text-[var(--color-text-muted)]">Send Request: makes a QR and sends its picture to the customer's WhatsApp.</span>
                 <span v-if="formError" class="rounded-lg bg-[var(--color-danger)]/15 px-3 py-1.5 font-bold text-[var(--color-danger)]">{{ formError }}</span>
               </div>
             </div>
@@ -293,13 +308,14 @@
               <button
                 @click="createRequest"
                 :disabled="creating || !paytmEnabled || !qrEnabled"
-                title="Generates the QR and sends its pay link to the customer's WhatsApp (F8)"
+                title="Generates a QR and sends its picture to the customer's WhatsApp (F8)"
                 class="rounded-2xl bg-[var(--color-info)] px-8 py-6 text-2xl font-black text-white shadow-xl transition-all hover:scale-[1.02] focus:scale-[1.02] focus:outline-none focus:ring-[10px] focus:ring-[var(--color-focus)] active:scale-95 disabled:opacity-40 disabled:grayscale disabled:hover:scale-100"
               >Send Request</button>
               <button
                 ref="generateBtn"
                 @click="createEntry"
-                :disabled="creating || !paytmEnabled || !qrEnabled"
+                :disabled="creating || !paytmEnabled || !machines.length"
+                title="Sends the amount to your card machine, which shows its UPI QR (Ctrl+Enter)"
                 class="group relative flex items-center gap-4 overflow-hidden rounded-2xl bg-[var(--color-success)] px-16 py-6 text-4xl font-black text-[var(--color-text-on-highlight)] shadow-xl transition-all hover:scale-[1.02] hover:shadow-2xl focus:scale-[1.02] focus:outline-none focus:ring-[10px] focus:ring-[var(--color-focus)] active:scale-95 disabled:opacity-40 disabled:grayscale disabled:hover:scale-100"
               >
                 <span v-if="creating" class="flex items-center gap-3">
@@ -307,10 +323,10 @@
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  Creating...
+                  Sending...
                 </span>
                 <span v-else class="flex items-center gap-4">
-                  Generate QR
+                  Send to Machine
                   <svg class="h-10 w-10 transition-transform group-hover:translate-x-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3" />
                   </svg>
@@ -343,16 +359,18 @@ import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { serverToday } from '../services/serverTime'
-import { getWhatsAppSessionId } from '../session.js'
+import { session, getWhatsAppSessionId } from '../session.js'
 
 const router = useRouter()
 const API = 'ssplbilling.api.paytm_api'
 const POLL_MS = 10000
-// A shown QR is checked this often; the socket event usually arrives first
+// A shown QR or a machine request is checked this often; the socket event usually arrives first
 const QR_POLL_MS = 4000
 
 const paytmEnabled = ref(true)
 const qrEnabled = ref(true)
+// card machines assigned to this user; Send to Machine uses the first, as the POS panel does
+const machines = ref([])
 
 const links = ref([])
 const loadingLinks = ref(false)
@@ -420,6 +438,10 @@ function isRequest(l) {
   return l.channel === 'Link' && (l.order_id || '').startsWith(REQUEST_PREFIX)
 }
 
+function isMachine(l) {
+  return l.channel === 'EDC'
+}
+
 function qrExpired(l) {
   return l.channel === 'QR' && ((l.status === 'Pending' && qrSecondsLeft(l) === 0)
     || (l.status === 'Cancelled' && l.result_message === QR_EXPIRED_MSG))
@@ -444,9 +466,9 @@ function qrSecondsLeft(l) {
 async function loadLinks() {
   loadingLinks.value = true
   try {
-    // the server also returns old payment links; this page handles QRs and payment requests only
+    // the server also returns old payment links; this page handles QRs, machine receipts and payment requests only
     links.value = (await frappeGet(`${API}.get_payment_links`, { limit: 200 }))
-      .filter((l) => l.channel === 'QR' || isRequest(l))
+      .filter((l) => l.channel === 'QR' || isMachine(l) || isRequest(l))
     for (const l of links.value) setDeadline(l.order_id, l.expires_in)
     if (selected.value) selected.value = links.value.find((l) => l.order_id === selected.value.order_id) || null
   } catch (e) {
@@ -547,7 +569,38 @@ function accountArgs() {
 
 async function createEntry() {
   const args = formArgs()
-  if (args) await createQr(args)
+  if (args) await sendToMachine(args)
+}
+
+// same machine user as the POS panel: an admin's inherited user, else the logged-in user
+function machineUser() {
+  let inherited = ''
+  try { inherited = localStorage.getItem('wb-inherited-user') || '' } catch { /* storage blocked */ }
+  return inherited || session.user.value
+}
+
+// The machine opens on its UPI QR; the webhook / polling posts the receipt once paid
+async function sendToMachine(args) {
+  creating.value = true
+  try {
+    const r = await frappePost(`${API}.send_receipt_to_device`, {
+      ...args, ...accountArgs(), tid: machines.value[0]?.tid, user: machineUser(),
+    }, { silent: true })
+    resetForm()
+    await loadLinks()
+    selected.value = links.value.find((l) => l.order_id === r.order_id) || null
+  } catch (e) {
+    formError.value = e.message
+    loadLinks() // the failed attempt is recorded too
+  } finally {
+    creating.value = false
+  }
+}
+
+// Same customer and amount as a failed / stopped machine receipt
+function resendToMachine(l) {
+  formError.value = ''
+  sendToMachine({ customer: l.customer, amount: l.amount, description: l.link_description, mobile: l.customer_mobile })
 }
 
 // Generate QR, then send its UPI link (the QR's own upi://pay string) on WhatsApp
@@ -625,7 +678,9 @@ async function checkStatus(l, { quiet = false } = {}) {
 
 async function stopWaiting(l) {
   const what = isRequest(l) ? 'a payment request: it stays payable on the customer\'s phone' : 'a QR: it stays payable until it expires'
-  const msg = `Stop waiting for ₹${fmt(l.amount)} from ${l.customer}?\n\nPaytm cannot cancel ${what}. If the customer still pays, the receipt is still posted.`
+  const msg = isMachine(l)
+    ? `Stop waiting for ₹${fmt(l.amount)} from ${l.customer}?\n\nThe request is cleared off the machine. If the customer already paid, the receipt is still posted.`
+    : `Stop waiting for ₹${fmt(l.amount)} from ${l.customer}?\n\nPaytm cannot cancel ${what}. If the customer still pays, the receipt is still posted.`
   if (!confirm(msg)) return
   busy.value = true
   try {
@@ -723,7 +778,8 @@ function qrStillLive(l) {
 
 function pollSelectedQr() {
   const l = selected.value
-  if (!l || l.channel !== 'QR' || l.status !== 'Pending' || document.hidden || !qrStillLive(l)) return
+  if (!l || l.status !== 'Pending' || document.hidden) return
+  if (!isMachine(l) && (l.channel !== 'QR' || !qrStillLive(l))) return
   checkStatus(l, { quiet: true })
 }
 
@@ -743,9 +799,10 @@ onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
   getFrappeSocket()?.on('paytm_payment_update', onPaytmSocket)
   try {
-    const s = await frappeGet(`${API}.get_devices`)
+    const s = await frappeGet(`${API}.get_devices`, { user: machineUser() })
     paytmEnabled.value = s.enabled
     qrEnabled.value = s.qr_enabled
+    machines.value = s.devices || []
   } catch { /* settings missing: create will report it */ }
   await loadLinks()
   pollTimer = setInterval(pollPending, POLL_MS)
