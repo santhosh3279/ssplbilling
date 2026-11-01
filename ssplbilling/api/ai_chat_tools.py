@@ -721,13 +721,17 @@ def _breakdown(doctype, group_by, filters, limit):
 	return rows
 
 
-def _item_breakdown(doctype, filters, limit):
+def _item_breakdown(doctype, filters, limit, item_codes=None):
 	"""Top items of submitted invoices, filtered on the parent invoice. frappe.get_list joins the
 	parent only while applying permissions, so with Full Read Access (ignore_permissions) its
-	filters would name a table missing from the query (1054 Unknown column); join it here."""
+	filters would name a table missing from the query (1054 Unknown column); join it here.
+	`item_codes` limits the rows to those items (uses the item_code index, so a few items read
+	only their own invoice lines instead of every line in the period)."""
 	if not _full_read():
 		parent_filters = [[doctype, k, *(v if isinstance(v, list) else ["=", v])] for k, v in filters.items()]
 		parent_filters.append([doctype, "docstatus", "=", 1])
+		if item_codes is not None:
+			parent_filters.append([f"{doctype} Item", "item_code", "in", list(item_codes)])
 		return _get_list(
 			f"{doctype} Item",
 			parent_doctype=doctype,
@@ -764,6 +768,8 @@ def _item_breakdown(doctype, filters, limit):
 		.groupby(item.item_code, item.item_name, item.stock_uom)
 		.orderby(net_amount, order=Order.desc)
 	)
+	if item_codes is not None:
+		query = query.where(item.item_code.isin(list(item_codes)))
 	for field, value in filters.items():
 		op, val = value if isinstance(value, list) else ["=", value]
 		if op == "between":
@@ -2072,10 +2078,12 @@ def supplier_item_sales(supplier=None, months=6, company=None, limit=None):
 				"Sales Invoice",
 				{"company": co, "posting_date": ["between", [str(from_date), str(today)]]},
 				0,
+				item_codes=items,
 			)
+			# Lines saved under an older item name come back as their own row; add them up.
 			for r in rows:
-				if r.item_code in items:
-					sold.setdefault(r.item_code, {})[key] = flt(r.qty)
+				q = sold.setdefault(r.item_code, {})
+				q[key] = q.get(key, 0) + flt(r.qty)
 		rows = []
 		for code, item in items.items():
 			qty = sold.get(code, {})

@@ -1213,6 +1213,12 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 	if warehouse:
 		sales_conditions.append("sii.warehouse = %(warehouse)s")
 		sales_values["warehouse"] = warehouse
+	if supplier:
+		# Only the supplier's items: reads their invoice lines via the item_code index, not the whole period.
+		sales_conditions.append(
+			"sii.item_code IN (SELECT parent FROM `tabItem Supplier` WHERE supplier = %(supplier)s)"
+		)
+		sales_values["supplier"] = supplier
 
 	sales = frappe.db.sql(
 		f"""
