@@ -18,7 +18,16 @@ ACTIONS = {
 	"customer_outstanding": ("Customer outstanding", True),
 	"stock_summary": ("Stock summary", False),
 	"item_stock": ("Item stock", True),
+	"supplier_sales": ("Supplier item sales", True),
 }
+# Actions that ask more than one thing, in order. The page sends the answers joined by STEP_SEP.
+STEPS = {
+	"supplier_sales": [
+		{"key": "supplier", "label": "Supplier", "hint": "type a supplier name, then pick", "suggest": "supplier"},
+		{"key": "months", "label": "Sales months", "hint": "months for the monthly average (Enter = 6)", "default": "6"},
+	],
+}
+STEP_SEP = " | "
 # Top items shown in the chat; ⬇ Excel has the full list.
 QUICK_TOP_ITEMS = 50
 
@@ -63,9 +72,20 @@ def label_for(action, query):
 		frappe.throw(f"Unknown quick action: {action}")
 	label, needs_query = ACTIONS[action]
 	query = (query or "").strip()
-	if needs_query and not query:
+	if needs_query and not query.strip(STEP_SEP):
 		frappe.throw(f"{label}: type a name, code or mobile first.")
+	if action == "supplier_sales":
+		supplier, months = _supplier_sales_args(query)
+		return f"{label}: {supplier} · {months} months", query
 	return (f"{label}: {query}" if query else label), query
+
+
+def _supplier_sales_args(query):
+	supplier, _sep, months = query.rpartition(STEP_SEP)
+	if not _sep:
+		supplier, months = query, ""
+	months = min(max(int(months) if months.strip().isdigit() else 6, 1), 36)
+	return supplier.strip(), months
 
 
 def _source(action, query):
@@ -86,7 +106,17 @@ def _source(action, query):
 		"customer_outstanding": ("customer_outstanding", {"customer": query, "limit": 20}, _customer),
 		"stock_summary": ("item_stock", {}, _stock_summary),
 		"item_stock": ("item_stock", {"item": query, "limit": 10}, _item_stock),
+		"supplier_sales": _supplier_sales_source(query),
 	}[action]
+
+
+def _supplier_sales_source(query):
+	supplier, months = _supplier_sales_args(query)
+	return (
+		"supplier_item_sales",
+		{"supplier": supplier, "months": months, "limit": QUICK_TOP_ITEMS},
+		_supplier_sales,
+	)
 
 
 def _scope_line(data):
@@ -213,6 +243,42 @@ def _customer(data):
 				],
 			)
 		)
+	return "\n\n".join(out)
+
+
+def _supplier_sales(data):
+	if not data.get("found"):
+		if data.get("candidates"):
+			return "Several suppliers match. Tap the button again and pick one.\n\n" + _table(
+				["Supplier", "Mobile"],
+				[[r.get("supplier_name") or r["name"], r.get("mobile_no") or ""] for r in data["candidates"]],
+			)
+		return data["message"]
+	name = data["supplier_name"] or data["supplier"]
+	months = data["months"]
+	head = f"**{name}** — sales averages (weekly: last 4 weeks ÷ 4 · monthly: last {months} months ÷ {months})"
+	if not data["companies"]:
+		return f"{head}\n\n{data.get('message') or 'No stock or sales for this supplier’s items.'}"
+	out = [head]
+	for company, c in data["companies"].items():
+		out.append(f"**{company}** — {c['items_linked']} items")
+		out.append(
+			_table(
+				["#", "Item", "Stock", "Weekly avg", f"Monthly avg ({months}M)"],
+				[
+					[
+						n,
+						f"{i['item_name'] or i['item_code']} ({i['item_code']})",
+						f"{qty(i['stock'])} {i['uom'] or ''}".strip(),
+						qty(i["weekly_avg"]),
+						qty(i["monthly_avg"]),
+					]
+					for n, i in enumerate(c["items"], 1)
+				],
+			)
+		)
+		if c["more_rows"]:
+			out.append(f"_First {len(c['items'])} of {c['items_linked']} shown. ⬇ Excel has them all._")
 	return "\n\n".join(out)
 
 

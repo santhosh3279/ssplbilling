@@ -613,6 +613,16 @@ def build_series(tool, args=None, chart_type="bar", points=None):
 			points,
 		)
 
+	if tool == "supplier_item_sales":
+		key = "monthly_avg" if chart_type == "pie" else "weekly_avg"
+		return _align(
+			{
+				co: {_label(r, "item_name"): flt(r[key], 2) for r in c["items"]}
+				for co, c in data["companies"].items()
+			},
+			points,
+		)
+
 	raise ValueError(f"No chart for {tool}; use export_excel instead.")
 
 

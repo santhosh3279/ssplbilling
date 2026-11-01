@@ -29,6 +29,7 @@ DATA_TOOLS = (
 	"customer_activity",
 	"item_stock",
 	"item_movement",
+	"supplier_item_sales",
 	"account_ledger",
 	"cash_bank_position",
 	"profit_loss",
@@ -280,6 +281,25 @@ TOOLS += [
 				"cost_center": _COST_CENTER,
 				"limit": _LIMIT,
 			},
+		},
+	},
+	{
+		"name": "supplier_item_sales",
+		"description": (
+			"Items linked to one supplier (Item Supplier) with stock and average sales qty, per company, "
+			"highest weekly sales first. weekly_avg = net qty sold in the last 28 days / 4; monthly_avg = "
+			"net qty sold in the last `months` months (months * 30 days) / months. Returns are netted off. "
+			"Use for reorder / purchase planning for a supplier."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"supplier": {"type": "string", "description": "Supplier name, code or mobile."},
+				"months": {"type": "integer", "description": "Months for the monthly average (default 6)."},
+				"company": _COMPANY,
+				"limit": _LIMIT,
+			},
+			"required": ["supplier"],
 		},
 	},
 	{
@@ -1985,6 +2005,100 @@ def _warehouses(company, warehouse):
 	return company_of, names or [""]
 
 
+# ── supplier item sales ─────────────────────────────────────────────────────
+
+
+def supplier_item_sales(supplier=None, months=6, company=None, limit=None):
+	"""A supplier's items with stock and weekly / monthly average sales, per company."""
+	if not supplier:
+		raise ValueError("supplier is required.")
+	months = min(max(cint(months) or 6, 1), 36)
+	limit = _limit(limit or _row_cap["max"])
+	company, _cost_center = _scoped(company, None)
+	party = _pick_party("Supplier", supplier)
+	if party.get("found") is False:
+		return party
+
+	codes = {
+		r.parent
+		for r in _get_list(
+			"Item Supplier",
+			parent_doctype="Item",
+			filters={"supplier": party.name, "parenttype": "Item"},
+			fields=["parent"],
+			limit=0,
+		)
+	}
+	base = {
+		"found": True,
+		"supplier": party.name,
+		"supplier_name": party.get("supplier_name"),
+		"months": months,
+		"as_of": nowdate(),
+		**_scope_note(company, None),
+		"note": f"weekly_avg = qty sold in last 28 days / 4; monthly_avg = qty sold in last {months * 30} days / {months}",
+	}
+	if not codes:
+		return {**base, "companies": {}, "message": "No items are linked to this supplier."}
+
+	items = {
+		i.name: i
+		for i in _get_list(
+			"Item",
+			filters={"name": ["in", list(codes)]},
+			fields=["name", "item_name", "stock_uom", "disabled"],
+			limit=0,
+		)
+	}
+	company_of, warehouses = _warehouses(company, None)
+	bin_filters = {"item_code": ["in", list(items)]}
+	if warehouses is not None:
+		bin_filters["warehouse"] = ["in", warehouses]
+	stock = {}
+	for b in _get_list("Bin", filters=bin_filters, fields=["item_code", "warehouse", "actual_qty"], limit=0):
+		key = (company_of.get(b.warehouse), b.item_code)
+		stock[key] = flt(stock.get(key, 0) + flt(b.actual_qty), 3)
+
+	today = getdate(nowdate())
+	week_from = frappe.utils.add_days(today, -28)
+	month_from = frappe.utils.add_days(today, -30 * months)
+	companies = [company] if company else [c.name for c in _get_list("Company", fields=["name"], limit=0)]
+
+	out = {}
+	for co in companies:
+		sold = {}
+		for key, from_date in (("week", week_from), ("month", month_from)):
+			rows = _item_breakdown(
+				"Sales Invoice",
+				{"company": co, "posting_date": ["between", [str(from_date), str(today)]]},
+				0,
+			)
+			for r in rows:
+				if r.item_code in items:
+					sold.setdefault(r.item_code, {})[key] = flt(r.qty)
+		rows = []
+		for code, item in items.items():
+			qty = sold.get(code, {})
+			in_stock = stock.get((co, code), 0)
+			if not qty and not in_stock and item.disabled:
+				continue
+			rows.append(
+				{
+					"item_code": code,
+					"item_name": item.item_name,
+					"uom": item.stock_uom,
+					"stock": in_stock,
+					"weekly_avg": flt(qty.get("week", 0) / 4, 2),
+					"monthly_avg": flt(qty.get("month", 0) / months, 2),
+				}
+			)
+		if not any(r["stock"] or r["weekly_avg"] or r["monthly_avg"] for r in rows):
+			continue
+		rows.sort(key=lambda r: (r["weekly_avg"], r["monthly_avg"], r["stock"]), reverse=True)
+		out[co] = {"items_linked": len(rows), "items": rows[:limit], "more_rows": len(rows) > limit}
+	return {**base, "companies": out}
+
+
 # ── customer activity ───────────────────────────────────────────────────────
 
 
@@ -2398,6 +2512,7 @@ HANDLERS = {
 	"supplier_outstanding": supplier_outstanding,
 	"customer_activity": customer_activity,
 	"item_movement": item_movement,
+	"supplier_item_sales": supplier_item_sales,
 	"cash_bank_position": cash_bank_position,
 	"profit_loss": profit_loss,
 	"gst_summary": gst_summary,

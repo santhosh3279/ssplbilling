@@ -228,12 +228,22 @@
                 ↻ {{ s.question }}{{ s.params.length ? '…' : '' }}
               </button>
             </div>
+            <div v-if="quickSteps.suggestions.value.length" class="mb-2 flex flex-wrap gap-1.5">
+              <button
+                v-for="s in quickSteps.suggestions.value"
+                :key="s.value"
+                class="rounded-full bg-[var(--color-info)]/15 px-3 py-1 text-[17.2px] font-semibold hover:bg-[var(--color-info)]/30"
+                @click="pickSuggestion(s)"
+              >
+                {{ s.label }}
+              </button>
+            </div>
             <div class="flex items-end gap-2">
               <textarea
                 ref="inputEl"
                 v-model="input"
                 rows="1"
-                :placeholder="savedParam ? `${savedParam.label} for “${pendingSaved.item.question}” (was ${savedParam.was}), then Enter` : pendingQuick ? `${pendingQuick.label}: type a name, code or mobile, then Enter` : hasAi ? 'Ask about sales, outstanding, stock…' : 'Use the quick buttons (AI not set up)'"
+                :placeholder="savedParam ? `${savedParam.label} for “${pendingSaved.item.question}” (was ${savedParam.was}), then Enter` : quickSteps.step.value ? `${quickSteps.prompt.value}, then Enter` : pendingQuick ? `${pendingQuick.label}: type a name, code or mobile, then Enter` : hasAi ? 'Ask about sales, outstanding, stock…' : 'Use the quick buttons (AI not set up)'"
                 :class="pendingQuick || pendingSaved ? 'bg-[var(--color-success)]/15' : ''"
                 class="min-w-0 flex-1 resize-none rounded-lg bg-[var(--color-bg)] px-3 py-2 text-[18.75px] focus:bg-[var(--color-info)]/15 focus:outline-none"
                 @keydown.enter.exact.prevent="submit"
@@ -250,7 +260,7 @@
               <button
                 v-else
                 class="rounded-lg bg-[var(--color-highlight)] px-4 py-2 text-[18.75px] font-bold text-[var(--color-text-on-highlight)] disabled:opacity-50"
-                :disabled="!input.trim() || quickBusy || (!pendingQuick && !hasAi)"
+                :disabled="(!input.trim() && !quickSteps.step.value?.default) || quickBusy || (!pendingQuick && !hasAi)"
                 @click="submit"
               >
                 Send
@@ -308,6 +318,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import { aiChat } from '../api'
+import { useQuickSteps } from '../composables/useQuickSteps'
 import AiChart from '../components/AiChart.vue'
 import { getFrappeSocket } from '../services/frappeSocket'
 
@@ -328,6 +339,7 @@ const running = ref(false)
 const usage = ref(null)
 const listOpen = ref(true)
 const pendingQuick = ref(null)
+const quickSteps = useQuickSteps(pendingQuick, input)
 // Saved question waiting for its values: { item: {name, question, params}, values }
 const pendingSaved = ref(null)
 const savedQs = ref([])
@@ -475,6 +487,12 @@ function pickQuick(q) {
   nextTick(() => inputEl.value?.focus())
 }
 
+// A suggestion under a quick step (e.g. a supplier) answers that step.
+function pickSuggestion(s) {
+  input.value = s.value
+  submit()
+}
+
 async function runQuick(q, query) {
   quickBusy.value = true
   try {
@@ -489,6 +507,7 @@ async function runQuick(q, query) {
     scrollDown()
   } catch (e) {
     error.value = lastLine(e)
+    quickSteps.answers.value = [] // ask every step again
   } finally {
     quickBusy.value = false
   }
@@ -505,7 +524,16 @@ async function submit() {
     return
   }
   if (pendingQuick.value) {
-    if (!text || quickBusy.value) return
+    if (quickBusy.value) return
+    if (quickSteps.step.value) {
+      const query = quickSteps.take(text)
+      if (query === undefined) return
+      input.value = ''
+      autosize()
+      if (query === null) return nextTick(() => inputEl.value?.focus())
+      return runQuick(pendingQuick.value, query)
+    }
+    if (!text) return
     input.value = ''
     autosize()
     return runQuick(pendingQuick.value, text)

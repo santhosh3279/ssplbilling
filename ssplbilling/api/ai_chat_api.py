@@ -52,7 +52,7 @@ def get_bootstrap():
 		"enabled": bool(settings.enabled),
 		"allowed": allowed,
 		"quick_actions": [
-			{"action": a, "label": label, "needs_query": needs}
+			{"action": a, "label": label, "needs_query": needs, "steps": ai_chat_quick.STEPS.get(a)}
 			for a, (label, needs) in ai_chat_quick.ACTIONS.items()
 		],
 		"providers": _providers(settings) if allowed else [],
