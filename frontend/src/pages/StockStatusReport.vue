@@ -175,6 +175,12 @@ const stockFilters = ref({
   avgMonths: 6
 })
 
+// Monthly avg divisor: sales of last N months (N*30 days) ÷ N. Invalid input falls back to 6.
+const avgMonths = computed(() => {
+  const n = Math.floor(Number(stockFilters.value.avgMonths))
+  return n >= 1 ? Math.min(n, 36) : 6
+})
+
 async function loadStockReportFilters() {
   try {
     const company = localStorage.getItem('wb-company') || ''
@@ -235,12 +241,6 @@ function handleScroll(e) {
     }
   }
 }
-
-// Monthly avg divisor: sales of last N months (N*30 days) ÷ N. Invalid input falls back to 6.
-const avgMonths = computed(() => {
-  const n = Math.floor(Number(stockFilters.value.avgMonths))
-  return n >= 1 ? Math.min(n, 36) : 6
-})
 
 const filteredStockRows = computed(() => {
   const query = stockFilters.value.search.trim().toLowerCase()
