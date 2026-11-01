@@ -1137,12 +1137,12 @@ def get_stock_report_filters(company=None):
 
 
 @frappe.whitelist()
-def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_only=False):
+def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_only=False, avg_months=6):
 	"""Returns stock report data (one row per item, stock summed across warehouses) with
 	weekly and monthly average sales qty.
 
 	Weekly average = net qty sold in the last 28 days / 4.
-	Monthly average = net qty sold in the last 180 days / 6.
+	Monthly average = net qty sold in the last (avg_months * 30) days / avg_months (default 6).
 	Returns are netted off (return invoices carry negative qty).
 	"""
 	conditions = []
@@ -1196,13 +1196,17 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 	if not data:
 		return data
 
+	avg_months = max(1, frappe.utils.cint(avg_months) or 6)
 	today = frappe.utils.getdate()
 	sales_values = {
-		"from_month": frappe.utils.add_days(today, -180),
+		"from_month": frappe.utils.add_days(today, -30 * avg_months),
 		"from_week": frappe.utils.add_days(today, -28),
 		"today": today,
 	}
-	sales_conditions = ["si.docstatus = 1", "si.posting_date BETWEEN %(from_month)s AND %(today)s"]
+	sales_conditions = [
+		"si.docstatus = 1",
+		"si.posting_date BETWEEN LEAST(%(from_month)s, %(from_week)s) AND %(today)s",
+	]
 	if company:
 		sales_conditions.append("si.company = %(company)s")
 		sales_values["company"] = company
@@ -1215,7 +1219,7 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 		SELECT
 			sii.item_code,
 			SUM(CASE WHEN si.posting_date >= %(from_week)s THEN sii.stock_qty ELSE 0 END) as week_qty,
-			SUM(sii.stock_qty) as month_qty
+			SUM(CASE WHEN si.posting_date >= %(from_month)s THEN sii.stock_qty ELSE 0 END) as month_qty
 		FROM `tabSales Invoice Item` sii
 		INNER JOIN `tabSales Invoice` si ON sii.parent = si.name
 		WHERE {" AND ".join(sales_conditions)}
@@ -1229,7 +1233,7 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 	for row in data:
 		s = sales_map.get(row.item_code)
 		row["weekly_avg_sales"] = frappe.utils.flt((s.week_qty if s else 0) / 4, 2)
-		row["monthly_avg_sales"] = frappe.utils.flt((s.month_qty if s else 0) / 6, 2)
+		row["monthly_avg_sales"] = frappe.utils.flt((s.month_qty if s else 0) / avg_months, 2)
 
 	return data
 

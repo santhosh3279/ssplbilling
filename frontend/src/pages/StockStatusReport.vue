@@ -75,6 +75,17 @@
             />
             <span>Negative Stock Only</span>
           </label>
+
+          <label class="flex items-center gap-2 select-none text-xl text-[var(--color-text)]" title="Monthly avg = sales of last N months ÷ N">
+            <span>Avg Months</span>
+            <input
+              v-model.number="stockFilters.avgMonths"
+              type="number"
+              min="1"
+              max="36"
+              class="w-16 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 text-xl text-right text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+            />
+          </label>
           
           <button
             @click="resetStockFilters"
@@ -109,7 +120,7 @@
               <th class="px-2 py-1.5 font-semibold">Item Name</th>
               <th class="px-2 py-1.5 font-semibold text-right">Actual Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right" title="Net qty sold in last 4 weeks ÷ 4">Weekly Avg Sales</th>
-              <th class="px-2 py-1.5 font-semibold text-right" title="Net qty sold in last 6 months ÷ 6">Monthly Avg Sales</th>
+              <th class="px-2 py-1.5 font-semibold text-right" :title="`Net qty sold in last ${avgMonths} months ÷ ${avgMonths}`">Monthly Avg Sales ({{ avgMonths }}M)</th>
               <th class="px-2 py-1.5 font-semibold text-right">Safety Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right">Max Stock</th>
               <th class="px-2 py-1.5 font-semibold">UOM</th>
@@ -160,7 +171,8 @@ const stockFilters = ref({
   search: '',
   warehouse: '',
   supplier: '',
-  negativeOnly: false
+  negativeOnly: false,
+  avgMonths: 6
 })
 
 async function loadStockReportFilters() {
@@ -181,7 +193,8 @@ async function loadStockReportData() {
       company: company,
       warehouse: stockFilters.value.warehouse,
       supplier: stockFilters.value.supplier,
-      negative_only: stockFilters.value.negativeOnly
+      negative_only: stockFilters.value.negativeOnly,
+      avg_months: avgMonths.value
     })
     stockReportRows.value = data || []
     maxDisplayed.value = 100
@@ -194,7 +207,7 @@ async function loadStockReportData() {
 }
 
 watch(
-  () => [stockFilters.value.warehouse, stockFilters.value.supplier, stockFilters.value.negativeOnly],
+  () => [stockFilters.value.warehouse, stockFilters.value.supplier, stockFilters.value.negativeOnly, avgMonths.value],
   () => {
     loadStockReportData()
   }
@@ -222,6 +235,12 @@ function handleScroll(e) {
     }
   }
 }
+
+// Monthly avg divisor: sales of last N months (N*30 days) ÷ N. Invalid input falls back to 6.
+const avgMonths = computed(() => {
+  const n = Math.floor(Number(stockFilters.value.avgMonths))
+  return n >= 1 ? Math.min(n, 36) : 6
+})
 
 const filteredStockRows = computed(() => {
   const query = stockFilters.value.search.trim().toLowerCase()
@@ -255,7 +274,8 @@ function resetStockFilters() {
     search: '',
     warehouse: '',
     supplier: '',
-    negativeOnly: false
+    negativeOnly: false,
+    avgMonths: 6
   }
 }
 
@@ -287,7 +307,7 @@ async function exportStockReportToExcel() {
 
   // Add Table Header
   const headerRow = worksheet.addRow([
-    'Item Code', 'Item Name', 'Actual Stock', 'Weekly Avg Sales', 'Monthly Avg Sales', 'Safety Stock', 'Max Stock', 'UOM', 'Suppliers'
+    'Item Code', 'Item Name', 'Actual Stock', 'Weekly Avg Sales', `Monthly Avg Sales (${avgMonths.value}M)`, 'Safety Stock', 'Max Stock', 'UOM', 'Suppliers'
   ])
   headerRow.eachCell(cell => {
     cell.font = { name: 'Arial', bold: true }
