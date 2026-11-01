@@ -107,8 +107,9 @@
             <tr>
               <th class="px-2 py-1.5 font-semibold">Item Code</th>
               <th class="px-2 py-1.5 font-semibold">Item Name</th>
-              <th class="px-2 py-1.5 font-semibold">Warehouse</th>
               <th class="px-2 py-1.5 font-semibold text-right">Actual Stock</th>
+              <th class="px-2 py-1.5 font-semibold text-right" title="Net qty sold in last 4 weeks ÷ 4">Weekly Avg Sales</th>
+              <th class="px-2 py-1.5 font-semibold text-right" title="Net qty sold in last 6 months ÷ 6">Monthly Avg Sales</th>
               <th class="px-2 py-1.5 font-semibold text-right">Safety Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right">Max Stock</th>
               <th class="px-2 py-1.5 font-semibold">UOM</th>
@@ -118,16 +119,17 @@
           <tbody class="divide-y divide-[var(--color-border)] text-[var(--color-text)] font-mono">
             <tr
               v-for="(row, idx) in displayedStockRows"
-              :key="row.item_code + '_' + row.warehouse"
+              :key="row.item_code"
               class="transition-colors"
               :class="focusedRowIdx === idx ? 'stock-row-focused bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-sm' : 'hover:bg-[var(--color-surface-raised)]/30'"
             >
               <td class="px-2 py-1 font-bold">{{ row.item_code }}</td>
               <td class="px-2 py-1 font-sans">{{ row.item_name }}</td>
-              <td class="px-2 py-1 font-sans" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.warehouse }}</td>
               <td class="px-2 py-1 text-right font-semibold tabular-nums" :class="focusedRowIdx === idx ? '' : (row.actual_stock < 0 ? 'text-[var(--color-danger)]' : '')">
                 {{ row.actual_stock }}
               </td>
+              <td class="px-2 py-1 text-right tabular-nums">{{ fmt(row.weekly_avg_sales) }}</td>
+              <td class="px-2 py-1 text-right tabular-nums">{{ fmt(row.monthly_avg_sales) }}</td>
               <td class="px-2 py-1 text-right tabular-nums" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.safety_stock }}</td>
               <td class="px-2 py-1 text-right tabular-nums" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.max_stock }}</td>
               <td class="px-2 py-1 font-sans uppercase tracking-wider" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.stock_uom }}</td>
@@ -274,8 +276,9 @@ async function exportStockReportToExcel() {
   worksheet.columns = [
     { key: 'item_code', width: 20 },
     { key: 'item_name', width: 35 },
-    { key: 'warehouse', width: 25 },
     { key: 'actual_stock', width: 15 },
+    { key: 'weekly_avg_sales', width: 18 },
+    { key: 'monthly_avg_sales', width: 18 },
     { key: 'safety_stock', width: 15 },
     { key: 'max_stock', width: 15 },
     { key: 'stock_uom', width: 10 },
@@ -284,7 +287,7 @@ async function exportStockReportToExcel() {
 
   // Add Table Header
   const headerRow = worksheet.addRow([
-    'Item Code', 'Item Name', 'Warehouse', 'Actual Stock', 'Safety Stock', 'Max Stock', 'UOM', 'Suppliers'
+    'Item Code', 'Item Name', 'Actual Stock', 'Weekly Avg Sales', 'Monthly Avg Sales', 'Safety Stock', 'Max Stock', 'UOM', 'Suppliers'
   ])
   headerRow.eachCell(cell => {
     cell.font = { name: 'Arial', bold: true }
@@ -300,8 +303,9 @@ async function exportStockReportToExcel() {
     worksheet.addRow([
       r.item_code,
       r.item_name,
-      r.warehouse,
       fmt(r.actual_stock),
+      fmt(r.weekly_avg_sales),
+      fmt(r.monthly_avg_sales),
       fmt(r.safety_stock),
       fmt(r.max_stock),
       r.stock_uom,

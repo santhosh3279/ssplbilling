@@ -1138,23 +1138,28 @@ def get_stock_report_filters(company=None):
 
 @frappe.whitelist()
 def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_only=False):
-	"""Returns stock report data with filters for warehouse, supplier, and negative stock."""
+	"""Returns stock report data (one row per item, stock summed across warehouses) with
+	weekly and monthly average sales qty.
+
+	Weekly average = net qty sold in the last 28 days / 4.
+	Monthly average = net qty sold in the last 180 days / 6.
+	Returns are netted off (return invoices carry negative qty).
+	"""
 	conditions = []
 	values = {}
 
 	query = """
-		SELECT 
+		SELECT
 			bin.item_code,
 			item.item_name,
 			item.stock_uom,
-			bin.warehouse,
-			bin.actual_qty as actual_stock,
+			SUM(bin.actual_qty) as actual_stock,
 			item.safety_stock,
 			item.custom_max_stock as max_stock,
 			(SELECT GROUP_CONCAT(supplier SEPARATOR ', ') FROM `tabItem Supplier` WHERE parent = bin.item_code) as suppliers
-		FROM 
+		FROM
 			`tabBin` bin
-		INNER JOIN 
+		INNER JOIN
 			`tabItem` item ON bin.item_code = item.item_code
 		INNER JOIN
 			`tabWarehouse` wh ON bin.warehouse = wh.name
@@ -1168,10 +1173,6 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 		conditions.append("bin.warehouse = %(warehouse)s")
 		values["warehouse"] = warehouse
 
-	# convert javascript/frontend boolean to python boolean/int
-	if str(negative_only).lower() in ["true", "1"]:
-		conditions.append("bin.actual_qty < 0")
-
 	if supplier:
 		conditions.append("""
 			bin.item_code IN (
@@ -1183,9 +1184,53 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 	if conditions:
 		query += " WHERE " + " AND ".join(conditions)
 
-	query += " ORDER BY bin.item_code ASC, bin.warehouse ASC"
+	query += " GROUP BY bin.item_code, item.item_name, item.stock_uom, item.safety_stock, item.custom_max_stock"
+
+	# convert javascript/frontend boolean to python boolean/int
+	if str(negative_only).lower() in ["true", "1"]:
+		query += " HAVING SUM(bin.actual_qty) < 0"
+
+	query += " ORDER BY bin.item_code ASC"
 
 	data = frappe.db.sql(query, values, as_dict=True)
+	if not data:
+		return data
+
+	today = frappe.utils.getdate()
+	sales_values = {
+		"from_month": frappe.utils.add_days(today, -180),
+		"from_week": frappe.utils.add_days(today, -28),
+		"today": today,
+	}
+	sales_conditions = ["si.docstatus = 1", "si.posting_date BETWEEN %(from_month)s AND %(today)s"]
+	if company:
+		sales_conditions.append("si.company = %(company)s")
+		sales_values["company"] = company
+	if warehouse:
+		sales_conditions.append("sii.warehouse = %(warehouse)s")
+		sales_values["warehouse"] = warehouse
+
+	sales = frappe.db.sql(
+		f"""
+		SELECT
+			sii.item_code,
+			SUM(CASE WHEN si.posting_date >= %(from_week)s THEN sii.stock_qty ELSE 0 END) as week_qty,
+			SUM(sii.stock_qty) as month_qty
+		FROM `tabSales Invoice Item` sii
+		INNER JOIN `tabSales Invoice` si ON sii.parent = si.name
+		WHERE {" AND ".join(sales_conditions)}
+		GROUP BY sii.item_code
+		""",
+		sales_values,
+		as_dict=True,
+	)
+	sales_map = {r.item_code: r for r in sales}
+
+	for row in data:
+		s = sales_map.get(row.item_code)
+		row["weekly_avg_sales"] = frappe.utils.flt((s.week_qty if s else 0) / 4, 2)
+		row["monthly_avg_sales"] = frappe.utils.flt((s.month_qty if s else 0) / 6, 2)
+
 	return data
 
 
