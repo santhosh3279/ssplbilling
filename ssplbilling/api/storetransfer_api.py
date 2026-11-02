@@ -27,6 +27,8 @@ def save_store_transfer(data):
         
     if data.get("company"):
         se.company = data["company"]
+    # Without set_posting_time ERPNext resets posting_date/time to now on submit
+    se.set_posting_time = 1
     se.posting_date = data.get("posting_date") or frappe.utils.today()
     se.from_warehouse = data.get("from_warehouse")
     se.to_warehouse = data.get("to_warehouse")
@@ -64,6 +66,8 @@ def save_store_transfer(data):
 def submit_store_transfer(name):
     """Submit a Stock Entry."""
     doc = frappe.get_doc("Stock Entry", name)
+    # Keep the draft's own date; drafts saved before this fix lack the flag
+    doc.set_posting_time = 1
     doc.submit()
     return {"status": "Submitted"}
 
