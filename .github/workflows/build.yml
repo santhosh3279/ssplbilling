@@ -28,6 +28,13 @@ jobs:
           repository: frappe/frappe_docker
           ref: bb3faf8a250da1d57a16d25e69ef34aa96b8b7cd
           path: frappe_docker
+      - name: Patch nginx template to keep port in socket.io Origin
+        # Upstream sets Origin to ${FRAPPE_SITE_NAME_HEADER} (site name = IP, no port), so on a
+        # non-80 port the realtime auth fetch hits :80 and fails. $http_host keeps the port.
+        run: |
+          f=frappe_docker/resources/core/nginx/nginx-template.conf
+          sed -i 's|proxy_set_header Origin $proxy_x_forwarded_proto://${FRAPPE_SITE_NAME_HEADER};|proxy_set_header Origin $proxy_x_forwarded_proto://$http_host;|' "$f"
+          grep -qF 'Origin $proxy_x_forwarded_proto://$http_host;' "$f" || { echo "nginx Origin patch failed"; exit 1; }
       - name: Patch Containerfile to build frontend assets + install fonts
         run: |
           python3 -c "
