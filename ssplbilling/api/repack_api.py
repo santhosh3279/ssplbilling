@@ -105,6 +105,8 @@ def save_repack(data):
 def submit_repack(name):
     """Submit a Stock Entry for Repack."""
     doc = frappe.get_doc("Stock Entry", name)
+    # Keep the draft's own date; without the flag ERPNext resets it to now on submit
+    doc.set_posting_time = 1
     doc.submit()
     return {"status": "Submitted"}
 

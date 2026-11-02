@@ -214,6 +214,8 @@ def submit_stock_reconciliation(name):
     
     sr = frappe.get_doc("Stock Reconciliation", name)
     if sr.docstatus == 0:
+        # Keep the draft's own date; without the flag ERPNext resets it to now on submit
+        sr.set_posting_time = 1
         sr.submit()
         return {"name": sr.name, "status": "Submitted"}
     elif sr.docstatus == 1:
