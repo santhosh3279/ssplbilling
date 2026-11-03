@@ -198,7 +198,6 @@
                       <span class="font-bold text-slate-900 text-lg" :title="variant.itemname">{{ variant.variant_label }}</span>
                       <span class="shrink-0 text-xs font-semibold" :class="variant.available_stock > 0 ? 'text-emerald-700' : 'text-rose-700'">{{ displayStock(variant) }}</span>
                     </div>
-                    <p v-if="variant.discount_desc && variant.discount_desc !== item.discount_desc" class="text-xs font-semibold text-indigo-700">{{ variant.discount_desc }}</p>
                     <div v-for="bp in variant.barcode_prices" :key="bp.barcode" class="flex flex-wrap items-baseline gap-x-3 font-mono text-slate-900 text-lg">
                       <span class="select-all">{{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans text-xs text-slate-600">({{ bp.uom }})</span></span>
                       <span v-for="pl in offer.price_lists" :key="pl.price_list" class="font-bold tracking-widest text-indigo-700">
@@ -482,7 +481,6 @@
                       <span class="font-bold text-[var(--color-text)]" :title="variant.itemname">{{ variant.variant_label }}</span>
                       <span class="shrink-0 text-xs font-semibold" :class="variant.available_stock > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ displayStock(variant) }}</span>
                     </div>
-                    <p v-if="variant.discount_desc && variant.discount_desc !== item.discount_desc" class="text-xs font-semibold text-[var(--color-info)]">{{ variant.discount_desc }}</p>
                     <div v-for="bp in variant.barcode_prices" :key="bp.barcode" class="flex flex-wrap items-baseline gap-x-3 font-mono text-[var(--color-text)]">
                       <span class="select-all">{{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans text-xs text-[var(--color-text-muted)]">({{ bp.uom }})</span></span>
                       <span v-for="pl in offer.price_lists" :key="pl.price_list" class="font-bold tracking-widest text-[var(--color-info)]">
