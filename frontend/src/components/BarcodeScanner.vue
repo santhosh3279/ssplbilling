@@ -73,9 +73,9 @@
         v-if="manualResults.length"
         class="results-scroll absolute inset-x-0 bottom-full max-h-[45vh] space-y-1 overflow-y-auto overscroll-contain border-t border-[var(--color-border)] bg-[var(--color-bg)] p-2 shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
       >
-        <!-- Item name (first 25 characters) | item code | price (cipher), all one size; code and price columns
+        <!-- Item name (full, up to two lines) | item code | price (cipher), all one size; code and price columns
              are as wide as the longest value in the list (monospace, so divider lines line up on every row),
-             the name gets the rest and wraps.
+             the name gets the rest and wraps onto at most two lines.
              Rows are 1.25× the single-line height (11px vertical padding) for an easier tap.
              Alternate rows shaded, exact code / barcode match blinks -->
         <button
@@ -87,7 +87,7 @@
           :style="{ gridTemplateColumns: resultColumns }"
           @click="found(m.code)"
         >
-          <div class="min-w-0 self-center break-words px-2 py-[0.6875rem]">{{ shortName(m.name) }}</div>
+          <div class="name-2 min-w-0 self-center break-words px-2 py-[0.6875rem]" :title="m.name">{{ m.name }}</div>
           <div class="flex items-center whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-[0.6875rem] font-mono text-[var(--color-text-muted)]">{{ m.code }}</div>
           <div class="flex items-center justify-end whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-[0.6875rem] font-mono">{{ cipherPrice(m.price) }}</div>
         </button>
@@ -192,12 +192,6 @@ const manualResults = computed(() => {
   const q = typed.value.trim()
   return props.search && q.length >= 2 ? (props.search(q) || []).slice(0, 30) : []
 })
-
-const NAME_CHARS = 25
-const shortName = name => {
-  const s = String(name || '')
-  return s.length > NAME_CHARS ? s.slice(0, NAME_CHARS).trimEnd() + '…' : s
-}
 
 // Same code / price column widths on every row: longest value in ch (monospace) + px-1.5 padding + border
 const resultColumns = computed(() => {
@@ -685,6 +679,14 @@ onBeforeUnmount(() => {
 .results-scroll {
   touch-action: pan-y;
   -webkit-overflow-scrolling: touch;
+}
+/* Result name: whole name over two lines; only a name longer than that ends in an ellipsis */
+.name-2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 /* Exact item-code or barcode match: card blinks so it is spotted at a glance */
 .exact-match {
