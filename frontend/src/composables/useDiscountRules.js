@@ -80,6 +80,15 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
     return null
   }
 
+  // Every active rule covering the item, for showing the offer while it is entered.
+  // Ignores the ignore-rule flag: the offer exists even when it is not being applied.
+  function rulesForItem(itemCode) {
+    if (!itemCode || !discountRules.value.length) return []
+    return discountRules.value.filter(rule =>
+      rule.enabled && _isRuleActive(rule) && ruleMatchesPriceList(rule, priceList.value) && _itemMatchesScope(rule, itemCode)
+    )
+  }
+
   // ── discount computation ─────────────────────────────────────────────────
   //
   // Returns { freeRows: [], discount: number | null }
@@ -444,5 +453,6 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
     makeRowKey,
     applyDiscountRuleForRow,
     reapplyAllDiscountRules,
+    rulesForItem,
   }
 }

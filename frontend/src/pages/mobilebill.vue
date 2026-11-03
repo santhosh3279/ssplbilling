@@ -45,6 +45,15 @@
         >{{ customerName || 'Select customer' }}</button>
       </div>
 
+      <!-- Offers on the item being entered (same rules as SalesInvoice's Active Offer badge) -->
+      <div v-if="pendingOffers.length" class="offer-strip rounded-xl px-3 py-1.5">
+        <div v-for="(o, i) in pendingOffers" :key="i" class="flex items-baseline gap-2 leading-tight">
+          <span class="shrink-0 text-[10px] font-black uppercase tracking-wider text-[var(--color-text-muted)]">{{ i === 0 ? 'Offer' : '' }}</span>
+          <span class="min-w-0 flex-1 truncate text-[1.09375rem] font-bold">{{ o.name }}</span>
+          <span class="min-w-0 shrink truncate text-sm text-[var(--color-text-muted)]">{{ o.text }}</span>
+        </div>
+      </div>
+
       <button
         v-if="isReadOnly && invoiceName && !isSubmitted"
         type="button"
@@ -482,7 +491,26 @@ const isSubmitted = computed(() => docstatus.value === 1)
 const activeRows = computed(() => rows.value.filter(r => !r.deleted))
 
 // Rules stay frozen while a saved bill is only being viewed, so it shows what was billed
-const { makeRowKey, reapplyAllDiscountRules } = useDiscountRules({ items: rows, priceList, lookupItemInCache, pauseRules: isReadOnly })
+const { makeRowKey, reapplyAllDiscountRules, rulesForItem } = useDiscountRules({ items: rows, priceList, lookupItemInCache, pauseRules: isReadOnly })
+
+// Short description of a discount rule, worded as SalesInvoice's Active Offer badge
+function describeRule(rule) {
+  const tiers = rule.custom_logic_rows || []
+  switch (rule.discount_type) {
+    case 'Percentage Discount':
+      return tiers.length
+        ? tiers.map(t => `${t.min_quantity}+ → ${t.percentage || 0}% off`).join(' · ')
+        : `${rule.percentage_discount || 0}% off (Min Qty: ${rule.min_quantity || 0})`
+    case 'Product Discount':
+      return `Buy ${rule.min_quantity} Get ${rule.free_quantity} Free`
+    case 'X to Y product discount':
+      return 'X to Y Offer Active'
+    case 'Custom Logic':
+      if (rule.custom_logic_type === 'Product') return tiers.map(t => `${t.min_quantity} + ${t.nos} free`).join(' · ') || 'Tiered offer'
+      if (rule.custom_logic_type === 'Percentage') return tiers.map(t => `${t.min_quantity}+ → ${t.percentage || 0}% off`).join(' · ') || 'Tiered discount'
+  }
+  return ''
+}
 
 const round = v => parseFloat((Number(v) || 0).toFixed(precision))
 const netRate = row => round((row.rate || 0) * (1 - (Number(row.discount) || 0) / 100))
@@ -579,6 +607,12 @@ const showKeypad = ref(true)
 const keypadVisible = computed(() =>
   showKeypad.value && !!pending.value && !isReadOnly.value &&
   !showScanner.value && !showCustomerPicker.value && !showPastBills.value && !showPrintModal.value && !showBatchPicker.value)
+// Offers covering the item whose qty is being entered
+const pendingOffers = computed(() => {
+  const code = pending.value?.item_code
+  if (!code || isReadOnly.value) return []
+  return rulesForItem(code).map(r => ({ name: r.rule_name || r.name, text: describeRule(r) }))
+})
 // Bill line number of the staged item: its own line when re-editing, else the next line
 const pendingLineNo = computed(() => {
   const p = pending.value
@@ -1362,6 +1396,10 @@ onBeforeUnmount(() => {
   opacity: 0.35;
 }
 /* Item picked on the scanner screen (or a line being modified), staged above the keypad */
+.offer-strip {
+  background: color-mix(in srgb, var(--color-focus) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--color-focus) 40%, transparent);
+}
 .pending-panel {
   background: color-mix(in srgb, var(--color-success) 35%, var(--color-bg));
 }
