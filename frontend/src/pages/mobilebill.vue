@@ -46,11 +46,12 @@
       </div>
 
       <!-- Offers on the item being entered (same rules as SalesInvoice's Active Offer badge) -->
-      <div v-if="pendingOffers.length" class="offer-strip rounded-xl px-3 py-1.5">
-        <div v-for="(o, i) in pendingOffers" :key="i" class="flex items-baseline gap-2 leading-tight">
+      <!-- Long offers scroll sideways instead of being cut off -->
+      <div v-if="pendingOffers.length" class="offer-strip overflow-x-auto overscroll-x-contain rounded-xl px-3 py-1.5">
+        <div v-for="(o, i) in pendingOffers" :key="i" class="flex w-max items-baseline gap-2 whitespace-nowrap leading-tight">
           <span class="shrink-0 text-[10px] font-black uppercase tracking-wider text-[var(--color-text-muted)]">{{ i === 0 ? 'Offer' : '' }}</span>
-          <span class="min-w-0 flex-1 truncate text-[1.09375rem] font-bold">{{ o.name }}</span>
-          <span class="min-w-0 shrink truncate text-sm text-[var(--color-text-muted)]">{{ o.text }}</span>
+          <span class="shrink-0 text-[1.09375rem] font-bold">{{ o.name }}</span>
+          <span class="shrink-0 text-sm text-[var(--color-text-muted)]">{{ o.text }}</span>
         </div>
       </div>
 
