@@ -48,11 +48,7 @@
       <!-- Offers on the item being entered (same rules as SalesInvoice's Active Offer badge) -->
       <!-- Long offers scroll sideways instead of being cut off -->
       <div v-if="pendingOffers.length" class="offer-strip overflow-x-auto overscroll-x-contain rounded-xl px-3 py-1.5">
-        <div v-for="(o, i) in pendingOffers" :key="i" class="flex w-max items-baseline gap-2 whitespace-nowrap leading-tight">
-          <span class="shrink-0 text-[10px] font-black uppercase tracking-wider text-[var(--color-text-muted)]">{{ i === 0 ? 'Offer' : '' }}</span>
-          <span class="shrink-0 text-[1.09375rem] font-bold">{{ o.name }}</span>
-          <span class="shrink-0 text-sm text-[var(--color-text-muted)]">{{ o.text }}</span>
-        </div>
+        <div v-for="(text, i) in pendingOffers" :key="i" class="w-max whitespace-nowrap text-[1.09375rem] font-bold leading-tight">{{ text }}</div>
       </div>
 
       <button
@@ -612,7 +608,7 @@ const keypadVisible = computed(() =>
 const pendingOffers = computed(() => {
   const code = pending.value?.item_code
   if (!code || isReadOnly.value) return []
-  return rulesForItem(code).map(r => ({ name: r.rule_name || r.name, text: describeRule(r) }))
+  return rulesForItem(code).map(describeRule).filter(Boolean)
 })
 // Bill line number of the staged item: its own line when re-editing, else the next line
 const pendingLineNo = computed(() => {
