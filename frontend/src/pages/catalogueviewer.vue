@@ -150,6 +150,9 @@
         <p v-else-if="itemQuery.trim() && !searchLoading && !searchResults.length" role="status">No matching catalogue items.</p>
         <div v-if="searchResults.length" class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <article v-for="item in searchResults" :key="JSON.stringify([item.pageaddress || '', item.item_code, item.barcode])" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 space-y-2">
+            <p v-if="item.has_discount" class="inline-block rounded-md bg-emerald-500/20 px-2 py-0.5 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+              🏷️ {{ item.discount_desc || 'Offer' }}
+            </p>
             <h2 class="font-bold">{{ item.item_name }}</h2>
             <p class="text-sm text-[var(--color-text-muted)]">{{ item.item_code }} <span v-if="item.barcode">· {{ item.barcode }}</span></p>
             <button v-if="item.pageaddress" type="button" class="text-sm text-[var(--color-info)] underline text-left" @click="openCatalogue(item.pageaddress)">{{ item.heading }}</button>

@@ -180,6 +180,10 @@ def search_catalogue_items(query, start=0, customer=None, price_list=None, all_i
 	include_all = bool(cint(all_items)) and _is_system_user()
 	escaped_query = "%" + query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
 	start_offset = max(0, cint(start))
+	# Items under an active discount rule (directly, through their template, or by item group) sort first.
+	rule_labels, rule_groups = _discount_rule_lookup(context["price_list"] if context else None)
+	params = {"query": escaped_query, "start": start_offset,
+		"rule_codes": tuple(rule_labels) or ("",), "rule_groups": tuple(rule_groups) or ("",)}
 
 	if include_all:
 		rows = frappe.db.sql("""
@@ -190,7 +194,11 @@ def search_catalogue_items(query, start=0, customer=None, price_list=None, all_i
 				item.item_name,
 				item.image,
 				item.stock_uom,
-				IF(line.itemcode = item.name, COALESCE(line.barcode, ''), '') AS barcode
+				IF(line.itemcode = item.name, COALESCE(line.barcode, ''), '') AS barcode,
+				item.variant_of,
+				item.item_group,
+				(item.name IN %(rule_codes)s OR COALESCE(item.variant_of, '') IN %(rule_codes)s
+					OR item.item_group IN %(rule_groups)s) AS has_discount
 			FROM `tabItem` item
 			LEFT JOIN `tabOffer-Item` line
 				ON (line.itemcode = item.name OR line.itemcode = item.variant_of)
@@ -206,14 +214,17 @@ def search_catalogue_items(query, start=0, customer=None, price_list=None, all_i
 					OR (line.barcode IS NOT NULL AND line.barcode LIKE %(query)s)
 					OR EXISTS (SELECT 1 FROM `tabItem Barcode` barcode
 						WHERE barcode.parent = item.name AND barcode.barcode LIKE %(query)s))
-			ORDER BY item.item_name, item.name, catalogue.pageaddress, line.barcode
+			ORDER BY has_discount DESC, item.item_name, item.name, catalogue.pageaddress, line.barcode
 			LIMIT 31 OFFSET %(start)s
-		""", {"query": escaped_query, "start": start_offset}, as_dict=True)
+		""", params, as_dict=True)
 	else:
 		rows = frappe.db.sql("""
 			SELECT DISTINCT catalogue.pageaddress, catalogue.heading, item.name AS item_code,
 				item.item_name, item.image, item.stock_uom,
-				IF(item.name = line.itemcode, line.barcode, '') AS barcode
+				IF(item.name = line.itemcode, line.barcode, '') AS barcode,
+				item.variant_of, item.item_group,
+				(item.name IN %(rule_codes)s OR COALESCE(item.variant_of, '') IN %(rule_codes)s
+					OR item.item_group IN %(rule_groups)s) AS has_discount
 			FROM `tabOffer-Item` line
 			INNER JOIN `tabOffer-Items` catalogue ON catalogue.name = line.parent
 			INNER JOIN `tabItem` item ON item.name = line.itemcode OR item.variant_of = line.itemcode
@@ -225,9 +236,9 @@ def search_catalogue_items(query, start=0, customer=None, price_list=None, all_i
 					OR line.itemname LIKE %(query)s OR line.barcode LIKE %(query)s
 					OR EXISTS (SELECT 1 FROM `tabItem Barcode` barcode
 						WHERE barcode.parent = item.name AND barcode.barcode LIKE %(query)s))
-			ORDER BY item.item_name, item.name, catalogue.pageaddress, line.barcode
+			ORDER BY has_discount DESC, item.item_name, item.name, catalogue.pageaddress, line.barcode
 			LIMIT 31 OFFSET %(start)s
-		""", {"query": escaped_query, "start": start_offset}, as_dict=True)
+		""", params, as_dict=True)
 
 	has_more = len(rows) > 30
 	rows = rows[:30]
@@ -236,6 +247,10 @@ def search_catalogue_items(query, start=0, customer=None, price_list=None, all_i
 		row.available_stock = stock.get(row.item_code)
 		row.order_rate = None
 		row.order_uom = row.stock_uom
+		row.has_discount = 1 if row.has_discount else 0
+		row.discount_desc = (rule_labels.get(row.item_code) or rule_labels.get(row.variant_of or "")
+			or rule_groups.get(row.item_group)) if row.has_discount else None
+		row.pop("item_group", None)
 		if not row.barcode and hasattr(frappe.db, "get_value"):
 			row.barcode = frappe.db.get_value("Item Barcode", {"parent": row.item_code}, "barcode") or ""
 		if context:
@@ -280,6 +295,45 @@ def _catalogue_rules(price_list):
 	return active
 
 
+def _num(value):
+	value = flt(value)
+	return str(int(value)) if value.is_integer() else str(value)
+
+
+def _rule_label(rule):
+	"""Short offer text for a catalogue card, e.g. "Buy 10 Get 1 Free" or "5% Off"."""
+	kind = rule.discount_type
+	if kind == "Product Discount":
+		return f"Buy {_num(rule.min_quantity)} Get {_num(rule.free_quantity)} Free"
+	if kind in ("Percentage Discount", "Custom Logic") and rule.custom_logic_rows:
+		if kind == "Custom Logic" and rule.custom_logic_type == "Product":
+			return " | ".join(f"Buy {_num(r.min_quantity)} Get {_num(r.nos)} Free" for r in rule.custom_logic_rows)
+		return " | ".join(f"Qty {_num(r.min_quantity)}+: {_num(r.percentage)}% Off" for r in rule.custom_logic_rows)
+	if kind == "Percentage Discount":
+		label = f"{_num(rule.percentage_discount)}% Off"
+		return f"{label} (Min Qty: {_num(rule.min_quantity)})" if flt(rule.min_quantity) > 0 else label
+	return rule.rule_name or "Offer"
+
+
+def _discount_rule_lookup(price_list=None):
+	"""Offer text keyed by item code (rule items and X to Y items) and by product group, first rule wins."""
+	codes, groups = {}, {}
+	for rule in _catalogue_rules(price_list):
+		label = _rule_label(rule)
+		if rule.discount_type == "X to Y product discount":
+			for entry in rule.x_to_y_table:
+				if entry.item_code:
+					codes.setdefault(entry.item_code, f"Buy {_num(entry.min_quantity or 1)} Get "
+						f"{_num(entry.free_item_quantity or 1)} {entry.free_item_code or 'Free'}")
+		elif rule.applies_to == "Item Code":
+			for entry in rule["items"]:
+				if entry.item_code:
+					codes.setdefault(entry.item_code, label)
+		elif rule.applies_to == "Product Group" and rule.product_group:
+			groups.setdefault(rule.product_group, label)
+	return codes, groups
+
+
 def _stock_uom_and_factor(item_code, uom):
 	"""The item's stock UOM and the conversion factor of uom to it (1 when unknown)."""
 	item = frappe.get_cached_doc("Item", item_code)
@@ -297,13 +351,15 @@ def _apply_catalogue_rules(lines, price_list):
 		line["discount_percentage"] = 0
 		line["is_free_item"] = 0
 		priced.append(line)
+		# A rule naming a template also covers its variants.
+		codes = {line["item_code"].lower(), (line.get("variant_of") or "").lower()} - {""}
 		for rule in rules:
 			matching_x_to_y = next((entry for entry in rule.x_to_y_table
-				if entry.item_code.lower() == line["item_code"].lower()), None)
+				if (entry.item_code or "").lower() in codes), None)
 			if rule.discount_type == "X to Y product discount":
 				matches = matching_x_to_y is not None
 			elif rule.applies_to == "Item Code":
-				matches = any(entry.item_code.lower() == line["item_code"].lower() for entry in rule["items"])
+				matches = any((entry.item_code or "").lower() in codes for entry in rule["items"])
 			elif rule.applies_to == "Product Group":
 				matches = line["item_group"] == rule.product_group
 			else:
@@ -358,6 +414,7 @@ def _apply_catalogue_rules(lines, price_list):
 			break
 	for line in priced:
 		line.pop("item_group", None)
+		line.pop("variant_of", None)
 	return priced
 
 
@@ -419,6 +476,7 @@ def _preview(items, customer=None, price_list=None):
 			"item_code": item_code,
 			"item_name": item.item_name,
 			"item_group": item.item_group,
+			"variant_of": item.variant_of,
 			"image": item.image,
 			"qty": qty,
 			"uom": uom,
