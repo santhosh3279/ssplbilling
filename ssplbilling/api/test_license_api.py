@@ -30,7 +30,9 @@ class TestLicenseTiers(IntegrationTestCase):
 		self.assertNotIn("hrms", granted)  # Enterprise
 
 	def test_highest_tier_wins_and_unknown_tier_ignored(self):
-		tier, _label, _addons, granted = expand_license_features(["tier:ultra-lite", "tier:enterprise", "tier:gold"])
+		tier, _label, _addons, granted = expand_license_features(
+			["tier:ultra-lite", "tier:enterprise", "tier:gold"]
+		)
 		self.assertEqual(tier, "enterprise")
 		self.assertIn("ai-chat", granted)
 

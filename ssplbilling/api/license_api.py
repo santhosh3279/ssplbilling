@@ -22,39 +22,93 @@ LICENSE_TIERS = [
 		"ultra-lite",
 		"Ultra Lite",
 		[
-			"sales", "mobile-bill", "cashier", "cashier-mobile", "pos", "payment", "ledger",
-			"expense", "daily-report", "ssplbillingsettings", "invoice-template", "stock-template",
+			"sales",
+			"mobile-bill",
+			"cashier",
+			"cashier-mobile",
+			"pos",
+			"payment",
+			"ledger",
+			"expense",
+			"daily-report",
+			"ssplbillingsettings",
+			"invoice-template",
+			"stock-template",
 		],
 	),
 	(
 		"lite",
 		"Lite",
 		[
-			"quotation", "sales-order", "cancellation", "modifysubmitted", "modify-submitted",
-			"Cashier-Management", "purchase-invoice", "pricelist-update", "purchase-submit",
-			"stock-ledger", "outstanding-bills", "single-entry", "barcode-print", "item-barcode",
-			"reports", "store-sale-report", "stock-status-report", "stock-aging-report",
-			"outstanding-customers-report", "ledger-sales-purchase-report", "item-sales-summary",
-			"store-wise-item-sales", "fast-moving-items", "material-transfer-report",
+			"quotation",
+			"sales-order",
+			"cancellation",
+			"modifysubmitted",
+			"modify-submitted",
+			"Cashier-Management",
+			"purchase-invoice",
+			"pricelist-update",
+			"purchase-submit",
+			"stock-ledger",
+			"outstanding-bills",
+			"single-entry",
+			"barcode-print",
+			"item-barcode",
+			"reports",
+			"store-sale-report",
+			"stock-status-report",
+			"stock-aging-report",
+			"outstanding-customers-report",
+			"ledger-sales-purchase-report",
+			"item-sales-summary",
+			"store-wise-item-sales",
+			"fast-moving-items",
+			"material-transfer-report",
 		],
 	),
 	(
 		"standard",
 		"Standard",
 		[
-			"purchase-order", "stock-reconciliation", "store-transfer", "repack", "land-cost-voucher",
-			"journal-contra", "cheques", "unreconciled", "payment-reconciliation", "general-ledger",
-			"account-tree", "bank-statement", "paytm-link", "paytm-unknown", "cost-center-sale-report",
-			"batch-reports", "pricing-rules", "discount-rules", "naming-settings",
+			"purchase-order",
+			"stock-reconciliation",
+			"store-transfer",
+			"repack",
+			"land-cost-voucher",
+			"journal-contra",
+			"cheques",
+			"unreconciled",
+			"payment-reconciliation",
+			"general-ledger",
+			"account-tree",
+			"bank-statement",
+			"paytm-link",
+			"paytm-unknown",
+			"cost-center-sale-report",
+			"batch-reports",
+			"pricing-rules",
+			"discount-rules",
+			"naming-settings",
 		],
 	),
 	(
 		"enterprise",
 		"Enterprise",
 		[
-			"incentive-ledger", "incentive-redeem", "incentive-entry", "loading-receipt",
-			"customer-enquiry", "parcel-address", "catelogue", "catalogueviewer", "offer-display",
-			"create-user", "hrms", "employee", "essl-machines", "ai-chat",
+			"incentive-ledger",
+			"incentive-redeem",
+			"incentive-entry",
+			"loading-receipt",
+			"customer-enquiry",
+			"parcel-address",
+			"catelogue",
+			"catalogueviewer",
+			"offer-display",
+			"create-user",
+			"hrms",
+			"employee",
+			"essl-machines",
+			"ai-chat",
 		],
 	),
 ]
@@ -121,7 +175,9 @@ def expand_license_features(features):
 	return tier_id, tier_label, addons, granted
 
 
-def _build_message(site_name, expiry_date, features, max_tabs=None, customer_name=None, watch_text=None, amc_date=None):
+def _build_message(
+	site_name, expiry_date, features, max_tabs=None, customer_name=None, watch_text=None, amc_date=None
+):
 	# expiry_date is a core positional field, but an empty/missing value means
 	# "unlimited" (no expiry) rather than being omitted from the message like the
 	# optional fields below — normalize to "" so both build and verify agree.
@@ -142,16 +198,25 @@ def _build_message(site_name, expiry_date, features, max_tabs=None, customer_nam
 	return message.encode("utf-8")
 
 
-def _verify_signature(site_name, expiry_date, features, signature_b64, max_tabs=None, customer_name=None, watch_text=None, amc_date=None):
+def _verify_signature(
+	site_name,
+	expiry_date,
+	features,
+	signature_b64,
+	max_tabs=None,
+	customer_name=None,
+	watch_text=None,
+	amc_date=None,
+):
 	try:
-		public_key = ed25519.Ed25519PublicKey.from_public_bytes(
-			base64.b64decode(LICENSE_PUBLIC_KEY_B64)
-		)
+		public_key = ed25519.Ed25519PublicKey.from_public_bytes(base64.b64decode(LICENSE_PUBLIC_KEY_B64))
 		signature = base64.b64decode(signature_b64)
-		message = _build_message(site_name, expiry_date, features, max_tabs, customer_name, watch_text, amc_date)
+		message = _build_message(
+			site_name, expiry_date, features, max_tabs, customer_name, watch_text, amc_date
+		)
 		public_key.verify(signature, message)
 		return True
-	except (InvalidSignature, ValueError, TypeError):
+	except InvalidSignature, ValueError, TypeError:
 		return False
 
 
@@ -178,7 +243,7 @@ def _load_license_status():
 			"days_remaining": None,
 			"amc_date": "",
 			"amc_days_remaining": None,
-			"site_name": frappe.local.site
+			"site_name": frappe.local.site,
 		}
 
 	# Location: sites/<site>/license.json
@@ -204,7 +269,7 @@ def _load_license_status():
 		"days_remaining": 0,
 		"amc_date": "",
 		"amc_days_remaining": None,
-		"site_name": frappe.local.site
+		"site_name": frappe.local.site,
 	}
 
 	if not os.path.exists(license_path):
@@ -250,13 +315,17 @@ def _load_license_status():
 
 	# Verify active site matches site in license.json
 	if site_name != frappe.local.site:
-		status["message"] = f"License is registered for site '{site_name}', but active site is '{frappe.local.site}'"
+		status["message"] = (
+			f"License is registered for site '{site_name}', but active site is '{frappe.local.site}'"
+		)
 		return status
 
 	# Verify signature
 	if signature == "bypass" or signature == "bypass_verification":
 		pass
-	elif not _verify_signature(site_name, expiry_date, features, signature, max_tabs, customer_name, watch_text, amc_date):
+	elif not _verify_signature(
+		site_name, expiry_date, features, signature, max_tabs, customer_name, watch_text, amc_date
+	):
 		status["message"] = "License signature verification failed (tampered)"
 		return status
 

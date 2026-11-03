@@ -221,303 +221,303 @@
     "License Tier": [
       {
         "id": "tier:ultra-lite",
-        "label": "Ultra Lite tier (includes lower tiers)"
+        "name": "Ultra Lite tier (includes lower tiers)"
       },
       {
         "id": "tier:lite",
-        "label": "Lite tier (includes lower tiers)"
+        "name": "Lite tier (includes lower tiers)"
       },
       {
         "id": "tier:standard",
-        "label": "Standard tier (includes lower tiers)"
+        "name": "Standard tier (includes lower tiers)"
       },
       {
         "id": "tier:enterprise",
-        "label": "Enterprise tier (includes lower tiers)"
+        "name": "Enterprise tier (includes lower tiers)"
       }
     ],
     "Add-ons from Ultra Lite": [
       {
         "id": "sales",
-        "label": "Sales Invoice"
+        "name": "Sales Invoice"
       },
       {
         "id": "mobile-bill",
-        "label": "Mobile Bill"
+        "name": "Mobile Bill"
       },
       {
         "id": "cashier",
-        "label": "Cashier Desk"
+        "name": "Cashier Desk"
       },
       {
         "id": "cashier-mobile",
-        "label": "Cashier Mobile"
+        "name": "Cashier Mobile"
       },
       {
         "id": "pos",
-        "label": "POS Billing"
+        "name": "POS Billing"
       },
       {
         "id": "payment",
-        "label": "Payment Receipt"
+        "name": "Payment Receipt"
       },
       {
         "id": "ledger",
-        "label": "Customer Ledger"
+        "name": "Customer Ledger"
       },
       {
         "id": "expense",
-        "label": "Cash Box Entry"
+        "name": "Cash Box Entry"
       },
       {
         "id": "daily-report",
-        "label": "Daily Report"
+        "name": "Daily Report"
       },
       {
         "id": "ssplbillingsettings",
-        "label": "Settings"
+        "name": "Settings"
       },
       {
         "id": "invoice-template",
-        "label": "Invoice Template"
+        "name": "Invoice Template"
       },
       {
         "id": "stock-template",
-        "label": "Stock Template"
+        "name": "Stock Template"
       }
     ],
     "Add-ons from Lite": [
       {
         "id": "quotation",
-        "label": "Quotation"
+        "name": "Quotation"
       },
       {
         "id": "sales-order",
-        "label": "Sales Order"
+        "name": "Sales Order"
       },
       {
         "id": "cancellation",
-        "label": "Cancellation"
+        "name": "Cancellation"
       },
       {
         "id": "modifysubmitted",
-        "label": "Modify Submitted Bill"
+        "name": "Modify Submitted Bill"
       },
       {
         "id": "modify-submitted",
-        "label": "Modify Submitted Bill (alt id)"
+        "name": "Modify Submitted Bill (alt id)"
       },
       {
         "id": "Cashier-Management",
-        "label": "Cashier Management"
+        "name": "Cashier Management"
       },
       {
         "id": "purchase-invoice",
-        "label": "Purchase Invoice"
+        "name": "Purchase Invoice"
       },
       {
         "id": "pricelist-update",
-        "label": "Price List Update"
+        "name": "Price List Update"
       },
       {
         "id": "purchase-submit",
-        "label": "Purchase Desk"
+        "name": "Purchase Desk"
       },
       {
         "id": "stock-ledger",
-        "label": "Stock"
+        "name": "Stock"
       },
       {
         "id": "outstanding-bills",
-        "label": "Outstanding"
+        "name": "Outstanding"
       },
       {
         "id": "single-entry",
-        "label": "Single Entry"
+        "name": "Single Entry"
       },
       {
         "id": "barcode-print",
-        "label": "Print Barcodes"
+        "name": "Print Barcodes"
       },
       {
         "id": "item-barcode",
-        "label": "Item Barcodes"
+        "name": "Item Barcodes"
       },
       {
         "id": "reports",
-        "label": "Reports"
+        "name": "Reports"
       },
       {
         "id": "store-sale-report",
-        "label": "Store Sale Report"
+        "name": "Store Sale Report"
       },
       {
         "id": "stock-status-report",
-        "label": "Stock Status"
+        "name": "Stock Status"
       },
       {
         "id": "stock-aging-report",
-        "label": "Stock Aging"
+        "name": "Stock Aging"
       },
       {
         "id": "outstanding-customers-report",
-        "label": "Outstanding Customers"
+        "name": "Outstanding Customers"
       },
       {
         "id": "ledger-sales-purchase-report",
-        "label": "Ledger Sales & Purchase"
+        "name": "Ledger Sales & Purchase"
       },
       {
         "id": "item-sales-summary",
-        "label": "Item Sales Summary"
+        "name": "Item Sales Summary"
       },
       {
         "id": "store-wise-item-sales",
-        "label": "Store Wise Item Sales"
+        "name": "Store Wise Item Sales"
       },
       {
         "id": "fast-moving-items",
-        "label": "Fast Moving Items"
+        "name": "Fast Moving Items"
       },
       {
         "id": "material-transfer-report",
-        "label": "Material Transfer Report"
+        "name": "Material Transfer Report"
       }
     ],
     "Add-ons from Standard": [
       {
         "id": "purchase-order",
-        "label": "Purchase Order"
+        "name": "Purchase Order"
       },
       {
         "id": "stock-reconciliation",
-        "label": "Stock Reconciliation"
+        "name": "Stock Reconciliation"
       },
       {
         "id": "store-transfer",
-        "label": "Store Transfer"
+        "name": "Store Transfer"
       },
       {
         "id": "repack",
-        "label": "Repack Entry"
+        "name": "Repack Entry"
       },
       {
         "id": "land-cost-voucher",
-        "label": "Landed Cost Voucher"
+        "name": "Landed Cost Voucher"
       },
       {
         "id": "journal-contra",
-        "label": "Journal Contra"
+        "name": "Journal Contra"
       },
       {
         "id": "cheques",
-        "label": "Cheque Register"
+        "name": "Cheque Register"
       },
       {
         "id": "unreconciled",
-        "label": "Unreconciled Entries"
+        "name": "Unreconciled Entries"
       },
       {
         "id": "payment-reconciliation",
-        "label": "Payment Reconciliation"
+        "name": "Payment Reconciliation"
       },
       {
         "id": "general-ledger",
-        "label": "General Ledger"
+        "name": "General Ledger"
       },
       {
         "id": "account-tree",
-        "label": "Chart of Accounts"
+        "name": "Chart of Accounts"
       },
       {
         "id": "bank-statement",
-        "label": "Bank Statement"
+        "name": "Bank Statement"
       },
       {
         "id": "paytm-link",
-        "label": "Paytm Receipt"
+        "name": "Paytm Receipt"
       },
       {
         "id": "paytm-unknown",
-        "label": "Paytm Unknown Payments"
+        "name": "Paytm Unknown Payments"
       },
       {
         "id": "cost-center-sale-report",
-        "label": "Cost Center Sale Report"
+        "name": "Cost Center Sale Report"
       },
       {
         "id": "batch-reports",
-        "label": "Batch Reports"
+        "name": "Batch Reports"
       },
       {
         "id": "pricing-rules",
-        "label": "Discount Rules"
+        "name": "Discount Rules"
       },
       {
         "id": "discount-rules",
-        "label": "Discount Rules (alt id)"
+        "name": "Discount Rules (alt id)"
       },
       {
         "id": "naming-settings",
-        "label": "Naming Settings"
+        "name": "Naming Settings"
       }
     ],
     "Add-ons from Enterprise": [
       {
         "id": "incentive-ledger",
-        "label": "Incentive Ledger"
+        "name": "Incentive Ledger"
       },
       {
         "id": "incentive-redeem",
-        "label": "Incentive Redeem"
+        "name": "Incentive Redeem"
       },
       {
         "id": "incentive-entry",
-        "label": "Incentive Entry"
+        "name": "Incentive Entry"
       },
       {
         "id": "loading-receipt",
-        "label": "Loading Receipt"
+        "name": "Loading Receipt"
       },
       {
         "id": "customer-enquiry",
-        "label": "Customer Enquiry"
+        "name": "Customer Enquiry"
       },
       {
         "id": "parcel-address",
-        "label": "Parcel Address"
+        "name": "Parcel Address"
       },
       {
         "id": "catelogue",
-        "label": "Catalogues"
+        "name": "Catalogues"
       },
       {
         "id": "catalogueviewer",
-        "label": "Catalogue Viewer"
+        "name": "Catalogue Viewer"
       },
       {
         "id": "offer-display",
-        "label": "Offer Display"
+        "name": "Offer Display"
       },
       {
         "id": "create-user",
-        "label": "Create User"
+        "name": "Create User"
       },
       {
         "id": "hrms",
-        "label": "HRMS Dashboard"
+        "name": "HRMS Dashboard"
       },
       {
         "id": "employee",
-        "label": "Employee Directory"
+        "name": "Employee Directory"
       },
       {
         "id": "essl-machines",
-        "label": "eSSL Machines"
+        "name": "eSSL Machines"
       },
       {
         "id": "ai-chat",
-        "label": "AI Chat"
+        "name": "AI Chat"
       }
     ]
   },
