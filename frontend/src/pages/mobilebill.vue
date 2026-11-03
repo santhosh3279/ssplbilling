@@ -95,6 +95,11 @@
               <div class="font-mono text-[1.25rem] font-bold tabular-nums" :style="{ minWidth: `${f.chars}ch` }">{{ pending[f.key] || '0' }}</div>
             </button>
           </div>
+          <!-- Barcode of the staged item (read only): the one scanned, else the item's first barcode -->
+          <div v-if="pendingBarcode">
+            <div class="whitespace-nowrap px-0.5 text-[12.5px] font-bold uppercase text-[var(--color-text-muted)]">Barcode</div>
+            <div class="rounded-lg border-2 border-[var(--color-border)] px-2 py-1 font-mono text-[1.25rem] font-bold tabular-nums text-[var(--color-text-muted)]">{{ pendingBarcode }}</div>
+          </div>
           <span class="ml-auto pb-1.5 font-mono text-[1.25rem] font-bold tabular-nums">{{ money(pendingAmount) }}</span>
         </div>
       </div>
@@ -599,6 +604,16 @@ const billWithPending = computed(() => {
   return round(subTotal.value - current + pendingAmount.value)
 })
 
+// Barcode shown beside the staged item's disc box: the code it was scanned with when that is
+// one of its barcodes, else its first barcode
+const pendingBarcode = computed(() => {
+  const p = pending.value
+  const cached = p && lookupItemInCache(p.item_code)
+  if (!cached) return ''
+  const barcodes = itemBarcodes(cached)
+  return barcodes.includes(p.scanned_code) ? p.scanned_code : barcodes[0] || ''
+})
+
 // UOMs the staged item can be sold in (stock UOM + its conversion rows)
 const pendingUoms = computed(() => {
   const p = pending.value
@@ -855,8 +870,10 @@ function onScanned(code) {
 // Exact item code / barcode from the camera or a keyboard-wedge scanner
 function addCode(code) {
   const match = lookupItemInCache(code)
-  if (match) addItem(match, match.uom)
-  else flash(`No item for ${code}`)
+  if (match) {
+    addItem(match, match.uom)
+    if (pending.value?.item_code === match.item_code) pending.value.scanned_code = String(code).trim()
+  } else flash(`No item for ${code}`)
 }
 
 function openScanner() {
