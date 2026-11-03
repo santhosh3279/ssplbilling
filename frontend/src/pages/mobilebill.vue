@@ -96,10 +96,7 @@
             </button>
           </div>
           <!-- Barcode of the staged item (read only): the one scanned, else the item's first barcode -->
-          <div v-if="pendingBarcode">
-            <div class="whitespace-nowrap px-0.5 text-[12.5px] font-bold uppercase text-[var(--color-text-muted)]">Barcode</div>
-            <div class="rounded-lg border-2 border-[var(--color-border)] px-2 py-1 font-mono text-[1.25rem] font-bold tabular-nums text-[var(--color-text-muted)]">{{ pendingBarcode }}</div>
-          </div>
+          <span v-if="pendingBarcode" class="pb-2 font-mono text-xs text-[var(--color-text-muted)]">{{ pendingBarcode }}</span>
           <span class="ml-auto pb-1.5 font-mono text-[1.25rem] font-bold tabular-nums">{{ money(pendingAmount) }}</span>
         </div>
       </div>
