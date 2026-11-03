@@ -1444,6 +1444,39 @@ def send_chat_file(chat_id, file_base64, mimetype, filename, caption="", session
 	)
 
 
+# WhatsApp Web lets one forward go to at most five chats
+MAX_FORWARD_TARGETS = 5
+
+
+@frappe.whitelist(methods=["POST"])
+def forward_chat_message(from_chat_id, message_id, to_chat_ids, session_id=None):
+	"""Forward one message to up to five chats; returns {chat_id: error or ""} per target."""
+	_require_chat_user()
+	targets = frappe.parse_json(to_chat_ids) if isinstance(to_chat_ids, str) else to_chat_ids
+	targets = list(dict.fromkeys(t for t in targets or [] if t))
+	if not targets:
+		frappe.throw(_("Pick a chat to forward to"))
+	if len(targets) > MAX_FORWARD_TARGETS:
+		frappe.throw(_("You can forward to at most {0} chats at once").format(MAX_FORWARD_TARGETS))
+	settings, row = _chat_settings(session_id)
+	results = {}
+	for chat_id in targets:
+		phone = chat_id.split("@")[0]
+		body = {"fromChatId": from_chat_id, "toChatId": chat_id, "messageId": message_id}
+		try:
+			result = _call(settings, "POST", f"/sessions/{row.session_id}/messages/forward", json=body)
+		except OpenWAError as e:
+			_log(phone, "Text", f"Forwarded {message_id}", "Failed", error=str(e))
+			results[chat_id] = str(e)
+			continue
+		_log(phone, "Text", f"Forwarded {message_id}", "Sent", message_id=result.get("messageId"))
+		results[chat_id] = ""
+	if all(results.values()):
+		frappe.db.commit()
+		frappe.throw(next(iter(results.values())), title=_("WhatsApp forward failed"))
+	return results
+
+
 def _stored_media(settings, row, chat_id, message_id):
 	"""The copy OpenWA kept of a message it saw while linked, or None."""
 	try:

@@ -107,7 +107,7 @@
                   {{ dayLabel(m, messages[i - 1]) }}
                 </span>
               </div>
-              <div class="flex" :class="m.from_me ? 'justify-end' : 'justify-start'">
+              <div class="group flex items-center gap-1" :class="m.from_me && 'flex-row-reverse'">
                 <div
                   class="max-w-[80%] rounded-xl text-sm"
                   :class="[
@@ -182,6 +182,13 @@
                     >{{ TICKS[m.status] }}</span>
                   </div>
                 </div>
+                <button
+                  v-if="canForward(m)"
+                  type="button"
+                  class="shrink-0 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-surface-raised)] text-sm text-[var(--color-text-muted)] opacity-0 transition-opacity hover:text-[var(--color-text)] focus:opacity-100 group-hover:opacity-100"
+                  title="Forward"
+                  @click="openForward(m)"
+                >↪</button>
               </div>
             </template>
           </div>
@@ -214,6 +221,66 @@
           </form>
         </template>
       </section>
+    </div>
+
+    <!-- Forward picker -->
+    <div
+      v-if="forwarding"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      @click.self="closeForward"
+    >
+      <div class="flex max-h-[85vh] w-full max-w-md flex-col overflow-hidden rounded-xl bg-[var(--color-surface)] shadow-xl">
+        <div class="shrink-0 flex items-center justify-between border-b border-[var(--color-border)] px-4 py-3">
+          <h2 class="font-bold">Forward message to</h2>
+          <button class="rounded px-2 text-lg text-[var(--color-text-muted)] hover:text-[var(--color-text)]" @click="closeForward">✕</button>
+        </div>
+        <div class="shrink-0 border-b border-[var(--color-border)] px-4 py-2 text-xs text-[var(--color-text-muted)] truncate">
+          {{ forwarding.body || mediaLabel(forwarding) || forwarding.type }}
+        </div>
+        <div class="shrink-0 p-3">
+          <input
+            ref="forwardSearchEl"
+            v-model="forwardSearch"
+            type="text"
+            placeholder="Search chats"
+            class="w-full rounded-lg bg-[var(--color-bg)] px-3 py-2 text-sm focus:bg-[var(--color-info)]/15 focus:outline-none"
+          />
+        </div>
+        <div class="min-h-0 flex-1 overflow-y-auto">
+          <div v-if="!forwardChats.length" class="p-6 text-center text-sm text-[var(--color-text-muted)]">No chats</div>
+          <label
+            v-for="c in forwardChats"
+            :key="c.id"
+            class="flex cursor-pointer items-center gap-3 px-4 py-2 transition-colors"
+            :class="forwardPicks.includes(c.id) ? 'bg-[var(--color-success)]/20' : 'hover:bg-[var(--color-surface-raised)]'"
+          >
+            <input
+              type="checkbox"
+              class="h-4 w-4 accent-[#25D366]"
+              :checked="forwardPicks.includes(c.id)"
+              :disabled="!forwardPicks.includes(c.id) && forwardPicks.length >= MAX_FORWARD"
+              @change="toggleForwardPick(c.id)"
+            />
+            <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-surface-raised)] text-xs font-bold">
+              {{ c.is_group ? '👥' : initials(c.name) }}
+            </div>
+            <span class="min-w-0 flex-1 truncate text-sm font-semibold">{{ c.name }}</span>
+          </label>
+        </div>
+        <p v-if="forwardError" class="shrink-0 bg-[var(--color-danger)]/15 px-4 py-2 text-sm text-[var(--color-danger)]">{{ forwardError }}</p>
+        <div class="shrink-0 flex items-center justify-between gap-3 border-t border-[var(--color-border)] px-4 py-3">
+          <span class="truncate text-xs text-[var(--color-text-muted)]">
+            {{ forwardPicks.length ? forwardNames : `Pick up to ${MAX_FORWARD} chats` }}
+          </span>
+          <button
+            :disabled="!forwardPicks.length || forwardBusy"
+            class="shrink-0 rounded-lg bg-[#25D366] px-4 py-2 text-sm font-bold text-black disabled:opacity-50"
+            @click="sendForward"
+          >
+            {{ forwardBusy ? 'Forwarding…' : 'Forward ↪' }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Attachment preview -->
@@ -263,6 +330,10 @@ const AUDIO_TYPES = new Set(['audio', 'voice', 'ptt'])
 const INLINE_TYPES = new Set(['image', 'sticker', ...AUDIO_TYPES])
 // Each fetch makes OpenWA pull chat history with media, so only a couple run at once
 const INLINE_CONCURRENCY = 2
+// WhatsApp Web forwards one message to at most five chats; the server enforces the same
+const MAX_FORWARD = 5
+// Nothing left to forward in these
+const UNFORWARDABLE_TYPES = new Set(['revoked', 'call'])
 // Archived attachments come back without a type, so recognise the common ones by their first bytes
 const MAGIC = [
   ['%PDF', 'application/pdf'],
@@ -299,6 +370,13 @@ const mediaBusy = ref({})
 const mediaCache = shallowReactive(new Map())
 // message id -> true when an inline image could not be fetched
 const mediaFailed = ref({})
+// The message being forwarded, and the chats picked for it
+const forwarding = ref(null)
+const forwardSearch = ref('')
+const forwardPicks = ref([])
+const forwardBusy = ref(false)
+const forwardError = ref('')
+const forwardSearchEl = ref(null)
 
 let chatsTimer = null
 let threadTimer = null
@@ -318,8 +396,23 @@ const filteredChats = computed(() => {
   const list = q
     ? chats.value.filter((c) => c.name.toLowerCase().includes(q) || c.id.includes(q.replace(/\D/g, '') || '\u0000'))
     : chats.value
-  return [...list].sort((a, b) => (b.pinned - a.pinned) || (b.timestamp - a.timestamp))
+  return sortChats(list)
 })
+
+const forwardChats = computed(() => {
+  const q = forwardSearch.value.trim().toLowerCase()
+  if (!q) return sortChats(chats.value)
+  const digits = q.replace(/\D/g, '')
+  return sortChats(chats.value.filter((c) => c.name.toLowerCase().includes(q) || (digits && c.id.includes(digits))))
+})
+
+const forwardNames = computed(() =>
+  forwardPicks.value.map((id) => chats.value.find((c) => c.id === id)?.name || id.split('@')[0]).join(', '),
+)
+
+function sortChats(list) {
+  return [...list].sort((a, b) => (b.pinned - a.pinned) || (b.timestamp - a.timestamp))
+}
 
 function initials(name) {
   return (name || '?').replace(/[^\p{L}\p{N} ]/gu, '').split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase() || '#'
@@ -646,6 +739,61 @@ async function send() {
   }
 }
 
+function canForward(m) {
+  return !!m.id && !UNFORWARDABLE_TYPES.has(m.type)
+}
+
+async function openForward(m) {
+  forwarding.value = m
+  forwardSearch.value = ''
+  forwardPicks.value = []
+  forwardError.value = ''
+  await nextTick()
+  forwardSearchEl.value?.focus()
+}
+
+function closeForward() {
+  if (forwardBusy.value) return
+  forwarding.value = null
+}
+
+function toggleForwardPick(id) {
+  const picks = forwardPicks.value
+  if (picks.includes(id)) forwardPicks.value = picks.filter((x) => x !== id)
+  else if (picks.length < MAX_FORWARD) forwardPicks.value = [...picks, id]
+}
+
+async function sendForward() {
+  const m = forwarding.value
+  if (!m || !active.value || !forwardPicks.value.length || forwardBusy.value) return
+  forwardBusy.value = true
+  const targets = [...forwardPicks.value]
+  try {
+    const results = await frappePost(`${API}.forward_chat_message`, {
+      from_chat_id: active.value.id,
+      message_id: m.id,
+      to_chat_ids: JSON.stringify(targets),
+      session_id: getWhatsAppSessionId(),
+    }, { silent: true })
+    const failed = targets.filter((id) => results?.[id])
+    const now = Math.floor(Date.now() / 1000)
+    for (const id of targets.filter((t) => !failed.includes(t))) {
+      const chat = chats.value.find((c) => c.id === id)
+      if (chat) chat.timestamp = now
+    }
+    error.value = failed.length
+      ? `Could not forward to ${failed.map((id) => chats.value.find((c) => c.id === id)?.name || id.split('@')[0]).join(', ')}: ${results[failed[0]]}`
+      : ''
+    forwardBusy.value = false
+    forwarding.value = null
+    if (active.value && targets.includes(active.value.id)) await loadThread({ scroll: true })
+  } catch (e) {
+    forwardError.value = e.message || String(e)
+  } finally {
+    forwardBusy.value = false
+  }
+}
+
 function scheduleChatsPoll() {
   clearTimeout(chatsTimer)
   if (unmounted) return
@@ -657,7 +805,8 @@ function scheduleChatsPoll() {
 
 function onKeydown(e) {
   if (e.key !== 'Escape') return
-  if (viewer.value) viewer.value = null
+  if (forwarding.value) closeForward()
+  else if (viewer.value) viewer.value = null
   else if (active.value) closeChat()
 }
 
