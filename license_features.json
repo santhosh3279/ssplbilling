@@ -1,34 +1,167 @@
 {
   "_about": [
-    "Every page in the SPA and the feature id that licences it.",
-    "Put the ids from 'features' into the 'features' array of sites/<site>/license.json;",
-    "granting one id unlocks every page listed under it in 'pages_by_feature'.",
-    "A page whose feature is null is never checked against the licence.",
-    "Some tiles ride on another feature (Mobile Bill→sales, Cashier Mobile→cashier, Item Barcodes→barcode-print, Paytm Receipt/Unknown→payment, Create User→offer-display) and some are free with every licence (Stock Check, WhatsApp Link/Chat, Competitive Items) — see LICENSE_FEATURE_ALIAS / LICENSE_FREE_TILES in usePermission.js.",
-    "Generated from frontend/src/router.js, frontend/src/composables/usePermission.js",
-    "and DASHBOARD_TILES in ssplbilling/setup.py — regenerate after adding a page.",
+    "License = one 'tier:<id>' token plus optional add-on feature ids, all inside the signed 'features' array.",
+    "Tiers are cumulative (ultra-lite < lite < standard < enterprise); the server expands the tier into the tile ids under 'license_tiers'.",
+    "Add-ons are granted on top of the tier; an add-on also grants its riding tiles (see 'feature_children').",
+    "Legacy licenses that list tile ids without a tier token keep working — every id is treated as an add-on.",
+    "Source of truth: LICENSE_TIERS / LICENSE_FEATURE_CHILDREN in ssplbilling/api/license_api.py — regenerate this file after changing them.",
+    "Free tiles (stock-check, whatsapp-link, whatsapp-chat, competitive) are never license gated.",
     "Use [\"*\"] to grant everything, including pages added later.",
-    "features_by_category groups the same ids in \"features\" for licence picking; \"features\" itself stays a flat sorted array because the signature is computed over it."
+    "features_by_category is for the license generator: pick ONE 'License Tier' entry, then untick every add-on you are not selling.",
+    "The signature is computed over the sorted raw 'features' array (tier token included)."
   ],
+  "license_tiers": [
+    {
+      "id": "ultra-lite",
+      "token": "tier:ultra-lite",
+      "label": "Ultra Lite",
+      "tiles": [
+        "sales",
+        "mobile-bill",
+        "cashier",
+        "cashier-mobile",
+        "pos",
+        "payment",
+        "ledger",
+        "expense",
+        "daily-report",
+        "ssplbillingsettings",
+        "invoice-template",
+        "stock-template"
+      ]
+    },
+    {
+      "id": "lite",
+      "token": "tier:lite",
+      "label": "Lite",
+      "tiles": [
+        "quotation",
+        "sales-order",
+        "cancellation",
+        "modifysubmitted",
+        "modify-submitted",
+        "Cashier-Management",
+        "purchase-invoice",
+        "pricelist-update",
+        "purchase-submit",
+        "stock-ledger",
+        "outstanding-bills",
+        "single-entry",
+        "barcode-print",
+        "item-barcode",
+        "reports",
+        "store-sale-report",
+        "stock-status-report",
+        "stock-aging-report",
+        "outstanding-customers-report",
+        "ledger-sales-purchase-report",
+        "item-sales-summary",
+        "store-wise-item-sales",
+        "fast-moving-items",
+        "material-transfer-report"
+      ]
+    },
+    {
+      "id": "standard",
+      "token": "tier:standard",
+      "label": "Standard",
+      "tiles": [
+        "purchase-order",
+        "stock-reconciliation",
+        "store-transfer",
+        "repack",
+        "land-cost-voucher",
+        "journal-contra",
+        "cheques",
+        "unreconciled",
+        "payment-reconciliation",
+        "general-ledger",
+        "account-tree",
+        "bank-statement",
+        "paytm-link",
+        "paytm-unknown",
+        "cost-center-sale-report",
+        "batch-reports",
+        "pricing-rules",
+        "discount-rules",
+        "naming-settings"
+      ]
+    },
+    {
+      "id": "enterprise",
+      "token": "tier:enterprise",
+      "label": "Enterprise",
+      "tiles": [
+        "incentive-ledger",
+        "incentive-redeem",
+        "incentive-entry",
+        "loading-receipt",
+        "customer-enquiry",
+        "parcel-address",
+        "catelogue",
+        "catalogueviewer",
+        "offer-display",
+        "create-user",
+        "hrms",
+        "employee",
+        "essl-machines",
+        "ai-chat"
+      ]
+    }
+  ],
+  "feature_children": {
+    "sales": [
+      "mobile-bill"
+    ],
+    "cashier": [
+      "cashier-mobile",
+      "pos"
+    ],
+    "barcode-print": [
+      "item-barcode"
+    ],
+    "payment": [
+      "paytm-link",
+      "paytm-unknown",
+      "bank-statement"
+    ],
+    "offer-display": [
+      "create-user"
+    ],
+    "purchase-invoice": [
+      "pricelist-update"
+    ],
+    "pricing-rules": [
+      "discount-rules"
+    ],
+    "modifysubmitted": [
+      "modify-submitted"
+    ]
+  },
   "wildcard": "*",
   "page_count": 79,
-  "feature_count": 52,
-  "category_count": 8,
+  "feature_count": 69,
+  "category_count": 5,
   "features": [
     "Cashier-Management",
     "account-tree",
     "ai-chat",
+    "bank-statement",
     "barcode-print",
     "batch-reports",
     "cancellation",
     "cashier",
+    "cashier-mobile",
     "catalogueviewer",
     "catelogue",
     "cheques",
     "cost-center-sale-report",
+    "create-user",
     "customer-enquiry",
     "daily-report",
+    "discount-rules",
     "employee",
+    "essl-machines",
     "expense",
     "fast-moving-items",
     "general-ledger",
@@ -36,6 +169,8 @@
     "incentive-entry",
     "incentive-ledger",
     "incentive-redeem",
+    "invoice-template",
+    "item-barcode",
     "item-sales-summary",
     "journal-contra",
     "land-cost-voucher",
@@ -43,12 +178,20 @@
     "ledger-sales-purchase-report",
     "loading-receipt",
     "material-transfer-report",
+    "mobile-bill",
+    "modify-submitted",
     "modifysubmitted",
     "naming-settings",
     "offer-display",
+    "outstanding-bills",
     "outstanding-customers-report",
     "parcel-address",
     "payment",
+    "payment-reconciliation",
+    "paytm-link",
+    "paytm-unknown",
+    "pos",
+    "pricelist-update",
     "pricing-rules",
     "purchase-invoice",
     "purchase-order",
@@ -61,409 +204,320 @@
     "single-entry",
     "ssplbillingsettings",
     "stock-aging-report",
+    "stock-ledger",
     "stock-reconciliation",
     "stock-status-report",
+    "stock-template",
     "store-sale-report",
     "store-transfer",
     "store-wise-item-sales",
+    "tier:enterprise",
+    "tier:lite",
+    "tier:standard",
+    "tier:ultra-lite",
     "unreconciled"
   ],
   "features_by_category": {
-    "Sales & Customers": [
+    "License Tier": [
+      {
+        "id": "tier:ultra-lite",
+        "label": "Ultra Lite tier (includes lower tiers)"
+      },
+      {
+        "id": "tier:lite",
+        "label": "Lite tier (includes lower tiers)"
+      },
+      {
+        "id": "tier:standard",
+        "label": "Standard tier (includes lower tiers)"
+      },
+      {
+        "id": "tier:enterprise",
+        "label": "Enterprise tier (includes lower tiers)"
+      }
+    ],
+    "Add-ons from Ultra Lite": [
       {
         "id": "sales",
-        "name": "Sales Invoice",
-        "pages": [
-          "SalesInvoice",
-          "MobileBill"
-        ]
+        "label": "Sales Invoice"
       },
       {
-        "id": "sales-order",
-        "name": "Sales Order",
-        "pages": [
-          "SalesOrderEntry"
-        ]
+        "id": "mobile-bill",
+        "label": "Mobile Bill"
       },
-      {
-        "id": "quotation",
-        "name": "Quotation",
-        "pages": [
-          "Quotation"
-        ]
-      },
-      {
-        "id": "ledger",
-        "name": "Customer Ledger",
-        "pages": [
-          "CustomerLedger"
-        ]
-      },
-      {
-        "id": "cheques",
-        "name": "Cheque Register",
-        "pages": [
-          "ChequeRegister"
-        ]
-      },
-      {
-        "id": "customer-enquiry",
-        "name": "Customer Enquiry",
-        "pages": [
-          "CustomerEnquiry"
-        ]
-      },
-      {
-        "id": "offer-display",
-        "name": "Offer Display",
-        "pages": [
-          "OfferDisplay",
-          "UserCreation"
-        ]
-      },
-      {
-        "id": "catelogue",
-        "name": "Catalogue",
-        "pages": [
-          "Catelogue"
-        ]
-      },
-      {
-        "id": "catalogueviewer",
-        "name": "Catalogue Viewer",
-        "pages": [
-          "CatalogueViewer",
-          "CatalougePage"
-        ]
-      }
-    ],
-    "Purchase & Suppliers": [
-      {
-        "id": "purchase-invoice",
-        "name": "Purchase Invoice",
-        "pages": [
-          "PurchaseInvoice",
-          "PriceListUpdate"
-        ]
-      },
-      {
-        "id": "purchase-submit",
-        "name": "Purchase Desk",
-        "pages": [
-          "PurchaseSubmit"
-        ]
-      },
-      {
-        "id": "purchase-order",
-        "name": "Purchase Order",
-        "pages": [
-          "PurchaseOrder"
-        ]
-      },
-      {
-        "id": "land-cost-voucher",
-        "name": "Landed Cost Voucher",
-        "pages": [
-          "LandCostVoucher"
-        ]
-      }
-    ],
-    "HRMS & Employees": [
-      {
-        "id": "hrms",
-        "name": "HRMS Dashboard",
-        "pages": [
-          "Hrms",
-          "Employees",
-          "EsslMachines",
-          "EsslMapping",
-          "EsslAttendance",
-          "DeviceUsers",
-          "AttendanceChart",
-          "ShiftRoaster"
-        ]
-      },
-      {
-        "id": "employee",
-        "name": "Employee Directory",
-        "pages": [
-          "Employee"
-        ]
-      }
-    ],
-    "Cashier & Financials": [
       {
         "id": "cashier",
-        "name": "Cashier Desk",
-        "pages": [
-          "CashierDesk",
-          "CashierMobile"
-        ]
+        "label": "Cashier Desk"
       },
       {
-        "id": "Cashier-Management",
-        "name": "Cashier Management",
-        "pages": [
-          "CashierManagement"
-        ]
+        "id": "cashier-mobile",
+        "label": "Cashier Mobile"
       },
       {
-        "id": "general-ledger",
-        "name": "General Ledger",
-        "pages": [
-          "GeneralLedger"
-        ]
-      },
-      {
-        "id": "journal-contra",
-        "name": "Journal Contra",
-        "pages": [
-          "JournalContraEntry"
-        ]
+        "id": "pos",
+        "label": "POS Billing"
       },
       {
         "id": "payment",
-        "name": "Payment Receipt",
-        "pages": [
-          "Payment",
-          "PaytmLink",
-          "PaytmUnknown",
-          "BankStatement"
-        ]
+        "label": "Payment Receipt"
+      },
+      {
+        "id": "ledger",
+        "label": "Customer Ledger"
       },
       {
         "id": "expense",
-        "name": "Cash Box Entry",
-        "pages": [
-          "Expense"
-        ]
+        "label": "Cash Box Entry"
       },
       {
-        "id": "single-entry",
-        "name": "Single Entry",
-        "pages": [
-          "SingleEntry"
-        ]
+        "id": "daily-report",
+        "label": "Daily Report"
       },
       {
-        "id": "account-tree",
-        "name": "Chart of Accounts",
-        "pages": [
-          "AccountTree"
-        ]
+        "id": "ssplbillingsettings",
+        "label": "Settings"
+      },
+      {
+        "id": "invoice-template",
+        "label": "Invoice Template"
+      },
+      {
+        "id": "stock-template",
+        "label": "Stock Template"
+      }
+    ],
+    "Add-ons from Lite": [
+      {
+        "id": "quotation",
+        "label": "Quotation"
+      },
+      {
+        "id": "sales-order",
+        "label": "Sales Order"
       },
       {
         "id": "cancellation",
-        "name": "Cancellation",
-        "pages": [
-          "Cancellation"
-        ]
+        "label": "Cancellation"
       },
       {
         "id": "modifysubmitted",
-        "name": "Modify Submitted Bill",
-        "pages": [
-          "ModifySubmitted"
-        ]
+        "label": "Modify Submitted Bill"
       },
       {
-        "id": "unreconciled",
-        "name": "Unreconciled Entries",
-        "pages": [
-          "Unreconciled"
-        ]
-      }
-    ],
-    "Inventory & Stock": [
-      {
-        "id": "stock-reconciliation",
-        "name": "Stock Reconciliation",
-        "pages": [
-          "StockReconciliation"
-        ]
+        "id": "modify-submitted",
+        "label": "Modify Submitted Bill (alt id)"
       },
       {
-        "id": "store-transfer",
-        "name": "Store Transfer",
-        "pages": [
-          "StoreTransfer"
-        ]
+        "id": "Cashier-Management",
+        "label": "Cashier Management"
       },
       {
-        "id": "repack",
-        "name": "Repack Entry",
-        "pages": [
-          "Repack"
-        ]
+        "id": "purchase-invoice",
+        "label": "Purchase Invoice"
       },
       {
-        "id": "pricing-rules",
-        "name": "Discount Rules (Pricing Rules)",
-        "pages": [
-          "DiscountRule"
-        ]
+        "id": "pricelist-update",
+        "label": "Price List Update"
+      },
+      {
+        "id": "purchase-submit",
+        "label": "Purchase Desk"
+      },
+      {
+        "id": "stock-ledger",
+        "label": "Stock"
+      },
+      {
+        "id": "outstanding-bills",
+        "label": "Outstanding"
+      },
+      {
+        "id": "single-entry",
+        "label": "Single Entry"
       },
       {
         "id": "barcode-print",
-        "name": "Print Barcodes",
-        "pages": [
-          "BarcodePrintPage",
-          "ItemBarcode"
-        ]
+        "label": "Print Barcodes"
       },
       {
-        "id": "loading-receipt",
-        "name": "Loading Receipt",
-        "pages": [
-          "LoadingReceipt"
-        ]
-      },
-      {
-        "id": "parcel-address",
-        "name": "Parcel Address",
-        "pages": [
-          "ParcelAddress"
-        ]
-      }
-    ],
-    "Tax & Reporting": [
-      {
-        "id": "daily-report",
-        "name": "Daily Report",
-        "pages": [
-          "DailyReport"
-        ]
+        "id": "item-barcode",
+        "label": "Item Barcodes"
       },
       {
         "id": "reports",
-        "name": "Reports",
-        "pages": [
-          "Reports",
-          "CashflowReport"
-        ]
+        "label": "Reports"
       },
       {
         "id": "store-sale-report",
-        "name": "Store Sale Report",
-        "pages": [
-          "StoreSalesReport"
-        ]
-      },
-      {
-        "id": "cost-center-sale-report",
-        "name": "Cost Center Sale Report",
-        "pages": [
-          "CostCenterSalesReport"
-        ]
+        "label": "Store Sale Report"
       },
       {
         "id": "stock-status-report",
-        "name": "Stock Status Report",
-        "pages": [
-          "StockStatusReport"
-        ]
+        "label": "Stock Status"
       },
       {
         "id": "stock-aging-report",
-        "name": "Stock Aging Report",
-        "pages": [
-          "StockAgingReport"
-        ]
+        "label": "Stock Aging"
       },
       {
         "id": "outstanding-customers-report",
-        "name": "Outstanding Customers Report",
-        "pages": [
-          "OutstandingCustomersReport"
-        ]
+        "label": "Outstanding Customers"
       },
       {
         "id": "ledger-sales-purchase-report",
-        "name": "Ledger Sales & Purchase",
-        "pages": [
-          "LedgerSalesPurchaseReport"
-        ]
+        "label": "Ledger Sales & Purchase"
       },
       {
         "id": "item-sales-summary",
-        "name": "Item Sales Summary",
-        "pages": [
-          "ItemSalesSummary"
-        ]
+        "label": "Item Sales Summary"
       },
       {
         "id": "store-wise-item-sales",
-        "name": "Store Wise Item Sales",
-        "pages": [
-          "StoreWiseItemSales"
-        ]
+        "label": "Store Wise Item Sales"
       },
       {
         "id": "fast-moving-items",
-        "name": "Fast Moving Items",
-        "pages": [
-          "FastMovingItems"
-        ]
+        "label": "Fast Moving Items"
       },
       {
         "id": "material-transfer-report",
-        "name": "Material Transfer Report",
-        "pages": [
-          "MaterialTransferReport"
-        ]
+        "label": "Material Transfer Report"
+      }
+    ],
+    "Add-ons from Standard": [
+      {
+        "id": "purchase-order",
+        "label": "Purchase Order"
+      },
+      {
+        "id": "stock-reconciliation",
+        "label": "Stock Reconciliation"
+      },
+      {
+        "id": "store-transfer",
+        "label": "Store Transfer"
+      },
+      {
+        "id": "repack",
+        "label": "Repack Entry"
+      },
+      {
+        "id": "land-cost-voucher",
+        "label": "Landed Cost Voucher"
+      },
+      {
+        "id": "journal-contra",
+        "label": "Journal Contra"
+      },
+      {
+        "id": "cheques",
+        "label": "Cheque Register"
+      },
+      {
+        "id": "unreconciled",
+        "label": "Unreconciled Entries"
+      },
+      {
+        "id": "payment-reconciliation",
+        "label": "Payment Reconciliation"
+      },
+      {
+        "id": "general-ledger",
+        "label": "General Ledger"
+      },
+      {
+        "id": "account-tree",
+        "label": "Chart of Accounts"
+      },
+      {
+        "id": "bank-statement",
+        "label": "Bank Statement"
+      },
+      {
+        "id": "paytm-link",
+        "label": "Paytm Receipt"
+      },
+      {
+        "id": "paytm-unknown",
+        "label": "Paytm Unknown Payments"
+      },
+      {
+        "id": "cost-center-sale-report",
+        "label": "Cost Center Sale Report"
       },
       {
         "id": "batch-reports",
-        "name": "Batch Reports",
-        "pages": [
-          "BatchReports"
-        ]
+        "label": "Batch Reports"
       },
       {
-        "id": "ai-chat",
-        "name": "AI Chat",
-        "pages": [
-          "AiChat"
-        ]
-      }
-    ],
-    "Incentives": [
-      {
-        "id": "incentive-ledger",
-        "name": "Incentive Ledger",
-        "pages": [
-          "IncentiveLedger"
-        ]
+        "id": "pricing-rules",
+        "label": "Discount Rules"
       },
       {
-        "id": "incentive-redeem",
-        "name": "Incentive Redeem",
-        "pages": [
-          "IncentiveRedeem"
-        ]
-      },
-      {
-        "id": "incentive-entry",
-        "name": "Incentive Entry",
-        "pages": [
-          "IncentiveEntry"
-        ]
-      }
-    ],
-    "System Settings": [
-      {
-        "id": "ssplbillingsettings",
-        "name": "SSPL Billing Settings",
-        "pages": [
-          "SSPLBillingSettings"
-        ]
+        "id": "discount-rules",
+        "label": "Discount Rules (alt id)"
       },
       {
         "id": "naming-settings",
-        "name": "Naming Settings",
-        "pages": [
-          "NamingSettings"
-        ]
+        "label": "Naming Settings"
+      }
+    ],
+    "Add-ons from Enterprise": [
+      {
+        "id": "incentive-ledger",
+        "label": "Incentive Ledger"
+      },
+      {
+        "id": "incentive-redeem",
+        "label": "Incentive Redeem"
+      },
+      {
+        "id": "incentive-entry",
+        "label": "Incentive Entry"
+      },
+      {
+        "id": "loading-receipt",
+        "label": "Loading Receipt"
+      },
+      {
+        "id": "customer-enquiry",
+        "label": "Customer Enquiry"
+      },
+      {
+        "id": "parcel-address",
+        "label": "Parcel Address"
+      },
+      {
+        "id": "catelogue",
+        "label": "Catalogues"
+      },
+      {
+        "id": "catalogueviewer",
+        "label": "Catalogue Viewer"
+      },
+      {
+        "id": "offer-display",
+        "label": "Offer Display"
+      },
+      {
+        "id": "create-user",
+        "label": "Create User"
+      },
+      {
+        "id": "hrms",
+        "label": "HRMS Dashboard"
+      },
+      {
+        "id": "employee",
+        "label": "Employee Directory"
+      },
+      {
+        "id": "essl-machines",
+        "label": "eSSL Machines"
+      },
+      {
+        "id": "ai-chat",
+        "label": "AI Chat"
       }
     ]
   },
@@ -1440,7 +1494,8 @@
     "watch_text": "",
     "max_tabs": null,
     "features": [
-      "*"
+      "tier:lite",
+      "hrms"
     ],
     "signature": "<base64 Ed25519 signature>"
   },

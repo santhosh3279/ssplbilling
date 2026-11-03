@@ -14,7 +14,8 @@ const BILLING_SETTINGS_TTL = 30 * 60 * 1000 // 30 mins
 const ALLOWED_SERIES_CACHE_KEY = 'wb-allowed-series-v1'
 const OPENING_CASH_DATE_KEY = 'wb-opening-box-cash-date'
 const GENERIC_CACHE_TTL = 30 * 60 * 1000 // 30 mins — series / naming series
-const LICENSE_CACHE_KEY = 'wb-license-checked-v1'
+// v2: license features are now expanded server-side from tiers — refetch old blobs.
+const LICENSE_CACHE_KEY = 'wb-license-checked-v2'
 const EWAY_CACHE_KEY = 'wb-eway-threshold-ts'
 
 // Per-user/group tile selection from SSPL Dashboard Tile Access.

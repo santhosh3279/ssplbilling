@@ -298,14 +298,18 @@ DASHBOARD_TILES = [
 def sync_dashboard_tiles():
 	"""Upsert SSPL Dashboard Tile records from DASHBOARD_TILES. Never deletes,
 	so tiles removed from the list stay selectable until removed manually."""
+	from ssplbilling.api.license_api import get_tile_tier
+
 	if not frappe.db.exists("DocType", "SSPL Dashboard Tile"):
 		return
 	for tile_id, tile_label, bucket in DASHBOARD_TILES:
+		# Lowest license tier that unlocks the tile; blank for free tiles.
+		license_tier = get_tile_tier(tile_id)[1] or ""
 		if frappe.db.exists("SSPL Dashboard Tile", tile_id):
 			frappe.db.set_value(
 				"SSPL Dashboard Tile",
 				tile_id,
-				{"tile_label": tile_label, "bucket": bucket},
+				{"tile_label": tile_label, "bucket": bucket, "license_tier": license_tier},
 				update_modified=False,
 			)
 		else:
@@ -315,6 +319,7 @@ def sync_dashboard_tiles():
 					"tile_id": tile_id,
 					"tile_label": tile_label,
 					"bucket": bucket,
+					"license_tier": license_tier,
 				}
 			).insert(ignore_permissions=True)
 

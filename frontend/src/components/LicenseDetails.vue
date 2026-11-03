@@ -93,20 +93,29 @@
             </div>
           </div>
 
-          <!-- Features -->
+          <!-- Tier + add-ons -->
           <div class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-            <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-3">
-              Licensed Features ({{ license?.features?.length || 0 }})
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)]">License Tier</span>
+              <span class="rounded-full bg-[var(--color-info)] px-3 py-1 text-xs font-bold text-[var(--color-text-on-highlight)]">
+                {{ tierText }}
+              </span>
+            </div>
+            <div class="text-xs font-bold uppercase tracking-wider text-[var(--color-text-muted)] mb-2">
+              Add-ons ({{ addons.length }})
             </div>
             <div class="flex flex-wrap gap-2">
               <span
-                v-for="f in license?.features || []"
+                v-for="f in addons"
                 :key="f"
                 class="rounded-full bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-2.5 py-1 text-[11px] font-medium text-[var(--color-text)]"
               >
                 {{ f }}
               </span>
-              <span v-if="!license?.features?.length" class="text-xs text-[var(--color-text-muted)]">No features listed</span>
+              <span v-if="!addons.length" class="text-xs text-[var(--color-text-muted)]">None</span>
+            </div>
+            <div class="mt-3 text-[11px] text-[var(--color-text-muted)]">
+              {{ license?.features?.includes('*') ? 'All features unlocked' : `${license?.features?.length || 0} features unlocked in total` }}
             </div>
           </div>
         </div>
@@ -128,6 +137,16 @@ defineEmits(['close'])
 
 const license = ref(null)
 const loading = ref(false)
+
+// Older cached blobs (pre-tier) carry no tier/addons — fall back to the features list.
+const addons = computed(() => license.value?.addons ?? license.value?.features ?? [])
+const tierText = computed(() => {
+  const info = license.value
+  if (!info) return '—'
+  if (info.tier_label) return info.tier_label
+  if (info.features?.includes('*')) return 'All Features'
+  return 'Custom (per tile)'
+})
 
 // Matches the dashboard header: a license carrying no amc_date counts as expired,
 // same as one whose date has passed — an unset AMC means no maintenance contract is

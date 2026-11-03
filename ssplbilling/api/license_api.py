@@ -10,6 +10,116 @@ from cryptography.exceptions import InvalidSignature
 # separate private license-generator repo and never touches this codebase.
 LICENSE_PUBLIC_KEY_B64 = "NCcdnL9384366XVtCpkpqq39XtZU7t/Fy+BYWt/+RBM="
 
+# License tiers, cheapest first. Each tier also grants every tier above it in this list.
+# A license names its tier as a "tier:<id>" token inside the signed `features` list,
+# so the signature format is unchanged and old per-tile licenses keep verifying.
+# Any other ids in `features` are add-ons granted on top of the tier.
+# Ids are exact dashboard tile / page feature ids — no aliasing is applied to tiers.
+# Free tiles (stock-check, whatsapp-link, whatsapp-chat, competitive) are never gated.
+LICENSE_TIER_PREFIX = "tier:"
+LICENSE_TIERS = [
+	(
+		"ultra-lite",
+		"Ultra Lite",
+		[
+			"sales", "mobile-bill", "cashier", "cashier-mobile", "pos", "payment", "ledger",
+			"expense", "daily-report", "ssplbillingsettings", "invoice-template", "stock-template",
+		],
+	),
+	(
+		"lite",
+		"Lite",
+		[
+			"quotation", "sales-order", "cancellation", "modifysubmitted", "modify-submitted",
+			"Cashier-Management", "purchase-invoice", "pricelist-update", "purchase-submit",
+			"stock-ledger", "outstanding-bills", "single-entry", "barcode-print", "item-barcode",
+			"reports", "store-sale-report", "stock-status-report", "stock-aging-report",
+			"outstanding-customers-report", "ledger-sales-purchase-report", "item-sales-summary",
+			"store-wise-item-sales", "fast-moving-items", "material-transfer-report",
+		],
+	),
+	(
+		"standard",
+		"Standard",
+		[
+			"purchase-order", "stock-reconciliation", "store-transfer", "repack", "land-cost-voucher",
+			"journal-contra", "cheques", "unreconciled", "payment-reconciliation", "general-ledger",
+			"account-tree", "bank-statement", "paytm-link", "paytm-unknown", "cost-center-sale-report",
+			"batch-reports", "pricing-rules", "discount-rules", "naming-settings",
+		],
+	),
+	(
+		"enterprise",
+		"Enterprise",
+		[
+			"incentive-ledger", "incentive-redeem", "incentive-entry", "loading-receipt",
+			"customer-enquiry", "parcel-address", "catelogue", "catalogueviewer", "offer-display",
+			"create-user", "hrms", "employee", "essl-machines", "ai-chat",
+		],
+	),
+]
+
+# Tiles that ride on another feature when that feature is listed explicitly (legacy
+# per-tile licenses and add-ons). Tiers list their tiles exactly and skip this.
+LICENSE_FEATURE_CHILDREN = {
+	"sales": ["mobile-bill"],
+	"cashier": ["cashier-mobile", "pos"],
+	"barcode-print": ["item-barcode"],
+	"payment": ["paytm-link", "paytm-unknown", "bank-statement"],
+	"offer-display": ["create-user"],
+	"purchase-invoice": ["pricelist-update"],
+	"pricing-rules": ["discount-rules"],
+	"modifysubmitted": ["modify-submitted"],
+}
+
+
+def get_tile_tier(tile_id):
+	"""Return (tier_id, tier_label) of the lowest tier that grants tile_id, or (None, None)."""
+	for tier_id, tier_label, tiles in LICENSE_TIERS:
+		if tile_id in tiles:
+			return tier_id, tier_label
+	return None, None
+
+
+def expand_license_features(features):
+	"""Expand a signed `features` list into (tier_id, tier_label, addons, granted_ids).
+
+	The highest "tier:<id>" token wins and grants its tiles plus every lower tier's.
+	Unknown tier tokens grant nothing. Other ids are add-ons, expanded with their
+	riding tiles. "*" passes through untouched.
+	"""
+	tier_ids = [t[0] for t in LICENSE_TIERS]
+	tier_index = -1
+	addons = []
+	for f in features or []:
+		if isinstance(f, str) and f.startswith(LICENSE_TIER_PREFIX):
+			name = f[len(LICENSE_TIER_PREFIX) :]
+			if name in tier_ids:
+				tier_index = max(tier_index, tier_ids.index(name))
+		else:
+			addons.append(f)
+
+	granted = []
+	seen = set()
+
+	def add(fid):
+		if fid not in seen:
+			seen.add(fid)
+			granted.append(fid)
+
+	for _tid, _label, tiles in LICENSE_TIERS[: tier_index + 1]:
+		for fid in tiles:
+			add(fid)
+	for fid in addons:
+		add(fid)
+		for child in LICENSE_FEATURE_CHILDREN.get(fid, []):
+			add(child)
+
+	if tier_index < 0:
+		return None, None, addons, granted
+	tier_id, tier_label, _tiles = LICENSE_TIERS[tier_index]
+	return tier_id, tier_label, addons, granted
+
 
 def _build_message(site_name, expiry_date, features, max_tabs=None, customer_name=None, watch_text=None, amc_date=None):
 	# expiry_date is a core positional field, but an empty/missing value means
@@ -58,6 +168,9 @@ def _load_license_status():
 			"site": frappe.local.site,
 			"expiry_date": "",
 			"features": ["*"],
+			"tier": "",
+			"tier_label": "",
+			"addons": ["*"],
 			"max_tabs": None,
 			"customer_name": "Dev Server (Bypassed)",
 			"watch_text": "Dev Mode Active",
@@ -81,6 +194,9 @@ def _load_license_status():
 		"site": "",
 		"expiry_date": "",
 		"features": [],
+		"tier": "",
+		"tier_label": "",
+		"addons": [],
 		"max_tabs": None,
 		"customer_name": "",
 		"watch_text": "",
@@ -120,6 +236,7 @@ def _load_license_status():
 
 	status["site"] = site_name or ""
 	status["expiry_date"] = expiry_date or ""
+	# Raw list until the signature checks out — only a verified license is expanded.
 	status["features"] = features
 	status["max_tabs"] = max_tabs
 	status["customer_name"] = customer_name or ""
@@ -142,6 +259,13 @@ def _load_license_status():
 	elif not _verify_signature(site_name, expiry_date, features, signature, max_tabs, customer_name, watch_text, amc_date):
 		status["message"] = "License signature verification failed (tampered)"
 		return status
+
+	# Signature was computed over the raw list (tier tokens included); expand only now.
+	tier_id, tier_label, addons, granted = expand_license_features(features)
+	status["features"] = granted
+	status["tier"] = tier_id or ""
+	status["tier_label"] = tier_label or ""
+	status["addons"] = addons
 
 	# Computed before the expiry branches below, which return early — an unlimited
 	# license still needs its AMC countdown. A bad date is ignored, not fatal.

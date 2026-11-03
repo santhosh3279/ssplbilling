@@ -250,20 +250,11 @@ export const PUBLIC_HRMS_ROUTES = []
 // Competitive Items only maintains pricelist percentages, so it ships free with every licence.
 const LICENSE_FREE_TILES = new Set(['stock-check', 'whatsapp-link', 'whatsapp-chat', 'competitive'])
 
-// Tiles licensed under another tile's feature instead of their own id.
-// Customer users exist to log in to the catalogue, so they ride on the Catalogue Editor licence.
-// Mobile Bill is another front end for Sales Invoice, so it rides on the Sales licence.
-// Item Barcodes edits the barcodes Print Barcodes prints, so it rides on that licence.
-// Paytm Receipt (QR / link) creates customer receipts, so it rides on the Payment Receipt licence.
-// Paytm Unknown Payments receipts payments from the same Paytm account, so it rides there too.
-// Bank Statement books the receipts / payments a bank statement shows, so it rides there too.
-// Cashier Mobile is the phone front end for the Cashier Desk, so it rides on the Cashier licence.
-// POS Billing settles bills like the Cashier Desk, so it rides on the Cashier licence too.
-const LICENSE_FEATURE_ALIAS = { 'create-user': 'offer-display', 'mobile-bill': 'sales', 'item-barcode': 'barcode-print', 'paytm-link': 'payment', 'paytm-unknown': 'payment', 'bank-statement': 'payment', 'cashier-mobile': 'cashier', 'pos': 'cashier' }
-
+// The server expands the signed license (tier token + add-ons, see LICENSE_TIERS /
+// LICENSE_FEATURE_CHILDREN in ssplbilling/api/license_api.py) into the exact tile ids
+// granted, so riding tiles (Mobile Bill, Cashier Mobile, Paytm, ...) are listed there.
 function isLicensedFeature(features, tileId) {
-  const feature = LICENSE_FEATURE_ALIAS[tileId] || tileId
-  return features.includes(feature) || features.includes('*')
+  return features.includes(tileId) || features.includes('*')
 }
 
 function getTileIdForRoute(routeName) {
