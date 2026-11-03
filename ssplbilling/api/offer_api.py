@@ -436,21 +436,19 @@ def get_offer_details(pageaddress):
 		else:
 			items.append(entry)
 
-	# A variant under a discount rule leaves its template's picker and shows as a normal card
-	# at the top; a template left with no variants is dropped.
-	offer_variants = []
-	for entry in list(items):
+	# Templates keep their variant picker; one with a discounted variant is listed first
+	# so the card shows that variant's offer when it is picked.
+	offer_templates = []
+	for entry in items:
 		if entry["itemcode"] in template_codes:
-			variants = variant_entries.get(entry["itemcode"], [])
-			for variant in variants:
-				variant["image"] = variant["image"] or entry["image"]
-			offer_variants += [v for v in variants if v["discount_desc"]]
 			entry["is_template"] = 1
-			entry["variants"] = [v for v in variants if not v["discount_desc"]]
+			entry["variants"] = variant_entries.get(entry["itemcode"], [])
+			for variant in entry["variants"]:
+				variant["image"] = variant["image"] or entry["image"]
 			entry["variant_options"] = _variant_options(entry["variants"])
-			if variants and not entry["variants"]:
-				items.remove(entry)
-	items[:0] = offer_variants
+			if any(v["discount_desc"] for v in entry["variants"]):
+				offer_templates.append(entry)
+	items[:] = offer_templates + [entry for entry in items if entry not in offer_templates]
 
 	settings = frappe.get_single("SSPL Billing Settings")
 	cipher_map = settings.cipher_map or ""

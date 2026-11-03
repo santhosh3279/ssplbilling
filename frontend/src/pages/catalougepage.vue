@@ -116,13 +116,13 @@
             >
               <!-- Top side for offer -->
               <div class="shrink-0 flex items-start justify-start w-full mb-2">
-                <div v-if="item.discount_type && item.discount_desc" class="bg-white rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm w-full border" :class="offerBannerColors(item).border">
-                  <div class="text-white text-[9px] font-black uppercase px-2 py-0.5 text-left tracking-wider" :class="offerBannerColors(item).heading">
+                <div v-if="offerSource(item).discount_type && offerSource(item).discount_desc" class="bg-white rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm w-full border" :class="offerBannerColors(offerSource(item)).border">
+                  <div class="text-white text-[9px] font-black uppercase px-2 py-0.5 text-left tracking-wider" :class="offerBannerColors(offerSource(item)).heading">
                     Active Offer
                   </div>
                   <div class="p-1.5 flex flex-col gap-0.5 font-normal text-[20px] whitespace-normal break-words leading-tight text-slate-800">
                     <div 
-                      v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
+                      v-for="(line, lIdx) in offerSource(item).discount_desc.split(' | ')" 
                       :key="lIdx"
                     >
                       {{ line }}
@@ -403,13 +403,13 @@
               class="group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
             >
               <!-- Offer banner above the item image -->
-              <div v-if="item.discount_type && item.discount_desc" class="w-full shrink-0 flex flex-col text-white text-center border rounded-lg overflow-hidden shadow-lg" :class="[offerBannerColors(item).background, offerBannerColors(item).border]">
-                <div class="uppercase px-1.5 py-0.5 tracking-wider shrink-0" :class="[cardTitleClass, offerBannerColors(item).heading]">
+              <div v-if="offerSource(item).discount_type && offerSource(item).discount_desc" class="w-full shrink-0 flex flex-col text-white text-center border rounded-lg overflow-hidden shadow-lg" :class="[offerBannerColors(offerSource(item)).background, offerBannerColors(offerSource(item)).border]">
+                <div class="uppercase px-1.5 py-0.5 tracking-wider shrink-0" :class="[cardTitleClass, offerBannerColors(offerSource(item)).heading]">
                   Offer
                 </div>
                 <div class="flex flex-col whitespace-normal break-words p-1.5 gap-1" :class="cardTitleClass">
                   <div
-                    v-for="(line, lIdx) in item.discount_desc.split(' | ')"
+                    v-for="(line, lIdx) in offerSource(item).discount_desc.split(' | ')"
                     :key="lIdx"
                   >
                     {{ line }}
@@ -801,6 +801,12 @@ function pickAttribute(item, attribute, value) {
     if (closest) next = attributesOf(closest)
   }
   variantSelections.value = { ...variantSelections.value, [item.itemcode]: next }
+}
+
+// A template card shows the picked variant's offer banner, else the template's own
+function offerSource(item) {
+  const variant = item.is_template ? selectedVariant(item) : null
+  return variant?.discount_desc ? variant : item
 }
 
 // A template card shows the picked variant's image (variants without one already carry the template's)
