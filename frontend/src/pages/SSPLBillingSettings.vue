@@ -73,6 +73,18 @@
             <DropdownField v-model="settings.online_order_series" :options="lists.onlineOrderSeries" label="Sales Order Series" />
             <DropdownField v-model="settings.online_order_warehouse" :options="lists.warehouses" label="Source Warehouse" />
             <DropdownField v-model="settings.online_order_cost_center" :options="lists.costCenters" label="Cost Center" />
+            <div>
+              <label class="block text-sm font-semibold text-[var(--color-text-muted)] mb-1">Catalogue Back Link</label>
+              <input
+                v-model="settings.catalogue_back_url"
+                type="url"
+                placeholder="https://www.example.com"
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2 text-sm text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+              />
+              <p class="mt-1 text-xs text-[var(--color-text-muted)]">
+                Where the Back button on the public catalogue page goes. Leave blank to hide the button.
+              </p>
+            </div>
           </div>
         </section>
 

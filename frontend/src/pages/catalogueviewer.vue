@@ -3,7 +3,8 @@
     <!-- Premium Hero Header -->
     <header class="relative overflow-hidden bg-gradient-to-br from-indigo-900 via-slate-900 to-black text-white px-6 text-center border-b border-[var(--color-border)] shrink-0 h-[20vh] min-h-[140px] flex items-center justify-center">
       <a
-        href="https://www.chettiyarkada.in"
+        v-if="backUrl"
+        :href="backUrl"
         class="absolute top-4 left-4 z-20 flex items-center gap-2 rounded-xl bg-slate-950/60 hover:bg-slate-900/80 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white border border-slate-800/50 transition active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
       >
         ← Back
@@ -324,6 +325,17 @@ function onCustomerApplied() {
   showCustomerSection.value = false
 }
 
+const backUrl = ref('')
+
+async function fetchBackUrl() {
+  try {
+    const url = await frappeGet('ssplbilling.api.offer_api.get_catalogue_back_url')
+    backUrl.value = typeof url === 'string' ? url : ''
+  } catch (err) {
+    console.warn('[catalogueviewer] Back link load failed:', err)
+  }
+}
+
 const loading = ref(true)
 const error = ref(null)
 const catalogues = ref([])
@@ -468,6 +480,7 @@ onMounted(() => {
     if (catalogueUser.value) setCartUser(session.user.value)
   }).catch((err) => console.warn('[catalogueviewer] Session check failed:', err))
   fetchCatalogues()
+  fetchBackUrl()
 })
 </script>
 

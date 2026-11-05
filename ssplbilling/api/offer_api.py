@@ -630,6 +630,14 @@ def print_template_doctype_exists():
 
 
 @frappe.whitelist(allow_guest=True)
+def get_catalogue_back_url():
+	"""Back-button target for the public catalogue page (SSPL Billing Settings). Only
+	http(s) links are returned, so a bad setting cannot turn the button into a script link."""
+	url = (frappe.db.get_single_value("SSPL Billing Settings", "catalogue_back_url") or "").strip()
+	return url if url.lower().startswith(("http://", "https://")) else ""
+
+
+@frappe.whitelist(allow_guest=True)
 def get_offer_print_templates():
 	"""Print Templates a user can pick for the catalogue export."""
 	if not print_template_doctype_exists():
