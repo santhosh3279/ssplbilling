@@ -43,6 +43,14 @@
                   <div class="flex min-w-0 items-center gap-2">
                     <div class="min-w-0 truncate text-3xl font-normal" :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ itemMeta.item.item_name }}</div>
                     <span v-if="isAlreadyAdded(itemMeta.item)" class="shrink-0 whitespace-nowrap rounded-full bg-green-100 px-2 py-0.5 text-base font-bold text-green-800">Already added</span>
+                    <span
+                      v-if="itemOffers(itemMeta.item).length"
+                      class="min-w-0 max-w-[45%] shrink truncate whitespace-nowrap rounded-full px-2 py-0.5 text-base font-bold"
+                      :class="selectedIndex === itemMeta.globalIndex
+                        ? 'bg-[var(--color-text-on-focus)]/20 text-[var(--color-text-on-focus)]'
+                        : 'bg-[var(--color-success)]/15 text-[var(--color-success)]'"
+                      :title="itemOffers(itemMeta.item).map(o => `${o.name}: ${o.label}`).join('\n')"
+                    >🏷️ {{ itemOffers(itemMeta.item).map(o => o.label).join(' | ') }}</span>
                   </div>
                   <div class="text-2xl font-mono flex flex-wrap items-center gap-x-2 gap-y-0.5" :class="selectedIndex === itemMeta.globalIndex ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
                     <span>{{ itemMeta.item.item_code }}</span>
@@ -72,6 +80,7 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useItemCache } from '../services/itemCache'
 import { useCustomerHistory } from '../composables/useCustomerHistory'
+import { isRuleLive, ruleCoversItem, ruleMatchesPriceList, offerLabel } from '../composables/useDiscountRules.js'
 
 const props = defineProps({
   results: { type: Array, default: () => [] },
@@ -87,7 +96,7 @@ const props = defineProps({
 
 const emit = defineEmits(['select', 'close', 'refresh'])
 
-const { items: allItems, refreshItemCache, syncLoading } = useItemCache()
+const { items: allItems, refreshItemCache, syncLoading, discountRules } = useItemCache()
 const { hasHistory } = useCustomerHistory()
 
 async function handleRefresh() {
@@ -116,6 +125,20 @@ const excludedCodes = computed(() => new Set(props.excludedItemCodes.map(code =>
 
 function isAlreadyAdded(item) {
   return excludedCodes.value.has((item.item_code || '').trim().toLowerCase())
+}
+
+// Offers only matter when selling. Live rules for the current price list are filtered once;
+// rows then only check coverage, and the virtual list renders ~20 rows at a time.
+const liveOfferRules = computed(() => {
+  if (props.searchType !== 'Sales') return []
+  return (discountRules.value || []).filter(r => isRuleLive(r) && ruleMatchesPriceList(r, props.priceList))
+})
+
+function itemOffers(item) {
+  if (!liveOfferRules.value.length) return []
+  return liveOfferRules.value
+    .filter(r => ruleCoversItem(r, item))
+    .map(r => ({ name: r.rule_name || r.name, label: offerLabel(r, item.item_code) }))
 }
 
 function selectItem(item) {

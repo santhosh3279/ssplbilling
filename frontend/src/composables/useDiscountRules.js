@@ -14,6 +14,55 @@ export function ruleMatchesPriceList(rule, priceList) {
   return !lists.length || lists.includes(priceList)
 }
 
+// Rule enabled and inside its date window.
+export function isRuleLive(rule) {
+  if (!rule?.enabled) return false
+  const today = serverToday()
+  if (rule.start_date && today < rule.start_date) return false
+  if (rule.end_date && today > rule.end_date) return false
+  return true
+}
+
+// Whether the rule covers this item; `item` is a cached item row (item_code + item_group).
+export function ruleCoversItem(rule, item) {
+  const code = (item?.item_code || '').toLowerCase()
+  if (!code) return false
+  if (rule.discount_type === 'X to Y product discount') {
+    return (rule.x_to_y_table || []).some(i => (i.item_code || '').toLowerCase() === code)
+  }
+  if (rule.applies_to === 'Item Code') {
+    return (rule.items || []).some(i => (i.item_code || '').toLowerCase() === code)
+  }
+  if (rule.applies_to === 'Product Group') {
+    return !!(item.item_group && rule.product_group &&
+      item.item_group.toLowerCase() === rule.product_group.toLowerCase())
+  }
+  return false
+}
+
+// One-line offer summary for compact lists (search popups).
+export function offerLabel(rule, itemCode = '') {
+  const tiers = rule.custom_logic_rows || []
+  const pctTiers = () => tiers.map(t => `${t.min_quantity}+ ${t.percentage || 0}%`).join(' · ')
+  if (rule.discount_type === 'Percentage Discount') {
+    if (tiers.length) return pctTiers()
+    return rule.min_quantity ? `${rule.percentage_discount || 0}% off on ${rule.min_quantity}+` : `${rule.percentage_discount || 0}% off`
+  }
+  if (rule.discount_type === 'Product Discount') {
+    return `Buy ${rule.min_quantity} Get ${rule.free_quantity} Free`
+  }
+  if (rule.discount_type === 'X to Y product discount') {
+    const code = itemCode.toLowerCase()
+    const m = (rule.x_to_y_table || []).find(r => (r.item_code || '').toLowerCase() === code)
+    return m ? `Buy ${m.min_quantity || 1} Get ${m.free_item_quantity || 1} ${m.free_item_name || m.free_item_code}` : 'X to Y offer'
+  }
+  if (rule.discount_type === 'Custom Logic') {
+    if (rule.custom_logic_type === 'Product') return tiers.map(t => `${t.min_quantity}+${t.nos} free`).join(' · ') || 'Tiered offer'
+    return pctTiers() || 'Tiered discount'
+  }
+  return rule.rule_name || rule.name || 'Offer'
+}
+
 /**
  * Discount rule engine for SalesEntry.
  *
