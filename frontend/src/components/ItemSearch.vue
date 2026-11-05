@@ -146,7 +146,9 @@
         </div>
       </div>
 
-      <!-- Results Table -->
+      <!-- Results Table (wrapper anchors the description overlay to the results area,
+           so it never covers the UOM price grid below) -->
+      <div class="relative flex min-h-0 flex-1 flex-col">
       <div ref="scrollContainer" class="flex-1 overflow-y-auto">
         <table class="w-full text-4xl">
           <thead class="sticky top-0 bg-[var(--color-surface-raised)] shadow-sm z-10">
@@ -214,6 +216,19 @@
         </table>
       </div>
 
+      <!-- Description overlay: floats over the results while the focused item has a
+           description; pointer-events-none so it never blocks keyboard or clicks -->
+      <div
+        v-if="focusedDescription"
+        class="pointer-events-none absolute bottom-4 right-6 z-20 w-[36%] max-h-[85%] overflow-hidden rounded-xl border-2 border-[var(--color-info)] bg-[var(--color-surface)]/95 shadow-2xl backdrop-blur-sm"
+      >
+        <div class="border-b border-[var(--color-border)] bg-[var(--color-info)]/15 px-4 py-2 text-base font-bold uppercase tracking-wider text-[var(--color-info)] truncate">
+          Description · {{ results[selectedIdx]?.item_name }}
+        </div>
+        <div class="whitespace-pre-line break-words px-4 py-3 text-3xl leading-snug text-[var(--color-text)]">{{ focusedDescription }}</div>
+      </div>
+      </div>
+
       <!-- UOM Prices Grid -->
       <div v-if="insightData?.uoms?.length > 0" class="border-t border-[var(--color-border)] bg-[var(--color-bg)] px-0 py-0">
         <div class="overflow-x-auto scrollbar-none">
@@ -241,18 +256,6 @@
             </tbody>
           </table>
         </div>
-      </div>
-
-      <!-- Description overlay: floats over the results while the focused item has a
-           description; pointer-events-none so it never blocks keyboard or clicks -->
-      <div
-        v-if="focusedDescription"
-        class="pointer-events-none absolute bottom-20 right-6 z-20 w-[36%] max-h-[40%] overflow-hidden rounded-xl border-2 border-[var(--color-info)] bg-[var(--color-surface)]/95 shadow-2xl backdrop-blur-sm"
-      >
-        <div class="border-b border-[var(--color-border)] bg-[var(--color-info)]/15 px-4 py-2 text-base font-bold uppercase tracking-wider text-[var(--color-info)] truncate">
-          Description · {{ results[selectedIdx]?.item_name }}
-        </div>
-        <div class="whitespace-pre-line break-words px-4 py-3 text-3xl leading-snug text-[var(--color-text)]">{{ focusedDescription }}</div>
       </div>
 
       <!-- Footer shortcuts -->
