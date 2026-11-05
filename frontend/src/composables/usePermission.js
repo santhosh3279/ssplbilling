@@ -150,6 +150,7 @@ export const ADMIN_ROUTES = new Set([
   'ChequeRegister',
   'BatchReports',
   'ModifySubmitted',
+  'DocumentPrint',
 ])
 
 /**
