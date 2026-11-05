@@ -628,8 +628,14 @@
               {{ (rule.custom_logic_rows || []).map(tier => `${tier.min_quantity}+ → ${tier.percentage || 0}% off`).join(' · ') || 'Tiered discount' }}
             </template>
           </span>
-          <span v-if="offerShortfall(rule)" class="mt-2 block rounded-xl bg-[var(--color-warning)]/20 px-3 py-1 font-sans text-2xl font-black text-[var(--color-warning)]">
-            {{ offerShortfall(rule) }}
+          <span
+            v-if="offerProgress(rule)"
+            class="offer-hint-blink mt-2 block rounded-xl px-3 py-1 font-sans text-2xl font-black"
+            :class="offerProgress(rule).maxed
+              ? 'bg-[var(--color-success)]/20 text-[var(--color-success)]'
+              : 'bg-[var(--color-warning)]/20 text-[var(--color-warning)]'"
+          >
+            {{ offerProgress(rule).text }}
           </span>
         </div>
       </div>
@@ -1506,11 +1512,13 @@ const activeOfferQty = computed(() => {
 
 const fmtOfferQty = n => String(Math.round(n * 1000) / 1000)
 
-// "Add X more …" while the entered qty is below the offer's lowest threshold. Thresholds
-// mirror _buildResult: Product offers count the free units inside the entered qty.
-function offerShortfall(rule) {
+// Where the entered qty stands against an offer: { text, maxed } or null. Below a level it says
+// "Add X more … to get …" for the next one (next tier, or the next free pack on repeating offers);
+// past the last tier of a non-repeating offer it says the max offer is reached. Thresholds mirror
+// _buildResult in useDiscountRules: Product offers count the free units inside the entered qty.
+function offerProgress(rule) {
   const active = activeOfferQty.value
-  if (!active || ignoreDiscountRule.value || active.qty <= 0) return ''
+  if (!active || ignoreDiscountRule.value || active.qty <= 0) return null
   const cached = lookupItemInCache(active.item_code)
   let qty = active.qty
   let uom = active.uom || cached?.uom || ''
@@ -1519,41 +1527,52 @@ function offerShortfall(rule) {
     qty *= factor
     uom = cached.uom
   }
+  const add = (need, reward) => ({ text: `Add ${fmtOfferQty(need)} more ${uom} to get ${reward}`.replace(/\s+/g, ' '), maxed: false })
+  const maxed = reward => ({ text: `Max offer reached: ${reward}`, maxed: true })
 
-  let need = 0
-  let reward = ''
-  const lowest = (rows, size) => rows.reduce((best, r) => (best == null || size(r) < size(best) ? r : best), null)
+  // Tiered levels: [{ size, reward }] — the next level above qty, else the top one is reached
+  const byLevels = levels => {
+    const sorted = levels.filter(l => l.size > 0).sort((a, b) => a.size - b.size)
+    if (!sorted.length) return null
+    const next = sorted.find(l => l.size > qty)
+    return next ? add(next.size - qty, next.reward) : maxed(sorted[sorted.length - 1].reward)
+  }
+  // Repeating packs: every `pack` units earns `free` more, so there is always a next pack
+  const byPacks = (pack, free, label) => {
+    if (!(pack > 0)) return null
+    const earned = Math.floor(qty / pack) * free
+    const reward = `${earned > 0 ? `${fmtOfferQty(free)} more` : fmtOfferQty(free)} ${label}free`
+    return add(pack - (qty % pack), reward)
+  }
+
   const tiers = rule.custom_logic_rows || []
   if (rule.discount_type === 'Percentage Discount') {
-    if (tiers.length) {
-      const t = lowest(tiers, r => r.min_quantity || 0)
-      need = (t.min_quantity || 0) - qty
-      reward = `${t.percentage || 0}% off`
-    } else {
-      need = (rule.min_quantity || 0) - qty
-      reward = `${rule.percentage_discount || 0}% off`
-    }
-  } else if (rule.discount_type === 'Product Discount') {
+    if (tiers.length) return byLevels(tiers.map(t => ({ size: t.min_quantity || 0, reward: `${t.percentage || 0}% off` })))
+    const min = rule.min_quantity || 0
+    const reward = `${rule.percentage_discount || 0}% off`
+    return min > 0 && qty < min ? add(min - qty, reward) : maxed(reward)
+  }
+  if (rule.discount_type === 'Product Discount') {
     const min = rule.min_quantity || 0
     const free = rule.free_quantity || 0
-    if (!(min > 0 && free > 0)) return ''
-    need = min + free - qty
-    reward = `${fmtOfferQty(free)} free`
-  } else if (rule.discount_type === 'X to Y product discount') {
+    if (!(min > 0 && free > 0)) return null
+    if (rule.recursive) return byPacks(min + free, free, '')
+    return byLevels([{ size: min + free, reward: `${fmtOfferQty(free)} free` }])
+  }
+  if (rule.discount_type === 'X to Y product discount') {
     const code = (active.item_code || '').toLowerCase()
     const match = (rule.x_to_y_table || []).find(r => (r.item_code || '').toLowerCase() === code)
-    if (!match) return ''
-    need = (match.min_quantity || 1) - qty
-    reward = `${fmtOfferQty(match.free_item_quantity || 1)} ${match.free_item_name || match.free_item_code} free`
-  } else if (rule.discount_type === 'Custom Logic' && tiers.length) {
-    const isProduct = rule.custom_logic_type === 'Product'
-    const size = r => (r.min_quantity || 0) + (isProduct ? (r.nos || 0) : 0)
-    const t = lowest(tiers, size)
-    need = size(t) - qty
-    reward = isProduct ? `${fmtOfferQty(t.nos || 0)} free` : `${t.percentage || 0}% off`
+    if (!match) return null
+    return byPacks(match.min_quantity || 1, match.free_item_quantity || 1, `${match.free_item_name || match.free_item_code} `)
   }
-  if (!(need > 0)) return ''
-  return `Add ${fmtOfferQty(need)} more ${uom} to get ${reward}`.replace(/\s+/g, ' ')
+  if (rule.discount_type === 'Custom Logic' && tiers.length) {
+    const isProduct = rule.custom_logic_type === 'Product'
+    return byLevels(tiers.map(t => ({
+      size: (t.min_quantity || 0) + (isProduct ? (t.nos || 0) : 0),
+      reward: isProduct ? `${fmtOfferQty(t.nos || 0)} free` : `${t.percentage || 0}% off`,
+    })))
+  }
+  return null
 }
 
 // A free row carries no rule reference (ERPNext only stores rate 0), so the rule is
@@ -3746,6 +3765,14 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Offer hint in the Active Offer badge blinks so the operator notices it while keying qty */
+.offer-hint-blink {
+  animation: offer-hint-blink 1s steps(2, start) infinite;
+}
+@keyframes offer-hint-blink {
+  to { visibility: hidden; }
+}
+
 .below-valuation-row {
   background-color: color-mix(in srgb, var(--color-danger) 50%, transparent) !important;
 }
