@@ -6,10 +6,10 @@
       <div class="flex items-center justify-between gap-4">
         <div class="flex items-center gap-3">
           <button
-            @click="router.push('/displaycatalogue')"
+            @click="router.push({ name: 'Dashboard' })"
             class="flex items-center gap-1 rounded px-2 py-1 text-xs text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition"
           >
-            ← Catalogue
+            ← Dashboard
           </button>
           <span class="text-[var(--color-text-muted)]">|</span>
           <h1 class="text-sm font-semibold text-[var(--color-text)]">
