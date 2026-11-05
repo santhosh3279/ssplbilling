@@ -25,6 +25,7 @@ const PaytmUnknown = () => import('./pages/PaytmUnknown.vue')
 const BankStatement = () => import('./pages/BankStatement.vue')
 const WhatsAppLink = () => import('./pages/WhatsAppLink.vue')
 const Competitive = () => import('./pages/Competitive.vue')
+const DocumentPrint = () => import('./pages/DocumentPrint.vue')
 const WhatsAppChat = () => import('./pages/WhatsAppChat.vue')
 const AiChat = () => import('./pages/AiChat.vue')
 const AiChatMobile = () => import('./pages/AiChatMobile.vue')
@@ -362,6 +363,12 @@ const routes = [
     name: 'Competitive',
     component: Competitive,
     meta: { title: 'Competitive Items' },
+  },
+  {
+    path: '/document-print',
+    name: 'DocumentPrint',
+    component: DocumentPrint,
+    meta: { title: 'Document Print' },
   },
   {
     path: '/whatsapp-chat',

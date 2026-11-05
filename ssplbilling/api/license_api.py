@@ -15,7 +15,7 @@ LICENSE_PUBLIC_KEY_B64 = "NCcdnL9384366XVtCpkpqq39XtZU7t/Fy+BYWt/+RBM="
 # so the signature format is unchanged and old per-tile licenses keep verifying.
 # Any other ids in `features` are add-ons granted on top of the tier.
 # Ids are exact dashboard tile / page feature ids — no aliasing is applied to tiers.
-# Free tiles (stock-check, whatsapp-link, whatsapp-chat, competitive) are never gated.
+# Free tiles (stock-check, whatsapp-link, whatsapp-chat, competitive, document-print) are never gated.
 LICENSE_TIER_PREFIX = "tier:"
 LICENSE_TIERS = [
 	(

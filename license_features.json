@@ -5,7 +5,7 @@
     "Add-ons are granted on top of the tier; an add-on also grants its riding tiles (see 'feature_children').",
     "Legacy licenses that list tile ids without a tier token keep working — every id is treated as an add-on.",
     "Source of truth: LICENSE_TIERS / LICENSE_FEATURE_CHILDREN in ssplbilling/api/license_api.py — regenerate this file after changing them.",
-    "Free tiles (stock-check, whatsapp-link, whatsapp-chat, competitive) are never license gated.",
+    "Free tiles (stock-check, whatsapp-link, whatsapp-chat, competitive, document-print) are never license gated.",
     "Use [\"*\"] to grant everything, including pages added later.",
     "features_by_category is for the license generator: pick ONE 'License Tier' entry, then untick every add-on you are not selling.",
     "The signature is computed over the sorted raw 'features' array (tier token included)."
@@ -139,7 +139,7 @@
     ]
   },
   "wildcard": "*",
-  "page_count": 79,
+  "page_count": 80,
   "feature_count": 69,
   "category_count": 5,
   "features": [
@@ -1279,6 +1279,14 @@
       "page": "Competitive",
       "path": "/competitive",
       "title": "Competitive Items",
+      "feature": null,
+      "note": "Free with every licence (LICENSE_FREE_TILES) — role / tile access only",
+      "category": null
+    },
+    {
+      "page": "DocumentPrint",
+      "path": "/document-print",
+      "title": "Document Print",
       "feature": null,
       "note": "Free with every licence (LICENSE_FREE_TILES) — role / tile access only",
       "category": null

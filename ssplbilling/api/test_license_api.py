@@ -16,7 +16,7 @@ from ssplbilling.api.license_api import (
 )
 from ssplbilling.setup import DASHBOARD_TILES
 
-FREE_TILES = {"stock-check", "whatsapp-link", "whatsapp-chat", "competitive"}
+FREE_TILES = {"stock-check", "whatsapp-link", "whatsapp-chat", "competitive", "document-print"}
 
 
 class TestLicenseTiers(IntegrationTestCase):

@@ -57,6 +57,7 @@ export const BILLER_ROUTES = new Set([
   'ShiftRoaster',
   'BatchReports',
   'Competitive',
+  'DocumentPrint',
 ])
 
 // Route names additionally accessible by cashier (beyond biller)
@@ -248,7 +249,8 @@ export const PUBLIC_HRMS_ROUTES = []
 // WhatsApp Link only pairs the OpenWA gateway (System Manager, server-checked); it bills nothing itself.
 // WhatsApp Chat is kept out of the licence for now; the server still requires the tile or System Manager.
 // Competitive Items only maintains pricelist percentages, so it ships free with every licence.
-const LICENSE_FREE_TILES = new Set(['stock-check', 'whatsapp-link', 'whatsapp-chat', 'competitive'])
+// Document Print only forwards an uploaded file to a printer, so it is free as well.
+const LICENSE_FREE_TILES = new Set(['stock-check', 'whatsapp-link', 'whatsapp-chat', 'competitive', 'document-print'])
 
 // The server expands the signed license (tier token + add-ons, see LICENSE_TIERS /
 // LICENSE_FEATURE_CHILDREN in ssplbilling/api/license_api.py) into the exact tile ids
@@ -383,6 +385,7 @@ const TILE_ROUTE_MAP = {
   'whatsapp-link':     'WhatsAppLink',
   'whatsapp-chat':     'WhatsAppChat',
   'competitive':       'Competitive',
+  'document-print':    'DocumentPrint',
   'expense':           'Expense',
   'pricelist-update':  'PriceListUpdate',
   'barcode-print':     'BarcodePrintPage',

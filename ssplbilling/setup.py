@@ -287,6 +287,7 @@ DASHBOARD_TILES = [
 	("whatsapp-chat", "WhatsApp Chat", "SSPL Special"),
 	("competitive", "Competitive Items", "SSPL Special"),
 	("ai-chat", "AI Chat", "SSPL Special"),
+	("document-print", "Document Print", "SSPL Special"),
 	("daily-report", "Daily Report", "Report"),
 	("reports", "Reports", "Report"),
 	("store-sale-report", "Store Sale Report", "Report"),
