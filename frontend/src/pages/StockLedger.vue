@@ -181,6 +181,17 @@
                 {{ fmt(ledgerData.closing_balance) }}
               </span>
             </div>
+
+            <div class="h-10 w-px bg-[var(--color-border)] opacity-50"></div>
+
+            <div class="flex flex-col" :title="selectedEntry ? `${selectedEntry.voucher_type}: ${selectedEntry.voucher_no}` : ''">
+              <span class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] leading-none mb-1">
+                Bill Rate<template v-if="selectedEntry"> · {{ selectedEntry.voucher_no }}</template>
+              </span>
+              <span class="text-3xl font-mono leading-none text-[var(--color-text)]">
+                {{ selectedBillRate != null ? `₹${fmt(selectedBillRate)}` : '—' }}
+              </span>
+            </div>
           </div>
         </template>
       </div>
@@ -612,6 +623,13 @@ function onPartyFocus() {
 const selectedEntry = ref(null)
 const voucherDetail = ref(null)
 const loadingDetail = ref(false)
+
+// Rate of the ledger item on the focused bill (first matching line), shown in the header
+const selectedBillRate = computed(() => {
+  const code = selectedItem.value?.item_code
+  const line = voucherDetail.value?.items?.find(it => it.item_code === code)
+  return line ? line.rate : null
+})
 
 // Ledger row keyboard navigation
 const focusedIdx = ref(-1)
