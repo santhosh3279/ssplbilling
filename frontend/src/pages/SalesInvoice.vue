@@ -628,6 +628,9 @@
               {{ (rule.custom_logic_rows || []).map(tier => `${tier.min_quantity}+ → ${tier.percentage || 0}% off`).join(' · ') || 'Tiered discount' }}
             </template>
           </span>
+          <span v-if="offerShortfall(rule)" class="mt-2 block rounded-xl bg-[var(--color-warning)]/20 px-3 py-1 font-sans text-2xl font-black text-[var(--color-warning)]">
+            {{ offerShortfall(rule) }}
+          </span>
         </div>
       </div>
     </div>
@@ -1491,6 +1494,67 @@ function discountRulesForItem(itemCode) {
 }
 
 const activeItemDiscountRules = computed(() => discountRulesForItem(activeItemCode.value))
+
+// Qty of the line being entered or the focused row, in the units the offer engine
+// (useDiscountRules) counts. A row a Product offer already split keeps its full qty in _total_qty.
+const activeOfferQty = computed(() => {
+  const row = pendingItem.value || (selectedRowIdx.value !== -1 ? items.value[selectedRowIdx.value] : null)
+  if (!row || row._is_free || row.deleted) return null
+  const qty = Number(row._total_qty ?? row.qty) || 0
+  return { qty, uom: row.uom || '', item_code: row.item_code }
+})
+
+const fmtOfferQty = n => String(Math.round(n * 1000) / 1000)
+
+// "Add X more …" while the entered qty is below the offer's lowest threshold. Thresholds
+// mirror _buildResult: Product offers count the free units inside the entered qty.
+function offerShortfall(rule) {
+  const active = activeOfferQty.value
+  if (!active || ignoreDiscountRule.value || active.qty <= 0) return ''
+  const cached = lookupItemInCache(active.item_code)
+  let qty = active.qty
+  let uom = active.uom || cached?.uom || ''
+  if (rule.apply_in_all_uom && cached && active.uom && active.uom !== cached.uom) {
+    const factor = parseFloat((cached.uoms || []).find(u => u.uom === active.uom)?.conversion_factor) || 1
+    qty *= factor
+    uom = cached.uom
+  }
+
+  let need = 0
+  let reward = ''
+  const lowest = (rows, size) => rows.reduce((best, r) => (best == null || size(r) < size(best) ? r : best), null)
+  const tiers = rule.custom_logic_rows || []
+  if (rule.discount_type === 'Percentage Discount') {
+    if (tiers.length) {
+      const t = lowest(tiers, r => r.min_quantity || 0)
+      need = (t.min_quantity || 0) - qty
+      reward = `${t.percentage || 0}% off`
+    } else {
+      need = (rule.min_quantity || 0) - qty
+      reward = `${rule.percentage_discount || 0}% off`
+    }
+  } else if (rule.discount_type === 'Product Discount') {
+    const min = rule.min_quantity || 0
+    const free = rule.free_quantity || 0
+    if (!(min > 0 && free > 0)) return ''
+    need = min + free - qty
+    reward = `${fmtOfferQty(free)} free`
+  } else if (rule.discount_type === 'X to Y product discount') {
+    const code = (active.item_code || '').toLowerCase()
+    const match = (rule.x_to_y_table || []).find(r => (r.item_code || '').toLowerCase() === code)
+    if (!match) return ''
+    need = (match.min_quantity || 1) - qty
+    reward = `${fmtOfferQty(match.free_item_quantity || 1)} ${match.free_item_name || match.free_item_code} free`
+  } else if (rule.discount_type === 'Custom Logic' && tiers.length) {
+    const isProduct = rule.custom_logic_type === 'Product'
+    const size = r => (r.min_quantity || 0) + (isProduct ? (r.nos || 0) : 0)
+    const t = lowest(tiers, size)
+    need = size(t) - qty
+    reward = isProduct ? `${fmtOfferQty(t.nos || 0)} free` : `${t.percentage || 0}% off`
+  }
+  if (!(need > 0)) return ''
+  return `Add ${fmtOfferQty(need)} more ${uom} to get ${reward}`.replace(/\s+/g, ' ')
+}
 
 // A free row carries no rule reference (ERPNext only stores rate 0), so the rule is
 // re-derived from the item code. Product-type rules are what produce free rows, so those
