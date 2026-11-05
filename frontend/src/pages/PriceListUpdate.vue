@@ -193,7 +193,8 @@
                       ? 'bg-[var(--color-info)]/5 border-x-2 border-[var(--color-info)]' 
                       : 'border-b border-[var(--color-border)]/10'"
                   >
-                    <div class="flex items-center justify-end gap-2">
+                    <div v-if="isHidden(idx)" class="text-right font-mono text-[20px] font-bold text-[var(--color-text-muted)] select-none">—</div>
+                    <div v-else class="flex items-center justify-end gap-2">
                       <span class="text-[14px] font-mono italic opacity-100 pointer-events-none select-none text-[var(--color-text-muted)]">
                         {{ (p.original_uom_rates[u.uom] || 0).toFixed(RATE_PRECISION) }}
                       </span>
@@ -203,7 +204,7 @@
                         v-model.number="p.uom_rates[u.uom]"
                         step="0.001"
                         :disabled="isCellLocked(idx, uidx)"
-                        :title="isLocked(idx) ? 'Buying price is locked for a submitted bill' : isDerived(idx, u.uom) ? `Derived from ${buyingUom} × factor` : ''"
+                        :title="isHidden(idx) ? '' : isLocked(idx) ? 'Buying price is locked for a submitted bill' : isDerived(idx, u.uom) ? `Derived from ${buyingUom} × factor` : ''"
                         class="disabled:opacity-50 disabled:cursor-not-allowed w-44 rounded border bg-[var(--color-surface)] px-1 py-1 text-right font-mono font-bold text-[var(--color-text)] text-[20px] outline-none focus:ring-1 transition-colors"
                         :class="u.uom === stockUom ? 'border-[var(--color-border)] focus:border-[var(--color-info)] focus:ring-[var(--color-info)]/20' : 'border-[var(--color-warning)]/40 focus:border-[var(--color-warning)] focus:ring-amber-500/20'"
                         @keydown.enter.prevent="onRateEnter(idx, uidx)"
@@ -232,7 +233,8 @@
                     @click="idx !== 0 && !isCellLocked(idx, uidx) && (p.uom_rates[u.uom] = Number(((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(RATE_PRECISION)))"
                     :title="idx !== 0 ? 'Click to apply to proposed' : ''"
                   >
-                    <template v-if="idx === 0 && buyingNetByUom[u.uom] !== undefined">
+                    <template v-if="isHidden(idx)">—</template>
+                    <template v-else-if="idx === 0 && buyingNetByUom[u.uom] !== undefined">
                       {{ buyingNetByUom[u.uom].toFixed(RATE_PRECISION) }} + {{ props.taxRate }}% = {{ ((calculatedRatesByUom[u.uom] || [])[0] || 0).toFixed(RATE_PRECISION) }}
                     </template>
                     <template v-else>{{ ((calculatedRatesByUom[u.uom] || [])[idx] || 0).toFixed(RATE_PRECISION) }}</template>
@@ -244,7 +246,7 @@
         </div>
 
         <!-- Purchase History Sections -->
-        <div v-if="currentItemCode" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-[var(--color-text)]">
+        <div v-if="currentItemCode && !props.hideBuying" class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-[var(--color-text)]">
           <!-- Same Supplier History (only if props.supplier is present) -->
           <div v-if="props.supplier" class="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-sm">
             <h3 class="mb-3 text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)] flex items-center justify-between">
@@ -394,6 +396,8 @@ const props = defineProps({
   supplier: { type: String, default: '' },
   // Opened from a submitted bill: buying price lists are read-only
   lockBuying: { type: Boolean, default: false },
+  // Viewer may not see purchase prices: buying lists and purchase history are masked and read-only
+  hideBuying: { type: Boolean, default: false },
   // Use the item's competitive item percentages, then the supplier's, instead of the item's own
   overridePercentages: { type: Boolean, default: false }
 })
@@ -574,7 +578,11 @@ function showToast(message, type = 'success') {
 }
 
 function isLocked(idx) {
-  return props.lockBuying && !!prices.value[idx]?.buying
+  return (props.lockBuying || props.hideBuying) && !!prices.value[idx]?.buying
+}
+
+function isHidden(idx) {
+  return props.hideBuying && !!prices.value[idx]?.buying
 }
 
 // UOM whose buying price is typed in; other UOMs on buying lists follow it by factor

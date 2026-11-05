@@ -291,6 +291,7 @@
         :is-sub-window="true"
         :item-code="results[selectedIdx]?.item_code"
         :selected-price-list="priceList"
+        :hide-buying="!canViewBuying"
         @close="showPriceUpdateModal = false; focus()"
         @saved="handlePricesSaved"
       />
