@@ -1,5 +1,24 @@
-import frappe
+import html
 import json
+import re
+
+import frappe
+
+
+
+def item_description_text(description, item_name=None):
+	"""Item description as plain text, or "" when it only repeats the item name.
+
+	ERPNext fills an empty description with the item name, so that copy is not a real description.
+	"""
+	text = description or ""
+	if "<" in text:
+		text = re.sub(r"(?i)<br\s*/?>|</(p|div|li)>", "\n", text)
+		text = html.unescape(frappe.utils.strip_html_tags(text))
+	text = "\n".join(line.rstrip() for line in text.strip().splitlines()).strip()
+	if text.lower() == (item_name or "").strip().lower():
+		return ""
+	return text
 
 
 def _find_item_by_name(item_name, exclude_item=None):
@@ -405,6 +424,8 @@ def create_item(data):
 	item.item_code = barcode
 	item.item_name = (data.get("item_name") or "").strip()
 	item.item_print_name = data.get("item_print_name")
+	if (data.get("description") or "").strip():
+		item.description = data.get("description").strip()
 	item.item_group = data.get("item_group")
 	item.stock_uom = data.get("stock_uom")
 	item.standard_rate = float(data.get("standard_rate") or 0)
@@ -536,6 +557,7 @@ def get_item_for_edit(item_code):
 		"item_code": item.item_code,
 		"item_name": item.item_name,
 		"item_print_name": item.item_print_name or "",
+		"description": item_description_text(item.description, item.item_name),
 		"barcode": barcode,
 		"item_group": item.item_group or "",
 		"custom_is_gst_item": frappe.utils.cint(item.get("custom_is_gst_item")),
@@ -594,6 +616,9 @@ def update_item(data):
 		_check_duplicate_item_name(new_name, exclude_item=item_code)
 	item.item_name = new_name or item.item_name
 	item.item_print_name = data.get("item_print_name") or ""
+	if "description" in data:
+		# Blank falls back to the item name, as ERPNext does on insert
+		item.description = (data.get("description") or "").strip() or item.item_name
 	item.item_group = data.get("item_group") or item.item_group
 	item.stock_uom = data.get("stock_uom") or item.stock_uom
 	item.safety_stock = float(data.get("safety_stock") or 0)

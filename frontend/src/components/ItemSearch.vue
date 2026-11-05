@@ -243,6 +243,18 @@
         </div>
       </div>
 
+      <!-- Description overlay: floats over the results while the focused item has a
+           description; pointer-events-none so it never blocks keyboard or clicks -->
+      <div
+        v-if="focusedDescription"
+        class="pointer-events-none absolute bottom-20 right-6 z-20 w-[36%] max-h-[40%] overflow-hidden rounded-xl border-2 border-[var(--color-info)] bg-[var(--color-surface)]/95 shadow-2xl backdrop-blur-sm"
+      >
+        <div class="border-b border-[var(--color-border)] bg-[var(--color-info)]/15 px-4 py-2 text-base font-bold uppercase tracking-wider text-[var(--color-info)] truncate">
+          Description · {{ results[selectedIdx]?.item_name }}
+        </div>
+        <div class="whitespace-pre-line break-words px-4 py-3 text-3xl leading-snug text-[var(--color-text)]">{{ focusedDescription }}</div>
+      </div>
+
       <!-- Footer shortcuts -->
       <div class="border-t border-[var(--color-border)] px-5 py-3 bg-[var(--color-surface-raised)] flex gap-6 text-xs text-[var(--color-text-muted)] uppercase tracking-widest font-bold">
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--color-text)]">Home</kbd> Focus</span>
@@ -994,6 +1006,11 @@ const results = computed(() => {
       history_qty: getItemHistoryQty(i.item_code)
     }
   })
+})
+
+const focusedDescription = computed(() => {
+  if (showDateModal.value || showCreationModal.value || showEditModal.value || showPriceUpdateModal.value || showSupplierModal.value) return ''
+  return (results.value[selectedIdx.value]?.description || '').trim()
 })
 
 watch(query, () => {

@@ -111,8 +111,20 @@
                 type="text"
                 class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-4xl font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
                 placeholder="Print name..."
-                @keydown.enter.prevent="itemGroupInput?.focus()"
+                @keydown.enter.prevent="descriptionInput?.focus()"
               />
+            </div>
+
+            <div class="space-y-[4px]">
+              <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Description</label>
+              <textarea
+                ref="descriptionInput"
+                v-model="form.description"
+                rows="2"
+                class="w-full resize-y rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
+                placeholder="Item description (Shift+Enter for new line)..."
+                @keydown.enter.exact.prevent="itemGroupInput?.focus()"
+              ></textarea>
             </div>
 
             <div class="space-y-[4px]">
@@ -913,6 +925,7 @@ function saveCache() {
 function _applyItemData(data, itemCode) {
   form.value.item_name        = data.item_name        || ''
   form.value.item_print_name  = data.item_print_name  || ''
+  form.value.description      = data.description      || ''
   form.value.image            = data.image            || ''
   form.value.barcode           = data.barcode || itemCode
   form.value.item_group        = data.item_group        || ''
@@ -984,6 +997,7 @@ async function loadForEdit(itemCode) {
 
 const itemNameInput = ref(null)
 const itemPrintNameInput = ref(null)
+const descriptionInput = ref(null)
 const barcodeInput = ref(null)
 const itemGroupInput = ref(null)
 const hsnInput = ref(null)
@@ -1004,6 +1018,7 @@ const hsnHighlightIdx = ref(0)
 const form = ref({
   item_name: '',
   item_print_name: '',
+  description: '',
   barcode: '',
   image: '',
   item_group: '',
@@ -1638,6 +1653,7 @@ function resetForm(blank = false) {
   form.value = {
     item_name: '',
     item_print_name: '',
+    description: '',
     barcode: '',
     image: '',
     item_group:        blank ? '' : (cache.item_group || metadata.value.item_groups[0]?.name || ''),

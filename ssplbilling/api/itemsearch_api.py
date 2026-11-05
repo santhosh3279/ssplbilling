@@ -1,4 +1,5 @@
 import frappe
+from ssplbilling.api.item_api import item_description_text
 from ssplbilling.api.stock_utils import get_draft_invoice_qtys_batch, get_draft_purchase_qtys_batch
 
 
@@ -131,7 +132,7 @@ def _build_items_detailed(
 		"Item",
 		filters=filters,
 		fields=["item_code", "item_name", "item_print_name", "item_group", "custom_is_gst_item",
-				"stock_uom as uom", "standard_rate as rate", "valuation_rate", "gst_hsn_code as hsn_sac", "safety_stock", "min_order_qty", "custom_max_stock", "custom_max_order_qty", "custom_competitive_item", "image", "has_variants", "has_batch_no", "create_new_batch"],
+				"stock_uom as uom", "standard_rate as rate", "valuation_rate", "gst_hsn_code as hsn_sac", "safety_stock", "min_order_qty", "custom_max_stock", "custom_max_order_qty", "custom_competitive_item", "image", "has_variants", "has_batch_no", "create_new_batch", "description"],
 		limit=0,
 		order_by="item_name asc",
 	)
@@ -144,6 +145,10 @@ def _build_items_detailed(
 
 	# Initialize fields
 	for i in items:
+		# Only real descriptions travel, so the 10k+ row cache does not carry an empty key per item
+		description = item_description_text(i.pop("description", None), i.item_name)
+		if description:
+			i["description"] = description
 		i["stock"] = 0.0
 		i["redis_stock"] = 0.0
 		i["redis_purchase_stock"] = 0.0
