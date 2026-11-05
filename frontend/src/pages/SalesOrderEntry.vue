@@ -672,7 +672,7 @@ import { useRouter } from 'vue-router'
 import { createResource } from 'frappe-ui'
 import { fetchBillingSettings, frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
-import { getUserRole } from '../composables/usePermission'
+import { getUserRole, canViewPurchasePrice } from '../composables/usePermission'
 import ItemSearch from '../components/ItemSearch.vue'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import { useItemCache } from '../services/itemCache.js'
@@ -981,7 +981,7 @@ async function loadItemInsight(code, itemName = '', uom = '') {
     uom: uom || cached?.uom || '',
     stock: cached?.stock != null ? [{ warehouse: cached.warehouse || 'Total', actual_qty: cached.stock }] : [],
     previousPurchases: [],
-    priceLists: cached?.price_lists || [],
+    priceLists: (cached?.price_lists || []).filter(pl => canViewPurchasePrice() || !(pl.buying || (pl.name || '').toLowerCase().includes('buying'))),
   }
   try {
     const r = await frappeGet(`${API_BASE}.get_item_insight`, { item_code: code, price_list: priceList.value, warehouse: defaultWarehouse.value })

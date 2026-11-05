@@ -21,6 +21,7 @@
   "cashier",
   "biller",
   "accounts",
+  "view_purchase_price",
   "default_printer",
   "theme"
  ],
@@ -114,6 +115,13 @@
    "label": "Accounts"
   },
   {
+   "default": "0",
+   "description": "Show buying / purchase prices to this user",
+   "fieldname": "view_purchase_price",
+   "fieldtype": "Check",
+   "label": "View Purchase Price"
+  },
+  {
    "fieldname": "default_printer",
    "fieldtype": "Link",
    "label": "Default Printer",
@@ -131,7 +139,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-07-06 00:00:00.000000",
+ "modified": "2026-11-05 00:00:00.000000",
  "modified_by": "biller@gmail.com",
  "module": "Ssplbilling",
  "name": "USER SERIES",

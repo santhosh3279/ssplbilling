@@ -319,7 +319,7 @@ import { frappeGet, getDisabledItems, getTemplateItems } from '../api.js'
 import DateFilter from './DateFilter.vue'
 import ItemCreation from './ItemCreation.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
-import { canAccessTile } from '../composables/usePermission'
+import { canAccessTile, canViewPurchasePrice } from '../composables/usePermission'
 import { getCipherMap } from '../encryption.js'
 import CustomerSearchModal from './CustomerSearchModal.vue'
 import {
@@ -532,9 +532,7 @@ const activePriceList = computed(() => {
 
 const enabledPriceLists = ref([])
 
-const canViewBuying = computed(() => {
-  return canAccessTile('purchase-invoice') || canAccessTile('purchase-order')
-})
+const canViewBuying = computed(() => canViewPurchasePrice())
 
 async function fetchEnabledPriceLists() {
   try {

@@ -231,6 +231,7 @@
                     <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-[var(--color-text-muted)]">Biller</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-left font-semibold text-[var(--color-text-muted)]">Default Printer</th>
                     <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-[var(--color-text-muted)]">Accounts</th>
+                    <th class="whitespace-nowrap px-2 py-1.5 text-center font-semibold text-[var(--color-text-muted)]">Purchase Price</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -250,6 +251,7 @@
                     <td class="whitespace-nowrap px-2 py-1.5 text-center text-[var(--color-text-muted)]">{{ us.biller ? '✓' : '' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-[var(--color-text-muted)]">{{ us.default_printer || '--' }}</td>
                     <td class="whitespace-nowrap px-2 py-1.5 text-center text-[var(--color-text-muted)]">{{ us.accounts ? '✓' : '' }}</td>
+                    <td class="whitespace-nowrap px-2 py-1.5 text-center text-[var(--color-text-muted)]">{{ us.view_purchase_price ? '✓' : '' }}</td>
                   </tr>
                 </tbody>
               </table>
@@ -490,6 +492,8 @@ function applyToLocalStorage(settings, targetUserArg) {
     localStorage.setItem('wb-role-biller',   userRow.biller   ? '1' : '0')
     localStorage.setItem('wb-role-accounts', userRow.accounts ? '1' : '0')
   }
+  // Written every sync so a previous user's flag never carries over on a shared terminal
+  localStorage.setItem('wb-view-purchase-price', userRow?.view_purchase_price ? '1' : '0')
 
   let allowedSeries = allBillingSeries
   if (userRow?.allowed_series && userRow.allowed_series.trim().toUpperCase() !== 'ALL') {

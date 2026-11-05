@@ -150,6 +150,7 @@ async function syncBillingSettings(targetUser, force) {
       localStorage.setItem('wb-role-cashier', roles.cashier ? '1' : '0')
       localStorage.setItem('wb-role-biller', roles.biller ? '1' : '0')
       localStorage.setItem('wb-role-accounts', roles.accounts ? '1' : '0')
+      localStorage.setItem('wb-view-purchase-price', roles.view_purchase_price ? '1' : '0')
     }
 
     // Set billing defaults from the first visible series row

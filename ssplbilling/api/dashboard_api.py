@@ -724,6 +724,7 @@ def get_billing_settings(user=None, company=None):
 			"cashier": user_row.cashier if user_row else 0,
 			"biller": user_row.biller if user_row else 0,
 			"accounts": user_row.accounts if user_row else 0,
+			"view_purchase_price": user_row.view_purchase_price if user_row else 0,
 		},
 		"billing_series": [
 			{
@@ -754,6 +755,7 @@ def get_billing_settings(user=None, company=None):
 				"cashier": r.cashier or 0,
 				"biller": r.biller or 0,
 				"accounts": r.accounts or 0,
+				"view_purchase_price": r.view_purchase_price or 0,
 				"default_printer": r.default_printer or "",
 				"theme": r.theme or "Light",
 			}

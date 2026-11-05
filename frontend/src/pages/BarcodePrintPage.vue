@@ -373,7 +373,7 @@ import {
 } from '../services/printCache.js'
 import { useShortcuts, useSubwindow } from '../services/shortcutManager'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
-import { canAccessTile } from '../composables/usePermission'
+import { canViewPurchasePrice } from '../composables/usePermission'
 
 const props = defineProps({
   isSubWindow: Boolean,
@@ -442,8 +442,7 @@ try {
 }
 
 const visiblePriceLists = computed(() => {
-  const hasPurchaseAccess = canAccessTile('purchase-invoice') || canAccessTile('purchase-order')
-  if (hasPurchaseAccess) {
+  if (canViewPurchasePrice()) {
     return availablePriceLists.value
   }
   return availablePriceLists.value.filter(pl => !pl.toLowerCase().includes('buying'))

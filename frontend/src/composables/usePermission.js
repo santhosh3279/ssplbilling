@@ -165,6 +165,16 @@ export function canAccessAccounts() {
 }
 
 /**
+ * Returns true if the current user may see buying / purchase prices.
+ * Controlled by the "View Purchase Price" checkbox on the user's USER SERIES row
+ * in SSPL Billing Settings. Administrator always sees them.
+ */
+export function canViewPurchasePrice() {
+  if (session.user.value === 'Administrator') return true
+  return localStorage.getItem('wb-view-purchase-price') === '1'
+}
+
+/**
  * Returns true if the user is allowed to modify document/posting dates.
  * Controlled by the "Allow Date Modification" checkbox in SSPL Dashboard Tile Access.
  * If not enabled or not configured, date modification is blocked and only the current date is allowed.

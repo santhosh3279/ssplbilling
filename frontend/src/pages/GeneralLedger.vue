@@ -710,7 +710,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import DateFilter from '../components/DateFilter.vue'
 import Warning from '../components/Warning.vue'
-import { canAccessTile } from '../composables/usePermission.js'
+import { canViewPurchasePrice } from '../composables/usePermission.js'
 import SalesInvoice from './SalesInvoice.vue'
 import Quotation from './Quotation.vue'
 import PurchaseInvoice from './PurchaseInvoice.vue'
@@ -742,7 +742,8 @@ useSubwindowWatcher(ref(props.isSubWindow), {
 const router = useRouter()
 const route = useRoute()
 
-const canAccessPurchaseInvoice = computed(() => canAccessTile('purchase-invoice'))
+// Purchase invoice amounts / rates / bill detail carry buying prices
+const canAccessPurchaseInvoice = computed(() => canViewPurchasePrice())
 
 // ── Filter state ──
 const partyType = ref('Customer')

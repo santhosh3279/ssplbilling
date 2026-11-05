@@ -147,6 +147,7 @@
                 <th class="px-2 py-2 text-center" title="Cashier">C</th>
                 <th class="px-2 py-2 text-center" title="Biller">B</th>
                 <th class="px-2 py-2 text-center" title="Accounts">Acc</th>
+                <th class="px-2 py-2 text-center" title="View Purchase Price">PP</th>
                 <th class="px-2 py-2">Printer</th>
                 <th class="px-2 py-2">Theme</th>
                 <th class="px-2 py-2"></th>
@@ -169,6 +170,7 @@
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.cashier" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.biller" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.accounts" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
+                <td class="px-1 py-2 text-center"><input type="checkbox" v-model="row.view_purchase_price" :true-value="1" :false-value="0" class="cursor-pointer accent-[var(--color-info)]" /></td>
                 <td class="px-1 py-2"><DropdownField v-model="row.default_printer" :options="lists.printers" compact /></td>
                 <td class="px-1 py-2"><DropdownField v-model="row.theme" :options="lists.themes" compact /></td>
                 <td class="px-1 py-2 text-right"><button @click="removeRow('user_series', idx)" class="text-[var(--color-danger)] hover:text-[var(--color-danger)] font-bold px-2">&times;</button></td>
