@@ -1,80 +1,5 @@
 <template>
   <div ref="catalogueRoot" class="h-screen overflow-y-auto flex flex-col bg-[var(--color-bg)] font-sans text-[var(--color-text)] antialiased selection:bg-[var(--color-info)] selection:text-white main-content-wrapper">
-    <CatalogueOrderParty
-      v-if="!isFullscreen && session.isSystemUser.value && showCustomerSection"
-      class="mt-16"
-      @applied="onCustomerApplied"
-      @close="showCustomerSection = false"
-    />
-    <div v-if="isLoggedIn" class="fixed top-4 right-4 z-[70] flex items-center gap-3 rounded-xl bg-slate-950/80 px-4 py-2 text-xs text-white border border-slate-800/50 shadow-lg">
-      <span class="max-w-40 truncate font-semibold">{{ userName }}</span>
-
-      <!-- Selected Customer & Price list for System Users (clicking opens customer search to modify) -->
-      <button
-        v-if="session.isSystemUser.value && orderContext.customer"
-        type="button"
-        @click="toggleCustomerSection"
-        class="flex items-center gap-1.5 rounded-lg bg-indigo-500/20 hover:bg-indigo-500/35 border border-indigo-400/40 px-2.5 py-1 text-xs text-indigo-100 hover:text-white transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-        title="Click to modify customer and price list"
-      >
-        <span class="font-bold text-white max-w-[180px] truncate">
-          {{ orderContext.customer_name || orderContext.customer }}
-        </span>
-        <span class="text-[11px] text-indigo-300 ml-0.5">✏️</span>
-      </button>
-      <button
-        v-else-if="session.isSystemUser.value"
-        type="button"
-        @click="toggleCustomerSection"
-        class="flex items-center gap-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/35 border border-amber-400/40 px-2.5 py-1 text-xs text-amber-200 hover:text-white transition cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-        title="Click to select customer and price list"
-      >
-        <span class="font-bold">Select Customer</span>
-        <span class="text-[11px]">🔍</span>
-      </button>
-
-      <RouterLink v-if="showCart" to="/catalogue-cart" class="font-bold text-indigo-200 hover:text-white">Cart ({{ cartCount }})</RouterLink>
-      <button type="button" @click="logout" class="font-bold text-indigo-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-white">Logout</button>
-    </div>
-    <button
-      v-else
-      type="button"
-      @click="showLogin = true"
-      class="fixed top-4 right-4 z-50 rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white shadow-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-    >
-      Login
-    </button>
-    <div data-remote-dialog v-if="showLogin" class="fixed inset-0 z-[80] flex items-center justify-center bg-black/60 p-4" @click.self="showLogin = false">
-      <form class="w-full max-w-sm space-y-4 rounded-xl bg-[var(--color-surface)] p-6 text-[var(--color-text)] shadow-xl" @submit.prevent="handleWebsiteLogin">
-        <div class="flex items-center justify-between">
-          <h2 class="text-lg font-bold">Login</h2>
-          <button type="button" aria-label="Close login" @click="showLogin = false">✕</button>
-        </div>
-        <p v-if="loginError" role="alert" class="text-sm text-red-600">{{ loginError }}</p>
-        <label class="block text-sm font-medium">Email or Username
-          <input v-model.trim="loginEmail" type="text" autocomplete="username" required class="mt-1 w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2" />
-        </label>
-        <label class="block text-sm font-medium">Password
-          <div class="relative mt-1">
-            <input v-model="loginPassword" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" required class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] py-2 pl-3 pr-11" />
-            <button
-              type="button"
-              :aria-label="showPassword ? 'Hide password' : 'Show password'"
-              :aria-pressed="showPassword"
-              :title="showPassword ? 'Hide password' : 'Show password'"
-              class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-              @click.prevent="showPassword = !showPassword"
-            >
-              <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
-              <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            </button>
-          </div>
-        </label>
-        <button type="submit" :disabled="loginLoading" class="w-full rounded bg-indigo-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-50">
-          {{ loginLoading ? 'Signing in…' : 'Sign In' }}
-        </button>
-      </form>
-    </div>
     <!-- Loading Screen -->
     <div v-if="loading" class="flex-1 flex flex-col items-center justify-center p-8">
       <div class="relative w-16 h-16 mb-4">
@@ -116,13 +41,13 @@
             >
               <!-- Top side for offer -->
               <div class="shrink-0 flex items-start justify-start w-full mb-2">
-                <div v-if="offerSource(item).discount_type && offerSource(item).discount_desc" class="bg-white rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm w-full border" :class="offerBannerColors(offerSource(item)).border">
-                  <div class="text-white text-[9px] font-black uppercase px-2 py-0.5 text-left tracking-wider" :class="offerBannerColors(offerSource(item)).heading">
+                <div v-if="item.discount_type && item.discount_desc" class="bg-white border border-amber-500/40 rounded-lg overflow-hidden shadow-2xl backdrop-blur-sm w-full">
+                  <div class="bg-amber-500 text-black text-[9px] font-black uppercase px-2 py-0.5 text-left tracking-wider">
                     Active Offer
                   </div>
-                  <div class="p-1.5 flex flex-col gap-0.5 font-normal text-[20px] whitespace-normal break-words leading-tight text-slate-800">
+                  <div class="p-1.5 flex flex-col gap-0.5 font-normal text-[20px] text-amber-800 whitespace-normal break-words leading-tight">
                     <div 
-                      v-for="(line, lIdx) in offerSource(item).discount_desc.split(' | ')" 
+                      v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
                       :key="lIdx"
                     >
                       {{ line }}
@@ -131,134 +56,65 @@
                 </div>
               </div>
 
-              <h3
-                class="shrink-0 text-center font-normal text-slate-900 line-clamp-2 leading-tight"
-                :class="presentationCols >= 6 ? 'text-[22px]' : 'text-2xl md:text-3xl'"
-              >
-                {{ item.itemname }}
-              </h3>
-
               <!-- Middle section for image (Normal size, no stretch) -->
-              <div class="flex-1 flex flex-col min-h-0 py-2">
-                <div class="relative flex-1 min-h-0 flex items-center justify-center">
-                  <span class="absolute right-0 top-0 z-10 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide shadow" :class="item.is_gst_item ? 'bg-green-500 text-white' : 'bg-amber-400 text-slate-900'">{{ item.is_gst_item ? 'GST Incl' : 'GST Excl' }}</span>
-                  <img
-                    v-if="cardImage(item)"
-                    :src="cardImage(item)"
-                    :alt="item.itemname"
-                    class="max-w-full max-h-full object-contain transition-all duration-500"
-                  />
-                  <!-- Placeholder -->
-                  <div
-                    v-else
-                    class="w-full h-full min-h-[20vh] rounded-xl bg-gradient-to-br from-slate-100 to-white flex flex-col items-center justify-center text-center p-4 select-none border border-slate-200"
-                  >
-                    <div class="text-3xl mb-1">📦</div>
-                    <span class="text-[9px] font-bold uppercase tracking-wider text-slate-600">
-                      No Image Available
-                    </span>
-                  </div>
-                </div>
-                <div v-if="!item.is_template && item.barcode_prices && item.barcode_prices.length" class="shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 text-2xl font-mono font-bold text-slate-800 select-all">
-                  <div v-for="bp in item.barcode_prices" :key="bp.barcode">
-                    <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans font-normal text-slate-600">({{ bp.uom }})</span>
-                  </div>
+              <div class="flex-1 flex items-center justify-center min-h-0 py-2">
+                <img
+                  v-if="item.image"
+                  :src="item.image"
+                  :alt="item.itemname"
+                  class="max-w-full object-contain transition-all duration-500"
+                  :class="showControls ? 'max-h-[35vh]' : 'max-h-[48vh]'"
+                />
+                <!-- Placeholder -->
+                <div
+                  v-else
+                  class="w-full h-full min-h-[20vh] rounded-xl bg-gradient-to-br from-slate-100 to-white flex flex-col items-center justify-center text-center p-4 select-none border border-slate-200"
+                >
+                  <div class="text-3xl mb-1">📦</div>
+                  <span class="text-[9px] font-bold uppercase tracking-wider text-slate-600">
+                    No Image Available
+                  </span>
                 </div>
               </div>
 
-
-              <!-- Template: pick one value per attribute; price, stock and quantity follow the matching variant -->
-              <div v-if="item.is_template" class="shrink-0 max-h-[40%] overflow-y-auto space-y-2 pt-3">
-                <p v-if="!item.variants.length" class="text-sm text-slate-600">No variants available</p>
-                <template v-else>
-                  <div v-for="group in item.variant_options" :key="group.attribute" class="space-y-1">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-600">{{ group.attribute }}</p>
-                    <div class="flex flex-wrap gap-1.5" role="radiogroup" :aria-label="`${group.attribute} of ${item.itemname}`">
-                      <button
-                        v-for="option in group.values"
-                        :key="option.value"
-                        type="button"
-                        role="radio"
-                        :aria-checked="isValuePicked(item, group.attribute, option.value)"
-                        :title="option.value"
-                        class="rounded-lg px-2.5 py-1 font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-                        :class="[isValuePicked(item, group.attribute, option.value) ? 'bg-emerald-600 text-white' : 'bg-slate-100 text-slate-900 hover:bg-slate-200', isValueAvailable(item, group.attribute, option.value) ? '' : 'opacity-40']"
-                        @click="pickAttribute(item, group.attribute, option.value)"
-                      >
-                        {{ option.abbr }}
-                      </button>
-                    </div>
-                  </div>
-                  <p v-if="cartVariants(item).length" class="text-xs text-slate-600">
-                    In cart: <span v-for="variant in cartVariants(item)" :key="variant.itemcode" class="mr-2 font-bold" :title="variant.itemname">{{ variant.variant_abbr }} × {{ getQuantity(pageaddress, variant.itemcode) }}</span>
-                  </p>
-                  <p v-if="!selectedVariant(item)" class="text-sm text-slate-600">No item for this combination. Pick another.</p>
-                  <div v-for="variant in selectedVariant(item) ? [selectedVariant(item)] : []" :key="variant.itemcode" class="rounded-lg border border-slate-200 p-2 space-y-1">
-                    <div class="flex items-start justify-between gap-2">
-                      <span class="font-bold text-slate-900 text-lg" :title="variant.itemname">{{ variant.variant_label }}</span>
-                      <span class="shrink-0 text-xs font-semibold" :class="variant.available_stock > 0 ? 'text-emerald-700' : 'text-rose-700'">{{ displayStock(variant) }}</span>
-                    </div>
-                    <div v-for="bp in variant.barcode_prices" :key="bp.barcode" class="flex flex-wrap items-baseline gap-x-3 font-mono text-slate-900 text-lg">
-                      <span class="select-all">{{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans text-xs text-slate-600">({{ bp.uom }})</span></span>
-                      <span v-for="pl in offer.price_lists" :key="pl.price_list" class="font-bold tracking-widest text-indigo-700">
-                        {{ bp.prices[pl.price_list] != null ? displayPrice(bp.prices[pl.price_list]) : '—' }}
-                      </span>
-                    </div>
-                    <div v-if="catalogueUser" class="flex items-center justify-end gap-1.5 text-black">
-                      <template v-if="variant.order_rate != null">
-                        <button v-if="minimumOrderQuantity(variant) > 1" type="button" :aria-label="`Decrease ${variant.itemname} by ${minimumOrderQuantity(variant)}`" class="rounded-lg border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 font-bold hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500" @click="adjustByMinimum(variant, -1)">−{{ minimumOrderQuantity(variant) }}</button>
-                        <button type="button" :aria-label="`Decrease ${variant.itemname}`" class="rounded-lg border border-rose-500/40 bg-rose-500/15 px-2.5 py-0.5 font-bold hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500" @click="adjustQuantity(variant, -1)">−</button>
-                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" :aria-label="`Quantity for ${variant.itemname}`" :value="getQuantity(pageaddress, variant.itemcode)" class="w-12 rounded-lg border px-1 py-0.5 text-center font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 border-slate-300 bg-white text-black" @focus="$event.target.select()" @change="setItemQuantity(variant, $event)" @keydown.enter="$event.target.blur()" />
-                        <button type="button" :aria-label="`Increase ${variant.itemname}`" class="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 font-bold hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500" @click="adjustQuantity(variant, 1)">+</button>
-                        <button v-if="minimumOrderQuantity(variant) > 1" type="button" :aria-label="`Increase ${variant.itemname} by ${minimumOrderQuantity(variant)}`" class="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 font-bold hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500" @click="adjustByMinimum(variant, 1)">+{{ minimumOrderQuantity(variant) }}</button>
-                      </template>
-                      <span v-else class="text-xs text-slate-600">Price unavailable</span>
-                    </div>
-                  </div>
-                </template>
-              </div>
               <!-- Bottom side for item details -->
-              <div v-if="!item.is_template" class="shrink-0 space-y-2 pt-3">
-                <div class="flex items-center justify-center shrink-0">
-                  <div class="w-full max-w-xl bg-slate-50 rounded-xl p-3 shadow-inner">
-                    <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-emerald-700' : 'text-rose-700'">
-                      Available stock: {{ displayStock(item) }}
-                    </p>
-                    <template v-if="presentationCols < 6 && item.barcode_prices && item.barcode_prices.length">
-                      <table class="w-full text-left text-2xl border-collapse">
+              <div class="shrink-0 space-y-2 pt-3 border-t border-slate-200">
+                <h3 
+                  class="font-normal text-slate-900 line-clamp-2 leading-tight"
+                  :class="presentationCols >= 6 ? 'text-[22px]' : 'text-2xl md:text-3xl'"
+                >
+                  {{ item.itemname }}
+                </h3>
+                
+                <div 
+                  v-if="presentationCols < 6 && item.barcode_prices && item.barcode_prices.length"
+                  class="flex items-center justify-center pt-2 shrink-0"
+                >
+                  <div class="w-full max-w-xl bg-slate-50 rounded-xl p-3 border border-slate-200 shadow-inner">
+                    <table class="w-full text-left text-2xl border-collapse">
 
-                        <tbody class="divide-y divide-slate-200 font-medium">
-                          <tr
-                            v-for="bp in item.barcode_prices"
-                            :key="bp.barcode"
+                      <tbody class="divide-y divide-slate-200 font-medium">
+                        <tr 
+                          v-for="bp in item.barcode_prices" 
+                          :key="bp.barcode"
+                        >
+                          <td class="py-0.5 pr-2 font-mono text-slate-800 select-all font-bold">
+                            {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-600 font-normal text-lg font-sans">({{ bp.uom }})</span>
+                          </td>
+                          <td 
+                            v-for="pl in offer.price_lists" 
+                            :key="pl.price_list"
+                            class="py-0.5 px-0.5 font-mono text-right text-indigo-700 font-bold tracking-widest"
                           >
-                            <td class="py-0.5 pr-2 font-mono text-slate-800 select-all font-bold">
-                              <div
-                                v-for="pl in offer.price_lists"
-                                :key="pl.price_list"
-                                class="py-0.5 px-0.5 font-mono text-left text-indigo-700 font-bold tracking-widest"
-                              >
-                                <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                                  {{ displayPrice(bp.prices[pl.price_list]) }}
-                                </span>
-                                <span v-else class="text-slate-600 font-normal">—</span>
-                              </div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </template>
+                            <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
+                              {{ encryptPrice(bp.prices[pl.price_list]) }}
+                            </span>
+                            <span v-else class="text-slate-600 font-normal">—</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
-                </div>
-                <div v-if="catalogueUser" class="flex items-center justify-center gap-2 text-slate-900">
-                  <template v-if="item.order_rate != null">
-                    <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Decrease ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-rose-300/40 bg-rose-400/20 text-black shadow-lg shadow-rose-950/20 backdrop-blur-md hover:bg-rose-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300" @click="adjustByMinimum(item, -1)">−{{ minimumOrderQuantity(item) }}</button>
-                    <button type="button" :aria-label="`Decrease ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-rose-300/40 bg-rose-400/20 text-black shadow-lg shadow-rose-950/20 backdrop-blur-md hover:bg-rose-400/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-300" @click="adjustQuantity(item, -1)">−</button>
-                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" :aria-label="`Quantity for ${item.itemname}`" :value="getQuantity(pageaddress, item.itemcode)" class="w-14 select-text rounded-lg border border-white/40 bg-white/90 px-1 py-1 text-center font-bold text-black focus:outline-none focus:ring-2 focus:ring-indigo-400" @focus="$event.target.select()" @change="setItemQuantity(item, $event)" @keydown.enter="$event.target.blur()" />
-                    <button type="button" :aria-label="`Increase ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-emerald-300/40 bg-emerald-600/20 text-black shadow-lg shadow-emerald-950/20 backdrop-blur-md hover:bg-emerald-600/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300" @click="adjustQuantity(item, 1)">+</button>
-                    <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Increase ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-emerald-300/40 bg-emerald-600/20 text-black shadow-lg shadow-emerald-950/20 backdrop-blur-md hover:bg-emerald-600/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-300" @click="adjustByMinimum(item, 1)">+{{ minimumOrderQuantity(item) }}</button>
-                  </template>
-                  <span v-else class="text-sm text-slate-600">Price unavailable</span>
                 </div>
               </div>
             </div>
@@ -304,7 +160,6 @@
               ❌ Exit Play
             </button>
             <button
-              v-if="false"
               @click="loadOffer(true)"
               class="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-amber-800 hover:bg-amber-500/10 hover:border-amber-500/30 transition active:scale-95"
             >
@@ -362,8 +217,7 @@
           </button>
           
           <!-- Refresh Button -->
-          <button
-            v-if="false"
+          <button 
             @click="loadOffer(false)"
             class="absolute top-4 right-4 z-20 flex items-center gap-2 rounded-xl bg-slate-950/60 hover:bg-slate-900/80 px-4 py-2 text-xs font-bold text-slate-300 hover:text-white border border-slate-800/50 transition active:scale-95 focus:outline-none"
           >
@@ -389,9 +243,10 @@
         </header>
 
         <!-- Items Grid Section -->
-        <main class="flex-1 w-full px-6 py-10 transition-all duration-300" :class="showCart && cartCount ? 'lg:pr-[21rem]' : ''">
+        <main class="flex-1 w-full mx-auto px-6 py-10" :class="containerClass">
           <CatalogueSubFolders :folders="offer.sub_catalogues || []" @open="openSubCatalogue" />
-          <div class="grid gap-6 w-full transition-all duration-300" :class="[gridClass, containerClass, showCart && cartCount ? 'lg:ml-0 lg:mr-auto' : 'mx-auto']">
+
+          <div class="grid gap-6" :class="gridClass">
             <div
               v-for="(item, itemIndex) in offer.items"
               :key="item.itemcode"
@@ -401,124 +256,55 @@
               :data-catalogue-item="itemIndex"
               class="group relative flex flex-col rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
             >
-              <!-- Offer banner above the item image -->
-              <div v-if="offerSource(item).discount_type && offerSource(item).discount_desc" class="w-full shrink-0 flex flex-col text-white text-center border rounded-lg overflow-hidden shadow-lg" :class="[offerBannerColors(offerSource(item)).background, offerBannerColors(offerSource(item)).border]">
-                <div class="uppercase px-1.5 py-0.5 tracking-wider shrink-0" :class="[cardTitleClass, offerBannerColors(offerSource(item)).heading]">
-                  Offer
-                </div>
-                <div class="flex flex-col whitespace-normal break-words p-1.5 gap-1" :class="cardTitleClass">
-                  <div
-                    v-for="(line, lIdx) in offerSource(item).discount_desc.split(' | ')"
-                    :key="lIdx"
-                  >
-                    {{ line }}
-                  </div>
-                </div>
-              </div>
-
-              <h3 class="bg-white px-4 py-2 text-center font-bold text-slate-900 line-clamp-2 group-hover:text-indigo-700 transition-colors" :class="cardTitleClass" :title="item.itemname">
-                {{ item.itemname }}
-              </h3>
-
               <!-- Image / Placeholder Frame -->
-              <div class="aspect-square w-full bg-white flex flex-col p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
-                <div class="relative flex-1 min-h-0 flex items-center justify-center">
-                  <span class="absolute right-0 top-0 z-10 rounded-md px-2 py-0.5 text-xs font-bold uppercase tracking-wide shadow" :class="item.is_gst_item ? 'bg-green-500 text-white' : 'bg-amber-400 text-slate-900'">{{ item.is_gst_item ? 'GST Incl' : 'GST Excl' }}</span>
-                  <img
-                    v-if="cardImage(item)"
-                    :src="cardImage(item)"
-                    :alt="item.itemname"
-                    class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <!-- Premium placeholder if no image exists -->
-                  <div
-                    v-else
-                    class="w-full h-full rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 flex flex-col items-center justify-center text-center p-4 select-none"
-                  >
-                    <div class="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">📦</div>
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
-                      No Image Available
-                    </span>
+              <div class="relative aspect-square w-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center p-4 border-b border-[var(--color-border)]/50 overflow-hidden shrink-0">
+                <!-- Stacked Offer Badges Overlay -->
+                <div v-if="item.discount_type && item.discount_desc" class="absolute top-2 left-2 z-10 pointer-events-none flex flex-col bg-slate-900/95 border border-[var(--color-warning)]/30 rounded-lg overflow-hidden shadow-lg backdrop-blur-sm max-w-[90%]">
+                  <div class="bg-[var(--color-warning)] text-black text-[8px] font-black uppercase px-1.5 py-0.5 text-center tracking-wider shrink-0">
+                    Offer
+                  </div>
+                  <div class="flex flex-col whitespace-normal break-words font-bold text-[var(--color-warning)]" :class="badgeTextClass">
+                    <div 
+                      v-for="(line, lIdx) in item.discount_desc.split(' | ')" 
+                      :key="lIdx"
+                      class="leading-none"
+                    >
+                      {{ line }}
+                    </div>
                   </div>
                 </div>
-                <div v-if="!item.is_template && item.barcode_prices && item.barcode_prices.length" class="w-full shrink-0 max-h-[35%] overflow-y-auto border-t border-slate-200 bg-white pt-2 text-[21px] font-mono font-bold text-slate-800 select-all">
-                  <div v-for="bp in item.barcode_prices" :key="bp.barcode">
-                    <span class="font-sans font-normal">Barcode:</span> {{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans font-normal text-slate-600">({{ bp.uom }})</span>
-                  </div>
+
+                <img
+                  v-if="item.image"
+                  :src="item.image"
+                  :alt="item.itemname"
+                  class="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                  loading="lazy"
+                />
+                <!-- Premium placeholder if no image exists -->
+                <div
+                  v-else
+                  class="w-full h-full rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 flex flex-col items-center justify-center text-center p-4 select-none"
+                >
+                  <div class="text-3xl mb-2 group-hover:scale-110 transition-transform duration-300">📦</div>
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                    No Image Available
+                  </span>
                 </div>
               </div>
 
-
-              <!-- Template: pick one value per attribute; price, stock and quantity follow the matching variant -->
-              <div v-if="item.is_template" class="flex-1 space-y-2 p-3">
-                <p v-if="!item.variants.length" class="text-sm text-[var(--color-text-muted)]">No variants available</p>
-                <template v-else>
-                  <div v-for="group in item.variant_options" :key="group.attribute" class="space-y-1">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">{{ group.attribute }}</p>
-                    <div class="flex flex-wrap gap-1.5" role="radiogroup" :aria-label="`${group.attribute} of ${item.itemname}`">
-                      <button
-                        v-for="option in group.values"
-                        :key="option.value"
-                        type="button"
-                        role="radio"
-                        :aria-checked="isValuePicked(item, group.attribute, option.value)"
-                        :title="option.value"
-                        class="rounded-lg px-2.5 py-1 font-bold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-400"
-                        :class="[isValuePicked(item, group.attribute, option.value) ? 'bg-[var(--color-success)] text-white' : 'bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-border)]/40', isValueAvailable(item, group.attribute, option.value) ? '' : 'opacity-40']"
-                        @click="pickAttribute(item, group.attribute, option.value)"
-                      >
-                        {{ option.abbr }}
-                      </button>
-                    </div>
-                  </div>
-                  <p v-if="cartVariants(item).length" class="text-xs text-[var(--color-text-muted)]">
-                    In cart: <span v-for="variant in cartVariants(item)" :key="variant.itemcode" class="mr-2 font-bold" :title="variant.itemname">{{ variant.variant_abbr }} × {{ getQuantity(pageaddress, variant.itemcode) }}</span>
-                  </p>
-                  <p v-if="!selectedVariant(item)" class="text-sm text-[var(--color-text-muted)]">No item for this combination. Pick another.</p>
-                  <div v-for="variant in selectedVariant(item) ? [selectedVariant(item)] : []" :key="variant.itemcode" class="rounded-lg border border-[var(--color-border)]/50 p-2 space-y-1">
-                    <div class="flex items-start justify-between gap-2">
-                      <span class="font-bold text-[var(--color-text)]" :title="variant.itemname">{{ variant.variant_label }}</span>
-                      <span class="shrink-0 text-xs font-semibold" :class="variant.available_stock > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ displayStock(variant) }}</span>
-                    </div>
-                    <div v-for="bp in variant.barcode_prices" :key="bp.barcode" class="flex flex-wrap items-baseline gap-x-3 font-mono text-[var(--color-text)]">
-                      <span class="select-all">{{ bp.barcode || '—' }} <span v-if="bp.uom" class="font-sans text-xs text-[var(--color-text-muted)]">({{ bp.uom }})</span></span>
-                      <span v-for="pl in offer.price_lists" :key="pl.price_list" class="font-bold tracking-widest text-[var(--color-info)]">
-                        {{ bp.prices[pl.price_list] != null ? displayPrice(bp.prices[pl.price_list]) : '—' }}
-                      </span>
-                    </div>
-                    <div v-if="catalogueUser" class="flex items-center justify-end gap-1.5 text-black">
-                      <template v-if="variant.order_rate != null">
-                        <button v-if="minimumOrderQuantity(variant) > 1" type="button" :aria-label="`Decrease ${variant.itemname} by ${minimumOrderQuantity(variant)}`" class="rounded-lg border border-rose-500/40 bg-rose-500/15 px-2 py-0.5 font-bold hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500" @click="adjustByMinimum(variant, -1)">−{{ minimumOrderQuantity(variant) }}</button>
-                        <button type="button" :aria-label="`Decrease ${variant.itemname}`" class="rounded-lg border border-rose-500/40 bg-rose-500/15 px-2.5 py-0.5 font-bold hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500" @click="adjustQuantity(variant, -1)">−</button>
-                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" :aria-label="`Quantity for ${variant.itemname}`" :value="getQuantity(pageaddress, variant.itemcode)" class="w-12 rounded-lg border px-1 py-0.5 text-center font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400 border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)]" @focus="$event.target.select()" @change="setItemQuantity(variant, $event)" @keydown.enter="$event.target.blur()" />
-                        <button type="button" :aria-label="`Increase ${variant.itemname}`" class="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2.5 py-0.5 font-bold hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500" @click="adjustQuantity(variant, 1)">+</button>
-                        <button v-if="minimumOrderQuantity(variant) > 1" type="button" :aria-label="`Increase ${variant.itemname} by ${minimumOrderQuantity(variant)}`" class="rounded-lg border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 font-bold hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-500" @click="adjustByMinimum(variant, 1)">+{{ minimumOrderQuantity(variant) }}</button>
-                      </template>
-                      <span v-else class="text-xs text-[var(--color-text-muted)]">Price unavailable</span>
-                    </div>
-                  </div>
-                </template>
-              </div>
               <!-- Card Details -->
-              <div v-if="!item.is_template" class="flex-1 flex flex-col justify-between" :class="cardPaddingClass">
-                <div v-if="catalogueUser" class="flex items-center justify-center gap-2 border-t border-[var(--color-border)]/40 pt-3">
-                  <template v-if="item.order_rate != null">
-                    <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Decrease ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-rose-500/40 bg-rose-500/15 text-black shadow-lg shadow-rose-900/10 backdrop-blur-md hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500" @click="adjustByMinimum(item, -1)">−{{ minimumOrderQuantity(item) }}</button>
-                    <button type="button" :aria-label="`Decrease ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-rose-500/40 bg-rose-500/15 text-black shadow-lg shadow-rose-900/10 backdrop-blur-md hover:bg-rose-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-rose-500" @click="adjustQuantity(item, -1)">−</button>
-                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="5" :aria-label="`Quantity for ${item.itemname}`" :value="getQuantity(pageaddress, item.itemcode)" class="w-14 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] px-1 py-1 text-center font-bold text-[var(--color-text)] focus:outline-none focus:ring-2 focus:ring-indigo-400" @focus="$event.target.select()" @change="setItemQuantity(item, $event)" @keydown.enter="$event.target.blur()" />
-                    <button type="button" :aria-label="`Increase ${item.itemname}`" class="rounded-lg border px-3 py-1 font-bold transition-colors border-emerald-500/40 bg-emerald-500/15 text-black shadow-lg shadow-emerald-900/10 backdrop-blur-md hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500" @click="adjustQuantity(item, 1)">+</button>
-                    <button v-if="minimumOrderQuantity(item) > 1" type="button" :aria-label="`Increase ${item.itemname} by ${minimumOrderQuantity(item)}`" class="rounded-lg border px-2 py-1 font-bold transition-colors border-emerald-500/40 bg-emerald-500/15 text-black shadow-lg shadow-emerald-900/10 backdrop-blur-md hover:bg-emerald-500/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500" @click="adjustByMinimum(item, 1)">+{{ minimumOrderQuantity(item) }}</button>
-                  </template>
-                  <span v-else class="text-xs text-[var(--color-text-muted)]">Price unavailable</span>
+              <div class="flex-1 flex flex-col justify-between" :class="cardPaddingClass">
+                <div class="space-y-1.5">
+                  <h3 class="font-bold text-[var(--color-text)] line-clamp-2 group-hover:text-[var(--color-info)] transition-colors" :class="cardTitleClass" :title="item.itemname">
+                    {{ item.itemname }}
+                  </h3>
                 </div>
+
                 <div class="space-y-2 shrink-0">
-                  <!-- Stock & Prices Table -->
-                  <div class="pt-2 shrink-0">
-                    <p class="text-sm font-semibold" :class="item.available_stock > 0 ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">
-                      Available stock: {{ displayStock(item) }}
-                    </p>
-                    <div v-if="item.barcode_prices && item.barcode_prices.length" class="overflow-x-auto">
+                  <!-- Barcode & Prices Table -->
+                  <div v-if="item.barcode_prices && item.barcode_prices.length" class="pt-2 border-t border-[var(--color-border)]/40 shrink-0">
+                    <div class="overflow-x-auto">
                       <table class="w-full text-left text-xl border-collapse">
 
                         <tbody class="divide-y divide-[var(--color-border)]/30 font-medium">
@@ -528,16 +314,17 @@
                             class="hover:bg-[var(--color-bg)]/50 transition-colors"
                           >
                             <td class="py-0.5 pr-2 font-mono text-[var(--color-text)] select-all font-bold">
-                              <div
-                                v-for="pl in offer.price_lists"
-                                :key="pl.price_list"
-                                class="py-0.5 px-0.5 font-mono text-left text-[var(--color-info)] font-bold tracking-widest"
-                              >
-                                <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
-                                  {{ displayPrice(bp.prices[pl.price_list]) }}
-                                </span>
-                                <span v-else class="text-[var(--color-text-muted)] font-normal">—</span>
-                              </div>
+                              {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-[var(--color-text-muted)] font-normal text-base font-sans">({{ bp.uom }})</span>
+                            </td>
+                            <td 
+                              v-for="pl in offer.price_lists" 
+                              :key="pl.price_list"
+                              class="py-0.5 px-0.5 font-mono text-right text-[var(--color-info)] font-bold tracking-widest"
+                            >
+                              <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
+                                {{ encryptPrice(bp.prices[pl.price_list]) }}
+                              </span>
+                              <span v-else class="text-[var(--color-text-muted)] font-normal">—</span>
                             </td>
                           </tr>
                         </tbody>
@@ -551,8 +338,8 @@
         </main>
       </template>
 
-      <!-- Floating actions hidden in the catalogue viewer detail page -->
-      <div v-if="false" class="fixed bottom-10 right-10 z-40 flex flex-row items-center gap-4">
+      <!-- Floating Actions (Visible in normal web view) -->
+      <div v-if="!isFullscreen && offer" class="fixed bottom-10 right-10 z-40 flex flex-row items-center gap-4">
         <!-- Export PDF Button -->
         <button
           @click="exportToPDF"
@@ -563,7 +350,6 @@
 
         <!-- Refresh Button -->
         <button
-          v-if="false"
           @click="loadOffer(false)"
           class="flex items-center gap-3 rounded-2xl bg-amber-600 hover:bg-amber-700 px-8 py-5 text-xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-amber-300 focus:bg-amber-700 focus:scale-105 transition-all duration-300 border border-amber-500"
         >
@@ -581,8 +367,6 @@
       </div>
     </template>
 
-    <CatalogueCartPanel v-if="showCart" />
-
     <!-- Footer -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 py-6 px-6 text-center text-[10px] text-[var(--color-text-muted)] shrink-0">
       <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
@@ -593,7 +377,7 @@
   </div>
 
   <!-- Export Options Modal -->
-  <div ref="exportDialog" data-remote-dialog v-if="showExportModal" class="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
+  <div ref="exportDialog" data-remote-dialog v-if="showExportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
     <div class="relative w-full max-w-md bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-2xl space-y-6 text-[var(--color-text)] animate-in fade-in zoom-in duration-200">
       <!-- Title -->
       <div>
@@ -635,7 +419,7 @@
         </label>
 
         <!-- Encrypt Prices Checkbox (Conditional) -->
-        <div v-if="includePricesInPrint && !session.isSystemUser.value" class="animate-in slide-in-from-top-2 duration-200">
+        <div v-if="includePricesInPrint" class="animate-in slide-in-from-top-2 duration-200">
           <label class="flex items-center gap-3 cursor-pointer group bg-[var(--color-bg)]/50 p-3.5 rounded-xl border border-[var(--color-border)] hover:border-[var(--color-info)]/60 transition">
             <input 
               v-model="encryptPricesInPrint" 
@@ -673,211 +457,15 @@
 <script setup>
 import { serverCalendarDate } from '../services/serverTime'
 import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from 'vue'
-import { useRoute, useRouter, RouterLink } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import CatalogueSubFolders from '../components/CatalogueSubFolders.vue'
-import { frappeGet, frappePost } from '../api.js'
+import { frappeGet } from '../api.js'
 import { handleCatalogueRemote } from '../services/catalogueRemote.js'
-import { encryptPrice, getCipherMap } from '../encryption.js'
+import { encryptPrice } from '../encryption.js'
 import { initFrappeSocket } from '../services/frappeSocket.js'
-import { session } from '../session.js'
-import { cartCount, getQuantity, setCartUser, setQuantity } from '../services/catalogueCart.js'
-import CatalogueCartPanel from '../components/CatalogueCartPanel.vue'
-import CatalogueOrderParty from '../components/CatalogueOrderParty.vue'
-import { orderContext, orderParams } from '../services/catalogueOrderContext.js'
 
 const route = useRoute()
 const router = useRouter()
-const showLogin = ref(false)
-const loginEmail = ref('')
-const loginPassword = ref('')
-const showPassword = ref(false)
-const loginError = ref('')
-const loginLoading = ref(false)
-const websiteUser = session.isWebsiteUser
-const catalogueUser = computed(() => websiteUser.value || session.isSystemUser.value)
-const showCart = computed(() => catalogueUser.value && (!session.isSystemUser.value || !!orderContext.value.customer))
-const isLoggedIn = session.isLoggedIn
-const userName = computed(() => session.fullName.value || session.user.value)
-
-const showCustomerSection = ref(!orderContext.value.customer)
-
-watch(() => orderContext.value.customer, (newCust, oldCust) => {
-  if (!oldCust && newCust) {
-    showCustomerSection.value = false
-  } else if (!newCust) {
-    showCustomerSection.value = true
-  }
-})
-
-function toggleCustomerSection() {
-  showCustomerSection.value = !showCustomerSection.value
-}
-
-function onCustomerApplied() {
-  showCustomerSection.value = false
-}
-
-async function logout() {
-  await session.logout()
-  setCartUser(null)
-  showLogin.value = false
-  await loadOffer()
-}
-
-function minimumOrderQuantity(item) {
-  const description = item.discount_desc || ''
-  const minimums = [...description.matchAll(/(?:Min Qty:|Buy|Qty)\s*(\d+(?:\.\d+)?)/gi)]
-    .map(match => Math.ceil(Number(match[1])))
-    .filter(quantity => quantity > 0)
-  return minimums.length ? Math.min(...minimums) : 1
-}
-
-function discountPercentage(item) {
-  const description = item.discount_desc || ''
-  const percentages = [...description.matchAll(/(\d+(?:\.\d+)?)\s*%\s*Off/gi)]
-    .map(match => Number(match[1]))
-  const freeItemOffers = [...description.matchAll(/Buy\s+(\d+(?:\.\d+)?)\s+Get\s+(\d+(?:\.\d+)?)\s+Free/gi)]
-    .map(match => {
-      const paid = Number(match[1])
-      const free = Number(match[2])
-      return paid > 0 && free > 0 ? free / (paid + free) * 100 : 0
-    })
-  return Math.max(0, ...percentages, ...freeItemOffers)
-}
-
-function offerBannerColors(item) {
-  const percent = discountPercentage(item)
-  if (percent >= 75) return { background: 'bg-fuchsia-700', heading: 'bg-fuchsia-800', border: 'border-fuchsia-500/60', text: 'text-fuchsia-200' }
-  if (percent >= 50) return { background: 'bg-rose-700', heading: 'bg-rose-800', border: 'border-rose-500/60', text: 'text-rose-200' }
-  if (percent >= 25) return { background: 'bg-orange-700', heading: 'bg-orange-800', border: 'border-orange-500/60', text: 'text-orange-200' }
-  if (percent >= 10) return { background: 'bg-violet-700', heading: 'bg-violet-800', border: 'border-violet-500/60', text: 'text-violet-200' }
-  return { background: 'bg-sky-700', heading: 'bg-sky-800', border: 'border-sky-500/60', text: 'text-sky-200' }
-}
-
-// Picked attribute values per template row ({ Colour: 'Red', Size: 'Large' }), by item code.
-// The variant whose attributes equal the picked values is the one shown and added to the cart.
-const variantSelections = ref({})
-
-function attributesOf(variant) {
-  return Object.fromEntries(variant.variant_attributes.map(attr => [attr.attribute, attr.value]))
-}
-
-function sameSelection(a, b) {
-  const keys = Object.keys(a)
-  return keys.length === Object.keys(b).length && keys.every(key => a[key] === b[key])
-}
-
-function variantSelection(item) {
-  return variantSelections.value[item.itemcode] || (item.variants[0] ? attributesOf(item.variants[0]) : {})
-}
-
-function selectedVariant(item) {
-  const selection = variantSelection(item)
-  return item.variants.find(variant => sameSelection(attributesOf(variant), selection)) || null
-}
-
-function isValuePicked(item, attribute, value) {
-  return variantSelection(item)[attribute] === value
-}
-
-function isValueAvailable(item, attribute, value) {
-  const selection = { ...variantSelection(item), [attribute]: value }
-  return item.variants.some(variant => sameSelection(attributesOf(variant), selection))
-}
-
-// Clicking a picked value clears it (for variants without that attribute). A value with no variant
-// for the other picks switches to the closest variant that has it.
-function pickAttribute(item, attribute, value) {
-  const current = variantSelection(item)
-  let next = { ...current, [attribute]: value }
-  if (current[attribute] === value) delete next[attribute]
-  else if (!item.variants.some(variant => sameSelection(attributesOf(variant), next))) {
-    const shared = variant => Object.entries(next).filter(([key, val]) => attributesOf(variant)[key] === val).length
-    const closest = item.variants
-      .filter(variant => attributesOf(variant)[attribute] === value)
-      .sort((a, b) => shared(b) - shared(a))[0]
-    if (closest) next = attributesOf(closest)
-  }
-  variantSelections.value = { ...variantSelections.value, [item.itemcode]: next }
-}
-
-// A template card shows the picked variant's offer banner, else the template's own
-function offerSource(item) {
-  const variant = item.is_template ? selectedVariant(item) : null
-  return variant?.discount_desc ? variant : item
-}
-
-// A template card shows the picked variant's image (variants without one already carry the template's)
-function cardImage(item) {
-  return (item.is_template && selectedVariant(item)?.image) || item.image
-}
-
-function cartVariants(item) {
-  return item.variants.filter(variant => getQuantity(pageaddress, variant.itemcode) > 0)
-}
-
-function setItemQuantity(item, event) {
-  const value = event.target.value.trim()
-  if (/^\d+$/.test(value) && Number(value) <= 10000) {
-    setQuantity(pageaddress, item.itemcode, Number(value))
-  }
-  event.target.value = getQuantity(pageaddress, item.itemcode)
-}
-
-function adjustQuantity(item, delta) {
-  setQuantity(pageaddress, item.itemcode, getQuantity(pageaddress, item.itemcode) + delta)
-}
-
-function adjustByMinimum(item, direction) {
-  const current = getQuantity(pageaddress, item.itemcode)
-  const minimum = minimumOrderQuantity(item)
-  const next = direction > 0
-    ? current + minimum
-    : Math.max(0, current - minimum)
-  setQuantity(pageaddress, item.itemcode, next)
-}
-
-const rupeeFormatter = new Intl.NumberFormat('en-IN', {
-  style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
-})
-
-const stockFormatter = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 6 })
-function displayStock(item) {
-  if (item.available_stock == null) return 'Unavailable'
-  return `${stockFormatter.format(item.available_stock)} ${item.stock_uom || ''}`.trim()
-}
-
-function displayPrice(price) {
-  if (!catalogueUser.value && getCipherMap()) return encryptPrice(price)
-  const value = Number(price)
-  return price == null || !Number.isFinite(value) ? '—' : rupeeFormatter.format(value)
-}
-
-async function handleWebsiteLogin() {
-  loginError.value = ''
-  loginLoading.value = true
-  let signedIn = false
-  try {
-    await session.login(loginEmail.value, loginPassword.value)
-    signedIn = true
-    await session.checkWebsiteUser()
-    if (!catalogueUser.value) {
-      await session.logout()
-      loginError.value = 'Sign in with a Website User or System User account.'
-      return
-    }
-    setCartUser(session.user.value)
-    await loadOffer()
-    loginPassword.value = ''
-    showPassword.value = false
-    showLogin.value = false
-  } catch (error) {
-    if (signedIn) await session.logout()
-    loginError.value = error.message || 'Could not sign in.'
-  } finally {
-    loginLoading.value = false
-  }
-}
 
 const loading = ref(true)
 const error = ref(null)
@@ -956,6 +544,10 @@ const cardTitleClass = computed(() => {
 
 const cardCodeClass = computed(() => {
   return 'text-[11px]'
+})
+
+const badgeTextClass = computed(() => {
+  return 'text-[10px] p-1.5 gap-1'
 })
 
 // Presentation Column Count Computes the active visible column count (safely limited by available items count)
@@ -1164,10 +756,7 @@ function handleFullscreenChange() {
   }
 }
 
-let offerLoadId = 0
-watch(orderContext, () => loadOffer())
 async function loadOffer(silent = false) {
-  const loadId = ++offerLoadId
   if (!pageaddress) {
     loading.value = false
     error.value = 'Invalid page address'
@@ -1179,12 +768,9 @@ async function loadOffer(silent = false) {
   }
   error.value = null
   try {
-    const priced = websiteUser.value || (session.isSystemUser.value && !!orderContext.value.customer)
-    const response = priced
-      ? await frappePost('ssplbilling.api.catalogue_order_api.get_customer_offer', { pageaddress, ...orderParams() }, { silent: true })
-      : await frappeGet('ssplbilling.api.offer_api.get_offer_details', { pageaddress })
-    const res = priced ? response?.offer : response
-    if (loadId !== offerLoadId) return
+    const res = await frappeGet('ssplbilling.api.offer_api.get_offer_details', {
+      pageaddress: pageaddress
+    })
     
     if (res) {
       // Blank cipher_map means encryption is off; clear any stale key.
@@ -1194,8 +780,9 @@ async function loadOffer(silent = false) {
       } else {
         localStorage.removeItem('wb-cipher')
       }
+      // This page shows plain item cards, so each template row is shown as its variants.
+      res.items = res.items.flatMap(item => item.is_template ? item.variants : [item])
       offer.value = res
-      scheduleStockRefresh()
       document.title = `${res.heading} | Deals`
       startTimer()
       if (!silent) {
@@ -1208,14 +795,13 @@ async function loadOffer(silent = false) {
       }
     }
   } catch (err) {
-    if (loadId !== offerLoadId) return
     console.error(err)
     if (!silent) {
       error.value = err.message || 'Failed to load offers'
       focusGoHomeButton()
     }
   } finally {
-    if (loadId === offerLoadId) {
+    if (!silent) {
       loading.value = false
     }
   }
@@ -1229,17 +815,17 @@ function goHome() {
   }
 }
 
-// Opened from a parent folder (or any in-app page): step back; a direct link goes to the viewer.
+// Opened from a parent folder: step back; otherwise return to the catalogue display list.
 const cameFromCatalogue = typeof window.history.state?.back === 'string'
-  && window.history.state.back.startsWith('/catalougepage/')
+  && window.history.state.back.startsWith('/tvlivedisplay/')
 
 function goBackToCatalogue() {
   if (cameFromCatalogue) router.back()
-  else router.push({ name: 'CatalogueViewer' })
+  else router.push('/displaycatalogue')
 }
 
 function openSubCatalogue(address) {
-  if (address) router.push({ name: 'CatalougePage', params: { pageaddress: address } })
+  if (address) router.push({ name: 'OfferPage', params: { pageaddress: address } })
 }
 
 const showExportModal = ref(false)
@@ -1305,8 +891,7 @@ async function triggerPrint() {
       pageaddress: pageaddress,
       print_template: selectedPrintTemplate.value || '',
       include_prices: includePricesInPrint.value ? 1 : 0,
-      encrypt_prices: !session.isSystemUser.value && encryptPricesInPrint.value ? 1 : 0,
-      ...orderParams()
+      encrypt_prices: encryptPricesInPrint.value ? 1 : 0
     })
     if (!html) {
       alert('Could not render the catalog. Check the print template.')
@@ -1377,10 +962,8 @@ function handleKeyDown(event) {
     catalogueRoot.value?.querySelector('[data-catalogue-item]') || playButtonRef.value
   )) return
   if (event.defaultPrevented || showExportModal.value) return
-  // Do not run catalogue shortcuts while entering login details or using browser shortcuts.
-  if (showLogin.value || event.ctrlKey || event.metaKey || event.altKey ||
+  if (event.ctrlKey || event.metaKey || event.altKey ||
       event.target?.closest?.('input, textarea, select, [contenteditable="true"]')) return
-
   resetControlsTimer()
   const key = event.key
   const keyCode = event.keyCode
@@ -1432,35 +1015,6 @@ function handleKeyDown(event) {
 let _offerSocket = null
 let _offerHandler = null
 let _offerRefreshTimer = null
-let _stockRefreshTimer = null
-let _stockRefreshId = 0
-let _offerDisposed = false
-
-// Catalogue rows plus the variants listed under template rows.
-function offerLines() {
-  return (offer.value?.items || []).flatMap(item => [item, ...(item.variants || [])])
-}
-
-async function refreshCatalogueStock() {
-  if (_offerDisposed) return
-  const id = ++_stockRefreshId
-  try {
-    const stock = await frappeGet('ssplbilling.api.offer_api.get_offer_stock', { pageaddress })
-    if (_offerDisposed || id !== _stockRefreshId) return
-    for (const item of offerLines()) item.available_stock = stock[item.itemcode] ?? null
-  } catch (error) {
-    if (_offerDisposed || id !== _stockRefreshId) return
-    for (const item of offerLines()) item.available_stock = null
-    console.warn('[catalogue] Stock refresh failed:', error)
-  }
-}
-
-function scheduleStockRefresh() {
-  if (_offerDisposed) return
-  ++_stockRefreshId
-  clearTimeout(_stockRefreshTimer)
-  _stockRefreshTimer = setTimeout(refreshCatalogueStock, 300)
-}
 
 function scheduleOfferRefresh() {
   if (_offerRefreshTimer) clearTimeout(_offerRefreshTimer)
@@ -1472,49 +1026,32 @@ function scheduleOfferRefresh() {
 
 function setupOfferSocket() {
   initFrappeSocket().then((socket) => {
-    if (!socket || _offerDisposed) return
+    if (!socket) return
     _offerSocket = socket
     _offerHandler = (data) => {
       if (!data) return
-      if (data.type === 'stock') {
-        // One message per saved document lists every changed item; older servers sent item_code.
-        const changed = new Set(data.item_codes || (data.item_code ? [data.item_code] : []))
-        if (offerLines().some(item => changed.has(item.itemcode))) scheduleStockRefresh()
-        return
-      }
       const affectsThisPage =
         (data.type === 'offer' && data.pageaddress && data.pageaddress === pageaddress) ||
         (data.type === 'item' &&
           data.item_code &&
-          offerLines().some((i) => i.itemcode === data.item_code || i.itemcode === data.variant_of))
+          offer.value?.items?.some((i) => i.itemcode === data.item_code))
       if (affectsThisPage) scheduleOfferRefresh()
     }
     socket.on('offer_page_update', _offerHandler)
-    socket.on('connect', scheduleStockRefresh)
-    scheduleStockRefresh()
   })
 }
 
 function teardownOfferSocket() {
-  _offerDisposed = true
-  ++_stockRefreshId
-  clearTimeout(_stockRefreshTimer)
   if (_offerRefreshTimer) clearTimeout(_offerRefreshTimer)
   if (_offerSocket && _offerHandler) {
     _offerSocket.off('offer_page_update', _offerHandler)
-    _offerSocket.off('connect', scheduleStockRefresh)
   }
   _offerSocket = null
   _offerHandler = null
 }
 
 onMounted(() => {
-  session.checkWebsiteUser().then(() => {
-    if (catalogueUser.value) setCartUser(session.user.value)
-  }).catch((error) => {
-    websiteUser.value = false
-    console.warn('[catalogue] Could not verify website user:', error)
-  }).finally(() => loadOffer())
+  loadOffer()
   setupOfferSocket()
   document.addEventListener('fullscreenchange', handleFullscreenChange)
   window.addEventListener('keydown', handleKeyDown)
@@ -1522,7 +1059,6 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
-  ++offerLoadId
   stopTimer()
   stopSlideshow()
   teardownOfferSocket()
@@ -1543,3 +1079,4 @@ onBeforeUnmount(() => {
 
 /* Core stylesheet variables integrated */
 </style>
+

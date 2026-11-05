@@ -64,8 +64,8 @@ const NamingSettings = () => import('./pages/NamingSettings.vue')
 const Expense = () => import('./pages/expense.vue')
 const Repack = () => import('./pages/Repack.vue')
 const Catalogue = () => import('./pages/catalogue.vue')
-const OfferPage = () => import('./pages/OfferPage.vue')
-const CatalougePage = () => import('./pages/tvlivedisplay.vue')
+const OfferPage = () => import('./pages/tvlivedisplay.vue')
+const CatalougePage = () => import('./pages/catalougepage.vue')
 const Catelogue = () => import('./pages/catelogue.vue')
 const CatalogueViewer = () => import('./pages/catalogueviewer.vue')
 const CatalogueCart = () => import('./pages/CatalogueCart.vue')
@@ -532,10 +532,15 @@ const routes = [
     meta: { title: 'Parcel Address' },
   },
   {
-    path: '/catalogue/:pageaddress',
+    path: '/tvlivedisplay/:pageaddress',
     name: 'OfferPage',
     component: OfferPage,
-    meta: { public: true, title: 'Offers' },
+    meta: { public: true, title: 'TV Live Display' },
+  },
+  {
+    // Old TV links keep working
+    path: '/catalogue/:pageaddress',
+    redirect: to => ({ name: 'OfferPage', params: to.params }),
   },
   {
     path: '/catalougepage/:pageaddress',
@@ -601,7 +606,7 @@ const router = createRouter({
   history: createWebHistory(
     import.meta.env.DEV
       ? '/'
-      : window.location.pathname.startsWith('/catalogue/') || window.location.pathname.startsWith('/displaycatalogue')
+      : window.location.pathname.startsWith('/tvlivedisplay/') || window.location.pathname.startsWith('/catalogue/') || window.location.pathname.startsWith('/displaycatalogue')
       ? '/'
       : '/frontend'
   ),

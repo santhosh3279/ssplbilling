@@ -76,7 +76,7 @@
               <div class="text-[11px] text-[var(--color-text-muted)] flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span>Address: 
                   <a 
-                    :href="`/catalogue/${catalogue.pageaddress}`"
+                    :href="`/tvlivedisplay/${catalogue.pageaddress}`"
                     target="_blank" 
                     class="text-[var(--color-info)] hover:underline font-mono"
                     @click.stop
@@ -196,7 +196,7 @@
                   </p>
                   <a
                     v-if="form.name"
-                    :href="`/catalogue/${form.pageaddress}`"
+                    :href="`/tvlivedisplay/${form.pageaddress}`"
                     target="_blank"
                     class="text-[10px] text-[var(--color-info)] hover:underline mt-1 font-mono inline-flex items-center gap-1 w-fit"
                   >

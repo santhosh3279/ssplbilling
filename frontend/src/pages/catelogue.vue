@@ -174,7 +174,7 @@ function openCatalogue(pageaddress, idx) {
   try {
     sessionStorage.setItem(FOCUS_KEY, String(idx))
   } catch (e) {}
-  router.push(`/catalogue/${pageaddress}`)
+  router.push(`/tvlivedisplay/${pageaddress}`)
 }
 
 function focusCard(idx) {
