@@ -1299,7 +1299,7 @@ const routeAliases = {
   modifysubmitted: '/modifysubmitted',
   'modify-submitted': '/modifysubmitted',
   'naming-settings': '/naming-settings',
-  catelogue: '/displaycatalogue',
+  catelogue: '/tvdisplay',
   catalogueviewer: '/catalogueviewer',
   hrms: '/hrms',
   employee: '/hrms/employee',

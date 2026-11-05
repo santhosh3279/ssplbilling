@@ -9,6 +9,7 @@ website_route_rules = [
 	{"from_route": "/frontend/<path:path>", "to_route": "frontend"},
 	{"from_route": "/tvlivedisplay/<path:path>", "to_route": "frontend"},
 	{"from_route": "/catalogue/<path:path>", "to_route": "frontend"},
+	{"from_route": "/tvdisplay", "to_route": "frontend"},
 	{"from_route": "/displaycatalogue", "to_route": "frontend"},
 ]
 

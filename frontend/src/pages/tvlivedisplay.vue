@@ -821,7 +821,7 @@ const cameFromCatalogue = typeof window.history.state?.back === 'string'
 
 function goBackToCatalogue() {
   if (cameFromCatalogue) router.back()
-  else router.push('/displaycatalogue')
+  else router.push({ name: 'Catelogue' })
 }
 
 function openSubCatalogue(address) {

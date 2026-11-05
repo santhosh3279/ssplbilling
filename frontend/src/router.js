@@ -567,10 +567,15 @@ const routes = [
     meta: { public: true, title: 'Catalogue Checkout' },
   },
   {
-    path: '/displaycatalogue',
+    path: '/tvdisplay',
     name: 'Catelogue',
     component: Catelogue,
-    meta: { public: true, title: 'Catalogue' },
+    meta: { public: true, title: 'TV Display' },
+  },
+  {
+    // Old link keeps working
+    path: '/displaycatalogue',
+    redirect: { name: 'Catelogue' },
   },
   {
     path: '/unreconciled',
@@ -606,7 +611,7 @@ const router = createRouter({
   history: createWebHistory(
     import.meta.env.DEV
       ? '/'
-      : window.location.pathname.startsWith('/tvlivedisplay/') || window.location.pathname.startsWith('/catalogue/') || window.location.pathname.startsWith('/displaycatalogue')
+      : window.location.pathname.startsWith('/tvlivedisplay/') || window.location.pathname.startsWith('/catalogue/') || window.location.pathname.startsWith('/tvdisplay') || window.location.pathname.startsWith('/displaycatalogue')
       ? '/'
       : '/frontend'
   ),
