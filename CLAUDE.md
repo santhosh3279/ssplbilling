@@ -163,6 +163,14 @@ Use `wc -l` to get accurate counts. Never estimate or skip this table.
 
 > **MANDATORY — a new page is not done until its tile is registered in the dashboard tile access list.**
 > Skipping the tile registration means the page exists but no non-admin user can ever be granted it.
+> **MANDATORY — it is also not done until its license tier is set here AND in `/home/erpdev/license_gen`.**
+> A tile id in no tier is unlocked only by a `["*"]` license, so tier-licensed customers can never open it.
+
+0. **Ask first, before writing code** — use `AskUserQuestion` to ask the user:
+   - **Bucket** — `Sales` / `Purchase` / `Stock` / `Accounts` / `Ledger View` / `SSPL Special` / `Report`.
+   - **License tier** — `Ultra Lite` / `Lite` / `Standard` / `Enterprise`, or **Free** (never license gated), or **Rides on** an existing feature (e.g. Mobile Bill rides on `sales`).
+
+   Never guess either; both decide who can see and buy the page.
 
 1. **Page** — create `frontend/src/pages/<Name>.vue`.
 2. **Route** — `frontend/src/router.js`: add the import and a route entry with a unique `name`.
@@ -170,7 +178,18 @@ Use `wc -l` to get accurate counts. Never estimate or skip this table.
 4. **Dashboard tile** — add `{ id, bucket, name, desc, icon, shortcut }` to the `allTiles` array in `frontend/src/pages/Dashboard.vue`. Bucket keys there are lowercase: `sales | purchase | stock | accounts | ledger | sspl | report`.
 5. **Tile navigation** — `openModule()` in `Dashboard.vue` pushes `/<tile-id>`. If the route path differs from the tile id, add `'<tile-id>': '/actual/path'` to `routeAliases`. Either way add the tile id to `readyModules`, or clicking the tile alerts "Coming soon".
 6. **Route permission** — `frontend/src/composables/usePermission.js`: add `'<tile-id>': '<RouteName>'` to `TILE_ROUTE_MAP`, and add `<RouteName>` to the relevant role set (`BILLER_ROUTES` / `CASHIER_EXTRA_ROUTES` / `ACCOUNTS_ROUTES`), which is the fallback used when no tile access record is configured.
-7. **Apply** — `bench --site <site> migrate` (syncs the tile), then `yarn build` in `frontend/`.
+7. **License tier (app)** — per the answer to step 0:
+   - **Tier** → add the tile id to that tier's list in `LICENSE_TIERS` in `ssplbilling/api/license_api.py` (it then also syncs `license_tier` on the SSPL Dashboard Tile).
+   - **Free** → add it to `LICENSE_FREE_TILES` in `usePermission.js` (and the "Free tiles" comment in `license_api.py`).
+   - **Rides on** → add it to that parent's list in `LICENSE_FEATURE_CHILDREN` in `license_api.py`, and still list it in the parent's tier in `LICENSE_TIERS` (tiers skip the children map).
+   - Then update `license_features.json` at the repo root: the tier's `license_tiers[].tiles`, `feature_children`, `features` (sorted), the matching `features_by_category["Add-ons from <Tier>"]` entry (`{ "id", "name" }`), `pages` / `pages_by_feature`, and the counts. Add a case to `ssplbilling/api/test_license_api.py`.
+8. **License generator repo** — `/home/erpdev/license_gen` (separate git repo; follow the same checkpoint → change → commit workflow there, never push unless asked). Skip for Free tiles.
+   - `generate_license.py` → add the id to `ALL_FEATURES` (keep sorted).
+   - `web/app.js` → add `{ id, label }` to the `DEFAULT_CATEGORIES["Add-ons from <Tier>"]` array and the id to `TIER_OWN_TILES["tier:<tier>"]`.
+   - `web/sample_features.json` → copy the app's `features_by_category`.
+   - `web/sw.js` → bump the `CACHE` version (`ssplbilling-license-gen-vN`), or browsers keep the old UI.
+   - Verify: `./venv/bin/python generate_license.py --site test.local --tier <tier> --key-file private_key.b64 --output /tmp/x.json` succeeds and `node --check web/app.js` passes. Never print `private_key.b64`.
+9. **Apply** — `bench --site <site> migrate` (syncs the tile + tier), then `yarn build` in `frontend/`.
 
 Verify the tile landed:
 
@@ -179,7 +198,7 @@ bench --site <site> execute frappe.client.get_value \
   --kwargs "{'doctype':'SSPL Dashboard Tile','filters':{'name':'<tile-id>'},'fieldname':'tile_label'}"
 ```
 
-**Sub-pages that have no tile of their own** (e.g. `/hrms/employees`, `/hrms/essl-machines`): skip steps 3–5, and do **not** add them to `TILE_ROUTE_MAP` — that map is reverse-searched by the license `features` gate, so a route mapped to a tile id absent from the license is blocked outright. Grant them explicitly inside the tile-override block of `canAccessRoute` instead, keyed on the parent tile:
+**Sub-pages that have no tile of their own** (e.g. `/hrms/employees`, `/hrms/essl-machines`): skip steps 0 and 3–5, 7–8, and do **not** add them to `TILE_ROUTE_MAP` — that map is reverse-searched by the license `features` gate, so a route mapped to a tile id absent from the license is blocked outright. Grant them explicitly inside the tile-override block of `canAccessRoute` instead, keyed on the parent tile:
 
 ```js
 if (tileIds.includes('hrms')) allowed.add('EsslMachines')
