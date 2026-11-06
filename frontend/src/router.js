@@ -65,6 +65,7 @@ const Expense = () => import('./pages/expense.vue')
 const Repack = () => import('./pages/Repack.vue')
 const Catalogue = () => import('./pages/CatalogueEditor.vue')
 const OfferPage = () => import('./pages/TvLiveDisplay.vue')
+const TvMatGlider = () => import('./pages/TvMatGlider.vue')
 const CatalougePage = () => import('./pages/CataloguePage.vue')
 const Catelogue = () => import('./pages/TvDisplay.vue')
 const CatalogueViewer = () => import('./pages/catalogueviewer.vue')
@@ -538,6 +539,12 @@ const routes = [
     meta: { public: true, title: 'TV Live Display' },
   },
   {
+    path: '/tvmat/:pageaddress',
+    name: 'TvMatGlider',
+    component: TvMatGlider,
+    meta: { public: true, title: 'TV Mat Glider' },
+  },
+  {
     // Old TV links keep working
     path: '/catalogue/:pageaddress',
     redirect: to => ({ name: 'OfferPage', params: to.params }),
@@ -611,7 +618,7 @@ const router = createRouter({
   history: createWebHistory(
     import.meta.env.DEV
       ? '/'
-      : window.location.pathname.startsWith('/tvlivedisplay/') || window.location.pathname.startsWith('/catalogue/') || window.location.pathname.startsWith('/tvdisplay') || window.location.pathname.startsWith('/displaycatalogue')
+      : window.location.pathname.startsWith('/tvlivedisplay/') || window.location.pathname.startsWith('/tvmat/') || window.location.pathname.startsWith('/catalogue/') || window.location.pathname.startsWith('/tvdisplay') || window.location.pathname.startsWith('/displaycatalogue')
       ? '/'
       : '/frontend'
   ),
