@@ -519,7 +519,7 @@ const props = defineProps({
 })
 
 // open-bill: a UPI queue row asks the page to bring its bill into view
-const emit = defineEmits(['settled', 'back', 'loaded', 'open-bill'])
+const emit = defineEmits(['settled', 'back', 'loaded', 'open-bill', 'bill-list'])
 
 const invoice = ref(null)
 const loading = ref(false)
@@ -852,6 +852,18 @@ function handleKeydown(e) {
     e.preventDefault()
     e.stopPropagation()
     emit('back')
+    return
+  }
+  // Left jumps to the bill list, unless the caret sits inside typed text that Left should move through
+  if (e.key === 'ArrowLeft') {
+    const t = e.target
+    let caretInText = false
+    try { caretInText = t.selectionStart > 0 && t.selectionStart === t.selectionEnd } catch { /* number box */ }
+    if (!caretInText) {
+      e.preventDefault()
+      e.stopPropagation()
+      emit('bill-list')
+    }
     return
   }
   // Up / Down walk the boxes (and the Post button) instead of stepping number values;

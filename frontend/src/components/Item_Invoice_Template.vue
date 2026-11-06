@@ -95,6 +95,7 @@
                 @keydown.enter="$emit('select-sidebar-item', inv)"
                 @keydown.up.prevent="navigateSidebar(idx, -1)"
                 @keydown.down.prevent="navigateSidebar(idx, 1)"
+                @keydown.right.prevent="$emit('sidebar-right')"
                 class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 transition-colors outline-none focus:bg-[var(--color-focus)] focus:border-l-2 focus:border-l-[var(--color-focus)]"
                 :class="{ 'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)]': selectedSidebarItemName === inv.name }"
               >
@@ -803,7 +804,7 @@ const totalUpToLine = computed(() => {
 const emit = defineEmits([
   'back', 'save', 'print', 'cancel', 'submit', 'export', 'import', 'party-click',
   'doc-date-change', 'sidebar-date-change', 'update:sidebarDate', 'update:sidebarSearch', 'update:sidebarSeries',
-  'toggle-draft-only', 'select-sidebar-item', 'delete-item', 'discount-pct-keydown', 'discount-amt-keydown',
+  'toggle-draft-only', 'select-sidebar-item', 'sidebar-right', 'delete-item', 'discount-pct-keydown', 'discount-amt-keydown',
   'update:freightEntry', 'update:packingEntry', 'update:loadingEntry', 'update:otherEntry',
   'update:discountPct', 'update:discountDirectAmt',
   'update:ignoreModifier', 'other-entry-enter', 'party-refreshed', 'reprice-prices',
@@ -942,6 +943,14 @@ defineExpose({
   // rather than appended to.
   focusSidebar: () => { sidebarSearchRef.value?.focus(); sidebarSearchRef.value?.select() },
   focusSidebarList: () => sidebarListRef.value?.querySelector('[tabindex="0"]')?.focus(),
+  // the selected bill if it is listed, else the first one
+  focusSelectedSidebarItem: () => {
+    const idx = props.sidebarItems.findIndex(inv => inv.name === props.selectedSidebarItemName)
+    const el = sidebarItemRefs.get(idx) || sidebarListRef.value?.querySelector('[tabindex="0"]')
+    if (!el) return
+    el.focus({ preventScroll: true })
+    el.scrollIntoView({ block: 'nearest' })
+  },
   focusDiscountPct: () => { discountPctRef.value?.focus(); discountPctRef.value?.select() },
   focusDiscountAmt: () => { discountAmtRef.value?.focus(); discountAmtRef.value?.select() },
   focusSaveBtn: () => saveBtnRef.value?.focus(),

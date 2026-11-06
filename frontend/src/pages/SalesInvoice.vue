@@ -58,6 +58,7 @@
       @update:sidebarSeries="sidebarSeries = $event"
       @toggle-draft-only="draftOnly = !draftOnly"
       @select-sidebar-item="handleSelectSidebarItem"
+      @sidebar-right="posMode && emit('focus-payment')"
       v-model:freight-entry="freightEntry"
       :freight-amt="freightAmt"
       v-model:packing-entry="packingEntry"
@@ -895,6 +896,7 @@ import { session } from '../session'
 import { salesInvoiceShortcuts } from '../shortcuts/salesInvoiceShortcuts'
 import ShortcutPage from '../components/ShortcutPage.vue'
 import { canAccessTile, canModifyDate } from '../composables/usePermission'
+import { useLayout } from '../composables/useLayout.js'
 
 import { formatDMY } from '../utils/date'
 import { serverToday, serverNow, toLocalISO, parseCalendarDate } from '../services/serverTime'
@@ -1076,6 +1078,7 @@ watch(availableSeries, (newVal) => {
 }, { immediate: true })
 // POS: the bill list starts showing drafts only
 const draftOnly = ref(props.posMode)
+const { isSidebarCollapsed } = useLayout()
 const sidebarLoading = ref(false)
 const isLoadingBill = ref(false)
 
@@ -2181,7 +2184,12 @@ function openBill(name) {
   return handleSelectSidebarItem({ name })
 }
 
-defineExpose({ printAndClear, focusBarcodeInput, openBill })
+function focusBillList() {
+  if (isSidebarCollapsed.value) isSidebarCollapsed.value = false
+  nextTick(() => invoiceTemplateRef.value?.focusSelectedSidebarItem())
+}
+
+defineExpose({ printAndClear, focusBarcodeInput, openBill, focusBillList })
 
 function handleCancel() {
   const hasParty = customerId.value;

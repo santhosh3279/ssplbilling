@@ -1,6 +1,7 @@
 <template>
   <!-- Bill entry (with its collapsible bill list) on the left, payment on the right:
-       F8 saves the bill and moves to Cash, F9 posts the payment, then the bill prints and clears -->
+       F8 saves the bill and moves to Cash, F9 posts the payment, then the bill prints and clears;
+       Left in payment jumps to the bill list, Right in the bill list jumps back to payment -->
   <div class="flex h-screen overflow-hidden bg-[var(--color-bg)]">
     <div class="min-w-0 flex-1">
       <SalesInvoice
@@ -17,6 +18,7 @@
       @loaded="onPaymentLoaded"
       @settled="salesRef?.printAndClear()"
       @back="salesRef?.focusBarcodeInput()"
+      @bill-list="salesRef?.focusBillList()"
       @open-bill="salesRef?.openBill($event)"
     />
   </div>
