@@ -358,10 +358,41 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
     return { freeRows: [], discount: null }
   }
 
+  // Qty fields the rule engine reads/writes; it only understands positive qty.
+  const _QTY_FIELDS = ['qty', '_total_qty', '_paid_qty', '_loaded_free_qty', '_loaded_paid_qty']
+
+  function _setQtySign(row, sign) {
+    for (const f of _QTY_FIELDS) {
+      if (typeof row[f] === 'number') row[f] = sign * Math.abs(row[f])
+    }
+  }
+
+  // Sale Return rows carry negative qty: run the rule on the absolute qty, then
+  // flip the row (and the free units it earns) back to negative. Every row is
+  // normalised to its own qty sign first, so toggling Return on/off keeps the
+  // remembered total (11 + 1 free ⇄ -11 / -1 free) instead of losing the free unit.
+  function _runRule(row, rule) {
+    const sign = row.qty < 0 ? -1 : 1
+    _setQtySign(row, 1)
+    try {
+      const res = _buildResult(row, rule)
+      if (sign > 0) return res
+      return { ...res, freeRows: res.freeRows.map(r => ({ ...r, qty: -Math.abs(r.qty) })) }
+    } finally {
+      _setQtySign(row, sign)
+    }
+  }
+
   // ── helpers: apply / clear percentage on a row ────────────────────────────
 
+  // On a return row the discount pulled from sales history wins; the rule's
+  // percentage only fills in when the row has no discount of its own.
+  function _ownsDiscount(row) {
+    return !(row.qty < 0) || !row.discount || row.discount === row._rule_discount
+  }
+
   function _applyDiscount(row, discount) {
-    if (discount !== null) {
+    if (discount !== null && _ownsDiscount(row)) {
       row.discount = discount
       row._rule_discount = discount
     }
@@ -369,11 +400,11 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
 
   function _clearRuleDiscount(row) {
     if (row._rule_discount != null) {
-      row.discount = 0
+      if (_ownsDiscount(row)) row.discount = 0
       row._rule_discount = null
     }
     if (row._total_qty !== undefined) {
-      row.qty = row._total_qty
+      row.qty = (row.qty < 0 ? -1 : 1) * Math.abs(row._total_qty)
     }
     delete row._paid_qty
     delete row._total_qty
@@ -387,8 +418,6 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
     try {
       const row = items.value[rowIdx]
       if (!row || row._is_free || row.deleted) return
-      // Return rows (negative qty) keep the rate/discount pulled from sales history
-      if (row.qty < 0) return
       const key = row._rowKey
 
       // Remove stale free rows for this parent
@@ -402,7 +431,7 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
         return
       }
 
-      const { freeRows, discount } = _buildResult(row, rule)
+      const { freeRows, discount } = _runRule(row, rule)
       _applyDiscount(row, discount)
       if (freeRows.length) {
         items.value.splice(newIdx + 1, 0, ...freeRows.map(r => ({ ...r, _free_parent_key: key })))
@@ -424,8 +453,6 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
       for (let i = 0; i < snap.length; i++) {
         const row = snap[i]
         if (row.deleted || ignoreDiscountRule.value) continue
-        // Return rows (negative qty) keep the rate/discount pulled from sales history
-        if (row.qty < 0) continue
 
         const rule = _findMatchingRule(row.item_code)
         if (!rule) {
@@ -433,7 +460,7 @@ export function useDiscountRules({ items, priceList, lookupItemInCache, pauseRul
           continue
         }
 
-        const { freeRows, discount } = _buildResult(row, rule)
+        const { freeRows, discount } = _runRule(row, rule)
         _applyDiscount(row, discount)
         if (freeRows.length) {
           items.value.splice(i + 1 + offset, 0, ...freeRows.map(r => ({
