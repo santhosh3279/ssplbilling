@@ -1448,9 +1448,87 @@ def send_chat_file(chat_id, file_base64, mimetype, filename, caption="", session
 MAX_FORWARD_TARGETS = 5
 
 
+# When the gateway's own forward crashes, the content is sent again through these routes
+# (message type -> send route, log type). Anything else with a body goes as text.
+RESEND_MEDIA_ROUTES = {
+	"image": ("send-image", "Image"),
+	"video": ("send-video", "Document"),
+	"audio": ("send-audio", "Document"),
+	"voice": ("send-audio", "Document"),
+	"ptt": ("send-audio", "Document"),
+	"document": ("send-document", "Document"),
+	"sticker": ("send-sticker", "Document"),
+}
+VOICE_TYPES = ("voice", "ptt")
+
+
+class ResendError(Exception):
+	"""The forwarded message's content could not be rebuilt to send again."""
+
+
+def _source_message(settings, row, chat_id, message_id, depth):
+	"""The message being forwarded, read back from the source chat, or None."""
+	limit = min(max(depth, 1), 100)
+	try:
+		history = _call(settings, "GET", _chat_path(row, chat_id, "/history"), params={"limit": limit})
+		found = next((m for m in history if m.get("id") == message_id), None)
+		return _live_message(found) if found else None
+	except OpenWAError as e:
+		# Baileys reads no live history; fall back to what OpenWA stored
+		if e.status_code != 501:
+			raise
+	stored = _call(
+		settings,
+		"GET",
+		f"/sessions/{row.session_id}/messages",
+		params={"chatId": chat_id, "limit": 100, "orderBy": "timestamp", "inlineMedia": "false"},
+	)
+	found = next(
+		(m for m in stored.get("messages") or [] if (m.get("waMessageId") or m.get("id")) == message_id), None
+	)
+	return _stored_message(found) if found else None
+
+
+def _resend_payload(settings, row, chat_id, message_id, depth):
+	"""(route, log type, body without chatId, log content) to send the message's content again.
+
+	Raises OpenWAError or ResendError when the content cannot be rebuilt.
+	"""
+	source = _source_message(settings, row, chat_id, message_id, depth)
+	if not source:
+		raise ResendError(_("The message to forward is no longer in the chat history"))
+	text = source["body"]
+	if source["type"] not in RESEND_MEDIA_ROUTES:
+		if not text:
+			raise ResendError(_("This kind of message cannot be forwarded"))
+		return "send-text", "Text", {"text": text[:4096]}, text
+	media = _stored_media(settings, row, chat_id, message_id) or _live_media(
+		settings, row, chat_id, message_id, depth
+	)
+	if not media:
+		raise ResendError(_("The attachment could not be downloaded to forward it"))
+	route, log_type = RESEND_MEDIA_ROUTES[source["type"]]
+	filename = media["filename"] or (source["media"] or {}).get("filename") or f"whatsapp-{source['type']}"
+	body = {
+		"base64": media["data"],
+		"mimetype": media["mimetype"] or (source["media"] or {}).get("mimetype") or "application/octet-stream",
+		"filename": filename,
+	}
+	if text and source["type"] in ("image", "video", "document"):
+		body["caption"] = text[:1024]
+	if source["type"] in VOICE_TYPES:
+		body["ptt"] = True
+	return route, log_type, body, text or filename
+
+
 @frappe.whitelist(methods=["POST"])
-def forward_chat_message(from_chat_id, message_id, to_chat_ids, session_id=None):
-	"""Forward one message to up to five chats; returns {chat_id: error or ""} per target."""
+def forward_chat_message(from_chat_id, message_id, to_chat_ids, depth=0, session_id=None):
+	"""Forward one message to up to five chats; returns {chat_id: error or ""} per target.
+
+	If OpenWA's forward crashes (a 5xx from inside the WhatsApp engine), the message's text or
+	attachment is sent again instead; it then arrives without WhatsApp's "Forwarded" label.
+	`depth` is the message's position from the newest in the open thread (1 = newest).
+	"""
 	_require_chat_user()
 	targets = frappe.parse_json(to_chat_ids) if isinstance(to_chat_ids, str) else to_chat_ids
 	targets = list(dict.fromkeys(t for t in targets or [] if t))
@@ -1459,17 +1537,50 @@ def forward_chat_message(from_chat_id, message_id, to_chat_ids, session_id=None)
 	if len(targets) > MAX_FORWARD_TARGETS:
 		frappe.throw(_("You can forward to at most {0} chats at once").format(MAX_FORWARD_TARGETS))
 	settings, row = _chat_settings(session_id)
+	depth = frappe.utils.cint(depth)
 	results = {}
+	# Once the native forward crashes it will crash for every target, so skip it after that
+	native_ok = True
+	resend = None
 	for chat_id in targets:
 		phone = chat_id.split("@")[0]
-		body = {"fromChatId": from_chat_id, "toChatId": chat_id, "messageId": message_id}
+		if native_ok:
+			body = {"fromChatId": from_chat_id, "toChatId": chat_id, "messageId": message_id}
+			try:
+				result = _call(settings, "POST", f"/sessions/{row.session_id}/messages/forward", json=body)
+				_log(phone, "Text", f"Forwarded {message_id}", "Sent", message_id=result.get("messageId"))
+				results[chat_id] = ""
+				continue
+			except OpenWAError as e:
+				if e.status_code < 500:
+					_log(phone, "Text", f"Forwarded {message_id}", "Failed", error=str(e))
+					results[chat_id] = str(e)
+					continue
+				native_ok = False
 		try:
-			result = _call(settings, "POST", f"/sessions/{row.session_id}/messages/forward", json=body)
+			resend = resend or _resend_payload(settings, row, from_chat_id, message_id, max(depth, 1))
+		except (OpenWAError, ResendError) as e:
+			# The content is the same for every target, so the rest fail alike
+			error = str(e) or _("The message could not be forwarded")
+			for t in targets:
+				if t not in results:
+					_log(t.split("@")[0], "Text", f"Forwarded {message_id}", "Failed", error=error)
+					results[t] = error
+			break
+		route, log_type, payload, content = resend
+		try:
+			result = _call(
+				settings,
+				"POST",
+				f"/sessions/{row.session_id}/messages/{route}",
+				json={"chatId": chat_id, **payload},
+				timeout=90,
+			)
 		except OpenWAError as e:
-			_log(phone, "Text", f"Forwarded {message_id}", "Failed", error=str(e))
+			_log(phone, log_type, f"Forwarded (resent): {content}", "Failed", error=str(e))
 			results[chat_id] = str(e)
 			continue
-		_log(phone, "Text", f"Forwarded {message_id}", "Sent", message_id=result.get("messageId"))
+		_log(phone, log_type, f"Forwarded (resent): {content}", "Sent", message_id=result.get("messageId"))
 		results[chat_id] = ""
 	if all(results.values()):
 		frappe.db.commit()

@@ -768,11 +768,14 @@ async function sendForward() {
   if (!m || !active.value || !forwardPicks.value.length || forwardBusy.value) return
   forwardBusy.value = true
   const targets = [...forwardPicks.value]
+  // Lets the server find the message again if it has to resend it instead of forwarding
+  const i = messages.value.findIndex((x) => x.id === m.id)
   try {
     const results = await frappePost(`${API}.forward_chat_message`, {
       from_chat_id: active.value.id,
       message_id: m.id,
       to_chat_ids: JSON.stringify(targets),
+      depth: i < 0 ? messages.value.length : messages.value.length - i,
       session_id: getWhatsAppSessionId(),
     }, { silent: true })
     const failed = targets.filter((id) => results?.[id])
