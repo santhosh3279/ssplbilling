@@ -31,7 +31,7 @@
       <div v-if="isFullscreen" class="fixed inset-0 z-50 bg-slate-50 text-slate-900 font-sans overflow-hidden select-none">
         
         <!-- Main Cards Area (Circular slider layout - now stays above footer controls) -->
-        <main class="absolute inset-0 w-full h-screen flex items-center justify-center overflow-hidden">
+        <main v-if="slideMode === 'carousel'" class="absolute inset-0 w-full h-screen flex items-center justify-center overflow-hidden">
           <div class="relative w-full h-screen flex items-center justify-center">
             <div
               v-for="(item, idx) in offer.items"
@@ -119,6 +119,72 @@
               </div>
             </div>
           </div>
+        </main>
+
+        <!-- Spotlight layout: one item at a time, image left, details right -->
+        <main
+          v-else
+          class="absolute inset-0 flex items-stretch px-[4vw] transition-all duration-500"
+          :class="showControls ? 'pt-[10vh] pb-[13vh]' : 'pt-[4vh] pb-[4vh]'"
+        >
+          <Transition name="spotlight" mode="out-in">
+            <div
+              v-if="activeItem"
+              :key="activeItem.itemcode"
+              class="flex w-full min-h-0 gap-[3vw] rounded-3xl bg-white border border-slate-200 shadow-2xl p-[2.5vw]"
+            >
+              <div class="flex-[1.2] min-w-0 min-h-0 flex items-center justify-center rounded-2xl bg-slate-50 border border-slate-200 p-[2vw]">
+                <img
+                  v-if="activeItem.image"
+                  :src="activeItem.image"
+                  :alt="activeItem.itemname"
+                  class="max-w-full object-contain transition-all duration-500"
+                  :class="showControls ? 'max-h-[62vh]' : 'max-h-[80vh]'"
+                />
+                <div v-else class="flex flex-col items-center justify-center text-center select-none">
+                  <div class="text-[8vw] leading-none mb-3">📦</div>
+                  <span class="text-sm font-bold uppercase tracking-wider text-slate-600">No Image Available</span>
+                </div>
+              </div>
+
+              <div class="flex-1 min-w-0 flex flex-col justify-center gap-[3vh]">
+                <div v-if="activeItem.discount_type && activeItem.discount_desc" class="rounded-2xl overflow-hidden border border-amber-500/40 shadow-lg">
+                  <div class="bg-amber-500 text-black text-sm font-black uppercase tracking-wider px-4 py-1">Active Offer</div>
+                  <div class="bg-amber-50 px-4 py-3 flex flex-col gap-1 text-[2vw] leading-tight font-semibold text-amber-900 break-words">
+                    <div v-for="(line, lIdx) in activeItem.discount_desc.split(' | ')" :key="lIdx">{{ line }}</div>
+                  </div>
+                </div>
+
+                <h2 class="text-[3.2vw] font-black leading-tight text-slate-900 line-clamp-3 break-words">
+                  {{ activeItem.itemname }}
+                </h2>
+
+                <table v-if="activeItem.barcode_prices && activeItem.barcode_prices.length" class="w-full text-left text-[2vw] border-collapse">
+                  <tbody class="divide-y divide-slate-200">
+                    <tr v-for="bp in activeItem.barcode_prices" :key="bp.barcode">
+                      <td class="py-1 pr-3 font-mono font-bold text-slate-800">
+                        {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-600 font-normal text-[1.4vw] font-sans">({{ bp.uom }})</span>
+                      </td>
+                      <td
+                        v-for="pl in offer.price_lists"
+                        :key="pl.price_list"
+                        class="py-1 px-1 font-mono text-right font-bold tracking-widest text-indigo-700"
+                      >
+                        <span v-if="bp.prices[pl.price_list] !== undefined && bp.prices[pl.price_list] !== null">
+                          {{ encryptPrice(bp.prices[pl.price_list]) }}
+                        </span>
+                        <span v-else class="text-slate-600 font-normal">—</span>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <p v-if="nextSpotlightItem" class="text-[1.2vw] font-semibold text-slate-600 truncate">
+                  Up next: <span class="text-slate-900">{{ nextSpotlightItem.itemname }}</span>
+                </p>
+              </div>
+            </div>
+          </Transition>
         </main>
 
         <!-- Header -->
@@ -356,10 +422,18 @@
           <span>🔄 Refresh (R)</span>
         </button>
 
+        <!-- Spotlight Slideshow Button -->
+        <button
+          @click="enterPresentationMode('spotlight')"
+          class="flex items-center gap-3 rounded-2xl bg-fuchsia-600 hover:bg-fuchsia-700 px-8 py-5 text-xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-fuchsia-300 focus:bg-fuchsia-700 focus:scale-105 transition-all duration-300 border border-fuchsia-500"
+        >
+          <span>🖼️ Spotlight Slideshow</span>
+        </button>
+
         <!-- Play Slideshow Button -->
         <button
           ref="playButtonRef"
-          @click="enterPresentationMode"
+          @click="enterPresentationMode('carousel')"
           class="flex items-center gap-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 px-8 py-5 text-xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-indigo-300 focus:bg-indigo-700 focus:scale-105 transition-all duration-300 border border-indigo-500"
         >
           <span>📺 Play Slideshow</span>
@@ -487,6 +561,14 @@ const goHomeButtonRef = ref(null)
 
 const showControls = ref(true)
 let controlsTimeout = null
+
+// Fullscreen layout: 'carousel' (multi-card slider) or 'spotlight' (one big item).
+const slideMode = ref('carousel')
+const activeItem = computed(() => offer.value?.items?.[activeIndex.value] || null)
+const nextSpotlightItem = computed(() => {
+  const items = offer.value?.items || []
+  return items.length > 1 ? items[(activeIndex.value + 1) % items.length] : null
+})
 
 function resetControlsTimer() {
   showControls.value = true
@@ -715,7 +797,8 @@ function togglePause() {
   }
 }
 
-function enterPresentationMode() {
+function enterPresentationMode(mode = 'carousel') {
+  slideMode.value = mode === 'spotlight' ? 'spotlight' : 'carousel'
   const selectedItem = document.activeElement?.closest?.('[data-catalogue-item]')
   const startIndex = Number(selectedItem?.getAttribute('data-catalogue-item')) || 0
   const docEl = document.documentElement
@@ -783,6 +866,7 @@ async function loadOffer(silent = false) {
       // This page shows plain item cards, so each template row is shown as its variants.
       res.items = res.items.flatMap(item => item.is_template ? item.variants : [item])
       offer.value = res
+      if (activeIndex.value >= res.items.length) activeIndex.value = 0
       document.title = `${res.heading} | Deals`
       startTimer()
       if (!silent) {
@@ -1075,6 +1159,19 @@ onBeforeUnmount(() => {
 :deep(button:focus-visible), :deep(a:focus-visible), :deep(input:focus-visible), :deep(select:focus-visible), [data-catalogue-item]:focus {
   outline: 3px solid var(--color-info, #818cf8);
   outline-offset: 3px;
+}
+
+.spotlight-enter-active,
+.spotlight-leave-active {
+  transition: opacity 0.4s ease, transform 0.4s ease;
+}
+.spotlight-enter-from {
+  opacity: 0;
+  transform: translateX(4vw);
+}
+.spotlight-leave-to {
+  opacity: 0;
+  transform: translateX(-4vw);
 }
 
 /* Core stylesheet variables integrated */
