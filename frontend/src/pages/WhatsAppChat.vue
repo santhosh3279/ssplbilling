@@ -194,8 +194,8 @@
                 <button
                   v-if="INLINE_TYPES.has(m.type) && mayPrint(m)"
                   type="button"
-                  class="shrink-0 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-surface-raised)] text-sm text-[var(--color-text-muted)] hover:text-[var(--color-text)] disabled:opacity-50"
-                  :class="mediaBusy[m.id] && 'animate-pulse'"
+                  class="shrink-0 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-surface-raised)] text-sm text-[var(--color-text-muted)] transition-opacity hover:text-[var(--color-text)] focus:opacity-100 group-hover:opacity-100"
+                  :class="mediaBusy[m.id] ? 'animate-pulse opacity-100' : 'opacity-0'"
                   :disabled="!!mediaBusy[m.id]"
                   title="Print"
                   @click="printMedia(m, i)"
