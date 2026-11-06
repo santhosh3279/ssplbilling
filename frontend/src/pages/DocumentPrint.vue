@@ -4,9 +4,9 @@
       <div class="flex items-center gap-4">
         <button
           class="rounded-lg px-3 py-1.5 text-sm font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
-          @click="router.push('/')"
+          @click="goBack"
         >
-          &larr; Dashboard
+          &larr; {{ returnTo ? returnTo.label : 'Dashboard' }}
         </button>
         <div>
           <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Document Print</h1>
@@ -144,6 +144,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { session } from '../session.js'
+import { takePendingPrint } from '../printHandoff.js'
 
 const router = useRouter()
 
@@ -163,6 +164,12 @@ const copies = ref(1)
 const printing = ref(false)
 const error = ref('')
 const success = ref('')
+// Set when another page (WhatsApp Chat) sent the file here; Back / Esc return there
+const returnTo = ref(null)
+
+function goBack() {
+  router.push(returnTo.value?.path || '/')
+}
 
 const PAGE_MODES = [
   { id: 'all', label: 'All' },
@@ -356,7 +363,7 @@ async function sendPrint() {
 function onKey(e) {
   if (e.key === 'Escape') {
     e.preventDefault()
-    router.push('/')
+    goBack()
   } else if (e.key === 'F2') {
     e.preventDefault()
     fileInput.value?.click()
@@ -367,6 +374,11 @@ function onKey(e) {
 }
 
 onMounted(() => {
+  const handoff = takePendingPrint()
+  if (handoff) {
+    returnTo.value = handoff.returnTo || null
+    setFile(handoff.file)
+  }
   loadPrinters()
   window.addEventListener('keydown', onKey)
 })

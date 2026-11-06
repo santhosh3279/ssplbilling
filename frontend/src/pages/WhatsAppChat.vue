@@ -170,6 +170,15 @@
                     >
                       {{ mediaBusy[m.id] === 'download' ? 'Loading…' : '⬇ Download' }}
                     </button>
+                    <button
+                      v-if="mayPrint(m)"
+                      type="button"
+                      class="rounded-md bg-[var(--color-surface-raised)] px-2 py-0.5 text-xs font-semibold hover:bg-[var(--color-info)]/20 disabled:opacity-50"
+                      :disabled="!!mediaBusy[m.id]"
+                      @click="printMedia(m, i)"
+                    >
+                      {{ mediaBusy[m.id] === 'print' ? 'Loading…' : '🖨 Print' }}
+                    </button>
                   </div>
                   <div v-if="m.body" class="whitespace-pre-wrap break-words" :class="INLINE_TYPES.has(m.type) && 'px-2 pt-1'">{{ m.body }}</div>
                   <div class="mt-0.5 text-right text-[10px] text-[var(--color-text-muted)]" :class="INLINE_TYPES.has(m.type) && 'px-1.5'">
@@ -182,6 +191,15 @@
                     >{{ TICKS[m.status] }}</span>
                   </div>
                 </div>
+                <button
+                  v-if="INLINE_TYPES.has(m.type) && mayPrint(m)"
+                  type="button"
+                  class="shrink-0 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--color-surface-raised)] text-sm text-[var(--color-text-muted)] opacity-0 transition-opacity hover:text-[var(--color-text)] focus:opacity-100 group-hover:opacity-100 disabled:opacity-50"
+                  :class="mediaBusy[m.id] && 'animate-pulse opacity-100'"
+                  :disabled="!!mediaBusy[m.id]"
+                  title="Print"
+                  @click="printMedia(m, i)"
+                >🖨</button>
                 <button
                   v-if="canForward(m)"
                   type="button"
@@ -292,6 +310,11 @@
       <div class="mx-auto flex w-full max-w-5xl shrink-0 items-center justify-between gap-3 pb-3 text-white">
         <span class="truncate text-sm font-semibold">{{ viewer.filename }}</span>
         <div class="flex shrink-0 gap-2">
+          <button
+            v-if="canPrintDocs && (viewer.kind === 'image' || viewer.kind === 'pdf')"
+            class="rounded-lg bg-white/15 px-3 py-1.5 text-sm font-bold hover:bg-white/25"
+            @click="printFile(viewer)"
+          >🖨 Print</button>
           <button class="rounded-lg bg-[#25D366] px-3 py-1.5 text-sm font-bold text-black" @click="saveFile(viewer)">⬇ Download</button>
           <button class="rounded-lg bg-white/15 px-3 py-1.5 text-sm font-bold hover:bg-white/25" @click="viewer = null">✕ Close</button>
         </div>
@@ -311,9 +334,11 @@
 
 <script setup>
 import { ref, shallowReactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { getWhatsAppSessionId } from '../session.js'
+import { canAccessRoute } from '../composables/usePermission.js'
+import { sendToDocumentPrint } from '../printHandoff.js'
 
 const API = 'ssplbilling.api.whatsapp_api'
 const CHATS_POLL_MS = 15000
@@ -334,6 +359,8 @@ const INLINE_CONCURRENCY = 2
 const MAX_FORWARD = 5
 // Nothing left to forward in these
 const UNFORWARDABLE_TYPES = new Set(['revoked', 'call'])
+// Document Print turns images into PDF by file extension, so images need one
+const IMAGE_EXT_RE = /\.(jpe?g|png|webp|bmp|gif|tiff?)$/i
 // Archived attachments come back without a type, so recognise the common ones by their first bytes
 const MAGIC = [
   ['%PDF', 'application/pdf'],
@@ -348,6 +375,9 @@ const EXTENSIONS = {
 }
 
 const router = useRouter()
+const route = useRoute()
+// Print hands the attachment to Document Print, so only users who can open that page see it
+const canPrintDocs = canAccessRoute('DocumentPrint')
 
 const chats = ref([])
 const search = ref('')
@@ -493,7 +523,8 @@ async function fetchMedia(m, i) {
   const bytes = Uint8Array.from(atob(data), (c) => c.charCodeAt(0))
   const mimetype = json.message.mimetype || sniffMimetype(bytes)
   const name = filename || m.media?.filename || `whatsapp-${m.type}-${m.timestamp || Date.now()}.${EXTENSIONS[mimetype] || 'bin'}`
-  const file = { url: URL.createObjectURL(new Blob([bytes], { type: mimetype })), mimetype, filename: name, kind: previewKind(mimetype) }
+  const blob = new Blob([bytes], { type: mimetype })
+  const file = { url: URL.createObjectURL(blob), blob, mimetype, filename: name, kind: previewKind(mimetype) }
   // The operator may have switched chats while this downloaded
   if (active.value?.id !== chatId) {
     URL.revokeObjectURL(file.url)
@@ -508,8 +539,8 @@ async function withMedia(m, i, mode, fn) {
   mediaBusy.value = { ...mediaBusy.value, [m.id]: mode }
   try {
     const file = await fetchMedia(m, i)
-    if (file) fn(file)
     error.value = ''
+    if (file) fn(file)
   } catch (e) {
     error.value = e.message || String(e)
   } finally {
@@ -523,6 +554,34 @@ function saveFile(file) {
   a.href = file.url
   a.download = file.filename
   a.click()
+}
+
+// Images always print; documents only when PDF or image, or when the type is not known yet
+function mayPrint(m) {
+  if (!canPrintDocs) return false
+  if (m.type === 'image') return true
+  if (m.type !== 'document') return false
+  const mime = m.media?.mimetype || ''
+  return !mime || mime === 'application/pdf' || mime.startsWith('image/')
+}
+
+function printFile(file) {
+  if (file.kind !== 'image' && file.kind !== 'pdf') {
+    error.value = `${file.filename} is not a PDF or image, so it cannot be printed`
+    return
+  }
+  let name = file.filename
+  if (file.kind === 'image' && !IMAGE_EXT_RE.test(name)) name += `.${EXTENSIONS[file.mimetype] || 'jpg'}`
+  else if (file.kind === 'pdf' && !/\.pdf$/i.test(name)) name += '.pdf'
+  const chatId = active.value?.id
+  sendToDocumentPrint(router, new File([file.blob], name, { type: file.mimetype }), {
+    path: chatId ? `/whatsapp-chat?chat=${encodeURIComponent(chatId)}` : '/whatsapp-chat',
+    label: 'WhatsApp Chat',
+  })
+}
+
+function printMedia(m, i) {
+  return withMedia(m, i, 'print', printFile)
 }
 
 function previewMedia(m, i) {
@@ -817,6 +876,13 @@ onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
   await loadChats()
   scheduleChatsPoll()
+  // Coming back from Document Print reopens the chat the print was sent from
+  const back = route.query.chat
+  if (typeof back === 'string' && back) {
+    router.replace({ query: {} })
+    const chat = chats.value.find((c) => c.id === back)
+    openChat(chat || { id: back, name: '+' + back.split('@')[0], is_group: back.endsWith('@g.us'), unread: 0, timestamp: 0, last_message: '', pinned: false })
+  }
 })
 
 onUnmounted(() => {
