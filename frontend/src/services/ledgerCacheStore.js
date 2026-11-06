@@ -30,7 +30,7 @@ function done(request) {
   })
 }
 
-/** Snapshot: { context, syncTs, syncedAt, lastSync, ledgers (JSON string), partyLinks } */
+/** Snapshot: { context, syncTs, syncedAt, lastSync, ledgers (JSON string), partyLinks (JSON string) } */
 export async function readLedgerSnapshot() {
   const db = await openDb()
   return (await done(db.transaction(STORE).objectStore(STORE).get(KEY))) || null

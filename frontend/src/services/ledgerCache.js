@@ -37,7 +37,9 @@ async function loadFromStorage() {
     if (snap && snap.context === currentContext()) {
       cacheContext.value = snap.context
       ledgers.value = JSON.parse(snap.ledgers || '[]')
-      partyLinks.value = snap.partyLinks || {}
+      // Older snapshots stored partyLinks as an object; newer ones as a JSON string.
+      partyLinks.value =
+        typeof snap.partyLinks === 'string' ? JSON.parse(snap.partyLinks) : snap.partyLinks || {}
       lastSync.value = snap.lastSync || 0
       syncTs = snap.syncTs || null
       syncedAt = snap.syncedAt || 0
@@ -72,7 +74,9 @@ function saveToStorage() {
     syncedAt,
     lastSync: lastSync.value,
     ledgers: JSON.stringify(toRaw(ledgers.value)),
-    partyLinks: toRaw(partyLinks.value)
+    // Stringified too: applyDelta spreads partyLinks.value, so its nested values are reactive
+    // proxies that toRaw (root only) leaves in place and IndexedDB cannot structured-clone.
+    partyLinks: JSON.stringify(toRaw(partyLinks.value))
   }).catch(e => console.warn('[ledgerCache] Save to IndexedDB failed:', e))
 }
 
