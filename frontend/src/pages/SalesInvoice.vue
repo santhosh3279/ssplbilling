@@ -39,6 +39,8 @@
       :income-account="incomeAccount"
       :sidebar-date="sidebarDate"
       :sidebar-items="recentInvoices"
+      :selected-sidebar-item-name="isSaved ? invoiceNo : ''"
+      :focus-selected-sidebar-item="false"
       :sidebar-search="sidebarSearch"
       :sidebar-series="sidebarSeries"
       :available-series="availableSeries"

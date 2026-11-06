@@ -728,6 +728,8 @@ const props = defineProps({
   sidebarLoading: { type: Boolean, default: false },
   sidebarItems: { type: Array, default: () => [] },
   selectedSidebarItemName: { type: String, default: '' },
+  // false: only highlight and scroll to the selected bill, leave focus where it is
+  focusSelectedSidebarItem: { type: Boolean, default: true },
 
   showBottomLeft: { type: Boolean, default: true },
   showBottomMiddle: { type: Boolean, default: true },
@@ -926,7 +928,7 @@ watch(() => props.selectedSidebarItemName, (newVal) => {
     if (idx !== -1) {
       const el = sidebarItemRefs.get(idx)
       if (el) {
-        el.focus({ preventScroll: true })
+        if (props.focusSelectedSidebarItem) el.focus({ preventScroll: true })
         el.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
       }
     }
