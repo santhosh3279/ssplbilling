@@ -308,7 +308,7 @@
             </div>
           </div>
 
-        <!-- Right Column: Clock & MQTT Widgets -->
+        <!-- Right Column: Clock & Status Widgets -->
         <div class="flex-shrink-0 flex flex-col gap-4 w-[280px]">
 
           <!-- Clock -->
@@ -356,43 +356,6 @@
                 <span class="font-bold text-[var(--color-text)]">{{ icCreditsExpiry || '—' }}</span>
               </div>
             </div>
-          </div>
-
-          <!-- MQTT Server Status -->
-          <div class="bg-[var(--color-surface)] p-5 rounded-3xl border border-[var(--color-border)] shadow-xl flex flex-col gap-3">
-            <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-2">
-              <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.15em]">MQTT Server</span>
-              <span class="flex items-center gap-1.5 text-xs font-bold">
-                <span
-                  class="h-2.5 w-2.5 rounded-full"
-                  :class="isConnected ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)] animate-pulse' : 'bg-rose-500'"
-                ></span>
-                <span :class="isConnected ? 'text-emerald-500' : 'text-rose-500'">
-                  {{ isConnected ? 'Connected' : 'Disconnected' }}
-                </span>
-              </span>
-            </div>
-
-            <div class="text-xs space-y-1">
-              <div class="flex justify-between">
-                <span class="text-[var(--color-text-muted)]">Broker:</span>
-                <span class="font-mono font-bold text-[var(--color-text)] truncate max-w-[160px] text-right" :title="serverInfo.server">{{ serverInfo.server || 'N/A' }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-[var(--color-text-muted)]">Port:</span>
-                <span class="font-mono font-bold text-[var(--color-text)]">{{ serverInfo.port || 'N/A' }}</span>
-              </div>
-            </div>
-
-            <!-- Manual reconnect button -->
-            <button
-              v-if="!isConnected"
-              @click="handleMqttRefresh"
-              :disabled="isConnecting"
-              class="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:opacity-50 px-4 py-2.5 text-xs font-bold text-white transition active:scale-95 border border-amber-500 shadow-md focus:outline-none"
-            >
-              <span>{{ isConnecting ? '⏳ Connecting...' : '🔄 Reconnect MQTT' }}</span>
-            </button>
           </div>
 
           <!-- Live Sync Status -->
@@ -656,17 +619,10 @@ import { useShortcuts, isSubwindowActive } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole, isDevLicense } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 import { useTheme } from '../composables/useTheme'
-import { useMqtt } from '../composables/useMqtt'
 import { getFrappeSocket } from '../services/frappeSocket'
 import { APP_VERSION, APP_UPDATED } from '../version'
 
 const router = useRouter()
-
-const { isConnected, isConnecting, serverInfo, refreshConnection } = useMqtt()
-
-async function handleMqttRefresh() {
-  await refreshConnection()
-}
 
 // ==================== LIVE SYNC INDICATOR ====================
 const socketConnected = ref(false)
@@ -1602,7 +1558,6 @@ onMounted(async () => {
     refreshCompetitiveCache() // Competitive Items + pricelist percentages into IndexedDB
     ensureItemAttributeCache() // Item Attributes (Item Creation → Variants) into IndexedDB
   })
-  // MQTT status is fetched by App.vue's connectMqtt() on every page load (shared refs).
 
 })
 onUnmounted(() => {
