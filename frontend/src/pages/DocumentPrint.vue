@@ -73,6 +73,38 @@
           <input v-model.number="copies" type="number" min="1" :max="MAX_COPIES" :class="inputCls" />
         </div>
 
+        <div>
+          <label class="mb-1 flex items-center justify-between text-[10px] uppercase tracking-wider font-bold text-[var(--color-text-muted)]">
+            Pages
+            <span class="normal-case tracking-normal font-semibold">
+              <template v-if="countingPages">Counting…</template>
+              <template v-else-if="totalPages">{{ totalPages }} page{{ totalPages === 1 ? '' : 's' }} in file</template>
+            </span>
+          </label>
+          <div class="grid grid-cols-3 gap-1 rounded-lg bg-[var(--color-surface-raised)] p-1">
+            <button
+              v-for="m in PAGE_MODES"
+              :key="m.id"
+              class="rounded-md px-2 py-1.5 text-xs font-semibold transition-colors"
+              :class="pageMode === m.id
+                ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]'
+                : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+              @click="setPageMode(m.id)"
+            >
+              {{ m.label }}
+            </button>
+          </div>
+          <div v-if="pageMode === 'single'" class="mt-2">
+            <input v-model.number="pageFrom" type="number" min="1" :max="totalPages || undefined" placeholder="Page number" :class="inputCls" />
+          </div>
+          <div v-else-if="pageMode === 'range'" class="mt-2 flex items-center gap-2">
+            <input v-model.number="pageFrom" type="number" min="1" :max="totalPages || undefined" placeholder="From" :class="inputCls" />
+            <span class="text-xs text-[var(--color-text-muted)]">to</span>
+            <input v-model.number="pageTo" type="number" min="1" :max="totalPages || undefined" placeholder="To" :class="inputCls" />
+          </div>
+          <p v-if="pageError" class="mt-1 text-xs text-[var(--color-danger)]">{{ pageError }}</p>
+        </div>
+
         <button
           class="rounded-lg px-4 py-3 text-sm font-bold uppercase tracking-wider transition-all active:scale-95"
           :class="canPrint
@@ -132,8 +164,79 @@ const printing = ref(false)
 const error = ref('')
 const success = ref('')
 
+const PAGE_MODES = [
+  { id: 'all', label: 'All' },
+  { id: 'single', label: 'One page' },
+  { id: 'range', label: 'Range' },
+]
+const pageMode = ref('all')
+const pageFrom = ref(1)
+const pageTo = ref(1)
+const totalPages = ref(0)
+const countingPages = ref(false)
+
 const isPdf = computed(() => !!file.value && (file.value.type === 'application/pdf' || /\.pdf$/i.test(file.value.name)))
-const canPrint = computed(() => !!file.value && !!selectedPrinter.value && !printing.value)
+
+// [from, to] to send, or null for all pages
+const pageSelection = computed(() => {
+  if (pageMode.value === 'single') return [Number(pageFrom.value), Number(pageFrom.value)]
+  if (pageMode.value === 'range') return [Number(pageFrom.value), Number(pageTo.value)]
+  return null
+})
+const pageError = computed(() => {
+  const sel = pageSelection.value
+  if (!sel) return ''
+  const [from, to] = sel
+  if (!Number.isInteger(from) || !Number.isInteger(to) || from < 1 || to < 1) return 'Enter page numbers of 1 or more'
+  if (from > to) return 'From page must not be after To page'
+  if (totalPages.value && to > totalPages.value) return `File has only ${totalPages.value} page${totalPages.value === 1 ? '' : 's'}`
+  return ''
+})
+const canPrint = computed(() => !!file.value && !!selectedPrinter.value && !printing.value && !pageError.value)
+
+function setPageMode(mode) {
+  pageMode.value = mode
+  if (mode === 'range' && (!pageTo.value || pageTo.value < pageFrom.value)) {
+    pageTo.value = totalPages.value || pageFrom.value || 1
+  }
+}
+
+// Frappe errors carry the message in _server_messages (may contain HTML like <br>)
+async function postFile(method, fields) {
+  const body = new FormData()
+  body.append('file', file.value, file.value.name)
+  for (const [k, v] of Object.entries(fields)) body.append(k, v)
+  const res = await fetch(`/api/method/${method}`, {
+    method: 'POST',
+    headers: { 'X-Frappe-CSRF-Token': window.csrf_token ?? 'fetch' },
+    body,
+  })
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) {
+    let msg = `HTTP ${res.status} — ${res.statusText}`
+    try {
+      const server = JSON.parse(data._server_messages || '[]')
+      if (server.length) msg = JSON.parse(server[0]).message || msg
+    } catch { /* keep HTTP message */ }
+    throw new Error(msg.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, ''))
+  }
+  return data.message || {}
+}
+
+async function countPages() {
+  const current = file.value
+  totalPages.value = 0
+  if (!current) return
+  countingPages.value = true
+  try {
+    const r = await postFile('ssplbilling.api.document_print_api.count_pages', {})
+    if (file.value === current) totalPages.value = Number(r.total_pages) || 0
+  } catch (e) {
+    if (file.value === current) error.value = e.message || 'Could not read the PDF'
+  } finally {
+    if (file.value === current) countingPages.value = false
+  }
+}
 
 function formatSize(bytes) {
   if (bytes < 1024) return `${bytes} B`
@@ -157,6 +260,10 @@ function setFile(f) {
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
   file.value = f
   previewUrl.value = URL.createObjectURL(f)
+  pageMode.value = 'all'
+  pageFrom.value = 1
+  pageTo.value = 1
+  countPages()
 }
 
 function onPick(e) {
@@ -175,6 +282,9 @@ function clearFile() {
   previewUrl.value = ''
   success.value = ''
   error.value = ''
+  totalPages.value = 0
+  countingPages.value = false
+  pageMode.value = 'all'
 }
 
 // Printers the user is allowed in SSPL Printer Setting (wb-printer-records); empty list = all
@@ -220,28 +330,22 @@ async function sendPrint() {
   error.value = ''
   success.value = ''
   try {
-    const body = new FormData()
-    body.append('file', file.value, file.value.name)
-    body.append('printer', selectedPrinter.value)
-    body.append('copies', String(Math.max(1, Math.min(Number(copies.value) || 1, MAX_COPIES))))
-
-    const res = await fetch('/api/method/ssplbilling.api.document_print_api.print_uploaded_file', {
-      method: 'POST',
-      headers: { 'X-Frappe-CSRF-Token': window.csrf_token ?? 'fetch' },
-      body,
-    })
-    const data = await res.json().catch(() => ({}))
-    if (!res.ok) {
-      let msg = `HTTP ${res.status} — ${res.statusText}`
-      try {
-        const server = JSON.parse(data._server_messages || '[]')
-        if (server.length) msg = JSON.parse(server[0]).message || msg
-      } catch { /* keep HTTP message */ }
-      throw new Error(msg)
+    const fields = {
+      printer: selectedPrinter.value,
+      copies: String(Math.max(1, Math.min(Number(copies.value) || 1, MAX_COPIES))),
     }
-    const r = data.message || {}
+    const sel = pageSelection.value
+    if (sel) {
+      fields.page_from = String(sel[0])
+      fields.page_to = String(sel[1])
+    }
+    const r = await postFile('ssplbilling.api.document_print_api.print_uploaded_file', fields)
     try { localStorage.setItem('wb-document-printer', selectedPrinter.value) } catch { /* ignore */ }
-    success.value = `Sent ${r.copies || 1} cop${(r.copies || 1) === 1 ? 'y' : 'ies'} to ${r.printer || selectedPrinter.value}${r.cups_job_id ? ` — Job ${r.cups_job_id}` : ''}`
+    const n = r.copies || 1
+    const pages = sel
+      ? (sel[0] === sel[1] ? ` (page ${sel[0]})` : ` (pages ${sel[0]}–${sel[1]})`)
+      : (r.total_pages ? ` (all ${r.total_pages} page${r.total_pages === 1 ? '' : 's'})` : '')
+    success.value = `Sent ${n} cop${n === 1 ? 'y' : 'ies'}${pages} to ${r.printer || selectedPrinter.value}${r.cups_job_id ? ` — Job ${r.cups_job_id}` : ''}`
   } catch (e) {
     error.value = e.message || 'Print failed'
   } finally {
