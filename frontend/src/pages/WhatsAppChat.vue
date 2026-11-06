@@ -109,7 +109,7 @@
               </div>
               <div class="group flex items-center gap-1" :class="m.from_me && 'flex-row-reverse'">
                 <div
-                  class="max-w-[80%] rounded-xl text-sm"
+                  class="max-w-[80%] rounded-xl text-[1.09375rem] leading-snug"
                   :class="[
                     m.type === 'sticker' ? '' : m.from_me ? 'bg-[#25D366]/25 shadow-sm' : 'bg-[var(--color-surface)] shadow-sm',
                     INLINE_TYPES.has(m.type) ? 'p-1' : 'px-3 py-1.5',
