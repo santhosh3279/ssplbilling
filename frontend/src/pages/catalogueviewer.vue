@@ -56,7 +56,7 @@
           📦 Catalogues
         </div>
         <h1 class="text-xl md:text-3xl font-black tracking-tight leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-100 to-emerald-200">
-          Sundaram and Sons Catalogues
+          {{ companyName }} Catalogues
         </h1>
         <p class="text-[10px] md:text-xs text-slate-400 max-w-xl mx-auto font-medium">
           Select a catalogue below to view items on discount, barcodes, prices, and play slideshow presentations.
@@ -276,7 +276,7 @@
     <!-- Footer -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)]/50 py-6 px-6 text-center text-[10px] text-[var(--color-text-muted)] shrink-0 mt-auto">
       <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-        <span>© {{ serverCalendarDate().getFullYear() }} Sundaram and Sons Private Ltd.</span>
+        <span>© {{ serverCalendarDate().getFullYear() }} {{ companyName }}</span>
         <span>Keyboard Fast wholesale Billing system</span>
       </div>
     </footer>
@@ -326,6 +326,16 @@ function onCustomerApplied() {
 }
 
 const backUrl = ref('')
+const companyName = ref('Sundaram and Sons Private Ltd.')
+
+async function fetchCompanyName() {
+  try {
+    const name = await frappeGet('ssplbilling.api.offer_api.get_catalogue_company_name')
+    if (typeof name === 'string' && name.trim()) companyName.value = name.trim()
+  } catch (err) {
+    console.warn('[catalogueviewer] Company name load failed:', err)
+  }
+}
 
 async function fetchBackUrl() {
   try {
@@ -481,6 +491,7 @@ onMounted(() => {
   }).catch((err) => console.warn('[catalogueviewer] Session check failed:', err))
   fetchCatalogues()
   fetchBackUrl()
+  fetchCompanyName()
 })
 </script>
 

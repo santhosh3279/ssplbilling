@@ -27,6 +27,7 @@
   "online_order_warehouse",
   "online_order_cost_center",
   "catalogue_back_url",
+  "catalogue_company_name",
   "section_break_visible_accounts",
   "visible_accounts"
  ],
@@ -164,6 +165,13 @@
    "options": "URL"
   },
   {
+   "default": "Sundaram and Sons Private Ltd.",
+   "description": "Company name shown in the title and footer of the public catalogue page (/catalogueviewer).",
+   "fieldname": "catalogue_company_name",
+   "fieldtype": "Data",
+   "label": "Catalogue Company Name"
+  },
+  {
    "fieldname": "section_break_visible_accounts",
    "fieldtype": "Section Break",
    "label": "Visible Accounts"
@@ -177,7 +185,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-11-05 12:00:00.000000",
+ "modified": "2026-11-06 12:00:00.000000",
  "modified_by": "biller@gmail.com",
  "module": "Ssplbilling",
  "name": "SSPL Billing Settings",

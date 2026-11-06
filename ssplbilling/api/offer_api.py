@@ -638,6 +638,13 @@ def get_catalogue_back_url():
 
 
 @frappe.whitelist(allow_guest=True)
+def get_catalogue_company_name():
+	"""Company name for the public catalogue page title and footer (SSPL Billing Settings)."""
+	name = (frappe.db.get_single_value("SSPL Billing Settings", "catalogue_company_name") or "").strip()
+	return name or "Sundaram and Sons Private Ltd."
+
+
+@frappe.whitelist(allow_guest=True)
 def get_offer_print_templates():
 	"""Print Templates a user can pick for the catalogue export."""
 	if not print_template_doctype_exists():
