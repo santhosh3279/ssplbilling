@@ -489,7 +489,7 @@
       },
       {
         "id": "catelogue",
-        "name": "Catalogues"
+        "name": "TV Display"
       },
       {
         "id": "catalogueviewer",
@@ -1168,7 +1168,7 @@
       "path": "/displaycatalogue",
       "title": "Catalogue",
       "feature": "catelogue",
-      "feature_label": "Catalogues",
+      "feature_label": "TV Display",
       "bucket": "SSPL Special",
       "has_dashboard_tile": true,
       "category": "Sales & Customers"

@@ -950,7 +950,7 @@ const allTiles = [
   { id: 'item-barcode',       bucket: 'sspl',   name: 'Item Barcodes',         desc: 'Add barcodes to an item (mobile)',         icon: '🏷️', shortcut: ''    },
   { id: 'offer-display',      bucket: 'sspl',   name: 'Catalogue Editor',      desc: 'Manage catalogue lists and product images', icon: '🖼️', shortcut: ''    },
   { id: 'catalogueviewer',    bucket: 'sspl',   name: 'Catalogue Viewer',      desc: 'View published catalogues',                icon: '📖', shortcut: ''    },
-  { id: 'catelogue',          bucket: 'sspl',   name: 'Catalogues',            desc: 'View published catalogues',                icon: '📖', shortcut: ''    },
+  { id: 'catelogue',          bucket: 'sspl',   name: 'TV Display',            desc: 'Published catalogues on TV screen',           icon: '📖', shortcut: ''    },
   { id: 'hrms',               bucket: 'sspl',   name: 'HRMS Dashboard',        desc: 'Human Resource Management',                icon: '👥', shortcut: ''    },
   { id: 'essl-machines',      bucket: 'sspl',   name: 'eSSL Machines',         desc: 'Attendance devices and their stores',      icon: '🖥️', shortcut: ''    },
   { id: 'create-user',        bucket: 'sspl',   name: 'Create User',           desc: 'Website login for a customer',             icon: '👤', shortcut: ''    },
