@@ -301,6 +301,17 @@
       </div>
     </div>
 
+    <!-- Document Print window -->
+    <div
+      v-if="printTarget"
+      class="fixed inset-0 z-[60] flex bg-black/60 p-2 md:p-6"
+      @click.self="printTarget = null"
+    >
+      <div class="mx-auto h-full w-full max-w-6xl overflow-hidden rounded-xl shadow-xl">
+        <DocumentPrint embedded :initial-file="printTarget" @close="printTarget = null" />
+      </div>
+    </div>
+
     <!-- Attachment preview -->
     <div
       v-if="viewer"
@@ -333,12 +344,13 @@
 </template>
 
 <script setup>
-import { ref, shallowReactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, shallowReactive, computed, nextTick, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
+import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { getWhatsAppSessionId } from '../session.js'
 import { canAccessRoute } from '../composables/usePermission.js'
-import { sendToDocumentPrint } from '../printHandoff.js'
+
+const DocumentPrint = defineAsyncComponent(() => import('./DocumentPrint.vue'))
 
 const API = 'ssplbilling.api.whatsapp_api'
 const CHATS_POLL_MS = 15000
@@ -375,7 +387,6 @@ const EXTENSIONS = {
 }
 
 const router = useRouter()
-const route = useRoute()
 // Print hands the attachment to Document Print, so only users who can open that page see it
 const canPrintDocs = canAccessRoute('DocumentPrint')
 
@@ -407,6 +418,8 @@ const forwardPicks = ref([])
 const forwardBusy = ref(false)
 const forwardError = ref('')
 const forwardSearchEl = ref(null)
+// File open in the Document Print window, or null
+const printTarget = ref(null)
 
 let chatsTimer = null
 let threadTimer = null
@@ -573,11 +586,7 @@ function printFile(file) {
   let name = file.filename
   if (file.kind === 'image' && !IMAGE_EXT_RE.test(name)) name += `.${EXTENSIONS[file.mimetype] || 'jpg'}`
   else if (file.kind === 'pdf' && !/\.pdf$/i.test(name)) name += '.pdf'
-  const chatId = active.value?.id
-  sendToDocumentPrint(router, new File([file.blob], name, { type: file.mimetype }), {
-    path: chatId ? `/whatsapp-chat?chat=${encodeURIComponent(chatId)}` : '/whatsapp-chat',
-    label: 'WhatsApp Chat',
-  })
+  printTarget.value = new File([file.blob], name, { type: file.mimetype })
 }
 
 function printMedia(m, i) {
@@ -866,7 +875,8 @@ function scheduleChatsPoll() {
 }
 
 function onKeydown(e) {
-  if (e.key !== 'Escape') return
+  // Document Print handles its own Esc (closes its window)
+  if (e.key !== 'Escape' || printTarget.value) return
   if (forwarding.value) closeForward()
   else if (viewer.value) viewer.value = null
   else if (active.value) closeChat()
@@ -876,13 +886,6 @@ onMounted(async () => {
   window.addEventListener('keydown', onKeydown)
   await loadChats()
   scheduleChatsPoll()
-  // Coming back from Document Print reopens the chat the print was sent from
-  const back = route.query.chat
-  if (typeof back === 'string' && back) {
-    router.replace({ query: {} })
-    const chat = chats.value.find((c) => c.id === back)
-    openChat(chat || { id: back, name: '+' + back.split('@')[0], is_group: back.endsWith('@g.us'), unread: 0, timestamp: 0, last_message: '', pinned: false })
-  }
 })
 
 onUnmounted(() => {

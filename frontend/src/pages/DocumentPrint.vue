@@ -1,12 +1,12 @@
 <template>
-  <div class="flex h-screen flex-col bg-[var(--color-bg)] overflow-hidden">
+  <div class="flex flex-col bg-[var(--color-bg)] overflow-hidden" :class="embedded ? 'h-full' : 'h-screen'">
     <header class="shrink-0 flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-3">
       <div class="flex items-center gap-4">
         <button
           class="rounded-lg px-3 py-1.5 text-sm font-semibold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors"
           @click="goBack"
         >
-          &larr; {{ returnTo ? returnTo.label : 'Dashboard' }}
+          {{ embedded ? '✕ Close' : '← Dashboard' }}
         </button>
         <div>
           <h1 class="text-lg font-bold text-[var(--color-text)] uppercase tracking-wider">Document Print</h1>
@@ -16,7 +16,7 @@
       <span class="hidden sm:inline text-xs text-[var(--color-text-muted)]">
         <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[var(--color-text)]">F2</kbd> Choose file
         <kbd class="ml-2 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[var(--color-text)]">F8</kbd> Print
-        <kbd class="ml-2 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[var(--color-text)]">Esc</kbd> Back
+        <kbd class="ml-2 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 py-0.5 font-mono text-[var(--color-text)]">Esc</kbd> {{ embedded ? 'Close' : 'Back' }}
       </span>
     </header>
 
@@ -144,7 +144,6 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { session } from '../session.js'
-import { takePendingPrint } from '../printHandoff.js'
 
 const router = useRouter()
 
@@ -164,11 +163,16 @@ const copies = ref(1)
 const printing = ref(false)
 const error = ref('')
 const success = ref('')
-// Set when another page (WhatsApp Chat) sent the file here; Back / Esc return there
-const returnTo = ref(null)
+// Embedded: opened as a window over another page (WhatsApp Chat) with its file already loaded
+const props = defineProps({
+  embedded: { type: Boolean, default: false },
+  initialFile: { type: Object, default: null },
+})
+const emit = defineEmits(['close'])
 
 function goBack() {
-  router.push(returnTo.value?.path || '/')
+  if (props.embedded) emit('close')
+  else router.push('/')
 }
 
 const PAGE_MODES = [
@@ -374,11 +378,7 @@ function onKey(e) {
 }
 
 onMounted(() => {
-  const handoff = takePendingPrint()
-  if (handoff) {
-    returnTo.value = handoff.returnTo || null
-    setFile(handoff.file)
-  }
+  if (props.initialFile) setFile(props.initialFile)
   loadPrinters()
   window.addEventListener('keydown', onKey)
 })
