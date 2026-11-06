@@ -881,6 +881,9 @@ def get_ic_api_credits():
 	import requests
 	from frappe.utils.password import get_decrypted_password
 
+	if "india_compliance" not in frappe.get_installed_apps():
+		return {"success": False, "not_configured": True, "error": "India Compliance not installed"}
+
 	try:
 		api_secret = get_decrypted_password(
 			"GST Settings",
@@ -892,7 +895,12 @@ def get_ic_api_credits():
 			api_secret = frappe.conf.get("ic_api_secret")
 
 		if not api_secret:
-			return {"success": False, "error": "API Secret not configured in GST Settings"}
+			# Not logged in to India Compliance: the dashboard hides the credits card.
+			return {
+				"success": False,
+				"not_configured": True,
+				"error": "API Secret not configured in GST Settings",
+			}
 
 		headers = {
 			"Content-Type": "application/json",

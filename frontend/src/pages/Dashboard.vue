@@ -319,7 +319,7 @@
           </div>
 
           <!-- India Compliance API Credits Card -->
-          <div v-if="isActualAdmin" class="bg-[var(--color-surface)] p-5 rounded-3xl border border-[var(--color-border)] shadow-xl flex flex-col gap-3">
+          <div v-if="isActualAdmin && icConfigured" class="bg-[var(--color-surface)] p-5 rounded-3xl border border-[var(--color-border)] shadow-xl flex flex-col gap-3">
             <div class="flex items-center justify-between border-b border-[var(--color-border)]/50 pb-2">
               <span class="text-[10px] font-bold text-[var(--color-text-muted)] uppercase tracking-[0.15em]">GST API Credits</span>
               <button
@@ -730,6 +730,8 @@ const icCreditsError = ref('')
 const icCreditsBalance = ref('')
 const icCreditsUsed = ref('0')
 const icCreditsExpiry = ref('')
+// Card stays hidden until the API confirms an India Compliance login (API secret) exists.
+const icConfigured = ref(false)
 
 async function fetchICCredits() {
   if (!isActualAdmin.value) return
@@ -737,6 +739,7 @@ async function fetchICCredits() {
   icCreditsError.value = ''
   try {
     const res = await frappeGet('ssplbilling.api.dashboard_api.get_ic_api_credits')
+    icConfigured.value = !res?.not_configured
     if (res && res.success && res.data) {
       const data = res.data
       if (data.total_credits === -1) {
