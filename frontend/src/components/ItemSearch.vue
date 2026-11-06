@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="show"
-    class="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 backdrop-blur-sm outline-none"
+    class="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 outline-none"
     tabindex="-1"
   >
     <div class="flex h-[90vh] w-[90vw] flex-col rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden relative">
@@ -220,7 +220,7 @@
            description; pointer-events-none so it never blocks keyboard or clicks -->
       <div
         v-if="focusedDescription"
-        class="pointer-events-none absolute bottom-4 right-6 z-20 w-[36%] max-h-[85%] overflow-hidden rounded-xl border-2 border-[var(--color-info)] bg-[var(--color-surface)]/95 shadow-2xl backdrop-blur-sm"
+        class="pointer-events-none absolute bottom-4 right-6 z-20 w-[36%] max-h-[85%] overflow-hidden rounded-xl border-2 border-[var(--color-info)] bg-[var(--color-surface)] shadow-2xl"
       >
         <div class="border-b border-[var(--color-border)] bg-[var(--color-info)]/15 px-4 py-2 text-base font-bold uppercase tracking-wider text-[var(--color-info)] truncate">
           Description · {{ results[selectedIdx]?.item_name }}
@@ -328,7 +328,7 @@
 
 <script setup>
 import { serverNow } from '../services/serverTime'
-import { ref, nextTick, watch, computed, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
+import { ref, nextTick, watch, computed, onMounted, onUnmounted, defineAsyncComponent, toRaw } from 'vue'
 import { useItemCache, uomLabel } from '../services/itemCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { frappeGet, getDisabledItems, getTemplateItems } from '../api.js'
@@ -535,8 +535,28 @@ const statusFilter = ref('')
 const statusOnly = computed(() => !!statusFilter.value)
 const statusItems = ref([])
 const statusLoading = ref(false)
-const sourceItems = computed(() =>
-  statusOnly.value ? statusItems.value : allItems.value.filter(i => !i.has_variants)
+// Plain (non-proxy) rows: the cache is a deep ref, and reading 12k items through Vue proxies on
+// every keystroke was the main search lag. Safe because the cache patches copy-on-write (new item
+// objects); lastSync is read so an in-place splice still invalidates this.
+const sourceItems = computed(() => {
+  if (statusOnly.value) return toRaw(statusItems.value)
+  void lastSync.value
+  return toRaw(allItems.value).filter(i => !i.has_variants)
+})
+
+// Lowercased search text per item, built once per cache change instead of per keystroke.
+// '\u0001' separates the fields so a term never matches across two of them.
+const searchIndex = computed(() =>
+  sourceItems.value.map(item => {
+    const code = (item.item_code || '').toLowerCase()
+    const barcodes = (item.barcodes || '').toLowerCase().split(',')
+    return {
+      item,
+      code,
+      barcodes,
+      hay: code + '\u0001' + (item.item_name || '').toLowerCase() + '\u0001' + barcodes.join('\u0001')
+    }
+  })
 )
 // Whether the selected row's qty cell is accepting digits. Enter commits the
 // value and drops this focus; moving rows re-arms it.
@@ -959,31 +979,17 @@ const results = computed(() => {
   }
 
   if (terms.length > 0) {
-    list = list.filter(i => {
-      const code = (i.item_code || '').toLowerCase()
-      const name = (i.item_name || '').toLowerCase()
-      const barcodes = (i.barcodes || '').toLowerCase().split(',')
-      return terms.every(term => 
-        code.includes(term) || 
-        name.includes(term) || 
-        barcodes.some(b => b.includes(term))
-      )
-    })
-
-    // Sort: prioritize exact match on item_code or ANY barcode
-    list.sort((a, b) => {
-      const codeA = (a.item_code || '').toLowerCase()
-      const codeB = (b.item_code || '').toLowerCase()
-      const barcodesA = (a.barcodes || '').toLowerCase().split(',')
-      const barcodesB = (b.barcodes || '').toLowerCase().split(',')
-      
-      const isExactA = codeA === q || barcodesA.includes(q)
-      const isExactB = codeB === q || barcodesB.includes(q)
-      
-      if (isExactA && !isExactB) return -1
-      if (!isExactA && isExactB) return 1
-      return 0
-    })
+    const allowed = list === sourceItems.value ? null : new Set(list)
+    // Exact item_code or barcode matches first, the rest in cache order (same as the old stable sort)
+    const exact = []
+    const rest = []
+    for (const entry of searchIndex.value) {
+      if (allowed && !allowed.has(entry.item)) continue
+      if (!terms.every(term => entry.hay.includes(term))) continue
+      if (entry.code === q || entry.barcodes.includes(q)) exact.push(entry.item)
+      else rest.push(entry.item)
+    }
+    list = exact.concat(rest)
   }
 
   return list.slice(sliceStart, sliceStart + 100).map(i => {
@@ -1002,11 +1008,13 @@ const results = computed(() => {
       }
     }
 
+    // getItemHistoryQty reads localStorage, so only rows with history pay for it
+    const has_history = hasHistory(i.item_code)
     return {
       ...i,
       price: displayPrice,
-      has_history: hasHistory(i.item_code),
-      history_qty: getItemHistoryQty(i.item_code)
+      has_history,
+      history_qty: has_history ? getItemHistoryQty(i.item_code) : 0
     }
   })
 })
@@ -1021,9 +1029,7 @@ watch(query, () => {
 })
 
 watch([selectedIdx, results, enabledPriceLists], () => {
-  const item = results.value[selectedIdx.value]
-  if (item) console.log('[ItemSearch] selected item warehouse_stock:', item.warehouse_stock)
-  updateItemInsight(item)
+  updateItemInsight(results.value[selectedIdx.value])
 }, { immediate: true })
 
 // ─── Navigation & Events ─────────────────────────────────────────────────────
