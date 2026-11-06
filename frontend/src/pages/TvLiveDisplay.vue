@@ -121,6 +121,53 @@
           </div>
         </main>
 
+        <!-- Mat layout: 6x4 grid of items floating on a tilted, drifting surface -->
+        <main
+          v-else-if="slideMode === 'mat'"
+          class="mat-stage absolute inset-0 flex items-center justify-center overflow-hidden px-[3vw] transition-all duration-500"
+          :class="showControls ? 'pt-[9vh] pb-[12vh]' : 'pt-[3vh] pb-[3vh]'"
+        >
+          <Transition name="mat-page" mode="out-in">
+            <div :key="matPage" class="h-full w-full" style="transform-style: preserve-3d">
+            <div class="mat-surface grid h-full w-full grid-cols-6 grid-rows-4 gap-[1.1vw]">
+              <div
+                v-for="(item, tIdx) in matItems"
+                :key="`${matPage}-${tIdx}-${item.itemcode}`"
+                class="mat-tile relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-white/70 bg-white p-[0.6vw]"
+                :style="{ animationDelay: `${-((tIdx * 0.53) % 5).toFixed(2)}s`, animationDuration: `${4 + (tIdx % 3)}s` }"
+              >
+                <div
+                  v-if="item.discount_type && item.discount_desc"
+                  class="absolute left-0 right-0 top-0 z-10 truncate bg-amber-500 px-2 py-0.5 text-[0.75vw] font-black uppercase tracking-wide text-black"
+                >
+                  {{ item.discount_desc.split(' | ')[0] }}
+                </div>
+                <div class="flex min-h-0 flex-1 items-center justify-center" :class="item.discount_type && item.discount_desc ? 'pt-[1.4vw]' : ''">
+                  <img v-if="item.image" :src="item.image" :alt="item.itemname" class="max-h-full max-w-full object-contain" />
+                  <span v-else class="text-[2.6vw] leading-none">📦</span>
+                </div>
+                <div class="shrink-0 space-y-0.5 border-t border-slate-100 pt-[0.4vw]">
+                  <h3 class="line-clamp-2 text-[0.9vw] font-semibold leading-tight text-slate-900">{{ item.itemname }}</h3>
+                  <div
+                    v-if="item.barcode_prices && item.barcode_prices.length"
+                    class="flex items-baseline justify-between gap-1 font-mono text-[0.85vw] font-bold"
+                  >
+                    <span class="truncate text-slate-600">{{ item.barcode_prices[0].uom || item.barcode_prices[0].barcode }}</span>
+                    <span class="flex gap-2 text-indigo-700 tracking-wider">
+                      <template v-for="pl in offer.price_lists" :key="pl.price_list">
+                        <span v-if="item.barcode_prices[0].prices[pl.price_list] != null">
+                          {{ encryptPrice(item.barcode_prices[0].prices[pl.price_list]) }}
+                        </span>
+                      </template>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            </div>
+          </Transition>
+        </main>
+
         <!-- Spotlight layout: one item at a time, image left, details right -->
         <main
           v-else
@@ -202,7 +249,8 @@
           <!-- Slide Indicator -->
           <div class="flex items-center gap-4 text-xs font-semibold text-slate-600">
             <span class="bg-white px-3 py-1 rounded-full border border-slate-200 font-bold">
-              Item {{ activeIndex + 1 }} / {{ offer.items?.length || 0 }}
+              <template v-if="slideMode === 'mat'">Page {{ matPage + 1 }} / {{ matPageCount }}</template>
+              <template v-else>Item {{ activeIndex + 1 }} / {{ offer.items?.length || 0 }}</template>
             </span>
             <span v-if="offer.timer > 0" class="text-xs uppercase tracking-wider bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-200 font-bold flex items-center gap-1.5 animate-pulse">
               <span>Next:</span>
@@ -422,6 +470,14 @@
           <span>🔄 Refresh (R)</span>
         </button>
 
+        <!-- Mat Slideshow Button -->
+        <button
+          @click="enterPresentationMode('mat')"
+          class="flex items-center gap-3 rounded-2xl bg-teal-600 hover:bg-teal-700 px-8 py-5 text-xl font-bold text-white shadow-2xl hover:scale-105 active:scale-95 focus:outline-none focus:ring-4 focus:ring-teal-300 focus:bg-teal-700 focus:scale-105 transition-all duration-300 border border-teal-500"
+        >
+          <span>🧩 Mat Slideshow</span>
+        </button>
+
         <!-- Spotlight Slideshow Button -->
         <button
           @click="enterPresentationMode('spotlight')"
@@ -565,6 +621,11 @@ let controlsTimeout = null
 // Fullscreen layout: 'carousel' (multi-card slider) or 'spotlight' (one big item).
 const slideMode = ref('carousel')
 const activeItem = computed(() => offer.value?.items?.[activeIndex.value] || null)
+// Mat mode shows MAT_SIZE items per page; activeIndex stays on a page start.
+const MAT_SIZE = 24
+const matPage = computed(() => Math.floor(activeIndex.value / MAT_SIZE))
+const matPageCount = computed(() => Math.max(1, Math.ceil((offer.value?.items?.length || 0) / MAT_SIZE)))
+const matItems = computed(() => (offer.value?.items || []).slice(matPage.value * MAT_SIZE, (matPage.value + 1) * MAT_SIZE))
 const nextSpotlightItem = computed(() => {
   const items = offer.value?.items || []
   return items.length > 1 ? items[(activeIndex.value + 1) % items.length] : null
@@ -777,6 +838,11 @@ function resetSlideshowTimer() {
 function nextItem() {
   if (!offer.value?.items?.length) return
   const N = offer.value.items.length
+  if (slideMode.value === 'mat') {
+    activeIndex.value = ((matPage.value + 1) % matPageCount.value) * MAT_SIZE
+    resetSlideshowTimer()
+    return
+  }
   activeIndex.value = (activeIndex.value + 1) % N
   resetSlideshowTimer()
 }
@@ -784,6 +850,11 @@ function nextItem() {
 function prevItem() {
   if (!offer.value?.items?.length) return
   const N = offer.value.items.length
+  if (slideMode.value === 'mat') {
+    activeIndex.value = ((matPage.value - 1 + matPageCount.value) % matPageCount.value) * MAT_SIZE
+    resetSlideshowTimer()
+    return
+  }
   activeIndex.value = (activeIndex.value - 1 + N) % N
   resetSlideshowTimer()
 }
@@ -798,9 +869,11 @@ function togglePause() {
 }
 
 function enterPresentationMode(mode = 'carousel') {
-  slideMode.value = mode === 'spotlight' ? 'spotlight' : 'carousel'
+  slideMode.value = ['spotlight', 'mat'].includes(mode) ? mode : 'carousel'
   const selectedItem = document.activeElement?.closest?.('[data-catalogue-item]')
-  const startIndex = Number(selectedItem?.getAttribute('data-catalogue-item')) || 0
+  const selectedIndex = Number(selectedItem?.getAttribute('data-catalogue-item')) || 0
+  // Mat pages start on multiples of MAT_SIZE; open the page holding the selected item.
+  const startIndex = slideMode.value === 'mat' ? selectedIndex - (selectedIndex % MAT_SIZE) : selectedIndex
   const docEl = document.documentElement
   if (docEl.requestFullscreen) {
     docEl.requestFullscreen().then(() => {
@@ -1159,6 +1232,46 @@ onBeforeUnmount(() => {
 :deep(button:focus-visible), :deep(a:focus-visible), :deep(input:focus-visible), :deep(select:focus-visible), [data-catalogue-item]:focus {
   outline: 3px solid var(--color-info, #818cf8);
   outline-offset: 3px;
+}
+
+/* Mat: tilted surface that drifts slowly, tiles bob out of phase. */
+.mat-stage {
+  perspective: 1800px;
+  background: radial-gradient(ellipse at 50% 35%, #ffffff 0%, #eef2f7 55%, #dfe6ef 100%);
+}
+.mat-surface {
+  transform-style: preserve-3d;
+  animation: mat-drift 14s ease-in-out infinite;
+}
+.mat-tile {
+  box-shadow: 0 18px 30px -12px rgba(15, 23, 42, 0.28), 0 4px 10px -4px rgba(15, 23, 42, 0.12);
+  animation-name: mat-float;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+@keyframes mat-drift {
+  0%, 100% { transform: rotateX(7deg) rotateZ(-0.4deg) translateY(0); }
+  50% { transform: rotateX(5deg) rotateZ(0.4deg) translateY(-0.6vh); }
+}
+@keyframes mat-float {
+  from { transform: translateY(0) translateZ(0); }
+  to { transform: translateY(-0.9vh) translateZ(18px); }
+}
+.mat-page-enter-active,
+.mat-page-leave-active {
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.mat-page-enter-from {
+  opacity: 0;
+  transform: translateY(4vh) scale(0.97);
+}
+.mat-page-leave-to {
+  opacity: 0;
+  transform: translateY(-4vh) scale(0.97);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mat-surface, .mat-tile { animation: none; }
 }
 
 .spotlight-enter-active,
