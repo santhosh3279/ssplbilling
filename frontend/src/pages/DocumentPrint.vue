@@ -61,7 +61,7 @@
           </label>
           <select v-model="selectedPrinter" :class="inputCls" :disabled="loadingPrinters">
             <option v-if="loadingPrinters" value="">Loading printers…</option>
-            <option v-else-if="!printers.length" disabled value="">No printers found</option>
+            <option v-else-if="!printers.length" disabled value="">No PDF printers found</option>
             <option v-for="p in printers" :key="p.name" :value="p.name">
               {{ p.printer_name || p.name }} — {{ p.status || 'Unknown' }}
             </option>
@@ -317,15 +317,15 @@ async function loadPrinters() {
     const allowed = allowedPrinterNames()
     const mine = allowed.size ? list.filter(p => allowed.has(p.name)) : []
     const pool = mine.length ? mine : list
-    // Uploads are always sent as PDF, so PDF-capable printers lead the list
+    // Uploads are always sent as PDF, so only PDF-capable printers are offered
     const isPdfPrinter = p => /pdf|a4|laser/i.test(p.printer_name || p.name)
-    printers.value = [...pool.filter(isPdfPrinter), ...pool.filter(p => !isPdfPrinter(p))]
+    printers.value = pool.filter(isPdfPrinter)
 
     const remembered = localStorage.getItem('wb-document-printer')
     if (remembered && printers.value.some(p => p.name === remembered)) {
       selectedPrinter.value = remembered
     } else if (!printers.value.some(p => p.name === selectedPrinter.value)) {
-      selectedPrinter.value = (printers.value.find(isPdfPrinter) || printers.value.find(p => p.is_default) || printers.value[0])?.name || ''
+      selectedPrinter.value = (printers.value.find(p => p.is_default) || printers.value[0])?.name || ''
     }
   } catch (e) {
     printers.value = []
