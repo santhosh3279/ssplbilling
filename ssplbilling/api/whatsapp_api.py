@@ -5,8 +5,9 @@ SSPL WhatsApp Settings. ERPNext only ever talks to it from here, so the API key 
 browser. A user works through the session assigned to them in Users per Session, else through the
 shared row (the session no user is assigned to); see _session_row().
 
-Linking: sessions are created and scanned on the OpenWA dashboard, then picked in the settings
-table. get_status() / refresh_sessions() mirror a session's state onto its row.
+Linking: the WhatsApp Link page adds, edits and removes session rows and links each one: connect()
+creates and starts it on the gateway, get_status() returns the QR to scan, disconnect() stops it and
+logout() unlinks the number. get_status() / refresh_sessions() mirror a session's state onto its row.
 
 Sending: send_document() takes the bill PDF the print dialog already rendered and hands it to
 OpenWA's send-document route. Every send is recorded in SSPL WhatsApp Log. OpenWA answers 201
@@ -383,10 +384,73 @@ def get_settings():
 				"status": r.status or "",
 				"phone": r.phone or "",
 				"push_name": r.push_name or "",
+				"auto_reconnect": bool(r.auto_reconnect),
 			}
 			for r in settings.sessions
 		],
+		# Users a session can be assigned to on the WhatsApp Link page
+		"users": frappe.get_all(
+			"User",
+			filters={"enabled": 1, "user_type": "System User"},
+			fields=["name", "full_name"],
+			order_by="full_name asc",
+		),
 	}
+
+
+def _parse_users(users):
+	if isinstance(users, str):
+		users = frappe.parse_json(users) if users.strip() else []
+	return [u for u in dict.fromkeys(users or []) if u]
+
+
+def _set_session_users(settings, session_name, users):
+	"""Make `users` exactly the Users per Session rows of `session_name`. A user moved here from
+	another session leaves that one, since each user has one session."""
+	moved = set(users)
+	keep = [r for r in settings.session_users if r.session_name != session_name and r.user not in moved]
+	settings.set("session_users", [])
+	for r in keep:
+		settings.append("session_users", {"user": r.user, "session_name": r.session_name})
+	for user in users:
+		settings.append("session_users", {"user": user, "session_name": session_name})
+
+
+@frappe.whitelist(methods=["POST"])
+def add_session(session_name, users=None, auto_reconnect=1):
+	"""Add a session row; it is created on the gateway by its first connect()."""
+	_require_manager()
+	settings = _settings()
+	settings.append(
+		"sessions", {"session_name": (session_name or "").strip(), "auto_reconnect": int(auto_reconnect)}
+	)
+	_set_session_users(settings, session_name.strip(), _parse_users(users))
+	settings.save()
+	return get_settings()
+
+
+@frappe.whitelist(methods=["POST"])
+def update_session(session_name, users=None, auto_reconnect=1):
+	"""Change who works through a session and whether Auto Reconnect restarts it."""
+	_require_manager()
+	settings = _settings()
+	row = _managed_row(settings, session_name)
+	row.auto_reconnect = int(auto_reconnect)
+	_set_session_users(settings, session_name, _parse_users(users))
+	settings.save()
+	return get_settings()
+
+
+@frappe.whitelist(methods=["POST"])
+def remove_session(session_name):
+	"""Drop a session row and its users. The gateway keeps the session; unlink it first to free
+	the number."""
+	_require_manager()
+	settings = _settings()
+	settings.remove(_managed_row(settings, session_name))
+	settings.set("session_users", [r for r in settings.session_users if r.session_name != session_name])
+	settings.save()
+	return get_settings()
 
 
 # POST because it mirrors the gateway's status onto the settings, and Frappe only commits writes
@@ -401,6 +465,85 @@ def get_status(session_name):
 		session = _fetch_session(settings, row)
 		if session:
 			_store_session(row, session)
+		return _status_payload(settings, row, session)
+
+	return _guarded(run)
+
+
+@frappe.whitelist(methods=["POST"])
+def connect(session_name):
+	"""Create the session on the gateway if needed and start it; the QR follows via get_status()."""
+	_require_manager()
+
+	def run():
+		settings = _settings()
+		row = _managed_row(settings, session_name)
+		session = _fetch_session(settings, row)
+		if not session:
+			session = _call(settings, "POST", "/sessions", json={"name": row.session_name})
+
+		# engineLoaded, not status: "disconnected" also covers an engine still backing off
+		if not session.get("engineLoaded"):
+			try:
+				session = _call(settings, "POST", f"/sessions/{session['id']}/start", timeout=START_TIMEOUT)
+			except OpenWAError as e:
+				# 400 = already started / starting, which is what we wanted
+				if e.status_code != 400 or "maximum concurrent" in str(e).lower():
+					raise
+				session = _call(settings, "GET", f"/sessions/{session['id']}")
+
+		_store_session(row, session)
+		# A person pressed Connect, so Auto Reconnect's backoff starts over
+		frappe.cache.hdel(RESTARTS_CACHE_KEY, row.session_name)
+		return _status_payload(settings, row, session)
+
+	return _guarded(run)
+
+
+@frappe.whitelist(methods=["POST"])
+def disconnect(session_name):
+	"""Stop the engine. The pairing is kept, so connect() resumes without a scan."""
+	_require_manager()
+
+	def run():
+		settings = _settings()
+		row = _managed_row(settings, session_name)
+		session = _fetch_session(settings, row)
+		if session and session.get("engineLoaded"):
+			session = _call(settings, "POST", f"/sessions/{session['id']}/stop")
+		if session:
+			_store_session(row, session)
+		return _status_payload(settings, row, session)
+
+	return _guarded(run)
+
+
+@frappe.whitelist(methods=["POST"])
+def logout(session_name):
+	"""Unlink this device from the WhatsApp account. The next connect needs a fresh QR scan."""
+	_require_manager()
+
+	def run():
+		settings = _settings()
+		row = _managed_row(settings, session_name)
+		session = _fetch_session(settings, row)
+		if not session:
+			return _status_payload(settings, row, None)
+		if not session.get("engineLoaded"):
+			frappe.throw(_("Connect the session first — WhatsApp can only unlink a running session"))
+		try:
+			_call(settings, "POST", f"/sessions/{session['id']}/logout", timeout=START_TIMEOUT)
+		except OpenWAError as e:
+			# Torn down locally but WhatsApp did not confirm; the phone may still list the device
+			if e.code != "SESSION_LOGOUT_INCOMPLETE":
+				raise
+			frappe.msgprint(
+				_(
+					"Logged out here, but WhatsApp did not confirm. Remove the device from Linked Devices on the phone."
+				)
+			)
+		session = _call(settings, "GET", f"/sessions/{session['id']}")
+		_store_session(row, session)
 		return _status_payload(settings, row, session)
 
 	return _guarded(run)
