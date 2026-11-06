@@ -121,51 +121,61 @@
           </div>
         </main>
 
-        <!-- Mat layout: 6x4 grid of items floating on a tilted, drifting surface -->
+        <!-- Mat layout: 6x4 window onto a tilted mat of items that glides upward without page breaks -->
         <main
           v-else-if="slideMode === 'mat'"
           class="mat-stage absolute inset-0 flex items-center justify-center overflow-hidden px-[3vw] transition-all duration-500"
           :class="showControls ? 'pt-[9vh] pb-[12vh]' : 'pt-[3vh] pb-[3vh]'"
         >
-          <Transition name="mat-page" mode="out-in">
-            <div :key="matPage" class="h-full w-full" style="transform-style: preserve-3d">
-            <div class="mat-surface grid h-full w-full grid-cols-6 grid-rows-4 gap-[1.1vw]">
-              <div
-                v-for="(item, tIdx) in matItems"
-                :key="`${matPage}-${tIdx}-${item.itemcode}`"
-                class="mat-tile relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-white/70 bg-white p-[0.6vw]"
-                :style="{ animationDelay: `${-((tIdx * 0.53) % 5).toFixed(2)}s`, animationDuration: `${4 + (tIdx % 3)}s` }"
-              >
+          <div class="mat-surface h-full w-full">
+            <div ref="matViewport" class="mat-viewport relative h-full w-full overflow-hidden">
+              <div ref="matTrack" class="absolute inset-x-0 top-0 will-change-transform">
                 <div
-                  v-if="item.discount_type && item.discount_desc"
-                  class="absolute left-0 right-0 top-0 z-10 truncate bg-amber-500 px-2 py-0.5 text-[0.75vw] font-black uppercase tracking-wide text-black"
+                  v-for="r in matRows"
+                  :key="r"
+                  class="absolute inset-x-0 grid grid-cols-6"
+                  :style="{ top: `${r * matRowPitch}px`, height: `${matRowHeight}px`, gap: `${matGap}px` }"
                 >
-                  {{ item.discount_desc.split(' | ')[0] }}
-                </div>
-                <div class="flex min-h-0 flex-1 items-center justify-center" :class="item.discount_type && item.discount_desc ? 'pt-[1.4vw]' : ''">
-                  <img v-if="item.image" :src="item.image" :alt="item.itemname" class="max-h-full max-w-full object-contain" />
-                  <span v-else class="text-[2.6vw] leading-none">📦</span>
-                </div>
-                <div class="shrink-0 space-y-0.5 border-t border-slate-100 pt-[0.4vw]">
-                  <h3 class="line-clamp-2 text-[0.9vw] font-semibold leading-tight text-slate-900">{{ item.itemname }}</h3>
-                  <div
-                    v-if="item.barcode_prices && item.barcode_prices.length"
-                    class="flex items-baseline justify-between gap-1 font-mono text-[0.85vw] font-bold"
-                  >
-                    <span class="truncate text-slate-600">{{ item.barcode_prices[0].uom || item.barcode_prices[0].barcode }}</span>
-                    <span class="flex gap-2 text-indigo-700 tracking-wider">
-                      <template v-for="pl in offer.price_lists" :key="pl.price_list">
-                        <span v-if="item.barcode_prices[0].prices[pl.price_list] != null">
-                          {{ encryptPrice(item.barcode_prices[0].prices[pl.price_list]) }}
-                        </span>
+                  <template v-for="c in MAT_COLS" :key="c">
+                    <div
+                      v-if="matItemAt(r, c - 1)"
+                      class="mat-tile relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-white/70 bg-white p-[0.6vw]"
+                      :style="matTileStyle(r, c - 1)"
+                    >
+                      <template v-for="item in [matItemAt(r, c - 1)]" :key="item.itemcode">
+                        <div
+                          v-if="item.discount_type && item.discount_desc"
+                          class="absolute left-0 right-0 top-0 z-10 truncate bg-amber-500 px-2 py-0.5 text-[0.75vw] font-black uppercase tracking-wide text-black"
+                        >
+                          {{ item.discount_desc.split(' | ')[0] }}
+                        </div>
+                        <div class="flex min-h-0 flex-1 items-center justify-center" :class="item.discount_type && item.discount_desc ? 'pt-[1.4vw]' : ''">
+                          <img v-if="item.image" :src="item.image" :alt="item.itemname" class="max-h-full max-w-full object-contain" />
+                          <span v-else class="text-[2.6vw] leading-none">📦</span>
+                        </div>
+                        <div class="shrink-0 space-y-0.5 border-t border-slate-100 pt-[0.4vw]">
+                          <h3 class="line-clamp-2 text-[0.9vw] font-semibold leading-tight text-slate-900">{{ item.itemname }}</h3>
+                          <div
+                            v-if="item.barcode_prices && item.barcode_prices.length"
+                            class="flex items-baseline justify-between gap-1 font-mono text-[0.85vw] font-bold"
+                          >
+                            <span class="truncate text-slate-600">{{ item.barcode_prices[0].uom || item.barcode_prices[0].barcode }}</span>
+                            <span class="flex gap-2 text-indigo-700 tracking-wider">
+                              <template v-for="pl in offer.price_lists" :key="pl.price_list">
+                                <span v-if="item.barcode_prices[0].prices[pl.price_list] != null">
+                                  {{ encryptPrice(item.barcode_prices[0].prices[pl.price_list]) }}
+                                </span>
+                              </template>
+                            </span>
+                          </div>
+                        </div>
                       </template>
-                    </span>
-                  </div>
+                    </div>
+                  </template>
                 </div>
               </div>
             </div>
-            </div>
-          </Transition>
+          </div>
         </main>
 
         <!-- Spotlight layout: one item at a time, image left, details right -->
@@ -249,10 +259,13 @@
           <!-- Slide Indicator -->
           <div class="flex items-center gap-4 text-xs font-semibold text-slate-600">
             <span class="bg-white px-3 py-1 rounded-full border border-slate-200 font-bold">
-              <template v-if="slideMode === 'mat'">Page {{ matPage + 1 }} / {{ matPageCount }}</template>
+              <template v-if="slideMode === 'mat'">{{ offer.items?.length || 0 }} items</template>
               <template v-else>Item {{ activeIndex + 1 }} / {{ offer.items?.length || 0 }}</template>
             </span>
-            <span v-if="offer.timer > 0" class="text-xs uppercase tracking-wider bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-200 font-bold flex items-center gap-1.5 animate-pulse">
+            <span v-if="slideMode === 'mat'" class="text-xs uppercase tracking-wider bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-200 font-bold">
+              {{ !matGlides ? 'All items shown' : isPaused ? 'Paused' : `Gliding · 1 row / ${slideSeconds()}s` }}
+            </span>
+            <span v-else-if="offer.timer > 0" class="text-xs uppercase tracking-wider bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full border border-indigo-200 font-bold flex items-center gap-1.5 animate-pulse">
               <span>Next:</span>
               <span class="font-mono text-sm font-black bg-indigo-100 px-2 py-0.5 rounded text-indigo-800">
                 {{ isPaused ? 'Paused' : `${slideshowTimeLeft}s` }}
@@ -621,11 +634,109 @@ let controlsTimeout = null
 // Fullscreen layout: 'carousel' (multi-card slider) or 'spotlight' (one big item).
 const slideMode = ref('carousel')
 const activeItem = computed(() => offer.value?.items?.[activeIndex.value] || null)
-// Mat mode shows MAT_SIZE items per page; activeIndex stays on a page start.
-const MAT_SIZE = 24
-const matPage = computed(() => Math.floor(activeIndex.value / MAT_SIZE))
-const matPageCount = computed(() => Math.max(1, Math.ceil((offer.value?.items?.length || 0) / MAT_SIZE)))
-const matItems = computed(() => (offer.value?.items || []).slice(matPage.value * MAT_SIZE, (matPage.value + 1) * MAT_SIZE))
+// Mat mode: a 6-column mat of every item that glides upward one row per timer interval.
+// Position is kept in rows (glideRows) so a resize never makes the mat jump; only the
+// rows inside the 4-row window are rendered, so long catalogues stay cheap.
+const MAT_COLS = 6
+const MAT_VISIBLE_ROWS = 4
+const matViewport = ref(null)
+const matTrack = ref(null)
+const matRowPitch = ref(0)
+const matRowHeight = ref(0)
+const matGap = ref(0)
+const matFirstRow = ref(0)
+let glideRows = 0
+let glideNudge = 0
+let glideRaf = null
+let glideLastTs = null
+let matResizeObserver = null
+
+// Everything fits in one window: show it still instead of looping repeats.
+const matGlides = computed(() => (offer.value?.items?.length || 0) > MAT_COLS * MAT_VISIBLE_ROWS)
+const matRows = computed(() => {
+  const count = matGlides.value ? MAT_VISIBLE_ROWS + 1 : MAT_VISIBLE_ROWS
+  return Array.from({ length: count }, (_, i) => matFirstRow.value + i)
+})
+
+function slideSeconds() {
+  return parseInt(offer.value?.timer) || 8
+}
+
+function matItemAt(row, col) {
+  const items = offer.value?.items || []
+  if (!items.length) return null
+  const i = row * MAT_COLS + col
+  if (!matGlides.value) return i >= 0 && i < items.length ? items[i] : null
+  return items[((i % items.length) + items.length) % items.length]
+}
+
+function matTileStyle(row, col) {
+  const i = row * MAT_COLS + col
+  return {
+    animationDelay: `${-((Math.abs(i) * 0.53) % 5).toFixed(2)}s`,
+    animationDuration: `${4 + (Math.abs(i) % 3)}s`
+  }
+}
+
+function measureMat() {
+  const el = matViewport.value
+  if (!el) return
+  const gap = window.innerWidth * 0.011
+  const pitch = (el.clientHeight + gap) / MAT_VISIBLE_ROWS
+  matGap.value = gap
+  matRowPitch.value = pitch
+  matRowHeight.value = Math.max(0, pitch - gap)
+  applyGlide()
+}
+
+function applyGlide() {
+  const first = Math.floor(glideRows)
+  if (first !== matFirstRow.value) matFirstRow.value = first
+  if (matTrack.value) {
+    matTrack.value.style.transform = `translate3d(0, ${-(glideRows * matRowPitch.value)}px, 0)`
+  }
+}
+
+function glideFrame(ts) {
+  if (glideLastTs == null) glideLastTs = ts
+  const dt = Math.min((ts - glideLastTs) / 1000, 0.1)
+  glideLastTs = ts
+  if (matGlides.value) {
+    if (!isPaused.value) glideRows += dt / slideSeconds()
+    // Prev/Next nudges ease in over a few frames instead of snapping.
+    if (glideNudge) {
+      const step = Math.abs(glideNudge) < 0.002 ? glideNudge : glideNudge * Math.min(1, dt * 6)
+      glideRows += step
+      glideNudge -= step
+    }
+  }
+  applyGlide()
+  glideRaf = requestAnimationFrame(glideFrame)
+}
+
+function startGlide() {
+  if (glideRaf) return
+  glideLastTs = null
+  nextTick(() => {
+    measureMat()
+    if (matViewport.value && !matResizeObserver && typeof ResizeObserver !== 'undefined') {
+      matResizeObserver = new ResizeObserver(measureMat)
+      matResizeObserver.observe(matViewport.value)
+    }
+    if (!glideRaf) glideRaf = requestAnimationFrame(glideFrame)
+  })
+}
+
+function stopGlide() {
+  if (glideRaf) cancelAnimationFrame(glideRaf)
+  glideRaf = null
+  glideNudge = 0
+  if (matResizeObserver) {
+    matResizeObserver.disconnect()
+    matResizeObserver = null
+  }
+}
+
 const nextSpotlightItem = computed(() => {
   const items = offer.value?.items || []
   return items.length > 1 ? items[(activeIndex.value + 1) % items.length] : null
@@ -811,6 +922,10 @@ function stopTimer() {
 // Presentation Actions
 function startSlideshow() {
   stopSlideshow()
+  if (slideMode.value === 'mat') {
+    startGlide() // runs continuously; isPaused only stops the drift
+    return
+  }
   if (isPaused.value) return
   const sec = parseInt(offer.value?.timer) || 8 // Default to 8 seconds
   slideshowTimeLeft.value = sec
@@ -839,8 +954,7 @@ function nextItem() {
   if (!offer.value?.items?.length) return
   const N = offer.value.items.length
   if (slideMode.value === 'mat') {
-    activeIndex.value = ((matPage.value + 1) % matPageCount.value) * MAT_SIZE
-    resetSlideshowTimer()
+    glideNudge += 1
     return
   }
   activeIndex.value = (activeIndex.value + 1) % N
@@ -851,8 +965,7 @@ function prevItem() {
   if (!offer.value?.items?.length) return
   const N = offer.value.items.length
   if (slideMode.value === 'mat') {
-    activeIndex.value = ((matPage.value - 1 + matPageCount.value) % matPageCount.value) * MAT_SIZE
-    resetSlideshowTimer()
+    glideNudge -= 1
     return
   }
   activeIndex.value = (activeIndex.value - 1 + N) % N
@@ -872,8 +985,11 @@ function enterPresentationMode(mode = 'carousel') {
   slideMode.value = ['spotlight', 'mat'].includes(mode) ? mode : 'carousel'
   const selectedItem = document.activeElement?.closest?.('[data-catalogue-item]')
   const selectedIndex = Number(selectedItem?.getAttribute('data-catalogue-item')) || 0
-  // Mat pages start on multiples of MAT_SIZE; open the page holding the selected item.
-  const startIndex = slideMode.value === 'mat' ? selectedIndex - (selectedIndex % MAT_SIZE) : selectedIndex
+  const startIndex = selectedIndex
+  // Mat starts with the selected item's row at the top of the window.
+  glideRows = slideMode.value === 'mat' && matGlides.value ? Math.floor(selectedIndex / MAT_COLS) : 0
+  glideNudge = 0
+  matFirstRow.value = Math.floor(glideRows)
   const docEl = document.documentElement
   if (docEl.requestFullscreen) {
     docEl.requestFullscreen().then(() => {
@@ -900,6 +1016,7 @@ function exitPresentationMode() {
   }
   isFullscreen.value = false
   stopSlideshow()
+  stopGlide()
   focusPlayButton()
 }
 
@@ -908,6 +1025,7 @@ function handleFullscreenChange() {
   isFullscreen.value = inFullscreen
   if (!inFullscreen) {
     stopSlideshow()
+    stopGlide()
     focusPlayButton()
   }
 }
@@ -1218,6 +1336,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   stopTimer()
   stopSlideshow()
+  stopGlide()
   teardownOfferSocket()
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
   window.removeEventListener('keydown', handleKeyDown)
@@ -1258,17 +1377,9 @@ onBeforeUnmount(() => {
   from { transform: translateY(0) translateZ(0); }
   to { transform: translateY(-0.9vh) translateZ(18px); }
 }
-.mat-page-enter-active,
-.mat-page-leave-active {
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-.mat-page-enter-from {
-  opacity: 0;
-  transform: translateY(4vh) scale(0.97);
-}
-.mat-page-leave-to {
-  opacity: 0;
-  transform: translateY(-4vh) scale(0.97);
+.mat-viewport {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
 }
 @media (prefers-reduced-motion: reduce) {
   .mat-surface, .mat-tile { animation: none; }
