@@ -138,6 +138,12 @@
               <td class="px-2 py-1 font-sans">{{ row.item_name }}</td>
               <td class="px-2 py-1 text-right font-semibold tabular-nums" :class="focusedRowIdx === idx ? '' : (row.actual_stock < 0 ? 'text-[var(--color-danger)]' : '')">
                 {{ row.actual_stock }}
+                <span
+                  v-if="row.draft_purchase || row.draft_sales"
+                  class="ml-1 text-base font-normal"
+                  :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'"
+                  :title="`Book ${fmt(row.book_stock)} + draft purchase ${fmt(row.draft_purchase)} − draft sales ${fmt(row.draft_sales)}`"
+                >({{ fmt(row.book_stock) }} +{{ fmt(row.draft_purchase) }} −{{ fmt(row.draft_sales) }})</span>
               </td>
               <td class="px-2 py-1 text-right tabular-nums">{{ fmt(row.weekly_avg_sales) }}</td>
               <td class="px-2 py-1 text-right tabular-nums">{{ fmt(row.monthly_avg_sales) }}</td>

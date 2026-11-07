@@ -1200,14 +1200,19 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 		scope = frappe.get_all("Warehouse", filters={"company": company}, pluck="name")
 	else:
 		scope = None
-	draft_delta = {}
-	for qtys, sign in ((get_draft_purchase_qtys_batch(scope), 1), (get_draft_invoice_qtys_batch(scope), -1)):
+	def _per_item(qtys):
+		out = {}
 		for (item_code, _wh), qty in qtys.items():
-			draft_delta[item_code] = draft_delta.get(item_code, 0.0) + sign * qty
+			out[item_code] = out.get(item_code, 0.0) + qty
+		return out
+
+	draft_purchase = _per_item(get_draft_purchase_qtys_batch(scope))
+	draft_sales = _per_item(get_draft_invoice_qtys_batch(scope))
 	for row in data:
-		row["actual_stock"] = frappe.utils.flt(
-			frappe.utils.flt(row.actual_stock) + draft_delta.get(row.item_code, 0.0), 3
-		)
+		row["book_stock"] = frappe.utils.flt(row.actual_stock, 3)
+		row["draft_purchase"] = frappe.utils.flt(draft_purchase.get(row.item_code, 0.0), 3)
+		row["draft_sales"] = frappe.utils.flt(draft_sales.get(row.item_code, 0.0), 3)
+		row["actual_stock"] = frappe.utils.flt(row.book_stock + row.draft_purchase - row.draft_sales, 3)
 
 	# convert javascript/frontend boolean to python boolean/int
 	if str(negative_only).lower() in ["true", "1"]:
