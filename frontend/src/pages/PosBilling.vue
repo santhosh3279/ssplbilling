@@ -1,18 +1,21 @@
 <template>
   <!-- Bill entry (with its collapsible bill list) on the left, payment on the right:
        F8 saves the bill and moves to Cash, F9 posts the payment, then the bill prints and clears;
-       Left in payment jumps to the bill list, Right in the bill list jumps back to payment -->
-  <div class="flex h-screen overflow-hidden bg-[var(--color-bg)]">
-    <div class="min-w-0 flex-1">
+       Left in payment jumps to the bill list, Right in the bill list jumps back to payment;
+       while focus is in payment the bill side dims so the cashier's eye stays on the panel -->
+  <div class="pos-root flex h-screen overflow-hidden bg-[var(--color-bg)]">
+    <div class="relative min-w-0 flex-1">
       <SalesInvoice
         ref="salesRef"
         pos-mode
         @active-bill="onActiveBill"
         @focus-payment="paymentRef?.focus()"
       />
+      <div class="pos-dim pointer-events-none absolute inset-0 z-40" aria-hidden="true"></div>
     </div>
     <PosPaymentPanel
       ref="paymentRef"
+      class="pos-pay"
       :invoice-name="activeBill"
       :reload-key="reloadKey"
       @loaded="onPaymentLoaded"
@@ -48,3 +51,16 @@ function onPaymentLoaded() {
   focusOnLoad.value = false
 }
 </script>
+
+<style scoped>
+/* driven by real focus (:has + :focus-within), so it can never get stuck on after an input unmounts */
+.pos-dim {
+  opacity: 0;
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(1.5px);
+  transition: opacity 150ms ease;
+}
+.pos-root:has(.pos-pay:focus-within) .pos-dim {
+  opacity: 1;
+}
+</style>
