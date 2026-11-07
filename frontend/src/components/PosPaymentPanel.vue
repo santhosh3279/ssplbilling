@@ -522,7 +522,7 @@ const props = defineProps({
 })
 
 // open-bill: a UPI queue row asks the page to bring its bill into view
-const emit = defineEmits(['settled', 'back', 'loaded', 'open-bill', 'bill-list'])
+const emit = defineEmits(['settled', 'back', 'loaded', 'open-bill', 'bill-list', 'print', 'modify'])
 
 const invoice = ref(null)
 const loading = ref(false)
@@ -855,6 +855,18 @@ function handleKeydown(e) {
     e.preventDefault()
     e.stopPropagation()
     emit('back')
+    return
+  }
+  // P prints, M modifies the bill; inside a text box (UPI / card ref, remarks) the letter is typed instead
+  const key = e.key.toLowerCase()
+  if ((key === 'p' || key === 'm') && !e.ctrlKey && !e.altKey && !e.metaKey) {
+    const t = e.target
+    const typesLetters = t.tagName === 'TEXTAREA' || (t.tagName === 'INPUT' && !['number', 'button', 'checkbox', 'radio'].includes(t.type))
+    if (!typesLetters && invoice.value) {
+      e.preventDefault()
+      e.stopPropagation()
+      emit(key === 'p' ? 'print' : 'modify')
+    }
     return
   }
   // Left jumps to the bill list, unless the caret sits inside typed text that Left should move through

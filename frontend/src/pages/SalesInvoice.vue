@@ -2189,7 +2189,7 @@ function focusBillList() {
   nextTick(() => invoiceTemplateRef.value?.focusSelectedSidebarItem())
 }
 
-defineExpose({ printAndClear, focusBarcodeInput, openBill, focusBillList })
+defineExpose({ printAndClear, focusBarcodeInput, openBill, focusBillList, handlePrint, handleModify })
 
 function handleCancel() {
   const hasParty = customerId.value;

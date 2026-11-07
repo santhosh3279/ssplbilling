@@ -1,6 +1,7 @@
 <template>
   <!-- Bill entry (with its collapsible bill list) on the left, payment on the right:
        F8 saves the bill and moves to Cash, F9 posts the payment, then the bill prints and clears;
+       P prints and M modifies the bill from inside payment (outside its text boxes);
        Left in payment jumps to the bill list, Right in the bill list jumps back to payment;
        while focus is in payment the bill side dims so the cashier's eye stays on the panel -->
   <div class="pos-root flex h-screen overflow-hidden bg-[var(--color-bg)]">
@@ -23,6 +24,8 @@
       @back="salesRef?.focusBarcodeInput()"
       @bill-list="salesRef?.focusBillList()"
       @open-bill="salesRef?.openBill($event)"
+      @print="salesRef?.handlePrint()"
+      @modify="salesRef?.handleModify()"
     />
   </div>
 </template>
