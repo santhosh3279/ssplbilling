@@ -294,7 +294,7 @@
           <button
             ref="postButton"
             type="button"
-            @click="processPayment"
+            @click="processPayment()"
             :disabled="!canSubmit"
             class="w-full rounded-xl py-4 text-sm font-black uppercase tracking-[0.2em] transition-all active:scale-95 focus:outline-none disabled:pointer-events-none disabled:opacity-30"
             :class="isCredit
@@ -496,12 +496,24 @@
       @toggle-paytm-mock="togglePaytmMock"
       @toggle-whatsapp-mock="setWhatsAppMock(!whatsappMockOn)"
     />
+
+    <!-- UPI / Card typed by hand while the Paytm machine or WhatsApp QR could have collected it -->
+    <Warning
+      :show="unsentWarn.show"
+      title="Payment not sent"
+      :message="unsentWarn.message"
+      cancel-label="No, go back (Esc)"
+      confirm-label="Post anyway"
+      @close="closeUnsentWarn"
+      @confirm="confirmUnsentWarn"
+    />
   </aside>
 </template>
 
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted, defineAsyncComponent } from 'vue'
 import DatePickerButton from './DatePickerButton.vue'
+import Warning from './Warning.vue'
 import { getInvoiceDetails, submitInvoiceWithPayment, fetchDashboardSettings, frappeGet, frappePost } from '../api.js'
 import { useLedgerCache } from '../services/ledgerCache'
 import { useSubwindowWatcher } from '../services/shortcutManager'
@@ -766,9 +778,47 @@ function getIsoDueDate() {
   return `${yyyy}-${mm.padStart(2, '0')}-${dd.padStart(2, '0')}`
 }
 
-async function processPayment() {
+// UPI / Card amounts that were neither collected through Paytm nor sent to the machine / phone
+function unsentModes() {
+  const out = []
+  const canSendUpi = hasPaytmMachine.value || paytm.value.qrEnabled
+  if (canSendUpi && Number(payments.value.upi) > 0.01 && !upiLocked.value && !upiWaiting.value) {
+    out.push({ label: upiLabel.value, amount: Number(payments.value.upi), input: upiInput })
+  }
+  if (hasPaytmMachine.value && Number(payments.value.card) > 0.01 && !cardLocked.value) {
+    out.push({ label: cardLabel.value, amount: Number(payments.value.card), input: cardInput })
+  }
+  return out
+}
+
+const unsentWarn = ref({ show: false, message: '', input: null })
+
+function closeUnsentWarn() {
+  const input = unsentWarn.value.input
+  unsentWarn.value = { show: false, message: '', input: null }
+  nextTick(() => input?.value?.focus())
+}
+
+function confirmUnsentWarn() {
+  unsentWarn.value = { show: false, message: '', input: null }
+  processPayment(true)
+}
+
+async function processPayment(unsentConfirmed = false) {
   if (!canSubmit.value) return
   errorMsg.value = ''
+  if (!unsentConfirmed) {
+    const unsent = unsentModes()
+    if (unsent.length) {
+      const list = unsent.map(m => `${m.label} ₹${fmt(m.amount)}`).join(' and ')
+      unsentWarn.value = {
+        show: true,
+        message: `${list} was not sent to the machine or phone. Post it as already received?`,
+        input: unsent[0].input,
+      }
+      return
+    }
+  }
   if (import.meta.env.DEV && [upiRefNo.value, cardRefNo.value].some(r => String(r || '').startsWith('MOCK-'))) {
     errorMsg.value = 'This bill has a mock Paytm payment; reload the page before posting.'
     return
@@ -838,6 +888,11 @@ function inputOrder() {
 }
 
 function handleKeydown(e) {
+  // the warning owns its keys (← → Enter Esc); nothing may leak to the panel or the bill shortcuts
+  if (unsentWarn.value.show) {
+    e.stopPropagation()
+    return
+  }
   if (paytm.value.show || paytmQr.value.show) {
     e.stopPropagation()
     if (e.key === 'Escape') {
