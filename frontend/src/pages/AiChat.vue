@@ -85,8 +85,20 @@
         class="w-full md:w-72 shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]"
         :class="listOpen ? 'flex' : 'hidden md:flex'"
       >
+        <div class="flex items-center gap-1 border-b border-[var(--color-border)] p-2">
+          <button class="rounded p-1.5 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]" title="Previous day" @click="shiftDate(-1)">&larr;</button>
+          <div class="flex-1 text-center text-[18.75px] font-bold">{{ listDate ? formatDMY(listDate) : 'All recent' }}</div>
+          <DatePickerButton :model-value="listDate" label="Choose conversation date" @update:model-value="setListDate" />
+          <button class="rounded p-1.5 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]" title="Next day" @click="shiftDate(1)">&rarr;</button>
+          <button
+            v-if="listDate"
+            class="rounded px-2 py-1 text-[15.6px] font-bold uppercase text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]"
+            title="Show all recent conversations"
+            @click="setListDate('')"
+          >All</button>
+        </div>
         <div class="flex-1 overflow-y-auto">
-          <div v-if="!chats.length" class="p-6 text-center text-[18.75px] text-[var(--color-text-muted)]">No conversations yet</div>
+          <div v-if="!chats.length" class="p-6 text-center text-[18.75px] text-[var(--color-text-muted)]">{{ listDate ? 'No conversations on this date' : 'No conversations yet' }}</div>
           <button
             v-for="c in chats"
             :key="c.name"
@@ -320,6 +332,9 @@ import DOMPurify from 'dompurify'
 import { aiChat } from '../api'
 import { useQuickSteps } from '../composables/useQuickSteps'
 import AiChart from '../components/AiChart.vue'
+import DatePickerButton from '../components/DatePickerButton.vue'
+import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
+import { formatDMY } from '../utils/date'
 import { getFrappeSocket } from '../services/frappeSocket'
 
 const EVENT = 'sspl_assistant_event'
@@ -413,9 +428,26 @@ async function pollStatus() {
   } catch {}
 }
 
+// '' = all recent conversations; a date = conversations active on that day
+const listDate = ref('')
+function shiftDate(days) {
+  const d = parseCalendarDate(listDate.value || serverToday())
+  if (listDate.value) d.setDate(d.getDate() + days)
+  setListDate(toLocalISO(d))
+}
+function setListDate(date) {
+  if ((date || '') === listDate.value) return
+  listDate.value = date || ''
+  loadChats()
+}
+// a chat being written to is active today: keep it in the list
+function showActive() {
+  if (listDate.value && listDate.value !== serverToday()) listDate.value = ''
+}
+
 async function loadChats() {
   try {
-    chats.value = await aiChat.chats()
+    chats.value = await aiChat.chats(listDate.value)
   } catch (e) {
     error.value = lastLine(e)
   }
@@ -496,6 +528,7 @@ function pickSuggestion(s) {
 async function runQuick(q, query) {
   quickBusy.value = true
   try {
+    showActive()
     const res = await aiChat.quick(q.action, query, current.value?.name, provider.value, { ...scope })
     if (!current.value) {
       current.value = res.chat
@@ -558,6 +591,7 @@ async function sendText(text, fresh = false) {
   running.value = true
   scrollDown()
   try {
+    showActive()
     const res = await aiChat.send(text, current.value?.name, provider.value, { ...scope }, fresh)
     if (!current.value) {
       current.value = res.chat
@@ -753,6 +787,7 @@ async function runSaved(s, values) {
   running.value = true
   listOpen.value = false
   try {
+    showActive()
     const res = await aiChat.askSaved(s.name, values, provider.value, { ...scope })
     messages.value[0].content = res.message
     current.value = res.chat

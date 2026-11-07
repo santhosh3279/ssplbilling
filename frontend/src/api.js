@@ -1569,7 +1569,7 @@ const AI_CHAT = "ssplbilling.api.ai_chat_api.";
 
 export const aiChat = {
   bootstrap: () => frappeGet(AI_CHAT + "get_bootstrap"),
-  chats: () => frappeGet(AI_CHAT + "list_chats"),
+  chats: (date) => frappeGet(AI_CHAT + "list_chats", date ? { date, limit: 200 } : {}),
   usage: () => frappeGet(AI_CHAT + "get_usage"),
   saved: () => frappeGet(AI_CHAT + "list_saved"),
   // values: { customer, item, … } typed in the chat box for the saved question's params

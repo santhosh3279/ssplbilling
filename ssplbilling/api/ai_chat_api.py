@@ -7,7 +7,7 @@ import time
 
 import frappe
 from frappe.query_builder.functions import Sum
-from frappe.utils import add_to_date, cint, get_datetime, get_first_day, now_datetime, today
+from frappe.utils import add_to_date, cint, get_datetime, get_first_day, getdate, now_datetime, today
 
 from ssplbilling.api import (
 	ai_chat_cache,
@@ -69,11 +69,16 @@ def get_usage():
 
 
 @frappe.whitelist()
-def list_chats(limit=50):
+def list_chats(limit=50, date=None):
 	_check_access()
+	filters = {"user": frappe.session.user}
+	if date:
+		# one calendar day, by last activity
+		day = getdate(date)
+		filters["modified"] = ["between", [f"{day} 00:00:00", f"{day} 23:59:59.999999"]]
 	return frappe.get_all(
 		CHAT,
-		filters={"user": frappe.session.user},
+		filters=filters,
 		fields=list(CHAT_FIELDS),
 		order_by="modified desc",
 		limit=min(int(limit), 200),
