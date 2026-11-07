@@ -2,11 +2,12 @@
   <!-- Keys the panel owns stop here: the SalesInvoice shortcuts listen on window,
        and its Escape would otherwise leave the page from inside the cash box -->
   <aside
-    class="flex w-[360px] shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] overflow-y-auto"
+    class="group flex w-[360px] shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] overflow-y-auto transition-colors focus-within:bg-[var(--color-focus)]/15"
     @keydown="handleKeydown"
   >
     <div class="p-4 space-y-3">
-      <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] flex items-center gap-2">
+      <!-- whole panel tints while focus is anywhere inside it, so the cashier sees where the keys go -->
+      <h3 class="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)] group-focus-within:text-[var(--color-focus)] flex items-center gap-2">
         <div class="h-1.5 w-1.5 rounded-full bg-[var(--color-highlight)]"></div>
         Payment
         <span class="ml-auto font-mono normal-case tracking-normal text-[11px]">F9</span>
