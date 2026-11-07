@@ -147,7 +147,8 @@ function selectItem(item) {
 
 const normalizedItems = computed(() => {
   return allItemsWithHistory.value
-    .filter(item => props.showExcludedItems || !isAlreadyAdded(item))
+    // Template items (has_variants) are never billable, so they are always hidden.
+    .filter(item => !item.has_variants && (props.showExcludedItems || !isAlreadyAdded(item)))
     .map(item => ({
     item,
     code: (item.item_code || '').toLowerCase(),
