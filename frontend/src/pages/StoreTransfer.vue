@@ -284,7 +284,7 @@
       :results="quickSearchResults"
       :query="editingRowIdx !== -1 && editingField === 'code' ? (items[editingRowIdx]?.item_code || '') : barcodeQuery"
       search-type="Stock"
-      :warehouse="fromWarehouse"
+      :warehouse="stockWarehouse"
       :anchor-el="quickSearchAnchor"
       :last-item-code="items[items.length - 1]?.item_code"
       @select="onQuickSearchSelect"
@@ -412,6 +412,9 @@ const quickSearchResults = ref([])
 const quickSearchRef = ref(null)
 const quickSearchAnchor = ref(null)
 
+// Quick search shows stock of the user's own warehouse (wb-warehouse), the same item set the dashboard preloads
+const stockWarehouse = localStorage.getItem('wb-warehouse') || null
+
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
 
@@ -435,7 +438,7 @@ const saveButtonText = computed(() => {
 onMounted(async () => {
   await fetchMetadata()
   await fetchRecentTransfers()
-  refreshItemCache('Sales')
+  refreshItemCache('Sales', null, stockWarehouse)
   focusFromWarehouse()
 })
 
