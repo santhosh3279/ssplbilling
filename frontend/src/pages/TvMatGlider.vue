@@ -25,7 +25,7 @@
     </div>
 
     <template v-else>
-        <!-- Mat layout: 6x4 window onto a tilted mat of items that glides upward without page breaks -->
+        <!-- Mat layout: rows x columns window onto a flat mat of items that glides upward without page breaks -->
         <main
           class="mat-stage absolute inset-0 flex items-center justify-center overflow-hidden px-[3vw] transition-all duration-500"
           :class="showControls ? 'pt-[9vh] pb-[12vh]' : 'pt-[3vh] pb-[3vh]'"
@@ -437,14 +437,9 @@ onBeforeUnmount(() => {
   outline-offset: 3px;
 }
 
-/* Mat: tilted surface that drifts slowly, tiles bob out of phase. */
+/* Mat: flat surface (no tilt / taper), tiles bob out of phase. */
 .mat-stage {
-  perspective: 1800px;
   background: #000;
-}
-.mat-surface {
-  transform-style: preserve-3d;
-  animation: mat-drift 14s ease-in-out infinite;
 }
 .mat-tile {
   box-shadow: 0 18px 30px -12px rgba(15, 23, 42, 0.28), 0 4px 10px -4px rgba(15, 23, 42, 0.12);
@@ -453,19 +448,15 @@ onBeforeUnmount(() => {
   animation-iteration-count: infinite;
   animation-direction: alternate;
 }
-@keyframes mat-drift {
-  0%, 100% { transform: rotateX(7deg) rotateZ(-0.4deg) translateY(0); }
-  50% { transform: rotateX(5deg) rotateZ(0.4deg) translateY(-0.6vh); }
-}
 @keyframes mat-float {
-  from { transform: translateY(0) translateZ(0); }
-  to { transform: translateY(-0.9vh) translateZ(18px); }
+  from { transform: translateY(0); }
+  to { transform: translateY(-0.9vh); }
 }
 .mat-viewport {
   -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0, #000 5%, #000 95%, transparent 100%);
 }
 @media (prefers-reduced-motion: reduce) {
-  .mat-surface, .mat-tile { animation: none; }
+  .mat-tile { animation: none; }
 }
 </style>
