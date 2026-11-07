@@ -307,6 +307,7 @@ function scannerSearch(q) {
     name: i.item_name || i.item_code,
     price: baseRate(i),
     stock: i.stock,
+    redisStock: i.redis_stock,
     barcodes: [
       ...(i.barcodes || '').split(','),
       ...(i.barcodes_detailed || []).map(b => b.barcode || ''),

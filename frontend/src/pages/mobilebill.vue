@@ -887,6 +887,7 @@ function scannerSearch(q) {
     name: i.item_name || i.item_code,
     price: rateFor(i, i.uom),
     stock: i.stock,
+    redisStock: i.redis_stock,
     barcodes: itemBarcodes(i),
   }))
 }

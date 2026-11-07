@@ -93,7 +93,7 @@
             v-if="showStock"
             class="flex items-center justify-end whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-[0.6875rem] font-mono"
             :class="stockOf(m) <= 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'"
-          >{{ stockOf(m) }}</div>
+          >{{ stockOf(m) }}<span v-if="redisOf(m)" class="ml-1 font-normal text-[var(--color-text-muted)]">({{ redisOf(m) }})</span></div>
           <div class="flex items-center justify-end whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-[0.6875rem] font-mono">{{ cipherPrice(m.price) }}</div>
         </button>
       </div>
@@ -165,9 +165,9 @@ import MobileSearchKeyboard from './MobileSearchKeyboard.vue'
 import { cipherPrice } from '../encryption.js'
 
 const props = defineProps({
-  // (text) => [{ code, name, price, barcodes, stock }] — items matching the typed text, listed as
-  // name · code · stock · price (cipher); `code` is emitted on pick. `stock` is optional (column
-  // hidden when no result has it). A card whose code or one of
+  // (text) => [{ code, name, price, barcodes, stock, redisStock }] — items matching the typed text, listed as
+  // name · code · stock (draft qty) · price (cipher); `code` is emitted on pick. `stock` is optional
+  // (column hidden when no result has it); `redisStock`, the qty on draft bills, shows in brackets. A card whose code or one of
   // its `barcodes` equals the typed text blinks
   search: { type: Function, default: null },
 })
@@ -200,13 +200,15 @@ const manualResults = computed(() => {
 
 // Stock shown to at most 2 decimals; the column only appears when the page sends stock
 const stockOf = m => Number((Number(m.stock) || 0).toFixed(2))
+const redisOf = m => Number((Number(m.redisStock) || 0).toFixed(2))
+const stockText = m => (redisOf(m) ? `${stockOf(m)} (${redisOf(m)})` : String(stockOf(m)))
 const showStock = computed(() => manualResults.value.some(m => m.stock !== undefined && m.stock !== null))
 
 // Same code / stock / price column widths on every row: longest value in ch (monospace) + px-1.5 padding + border
 const resultColumns = computed(() => {
   const widest = f => Math.max(1, ...manualResults.value.map(m => String(f(m) ?? '').length))
   const col = n => `calc(${n}ch + 0.75rem + 2px)`
-  const stock = showStock.value ? ` ${col(widest(stockOf))}` : ''
+  const stock = showStock.value ? ` ${col(widest(stockText))}` : ''
   return `minmax(0,1fr) ${col(widest(m => m.code))}${stock} ${col(widest(m => cipherPrice(m.price)))}`
 })
 
