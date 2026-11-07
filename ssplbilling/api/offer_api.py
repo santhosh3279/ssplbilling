@@ -462,7 +462,21 @@ def get_offer_details(pageaddress):
 		"price_lists": [{"price_list": pl.price_list} for pl in doc.get("price_lists") if pl.price_list],
 		"items": items,
 		"sub_catalogues": _sub_catalogues(doc),
-		"cipher_map": cipher_map
+		"cipher_map": cipher_map,
+		"mat_glider": _mat_glider_settings(),
+	}
+
+
+def _mat_glider_settings():
+	"""Rows / columns / speed for the TV Mat Glider, from SSPL TV Slideshow Settings."""
+	defaults = {"rows": 4, "columns": 6, "speed": 0}
+	if not frappe.db.exists("DocType", "SSPL TV Slideshow Settings"):
+		return defaults
+	tv = frappe.get_cached_doc("SSPL TV Slideshow Settings")
+	return {
+		"rows": tv.mat_rows or defaults["rows"],
+		"columns": tv.mat_columns or defaults["columns"],
+		"speed": tv.mat_speed or 0,
 	}
 
 

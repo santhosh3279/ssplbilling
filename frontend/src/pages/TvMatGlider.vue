@@ -36,10 +36,15 @@
                 <div
                   v-for="r in matRows"
                   :key="r"
-                  class="absolute inset-x-0 grid grid-cols-6"
-                  :style="{ top: `${r * matRowPitch}px`, height: `${matRowHeight}px`, gap: `${matGap}px` }"
+                  class="absolute inset-x-0 grid"
+                  :style="{
+                    top: `${r * matRowPitch}px`,
+                    height: `${matRowHeight}px`,
+                    gap: `${matGap}px`,
+                    gridTemplateColumns: `repeat(${MAT_COLS_C}, minmax(0, 1fr))`
+                  }"
                 >
-                  <template v-for="c in MAT_COLS" :key="c">
+                  <template v-for="c in MAT_COLS_C" :key="c">
                     <div
                       v-if="matItemAt(r, c - 1)"
                       class="mat-tile relative flex min-h-0 min-w-0 flex-col overflow-hidden rounded-2xl border border-white/70 bg-white p-[0.6vw]"
@@ -129,7 +134,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { encryptPrice } from '../encryption.js'
@@ -157,11 +162,14 @@ function resetControlsTimer() {
   }, 3000)
 }
 
-// Mat mode: a 6-column mat of every item that glides upward one row per timer interval.
+// Mat mode: a columns-wide mat of every item that glides upward one row per speed interval.
 // Position is kept in rows (glideRows) so a resize never makes the mat jump; only the
-// rows inside the 4-row window are rendered, so long catalogues stay cheap.
-const MAT_COLS = 6
-const MAT_VISIBLE_ROWS = 4
+// rows inside the visible window are rendered, so long catalogues stay cheap.
+// Rows / columns / speed come from SSPL TV Slideshow Settings (Mat Glider section).
+const matSettings = computed(() => offer.value?.mat_glider || {})
+const clampInt = (v, d) => Math.min(12, Math.max(1, parseInt(v) || d))
+const MAT_COLS_C = computed(() => clampInt(matSettings.value.columns, 6))
+const MAT_ROWS_C = computed(() => clampInt(matSettings.value.rows, 4))
 const matViewport = ref(null)
 const matTrack = ref(null)
 const matRowPitch = ref(0)
@@ -175,26 +183,26 @@ let glideLastTs = null
 let matResizeObserver = null
 
 // Everything fits in one window: show it still instead of looping repeats.
-const matGlides = computed(() => (offer.value?.items?.length || 0) > MAT_COLS * MAT_VISIBLE_ROWS)
+const matGlides = computed(() => (offer.value?.items?.length || 0) > MAT_COLS_C.value * MAT_ROWS_C.value)
 const matRows = computed(() => {
-  const count = matGlides.value ? MAT_VISIBLE_ROWS + 1 : MAT_VISIBLE_ROWS
+  const count = matGlides.value ? MAT_ROWS_C.value + 1 : MAT_ROWS_C.value
   return Array.from({ length: count }, (_, i) => matFirstRow.value + i)
 })
 
 function slideSeconds() {
-  return parseInt(offer.value?.timer) || 8
+  return parseFloat(matSettings.value.speed) || parseInt(offer.value?.timer) || 8
 }
 
 function matItemAt(row, col) {
   const items = offer.value?.items || []
   if (!items.length) return null
-  const i = row * MAT_COLS + col
+  const i = row * MAT_COLS_C.value + col
   if (!matGlides.value) return i >= 0 && i < items.length ? items[i] : null
   return items[((i % items.length) + items.length) % items.length]
 }
 
 function matTileStyle(row, col) {
-  const i = row * MAT_COLS + col
+  const i = row * MAT_COLS_C.value + col
   return {
     animationDelay: `${-((Math.abs(i) * 0.53) % 5).toFixed(2)}s`,
     animationDuration: `${4 + (Math.abs(i) % 3)}s`
@@ -205,12 +213,15 @@ function measureMat() {
   const el = matViewport.value
   if (!el) return
   const gap = window.innerWidth * 0.011
-  const pitch = (el.clientHeight + gap) / MAT_VISIBLE_ROWS
+  const pitch = (el.clientHeight + gap) / MAT_ROWS_C.value
   matGap.value = gap
   matRowPitch.value = pitch
   matRowHeight.value = Math.max(0, pitch - gap)
   applyGlide()
 }
+
+// A refresh can change the row count; re-measure so row height follows.
+watch(MAT_ROWS_C, () => nextTick(measureMat))
 
 function applyGlide() {
   const first = Math.floor(glideRows)
@@ -386,7 +397,7 @@ onMounted(async () => {
   }
   // ?start=<item index> opens with that item's row at the top.
   const start = parseInt(route.query.start) || 0
-  glideRows = matGlides.value ? Math.floor(Math.max(0, start) / MAT_COLS) : 0
+  glideRows = matGlides.value ? Math.floor(Math.max(0, start) / MAT_COLS_C.value) : 0
   matFirstRow.value = Math.floor(glideRows)
   startGlide()
 })

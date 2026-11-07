@@ -1,0 +1,77 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "creation": "2026-11-07 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "mat_glider_section",
+  "mat_rows",
+  "mat_columns",
+  "column_break_mat",
+  "mat_speed"
+ ],
+ "fields": [
+  {
+   "description": "Layout and glide speed of the TV Mat Glider page (/tvmat)",
+   "fieldname": "mat_glider_section",
+   "fieldtype": "Section Break",
+   "label": "Mat Glider"
+  },
+  {
+   "default": "4",
+   "description": "Rows of items visible on screen at once (1-12)",
+   "fieldname": "mat_rows",
+   "fieldtype": "Int",
+   "label": "Rows",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "default": "6",
+   "description": "Items per row (1-12)",
+   "fieldname": "mat_columns",
+   "fieldtype": "Int",
+   "label": "Columns",
+   "non_negative": 1,
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_mat",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "description": "Seconds the mat takes to glide up one row. 0 uses the catalogue's own Timer (8s if that is blank too).",
+   "fieldname": "mat_speed",
+   "fieldtype": "Float",
+   "label": "Speed (seconds per row)",
+   "non_negative": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-11-07 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL TV Slideshow Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
