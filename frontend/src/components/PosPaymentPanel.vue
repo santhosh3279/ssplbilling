@@ -1,7 +1,9 @@
 <template>
   <!-- Keys the panel owns stop here: the SalesInvoice shortcuts listen on window,
-       and its Escape would otherwise leave the page from inside the cash box -->
+       and its Escape would otherwise leave the page from inside the cash box;
+       hidden (not unmounted, so the QR queue keeps polling) while it has nothing to show -->
   <aside
+    v-show="!isEmpty"
     class="group flex w-[360px] shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] overflow-y-auto transition-shadow focus-within:shadow-[inset_0_0_0_2px_var(--color-focus),inset_0_0_18px_color-mix(in_srgb,var(--color-focus)_45%,transparent)]"
     @keydown="handleKeydown"
   >
@@ -932,6 +934,8 @@ const paytmLock = ref({ invoice: '', upi: null, upiRef: '', card: null, cardRef:
 const upiLocked = computed(() => paytmLock.value.upi != null && paytmLock.value.invoice === invoice.value?.name)
 const cardLocked = computed(() => paytmLock.value.card != null && paytmLock.value.invoice === invoice.value?.name)
 const qrQueue = ref([])
+// no bill, no settled-bill change to hand back and no QR waiting: the bill side gets the full width
+const isEmpty = computed(() => !invoice.value && !loading.value && !lastSettled.value && !qrQueue.value.length)
 // A UPI request waiting in the queue holds this bill's UPI box at the requested amount until it is
 // paid or cancelled from its popup
 const upiWaiting = computed(() => qrQueue.value.find(q => q.sales_invoice === invoice.value?.name && q.status === 'Pending'))
