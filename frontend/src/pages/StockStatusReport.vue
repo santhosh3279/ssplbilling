@@ -56,13 +56,41 @@
         <!-- Supplier -->
         <div>
           <label class="mb-1 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier</label>
-          <select
-            v-model="stockFilters.supplier"
-            class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-          >
-            <option value="">— All Suppliers —</option>
-            <option v-for="sup in filterOptions.suppliers" :key="sup.id" :value="sup.id">{{ sup.name }}</option>
-          </select>
+          <div class="relative" data-supplier-combo>
+            <input
+              v-model="supplierQuery"
+              type="text"
+              placeholder="— All Suppliers —"
+              class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 pr-7 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+              @focus="openSupplierList"
+              @input="supplierOpen = true; supplierActiveIdx = 0; if (!supplierQuery.trim()) stockFilters.supplier = ''"
+              @keydown="onSupplierKeydown"
+              @blur="closeSupplierList"
+            />
+            <button
+              v-if="stockFilters.supplier || supplierQuery"
+              type="button"
+              class="absolute right-1.5 top-1/2 -translate-y-1/2 text-lg text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
+              title="Clear supplier"
+              @mousedown.prevent="selectSupplier(null)"
+            >×</button>
+            <ul
+              v-if="supplierOpen && supplierMatches.length"
+              class="supplier-list absolute z-30 mt-1 max-h-72 w-full overflow-y-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg"
+            >
+              <li
+                v-for="(sup, i) in supplierMatches"
+                :key="sup.id"
+                class="cursor-pointer px-2 py-1 text-lg text-[var(--color-text)]"
+                :class="i === supplierActiveIdx ? 'supplier-active bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : 'hover:bg-[var(--color-surface-raised)]'"
+                @mousedown.prevent="selectSupplier(sup)"
+                @mouseenter="supplierActiveIdx = i"
+              >
+                {{ sup.name }}
+                <span v-if="sup.name !== sup.id" class="ml-1 text-sm opacity-70">{{ sup.id }}</span>
+              </li>
+            </ul>
+          </div>
         </div>
 
         <!-- Negative Stock and Reset -->
@@ -179,6 +207,73 @@ const stockFilters = ref({
   supplier: '',
   negativeOnly: false,
   avgMonths: 6
+})
+
+// Searchable supplier filter: typing filters by name or id; picking one sets stockFilters.supplier (the id).
+const supplierQuery = ref('')
+const supplierOpen = ref(false)
+const supplierActiveIdx = ref(0)
+
+const selectedSupplierName = computed(() => {
+  const sup = filterOptions.value.suppliers.find(s => s.id === stockFilters.value.supplier)
+  return sup ? sup.name : ''
+})
+
+const supplierMatches = computed(() => {
+  const list = filterOptions.value.suppliers || []
+  const q = supplierQuery.value.trim().toLowerCase()
+  // Show the full list when the box holds the already-picked supplier's name.
+  if (!q || q === selectedSupplierName.value.toLowerCase()) return list
+  return list.filter(s => (s.name || '').toLowerCase().includes(q) || s.id.toLowerCase().includes(q))
+})
+
+function openSupplierList() {
+  supplierOpen.value = true
+  const idx = supplierMatches.value.findIndex(s => s.id === stockFilters.value.supplier)
+  supplierActiveIdx.value = idx >= 0 ? idx : 0
+}
+
+function closeSupplierList() {
+  supplierOpen.value = false
+  // Text that wasn't picked from the list falls back to the current selection.
+  supplierQuery.value = selectedSupplierName.value
+}
+
+function selectSupplier(sup) {
+  stockFilters.value.supplier = sup ? sup.id : ''
+  supplierQuery.value = sup ? sup.name : ''
+  supplierOpen.value = false
+}
+
+function scrollActiveSupplier() {
+  nextTick(() => {
+    const el = document.querySelector('.supplier-list .supplier-active')
+    if (el) el.scrollIntoView({ block: 'nearest' })
+  })
+}
+
+function onSupplierKeydown(e) {
+  const len = supplierMatches.value.length
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    e.preventDefault()
+    if (!supplierOpen.value) return openSupplierList()
+    if (!len) return
+    const step = e.key === 'ArrowDown' ? 1 : -1
+    supplierActiveIdx.value = (supplierActiveIdx.value + step + len) % len
+    scrollActiveSupplier()
+  } else if (e.key === 'Enter') {
+    e.preventDefault()
+    if (supplierOpen.value && len) selectSupplier(supplierMatches.value[supplierActiveIdx.value])
+    else if (!supplierQuery.value.trim()) selectSupplier(null)
+  } else if (e.key === 'Escape') {
+    supplierOpen.value = false
+    supplierQuery.value = selectedSupplierName.value
+  }
+}
+
+// Keep the box text in step when the selection changes elsewhere (Clear Filters, filters loading late).
+watch(selectedSupplierName, (name) => {
+  if (!supplierOpen.value) supplierQuery.value = name
 })
 
 // Monthly avg divisor: sales of last N months (N*30 days) ÷ N. Invalid input falls back to 6.
@@ -362,6 +457,8 @@ function scrollToFocusedRow() {
 }
 
 function handleKeyDown(e) {
+  // Arrow keys inside the supplier box move through its list, not the report rows.
+  if (e.target instanceof Element && e.target.closest('[data-supplier-combo]')) return
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     const len = filteredStockRows.value.length
