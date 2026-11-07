@@ -1139,7 +1139,7 @@ def get_stock_report_filters(company=None):
 @frappe.whitelist()
 def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_only=False, avg_months=6):
 	"""Returns stock report data (one row per item, stock summed across warehouses) with
-	weekly and monthly average sales qty.
+	actual stock = book stock + draft purchase qty - draft sales qty, and weekly and monthly average sales qty.
 
 	Weekly average = net qty sold in the last 28 days / 4.
 	Monthly average = net qty sold in the last (avg_months * 30) days / avg_months (default 6).
@@ -1186,13 +1186,32 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 
 	query += " GROUP BY bin.item_code, item.item_name, item.stock_uom, item.safety_stock, item.custom_max_stock"
 
-	# convert javascript/frontend boolean to python boolean/int
-	if str(negative_only).lower() in ["true", "1"]:
-		query += " HAVING SUM(bin.actual_qty) < 0"
-
 	query += " ORDER BY bin.item_code ASC"
 
 	data = frappe.db.sql(query, values, as_dict=True)
+
+	# Actual stock = book stock + draft purchase qty - draft sales qty (same figure billing uses),
+	# summed over the warehouses in scope.
+	from ssplbilling.api.stock_utils import get_draft_invoice_qtys_batch, get_draft_purchase_qtys_batch
+
+	if warehouse:
+		scope = [warehouse]
+	elif company:
+		scope = frappe.get_all("Warehouse", filters={"company": company}, pluck="name")
+	else:
+		scope = None
+	draft_delta = {}
+	for qtys, sign in ((get_draft_purchase_qtys_batch(scope), 1), (get_draft_invoice_qtys_batch(scope), -1)):
+		for (item_code, _wh), qty in qtys.items():
+			draft_delta[item_code] = draft_delta.get(item_code, 0.0) + sign * qty
+	for row in data:
+		row["actual_stock"] = frappe.utils.flt(
+			frappe.utils.flt(row.actual_stock) + draft_delta.get(row.item_code, 0.0), 3
+		)
+
+	# convert javascript/frontend boolean to python boolean/int
+	if str(negative_only).lower() in ["true", "1"]:
+		data = [row for row in data if row.actual_stock < 0]
 	if not data:
 		return data
 

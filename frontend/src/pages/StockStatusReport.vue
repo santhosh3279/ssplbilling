@@ -118,7 +118,7 @@
             <tr>
               <th class="px-2 py-1.5 font-semibold">Item Code</th>
               <th class="px-2 py-1.5 font-semibold">Item Name</th>
-              <th class="px-2 py-1.5 font-semibold text-right">Actual Stock</th>
+              <th class="px-2 py-1.5 font-semibold text-right" title="Book stock + draft purchases − draft sales">Actual Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right" title="Net qty sold in last 4 weeks ÷ 4">Weekly Avg Sales</th>
               <th class="px-2 py-1.5 font-semibold text-right" :title="`Net qty sold in last ${avgMonths} months ÷ ${avgMonths}`">Monthly Avg Sales ({{ avgMonths }}M)</th>
               <th class="px-2 py-1.5 font-semibold text-right">Safety Stock</th>
