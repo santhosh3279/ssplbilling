@@ -39,16 +39,11 @@
             placeholder="Search customer / order / amount"
             class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
           />
-          <div class="flex flex-wrap gap-1">
-            <button
-              v-for="d in dayFilters"
-              :key="d.days"
-              @click="setDays(d.days)"
-              class="rounded-md px-2 py-0.5 text-xs font-bold uppercase"
-              :class="dayFilter === d.days
-                ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]'
-                : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]'"
-            >{{ d.label }}</button>
+          <div class="flex items-center gap-1 rounded-lg bg-[var(--color-bg)]">
+            <button @click="shiftDate(-1)" class="rounded p-1.5 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]">&larr;</button>
+            <div class="flex-1 text-center text-lg font-bold">{{ formatDMY(listDate, 'Select Date') }}</div>
+            <DatePickerButton :model-value="listDate" label="Choose list date" @update:model-value="setListDate" />
+            <button @click="shiftDate(1)" class="rounded p-1.5 text-xl text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]">&rarr;</button>
           </div>
           <div class="flex flex-wrap gap-1">
             <button
@@ -65,7 +60,7 @@
 
         <div class="flex-1 overflow-y-auto custom-scrollbar">
           <div v-if="!filteredLinks.length" class="p-6 text-center text-sm text-[var(--color-text-muted)]">
-            {{ loadingLinks ? 'Loading…' : !machines.length ? 'No card machine is assigned to you' : 'Nothing in this period' }}
+            {{ loadingLinks ? 'Loading…' : !machines.length ? 'No card machine is assigned to you' : 'Nothing on this date' }}
           </div>
           <button
             v-for="l in filteredLinks"
@@ -388,7 +383,9 @@ import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import { getFrappeSocket } from '../services/frappeSocket.js'
-import { serverToday } from '../services/serverTime'
+import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
+import { formatDMY } from '../utils/date'
+import DatePickerButton from '../components/DatePickerButton.vue'
 import { session, getWhatsAppSessionId } from '../session.js'
 import { fireConfetti } from '../utils/confetti'
 
@@ -408,24 +405,16 @@ const loadingLinks = ref(false)
 const linkSearch = ref('')
 const statusFilters = ['All', 'Pending', 'Success', 'Failed', 'Cancelled']
 const statusFilter = ref('All')
-// last N days (today included), remembered per browser
-const dayFilters = [
-  { label: 'Today', days: 1 },
-  { label: '7 Days', days: 7 },
-  { label: '30 Days', days: 30 },
-  { label: '90 Days', days: 90 },
-]
-const DAYS_KEY = 'wb-paytm-receipt-days'
-function savedDays() {
-  try {
-    const d = Number(localStorage.getItem(DAYS_KEY))
-    return dayFilters.some((f) => f.days === d) ? d : 1
-  } catch { return 1 }
+// one day at a time, as the Sales Invoice sidebar
+const listDate = ref(serverToday())
+function shiftDate(days) {
+  const d = parseCalendarDate(listDate.value)
+  d.setDate(d.getDate() + days)
+  setListDate(toLocalISO(d))
 }
-const dayFilter = ref(savedDays())
-function setDays(days) {
-  dayFilter.value = days
-  try { localStorage.setItem(DAYS_KEY, String(days)) } catch { /* storage blocked */ }
+function setListDate(date) {
+  if (!date || date === listDate.value) return
+  listDate.value = date
   loadLinks()
 }
 // the list keeps the operator's cost center only (all, when none is set)
@@ -516,6 +505,12 @@ function qrSecondsLeft(l) {
   return d ? Math.max(0, Math.round((d - nowMs.value) / 1000)) : 0
 }
 
+// a new entry is today's: show today's list so it can be selected
+function showToday() {
+  listDate.value = serverToday()
+  return loadLinks()
+}
+
 async function loadLinks() {
   loadingLinks.value = true
   try {
@@ -524,7 +519,7 @@ async function loadLinks() {
       limit: 500,
       cost_center: costCenter,
       tids: JSON.stringify(machines.value.map((m) => m.tid).filter(Boolean)),
-      days: dayFilter.value,
+      date: listDate.value,
     }))
       .filter((l) => l.channel === 'QR' || isMachine(l) || isRequest(l))
     for (const l of links.value) setDeadline(l.order_id, l.expires_in)
@@ -666,7 +661,7 @@ async function sendToMachine(args) {
       ...args, ...accountArgs(), tid: machines.value[0]?.tid, user: machineUser(),
     }, { silent: true })
     resetForm()
-    await loadLinks()
+    await showToday()
     selected.value = links.value.find((l) => l.order_id === r.order_id) || null
   } catch (e) {
     formError.value = e.message
@@ -728,7 +723,7 @@ async function createQr(args, { sendLink = false } = {}) {
     qrImages[r.order_id] = r.qr_image
     setDeadline(r.order_id, r.expires_in)
     resetForm()
-    await loadLinks()
+    await showToday()
     selected.value = links.value.find((l) => l.order_id === r.order_id) || null
     if (sendLink && selected.value) sendPayLink(selected.value)
   } catch (e) {
