@@ -866,9 +866,13 @@ def _qr_expires_in(channel, status, creation):
 
 
 @frappe.whitelist()
-def get_payment_links(limit=100, status=None):
+def get_payment_links(limit=100, status=None, cost_center=None, tids=None, days=None):
 	"""Payment links, receipt QRs and machine receipts, newest first, for the left panel of the
-	Paytm receipt page."""
+	Paytm receipt page.
+
+	cost_center keeps the operator's cost center only; tids (JSON list) keeps rows made on those
+	card machines (Send to Machine and receipt QRs carry the machine's TID); days keeps the last
+	N days, today included."""
 	_require_desk_user()
 	filters = {
 		"channel": ("in", RECEIPT_CHANNELS),
@@ -877,6 +881,15 @@ def get_payment_links(limit=100, status=None):
 	}
 	if status:
 		filters["status"] = status
+	if cost_center:
+		filters["cost_center"] = cost_center
+	if tids is not None:
+		tids = [t for t in (frappe.parse_json(tids) or []) if t]
+		if not tids:
+			return []
+		filters["tid"] = ("in", tids)
+	if frappe.utils.cint(days) > 0:
+		filters["creation"] = (">=", frappe.utils.add_days(frappe.utils.nowdate(), 1 - frappe.utils.cint(days)))
 	rows = frappe.get_all(
 		"SSPL Paytm Transaction",
 		filters=filters,

@@ -24,7 +24,10 @@
       <aside class="flex w-[380px] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-surface)]">
         <div class="flex flex-col gap-2 border-b border-[var(--color-border)] p-3">
           <div class="flex items-center justify-between">
-            <span class="text-sm font-bold uppercase tracking-wide text-[var(--color-text-muted)]">QRs &amp; Requests</span>
+            <span class="min-w-0">
+              <span class="block text-sm font-bold uppercase tracking-wide text-[var(--color-text-muted)]">My Machine Receipts</span>
+              <span class="block truncate text-xs text-[var(--color-text-muted)]">{{ costCenter || 'All cost centers' }}<template v-if="machines.length"> · {{ machines.map((m) => m.device_name).join(', ') }}</template></span>
+            </span>
             <button
               @click="loadLinks"
               class="rounded-md px-2 py-0.5 text-sm hover:bg-[var(--color-midlight)]"
@@ -36,6 +39,17 @@
             placeholder="Search customer / order / amount"
             class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-sm outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
           />
+          <div class="flex flex-wrap gap-1">
+            <button
+              v-for="d in dayFilters"
+              :key="d.days"
+              @click="setDays(d.days)"
+              class="rounded-md px-2 py-0.5 text-xs font-bold uppercase"
+              :class="dayFilter === d.days
+                ? 'bg-[var(--color-highlight)] text-[var(--color-text-on-highlight)]'
+                : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:bg-[var(--color-midlight)]'"
+            >{{ d.label }}</button>
+          </div>
           <div class="flex flex-wrap gap-1">
             <button
               v-for="s in statusFilters"
@@ -51,7 +65,7 @@
 
         <div class="flex-1 overflow-y-auto custom-scrollbar">
           <div v-if="!filteredLinks.length" class="p-6 text-center text-sm text-[var(--color-text-muted)]">
-            {{ loadingLinks ? 'Loading…' : 'Nothing created yet' }}
+            {{ loadingLinks ? 'Loading…' : !machines.length ? 'No card machine is assigned to you' : 'Nothing in this period' }}
           </div>
           <button
             v-for="l in filteredLinks"
@@ -394,6 +408,28 @@ const loadingLinks = ref(false)
 const linkSearch = ref('')
 const statusFilters = ['All', 'Pending', 'Success', 'Failed', 'Cancelled']
 const statusFilter = ref('All')
+// last N days (today included), remembered per browser
+const dayFilters = [
+  { label: 'Today', days: 1 },
+  { label: '7 Days', days: 7 },
+  { label: '30 Days', days: 30 },
+  { label: '90 Days', days: 90 },
+]
+const DAYS_KEY = 'wb-paytm-receipt-days'
+function savedDays() {
+  try {
+    const d = Number(localStorage.getItem(DAYS_KEY))
+    return dayFilters.some((f) => f.days === d) ? d : 1
+  } catch { return 1 }
+}
+const dayFilter = ref(savedDays())
+function setDays(days) {
+  dayFilter.value = days
+  try { localStorage.setItem(DAYS_KEY, String(days)) } catch { /* storage blocked */ }
+  loadLinks()
+}
+// the list keeps the operator's cost center only (all, when none is set)
+const costCenter = (() => { try { return localStorage.getItem('wb-cost-center') || '' } catch { return '' } })()
 const selected = ref(null)
 const busy = ref(false)
 
@@ -483,8 +519,13 @@ function qrSecondsLeft(l) {
 async function loadLinks() {
   loadingLinks.value = true
   try {
-    // the server also returns old payment links; this page handles QRs, machine receipts and payment requests only
-    links.value = (await frappeGet(`${API}.get_payment_links`, { limit: 200 }))
+    // only the operator's cost center and card machines (machine receipts and QRs carry its TID)
+    links.value = (await frappeGet(`${API}.get_payment_links`, {
+      limit: 500,
+      cost_center: costCenter,
+      tids: JSON.stringify(machines.value.map((m) => m.tid).filter(Boolean)),
+      days: dayFilter.value,
+    }))
       .filter((l) => l.channel === 'QR' || isMachine(l) || isRequest(l))
     for (const l of links.value) setDeadline(l.order_id, l.expires_in)
     if (selected.value) selected.value = links.value.find((l) => l.order_id === selected.value.order_id) || null
