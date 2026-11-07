@@ -69,6 +69,7 @@
                   :disabled="isReadOnly"
                   class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)]"
                   :class="!toWarehouse && !isReadOnly ? '!border-[var(--color-danger)]' : ''"
+                  @focus="openDestinationPicker"
                   @keydown.enter.prevent="toWarehouse && focusBarcodeInput()"
                 >
                   <!-- never defaulted: the operator must pick where the goods go -->
@@ -502,6 +503,13 @@ function focusFromWarehouse() {
 
 function focusToWarehouse() {
   nextTick(() => toWarehouseInput.value?.focus())
+}
+
+// nothing picked yet: drop the list open so the operator chooses straight away.
+// showPicker needs a user gesture (Enter, click); a focus without one just leaves the select focused
+function openDestinationPicker(e) {
+  if (toWarehouse.value || isReadOnly.value) return
+  try { e.target.showPicker?.() } catch { /* no gesture or unsupported browser */ }
 }
 
 function focusRow(idx) {
