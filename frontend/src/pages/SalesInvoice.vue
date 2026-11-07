@@ -2139,9 +2139,21 @@ function handleEWayBillCancelled() {
   showEWayOptionsModal.value = false
 }
 
+// whatever had focus when the print popup opened (a bill row, the payment panel's cash box...) gets it back on close
+let focusBeforePrint = null
+watch(showPrintModal, (open) => {
+  if (open) focusBeforePrint = document.activeElement
+})
+
 async function closePrintModal() {
   showPrintModal.value = false
-  if (!pendingClearAfterPrint.value) return
+  if (!pendingClearAfterPrint.value) {
+    const el = focusBeforePrint
+    focusBeforePrint = null
+    if (el && el !== document.body) nextTick(() => { if (el.isConnected) el.focus() })
+    return
+  }
+  focusBeforePrint = null
   pendingClearAfterPrint.value = false
   // POS: the paid bill was read-only (and maybe a credit / return draft), so reset it fully
   if (props.posMode) return clearBill()
