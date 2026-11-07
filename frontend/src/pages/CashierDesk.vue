@@ -770,7 +770,7 @@
               <!-- Action Button -->
               <button
                 ref="postButton"
-                @click="processPayment"
+                @click="processPayment()"
                 :disabled="!canSubmit"
                 class="group w-full rounded-xl py-4 font-black uppercase tracking-[0.2em] text-sm transition-all active:scale-95 focus:outline-none disabled:opacity-30 disabled:pointer-events-none"
                 :class="isCredit
@@ -1027,6 +1027,17 @@
       @close="showBillMirrorCreator = false"
     />
 
+    <!-- UPI / Card typed by hand while the Paytm machine or WhatsApp QR could have collected it -->
+    <Warning
+      :show="showUnsentWarn"
+      title="Payment not sent"
+      :message="unsentWarn.message"
+      cancel-label="No, go back (Esc)"
+      confirm-label="Post anyway"
+      @close="closeUnsentWarn"
+      @confirm="confirmUnsentWarn"
+    />
+
     <!-- GST MIRROR WARNING MODAL -->
     <Warning
       :show="showGstWarning"
@@ -1246,6 +1257,9 @@ useSubwindowWatcher(showModifyModal)
 useSubwindowWatcher(showReconcileModal)
 useSubwindowWatcher(showBillMirrorCreator)
 useSubwindowWatcher(showGstWarning)
+const showUnsentWarn = ref(false)
+const unsentWarn = ref({ message: '', input: null })
+useSubwindowWatcher(showUnsentWarn)
 
 const invoices = ref([])
 const selectedInvoice = ref(null)
@@ -2336,11 +2350,50 @@ async function closePaytmQr() {
   Object.assign(q, { show: false, orderId: '', status: '', message: '', image: '', phone: '', withBill: false, tid: '', posId: '', waOk: undefined, waText: '' })
 }
 
-async function processPayment() {
+// UPI / Card amounts that were neither collected through Paytm nor sent to the machine / phone
+function unsentModes() {
+  if (isCredit.value) return []
+  const out = []
+  const canSendUpi = hasPaytmMachine.value || paytm.value.qrEnabled
+  if (canSendUpi && Number(payments.value.upi) > 0.01 && !upiLocked.value && !upiWaiting.value) {
+    out.push({ label: upiLabel.value, amount: Number(payments.value.upi), input: upiInput })
+  }
+  if (hasPaytmMachine.value && Number(payments.value.card) > 0.01 && !cardLocked.value) {
+    out.push({ label: cardLabel.value, amount: Number(payments.value.card), input: cardInput })
+  }
+  return out
+}
+
+function closeUnsentWarn() {
+  const input = unsentWarn.value.input
+  showUnsentWarn.value = false
+  unsentWarn.value = { message: '', input: null }
+  nextTick(() => { input?.value?.focus(); input?.value?.select() })
+}
+
+function confirmUnsentWarn() {
+  showUnsentWarn.value = false
+  unsentWarn.value = { message: '', input: null }
+  processPayment(true)
+}
+
+async function processPayment(unsentConfirmed = false) {
   if (!canSubmit.value) return
   if (import.meta.env.DEV && [upiRefNo.value, cardRefNo.value].some(r => String(r || '').startsWith('MOCK-'))) {
     errorMsg.value = 'This bill has a mock Paytm payment; reload the page before posting.'
     return
+  }
+  if (unsentConfirmed !== true) {
+    const unsent = unsentModes()
+    if (unsent.length) {
+      const list = unsent.map(m => `${m.label} ₹${fmt(m.amount)}`).join(' and ')
+      unsentWarn.value = {
+        message: `${list} was not sent to the machine or phone. Post it as already received?`,
+        input: unsent[0].input,
+      }
+      showUnsentWarn.value = true
+      return
+    }
   }
 
   isSubmitting.value = true
@@ -2463,7 +2516,8 @@ function handleGstConfirm() {
 async function confirmCardRef() {
   if (!cardRefNo.value) return
   showCardRefModal.value = false
-  await processPayment()
+  // the unsent UPI / Card warning (if any) was already answered before the ref was asked
+  await processPayment(true)
 }
 
 async function handleModifyClose() {
@@ -2867,7 +2921,7 @@ useShortcuts(cashierpageShortcuts({
   navigatePanelRight: handleArrowRight,
   handleEnter: handleEnter,
   toggleCredit: () => { if (!hasPaymentValues.value) toggleCredit() },
-  submitPayment: processPayment,
+  submitPayment: () => processPayment(),
   goBack: () => window.history.back()
 }))
 </script>

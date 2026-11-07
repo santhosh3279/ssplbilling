@@ -780,6 +780,7 @@ function getIsoDueDate() {
 
 // UPI / Card amounts that were neither collected through Paytm nor sent to the machine / phone
 function unsentModes() {
+  if (isCredit.value) return []
   const out = []
   const canSendUpi = hasPaytmMachine.value || paytm.value.qrEnabled
   if (canSendUpi && Number(payments.value.upi) > 0.01 && !upiLocked.value && !upiWaiting.value) {
