@@ -70,6 +70,7 @@
                   class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)]"
                   :class="!toWarehouse && !isReadOnly ? '!border-[var(--color-danger)]' : ''"
                   @focus="openDestinationPicker"
+                  @change="toWarehouse && !isReadOnly && focusBarcodeInput()"
                   @keydown.enter.prevent="toWarehouse && focusBarcodeInput()"
                 >
                   <!-- never defaulted: the operator must pick where the goods go -->
