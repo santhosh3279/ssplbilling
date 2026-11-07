@@ -73,7 +73,7 @@
         v-if="manualResults.length"
         class="results-scroll absolute inset-x-0 bottom-full max-h-[45vh] space-y-1 overflow-y-auto overscroll-contain border-t border-[var(--color-border)] bg-[var(--color-bg)] p-2 shadow-[0_-4px_12px_rgba(0,0,0,0.25)]"
       >
-        <!-- Item name (full, up to two lines) | item code | price (cipher), all one size; code and price columns
+        <!-- Item name (full, up to two lines) | item code | stock | price (cipher), all one size; code, stock and price columns
              are as wide as the longest value in the list (monospace, so divider lines line up on every row),
              the name gets the rest and wraps onto at most two lines.
              Rows are 1.25× the single-line height (11px vertical padding) for an easier tap.
@@ -89,6 +89,11 @@
         >
           <div class="name-2 min-w-0 self-center break-words px-2 py-[0.6875rem]" :title="m.name">{{ m.name }}</div>
           <div class="flex items-center whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-[0.6875rem] font-mono text-[var(--color-text-muted)]">{{ m.code }}</div>
+          <div
+            v-if="showStock"
+            class="flex items-center justify-end whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-[0.6875rem] font-mono"
+            :class="stockOf(m) <= 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'"
+          >{{ stockOf(m) }}</div>
           <div class="flex items-center justify-end whitespace-nowrap border-l-2 border-[var(--color-text-muted)] px-1.5 py-[0.6875rem] font-mono">{{ cipherPrice(m.price) }}</div>
         </button>
       </div>
@@ -160,8 +165,9 @@ import MobileSearchKeyboard from './MobileSearchKeyboard.vue'
 import { cipherPrice } from '../encryption.js'
 
 const props = defineProps({
-  // (text) => [{ code, name, price, barcodes }] — items matching the typed text, listed as
-  // name · code · price (cipher); `code` is emitted on pick. A card whose code or one of
+  // (text) => [{ code, name, price, barcodes, stock }] — items matching the typed text, listed as
+  // name · code · stock · price (cipher); `code` is emitted on pick. `stock` is optional (column
+  // hidden when no result has it). A card whose code or one of
   // its `barcodes` equals the typed text blinks
   search: { type: Function, default: null },
 })
@@ -192,11 +198,16 @@ const manualResults = computed(() => {
   return props.search && q.length >= 2 ? (props.search(q) || []).slice(0, 30) : []
 })
 
-// Same code / price column widths on every row: longest value in ch (monospace) + px-1.5 padding + border
+// Stock shown to at most 2 decimals; the column only appears when the page sends stock
+const stockOf = m => Number((Number(m.stock) || 0).toFixed(2))
+const showStock = computed(() => manualResults.value.some(m => m.stock !== undefined && m.stock !== null))
+
+// Same code / stock / price column widths on every row: longest value in ch (monospace) + px-1.5 padding + border
 const resultColumns = computed(() => {
   const widest = f => Math.max(1, ...manualResults.value.map(m => String(f(m) ?? '').length))
   const col = n => `calc(${n}ch + 0.75rem + 2px)`
-  return `minmax(0,1fr) ${col(widest(m => m.code))} ${col(widest(m => cipherPrice(m.price)))}`
+  const stock = showStock.value ? ` ${col(widest(stockOf))}` : ''
+  return `minmax(0,1fr) ${col(widest(m => m.code))}${stock} ${col(widest(m => cipherPrice(m.price)))}`
 })
 
 const isExactCode = m => {
