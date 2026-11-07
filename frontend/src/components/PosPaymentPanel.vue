@@ -3,7 +3,7 @@
        and its Escape would otherwise leave the page from inside the cash box;
        hidden (not unmounted, so the QR queue keeps polling) while it has nothing to show -->
   <aside
-    v-show="!isEmpty"
+    v-show="!isEmpty && !suspended"
     class="group flex w-[360px] shrink-0 flex-col border-l border-[var(--color-border)] bg-[var(--color-surface)] overflow-y-auto transition-shadow focus-within:shadow-[inset_0_0_0_2px_var(--color-focus),inset_0_0_18px_color-mix(in_srgb,var(--color-focus)_45%,transparent)]"
     @keydown="handleKeydown"
   >
@@ -519,6 +519,8 @@ const props = defineProps({
   invoiceName: { type: String, default: null },
   // bumped when the same bill is saved again, so its new totals are fetched
   reloadKey: { type: Number, default: 0 },
+  // the bill is open for modify: stay hidden until it is saved again
+  suspended: { type: Boolean, default: false },
 })
 
 // open-bill: a UPI queue row asks the page to bring its bill into view

@@ -908,7 +908,7 @@ const props = defineProps({
   posMode: Boolean
 })
 
-const emit = defineEmits(['close', 'active-bill', 'focus-payment'])
+const emit = defineEmits(['close', 'active-bill', 'focus-payment', 'modifying'])
 
 const router = useRouter()
 const route = useRoute()
@@ -1084,6 +1084,8 @@ const isLoadingBill = ref(false)
 
 const isReadOnly = ref(false)
 const isSaved = ref(false)
+// POS: a saved bill opened for edit (M) is not payable until it is saved again, so the payment panel steps aside
+watch(() => isSaved.value && !isReadOnly.value, (v) => { if (props.posMode) emit('modifying', v) })
 const isSubmitted = ref(false)
 const linkedPayments = ref([])
 const ewaybill = ref('')

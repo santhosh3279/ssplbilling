@@ -11,6 +11,7 @@
         pos-mode
         @active-bill="onActiveBill"
         @focus-payment="paymentRef?.focus()"
+        @modifying="modifying = $event"
       />
       <div class="pos-dim pointer-events-none absolute inset-0 z-40" aria-hidden="true"></div>
     </div>
@@ -19,6 +20,7 @@
       class="pos-pay"
       :invoice-name="activeBill"
       :reload-key="reloadKey"
+      :suspended="modifying"
       @loaded="onPaymentLoaded"
       @settled="salesRef?.printAndClear()"
       @back="salesRef?.focusBarcodeInput()"
@@ -39,6 +41,8 @@ const salesRef = ref(null)
 const paymentRef = ref(null)
 const activeBill = ref(null)
 const reloadKey = ref(0)
+// M opened the bill for edit: payment hides until F8 saves it again
+const modifying = ref(false)
 // a just-saved bill or a draft picked from the list goes straight to Cash; a paid bill leaves focus in the bill
 const focusOnLoad = ref(false)
 
