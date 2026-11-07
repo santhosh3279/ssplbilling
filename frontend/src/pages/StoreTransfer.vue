@@ -73,7 +73,7 @@
                 >
                   <!-- never defaulted: the operator must pick where the goods go -->
                   <option value="" disabled>Select destination</option>
-                  <option v-for="w in warehouses" :key="w.name" :value="w.name">{{ w.name }}</option>
+                  <option v-for="w in destinationWarehouses" :key="w.name" :value="w.name">{{ w.name }}</option>
                 </select>
               </div>
 
@@ -429,6 +429,12 @@ const sidebarSearch = ref('')
 const sidebarSeries = ref([])
 const draftOnly = ref(false)
 const sidebarLoading = ref(false)
+
+// goods cannot move into the warehouse they leave, so the source is not offered as destination
+const destinationWarehouses = computed(() => warehouses.value.filter(w => w.name !== fromWarehouse.value))
+watch(fromWarehouse, (src) => {
+  if (src && src === toWarehouse.value) toWarehouse.value = ''
+})
 
 const totalAmount = computed(() => {
   return items.value.reduce((sum, item) => sum + (item.qty * item.rate), 0).toFixed(2)
