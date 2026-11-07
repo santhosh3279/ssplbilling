@@ -15,7 +15,7 @@
       </div>
       <div class="text-sm text-[var(--color-text-muted)]">
         <span v-if="!paytmEnabled" class="font-bold text-[var(--color-danger)]">Paytm is disabled in SSPL Paytm Settings</span>
-        <span v-else>Esc back · F2 customer · Ctrl+Enter send to machine · F8 send request</span>
+        <span v-else>Esc back · F2 customer · F4 link bills · Ctrl+Enter send to machine · F8 send request</span>
       </div>
     </header>
 
@@ -128,7 +128,7 @@
                         min="0"
                         step="0.01"
                         placeholder="0.00"
-                        @keydown.enter.prevent="mobileInput?.focus()"
+                        @keydown.enter.prevent="openBills(true)"
                         class="w-full bg-transparent text-right text-5xl font-light text-[var(--color-text)] placeholder:text-inherit focus:text-[var(--color-text-on-focus)] focus:outline-none"
                       />
                     </td>
@@ -143,10 +143,64 @@
                       />
                     </td>
                     <td class="bg-[var(--color-surface-raised)] px-6 py-1.5 text-right">
-                      <div v-if="ledgerBalance !== null" class="text-4xl font-black" :class="ledgerBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
-                        {{ Math.abs(ledgerBalance).toLocaleString('en-IN') }} {{ ledgerBalance > 0 ? 'Dr' : 'Cr' }}
+                      <div v-if="ledgerBalance !== null" class="flex items-center justify-end gap-3">
+                        <div class="text-4xl font-black" :class="ledgerBalance > 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
+                          {{ Math.abs(ledgerBalance).toLocaleString('en-IN') }} {{ ledgerBalance > 0 ? 'Dr' : 'Cr' }}
+                        </div>
+                        <button
+                          v-if="form.customer"
+                          @click="openBills()"
+                          class="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--color-highlight)]/10 text-xl font-bold text-[var(--color-highlight)] transition-all hover:bg-[var(--color-highlight)] hover:text-[var(--color-text-on-highlight)]"
+                          title="Link outstanding bills / unlinked entries (F4)"
+                        >📄</button>
                       </div>
                       <div v-else class="text-xl font-medium italic text-[var(--color-text-muted)]">—</div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Bills / entries linked to the new receipt (applied when it is paid) -->
+            <div v-if="allocations.length" class="border border-[var(--color-border)] bg-[var(--color-surface)] shadow-lg">
+              <div class="flex items-center gap-2 border-b border-[var(--color-border)] bg-[var(--color-surface-raised)] px-4 py-1.5">
+                <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Linked Bills / Allocations · applied when paid</span>
+                <div class="h-px flex-1 bg-[var(--color-border)]/50"></div>
+                <span class="text-sm font-black" :class="allocationOver ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">{{ fmt(totalAllocated) }}</span>
+              </div>
+              <table class="w-full border-collapse text-left">
+                <thead class="bg-[var(--color-surface-raised)]">
+                  <tr class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)] text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">
+                    <th class="px-4 py-2">Voucher No</th>
+                    <th class="px-4 py-2">Type</th>
+                    <th class="px-4 py-2 text-right">Outstanding</th>
+                    <th class="w-64 px-4 py-2 text-right">Allocated</th>
+                    <th class="w-16 px-4 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)]">
+                  <tr
+                    v-for="(a, idx) in allocations"
+                    :key="a.reference_name + (a._row || '')"
+                    class="divide-x divide-[var(--color-border)] transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)] hover:bg-[var(--color-midlight)]/30"
+                  >
+                    <td class="px-4 py-1.5 font-mono text-xl font-bold">{{ a.reference_name }}</td>
+                    <td class="px-4 py-1.5 text-xl">{{ a.reference_doctype }}</td>
+                    <td class="px-4 py-1.5 text-right font-mono text-xl">{{ fmt(a.outstanding_amount) }}</td>
+                    <td class="px-2 py-1">
+                      <input
+                        v-model.number="a.allocated_amount"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        class="w-full bg-transparent px-3 py-1 text-right text-2xl font-black placeholder:text-inherit focus:outline-none"
+                      />
+                    </td>
+                    <td class="px-4 py-1 text-right">
+                      <button
+                        @click="allocations.splice(idx, 1)"
+                        class="ml-auto flex h-7 w-7 items-center justify-center rounded bg-[var(--color-danger)]/10 text-[var(--color-danger)] transition-all hover:bg-[var(--color-danger)]/25"
+                      >✕</button>
                     </td>
                   </tr>
                 </tbody>
@@ -223,6 +277,10 @@
                     <template v-if="waResult[selected.order_id]">
                       <dt class="text-[var(--color-text-muted)]">WhatsApp</dt>
                       <dd class="font-bold" :class="waResult[selected.order_id].ok ? 'text-[var(--color-success)]' : 'text-[var(--color-danger)]'">{{ waResult[selected.order_id].text }}</dd>
+                    </template>
+                    <template v-if="selected.allocations?.length">
+                      <dt class="text-[var(--color-text-muted)]">Linked</dt>
+                      <dd>{{ selected.allocations.map((a) => `${a.reference_name} ₹${fmt(a.allocated_amount)}`).join(' · ') }}</dd>
                     </template>
                     <template v-if="selected.result_message && selected.status !== 'Pending'">
                       <dt class="text-[var(--color-text-muted)]">Message</dt><dd>{{ selected.result_message }}</dd>
@@ -363,6 +421,19 @@
       </div>
     </transition>
 
+    <OutstandingBillsModal
+      :show="showBillsModal"
+      partyType="Customer"
+      :party="form.customer"
+      :enteredAmount="Number(form.amount) || 0"
+      activeTab="Receipt"
+      :modalAmounts="modalAmounts"
+      :otherAllocations="[]"
+      :mop="upiAccountName"
+      @close="closeBills"
+      @update-allocations="onAllocations"
+    />
+
     <CustomerSearchModal
       :show="showCustomerSearch"
       title="Select Customer"
@@ -382,6 +453,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
+import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 import { getFrappeSocket } from '../services/frappeSocket.js'
 import { serverToday, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import { formatDMY } from '../utils/date'
@@ -432,6 +504,15 @@ const creating = ref(false)
 const formError = ref('')
 const form = reactive({ customer: '', customer_name: '', amount: '', mobile: '', description: '' })
 const ledgerBalance = ref(null)
+
+// Bills / unlinked entries picked for the new receipt, as in Payment & Receipt Entry. They are
+// stored on the Paytm row and applied to the Receipt Payment Entry once the customer pays.
+const allocations = ref([])
+const showBillsModal = ref(false)
+const upiAccountName = (() => { try { return localStorage.getItem('wb-upi') || '' } catch { return '' } })()
+const totalAllocated = computed(() => allocations.value.reduce((sum, a) => sum + Math.abs(Number(a.allocated_amount) || 0), 0))
+const allocationOver = computed(() => totalAllocated.value > (Number(form.amount) || 0) + 0.01)
+const modalAmounts = computed(() => Object.fromEntries(allocations.value.map((a) => [a._row || a.reference_name, a.allocated_amount])))
 
 const customerInput = ref(null)
 const amountInput = ref(null)
@@ -591,6 +672,7 @@ function onCustomerSelect(item) {
   form.customer = item.name
   form.customer_name = item.label || item.customer_name || item.name
   form.mobile = item.whatsapp || item.mobile_no || ''
+  allocations.value = [] // they belong to the previous customer
   fetchLedgerBalance(item.name)
   fetchMobile(item.name, form.mobile)
   nextTick(() => amountInput.value?.focus())
@@ -620,16 +702,51 @@ async function fetchLedgerBalance(customer) {
   } catch { /* balance is informational only */ }
 }
 
+// F4 / 📄 opens the bills; Enter on the amount opens them only when the customer has something to link
+async function openBills(fromAmount = false) {
+  if (!form.customer) { formError.value = 'Select a customer'; return customerInput.value?.focus() }
+  if (!fromAmount) { showBillsModal.value = true; return }
+  if (!(Number(form.amount) > 0)) return
+  try {
+    const res = await frappeGet('ssplbilling.api.outstanding_api.get_party_outstanding', {
+      party_type: 'Customer',
+      party: form.customer,
+    })
+    const hasItems = ['invoices', 'payment_entries', 'journal_entries']
+      .some((k) => (res?.[k] || []).some((r) => r.direction === 'Dr'))
+    if (hasItems) { showBillsModal.value = true; return }
+  } catch { /* linking is optional */ }
+  mobileInput.value?.focus()
+}
+
+function onAllocations(list) {
+  allocations.value = list.map((a) => ({ ...a, allocated_amount: Math.abs(Number(a.allocated_amount) || 0) }))
+  closeBills()
+}
+
+function closeBills() {
+  showBillsModal.value = false
+  nextTick(() => mobileInput.value?.focus())
+}
+
 function resetForm() {
   Object.assign(form, { customer: '', customer_name: '', amount: '', mobile: '', description: '' })
   ledgerBalance.value = null
+  allocations.value = []
 }
 
 function formArgs() {
   formError.value = ''
   if (!form.customer) { formError.value = 'Select a customer'; customerInput.value?.focus(); return null }
   if (!(Number(form.amount) > 0)) { formError.value = 'Enter an amount'; amountInput.value?.focus(); return null }
-  return { customer: form.customer, amount: Number(form.amount), description: form.description, mobile: form.mobile }
+  if (allocationOver.value) { formError.value = `Linked ₹${fmt(totalAllocated.value)} is more than the amount`; return null }
+  return {
+    customer: form.customer,
+    amount: Number(form.amount),
+    description: form.description,
+    mobile: form.mobile,
+    allocations: JSON.stringify(allocations.value.filter((a) => Number(a.allocated_amount) > 0)),
+  }
 }
 
 // operator defaults: the receipt is debited to wb-upi under wb-company / wb-cost-center
@@ -674,7 +791,10 @@ async function sendToMachine(args) {
 // Same customer and amount as a failed / stopped machine receipt
 function resendToMachine(l) {
   formError.value = ''
-  sendToMachine({ customer: l.customer, amount: l.amount, description: l.link_description, mobile: l.customer_mobile })
+  sendToMachine({
+    customer: l.customer, amount: l.amount, description: l.link_description, mobile: l.customer_mobile,
+    allocations: JSON.stringify(l.allocations || []),
+  })
 }
 
 // Generate QR, then send its UPI link (the QR's own upi://pay string) on WhatsApp
@@ -737,7 +857,10 @@ async function createQr(args, { sendLink = false } = {}) {
 // Same customer and amount as an expired / stopped QR
 function regenerateQr(l) {
   formError.value = ''
-  createQr({ customer: l.customer, amount: l.amount, description: l.link_description, mobile: l.customer_mobile })
+  createQr({
+    customer: l.customer, amount: l.amount, description: l.link_description, mobile: l.customer_mobile,
+    allocations: JSON.stringify(l.allocations || []),
+  })
 }
 
 async function checkStatus(l, { quiet = false } = {}) {
@@ -863,9 +986,10 @@ function onPaytmSocket(r) {
 }
 
 function onKeydown(e) {
-  if (showCustomerSearch.value) return
+  if (showCustomerSearch.value || showBillsModal.value) return
   if (e.key === 'Escape') { e.preventDefault(); router.push('/') }
   else if (e.key === 'F2') { e.preventDefault(); openCustomerSearch() }
+  else if (e.key === 'F4') { e.preventDefault(); openBills() }
   else if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); createEntry() }
   else if (e.key === 'F8') { e.preventDefault(); createRequest() }
 }

@@ -694,7 +694,15 @@ def get_customer_whatsapp(customer):
 
 @frappe.whitelist(methods=["POST"])
 def create_receipt_qr(
-	customer, amount, description=None, mobile=None, company=None, cost_center=None, upi_account=None, user=None
+	customer,
+	amount,
+	description=None,
+	mobile=None,
+	company=None,
+	cost_center=None,
+	upi_account=None,
+	user=None,
+	allocations=None,
 ):
 	"""Dynamic UPI QR for a customer receipt (no invoice), shown on screen or shared with the
 	customer. Valid for QR_EXPIRY_SECONDS; once paid it gets its Receipt Payment Entry like a link.
@@ -718,6 +726,7 @@ def create_receipt_qr(
 	if not upi_account:
 		frappe.throw(_("Set the UPI Account in SSPL Paytm Settings; QR receipts are received into it"))
 	_validate_receipt_accounts(upi_account, company, cost_center)
+	allocations = _clean_allocations(allocations, customer, amount)
 	device = next(iter(_user_devices(settings, user)), None)
 	pos_id = (
 		(device and device.pos_id)
@@ -740,6 +749,7 @@ def create_receipt_qr(
 			"upi_account": upi_account,
 			"company": company or None,
 			"cost_center": cost_center or None,
+			"allocations": allocations,
 			"device_name": pos_id,
 			"tid": device.tid if device else None,
 			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
@@ -775,6 +785,7 @@ def send_receipt_to_device(
 	cost_center=None,
 	upi_account=None,
 	user=None,
+	allocations=None,
 ):
 	"""Customer receipt (no invoice) paid on the card machine: the amount goes to the user's machine,
 	which opens on its UPI QR. Once paid it gets its Receipt Payment Entry like a receipt QR.
@@ -796,6 +807,7 @@ def send_receipt_to_device(
 	if not upi_account:
 		frappe.throw(_("Set the UPI Account in SSPL Paytm Settings; machine receipts are received into it"))
 	_validate_receipt_accounts(upi_account, company, cost_center)
+	allocations = _clean_allocations(allocations, customer, amount)
 
 	now = now_datetime()
 	# ECR ids are plain alphanumeric
@@ -814,6 +826,7 @@ def send_receipt_to_device(
 			"upi_account": upi_account,
 			"company": company or None,
 			"cost_center": cost_center or None,
+			"allocations": allocations,
 			"device_name": device.device_name,
 			"tid": tid,
 			"transaction_datetime": now.strftime("%Y-%m-%d %H:%M:%S"),
@@ -850,6 +863,111 @@ def _validate_receipt_accounts(upi_account, company, cost_center):
 			frappe.throw(
 				_("Cost Center {0} does not belong to company {1}").format(cost_center, company or acc.company)
 			)
+
+
+ALLOCATION_DOCTYPES = ("Sales Invoice", "Payment Entry", "Journal Entry")
+
+
+def _clean_allocations(allocations, customer, amount):
+	"""Bills / unlinked entries picked on the Paytm Receipt page (OutstandingBillsModal rows), checked
+	and kept as JSON on the row: _make_receipt applies them once the receipt is paid, which can be
+	much later. Each must be a submitted document of this customer; together at most the amount."""
+	rows = frappe.parse_json(allocations) if allocations else []
+	if not rows:
+		return None
+	if not isinstance(rows, list):
+		frappe.throw(_("Invalid allocations"))
+	clean = []
+	for a in rows:
+		doctype, name = a.get("reference_doctype"), a.get("reference_name")
+		allocated = abs(flt(a.get("allocated_amount"), 2))
+		if allocated <= 0:
+			continue
+		if doctype not in ALLOCATION_DOCTYPES or not name:
+			frappe.throw(_("Cannot link {0} {1}").format(doctype, name))
+		if doctype == "Sales Invoice":
+			ok = frappe.db.exists(doctype, {"name": name, "docstatus": 1, "customer": customer})
+		elif doctype == "Payment Entry":
+			ok = frappe.db.exists(
+				doctype, {"name": name, "docstatus": 1, "party_type": "Customer", "party": customer}
+			)
+		else:
+			ok = frappe.db.exists(
+				"Journal Entry Account",
+				{"parent": name, "docstatus": 1, "party_type": "Customer", "party": customer},
+			)
+		if not ok:
+			frappe.throw(_("{0} {1} is not a submitted entry of {2}").format(doctype, name, customer))
+		clean.append(
+			{
+				"reference_doctype": doctype,
+				"reference_name": name,
+				"total_amount": flt(a.get("total_amount"), 2),
+				"outstanding_amount": flt(a.get("outstanding_amount"), 2),
+				"allocated_amount": allocated,
+				"_row": a.get("_row"),
+			}
+		)
+	if sum(a["allocated_amount"] for a in clean) > flt(amount, 2) + 0.01:
+		frappe.throw(_("Linked amount is more than the receipt amount {0}").format(flt(amount, 2)))
+	return json.dumps(clean) if clean else None
+
+
+def _live_invoice_refs(allocations):
+	"""Sales Invoice links re-read at receipt time: the bill may have been paid since the QR was made,
+	so each allocation is clamped to what is outstanding now (credit notes keep their minus sign)."""
+	refs = []
+	for a in allocations:
+		if a.get("reference_doctype") != "Sales Invoice":
+			continue
+		inv = frappe.db.get_value(
+			"Sales Invoice",
+			{"name": a["reference_name"], "docstatus": 1},
+			["grand_total", "outstanding_amount"],
+			as_dict=True,
+		)
+		outstanding = flt(inv.outstanding_amount, 2) if inv else 0
+		if not outstanding:
+			continue
+		sign = 1 if outstanding > 0 else -1
+		refs.append(
+			{
+				"reference_doctype": "Sales Invoice",
+				"reference_name": a["reference_name"],
+				"total_amount": inv.grand_total,
+				"outstanding_amount": outstanding,
+				"allocated_amount": sign * min(abs(flt(a.get("allocated_amount"))), abs(outstanding)),
+			}
+		)
+	return refs
+
+
+def _reconcile_allocations(txn, pe_name, allocations, company):
+	"""Unlinked Payment / Journal Entries picked for the receipt, reconciled against the new Payment
+	Entry as Payment & Receipt Entry does. A failure is logged and never undoes the receipt."""
+	from ssplbilling.api.reconcile_api import post_reconciliation
+
+	cross = [
+		{
+			"payment_type": "Payment Entry",
+			"payment_name": pe_name,
+			"reference_row": None,
+			"invoice_type": a["reference_doctype"],
+			"invoice_name": a["reference_name"],
+			"amount": flt(a.get("allocated_amount")),
+			"unreconciled_amount": txn.amount,
+		}
+		for a in allocations
+		if a.get("reference_doctype") in ("Payment Entry", "Journal Entry")
+	]
+	if not cross:
+		return
+	frappe.db.savepoint("paytm_link_reconcile")
+	try:
+		post_reconciliation("Customer", txn.customer, json.dumps(cross), company=company)
+	except Exception:
+		frappe.db.rollback(save_point="paytm_link_reconcile")
+		frappe.log_error(title="Paytm receipt: reconciliation failed", message=frappe.get_traceback())
 
 
 def _is_receipt(txn):
@@ -912,6 +1030,7 @@ def get_payment_links(limit=100, status=None, cost_center=None, tids=None, date=
 			"owner",
 			"qr_data",
 			"device_name",
+			"allocations",
 		],
 		order_by="creation desc",
 		limit_page_length=frappe.utils.cint(limit) or 100,
@@ -921,6 +1040,7 @@ def get_payment_links(limit=100, status=None, cost_center=None, tids=None, date=
 		# a receipt QR's link is its UPI string, what scanning the QR gives
 		qr_data = r.pop("qr_data")
 		r.pay_url = qr_data if r.channel == "QR" else ""
+		r.allocations = frappe.parse_json(r.allocations) if r.allocations else []
 	return rows
 
 
@@ -1029,28 +1149,42 @@ def _make_receipt(txn):
 	try:
 		if session_user == "Guest":
 			frappe.set_user(txn.owner)
-		pe_name = _build_and_submit_payment_entry(
-			{
-				"payment_type": "Receive",
-				"party_type": "Customer",
-				"party": txn.customer,
-				"amount": txn.amount,
-				"mop_account": upi_account,
-				"company": txn.get("company") or frappe.db.get_value("Account", upi_account, "company"),
-				"cost_center": txn.get("cost_center"),
-				# same fallback as the cashier desk when no Mode of Payment maps to the account
-				"mode_of_payment": frappe.db.get_value(
-					"Mode of Payment Account", {"default_account": upi_account}, "parent"
-				)
-				or "Cash",
-				"reference_no": txn.rrn or txn.paytm_txn_id or txn.order_id,
-				"reference_date": frappe.utils.today(),
-				"remarks": f"Paytm {RECEIPT_LABELS.get(txn.channel, 'UPI QR')} {txn.order_id}: "
-				f"{txn.link_description or ''}".strip()
-				+ (f" · Mobile {txn.customer_mobile}" if txn.customer_mobile else ""),
-			}
-		)
+		company = txn.get("company") or frappe.db.get_value("Account", upi_account, "company")
+		data = {
+			"payment_type": "Receive",
+			"party_type": "Customer",
+			"party": txn.customer,
+			"amount": txn.amount,
+			"mop_account": upi_account,
+			"company": company,
+			"cost_center": txn.get("cost_center"),
+			# same fallback as the cashier desk when no Mode of Payment maps to the account
+			"mode_of_payment": frappe.db.get_value(
+				"Mode of Payment Account", {"default_account": upi_account}, "parent"
+			)
+			or "Cash",
+			"reference_no": txn.rrn or txn.paytm_txn_id or txn.order_id,
+			"reference_date": frappe.utils.today(),
+			"remarks": f"Paytm {RECEIPT_LABELS.get(txn.channel, 'UPI QR')} {txn.order_id}: "
+			f"{txn.link_description or ''}".strip()
+			+ (f" · Mobile {txn.customer_mobile}" if txn.customer_mobile else ""),
+		}
+		# bills / entries picked on the Paytm Receipt page
+		allocations = frappe.parse_json(txn.get("allocations")) if txn.get("allocations") else []
+		refs = _live_invoice_refs(allocations)
+		pe_name = None
+		if refs:
+			# a bill link that no longer fits must not stop the customer's money being receipted
+			frappe.db.savepoint("paytm_link_refs")
+			try:
+				pe_name = _build_and_submit_payment_entry({**data, "references": refs})
+			except Exception:
+				frappe.db.rollback(save_point="paytm_link_refs")
+				frappe.log_error(title="Paytm receipt: bill links dropped", message=frappe.get_traceback())
+		if not pe_name:
+			pe_name = _build_and_submit_payment_entry(data)
 		txn.payment_entry = pe_name
+		_reconcile_allocations(txn, pe_name, allocations, company)
 		try:
 			from ssplbilling.api.automatic_entries_api import mirror_standalone_payment_entry
 

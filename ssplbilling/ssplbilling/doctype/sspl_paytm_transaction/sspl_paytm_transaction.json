@@ -21,6 +21,7 @@
   "link_id",
   "short_url",
   "payment_entry",
+  "allocations",
   "upi_account",
   "company",
   "cost_center",
@@ -156,6 +157,13 @@
    "read_only": 1
   },
   {
+   "description": "Bills / unlinked entries chosen on the Paytm Receipt page (JSON); applied to the Receipt Payment Entry when it is made",
+   "fieldname": "allocations",
+   "fieldtype": "Long Text",
+   "label": "Allocations",
+   "read_only": 1
+  },
+  {
    "description": "Account the receipt is debited to; empty uses the UPI Account in SSPL Paytm Settings",
    "fieldname": "upi_account",
    "fieldtype": "Link",
@@ -238,7 +246,7 @@
   }
  ],
  "links": [],
- "modified": "2026-10-23 18:00:00",
+ "modified": "2026-11-07 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL Paytm Transaction",
