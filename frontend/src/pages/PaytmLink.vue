@@ -510,7 +510,9 @@ const ledgerBalance = ref(null)
 const allocations = ref([])
 const showBillsModal = ref(false)
 const upiAccountName = (() => { try { return localStorage.getItem('wb-upi') || '' } catch { return '' } })()
-const totalAllocated = computed(() => allocations.value.reduce((sum, a) => sum + Math.abs(Number(a.allocated_amount) || 0), 0))
+// net of credit notes (negative outstanding), as the server checks it
+const totalAllocated = computed(() => allocations.value.reduce(
+  (sum, a) => sum + (Number(a.outstanding_amount) < 0 ? -1 : 1) * Math.abs(Number(a.allocated_amount) || 0), 0))
 const allocationOver = computed(() => totalAllocated.value > (Number(form.amount) || 0) + 0.01)
 const modalAmounts = computed(() => Object.fromEntries(allocations.value.map((a) => [a._row || a.reference_name, a.allocated_amount])))
 

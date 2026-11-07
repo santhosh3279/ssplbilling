@@ -908,7 +908,9 @@ def _clean_allocations(allocations, customer, amount):
 				"_row": a.get("_row"),
 			}
 		)
-	if sum(a["allocated_amount"] for a in clean) > flt(amount, 2) + 0.01:
+	# net of credit notes (negative outstanding), as Payment & Receipt Entry allows a bill plus its return
+	net = sum((-1 if a["outstanding_amount"] < 0 else 1) * a["allocated_amount"] for a in clean)
+	if net > flt(amount, 2) + 0.01:
 		frappe.throw(_("Linked amount is more than the receipt amount {0}").format(flt(amount, 2)))
 	return json.dumps(clean) if clean else None
 
@@ -944,9 +946,15 @@ def _live_invoice_refs(allocations):
 
 def _reconcile_allocations(txn, pe_name, allocations, company):
 	"""Unlinked Payment / Journal Entries picked for the receipt, reconciled against the new Payment
-	Entry as Payment & Receipt Entry does. A failure is logged and never undoes the receipt."""
+	Entry as Payment & Receipt Entry does. A failure is logged and never undoes the receipt.
+	Returns the allocations that were reconciled."""
 	from ssplbilling.api.reconcile_api import post_reconciliation
 
+	picked = [a for a in allocations if a.get("reference_doctype") in ("Payment Entry", "Journal Entry")]
+	# what the bill links left of the new entry; reconcile checks against this
+	unallocated = flt(frappe.db.get_value("Payment Entry", pe_name, "unallocated_amount"), 2)
+	if not picked or unallocated <= 0:
+		return []
 	cross = [
 		{
 			"payment_type": "Payment Entry",
@@ -955,19 +963,18 @@ def _reconcile_allocations(txn, pe_name, allocations, company):
 			"invoice_type": a["reference_doctype"],
 			"invoice_name": a["reference_name"],
 			"amount": flt(a.get("allocated_amount")),
-			"unreconciled_amount": txn.amount,
+			"unreconciled_amount": unallocated,
 		}
-		for a in allocations
-		if a.get("reference_doctype") in ("Payment Entry", "Journal Entry")
+		for a in picked
 	]
-	if not cross:
-		return
 	frappe.db.savepoint("paytm_link_reconcile")
 	try:
 		post_reconciliation("Customer", txn.customer, json.dumps(cross), company=company)
+		return picked
 	except Exception:
 		frappe.db.rollback(save_point="paytm_link_reconcile")
 		frappe.log_error(title="Paytm receipt: reconciliation failed", message=frappe.get_traceback())
+		return []
 
 
 def _is_receipt(txn):
@@ -1173,18 +1180,23 @@ def _make_receipt(txn):
 		allocations = frappe.parse_json(txn.get("allocations")) if txn.get("allocations") else []
 		refs = _live_invoice_refs(allocations)
 		pe_name = None
+		applied = []
 		if refs:
 			# a bill link that no longer fits must not stop the customer's money being receipted
 			frappe.db.savepoint("paytm_link_refs")
 			try:
 				pe_name = _build_and_submit_payment_entry({**data, "references": refs})
+				applied = refs
 			except Exception:
 				frappe.db.rollback(save_point="paytm_link_refs")
 				frappe.log_error(title="Paytm receipt: bill links dropped", message=frappe.get_traceback())
 		if not pe_name:
 			pe_name = _build_and_submit_payment_entry(data)
 		txn.payment_entry = pe_name
-		_reconcile_allocations(txn, pe_name, allocations, company)
+		applied += _reconcile_allocations(txn, pe_name, allocations, company)
+		if allocations:
+			# keep only what was actually linked, so the page does not show dropped bills
+			txn.allocations = json.dumps(applied) if applied else None
 		try:
 			from ssplbilling.api.automatic_entries_api import mirror_standalone_payment_entry
 
