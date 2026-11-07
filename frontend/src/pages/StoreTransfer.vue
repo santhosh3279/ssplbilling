@@ -144,8 +144,10 @@
             <input
               ref="barcodeInput"
               v-model="barcodeQuery"
-              placeholder="Scan Barcode or Type Item Name..."
+              :readonly="!toWarehouse"
+              :placeholder="toWarehouse ? 'Scan Barcode or Type Item Name...' : 'Select the Destination Warehouse first'"
               class="w-full bg-transparent px-4 py-3 text-4xl font-mono text-[var(--color-highlight)] outline-none placeholder:text-[var(--color-text-muted)]/30"
+              @focus="!toWarehouse && focusToWarehouse()"
               @input="onBarcodeInput"
               @keydown="handleBarcodeKeydown"
             />
@@ -483,6 +485,8 @@ watch([sidebarDate, draftOnly], () => fetchRecentTransfers())
 function focusBarcodeInput() {
   selectedRowIdx.value = -1
   exitEditMode()
+  // no items go in until the destination is picked
+  if (!toWarehouse.value) return focusToWarehouse()
   nextTick(() => barcodeInput.value?.focus())
 }
 
@@ -652,6 +656,7 @@ function handleBarcodeKeydown(e) {
 
 async function handleBarcodeEnter() {
   if (!barcodeQuery.value) return
+  if (!toWarehouse.value) return focusToWarehouse()
   
   const code = barcodeQuery.value.trim()
   // Variant templates cannot be transferred; send them to Item Search like an unknown code
