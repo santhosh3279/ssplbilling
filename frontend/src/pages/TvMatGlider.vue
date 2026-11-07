@@ -1,19 +1,19 @@
 <template>
-  <div class="fixed inset-0 overflow-hidden bg-slate-50 font-sans text-slate-900 antialiased select-none" @mousemove="resetControlsTimer">
+  <div class="fixed inset-0 overflow-hidden bg-black font-sans text-white antialiased select-none" @mousemove="resetControlsTimer">
     <!-- Loading -->
     <div v-if="loading" class="flex h-full flex-col items-center justify-center">
       <div class="relative mb-4 h-16 w-16">
         <div class="absolute inset-0 rounded-full border-4 border-indigo-500/20"></div>
         <div class="absolute inset-0 animate-spin rounded-full border-4 border-t-indigo-500"></div>
       </div>
-      <div class="animate-pulse text-sm font-medium text-slate-600">Loading catalogue...</div>
+      <div class="animate-pulse text-sm font-medium text-slate-400">Loading catalogue...</div>
     </div>
 
     <!-- Error / Not found -->
     <div v-else-if="error || !offer" class="mx-auto flex h-full max-w-md flex-col items-center justify-center p-8 text-center">
       <div class="mb-6 text-6xl">🏷️</div>
       <h2 class="mb-2 text-2xl font-bold">Catalogue Not Found</h2>
-      <p class="mb-6 text-sm leading-relaxed text-slate-600">{{ error || 'No active items at this address.' }}</p>
+      <p class="mb-6 text-sm leading-relaxed text-slate-400">{{ error || 'No active items at this address.' }}</p>
       <button
         ref="backButtonRef"
         type="button"
@@ -88,15 +88,15 @@
 
       <!-- Header -->
       <header
-        class="absolute left-0 right-0 top-0 z-40 flex transform items-center justify-between bg-gradient-to-b from-slate-50 via-slate-50/90 to-transparent px-8 py-5 transition-all duration-500"
+        class="absolute left-0 right-0 top-0 z-40 flex transform items-center justify-between bg-gradient-to-b from-black via-black/90 to-transparent px-8 py-5 transition-all duration-500"
         :class="showControls ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'"
       >
         <div class="flex items-center gap-3">
           <span class="inline-flex h-2 w-2 animate-ping rounded-full bg-emerald-600"></span>
           <h1 class="text-lg font-bold tracking-tight">{{ offer.heading }}</h1>
         </div>
-        <div class="flex items-center gap-4 text-xs font-semibold text-slate-600">
-          <span class="rounded-full border border-slate-200 bg-white px-3 py-1 font-bold">{{ offer.items?.length || 0 }} items</span>
+        <div class="flex items-center gap-4 text-xs font-semibold text-slate-300">
+          <span class="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 font-bold">{{ offer.items?.length || 0 }} items</span>
           <span class="rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-indigo-700">
             {{ !matGlides ? 'All items shown' : isPaused ? 'Paused' : `Gliding · 1 row / ${slideSeconds()}s` }}
           </span>
@@ -105,7 +105,7 @@
 
       <!-- Controls -->
       <footer
-        class="absolute bottom-0 left-0 right-0 z-40 flex transform items-center justify-between bg-gradient-to-t from-slate-50 via-slate-50/90 to-transparent px-8 py-6 transition-all duration-500"
+        class="absolute bottom-0 left-0 right-0 z-40 flex transform items-center justify-between bg-gradient-to-t from-black via-black/90 to-transparent px-8 py-6 transition-all duration-500"
         :class="showControls ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'"
       >
         <div class="flex items-center gap-3">
@@ -440,7 +440,7 @@ onBeforeUnmount(() => {
 /* Mat: tilted surface that drifts slowly, tiles bob out of phase. */
 .mat-stage {
   perspective: 1800px;
-  background: radial-gradient(ellipse at 50% 35%, #ffffff 0%, #eef2f7 55%, #dfe6ef 100%);
+  background: #000;
 }
 .mat-surface {
   transform-style: preserve-3d;
