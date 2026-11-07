@@ -68,8 +68,11 @@
                   v-model="toWarehouse" 
                   :disabled="isReadOnly"
                   class="bg-[var(--color-surface)] border border-[var(--color-border)] rounded px-3 py-1 text-2xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-focus)]"
-                  @keydown.enter.prevent="focusBarcodeInput"
+                  :class="!toWarehouse && !isReadOnly ? '!border-[var(--color-danger)]' : ''"
+                  @keydown.enter.prevent="toWarehouse && focusBarcodeInput()"
                 >
+                  <!-- never defaulted: the operator must pick where the goods go -->
+                  <option value="" disabled>Select destination</option>
                   <option v-for="w in warehouses" :key="w.name" :value="w.name">{{ w.name }}</option>
                 </select>
               </div>
@@ -454,15 +457,6 @@ async function fetchMetadata() {
     fromWarehouse.value = localWh
   } else if (warehouses.value.length > 0) {
     fromWarehouse.value = warehouses.value[0].name
-  }
-
-  if (warehouses.value.length >= 2) {
-    const defaultTo = warehouses.value[1].name
-    if (fromWarehouse.value === defaultTo) {
-      toWarehouse.value = warehouses.value[0].name
-    } else {
-      toWarehouse.value = defaultTo
-    }
   }
 }
 
@@ -886,6 +880,7 @@ async function handleSave() {
   }
 
   if (!items.value.length) { alert('No items to save'); return }
+  if (!toWarehouse.value) { alert('Select the Destination Warehouse'); focusToWarehouse(); return }
   if (fromWarehouse.value === toWarehouse.value) { alert('Source and Destination warehouses must be different'); return }
 
   submitting.value = true
@@ -930,6 +925,7 @@ function resetForm() {
   transferNo.value = ''
   transferName.value = ''
   items.value = []
+  toWarehouse.value = ''
   if (availableSeries.value.length) selectedSeries.value = availableSeries.value[0]
   isReadOnly.value = false
   isDraft.value = false
