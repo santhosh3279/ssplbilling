@@ -7,6 +7,8 @@
  "field_order": [
   "template_name",
   "usage_area",
+  "all_users",
+  "users",
   "available_fields",
   "message"
  ],
@@ -26,7 +28,24 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "options": "\nCashier Desk - UPI Pay Link\nCashier Desk - Bill + UPI Link\nPaytm Receipt - Pay Link\nBill Sending (Print Window)\nLedger Sending (Print Window)",
-   "description": "Where this template is sent from. Only templates for that area (or with no area) can be picked for it in SSPL WhatsApp Settings > Template per Usage Area."
+   "description": "Where this template is sent from.",
+   "reqd": 1
+  },
+  {
+   "fieldname": "all_users",
+   "fieldtype": "Check",
+   "label": "All Users",
+   "default": "0",
+   "in_list_view": 1,
+   "description": "The area's default: sent for everyone not listed on another template of this area. One per area."
+  },
+  {
+   "fieldname": "users",
+   "fieldtype": "Table MultiSelect",
+   "label": "Users",
+   "options": "SSPL WhatsApp Template User",
+   "depends_on": "eval:!doc.all_users",
+   "description": "These users send this template from this area instead of the All Users one. A user can be on one template per area."
   },
   {
    "fieldname": "available_fields",
@@ -44,7 +63,7 @@
   }
  ],
  "links": [],
- "modified": "2026-11-08 21:00:00",
+ "modified": "2026-11-08 22:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL WhatsApp Template",

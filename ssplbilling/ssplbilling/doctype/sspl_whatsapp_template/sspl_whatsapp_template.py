@@ -8,21 +8,45 @@ from frappe.model.document import Document
 
 class SSPLWhatsAppTemplate(Document):
 	def validate(self):
-		self.validate_area_usages()
+		if self.all_users:
+			self.users = []
+		self.validate_unique_users()
+		self.validate_one_default()
 
-	def validate_area_usages(self):
-		"""A template moved to another usage area must not stay set for an area it no longer serves."""
-		if not self.usage_area or self.is_new():
+	def validate_unique_users(self):
+		"""A user sends one template per usage area, so may be on only one template of it."""
+		users = [row.user for row in self.users]
+		dupes = {u for u in users if users.count(u) > 1}
+		if dupes:
+			frappe.throw(_("Users listed twice: {0}").format(", ".join(sorted(dupes))))
+		if not users:
 			return
-		wrong = frappe.get_all(
-			"SSPL WhatsApp Template Usage",
-			filters={"template_name": self.name, "usage_area": ["!=", self.usage_area]},
-			pluck="usage_area",
-			distinct=True,
+		taken = frappe.get_all(
+			"SSPL WhatsApp Template",
+			filters=[
+				["usage_area", "=", self.usage_area],
+				["name", "!=", self.name],
+				["SSPL WhatsApp Template User", "user", "in", users],
+			],
+			fields=["name", "`tabSSPL WhatsApp Template User`.user as user"],
 		)
-		if wrong:
+		if taken:
 			frappe.throw(
-				_("{0} is set for {1} in SSPL WhatsApp Settings; clear it there first").format(
-					self.name, ", ".join(wrong)
+				_("Already on another {0} template: {1}").format(
+					self.usage_area, ", ".join(f"{t.user} ({t.name})" for t in taken)
+				)
+			)
+
+	def validate_one_default(self):
+		if not self.all_users:
+			return
+		other = frappe.db.get_value(
+			"SSPL WhatsApp Template",
+			{"usage_area": self.usage_area, "all_users": 1, "name": ["!=", self.name]},
+		)
+		if other:
+			frappe.throw(
+				_("{0} is already the All Users template for {1}; untick it there first").format(
+					other, self.usage_area
 				)
 			)

@@ -13,3 +13,4 @@ ssplbilling.patches.v1_0.import_openwa_templates
 ssplbilling.patches.v1_0.set_ai_chat_query_cache_defaults
 ssplbilling.patches.v1_0.set_catalogue_back_url_default
 ssplbilling.patches.v1_0.set_whatsapp_template_usage_area
+ssplbilling.patches.v1_0.move_whatsapp_template_usages_to_templates

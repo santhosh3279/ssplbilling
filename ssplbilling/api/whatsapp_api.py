@@ -182,13 +182,13 @@ def _inheritable_user(user=None):
 
 
 # {{name}} placeholders in an SSPL WhatsApp Template
+TEMPLATE_DOCTYPE = "SSPL WhatsApp Template"
 TEMPLATE_PLACEHOLDER = re.compile(r"\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}")
 
-# Places that send a WhatsApp message, each a row of SSPL WhatsApp Settings > Template per Usage
-# Area (added on migrate by sync_template_usages) naming its SSPL WhatsApp Template. An SSPL WhatsApp
-# Template names the area it is written for, and its form lists that area's fields. A new place: add
-# it to TEMPLATE_AREA_FIELDS and to the Usage Area options of both SSPL WhatsApp Template Usage and
-# SSPL WhatsApp Template, and look its template up with _area_template.
+# Places that send a WhatsApp message. Each SSPL WhatsApp Template names the area it is sent from and
+# who sends it (All Users, or its listed users), and its form lists the area's fields. A new place:
+# add it to TEMPLATE_AREA_FIELDS and to the Usage Area options of SSPL WhatsApp Template, and look
+# its template up with _area_template.
 AREA_UPI_PAY_LINK = "Cashier Desk - UPI Pay Link"
 AREA_BILL_UPI_LINK = "Cashier Desk - Bill + UPI Link"
 AREA_RECEIPT_PAY_LINK = "Paytm Receipt - Pay Link"
@@ -201,7 +201,7 @@ PAY_LINK_FIELDS = [
 	("customer_name", "Customer name"),
 ]
 # area: its own placeholders, the doctypes whose fields it also fills (the first is the usual one),
-# a note shown with the fields and, optionally, the summary shown in Template per Usage Area
+# and a note shown with the fields
 TEMPLATE_AREA_FIELDS = {
 	AREA_UPI_PAY_LINK: {
 		"fields": [*PAY_LINK_FIELDS, ("bill_no", "Bill number")],
@@ -218,7 +218,6 @@ TEMPLATE_AREA_FIELDS = {
 		"fields": [],
 		"doctypes": ["Sales Invoice", "Purchase Invoice", "Stock Entry", "Loading Receipt", "SSPL Cheque"],
 		"note": "PDF caption. Any field of the document being sent",
-		"summary": "PDF caption. Any field of the bill, e.g. {{name}} {{posting_date}} {{rounded_total}}",
 	},
 	AREA_LEDGER_SENDING: {
 		"fields": [
@@ -233,20 +232,6 @@ TEMPLATE_AREA_FIELDS = {
 		"note": "PDF caption",
 	},
 }
-
-
-def _area_summary(area):
-	"""One-line list of an area's placeholders, for the read-only column of Template per Usage Area."""
-	spec = TEMPLATE_AREA_FIELDS[area]
-	if spec.get("summary"):
-		return spec["summary"]
-	own = " ".join(f"{{{{{key}}}}}" for key, _label in spec["fields"])
-	any_field = "any {} field".format(" / ".join(spec["doctypes"][:2]).lower())
-	summary = f"{own} + {any_field}" if own else any_field.capitalize()
-	return f"{spec['note']}. {summary}" if spec["note"] else summary
-
-
-TEMPLATE_AREAS = [(area, _area_summary(area)) for area in TEMPLATE_AREA_FIELDS]
 
 
 @frappe.whitelist()
@@ -277,41 +262,18 @@ def get_template_fields(usage_area, doctype=None):
 	}
 
 
-def _area_template(settings, area, user=None):
-	"""Template set for `area`: the user's own row, else the shared row (no user)."""
+def _area_template(area, user=None):
+	"""SSPL WhatsApp Template for `area`: the one listing the user, else the area's All Users one."""
 	user = user or frappe.session.user
-	rows = [r for r in settings.get("template_usages") or [] if r.usage_area == area]
-	row = next((r for r in rows if r.user == user), None) or next((r for r in rows if not r.user), None)
-	return (row.template_name or "").strip() if row else ""
-
-
-def sync_template_usages():
-	"""Give SSPL WhatsApp Settings one shared Template per Usage Area row for every TEMPLATE_AREAS
-	entry, keeping the template names already set. Never deletes rows."""
-	if not frappe.db.exists("DocType", "SSPL WhatsApp Template Usage"):
-		return
-	settings = frappe.get_single(SETTINGS_DOCTYPE)
-	shared = {r.usage_area for r in settings.get("template_usages") or [] if not r.user}
-	placeholders_by_area = dict(TEMPLATE_AREAS)
-	changed = False
-	for area, placeholders in TEMPLATE_AREAS:
-		if area not in shared:
-			settings.append("template_usages", {"usage_area": area, "placeholders": placeholders})
-			changed = True
-	for row in settings.get("template_usages") or []:
-		placeholders = placeholders_by_area.get(row.usage_area)
-		if placeholders and row.placeholders != placeholders:
-			row.placeholders = placeholders
-			changed = True
-	if not changed:
-		return
-	settings.flags.ignore_mandatory = True
-	try:
-		settings.save(ignore_permissions=True)
-	except Exception:
-		# a settings row that no longer validates must not fail the migrate
-		frappe.db.rollback()
-		frappe.log_error(title="WhatsApp template usage rows not synced", message=frappe.get_traceback())
+	own = frappe.get_all(
+		TEMPLATE_DOCTYPE,
+		filters=[["usage_area", "=", area], ["SSPL WhatsApp Template User", "user", "=", user]],
+		pluck="name",
+		limit=1,
+	)
+	if own:
+		return own[0]
+	return frappe.db.get_value(TEMPLATE_DOCTYPE, {"usage_area": area, "all_users": 1}) or ""
 
 
 def _render_template(template_name, values):
@@ -1077,13 +1039,11 @@ def _send_pay_link(txn, minutes_left, with_bill, session_id, test=False, print_t
 	# Bill + Link falls back to the plain pay link's template
 	with_bill = frappe.utils.cint(with_bill) and txn.sales_invoice
 	if not txn.sales_invoice:
-		template_name = _area_template(settings, AREA_RECEIPT_PAY_LINK)
+		template_name = _area_template(AREA_RECEIPT_PAY_LINK)
 	elif with_bill:
-		template_name = _area_template(settings, AREA_BILL_UPI_LINK) or _area_template(
-			settings, AREA_UPI_PAY_LINK
-		)
+		template_name = _area_template(AREA_BILL_UPI_LINK) or _area_template(AREA_UPI_PAY_LINK)
 	else:
-		template_name = _area_template(settings, AREA_UPI_PAY_LINK)
+		template_name = _area_template(AREA_UPI_PAY_LINK)
 	text = (
 		_render_template(
 			template_name,
@@ -1236,15 +1196,15 @@ def _bill_pdf(invoice_name, print_template=None, hide_bill_no=False):
 
 @frappe.whitelist()
 def get_document_caption(doctype, document_name, session_id=None):
-	"""Caption for sending a bill / document on WhatsApp, from the WhatsApp template set for Bill
-	Sending in SSPL WhatsApp Settings, filled with the document's fields. None when no template is
+	"""Caption for sending a bill / document on WhatsApp, from the SSPL WhatsApp Template for Bill
+	Sending (or Ledger Sending), filled with the document's fields. None when no template is
 	set or usable, so the print modal keeps its built-in caption. session_id is no longer needed and
 	only kept so older clients still call it."""
 	ledger = check_document_read(doctype, document_name)
 	if ledger:
-		template_name = _area_template(_settings(), AREA_LEDGER_SENDING)
+		template_name = _area_template(AREA_LEDGER_SENDING)
 		return _render_template(template_name, _ledger_values(ledger)) if template_name else None
-	template_name = _area_template(_settings(), AREA_BILL_SENDING)
+	template_name = _area_template(AREA_BILL_SENDING)
 	return _render_template(template_name, _doc_values(doctype, document_name))
 
 

@@ -15,7 +15,6 @@ class SSPLWhatsAppSettings(Document):
 			self.base_url = self.base_url[: -len("/api")]
 		self.validate_sessions()
 		self.validate_session_users()
-		self.validate_template_usages()
 
 	def validate_sessions(self):
 		before = self.get_doc_before_save()
@@ -64,39 +63,3 @@ class SSPLWhatsAppSettings(Document):
 					", ".join(sorted(shared))
 				)
 			)
-
-	def validate_template_usages(self):
-		from ssplbilling.api.whatsapp_api import TEMPLATE_AREAS
-
-		placeholders = dict(TEMPLATE_AREAS)
-		names = {row.template_name for row in self.template_usages if row.template_name}
-		template_areas = (
-			dict(
-				frappe.get_all(
-					"SSPL WhatsApp Template",
-					filters={"name": ["in", list(names)]},
-					fields=["name", "usage_area"],
-					as_list=True,
-				)
-			)
-			if names
-			else {}
-		)
-		seen = set()
-		for row in self.template_usages:
-			key = (row.usage_area, row.user or "")
-			if key in seen:
-				frappe.throw(
-					_("Template per Usage Area row {0}: {1} is listed twice for {2}").format(
-						row.idx, row.usage_area, row.user or _("everyone")
-					)
-				)
-			seen.add(key)
-			template_area = template_areas.get(row.template_name)
-			if template_area and template_area != row.usage_area:
-				frappe.throw(
-					_("Template per Usage Area row {0}: {1} is written for {2}, not {3}").format(
-						row.idx, row.template_name, template_area, row.usage_area
-					)
-				)
-			row.placeholders = placeholders.get(row.usage_area, row.placeholders)

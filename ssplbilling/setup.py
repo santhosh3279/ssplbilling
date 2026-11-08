@@ -325,13 +325,6 @@ def sync_dashboard_tiles():
 			).insert(ignore_permissions=True)
 
 
-def sync_template_usages():
-	"""One WhatsApp Template per Usage Area row per place the app sends messages (see whatsapp_api)."""
-	from ssplbilling.api.whatsapp_api import sync_template_usages as sync
-
-	sync()
-
-
 def sync_offer_print_template():
 	"""Seed the editable catalogue Print Template for the offer page export.
 
@@ -465,7 +458,6 @@ def allow_supplier_bill_no_edit_after_submit():
 def after_install():
 	create_custom_fields(CUSTOM_FIELDS, ignore_validate=True)
 	sync_dashboard_tiles()
-	sync_template_usages()
 	sync_offer_print_template()
 	sync_invoice_email_template()
 	backfill_mirrored_purchase_invoices()
@@ -475,7 +467,6 @@ def after_install():
 def after_migrate():
 	create_custom_fields(CUSTOM_FIELDS, ignore_validate=True)
 	sync_dashboard_tiles()
-	sync_template_usages()
 	sync_offer_print_template()
 	sync_invoice_email_template()
 	backfill_mirrored_purchase_invoices()

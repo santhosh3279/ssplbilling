@@ -59,18 +59,20 @@
   {
    "fieldname": "templates_section",
    "fieldtype": "Section Break",
-   "label": "Templates"
+   "label": "Templates",
+   "hidden": 1
   },
   {
    "fieldname": "template_usages",
    "fieldtype": "Table",
    "label": "Template per Usage Area",
    "options": "SSPL WhatsApp Template Usage",
-   "description": "One row per place the app sends a WhatsApp message; the app adds a row for each new place on migrate. Placeholders are {{fieldname}}: any field of the bill (or customer) plus the ones listed on the row."
+   "description": "No longer used: each SSPL WhatsApp Template now names its usage area and users. Kept one release so the moved rows can be checked.",
+   "hidden": 1
   }
  ],
  "links": [],
- "modified": "2026-10-25 15:00:00",
+ "modified": "2026-11-08 22:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL WhatsApp Settings",
