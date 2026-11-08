@@ -428,7 +428,9 @@ def create_item(data):
 		item.description = data.get("description").strip()
 	item.item_group = data.get("item_group")
 	item.stock_uom = data.get("stock_uom")
-	item.standard_rate = float(data.get("standard_rate") or 0)
+	is_template = frappe.utils.cint(data.get("has_variants")) == 1
+	# Templates are never billed: zero rate, and their code is not a scannable barcode
+	item.standard_rate = 0 if is_template else float(data.get("standard_rate") or 0)
 	item.safety_stock = float(data.get("safety_stock") or 0)
 	if "custom_is_gst_item" in data:
 		item.custom_is_gst_item = 1 if frappe.utils.cint(data.get("custom_is_gst_item")) else 0
@@ -445,7 +447,8 @@ def create_item(data):
 	_set_batch_fields(item, data)
 	
 	# Add to barcodes child table
-	item.append("barcodes", {"barcode": barcode, "uom": item.stock_uom})
+	if not is_template:
+		item.append("barcodes", {"barcode": barcode, "uom": item.stock_uom})
 	for row in (data.get("extra_barcodes") or []):
 		extra = (row.get("barcode") or "").strip()
 		uom = row.get("uom") or item.stock_uom
@@ -697,7 +700,9 @@ def update_item(data):
 			"supplier_part_no": data.get("supplier_part_no") or "",
 		})
 
-	if data.get("standard_rate") is not None:
+	if item.has_variants:
+		item.standard_rate = 0
+	elif data.get("standard_rate") is not None:
 		item.standard_rate = float(data["standard_rate"])
 
 	item.flags.ignore_permissions = True

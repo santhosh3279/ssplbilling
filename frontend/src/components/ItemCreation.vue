@@ -135,7 +135,7 @@
                   v-model="form.barcode"
                   type="text"
                   class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] pl-[20px] pr-[30px] py-[12px] font-mono text-3xl text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="Barcode..."
+                  :placeholder="form.has_variants ? 'Template item code...' : 'Barcode...'"
                   @focus="e => e.target.select()"
                   @keydown.enter.prevent="itemGroupInput?.focus()"
                 />
@@ -390,7 +390,7 @@
                 <label class="text-2xl font-bold text-[var(--color-text-muted)] uppercase tracking-wider px-[20px]">Standard Rate</label>
                 <div class="relative">
                   <span class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-[var(--color-text-muted)] text-3xl">₹</span>
-                  <input ref="rateInput" v-model.number="form.standard_rate" type="number" class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] pl-[40px] text-right font-mono text-4xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-success)] transition-all" placeholder="0.00" @keydown.enter.prevent="safetyStockInput?.focus()" />
+                  <input ref="rateInput" v-model.number="form.standard_rate" type="number" :disabled="!!form.has_variants" :title="form.has_variants ? 'Template items are not billed — rate stays 0' : ''" class="disabled:opacity-50 disabled:cursor-not-allowed w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] pl-[40px] text-right font-mono text-4xl font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-success)] transition-all" placeholder="0.00" @keydown.enter.prevent="safetyStockInput?.focus()" />
                 </div>
               </div>
               <div class="space-y-[4px]">
@@ -1393,6 +1393,17 @@ async function submitVariants() {
 // A template needs at least one attribute row, so ticking the box seeds an empty one
 watch(() => form.value.has_variants, (on) => {
   if (on && !form.value.attributes.length) addAttributeRow()
+  // Templates are never billed: no rate, and no series barcode is pulled for them
+  if (on) form.value.standard_rate = 0
+  if (isEditMode.value) return
+  if (on) {
+    if (!isBarcodeManual.value) {
+      autoBarcode.value = ''
+      form.value.barcode = ''
+    }
+  } else if (!form.value.barcode) {
+    startFreshBarcode()
+  }
 })
 
 // ── Supplier search state ──────────────────────────────────────────────────
@@ -1556,6 +1567,7 @@ function stripLeadingZeros(val) {
 }
 
 async function generateBarcode() {
+  if (form.value.has_variants) return
   const series = selectedSeries.value || metadata.value.naming_series[0]
   if (!series) return
 
@@ -1602,6 +1614,8 @@ async function handleSubmit() {
     barcode: stripLeadingZeros(r.barcode),
   }))
 
+  if (form.value.has_variants) form.value.standard_rate = 0
+
   isSubmitting.value = true
   try {
     if (isEditMode.value) {
@@ -1621,7 +1635,7 @@ async function handleSubmit() {
     } else {
       const res = await createItem({
         ...form.value,
-        is_manual_barcode: isBarcodeManual.value,
+        is_manual_barcode: isBarcodeManual.value || !!form.value.has_variants,
         naming_series: selectedSeries.value,
       })
       saveCache()
