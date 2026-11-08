@@ -1565,7 +1565,7 @@ def get_messages(chat_id, limit=50, session_id=None):
 		settings, row = _chat_settings(session_id)
 		try:
 			history = _call(settings, "GET", _chat_path(row, chat_id, "/history"), params={"limit": limit})
-			messages = [_live_message(m) for m in history]
+			messages = _merge_hd_pairs([_live_message(m) for m in history])
 			_apply_receipts(settings, row, chat_id, messages)
 			return messages
 		except OpenWAError as e:
@@ -1578,9 +1578,48 @@ def get_messages(chat_id, limit=50, session_id=None):
 			f"/sessions/{row.session_id}/messages",
 			params={"chatId": chat_id, "limit": limit, "orderBy": "timestamp", "inlineMedia": "false"},
 		)
-		return [_stored_message(m) for m in reversed(stored.get("messages") or [])]
+		return _merge_hd_pairs([_stored_message(m) for m in reversed(stored.get("messages") or [])])
 
 	return _guarded(run)
+
+
+def _merge_hd_pairs(messages):
+	"""Show a photo sent in HD once. WhatsApp sends it as two messages in the same second, the
+	full-size copy and then a standard one, and its own apps draw them as one bubble; the gateway
+	returns both with nothing linking them. So a run of exactly two images from the same sender in
+	the same second, with at most one caption, keeps only the first (the HD copy in every case seen).
+	Two different photos sent in the same second would be shown as one: an accepted trade-off.
+
+	`messages` is oldest first. Each message gets `depth`, its position from the newest in the
+	unfiltered history, because media download and forwarding look the message up by depth."""
+	total = len(messages)
+	for i, m in enumerate(messages):
+		m["depth"] = total - i
+
+	def same_shot(a, b):
+		return (
+			a["type"] == b["type"] == "image"
+			and a["from_me"] == b["from_me"]
+			and a["author"] == b["author"]
+			and a["timestamp"]
+			and a["timestamp"] == b["timestamp"]
+			and (not a["body"] or not b["body"] or a["body"] == b["body"])
+		)
+
+	merged = []
+	i = 0
+	while i < total:
+		run = i + 1
+		while run < total and same_shot(messages[i], messages[run]):
+			run += 1
+		if run - i == 2:
+			first, second = messages[i], messages[i + 1]
+			first["body"] = first["body"] or second["body"]
+			merged.append(first)
+		else:
+			merged.extend(messages[i:run])
+		i = run
+	return merged
 
 
 @frappe.whitelist(methods=["POST"])

@@ -523,7 +523,8 @@ function clearMedia() {
 async function fetchMedia(m, i) {
   if (mediaCache.has(m.id)) return mediaCache.get(m.id)
   const chatId = active.value.id
-  const qs = new URLSearchParams({ chat_id: chatId, message_id: m.id, depth: String(messages.value.length - i), session_id: getWhatsAppSessionId() })
+  // m.depth counts the copies the server hid (HD photo pairs); the index alone would fall short
+  const qs = new URLSearchParams({ chat_id: chatId, message_id: m.id, depth: String(m.depth || messages.value.length - i), session_id: getWhatsAppSessionId() })
   const res = await fetch(`/api/method/${API}.get_chat_media?${qs}`)
   const json = await res.json().catch(() => ({}))
   if (!res.ok || json.exc) {
@@ -843,7 +844,7 @@ async function sendForward() {
       from_chat_id: active.value.id,
       message_id: m.id,
       to_chat_ids: JSON.stringify(targets),
-      depth: i < 0 ? messages.value.length : messages.value.length - i,
+      depth: m.depth || (i < 0 ? messages.value.length : messages.value.length - i),
       session_id: getWhatsAppSessionId(),
     }, { silent: true })
     const failed = targets.filter((id) => results?.[id])
