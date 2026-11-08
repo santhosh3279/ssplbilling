@@ -178,8 +178,39 @@ PARTY_LINK_FIELDS = (
 DEFAULT_COUNTRY_CODE = "91"
 
 
+# A party ledger has no document of its own: the print window gets an empty doctype and a
+# document_name of "<party>||<from date>||<to date>||<party type>" (see GeneralLedger.vue).
+LEDGER_NAME_SEPARATOR = "||"
+
+
+def parse_ledger_name(doctype, document_name):
+	"""{party, from_date, to_date, party_type} when (doctype, document_name) is a party ledger,
+	else None."""
+	if doctype or LEDGER_NAME_SEPARATOR not in (document_name or ""):
+		return None
+	parts = (str(document_name).split(LEDGER_NAME_SEPARATOR) + ["", "", "", ""])[:4]
+	party, from_date, to_date, party_type = (p.strip() for p in parts)
+	party_type = party_type or "Customer"
+	if not party or not frappe.db.exists("DocType", party_type) or not frappe.db.exists(party_type, party):
+		frappe.throw("Party not found")
+	return {"party": party, "from_date": from_date, "to_date": to_date, "party_type": party_type}
+
+
+def check_document_read(doctype, document_name):
+	"""Throw unless the user may read the document; for a party ledger, the party."""
+	ledger = parse_ledger_name(doctype, document_name)
+	if ledger:
+		frappe.has_permission(ledger["party_type"], "read", doc=ledger["party"], throw=True)
+	else:
+		frappe.has_permission(doctype, "read", doc=document_name, throw=True)
+	return ledger
+
+
 def get_party_link(doctype, document_name):
 	"""(party doctype, party) a document is billed to, or (None, None)."""
+	ledger = parse_ledger_name(doctype, document_name)
+	if ledger:
+		return ledger["party_type"], ledger["party"]
 	meta = frappe.get_meta(doctype)
 	for fieldname, party_doctype in PARTY_LINK_FIELDS:
 		if not meta.has_field(fieldname):
@@ -263,13 +294,19 @@ def get_whatsapp_recipient(doctype, document_name):
 	An empty phone is a valid answer: the modal then opens WhatsApp with no chat
 	preselected so the operator searches the contact themselves.
 	"""
-	if not doctype or not document_name or not frappe.db.exists(doctype, document_name):
+	ledger = parse_ledger_name(doctype, document_name)
+	if not ledger and (not doctype or not document_name or not frappe.db.exists(doctype, document_name)):
 		frappe.throw("Document not found")
 
-	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
+	check_document_read(doctype, document_name)
 
 	party_doctype, party = get_party_link(doctype, document_name)
 	phone = normalize_whatsapp_number(get_party_whatsapp(party_doctype, party)) if party else ""
+	if ledger:
+		name_field = "customer_name" if party_doctype == "Customer" else "supplier_name"
+		meta = frappe.get_meta(party_doctype)
+		party_name = frappe.db.get_value(party_doctype, party, name_field) if meta.has_field(name_field) else ""
+		return {"party": party_name or party, "phone": phone, "amount": 0.0}
 
 	meta = frappe.get_meta(doctype)
 	amount = None

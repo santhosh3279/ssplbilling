@@ -784,9 +784,13 @@ async function sendWhatsApp() {
 
     const { name: billName, blob } = await fetchBillPdf()
 
+    // A party ledger arrives as doctype '' + "<party>||<from>||<to>||<party type>" (GeneralLedger.vue)
+    const ledgerParts = !props.doctype && props.invoiceName.includes('||') ? props.invoiceName.split('||') : null
     const lines = [
       recipient.party ? `${recipient.party},` : '',
-      `Bill ${props.invoiceName}`,
+      ledgerParts
+        ? `Ledger statement${ledgerParts[1] || ledgerParts[2] ? ` ${ledgerParts[1] || '…'} to ${ledgerParts[2] || 'date'}` : ''}`
+        : `Bill ${props.invoiceName}`,
       // Returns carry a negative total; sending "Amount: -16" to a customer invites a call.
       recipient.amount > 0 ? `Amount: ${recipient.amount.toLocaleString('en-IN')}` : '',
     ].filter(Boolean)

@@ -34,12 +34,14 @@ from ssplbilling.api.dashboard_api import get_allowed_tiles
 from ssplbilling.api.print_preview_api import (
 	DEFAULT_COUNTRY_CODE,
 	build_preview_filename,
+	check_document_read,
 	get_party_link,
 	get_party_mobile,
 	get_party_name,
 	get_party_saved_whatsapp,
 	get_party_whatsapp,
 	normalize_whatsapp_number,
+	parse_ledger_name,
 	preview_print_template_pdf,
 	scrub_filename,
 )
@@ -190,6 +192,7 @@ AREA_UPI_PAY_LINK = "Cashier Desk - UPI Pay Link"
 AREA_BILL_UPI_LINK = "Cashier Desk - Bill + UPI Link"
 AREA_RECEIPT_PAY_LINK = "Paytm Receipt - Pay Link"
 AREA_BILL_SENDING = "Bill Sending (Print Window)"
+AREA_LEDGER_SENDING = "Ledger Sending (Print Window)"
 PAY_LINK_PLACEHOLDERS = "{{link}} {{amount}} {{valid_minutes}} {{customer_name}}"
 TEMPLATE_AREAS = [
 	(AREA_UPI_PAY_LINK, f"{PAY_LINK_PLACEHOLDERS} {{{{bill_no}}}} + any bill field"),
@@ -199,6 +202,11 @@ TEMPLATE_AREAS = [
 	),
 	(AREA_RECEIPT_PAY_LINK, f"{PAY_LINK_PLACEHOLDERS} + any customer field"),
 	(AREA_BILL_SENDING, "PDF caption. Any field of the bill, e.g. {{name}} {{posting_date}} {{rounded_total}}"),
+	(
+		AREA_LEDGER_SENDING,
+		"PDF caption. {{party}} {{party_name}} {{party_type}} {{from_date}} {{to_date}} {{closing_balance}}"
+		" + any customer / supplier field",
+	),
 ]
 
 
@@ -818,13 +826,14 @@ def send_document(doctype, document_name, pdf_base64, filename, caption="", sess
 	then stored as its WhatsApp number (`saved_from_mobile`).
 	"""
 	_require_desk_user()
-	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
+	check_document_read(doctype, document_name)
 	settings = _settings()
 	row = _linked_row(settings, session_id=session_id)
 
 	party_doctype, party = get_party_link(doctype, document_name)
 	if not party:
 		frappe.throw(_("This document has no customer or supplier to send it to"))
+	reference = _send_reference(doctype, document_name)
 	if not _party_whatsapp_enabled(party_doctype, party):
 		# The saved number is not to be used: ask every time, see send_document_to_number()
 		return {"needs_number": True, "party_type": party_doctype, "reason": "disabled", "phone": ""}
@@ -866,7 +875,7 @@ def send_document(doctype, document_name, pdf_base64, filename, caption="", sess
 			"send-document",
 			body,
 			caption,
-			reference=(doctype, document_name),
+			reference=reference,
 			chat_id=chat_id,
 			on_failure=on_failure,
 			row=row,
@@ -1164,9 +1173,47 @@ def get_document_caption(doctype, document_name, session_id=None):
 	Sending in SSPL WhatsApp Settings, filled with the document's fields. None when no template is
 	set or usable, so the print modal keeps its built-in caption. session_id is no longer needed and
 	only kept so older clients still call it."""
-	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
+	ledger = check_document_read(doctype, document_name)
+	if ledger:
+		template_name = _area_template(_settings(), AREA_LEDGER_SENDING)
+		return _render_template(template_name, _ledger_values(ledger)) if template_name else None
 	template_name = _area_template(_settings(), AREA_BILL_SENDING)
 	return _render_template(template_name, _doc_values(doctype, document_name))
+
+
+def _send_reference(doctype, document_name):
+	"""(doctype, name) a sent document is logged against; a party ledger is logged against its party."""
+	ledger = parse_ledger_name(doctype, document_name)
+	return (ledger["party_type"], ledger["party"]) if ledger else (doctype, document_name)
+
+
+def _ledger_values(ledger):
+	"""Placeholders for a party ledger caption: every field of the party, plus the ledger's
+	party / party_name / party_type, its date range and its closing balance on to_date."""
+	party_type, party = ledger["party_type"], ledger["party"]
+	values = _doc_values(party_type, party)
+	name_field = {"Customer": "customer_name", "Supplier": "supplier_name"}.get(party_type)
+	values.update(
+		{
+			"party": party,
+			"party_name": values.get(name_field) or party,
+			"party_type": party_type,
+		}
+	)
+	for key in ("from_date", "to_date"):
+		if ledger[key]:
+			values[key] = frappe.utils.formatdate(ledger[key])
+	filters = {"party_type": party_type, "party": party, "is_cancelled": 0}
+	if ledger["to_date"]:
+		filters["posting_date"] = ("<=", ledger["to_date"])
+	totals = frappe.get_all(
+		"GL Entry", filters=filters, fields=[{"SUM": "debit"}, {"SUM": "credit"}], as_list=True
+	)
+	debit, credit = (totals[0] if totals else (0, 0)) or (0, 0)
+	values["closing_balance"] = frappe.utils.fmt_money(
+		frappe.utils.flt(debit) - frappe.utils.flt(credit), currency=frappe.defaults.get_global_default("currency")
+	)
+	return values
 
 
 def _bill_body(pdf_base64, filename, caption):
@@ -1202,7 +1249,7 @@ def send_document_to_number(doctype, document_name, phone, pdf_base64, filename,
 	party's saved number is never bypassed this way.
 	"""
 	_require_desk_user()
-	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
+	check_document_read(doctype, document_name)
 	settings = _settings()
 	row = _linked_row(settings, session_id=session_id)
 	party_doctype, party = get_party_link(doctype, document_name)
@@ -1214,7 +1261,13 @@ def send_document_to_number(doctype, document_name, phone, pdf_base64, filename,
 		frappe.throw(_("Enter a full mobile number"))
 	body = _bill_body(pdf_base64, filename, caption)
 	return _send(
-		number, "Document", "send-document", body, caption, reference=(doctype, document_name), row=row
+		number,
+		"Document",
+		"send-document",
+		body,
+		caption,
+		reference=_send_reference(doctype, document_name),
+		row=row,
 	)
 
 
@@ -1266,7 +1319,7 @@ def _set_contact_whatsapp(party_doctype, party, number):
 def save_party_whatsapp(doctype, document_name, phone, session_id=None):
 	"""Verify a number on WhatsApp and store it as the bill party's WhatsApp number."""
 	_require_desk_user()
-	frappe.has_permission(doctype, "read", doc=document_name, throw=True)
+	check_document_read(doctype, document_name)
 	party_doctype, party = get_party_link(doctype, document_name)
 	if not party:
 		frappe.throw(_("This document has no customer or supplier"))
