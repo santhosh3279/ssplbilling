@@ -229,6 +229,46 @@
                   </p>
                 </div>
 
+                <!-- Cover Image -->
+                <div class="flex flex-col gap-1.5 md:col-span-1">
+                  <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">Cover Image</label>
+                  <div class="flex items-center gap-3">
+                    <img
+                      v-if="form.cover_image"
+                      :src="form.cover_image"
+                      alt="Catalogue cover"
+                      class="h-16 w-16 shrink-0 rounded border border-[var(--color-border)] object-cover"
+                    />
+                    <div
+                      v-else
+                      class="flex h-16 w-16 shrink-0 items-center justify-center rounded border border-dashed border-[var(--color-border)] text-2xl"
+                    >📖</div>
+                    <div class="flex flex-col gap-1.5">
+                      <button
+                        type="button"
+                        :disabled="coverUploading"
+                        class="rounded bg-[var(--color-info)] px-3 py-1.5 text-[10px] font-bold text-white disabled:opacity-50"
+                        @click="coverFileInput?.click()"
+                      >
+                        {{ coverUploading ? 'Uploading...' : form.cover_image ? 'Replace Cover' : 'Upload Cover' }}
+                      </button>
+                      <button
+                        v-if="form.cover_image"
+                        type="button"
+                        :disabled="coverUploading"
+                        class="text-[10px] font-bold text-[var(--color-danger)] hover:underline disabled:opacity-50"
+                        @click="form.cover_image = ''"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                  <input ref="coverFileInput" type="file" accept="image/*" class="hidden" aria-label="Choose catalogue cover image" @change="uploadCoverImage" />
+                  <p class="text-[9px] text-[var(--color-text-muted)] mt-0.5">
+                    Shown on the catalogue / sub folder card. Empty: default icon. Applied on Save.
+                  </p>
+                </div>
+
                 <!-- Tile Grid -->
                 <div class="flex flex-col gap-1.5 md:col-span-1">
                   <label class="text-[11px] font-bold uppercase text-[var(--color-text-muted)]">
@@ -725,6 +765,29 @@ function closeItemImage() {
   imageUrl.value = ''
 }
 
+const coverFileInput = ref(null)
+const coverUploading = ref(false)
+
+async function uploadCoverImage(event) {
+  const file = event.target.files?.[0]
+  event.target.value = ''
+  if (!file) return
+  if (!file.type.startsWith('image/')) {
+    alert('Please choose an image file.')
+    return
+  }
+  coverUploading.value = true
+  try {
+    // Uploaded unattached: a new catalogue has no name yet; the URL is stored on Save.
+    const uploaded = await uploadFile(file, { folder: 'Home' })
+    form.value.cover_image = uploaded.file_url
+  } catch (e) {
+    alert(e.message || 'Failed to upload cover image')
+  } finally {
+    coverUploading.value = false
+  }
+}
+
 async function uploadItemImage(event) {
   const file = event.target.files?.[0]
   if (!file) return
@@ -833,6 +896,7 @@ const emptyForm = () => ({
   pageaddress: '',
   priority: 0,
   show_in_catalogue: true,
+  cover_image: '',
   tile_grid: '4',
   timer: 0,
   price_lists: [],
@@ -903,6 +967,7 @@ async function selectCatalogue(name) {
       pageaddress: doc.pageaddress || '',
       priority: doc.priority ?? 0,
       show_in_catalogue: doc.show_in_catalogue !== 0,
+      cover_image: doc.cover_image || '',
       tile_grid: doc.tile_grid || '4',
       timer: doc.timer || 0,
       price_lists: (doc.price_lists || []).map(p => ({
@@ -1434,6 +1499,7 @@ async function handleSave() {
       pageaddress: form.value.pageaddress.trim(),
       priority: Number(form.value.priority),
       show_in_catalogue: form.value.show_in_catalogue ? 1 : 0,
+      cover_image: form.value.cover_image || '',
       tile_grid: form.value.tile_grid,
       timer: parseInt(form.value.timer) || 0,
       ...(form.value.modified && { modified: form.value.modified }),

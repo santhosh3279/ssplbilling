@@ -461,6 +461,7 @@ def get_offer_details(pageaddress):
 		"timer": doc.timer or 0,
 		"price_lists": [{"price_list": pl.price_list} for pl in doc.get("price_lists") if pl.price_list],
 		"items": items,
+		"cover_image": doc.get("cover_image"),
 		"sub_catalogues": _sub_catalogues(doc),
 		"cipher_map": cipher_map,
 		"mat_glider": _mat_glider_settings(),
@@ -498,6 +499,11 @@ def _active_item_counts(names):
 	return {row.parent: row.item_count for row in counts}
 
 
+def _has_cover_image():
+	# A site may serve requests before its DocType schema migration completes.
+	return frappe.db.has_column("Offer-Items", "cover_image")
+
+
 def _sub_catalogues(doc):
 	"""Linked child catalogues, in table order, rendered as folders on the public page."""
 	names = [row.offer for row in doc.get("sub_catalogues") or [] if row.offer]
@@ -508,7 +514,7 @@ def _sub_catalogues(doc):
 		for row in frappe.get_all(
 			"Offer-Items",
 			filters={"name": ["in", names]},
-			fields=["name", "heading", "pageaddress"],
+			fields=["name", "heading", "pageaddress"] + (["cover_image"] if _has_cover_image() else []),
 			ignore_permissions=True,
 		)
 	}
@@ -518,6 +524,7 @@ def _sub_catalogues(doc):
 			"name": name,
 			"heading": details[name].heading,
 			"pageaddress": details[name].pageaddress,
+			"cover_image": details[name].get("cover_image"),
 			"item_count": counts.get(name, 0),
 		}
 		for name in names
@@ -533,7 +540,9 @@ def get_offer_list():
 	catalogues = frappe.get_all(
 		"Offer-Items",
 		filters={"show_in_catalogue": 1} if has_visibility else None,
-		fields=["name", "heading", "pageaddress", "timer", "creation"] + (["priority"] if has_priority else []),
+		fields=["name", "heading", "pageaddress", "timer", "creation"]
+		+ (["priority"] if has_priority else [])
+		+ (["cover_image"] if _has_cover_image() else []),
 		order_by="priority asc, creation desc" if has_priority else "creation desc"
 	)
 	if not catalogues:

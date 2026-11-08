@@ -246,9 +246,18 @@
           <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
           <div class="flex-1 space-y-2">
+            <!-- Cover image replaces the default icon when uploaded -->
+            <img
+              v-if="cat.cover_image"
+              :src="cat.cover_image"
+              :alt="cat.heading"
+              loading="lazy"
+              class="card-cover w-full aspect-[4/3] rounded-xl object-cover border border-[var(--color-border)]/40"
+            />
             <!-- Icon and Active Items -->
             <div class="flex items-center justify-between">
-              <span class="card-icon text-3xl">📖</span>
+              <span v-if="!cat.cover_image" class="card-icon text-3xl">📖</span>
+              <span v-else></span>
               <span class="card-item-count text-[10px] font-bold text-[var(--color-text-muted)]">
                 <template v-if="cat.folder_count">📁 {{ cat.folder_count }} · </template>{{ cat.item_count ?? 0 }} active {{ cat.item_count === 1 ? 'item' : 'items' }}
               </span>

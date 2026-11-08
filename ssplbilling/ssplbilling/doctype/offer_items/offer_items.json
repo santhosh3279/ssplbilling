@@ -9,6 +9,7 @@
   "pageaddress",
   "priority",
   "show_in_catalogue",
+  "cover_image",
   "tile_grid",
   "timer",
   "price_lists",
@@ -45,6 +46,12 @@
    "label": "Show in Catalogue"
   },
   {
+   "description": "Shown on the catalogue / sub folder card instead of the default icon.",
+   "fieldname": "cover_image",
+   "fieldtype": "Attach Image",
+   "label": "Cover Image"
+  },
+  {
    "default": "4",
    "fieldname": "tile_grid",
    "fieldtype": "Select",
@@ -78,7 +85,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-20 12:00:00.000000",
+ "modified": "2026-11-08 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "Offer-Items",
