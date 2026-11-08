@@ -6,6 +6,8 @@
  "engine": "InnoDB",
  "field_order": [
   "template_name",
+  "usage_area",
+  "available_fields",
   "message"
  ],
  "fields": [
@@ -18,16 +20,31 @@
    "in_list_view": 1
   },
   {
+   "fieldname": "usage_area",
+   "fieldtype": "Select",
+   "label": "Usage Area",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "options": "\nCashier Desk - UPI Pay Link\nCashier Desk - Bill + UPI Link\nPaytm Receipt - Pay Link\nBill Sending (Print Window)\nLedger Sending (Print Window)",
+   "description": "Where this template is sent from. Only templates for that area (or with no area) can be picked for it in SSPL WhatsApp Settings > Template per Usage Area."
+  },
+  {
+   "fieldname": "available_fields",
+   "fieldtype": "HTML",
+   "label": "Available Fields",
+   "depends_on": "usage_area"
+  },
+  {
    "fieldname": "message",
    "fieldtype": "Small Text",
    "label": "Message",
    "reqd": 1,
    "in_list_view": 1,
-   "description": "{{placeholder}}s are filled when sending; the ones each place offers are listed in SSPL WhatsApp Settings > Template per Usage Area. A placeholder with no value is sent as written."
+   "description": "{{placeholder}}s are filled when sending; pick a Usage Area to list the ones it offers (click one to insert it). A placeholder with no value is sent as written."
   }
  ],
  "links": [],
- "modified": "2026-10-27 13:00:00",
+ "modified": "2026-11-08 21:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL WhatsApp Template",

@@ -185,29 +185,96 @@ def _inheritable_user(user=None):
 TEMPLATE_PLACEHOLDER = re.compile(r"\{\{\s*([a-zA-Z0-9_.-]+)\s*\}\}")
 
 # Places that send a WhatsApp message, each a row of SSPL WhatsApp Settings > Template per Usage
-# Area (added on migrate by sync_template_usages) naming its SSPL WhatsApp Template. A new place: add it
-# here and to the Usage Area options of SSPL WhatsApp Template Usage, and look its template up
-# with _area_template.
+# Area (added on migrate by sync_template_usages) naming its SSPL WhatsApp Template. An SSPL WhatsApp
+# Template names the area it is written for, and its form lists that area's fields. A new place: add
+# it to TEMPLATE_AREA_FIELDS and to the Usage Area options of both SSPL WhatsApp Template Usage and
+# SSPL WhatsApp Template, and look its template up with _area_template.
 AREA_UPI_PAY_LINK = "Cashier Desk - UPI Pay Link"
 AREA_BILL_UPI_LINK = "Cashier Desk - Bill + UPI Link"
 AREA_RECEIPT_PAY_LINK = "Paytm Receipt - Pay Link"
 AREA_BILL_SENDING = "Bill Sending (Print Window)"
 AREA_LEDGER_SENDING = "Ledger Sending (Print Window)"
-PAY_LINK_PLACEHOLDERS = "{{link}} {{amount}} {{valid_minutes}} {{customer_name}}"
-TEMPLATE_AREAS = [
-	(AREA_UPI_PAY_LINK, f"{PAY_LINK_PLACEHOLDERS} {{{{bill_no}}}} + any bill field"),
-	(
-		AREA_BILL_UPI_LINK,
-		f"PDF caption. {PAY_LINK_PLACEHOLDERS} {{{{bill_no}}}} + any bill field. Blank: UPI Pay Link's template",
-	),
-	(AREA_RECEIPT_PAY_LINK, f"{PAY_LINK_PLACEHOLDERS} + any customer field"),
-	(AREA_BILL_SENDING, "PDF caption. Any field of the bill, e.g. {{name}} {{posting_date}} {{rounded_total}}"),
-	(
-		AREA_LEDGER_SENDING,
-		"PDF caption. {{party}} {{party_name}} {{party_type}} {{from_date}} {{to_date}} {{closing_balance}}"
-		" + any customer / supplier field",
-	),
+PAY_LINK_FIELDS = [
+	("link", "Pay link (or QR data)"),
+	("amount", "Amount"),
+	("valid_minutes", "Minutes the QR stays valid"),
+	("customer_name", "Customer name"),
 ]
+# area: its own placeholders, the doctypes whose fields it also fills (the first is the usual one),
+# a note shown with the fields and, optionally, the summary shown in Template per Usage Area
+TEMPLATE_AREA_FIELDS = {
+	AREA_UPI_PAY_LINK: {
+		"fields": [*PAY_LINK_FIELDS, ("bill_no", "Bill number")],
+		"doctypes": ["Sales Invoice"],
+		"note": "",
+	},
+	AREA_BILL_UPI_LINK: {
+		"fields": [*PAY_LINK_FIELDS, ("bill_no", "Bill number")],
+		"doctypes": ["Sales Invoice"],
+		"note": "PDF caption. Blank: UPI Pay Link's template",
+	},
+	AREA_RECEIPT_PAY_LINK: {"fields": PAY_LINK_FIELDS, "doctypes": ["Customer"], "note": ""},
+	AREA_BILL_SENDING: {
+		"fields": [],
+		"doctypes": ["Sales Invoice", "Purchase Invoice", "Stock Entry", "Loading Receipt", "SSPL Cheque"],
+		"note": "PDF caption. Any field of the document being sent",
+		"summary": "PDF caption. Any field of the bill, e.g. {{name}} {{posting_date}} {{rounded_total}}",
+	},
+	AREA_LEDGER_SENDING: {
+		"fields": [
+			("party", "Party ID"),
+			("party_name", "Party name"),
+			("party_type", "Party type (Customer / Supplier)"),
+			("from_date", "Ledger from date"),
+			("to_date", "Ledger to date"),
+			("closing_balance", "Closing balance on to date"),
+		],
+		"doctypes": ["Customer", "Supplier"],
+		"note": "PDF caption",
+	},
+}
+
+
+def _area_summary(area):
+	"""One-line list of an area's placeholders, for the read-only column of Template per Usage Area."""
+	spec = TEMPLATE_AREA_FIELDS[area]
+	if spec.get("summary"):
+		return spec["summary"]
+	own = " ".join(f"{{{{{key}}}}}" for key, _label in spec["fields"])
+	any_field = "any {} field".format(" / ".join(spec["doctypes"][:2]).lower())
+	summary = f"{own} + {any_field}" if own else any_field.capitalize()
+	return f"{spec['note']}. {summary}" if spec["note"] else summary
+
+
+TEMPLATE_AREAS = [(area, _area_summary(area)) for area in TEMPLATE_AREA_FIELDS]
+
+
+@frappe.whitelist()
+def get_template_fields(usage_area, doctype=None):
+	"""Placeholders an SSPL WhatsApp Template written for usage_area can use: the area's own, then
+	every field of `doctype` (one of the area's doctypes, default the first)."""
+	spec = TEMPLATE_AREA_FIELDS.get(usage_area)
+	if not spec:
+		return None
+	doctype = doctype if doctype in spec["doctypes"] else spec["doctypes"][0]
+	fields = [{"placeholder": key, "label": _(label)} for key, label in spec["fields"]]
+	own = {f["placeholder"] for f in fields}
+	if frappe.db.exists("DocType", doctype):
+		meta = frappe.get_meta(doctype)
+		if "name" not in own:
+			fields.append({"placeholder": "name", "label": _("ID")})
+		fields += [
+			{"placeholder": df.fieldname, "label": _(df.label or df.fieldname)}
+			for df in meta.fields
+			if df.fieldtype not in NO_VALUE_FIELDTYPES and df.fieldname not in own
+		]
+	return {
+		"note": _(spec["note"]) if spec["note"] else "",
+		"own_count": len(spec["fields"]),
+		"doctype": doctype,
+		"doctypes": [d for d in spec["doctypes"] if frappe.db.exists("DocType", d)],
+		"fields": fields,
+	}
 
 
 def _area_template(settings, area, user=None):

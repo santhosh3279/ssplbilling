@@ -8,6 +8,10 @@ frappe.ui.form.on("SSPL WhatsApp Settings", {
 		frm.add_custom_button(__("Refresh Status"), () => refresh_session(frm, false));
 		load_session_names(frm);
 		set_user_session_options(frm);
+		// A row offers the templates written for its usage area, plus those with no area
+		frm.set_query("template_name", "template_usages", (doc, cdt, cdn) => ({
+			filters: [["usage_area", "in", [locals[cdt][cdn].usage_area, ""]]],
+		}));
 
 		// Desk reuses this form across visits, so gate on time: each reopen refreshes, while the
 		// reload that follows a refresh (which fires `refresh` again) does not loop
