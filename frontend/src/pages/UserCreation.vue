@@ -133,7 +133,7 @@
         <p v-if="error" role="alert" class="rounded border border-[var(--color-danger)] p-3 text-sm text-[var(--color-danger)]">{{ error }}</p>
         <p v-if="success" role="status" class="rounded border border-[var(--color-success)] p-3 text-sm text-[var(--color-success)]">{{ success }}</p>
 
-        <button type="submit" :disabled="isSaving || isLoadingCustomers || isLoadingPricing || (!!success && !editingUser)"
+        <button type="submit" :disabled="isSaving || isLoadingCustomers || isLoadingPricing || isLoadingDomain || (!!success && !editingUser)"
           class="rounded bg-[var(--color-info)] px-4 py-2 font-semibold text-[var(--color-text-on-highlight)] disabled:opacity-50">
           {{ isSaving ? 'Saving...' : editingUser ? 'Save Changes' : createdUser ? 'Retry Customer Link' : 'Create User' }}
         </button>
@@ -162,11 +162,30 @@ const isSaving = ref(false)
 const error = ref('')
 const success = ref('')
 
-// Logins are always on this domain; the field takes only the part before @.
-const LOGIN_DOMAIN = '@ctr.com'
-// An edited user keeps its own domain; new users get LOGIN_DOMAIN.
-const loginDomain = ref(LOGIN_DOMAIN)
+// New logins use the Catalogue Back Link's host (SSPL Billing Settings) without
+// "www."; the field takes only the part before @.
+const FALLBACK_LOGIN_DOMAIN = '@ctr.com'
+const defaultLoginDomain = ref(FALLBACK_LOGIN_DOMAIN)
+const isLoadingDomain = ref(false)
+// An edited user keeps its own domain; new users get defaultLoginDomain.
+const loginDomain = ref(FALLBACK_LOGIN_DOMAIN)
 const loginEmail = computed(() => username.value ? `${username.value}${loginDomain.value}` : '')
+
+async function loadLoginDomain() {
+  isLoadingDomain.value = true
+  try {
+    const url = await frappeGet('ssplbilling.api.offer_api.get_catalogue_back_url')
+    const host = url ? new URL(url).hostname.toLowerCase().replace(/^www\./, '') : ''
+    if (host) {
+      defaultLoginDomain.value = `@${host}`
+      if (!editingUser.value) loginDomain.value = defaultLoginDomain.value
+    }
+  } catch (e) {
+    console.warn('[UserCreation] Login domain load failed, using fallback:', e)
+  } finally {
+    isLoadingDomain.value = false
+  }
+}
 
 function stripEmailDomain() {
   // A pasted full address keeps only its local part.
@@ -504,7 +523,7 @@ function resetForm() {
   createdUser.value = ''
   editingUser.value = ''
   editingCustomer.value = ''
-  loginDomain.value = LOGIN_DOMAIN
+  loginDomain.value = defaultLoginDomain.value
   error.value = ''
   success.value = ''
 }
@@ -513,6 +532,7 @@ onMounted(() => {
   loadCustomers()
   loadPriceLists()
   loadUsers()
+  loadLoginDomain()
   document.addEventListener('mousedown', onClickOutside)
 })
 onUnmounted(() => document.removeEventListener('mousedown', onClickOutside))
