@@ -729,8 +729,17 @@ def _chat_id(settings, row, phone):
 	return number, chat_id
 
 
+def _message_id(value):
+	"""OpenWA returns messageId either as a string or as the whatsapp-web.js id object
+	({fromMe, remote, id, _serialized}); the log's Data field takes only the string."""
+	if isinstance(value, dict):
+		value = value.get("_serialized") or value.get("id")
+	return str(value) if value else None
+
+
 def _log(phone, message_type, content, status, message_id=None, error=None, reference=None):
 	reference_doctype, reference_name = reference or (None, None)
+	message_id = _message_id(message_id)
 	frappe.get_doc(
 		{
 			"doctype": LOG_DOCTYPE,
@@ -787,7 +796,7 @@ def _send(phone, message_type, route, body, content, reference=None, chat_id=Non
 		frappe.throw(str(e), title=_("WhatsApp send failed"))
 
 	_log(number, message_type, content, "Sent", message_id=result.get("messageId"), reference=reference)
-	return {"phone": number, "message_id": result.get("messageId")}
+	return {"phone": number, "message_id": _message_id(result.get("messageId"))}
 
 
 @frappe.whitelist(methods=["POST"])
@@ -1552,7 +1561,7 @@ def _chat_send(chat_id, message_type, route, body, content, session_id=None):
 		frappe.db.commit()
 		frappe.throw(str(e), title=_("WhatsApp send failed"))
 	_log(phone, message_type, content, "Sent", message_id=result.get("messageId"))
-	return {"message_id": result.get("messageId"), "timestamp": result.get("timestamp")}
+	return {"message_id": _message_id(result.get("messageId")), "timestamp": result.get("timestamp")}
 
 
 @frappe.whitelist(methods=["POST"])
