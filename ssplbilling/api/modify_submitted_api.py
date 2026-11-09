@@ -404,12 +404,16 @@ def _naming_series_options(doctype):
 	return [opt.strip() for opt in ((field.options if field else "") or "").split("\n") if opt.strip()]
 
 
-def _series_for_name(doctype, name):
+def _series_for_name(doctype, name, preferred=()):
 	"""Match `name` to the naming series option it belongs to: (series, prefix, number), or None.
-	The longest matching prefix wins so `PLVA00001` never resolves to a `PLV` series."""
+
+	A name can fit several series (`PLV00101` is both `PLV.#####` and `PLV0.####`), so series
+	listed in `preferred` win first; otherwise the longest matching prefix wins so `PLVA00001`
+	never resolves to a `PLV` series."""
 	from frappe.model.naming import NamingSeries
 
-	best = None
+	preferred = list(preferred or [])
+	best = best_key = None
 	for series in _naming_series_options(doctype):
 		try:
 			prefix = NamingSeries(series).get_prefix()
@@ -417,8 +421,10 @@ def _series_for_name(doctype, name):
 			continue
 		number = name[len(prefix):].rstrip("/")
 		if prefix and name.startswith(prefix) and number.isdigit():
-			if not best or len(prefix) > len(best[1]):
-				best = (series, prefix, int(number))
+			rank = preferred.index(series) if series in preferred else len(preferred)
+			key = (-rank, len(prefix))
+			if not best or key > best_key:
+				best, best_key = (series, prefix, int(number)), key
 	return best
 
 
@@ -492,7 +498,12 @@ def rename_submitted_bill(invoice_no, new_name, doctype="Purchase Invoice"):
 		if frappe.db.exists(doctype, mirror_name_for(invoice_no)):
 			frappe.throw(f"Bill '{invoice_no}' has a mirror bill linked by its number. Its number cannot be changed.")
 
-	match = _series_for_name(doctype, new_name)
+	# Prefer the user's allowed series (what the bill lists filter on), then the bill's own.
+	from ssplbilling.api.dashboard_api import get_allowed_series
+
+	allowed = get_allowed_series(doctype=doctype)
+	allowed = (allowed.get("allowed_series") if isinstance(allowed, dict) else allowed) or []
+	match = _series_for_name(doctype, new_name, preferred=[*allowed, doc.naming_series])
 	if not match:
 		frappe.throw(f"'{new_name}' does not match any {doctype} naming series. Use a number like the suggestions shown.")
 	series, prefix, number = match
