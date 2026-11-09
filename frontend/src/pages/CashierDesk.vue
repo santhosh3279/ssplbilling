@@ -2454,7 +2454,7 @@ async function processPayment(unsentConfirmed = false) {
       cost_center: localStorage.getItem('wb-cost-center') || null
     }
     
-    // Mandatory UPI Mirror Series (Automatic Entries): read before the bill is cleared below
+    // Mandatory UPI/Card Mirror Series (Automatic Entries): read before the bill is cleared below
     const askMirror = shouldAskUpiMirror(upi, card, selectedInvoice.value?.naming_series)
     const invoiceName = selectedInvoice.value?.name
 

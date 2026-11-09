@@ -52,7 +52,7 @@
    "description": "Comma-separated Sales Invoice series prefixes (e.g. SINV-, RT-). When a bill from one of these series is posted with a UPI or Card amount, the cashier is asked to mirror it to the Alternative Company.",
    "fieldname": "mandatory_upi_mirror_series",
    "fieldtype": "Small Text",
-   "label": "Mandatory UPI Mirror Series"
+   "label": "Mandatory UPI/Card Mirror Series"
   },
   {
    "fieldname": "section_break_tables",
@@ -80,7 +80,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-11-09 12:00:00.000000",
+ "modified": "2026-11-09 13:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "Automatic Entries",

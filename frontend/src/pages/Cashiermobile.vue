@@ -1253,7 +1253,7 @@ async function processPayment() {
       cost_center: localStorage.getItem('wb-cost-center') || null
     }
 
-    // Mandatory UPI Mirror Series (Automatic Entries)
+    // Mandatory UPI/Card Mirror Series (Automatic Entries)
     const askMirror = shouldAskUpiMirror(upi, card, selectedInvoice.value?.naming_series)
     const invoiceName = selectedInvoice.value?.name
 

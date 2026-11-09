@@ -1,4 +1,4 @@
-// "Mandatory UPI Mirror Series" (Automatic Entries): a bill from one of these
+// "Mandatory UPI/Card Mirror Series" (Automatic Entries): a bill from one of these
 // series that is posted with a UPI or Card amount is offered for mirroring to the
 // Alternative Company. Prefixes match the way the server matches mirror series.
 export function isMandatoryUpiMirrorSeries(namingSeries) {
