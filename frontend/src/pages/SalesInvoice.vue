@@ -5,6 +5,7 @@
       title="SALES INVOICE"
       title-bar-color="#b2dfb0"
       :show-sidebar="!isSubwindow"
+      sidebar-tiles
       :show-back-button="!isSubwindow"
       :doc-number="displayedDocNumber"
       :party-id="customerId"

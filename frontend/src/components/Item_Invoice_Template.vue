@@ -77,7 +77,7 @@
         </div>
 
         <!-- Bill List -->
-        <div ref="sidebarListRef" class="flex-1 overflow-y-auto scrollbar-none">
+        <div ref="sidebarListRef" class="flex-1 overflow-y-auto scrollbar-none" :class="sidebarTiles ? 'bg-[color-mix(in_srgb,var(--color-bg)_70%,black)] p-1.5' : ''">
           <slot name="sidebar-list">
             <div v-if="sidebarLoading" class="p-4 text-center text-lg text-[var(--color-text-muted)]">Loading...</div>
             <div v-else-if="!sidebarItems.length" class="p-4 text-center text-lg text-[var(--color-text-muted)] italic">No bills found</div>
@@ -85,6 +85,7 @@
               <div
                 v-if="(sidebarSearch || draftOnly) && (inv.posting_date || inv.transaction_date) && (idx === 0 || (inv.posting_date || inv.transaction_date) !== (sidebarItems[idx - 1].posting_date || sidebarItems[idx - 1].transaction_date))"
                 class="px-2 py-1 bg-[var(--color-lowlight)] border-b border-[var(--color-border)] text-lg font-bold uppercase tracking-wider text-[var(--color-text-muted)] sticky top-0 z-10"
+                :class="sidebarTiles && 'mb-1.5 rounded-md'"
               >
                 {{ formatDate(inv.posting_date || inv.transaction_date) }}
               </div>
@@ -96,8 +97,13 @@
                 @keydown.up.prevent="navigateSidebar(idx, -1)"
                 @keydown.down.prevent="navigateSidebar(idx, 1)"
                 @keydown.right.prevent="$emit('sidebar-right')"
-                class="group cursor-pointer border-b border-[var(--color-border)] px-2 py-1 transition-colors outline-none focus:bg-[var(--color-focus)] focus:border-l-2 focus:border-l-[var(--color-focus)]"
-                :class="{ 'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)]': selectedSidebarItemName === inv.name }"
+                class="group cursor-pointer px-2 py-1 transition-colors outline-none focus:bg-[var(--color-focus)]"
+                :class="[
+                  sidebarTiles
+                    ? 'mb-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm focus:border-[var(--color-focus)]'
+                    : 'border-b border-[var(--color-border)] focus:border-l-2 focus:border-l-[var(--color-focus)]',
+                  selectedSidebarItemName === inv.name && (sidebarTiles ? 'bg-[var(--color-focus)] border-[var(--color-focus)]' : 'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)]'),
+                ]"
               >
                 <div class="flex items-center justify-between gap-1">
                   <div class="flex items-center gap-1.5 truncate min-w-0">
@@ -697,6 +703,8 @@ function preventArrowIncrement(e) {
 const props = defineProps({
   title: { type: String, default: 'Invoice' },
   showSidebar: { type: Boolean, default: true },
+  // Rounded tile cards on a darker list background (opt-in per page)
+  sidebarTiles: { type: Boolean, default: false },
   sidebarTitle: { type: String, default: 'Modify Bills' },
   showBackButton: { type: Boolean, default: true },
   titleBarColor: { type: String, default: '' },
