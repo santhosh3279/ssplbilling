@@ -3,9 +3,10 @@ as markdown here, with no AI call (zero tokens). Same permissions as the AI path
 the tools run as the logged-in user."""
 
 import json
+import re
 
 import frappe
-from frappe.utils import format_date, get_first_day, getdate, nowdate
+from frappe.utils import add_days, add_months, format_date, get_first_day, get_last_day, getdate, nowdate
 
 from ssplbilling.api import ai_chat_tools as tools
 
@@ -19,12 +20,21 @@ ACTIONS = {
 	"stock_summary": ("Stock summary", False),
 	"item_stock": ("Item stock", True),
 	"supplier_sales": ("Supplier item sales", True),
+	"purchase_mirrors": ("Purchase mirror bills", True),
 }
 # Actions that ask more than one thing, in order. The page sends the answers joined by STEP_SEP.
 STEPS = {
 	"supplier_sales": [
 		{"key": "supplier", "label": "Supplier", "hint": "type a supplier name, then pick", "suggest": "supplier"},
 		{"key": "months", "label": "Sales months", "hint": "months for the monthly average (Enter = 6)", "default": "6"},
+	],
+	"purchase_mirrors": [
+		{
+			"key": "period",
+			"label": "Period",
+			"hint": "Enter = this month, or today / last month / 7 days / 01-11-2026 to 09-11-2026",
+			"default": "this month",
+		},
 	],
 }
 STEP_SEP = " | "
@@ -77,6 +87,8 @@ def label_for(action, query):
 	if action == "supplier_sales":
 		supplier, months = _supplier_sales_args(query)
 		return f"{label}: {supplier} · {months} months", query
+	if action == "purchase_mirrors":
+		return f"{label}: {_period(*_period_args(query))}", query
 	return (f"{label}: {query}" if query else label), query
 
 
@@ -107,6 +119,7 @@ def _source(action, query):
 		"stock_summary": ("item_stock", {}, _stock_summary),
 		"item_stock": ("item_stock", {"item": query, "limit": 10}, _item_stock),
 		"supplier_sales": _supplier_sales_source(query),
+		"purchase_mirrors": _purchase_mirrors_source(query),
 	}[action]
 
 
@@ -119,7 +132,61 @@ def _supplier_sales_source(query):
 	)
 
 
+def _purchase_mirrors_source(query):
+	from_date, to_date = _period_args(query)
+	return (
+		"purchase_mirror_check",
+		{"from_date": str(from_date), "to_date": str(to_date), "limit": QUICK_TOP_ITEMS},
+		_purchase_mirrors,
+	)
+
+
+def _period_args(text):
+	"""(from_date, to_date) for "today", "yesterday", "this month", "last month", "7 days",
+	"01-11-2026 to 09-11-2026" or one date."""
+	text = (text or "").strip().lower() or "this month"
+	today = getdate(nowdate())
+	if text == "today":
+		return today, today
+	if text == "yesterday":
+		day = add_days(today, -1)
+		return day, day
+	if text == "this month":
+		return get_first_day(today), today
+	if text == "last month":
+		last = add_months(today, -1)
+		return get_first_day(last), get_last_day(last)
+	days = re.fullmatch(r"(\d+)\s*days?", text)
+	if days:
+		return add_days(today, 1 - min(max(int(days.group(1)), 1), 366)), today
+	start, _sep, end = text.partition(" to ")
+	from_date, to_date = _date(start), _date(end or start)
+	if not (from_date and to_date):
+		frappe.throw(
+			f"Period not understood: {text}. Try this month, last month, 7 days or 01-11-2026 to 09-11-2026."
+		)
+	if to_date < from_date:
+		frappe.throw("Period: the end date is before the start date.")
+	return from_date, to_date
+
+
+def _date(text):
+	"""dd-mm-yyyy (or with / or .) or yyyy-mm-dd, else None."""
+	text = text.strip()
+	m = re.fullmatch(r"(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})", text)
+	if m:
+		text = f"{m.group(3)}-{int(m.group(2)):02d}-{int(m.group(1)):02d}"
+	elif not re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+		return None
+	try:
+		return getdate(text)
+	except Exception:
+		return None
+
+
 def _scope_line(data):
+	if data.get("ae_company"):  # purchase_mirror_check names both companies itself
+		return ""
 	scope = [data.get("company_filter"), data.get("cost_center_filter")]
 	scope = [s for s in scope if s and not s.startswith("all ")]
 	return f"_{' · '.join(scope)}_\n\n" if scope else "_All companies_\n\n"
@@ -280,6 +347,110 @@ def _supplier_sales(data):
 		if c["more_rows"]:
 			out.append(f"_First {len(c['items'])} of {c['items_linked']} shown. ⬇ Excel has them all._")
 	return "\n\n".join(out)
+
+
+def _purchase_mirrors(data):
+	wb, ae, s = data["wb_company"], data["ae_company"], data["summary"]
+	out = [
+		f"**Purchase mirror bills {_period(data['from_date'], data['to_date'])}**\n\n"
+		f"Billing company: **{wb}** · AE company: **{ae}** · drafts included, cancelled skipped",
+		_table(
+			["Where", "Bills", "Note"],
+			[
+				[
+					"In both",
+					s["in_both"],
+					f"⚠ {s['in_both_total_mismatch']} with different totals"
+					if s["in_both_total_mismatch"]
+					else "—",
+				],
+				[
+					f"Only in {wb}",
+					s["only_in_billing_company"],
+					f"⚠ {s['only_in_billing_company_in_mirror_series']} in a mirror series: mirror missing"
+					if s["only_in_billing_company_in_mirror_series"]
+					else "—",
+				],
+				[f"Only in {ae}", s["only_in_ae_company"], "—"],
+			],
+		),
+	]
+	if data["in_both"]:
+		out.append(
+			f"**In both** ({s['in_both']})\n\n"
+			+ _table(
+				[
+					"#",
+					f"Bill ({_abbr(wb)})",
+					f"Mirror ({_abbr(ae)})",
+					"Date",
+					"Supplier",
+					"Bill total",
+					"Mirror total",
+					"Status",
+				],
+				[
+					[
+						n,
+						r["bill"],
+						r["mirror"],
+						format_date(r["posting_date"]),
+						r["supplier"],
+						inr(r["bill_total"]),
+						inr(r["mirror_total"]) + (" ⚠" if abs(r["difference"]) >= 1 else ""),
+						r["status"],
+					]
+					for n, r in enumerate(data["in_both"], 1)
+				],
+			)
+		)
+	if data["only_in_billing_company"]:
+		out.append(
+			f"**Only in {wb}** ({s['only_in_billing_company']})\n\n"
+			+ _table(
+				["#", "Bill", "Date", "Supplier", "Supplier bill no", "Total", "Status", "Mirror series"],
+				[
+					[
+						n,
+						r["bill"],
+						format_date(r["posting_date"]),
+						r["supplier"],
+						r["bill_no"] or "",
+						inr(r["grand_total"]),
+						r["status"],
+						"⚠ Yes" if r["mirror_series"] else "No",
+					]
+					for n, r in enumerate(data["only_in_billing_company"], 1)
+				],
+			)
+		)
+	if data["only_in_ae_company"]:
+		out.append(
+			f"**Only in {ae}** ({s['only_in_ae_company']})\n\n"
+			+ _table(
+				["#", "Bill", "Date", "Supplier", "Supplier bill no", "Total", "Status", "Linked to"],
+				[
+					[
+						n,
+						r["bill"],
+						format_date(r["posting_date"]),
+						r["supplier"],
+						r["bill_no"] or "",
+						inr(r["grand_total"]),
+						r["status"],
+						r["linked_to"] or "—",
+					]
+					for n, r in enumerate(data["only_in_ae_company"], 1)
+				],
+			)
+		)
+	if data["more_rows"]:
+		out.append(f"_First {QUICK_TOP_ITEMS} of each list shown. ⬇ Excel has them all._")
+	return "\n\n".join(out)
+
+
+def _abbr(company):
+	return frappe.get_cached_value("Company", company, "abbr") or company
 
 
 def _stock_summary(data):

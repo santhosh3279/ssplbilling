@@ -30,6 +30,7 @@ DATA_TOOLS = (
 	"item_stock",
 	"item_movement",
 	"supplier_item_sales",
+	"purchase_mirror_check",
 	"account_ledger",
 	"cash_bank_position",
 	"profit_loss",
@@ -407,6 +408,26 @@ TOOLS += [
 				"group_by": {"type": "string", "enum": ["account", "mode", "day", "party"]},
 				"company": _COMPANY,
 				"cost_center": _COST_CENTER,
+				"limit": _LIMIT,
+			},
+		},
+	},
+	{
+		"name": "purchase_mirror_check",
+		"description": (
+			"Purchase bill mirroring between the billing company and the Automatic Entries (AE) alternate "
+			"company for a date range: bills in both (original + mirror), only in the billing company "
+			"(mirror missing) and only in the AE company. Drafts included, cancelled skipped."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"from_date": _FROM,
+				"to_date": _TO,
+				"company": {
+					"type": "string",
+					"description": "Billing company. Omit to use the chat's company.",
+				},
 				"limit": _LIMIT,
 			},
 		},
@@ -2107,6 +2128,169 @@ def supplier_item_sales(supplier=None, months=6, company=None, limit=None):
 	return {**base, "companies": out}
 
 
+# ── purchase mirror check ───────────────────────────────────────────────────
+
+MIRROR_FIELDS = [
+	"name",
+	"naming_series",
+	"posting_date",
+	"supplier",
+	"supplier_name",
+	"bill_no",
+	"base_grand_total",
+	"docstatus",
+]
+
+
+def purchase_mirror_check(from_date=None, to_date=None, company=None, limit=None):
+	"""Purchase Invoices of the billing company and the Automatic Entries alternate company, paired the
+	way purchase_mirror_api.find_purchase_mirror pairs them (custom_mirrored, else the slash-toggled
+	name if that bill is unlinked or links back). A pair counts when either bill is in the period."""
+	from ssplbilling.api.automatic_entries_api import get_automatic_entries
+	from ssplbilling.api.purchase_mirror_api import should_mirror_purchase_invoice
+
+	ae_doc = get_automatic_entries()
+	ae_company = ae_doc.alternative_company
+	if not ae_company:
+		raise ValueError(
+			"No alternative company is set in Automatic Entries, so purchase bills are not mirrored."
+		)
+	from_date = getdate(from_date or get_first_day(nowdate()))
+	to_date = getdate(to_date or nowdate())
+	if to_date < from_date:
+		raise ValueError("to_date is before from_date")
+	limit = _limit(limit)
+	wb_company = _mirror_billing_company(company, ae_company)
+
+	fields = list(MIRROR_FIELDS)
+	if frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
+		fields.append("custom_mirrored")
+
+	def bills(company, extra):
+		rows = _get_list(
+			"Purchase Invoice",
+			filters={"company": company, "docstatus": ["<", 2], **extra},
+			fields=fields,
+			order_by="posting_date asc, name asc",
+			limit=0,
+		)
+		return {r.name: r for r in rows}
+
+	period = {"posting_date": ["between", [from_date, to_date]]}
+	wb, ae = bills(wb_company, period), bills(ae_company, period)
+
+	def candidates(row):
+		return [n for n in (row.get("custom_mirrored"), _toggle_slash(row.name)) if n]
+
+	# Partners posted outside the period, so a pair split across the period edge is still a pair.
+	wanted = {n for r in wb.values() for n in candidates(r) if n not in ae}
+	ae_out = bills(ae_company, {"name": ["in", list(wanted)]}) if wanted else {}
+	wanted = {n for r in ae.values() for n in candidates(r) if n not in wb}
+	wb_out = bills(wb_company, {"name": ["in", list(wanted)]}) if wanted else {}
+
+	pairs, paired_ae = [], set()
+	for w in [*wb.values(), *wb_out.values()]:
+		for name in candidates(w):
+			a = ae.get(name) or ae_out.get(name)
+			if a and a.name not in paired_ae and (a.get("custom_mirrored") or "") in ("", w.name):
+				if w.name in wb or a.name in ae:
+					pairs.append((w, a))
+				paired_ae.add(a.name)
+				break
+	paired_wb = {w.name for w, _a in pairs}
+	only_wb = [w for w in wb.values() if w.name not in paired_wb]
+	only_ae = [a for a in ae.values() if a.name not in paired_ae]
+	pairs.sort(key=lambda p: (p[0].posting_date, p[0].name))
+
+	in_both = [
+		{
+			"bill": w.name,
+			"mirror": a.name,
+			"posting_date": w.posting_date,
+			"supplier": w.supplier_name or w.supplier,
+			"bill_no": w.bill_no,
+			"bill_total": flt(w.base_grand_total, 2),
+			"mirror_total": flt(a.base_grand_total, 2),
+			"difference": flt(flt(w.base_grand_total) - flt(a.base_grand_total), 2),
+			"status": _mirror_status(w, a),
+		}
+		for w, a in pairs
+	]
+	only_billing = [
+		{
+			**_mirror_row(w),
+			"mirror_series": bool(
+				should_mirror_purchase_invoice(w.naming_series, ae_doc)
+				or should_mirror_purchase_invoice(w.name, ae_doc)
+			),
+		}
+		for w in only_wb
+	]
+	only_alternate = [_mirror_row(a) for a in only_ae]
+	return {
+		"from_date": str(from_date),
+		"to_date": str(to_date),
+		"wb_company": wb_company,
+		"ae_company": ae_company,
+		"summary": {
+			"in_both": len(in_both),
+			"in_both_total_mismatch": sum(1 for r in in_both if abs(r["difference"]) >= 1),
+			"only_in_billing_company": len(only_billing),
+			"only_in_billing_company_in_mirror_series": sum(1 for r in only_billing if r["mirror_series"]),
+			"only_in_ae_company": len(only_alternate),
+			"billing_company_total": flt(sum(flt(r.base_grand_total) for r in wb.values()), 2),
+			"ae_company_total": flt(sum(flt(r.base_grand_total) for r in ae.values()), 2),
+		},
+		"in_both": in_both[:limit],
+		"only_in_billing_company": only_billing[:limit],
+		"only_in_ae_company": only_alternate[:limit],
+		"more_rows": any(len(rows) > limit for rows in (in_both, only_billing, only_alternate)),
+		"note": "mirror_series = the bill's series is set for purchase mirroring, so its mirror is missing. "
+		"The two company totals overlap by design; never add them.",
+	}
+
+
+def _mirror_billing_company(company, ae_company):
+	"""The billing (wb) company to compare against the AE company: the asked / chat company, else the
+	user's default company, else the only other company."""
+	company, _cost_center = _scoped(company, None)
+	if company and company != ae_company:
+		return company
+	default = frappe.defaults.get_user_default("Company")
+	if default and default != ae_company:
+		return default
+	others = frappe.get_all("Company", filters={"name": ["!=", ae_company]}, pluck="name")
+	if len(others) == 1:
+		return others[0]
+	raise ValueError(f"Pick the billing company (not the AE company {ae_company}) in the company box first.")
+
+
+def _toggle_slash(name):
+	return name[:-1] if name.endswith("/") else f"{name}/"
+
+
+def _mirror_status(bill, mirror):
+	"""One status when both bills agree, else "billing / AE"."""
+	states = [_docstatus(bill), _docstatus(mirror)]
+	return states[0] if states[0] == states[1] else " / ".join(states)
+
+
+def _docstatus(row):
+	return "Draft" if row.docstatus == 0 else "Submitted"
+
+
+def _mirror_row(r):
+	return {
+		"bill": r.name,
+		"posting_date": r.posting_date,
+		"supplier": r.supplier_name or r.supplier,
+		"bill_no": r.bill_no,
+		"grand_total": flt(r.base_grand_total, 2),
+		"status": _docstatus(r),
+		"linked_to": r.get("custom_mirrored") or "",
+	}
+
+
 # ── customer activity ───────────────────────────────────────────────────────
 
 
@@ -2521,6 +2705,7 @@ HANDLERS = {
 	"customer_activity": customer_activity,
 	"item_movement": item_movement,
 	"supplier_item_sales": supplier_item_sales,
+	"purchase_mirror_check": purchase_mirror_check,
 	"cash_bank_position": cash_bank_position,
 	"profit_loss": profit_loss,
 	"gst_summary": gst_summary,

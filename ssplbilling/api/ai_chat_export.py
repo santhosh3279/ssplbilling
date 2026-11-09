@@ -623,6 +623,12 @@ def build_series(tool, args=None, chart_type="bar", points=None):
 			points,
 		)
 
+	if tool == "purchase_mirror_check":
+		s = data["summary"]
+		labels = ["In both", f"Only {_abbr(data['wb_company'])}", f"Only {_abbr(data['ae_company'])}"]
+		values = [s["in_both"], s["only_in_billing_company"], s["only_in_ae_company"]]
+		return labels, [{"name": "Purchase bills", "values": values}]
+
 	raise ValueError(f"No chart for {tool}; use export_excel instead.")
 
 
