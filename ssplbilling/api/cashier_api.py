@@ -687,15 +687,6 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	card_account     = _resolve_gl_account(card_account)
 	discount_account = _resolve_gl_account(discount_account)
 
-	# UPI and card landing in the same ledger are one receipt, not two Payment Entries.
-	# Card folds into the UPI bucket, so the mirror payload below follows automatically.
-	upi_remarks = _paytm_upi_remarks(si.name, upi_ref_no) if upi_amount > 0.01 else None
-	if upi_amount > 0.01 and card_amount > 0.01 and upi_account and upi_account == card_account:
-		upi_ref_no = " / ".join(r for r in (upi_ref_no, card_ref_no) if r) or None
-		upi_amount += card_amount
-		card_amount = 0
-		card_ref_no = None
-
 	def _mop_for_account(account):
 		"""Find the Mode of Payment whose default account matches, for this company."""
 		return frappe.db.get_value(
@@ -768,7 +759,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	if upi_amount > 0.01:
 		pe_name = _create_pe(
-			upi_amount, upi_account, ref_no=upi_ref_no, remarks=upi_remarks
+			upi_amount, upi_account, ref_no=upi_ref_no, remarks=_paytm_upi_remarks(si.name, upi_ref_no)
 		)
 		if pe_name:
 			payment_entries.append(pe_name)
