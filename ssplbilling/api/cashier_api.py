@@ -437,7 +437,8 @@ def get_sales_invoice(invoice_name, include_customer_details=0):
         "price_list": si.selling_price_list or "",
         "warehouse": si.get("set_warehouse") or (si.items[0].warehouse if si.items else ""),
         "income_account": si.items[0].income_account if si.items else "",
-        "upi_card_amount": float(si.get("custom_upi_card_amount") or 0),
+        "upi_amount": float(si.get("custom_upi_amount") or 0),
+        "card_amount": float(si.get("custom_card_amount") or 0),
         "mop": si.get("mop") or "Cash",
         "docstatus": si.docstatus,
         "status": si.status,
@@ -771,6 +772,16 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		if pe_name:
 			payment_entries.append(pe_name)
 			original_card_pe = pe_name
+
+	# Keep the UPI / card split on the bill itself; its alternate-company copy reads it from here.
+	if original_upi_pe or original_card_pe:
+		si.db_set(
+			{
+				"custom_upi_amount": float(si.get("custom_upi_amount") or 0) + (upi_amount if original_upi_pe else 0),
+				"custom_card_amount": float(si.get("custom_card_amount") or 0) + (card_amount if original_card_pe else 0),
+			},
+			update_modified=False,
+		)
 
 	from ssplbilling.api.paytm_api import expire_bill_links
 

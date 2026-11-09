@@ -511,11 +511,19 @@
               />
             </div>
 
-            <!-- UPI + Card amount (set when the bill is mirrored to the alternate company) -->
+            <!-- UPI / Card amounts: filled when the bill is settled at the cashier / POS, copied to the alternate-company bill -->
             <div class="flex flex-col gap-0.5">
-              <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">UPI + Card</label>
+              <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">UPI</label>
               <input
-                :value="format2p(upiCardAmount)"
+                :value="format2p(upiAmount)"
+                readonly
+                class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-1 py-0.5 text-2xl font-mono text-right text-[var(--color-text-muted)] outline-none cursor-not-allowed"
+              />
+            </div>
+            <div class="flex flex-col gap-0.5">
+              <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Card</label>
+              <input
+                :value="format2p(cardAmount)"
                 readonly
                 class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)]/30 px-1 py-0.5 text-2xl font-mono text-right text-[var(--color-text-muted)] outline-none cursor-not-allowed"
               />
@@ -992,8 +1000,9 @@ const taxTemplate = ref(localTaxTemplates.value[0] || '')
 const warehouse = ref(localStorage.getItem('wb-warehouse') || localWarehouses.value[0] || 'None')
 const costCenter = ref(localStorage.getItem('wb-cost-center') || localCostCenters.value[0] || 'None')
 const incomeAccount = ref(localStorage.getItem('wb-income-account') || localAccounts.value[0] || 'None')
-// UPI + card part of the original bill, stamped on its alternate-company copy (read-only)
-const upiCardAmount = ref(0)
+// UPI / card split of the bill's payment (read-only; also on its alternate-company copy)
+const upiAmount = ref(0)
+const cardAmount = ref(0)
 const isInclusiveTax = ref(localStorage.getItem('wb-tax-type-incl') === '1')
 const isReturn = ref(false)
 const halfTaxDiscountRef = ref(null)
@@ -1308,7 +1317,8 @@ async function loadInvoice(invoiceName) {
     costCenter.value = data.cost_center || ''
     warehouse.value = data.warehouse || ''
     incomeAccount.value = data.income_account || ''
-    upiCardAmount.value = data.upi_card_amount || 0
+    upiAmount.value = data.upi_amount || 0
+    cardAmount.value = data.card_amount || 0
 
     // Charges
     freightEntry.value = data.freight_amount || ''
@@ -1795,7 +1805,8 @@ async function clearBill() {
   discountPct.value = ''
   discountDirectAmt.value = ''
   freightEntry.value = ''
-  upiCardAmount.value = 0
+  upiAmount.value = 0
+  cardAmount.value = 0
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''
@@ -2190,7 +2201,8 @@ async function closePrintModal() {
   discountPct.value = ''
   discountDirectAmt.value = ''
   freightEntry.value = ''
-  upiCardAmount.value = 0
+  upiAmount.value = 0
+  cardAmount.value = 0
   loadingEntry.value = ''
   packingEntry.value = ''
   otherEntry.value = ''

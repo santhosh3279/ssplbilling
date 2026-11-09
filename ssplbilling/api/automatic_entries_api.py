@@ -401,21 +401,77 @@ def mirror_name_for(name):
 	return name[:-1] if name.endswith("/") else f"{name}/"
 
 
-def source_upi_card_amount(si):
-	"""UPI + card received against `si`: its submitted Payment Entries whose paid-to
-	account is not a Cash-type account. Mode of payment is not used, since cashier
-	receipts default it to Cash whatever account they land in."""
+def _card_only_accounts(company):
+	"""Accounts set as the card account (SSPL Billing Settings user rows, Credit Card mode of
+	payment) and never as a UPI account. Shops often point UPI and card at one ledger; such a
+	ledger says nothing about which one was used, so it is left out. Values may be plain
+	account names, so both forms are kept."""
+	settings = frappe.get_cached_doc("SSPL Billing Settings", "SSPL Billing Settings")
+	rows = settings.user_series or []
+	card = {r.card for r in rows if r.get("card")}
+	upi = {r.upi for r in rows if r.get("upi")}
+	mop = frappe.db.get_value(
+		"Mode of Payment Account", {"parent": "Credit Card", "company": company}, "default_account"
+	)
+	if mop:
+		card.add(mop)
+	return card - upi
+
+
+def _paytm_card_refs(invoice_name):
+	"""Every reference of the bill's successful Paytm card payments (EDC swipes)."""
+	from ssplbilling.api.paytm_api import CARD_PAY_METHODS, PG_CHANNELS
+
+	refs = set()
+	for t in frappe.get_all(
+		"SSPL Paytm Transaction",
+		filters={"sales_invoice": invoice_name, "status": "Success"},
+		fields=["channel", "pay_method", "rrn", "paytm_txn_id", "auth_code", "order_id"],
+	):
+		if t.channel not in PG_CHANNELS and (t.pay_method or "").upper() in CARD_PAY_METHODS:
+			refs.update(r for r in (t.rrn, t.paytm_txn_id, t.auth_code, t.order_id) if r)
+	return refs
+
+
+def source_upi_card_amounts(si):
+	"""(upi, card) received against `si`.
+
+	Bills settled at the cashier / POS carry the split in custom_upi_amount /
+	custom_card_amount. Older bills fall back to their submitted Payment Entries with a
+	non-Cash-type paid-to account: card when the reference is a Paytm card payment or the
+	account is card-only, else UPI. Mode of payment is not used, since cashier receipts
+	default it to Cash."""
+	upi = float(si.get("custom_upi_amount") or 0)
+	card = float(si.get("custom_card_amount") or 0)
+	if upi or card:
+		return upi, card
+
 	refs = frappe.db.get_all(
 		"Payment Entry Reference",
 		filters={"reference_doctype": "Sales Invoice", "reference_name": si.name, "docstatus": 1},
 		fields=["parent", "allocated_amount"],
 	)
-	total = 0.0
+	if not refs:
+		return upi, card
+	card_accounts = _card_only_accounts(si.company)
+	card_refs = _paytm_card_refs(si.name)
 	for ref in refs:
-		paid_to = frappe.db.get_value("Payment Entry", ref.parent, "paid_to")
-		if paid_to and frappe.get_cached_value("Account", paid_to, "account_type") != "Cash":
-			total += float(ref.allocated_amount or 0)
-	return total
+		pe = frappe.db.get_value("Payment Entry", ref.parent, ["paid_to", "reference_no"], as_dict=True)
+		if not pe or not pe.paid_to:
+			continue
+		account_type, account_name = frappe.get_cached_value(
+			"Account", pe.paid_to, ["account_type", "account_name"]
+		)
+		if account_type == "Cash":
+			continue
+		is_card = (pe.reference_no and pe.reference_no in card_refs) or (
+			pe.paid_to in card_accounts or account_name in card_accounts
+		)
+		if is_card:
+			card += float(ref.allocated_amount or 0)
+		else:
+			upi += float(ref.allocated_amount or 0)
+	return upi, card
 
 
 def create_mirror_sales_invoice(si, automatic_entries):
@@ -556,7 +612,7 @@ def create_mirror_sales_invoice(si, automatic_entries):
 	msi.custom_address_line1 = si.get("custom_address_line1") or ""
 	msi.custom_address_line2 = si.get("custom_address_line2") or ""
 	msi.custom_mobile_number = si.get("custom_mobile_number") or ""
-	msi.custom_upi_card_amount = source_upi_card_amount(si)
+	msi.custom_upi_amount, msi.custom_card_amount = source_upi_card_amounts(si)
 
 	msi.flags.ignore_permissions = True
 	msi.insert(set_name=mirror_name)
@@ -942,7 +998,7 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 	msi.custom_address_line1 = si.get("custom_address_line1") or ""
 	msi.custom_address_line2 = si.get("custom_address_line2") or ""
 	msi.custom_mobile_number = si.get("custom_mobile_number") or ""
-	msi.custom_upi_card_amount = source_upi_card_amount(si)
+	msi.custom_upi_amount, msi.custom_card_amount = source_upi_card_amounts(si)
 
 	msi.flags.ignore_permissions = True
 	if mirror_name:
