@@ -48,19 +48,6 @@
         </div>
       </div>
 
-      <!-- Last settled bill stays visible until the next one comes in -->
-      <div
-        v-if="lastSettled && !invoice"
-        class="rounded-xl border border-[var(--color-success)] bg-[var(--color-success)]/15 p-4 text-center"
-      >
-        <div class="text-[11px] font-black uppercase tracking-widest text-[var(--color-success)]">Settled</div>
-        <div class="font-mono text-sm font-bold text-[var(--color-text)] mt-1">{{ lastSettled.name }}</div>
-        <div v-if="lastSettled.change > 0" class="mt-2">
-          <div class="text-[11px] font-black uppercase tracking-widest text-[var(--color-danger)]">Change Return</div>
-          <div class="font-mono text-[36px] font-black text-[var(--color-danger)]">₹{{ fmt(lastSettled.change) }}</div>
-        </div>
-      </div>
-
       <div v-if="loading" class="flex justify-center py-16">
         <div class="h-6 w-6 animate-spin rounded-full border-2 border-[var(--color-highlight)] border-t-transparent"></div>
       </div>
@@ -470,6 +457,20 @@
       </div>
     </div>
 
+    <!-- Settled: the panel closes straight away, this note says so (and the change to hand back) for a moment;
+         teleported so the hidden panel does not hide it, and click-through so the print popup stays usable -->
+    <Teleport to="body">
+      <transition name="fade">
+        <div
+          v-if="lastSettled"
+          class="pointer-events-none fixed left-1/2 top-4 z-[130] -translate-x-1/2 rounded-xl border border-[var(--color-success)] bg-[var(--color-surface)] px-5 py-3 text-center shadow-2xl"
+        >
+          <div class="text-[12px] font-black uppercase tracking-widest text-[var(--color-success)]">Bill settled · <span class="font-mono normal-case tracking-normal text-[var(--color-text)]">{{ lastSettled.name }}</span></div>
+          <div v-if="lastSettled.change > 0" class="mt-1 font-mono text-[28px] font-black leading-none text-[var(--color-danger)]">Change ₹{{ fmt(lastSettled.change) }}</div>
+        </div>
+      </transition>
+    </Teleport>
+
     <!-- PAYMENT RECEIVED BIG TICK (UPI / CARD) -->
     <transition name="fade">
       <div v-if="paidTick.show" class="pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-[var(--color-bg)]/60">
@@ -546,7 +547,14 @@ const isCredit = ref(false)
 const dueDate = ref('')
 const upiRefNo = ref('')
 const cardRefNo = ref('')
+// brief "bill settled" note shown after the panel closes; longer when there is change to hand back
 const lastSettled = ref(null)
+let lastSettledTimer = null
+function showSettled(name, change) {
+  if (lastSettledTimer) clearTimeout(lastSettledTimer)
+  lastSettled.value = { name, change }
+  lastSettledTimer = setTimeout(() => { lastSettled.value = null }, change > 0 ? 5000 : 2500)
+}
 // cash was filled with the bill amount by us, not typed: it shrinks as other modes are entered
 const cashAuto = ref(false)
 const payments = ref({ cash: 0, upi: 0, card: 0, credit: 0, discount: 0, remarks: '' })
@@ -694,7 +702,6 @@ async function loadInvoice(name) {
     const details = await getInvoiceDetails(name)
     if (seq !== loadSeq) return
     invoice.value = details
-    lastSettled.value = null
     await loadSeriesSettings(details.naming_series)
     if (seq !== loadSeq) return
     // submit writes the box back to custom_remarks, so start from the saved remark
@@ -870,8 +877,8 @@ async function processPayment(unsentConfirmed = false) {
       custom_remarks: payments.value.remarks,
       cost_center: localStorage.getItem('wb-cost-center') || null,
     })
-    lastSettled.value = { name, change }
     invoice.value = null
+    showSettled(name, change)
     qrQueue.value = qrQueue.value.filter(q => q.sales_invoice !== name)
     emit('settled', name)
   } catch (e) {
@@ -1004,8 +1011,8 @@ const paytmLock = ref({ invoice: '', upi: null, upiRef: '', card: null, cardRef:
 const upiLocked = computed(() => paytmLock.value.upi != null && paytmLock.value.invoice === invoice.value?.name)
 const cardLocked = computed(() => paytmLock.value.card != null && paytmLock.value.invoice === invoice.value?.name)
 const qrQueue = ref([])
-// no bill, no settled-bill change to hand back and no QR waiting: the bill side gets the full width
-const isEmpty = computed(() => !invoice.value && !loading.value && !lastSettled.value && !qrQueue.value.length)
+// no bill and no QR waiting: the bill side gets the full width (a settled bill closes the panel at once)
+const isEmpty = computed(() => !invoice.value && !loading.value && !qrQueue.value.length)
 // A UPI request waiting in the queue holds this bill's UPI box at the requested amount until it is
 // paid or cancelled from its popup
 const upiWaiting = computed(() => qrQueue.value.find(q => q.sales_invoice === invoice.value?.name && q.status === 'Pending'))
@@ -1554,6 +1561,7 @@ onUnmounted(() => {
   if (qrQueueTimer) clearInterval(qrQueueTimer)
   stopPaytmQrPolling()
   if (paidTickTimer) clearTimeout(paidTickTimer)
+  if (lastSettledTimer) clearTimeout(lastSettledTimer)
   bindUpiOverlay(null)
   bindCardOverlay(null)
   getFrappeSocket()?.off('paytm_payment_update', onPaytmSocket)
