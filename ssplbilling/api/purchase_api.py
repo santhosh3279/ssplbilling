@@ -440,15 +440,11 @@ def create_purchase_invoice(data=None, **kwargs):
         if data.get("incentive_system"):
             pi.save(ignore_permissions=True)
 
-    from ssplbilling.api.purchase_mirror_api import create_purchase_mirror_draft
-
-    mpi = create_purchase_mirror_draft(pi)
-
+    # The mirror is created after submit, in the background (submit_purchase_invoice).
     return {
         "invoice_name": pi.name,
         "grand_total": float(pi.grand_total),
         "status": "Draft",
-        "mirrored_invoice": mpi.name if mpi else None,
     }
 
 
@@ -496,11 +492,11 @@ def get_next_bill_no(naming_series="PINV-.YY.-"):
         next_no = peek_naming_series(naming_series)
     except Exception:
         return naming_series + "???"
-    # Mirrored series are saved with a trailing "/" (set_suffix_for_original_purchase_invoice).
+    # Mirrored series skip numbers whose bill or mirror name is taken (name_mirrored_purchase_invoice).
     try:
         from ssplbilling.api.automatic_entries_api import get_automatic_entries
         from ssplbilling.api.purchase_mirror_api import should_mirror_purchase_invoice
-        if next_no and not next_no.endswith("/") and should_mirror_purchase_invoice(naming_series, get_automatic_entries()):
+        if next_no and should_mirror_purchase_invoice(naming_series, get_automatic_entries()):
             next_no = _peek_free_mirrored_name(naming_series)
     except Exception:
         pass
@@ -508,8 +504,8 @@ def get_next_bill_no(naming_series="PINV-.YY.-"):
 
 
 def _peek_free_mirrored_name(naming_series):
-    """Next free slashed name in a mirrored series, skipping taken numbers like
-    set_suffix_for_original_purchase_invoice does, without consuming the counter."""
+    """Next free name in a mirrored series, skipping taken numbers like
+    name_mirrored_purchase_invoice does, without consuming the counter."""
     from frappe.model.naming import parse_naming_series
 
     offset = 0
@@ -520,8 +516,8 @@ def _peek_free_mirrored_name(naming_series):
         return ("%0" + str(digits) + "d") % (current + 1 + offset)
 
     for _ in range(1000):
-        name = parse_naming_series(naming_series, number_generator=read_only_counter).rstrip("/") + "/"
-        if not frappe.db.exists("Purchase Invoice", name):
+        name = parse_naming_series(naming_series, number_generator=read_only_counter)
+        if not _purchase_name_taken(name):
             break
         offset += 1
     return name
@@ -707,7 +703,7 @@ def update_purchase_invoice(data=None, **kwargs):
     _apply_due_date(pi)
 
     pi.custom_remarks = data.get("custom_remarks") or ""
-    # The mirror draft is left as it is here; submit_purchase_mirror brings it up to date.
+    # A mirrored bill's link is set by its mirror job, never typed in.
     if "custom_mirrored" in data and not _in_mirrored_series(pi):
         pi.custom_mirrored = data.get("custom_mirrored") or ""
 
@@ -864,7 +860,7 @@ def submit_purchase_invoice(invoice_name):
 		_block_mirror_bill(pi, "Submit")
 		pi.submit()
 		is_mirror_series = _in_mirrored_series(pi)
-		mpi = None
+		mirror_queued = False
 		if is_mirror_series:
 			try:
 				item_codes = list({item.item_code for item in pi.items if item.item_code})
@@ -873,27 +869,23 @@ def submit_purchase_invoice(invoice_name):
 			except Exception:
 				frappe.log_error(title="Purchase mirror: map items as GST items failed", message=frappe.get_traceback())
 
-			from ssplbilling.api.purchase_mirror_api import submit_purchase_mirror
+			from ssplbilling.api.purchase_mirror_api import queue_purchase_mirror
 
-			# A failed mirror raises, so the request rolls back and neither bill is submitted.
-			try:
-				mpi = submit_purchase_mirror(pi)
-			except Exception as e:
-				frappe.throw(
-					f"Mirror bill for {pi.name} could not be submitted, so {pi.name} was not submitted either: "
-					f"{frappe.utils.strip_html(str(e))}"
-				)
+			# Mirrored in the background once this request commits, like sales bills; a
+			# failure is logged as a Mirror Invoice Error and never blocks this submit.
+			mirror_queued = queue_purchase_mirror(pi)
 		return {
 			"name": pi.name,
 			"status": "Submitted",
 			"is_mirror_series": is_mirror_series,
-			"mirrored_invoice": mpi.name if mpi else (pi.get("custom_mirrored") or None),
+			"mirror_queued": mirror_queued,
+			"mirrored_invoice": _mirror_link(pi),
 		}
 	elif pi.docstatus == 1:
 		return {
 			"name": pi.name,
 			"status": "Already Submitted",
-			"mirrored_invoice": pi.get("custom_mirrored") or None,
+			"mirrored_invoice": _mirror_link(pi),
 		}
 	else:
 		frappe.throw(f"Invoice {invoice_name} is already cancelled")
@@ -909,6 +901,12 @@ def delete_purchase_invoice(invoice_name):
         delete_purchase_mirror_draft(pi)
     frappe.delete_doc("Purchase Invoice", invoice_name)
     return {"status": "Deleted"}
+
+
+def _mirror_link(pi):
+    """`custom_mirrored`, or None. Old bills carry the field default "0" for no link."""
+    link = (pi.get("custom_mirrored") or "").strip()
+    return None if link in ("", "0") else link
 
 
 def _in_mirrored_series(pi):
@@ -1268,7 +1266,20 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 	return data
 
 
-def set_suffix_for_original_purchase_invoice(doc, method=None, ae=None):
+def _purchase_name_taken(name):
+	"""A bill name is free only when neither it nor its mirror name (`<name>/`) is used."""
+	from ssplbilling.api.automatic_entries_api import mirror_name_for
+
+	return bool(
+		frappe.db.exists("Purchase Invoice", name)
+		or frappe.db.exists("Purchase Invoice", mirror_name_for(name))
+	)
+
+
+def name_mirrored_purchase_invoice(doc, method=None, ae=None):
+	"""Autoname for a bill in a mirrored purchase series. Named like sales bills: the bill keeps
+	the plain series name and its mirror is `<name>/`, so numbers whose bill or mirror name is
+	already taken (including older bills that carry the "/" themselves) are skipped."""
 	if doc.doctype != "Purchase Invoice":
 		return
 	if doc.name:
@@ -1287,14 +1298,11 @@ def set_suffix_for_original_purchase_invoice(doc, method=None, ae=None):
 	if not naming_series or not ae or not should_mirror_purchase_invoice(naming_series, ae):
 		return
 
-	# Every purchase series set for mirroring gets a trailing "/", whether the mirror
-	# uses the same series or a different one.
 	from frappe.model.naming import make_autoname
 
 	# The series counter can fall behind bills already saved, so skip numbers that are taken.
 	for _ in range(1000):
-		generated_name = make_autoname(naming_series, doc=doc)
-		name = generated_name if generated_name.endswith("/") else f"{generated_name}/"
-		if not frappe.db.exists("Purchase Invoice", name):
+		name = make_autoname(naming_series, doc=doc)
+		if not _purchase_name_taken(name):
 			break
 	doc.name = name

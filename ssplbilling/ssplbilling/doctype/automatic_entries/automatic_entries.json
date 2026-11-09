@@ -12,7 +12,6 @@
   "mandatory_upi_mirror_series",
   "section_break_tables",
   "series",
-  "purchase_mirroring_series",
   "accounts"
  ],
  "fields": [
@@ -66,12 +65,6 @@
    "options": "Automatic Entry Series"
   },
   {
-   "fieldname": "purchase_mirroring_series",
-   "fieldtype": "Table",
-   "label": "Purchase Mirroring Series Table",
-   "options": "Purchase Mirroring Series"
-  },
-  {
    "fieldname": "accounts",
    "fieldtype": "Table",
    "label": "Accounts Table",
@@ -80,7 +73,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-11-09 13:00:00.000000",
+ "modified": "2026-11-09 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "Automatic Entries",

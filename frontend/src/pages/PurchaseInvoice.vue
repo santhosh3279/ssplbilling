@@ -2050,7 +2050,6 @@ async function handleSave() {
       })
       if (res.invoice_name) {
         invoiceNo.value = res.invoice_name
-        if (res.mirrored_invoice) customMirrored.value = res.mirrored_invoice
         isSaved.value = true
         isReadOnly.value = true
         fetchRecentInvoices()

@@ -217,7 +217,7 @@ doc_events = {
 		],
 	},
 	"Purchase Invoice": {
-		"autoname": "ssplbilling.api.purchase_api.set_suffix_for_original_purchase_invoice",
+		"autoname": "ssplbilling.api.purchase_api.name_mirrored_purchase_invoice",
 		"validate": "ssplbilling.api.SaleEntry_api.sync_gst_category",
 		"after_insert": "ssplbilling.api.panel_sync.publish_bill_panel_update",
 		"on_update": [
