@@ -1254,7 +1254,7 @@ async function processPayment() {
     }
 
     // Mandatory UPI Mirror Series (Automatic Entries)
-    const askMirror = shouldAskUpiMirror(upi, selectedInvoice.value?.naming_series)
+    const askMirror = shouldAskUpiMirror(upi, card, selectedInvoice.value?.naming_series)
     const invoiceName = selectedInvoice.value?.name
 
     mirrorQueued.value = false

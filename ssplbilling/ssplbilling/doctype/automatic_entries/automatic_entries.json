@@ -49,7 +49,7 @@
    "label": "Allow Zero Valuation Rate on Mirror Invoices"
   },
   {
-   "description": "Comma-separated Sales Invoice series prefixes (e.g. SINV-, RT-). When a bill from one of these series is posted with a UPI amount, the cashier is asked to mirror it to the Alternative Company.",
+   "description": "Comma-separated Sales Invoice series prefixes (e.g. SINV-, RT-). When a bill from one of these series is posted with a UPI or Card amount, the cashier is asked to mirror it to the Alternative Company.",
    "fieldname": "mandatory_upi_mirror_series",
    "fieldtype": "Small Text",
    "label": "Mandatory UPI Mirror Series"

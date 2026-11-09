@@ -1,5 +1,5 @@
 // "Mandatory UPI Mirror Series" (Automatic Entries): a bill from one of these
-// series that is posted with a UPI amount is offered for mirroring to the
+// series that is posted with a UPI or Card amount is offered for mirroring to the
 // Alternative Company. Prefixes match the way the server matches mirror series.
 export function isMandatoryUpiMirrorSeries(namingSeries) {
   const series = String(namingSeries || '').trim()
@@ -11,8 +11,8 @@ export function isMandatoryUpiMirrorSeries(namingSeries) {
     .some(prefix => series === prefix || series.startsWith(prefix))
 }
 
-export function shouldAskUpiMirror(upiAmount, namingSeries) {
-  return Number(upiAmount) > 0.01
+export function shouldAskUpiMirror(upiAmount, cardAmount, namingSeries) {
+  return (Number(upiAmount) > 0.01 || Number(cardAmount) > 0.01)
     && !!localStorage.getItem('ae-alternative_company')
     && isMandatoryUpiMirrorSeries(namingSeries)
 }

@@ -858,8 +858,8 @@ async function processPayment(unsentConfirmed = false) {
   const change = changeAmount.value
   isSubmitting.value = true
   try {
-    // CashierDesk rule: a UPI bill from a Mandatory UPI Mirror Series is offered for mirroring
-    const askMirror = shouldAskUpiMirror(upi, invoice.value.naming_series)
+    // CashierDesk rule: a UPI / Card bill from a Mandatory UPI Mirror Series is offered for mirroring
+    const askMirror = shouldAskUpiMirror(upi, card, invoice.value.naming_series)
     const res = await submitInvoiceWithPayment({
       invoice_name: name,
       cash_amount: cash,

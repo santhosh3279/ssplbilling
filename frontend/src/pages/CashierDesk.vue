@@ -2455,7 +2455,7 @@ async function processPayment(unsentConfirmed = false) {
     }
     
     // Mandatory UPI Mirror Series (Automatic Entries): read before the bill is cleared below
-    const askMirror = shouldAskUpiMirror(upi, selectedInvoice.value?.naming_series)
+    const askMirror = shouldAskUpiMirror(upi, card, selectedInvoice.value?.naming_series)
     const invoiceName = selectedInvoice.value?.name
 
     mirrorQueued.value = false
