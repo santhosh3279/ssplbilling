@@ -94,22 +94,54 @@
         <div class="flex items-center gap-2 bg-[var(--color-surface-raised)]/50 px-1 py-0.5 rounded-xl border border-[var(--color-border)] shadow-sm">
           <div class="flex items-center gap-2">
             <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)] ml-2">From</label>
+            <button
+              type="button"
+              @click="shiftDate('from', -1)"
+              title="Previous day (From)"
+              class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
             <input
               v-model="fromDate"
               type="date"
               class="bg-transparent text-3xl font-mono text-[var(--color-text)] outline-none focus:text-[var(--color-info)] w-48"
             />
+            <button
+              type="button"
+              @click="shiftDate('from', 1)"
+              title="Next day (From)"
+              class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
           </div>
           
           <div class="h-8 w-px bg-[var(--color-border)] opacity-30 mx-1"></div>
 
           <div class="flex items-center gap-2">
             <label class="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">To</label>
+            <button
+              type="button"
+              @click="shiftDate('to', -1)"
+              title="Previous day (To)"
+              class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+            </button>
             <input
               v-model="toDate"
               type="date"
               class="bg-transparent text-3xl font-mono text-[var(--color-text)] outline-none focus:text-[var(--color-info)] w-48"
             />
+            <button
+              type="button"
+              @click="shiftDate('to', 1)"
+              title="Next day (To)"
+              class="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-muted)] transition hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] active:scale-95"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            </button>
           </div>
         </div>
 
@@ -1132,6 +1164,22 @@ const activeQuickRange = computed(() => {
 
   return null
 })
+
+// Arrow buttons: step one date by a day; the other date follows so the range never inverts.
+function shiftDate(which, days) {
+  const target = which === 'from' ? fromDate : toDate
+  if (!target.value) return
+  const d = new Date(target.value + 'T00:00:00')
+  d.setDate(d.getDate() + days)
+  target.value = toLocalISO(d)
+  if (fromDate.value > toDate.value) {
+    if (which === 'from') toDate.value = fromDate.value
+    else fromDate.value = toDate.value
+  }
+  nextTick(() => {
+    applyDateRange()
+  })
+}
 
 function setQuickRange(range) {
   const [y, m, d] = getLocalDateParts()
