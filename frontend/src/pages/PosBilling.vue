@@ -12,6 +12,7 @@
         @active-bill="onActiveBill"
         @focus-payment="paymentRef?.focus()"
         @modifying="modifying = $event"
+        @print-closed="onPrintClosed"
       />
       <div class="pos-dim pointer-events-none absolute inset-0 z-40" aria-hidden="true"></div>
     </div>
@@ -22,12 +23,27 @@
       :reload-key="reloadKey"
       :suspended="modifying"
       @loaded="onPaymentLoaded"
-      @settled="salesRef?.printAndClear()"
+      @settled="onSettled"
       @back="salesRef?.focusBarcodeInput()"
       @bill-list="salesRef?.focusBillList()"
       @open-bill="salesRef?.openBill($event)"
       @print="salesRef?.handlePrint()"
       @modify="salesRef?.handleModify()"
+    />
+
+    <!-- Same as CashierDesk: an exempt bill paid by UPI is offered for mirroring, asked once its print popup closes -->
+    <Warning
+      :show="showGstWarning"
+      title="GST Mirroring"
+      :message="`mirror salesinvoice no: ${mirrorInvoice} to alternate company`"
+      @close="closeGstWarning"
+      @confirm="confirmGstWarning"
+    />
+    <BillMirrorCreator
+      v-if="showBillMirrorCreator"
+      :show="showBillMirrorCreator"
+      :invoice-name="mirrorInvoice"
+      @close="closeBillMirrorCreator"
     />
   </div>
 </template>
@@ -36,6 +52,9 @@
 import { ref } from 'vue'
 import SalesInvoice from './SalesInvoice.vue'
 import PosPaymentPanel from '../components/PosPaymentPanel.vue'
+import Warning from '../components/Warning.vue'
+import BillMirrorCreator from '../components/BillMirrorCreator.vue'
+import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const salesRef = ref(null)
 const paymentRef = ref(null)
@@ -51,6 +70,41 @@ function onActiveBill(name, reason) {
   // saved again after a modify: same bill, new totals, so load it afresh
   if (name && name === activeBill.value) reloadKey.value++
   activeBill.value = name
+}
+
+// settled bill waiting for the mirror question until its print popup closes
+const pendingMirror = ref('')
+const mirrorInvoice = ref('')
+const showGstWarning = ref(false)
+const showBillMirrorCreator = ref(false)
+// the bill side's window shortcuts stay quiet while the question is open
+useSubwindowWatcher(showGstWarning)
+
+function onSettled(name, { askMirror } = {}) {
+  pendingMirror.value = askMirror ? name : ''
+  salesRef.value?.printAndClear()
+}
+
+function onPrintClosed() {
+  if (!pendingMirror.value) return
+  mirrorInvoice.value = pendingMirror.value
+  pendingMirror.value = ''
+  showGstWarning.value = true
+}
+
+function closeGstWarning() {
+  showGstWarning.value = false
+  salesRef.value?.focusBarcodeInput()
+}
+
+function confirmGstWarning() {
+  showGstWarning.value = false
+  showBillMirrorCreator.value = true
+}
+
+function closeBillMirrorCreator() {
+  showBillMirrorCreator.value = false
+  salesRef.value?.focusBarcodeInput()
 }
 
 function onPaymentLoaded() {

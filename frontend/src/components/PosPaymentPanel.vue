@@ -465,7 +465,7 @@
           v-if="lastSettled"
           class="pointer-events-none fixed left-1/2 top-4 z-[130] -translate-x-1/2 rounded-xl border border-[var(--color-success)] bg-[var(--color-surface)] px-5 py-3 text-center shadow-2xl"
         >
-          <div class="text-[12px] font-black uppercase tracking-widest text-[var(--color-success)]">Bill settled · <span class="font-mono normal-case tracking-normal text-[var(--color-text)]">{{ lastSettled.name }}</span></div>
+          <div class="text-[12px] font-black uppercase tracking-widest text-[var(--color-success)]">Bill settled · <span class="font-mono normal-case tracking-normal text-[var(--color-text)]">{{ lastSettled.name }}</span><template v-if="lastSettled.mirrorQueued"> · Mirror queued</template></div>
           <div v-if="lastSettled.change > 0" class="mt-1 font-mono text-[28px] font-black leading-none text-[var(--color-danger)]">Change ₹{{ fmt(lastSettled.change) }}</div>
         </div>
       </transition>
@@ -550,9 +550,9 @@ const cardRefNo = ref('')
 // brief "bill settled" note shown after the panel closes; longer when there is change to hand back
 const lastSettled = ref(null)
 let lastSettledTimer = null
-function showSettled(name, change) {
+function showSettled(name, change, mirrorQueued = false) {
   if (lastSettledTimer) clearTimeout(lastSettledTimer)
-  lastSettled.value = { name, change }
+  lastSettled.value = { name, change, mirrorQueued }
   lastSettledTimer = setTimeout(() => { lastSettled.value = null }, change > 0 ? 5000 : 2500)
 }
 // cash was filled with the bill amount by us, not typed: it shrinks as other modes are entered
@@ -857,7 +857,11 @@ async function processPayment(unsentConfirmed = false) {
   const change = changeAmount.value
   isSubmitting.value = true
   try {
-    await submitInvoiceWithPayment({
+    // CashierDesk rule: an exempt bill paid by UPI is offered for mirroring to the alternate company
+    const askMirror = upi > 0.01
+      && String(invoice.value.tax_template || '').toLowerCase().includes('exempt')
+      && !!localStorage.getItem('ae-alternative_company')
+    const res = await submitInvoiceWithPayment({
       invoice_name: name,
       cash_amount: cash,
       upi_amount: upi,
@@ -878,9 +882,9 @@ async function processPayment(unsentConfirmed = false) {
       cost_center: localStorage.getItem('wb-cost-center') || null,
     })
     invoice.value = null
-    showSettled(name, change)
+    showSettled(name, change, !!res?.mirror_queued)
     qrQueue.value = qrQueue.value.filter(q => q.sales_invoice !== name)
-    emit('settled', name)
+    emit('settled', name, { askMirror })
   } catch (e) {
     errorMsg.value = e.message
   } finally {

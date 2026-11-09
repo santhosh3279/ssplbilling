@@ -909,7 +909,7 @@ const props = defineProps({
   posMode: Boolean
 })
 
-const emit = defineEmits(['close', 'active-bill', 'focus-payment', 'modifying'])
+const emit = defineEmits(['close', 'active-bill', 'focus-payment', 'modifying', 'print-closed'])
 
 const router = useRouter()
 const route = useRoute()
@@ -2159,7 +2159,11 @@ async function closePrintModal() {
   focusBeforePrint = null
   pendingClearAfterPrint.value = false
   // POS: the paid bill was read-only (and maybe a credit / return draft), so reset it fully
-  if (props.posMode) return clearBill()
+  if (props.posMode) {
+    await clearBill()
+    emit('print-closed')
+    return
+  }
 
   // Clear bill for next entry (keep customer)
   items.value = []
