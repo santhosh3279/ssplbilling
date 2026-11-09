@@ -108,13 +108,6 @@
       <!-- LEFT 40%: BOX Cash compact table + UPI below -->
       <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar min-w-0" style="width: 40%; flex-shrink: 0;">
 
-      <!-- Export Button -->
-      <button @click="exportToExcel"
-        class="flex items-center justify-center gap-2 rounded-xl border border-[var(--color-success)]/50 bg-[var(--color-success)]/20 px-4 py-3 text-xs font-black uppercase tracking-widest text-[var(--color-success)] transition hover:bg-[var(--color-success)]/40 active:scale-95 disabled:opacity-30 disabled:grayscale shadow-lg shadow-emerald-900/20">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export Daily Cashier Report
-      </button>
-
       <!-- BOX Cash table card -->
       <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_60%,var(--color-bg))] shadow-2xl flex-shrink-0">
         <!-- Table header -->
@@ -301,6 +294,13 @@
         </div>
       </div>
       <!-- end BOX Cash table card -->
+
+      <!-- Export Button -->
+      <button @click="exportToExcel"
+        class="flex items-center justify-center gap-2 rounded-xl border border-[var(--color-success)]/50 bg-[color-mix(in_srgb,var(--color-success)_20%,var(--color-bg))] px-4 py-3 text-xs font-black uppercase tracking-widest text-[var(--color-success)] transition hover:bg-[color-mix(in_srgb,var(--color-success)_40%,var(--color-bg))] active:scale-95 disabled:opacity-30 disabled:grayscale shadow-lg shadow-emerald-900/20">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Daily Cashier Report
+      </button>
 
       </div>
       <!-- end left panel -->
