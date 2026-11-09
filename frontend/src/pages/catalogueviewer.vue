@@ -252,7 +252,7 @@
               :src="cat.cover_image"
               :alt="cat.heading"
               loading="lazy"
-              class="card-cover w-full aspect-[4/3] rounded-xl object-cover border border-[var(--color-border)]/40"
+              class="card-cover w-full aspect-[4/3] rounded-xl object-contain bg-[var(--color-bg)] border border-[var(--color-border)]/40"
             />
             <!-- Icon and Active Items -->
             <div class="flex items-center justify-between">

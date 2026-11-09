@@ -237,7 +237,7 @@
                       v-if="form.cover_image"
                       :src="form.cover_image"
                       alt="Catalogue cover"
-                      class="h-16 w-16 shrink-0 rounded border border-[var(--color-border)] object-cover"
+                      class="h-16 w-16 shrink-0 rounded border border-[var(--color-border)] object-contain"
                     />
                     <div
                       v-else
