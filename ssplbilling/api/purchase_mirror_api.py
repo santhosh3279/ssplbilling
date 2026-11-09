@@ -259,3 +259,54 @@ def delete_purchase_mirror_draft(pi):
 	found = find_purchase_mirror(pi, ae)
 	if found and found.docstatus == 0:
 		frappe.delete_doc("Purchase Invoice", found.name, ignore_permissions=True)
+
+
+@frappe.whitelist()
+def retry_purchase_mirror_bill(invoice_name):
+	"""Manually mirror an already-submitted Purchase Invoice now (Ctrl+Shift+O in the
+	Purchase Invoice page), e.g. when the background mirror failed.
+
+	Unlike `mirror_purchase_bill`, a failure is NOT swallowed into the Error Log; the
+	exception propagates so the operator sees why it failed.
+
+	Returns one of:
+	  {"status": "exists",  "invoice_name": ...}  submitted mirror already there, nothing done
+	  {"status": "created", "invoice_name": ...}  mirror created (or its old draft submitted) now
+	  {"status": "not_configured"}                series is not set for purchase mirroring
+	"""
+	pi = frappe.get_doc("Purchase Invoice", invoice_name)
+	pi.check_permission("submit")
+	if pi.docstatus != 1:
+		frappe.throw("Only a submitted Purchase Invoice can be mirrored.")
+
+	ae = get_automatic_entries()
+	# Checked first: a bill in the alternate company is a mirror itself, so pressing the
+	# key on it reports "not configured" rather than a misleading "already created".
+	if not _mirrors_purchase_bill(pi, ae):
+		return {"status": "not_configured"}
+
+	found = find_purchase_mirror(pi, ae)
+	if found and found.docstatus == 1:
+		_link_purchase_pair(pi, frappe.get_doc("Purchase Invoice", found.name))
+		return {"status": "exists", "invoice_name": found.name, "company": ae.alternative_company}
+
+	# Same as submit: the mirror needs its items marked as GST items.
+	try:
+		from ssplbilling.api.purchase_api import map_items_as_gst_item
+
+		item_codes = list({item.item_code for item in pi.items if item.item_code})
+		if item_codes:
+			map_items_as_gst_item(item_codes)
+	except Exception:
+		frappe.log_error(title="Purchase mirror: map items as GST items failed", message=frappe.get_traceback())
+
+	if found:
+		mpi = frappe.get_doc("Purchase Invoice", found.name)
+		_fill_mirror_from_parent(mpi, pi, ae)
+		mpi.flags.ignore_permissions = True
+		mpi.submit()
+	else:
+		mpi = create_mirror_purchase_invoice(pi, ae)
+	_link_purchase_pair(pi, mpi)
+	resolve_mirror_errors("Purchase Mirror Bill", "Purchase Invoice", pi.name)
+	return {"status": "created", "invoice_name": mpi.name, "company": mpi.company}

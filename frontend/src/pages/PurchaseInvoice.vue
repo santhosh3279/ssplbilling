@@ -902,6 +902,7 @@
         { key: 'M', desc: 'Modify invoice (when invoice is open)' },
         { key: 'Page Up', desc: 'Series (empty) / Change supplier (with items)' },
         { key: 'Delete', desc: 'Delete selected row' },
+        { key: 'Ctrl + Shift + O', desc: 'Mirror bill now (submitted bill in a purchase mirroring series)' },
       ]"
       @close="showShortcutPage = false"
     />
@@ -3276,7 +3277,7 @@ function finishRowEdit(idx) {
   else focusBarcodeInput()
 }
 
-useShortcuts(salesInvoiceShortcuts({
+useShortcuts({ ...salesInvoiceShortcuts({
   openShortcuts:    () => { showShortcutPage.value = !showShortcutPage.value },
   clearBill:        () => handleF2(),
   focusModifyPanel: () => handleF3(),
@@ -3293,7 +3294,55 @@ useShortcuts(salesInvoiceShortcuts({
       deleteItem(selectedRowIdx.value)
     }
   },
-}), props.isSubwindow ? 'subwindow' : 'local')
+}), 'CTRL+SHIFT+O': () => handleRetryPurchaseMirror() }, props.isSubwindow ? 'subwindow' : 'local')
+
+const retryingMirror = ref(false)
+
+// Ctrl+Shift+O — mirror the open submitted bill into the alternate company now, when its
+// series is set in Purchase Invoice Series of Automatic Entries. Submit only queues the
+// mirror in the background and logs a failure; this runs it now and shows the real reason.
+async function handleRetryPurchaseMirror() {
+  if (!invoiceNo.value || invoiceNo.value === 'NEW' || !isSaved.value) {
+    alert('Please save the purchase invoice first.')
+    return
+  }
+  if (!isSubmitted.value) {
+    alert('Only a submitted purchase invoice can be mirrored.')
+    return
+  }
+  if (retryingMirror.value) return
+
+  retryingMirror.value = true
+  try {
+    // silent: the failure message is ERPNext HTML, shown below with tags stripped
+    const res = await frappePost('ssplbilling.api.purchase_mirror_api.retry_purchase_mirror_bill', {
+      invoice_name: invoiceNo.value,
+    }, { silent: true })
+    const r = res?.message || res
+    if (r?.status === 'exists' || r?.status === 'created') {
+      customMirrored.value = r.invoice_name || ''
+    }
+    if (r?.status === 'exists') {
+      alert(`Mirror bill already created: ${r.invoice_name}`)
+    } else if (r?.status === 'not_configured') {
+      alert('This invoice series is not added in purchase mirroring (Automatic Entries).')
+    } else if (r?.status === 'created') {
+      alert(`Mirror bill created: ${r.invoice_name}`)
+    } else {
+      alert('Mirror bill: unexpected response from the server.')
+    }
+  } catch (e) {
+    alert(`Mirror bill failed:\n\n${stripHtml(e?.message || String(e))}`)
+  } finally {
+    retryingMirror.value = false
+  }
+}
+
+function stripHtml(msg) {
+  const el = document.createElement('div')
+  el.innerHTML = String(msg || '').replace(/<br\s*\/?>|<\/li>/gi, '\n')
+  return (el.textContent || '').replace(/\n{3,}/g, '\n\n').trim()
+}
 
 function handleBeforeUnload() {
   releaseLock()
