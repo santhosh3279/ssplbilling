@@ -711,6 +711,11 @@ async function loadInvoice(name) {
     if (details.is_return || isSecondaryParty.value || details.mop === 'Credit') {
       isCredit.value = true
     }
+    // An alternate-company bill made from a paid bill carries that bill's UPI / card split: start from it
+    if (!isCredit.value && details.docstatus === 0 && (details.upi_amount || details.card_amount)) {
+      payments.value.upi = details.upi_amount || 0
+      payments.value.card = details.card_amount || 0
+    }
     loading.value = false
     resumeQueued(name)
     emit('loaded', name)

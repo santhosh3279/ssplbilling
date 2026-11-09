@@ -1706,6 +1706,11 @@ async function selectInvoice(inv) {
     } else if (details.mop) {
       toggleCredit(details.mop === 'Credit')
     }
+    // An alternate-company bill made from a paid bill carries that bill's UPI / card split: start from it
+    if (!isCredit.value && details.docstatus === 0 && (details.upi_amount || details.card_amount)) {
+      payments.value.upi = details.upi_amount || 0
+      payments.value.card = details.card_amount || 0
+    }
     const queued = qrQueue.value.find(q => q.sales_invoice === inv.name && q.status === 'Success')
     if (queued) applyQueuedPayment(queued)
   } catch (e) {

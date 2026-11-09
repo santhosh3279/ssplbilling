@@ -569,6 +569,9 @@ def submit_invoice_with_payment(data=None, **kwargs):
 	grand_total = float(si.rounded_total or si.grand_total or 0)
 	company = si.company
 	cost_center = data.get("cost_center") or si.get("cost_center")
+	# A draft may already carry a UPI / card split copied from its source bill (prefill only):
+	# the first settlement replaces it, a later one on a part-paid bill adds to it.
+	was_draft = si.docstatus == 0
 
 	if not is_credit:
 		total_payment = cash_amount + upi_amount + card_amount + discount_amount + credit_amount
@@ -637,6 +640,9 @@ def submit_invoice_with_payment(data=None, **kwargs):
 				reconcile_dr_cr_note(reconcile_args, si.company)
 
 	if is_credit:
+		if was_draft and (si.get("custom_upi_amount") or si.get("custom_card_amount")):
+			# a prefilled split that was not taken: nothing came in by UPI / card
+			si.db_set({"custom_upi_amount": 0, "custom_card_amount": 0}, update_modified=False)
 		mirror_queued = _queue_cashier_mirror(si)
 		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted", "mirrored": _has_mirror_bill(si), "mirror_queued": mirror_queued}
 
@@ -774,11 +780,13 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			original_card_pe = pe_name
 
 	# Keep the UPI / card split on the bill itself; its alternate-company copy reads it from here.
-	if original_upi_pe or original_card_pe:
+	if was_draft or original_upi_pe or original_card_pe:
+		prev_upi = 0 if was_draft else float(si.get("custom_upi_amount") or 0)
+		prev_card = 0 if was_draft else float(si.get("custom_card_amount") or 0)
 		si.db_set(
 			{
-				"custom_upi_amount": float(si.get("custom_upi_amount") or 0) + (upi_amount if original_upi_pe else 0),
-				"custom_card_amount": float(si.get("custom_card_amount") or 0) + (card_amount if original_card_pe else 0),
+				"custom_upi_amount": prev_upi + (upi_amount if original_upi_pe else 0),
+				"custom_card_amount": prev_card + (card_amount if original_card_pe else 0),
 			},
 			update_modified=False,
 		)
