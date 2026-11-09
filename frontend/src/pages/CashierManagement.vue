@@ -1,5 +1,5 @@
 <template>
-  <div class="relative min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-sans">
+  <div class="relative min-h-screen bg-[color-mix(in_srgb,var(--color-bg)_70%,black)] text-[var(--color-text)] font-sans">
 
     <!-- TOP NAVIGATION BAR -->
     <nav class="fixed top-0 left-0 right-0 z-50 flex h-20 items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg)]/80 px-8 backdrop-blur-xl">
