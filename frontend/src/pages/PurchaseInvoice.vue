@@ -1,6 +1,7 @@
 <template>
   <div class="h-screen bg-[var(--color-bg)] overflow-hidden">
     <Item_Invoice_Template
+      sidebar-tiles
       :show-sidebar="!isSubwindow"
       :show-back-button="!isSubwindow"
       ref="invoiceTemplateRef"
