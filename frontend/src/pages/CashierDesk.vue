@@ -1637,6 +1637,24 @@ function debouncedSearch() {
   searchTimeout = setTimeout(loadInvoices, 300)
 }
 
+// Another tab submitted or cancelled the bill open here: refetch it so canSubmit turns off and
+// the Settled badge shows, instead of this tab collecting the same bill a second time.
+async function onSelectedBillSettledElsewhere(e) {
+  const d = e?.detail
+  if (!d || d.doctype !== 'Sales Invoice' || !d.docstatus) return
+  const cur = selectedInvoice.value
+  if (!cur || cur.name !== d.name || cur.docstatus !== 0) return
+  if (isSubmitting.value) return // our own settle; its result handles the panel
+  try {
+    const details = await getInvoiceDetails(d.name)
+    if (selectedInvoice.value?.name !== d.name) return
+    selectedInvoice.value = details
+    errorMsg.value = `Bill ${d.name} was ${d.docstatus === 2 ? 'cancelled' : 'settled'} in another tab.`
+  } catch (err) {
+    errorMsg.value = 'Failed to refresh bill: ' + err.message
+  }
+}
+
 async function selectInvoice(inv) {
   highlightedInvoiceName.value = inv.name
   if (selectedInvoice.value?.name === inv.name) return
@@ -2893,6 +2911,7 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
 
   _billPanelCleanup = onBillPanelUpdate('Sales Invoice', sidebarSeries, loadInvoices, applyCashierPanelEvent)
+  window.addEventListener('wb-bill-panel-update', onSelectedBillSettledElsewhere)
   loadPaytmDevices().then(startQrQueue)
   getFrappeSocket()?.on('paytm_payment_update', onPaytmSocket)
 })
@@ -2905,6 +2924,7 @@ onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   if (paidTickTimer) clearTimeout(paidTickTimer)
   _billPanelCleanup?.()
+  window.removeEventListener('wb-bill-panel-update', onSelectedBillSettledElsewhere)
   stopPaytmPolling()
   stopPaytmQrPolling()
   if (qrQueueTimer) clearInterval(qrQueueTimer)

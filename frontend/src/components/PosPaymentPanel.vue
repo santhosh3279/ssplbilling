@@ -1567,9 +1567,20 @@ function settleMock(status) {
   else errorMsg.value = 'No mock Paytm order is waiting.'
 }
 
+// Another tab submitted or cancelled the draft open here: reload it so the panel flips to
+// "Already settled" instead of letting this tab collect the same bill a second time.
+function onBillPanelEvent(e) {
+  const d = e?.detail
+  if (!d || d.doctype !== 'Sales Invoice' || !d.docstatus) return
+  if (!invoice.value || invoice.value.name !== d.name || invoice.value.docstatus !== 0) return
+  if (isSubmitting.value) return // our own settle; its result handles the panel
+  loadInvoice(d.name)
+}
+
 onMounted(() => {
   loadPaytmDevices().then(startQrQueue)
   getFrappeSocket()?.on('paytm_payment_update', onPaytmSocket)
+  window.addEventListener('wb-bill-panel-update', onBillPanelEvent)
 })
 
 onUnmounted(() => {
@@ -1581,6 +1592,7 @@ onUnmounted(() => {
   bindUpiOverlay(null)
   bindCardOverlay(null)
   getFrappeSocket()?.off('paytm_payment_update', onPaytmSocket)
+  window.removeEventListener('wb-bill-panel-update', onBillPanelEvent)
 })
 
 function focus() {

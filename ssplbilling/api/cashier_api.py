@@ -556,7 +556,14 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		upi_ref_no = upi_ref_no or paytm_upi_ref
 		card_ref_no = card_ref_no or paytm_card_ref
 
+	# Row lock: a second tab settling the same bill waits here until the first commits,
+	# then sees it submitted and paid instead of booking a second, unallocated receipt.
+	frappe.db.get_value("Sales Invoice", invoice_name, "name", for_update=True)
 	si = frappe.get_doc("Sales Invoice", invoice_name)
+	if si.docstatus == 2:
+		frappe.throw(f"Bill {si.name} is cancelled.")
+	if si.docstatus == 1 and abs(float(si.outstanding_amount or 0)) <= 0.01:
+		frappe.throw(f"Bill {si.name} is already settled.")
 	grand_total = float(si.rounded_total or si.grand_total or 0)
 	company = si.company
 	cost_center = data.get("cost_center") or si.get("cost_center")
