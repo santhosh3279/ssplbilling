@@ -58,13 +58,13 @@
 
       <!-- Today's Sales Summary -->
       <div class="flex items-center gap-3">
-        <div class="flex flex-col items-end rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-4 py-2 shadow-inner">
+        <div class="flex flex-col items-end rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_60%,var(--color-bg))] px-4 py-2 shadow-inner">
           <div class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Total Sales</div>
           <div class="font-mono text-xl font-black text-[var(--color-success)] leading-none">
             {{ totalSales.toLocaleString('en-IN', { minimumFractionDigits: 0 }) }}
           </div>
         </div>
-        <div class="flex flex-col items-end rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-4 py-2 shadow-inner">
+        <div class="flex flex-col items-end rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_60%,var(--color-bg))] px-4 py-2 shadow-inner">
           <div class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">Bills</div>
           <div class="font-mono text-xl font-black text-[var(--color-text)] leading-none">{{ filteredBills.length }}</div>
         </div>
@@ -72,7 +72,7 @@
 
       <!-- Live Ledger Closing Balance -->
       <div class="flex items-center gap-4">
-        <div class="flex flex-col items-end rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-5 py-2.5 shadow-inner backdrop-blur-sm">
+        <div class="flex flex-col items-end rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_60%,var(--color-bg))] px-5 py-2.5 shadow-inner backdrop-blur-sm">
           <div class="flex items-center gap-2 mb-0.5">
             <div class="h-1.5 w-1.5 rounded-full" :class="[liveLedgerLoading ? 'bg-[var(--color-warning)] animate-pulse' : 'bg-[var(--color-success)]', !isToday ? 'animate-none' : 'animate-pulse']"></div>
             <span class="text-[9px] font-black uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
@@ -109,7 +109,7 @@
       <div class="flex flex-col gap-3 overflow-y-auto custom-scrollbar min-w-0" style="width: 40%; flex-shrink: 0;">
 
       <!-- BOX Cash table card -->
-      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 shadow-2xl flex-shrink-0">
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_60%,var(--color-bg))] shadow-2xl flex-shrink-0">
         <!-- Table header -->
         <div class="bg-[var(--color-bg)]/80 px-3 py-2 border-b border-[var(--color-border)]">
           <div class="text-sm font-black uppercase tracking-widest text-[var(--color-text-muted)]">BOX Cash — Daily Summary</div>
@@ -306,7 +306,7 @@
       <!-- end left panel -->
 
       <!-- SECOND 30%: Today's Bills table -->
-      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_60%,var(--color-bg))] shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
         <!-- Header -->
         <div class="flex items-center justify-between bg-[var(--color-bg)]/80 px-4 py-3 border-b border-[var(--color-border)] flex-shrink-0">
           <div>
@@ -427,7 +427,7 @@
       </div>
 
       <!-- THIRD 30%: Cash Ledger for today -->
-      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_60%,var(--color-bg))] shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
         <!-- Header -->
         <div class="flex items-center justify-between bg-[var(--color-bg)]/80 px-4 py-3 border-b border-[var(--color-border)] flex-shrink-0">
           <div>
@@ -513,7 +513,7 @@
       </div>
 
       <!-- FOURTH 30%: UPI Ledger for today -->
-      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]/60 shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
+      <div class="flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_60%,var(--color-bg))] shadow-2xl min-w-0" style="width: 30%; flex-shrink: 0;">
         <!-- Header -->
         <div class="flex items-center justify-between bg-[var(--color-bg)]/80 px-4 py-3 border-b border-[var(--color-border)] flex-shrink-0">
           <div>
