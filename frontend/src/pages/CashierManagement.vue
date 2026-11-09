@@ -43,7 +43,7 @@
           </div>
           <div class="flex items-center gap-2">
             <div class="font-mono text-2xl font-black text-[var(--color-text)] leading-tight">{{ formatDateDisplay(currentDate) }}</div>
-            <DatePickerButton v-model="currentDate" :max="serverToday()" label="Choose cashier date" />
+            <DatePickerButton v-model="currentDate" :max="serverToday()" label="Choose cashier date" class="bg-black/20" />
           </div>
         </div>
         <button @click="shiftDate(1)" :disabled="isToday"
