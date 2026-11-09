@@ -487,7 +487,7 @@ import Warning from '../components/Warning.vue'
 import { canModifyDate } from '../composables/usePermission'
 import { formatDMY } from '../utils/date'
 import { serverToday, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
-import { shouldAskUpiMirror } from '../utils/upiMirror'
+import { shouldAskUpiMirror, mirrorAlreadyHandled } from '../utils/upiMirror'
 
 const router = useRouter()
 
@@ -1271,7 +1271,7 @@ async function processPayment() {
 
     setTimeout(() => { showSuccessModal.value = false }, 1500)
 
-    if (askMirror) {
+    if (askMirror && !mirrorAlreadyHandled(res)) {
       nextTick(() => { showGstWarning.value = true })
     }
   } catch (e) {

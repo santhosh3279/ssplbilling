@@ -16,3 +16,9 @@ export function shouldAskUpiMirror(upiAmount, cardAmount, namingSeries) {
     && !!localStorage.getItem('ae-alternative_company')
     && isMandatoryUpiMirrorSeries(namingSeries)
 }
+
+// The server already queued the automatic mirror, or a mirror bill already exists:
+// asking again would create a duplicate.
+export function mirrorAlreadyHandled(submitResult) {
+  return !!(submitResult?.mirror_queued || submitResult?.mirrored)
+}

@@ -1121,7 +1121,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Unallocated from '../components/Unallocated.vue'
 import SalesInvoice from './SalesInvoice.vue'
 import BillMirrorCreator from '../components/BillMirrorCreator.vue'
-import { shouldAskUpiMirror } from '../utils/upiMirror'
+import { shouldAskUpiMirror, mirrorAlreadyHandled } from '../utils/upiMirror'
 import Warning from '../components/Warning.vue'
 import { canAccessTile, canModifyDate } from '../composables/usePermission'
 
@@ -2495,7 +2495,7 @@ async function processPayment(unsentConfirmed = false) {
       showSuccessModal.value = false
     }, 1500)
 
-    if (askMirror) {
+    if (askMirror && !mirrorAlreadyHandled(res)) {
       nextTick(() => {
         showGstWarning.value = true
       })

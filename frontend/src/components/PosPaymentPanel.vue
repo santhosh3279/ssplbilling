@@ -524,7 +524,7 @@ import { fireConfetti } from '../utils/confetti'
 import { paytmMockOn, whatsappMockOn, setPaytmMock, setWhatsAppMock, devCall, settleMockOrder } from '../utils/devMock'
 import { canModifyDate } from '../composables/usePermission'
 import { serverToday, serverCalendarDate } from '../services/serverTime'
-import { shouldAskUpiMirror } from '../utils/upiMirror'
+import { shouldAskUpiMirror, mirrorAlreadyHandled } from '../utils/upiMirror'
 
 const ConfettiTester = import.meta.env.DEV ? defineAsyncComponent(() => import('./ConfettiTester.vue')) : null
 
@@ -883,7 +883,7 @@ async function processPayment(unsentConfirmed = false) {
     invoice.value = null
     showSettled(name, change, !!res?.mirror_queued)
     qrQueue.value = qrQueue.value.filter(q => q.sales_invoice !== name)
-    emit('settled', name, { askMirror })
+    emit('settled', name, { askMirror: askMirror && !mirrorAlreadyHandled(res) })
   } catch (e) {
     errorMsg.value = e.message
   } finally {

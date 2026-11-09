@@ -27,6 +27,16 @@ def _queue_cashier_mirror(si, payment_details=None):
         return False
 
 
+def _has_mirror_bill(si):
+	"""Whether a mirror bill (`<name>/`) for `si` already exists, not cancelled, in another company."""
+	from ssplbilling.api.automatic_entries_api import mirror_name_for
+
+	mirror = frappe.db.get_value(
+		"Sales Invoice", mirror_name_for(si.name), ["company", "docstatus"], as_dict=True
+	)
+	return bool(mirror and mirror.company != si.company and mirror.docstatus != 2)
+
+
 def run_cashier_mirror(invoice_name, payment_details=None):
     """Create the mirror bill and payments in a worker after the source is committed."""
     from ssplbilling.api.automatic_entries_api import mirror_bill
@@ -619,7 +629,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 
 	if is_credit:
 		mirror_queued = _queue_cashier_mirror(si)
-		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted", "mirrored": False, "mirror_queued": mirror_queued}
+		return {"invoice_name": si.name, "payment_entries": [], "grand_total": grand_total, "status": "Submitted", "mirrored": _has_mirror_bill(si), "mirror_queued": mirror_queued}
 
 	payment_entries = []
 
@@ -776,7 +786,7 @@ def submit_invoice_with_payment(data=None, **kwargs):
 		"cost_center": cost_center,
 	})
 
-	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted", "mirrored": False, "mirror_queued": mirror_queued}
+	return {"invoice_name": si.name, "payment_entries": payment_entries, "grand_total": grand_total, "status": "Submitted", "mirrored": _has_mirror_bill(si), "mirror_queued": mirror_queued}
 
 @frappe.whitelist()
 def get_customer_unallocated_cash(customer, invoice_name=None, company=None):
