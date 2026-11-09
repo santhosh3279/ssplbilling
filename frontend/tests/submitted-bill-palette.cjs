@@ -27,6 +27,9 @@ assert.deepEqual(params.filters, [['docstatus', '=', 1], ['company', '=', 'Compa
 assert.deepEqual(params.or_filters, [['name', 'like', '%SO%2026%12%'], ['customer_name', 'like', '%SO/2026/12%']])
 assert.equal(params.limit_start, 50)
 assert.ok(params.fields.includes('transaction_date'))
+const allParams = plain(run("billListParams(BILL_TYPES[0], {docstatus:[0, 1]})"))
+assert.deepEqual(allParams.filters, [['docstatus', 'in', [0, 1]]])
+assert.ok(allParams.fields.includes('docstatus'))
 let calls = []
 let staleResolve
 let phase = 'initial'

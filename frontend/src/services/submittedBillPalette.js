@@ -31,12 +31,13 @@ export function readBillSeries(storage = localStorage) {
 }
 
 export function billListParams(type, { query = '', series = [], company = '', start = 0, limit = 50, docstatus = 1 } = {}) {
-  const filters = [['docstatus', '=', docstatus]]
+  // an array lists several states together (e.g. drafts and submitted bills)
+  const filters = [Array.isArray(docstatus) ? ['docstatus', 'in', docstatus] : ['docstatus', '=', docstatus]]
   if (company) filters.push(['company', '=', company])
   if (series.length) filters.push(['naming_series', 'in', series])
   const params = {
     doctype: type.doctype,
-    fields: ['name', type.date, type.party, 'grand_total', 'naming_series'],
+    fields: ['name', type.date, type.party, 'grand_total', 'naming_series', 'docstatus'],
     filters,
     order_by: `${type.date} desc, name desc`,
     limit_start: start,
