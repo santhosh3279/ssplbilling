@@ -1121,6 +1121,7 @@ import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import Unallocated from '../components/Unallocated.vue'
 import SalesInvoice from './SalesInvoice.vue'
 import BillMirrorCreator from '../components/BillMirrorCreator.vue'
+import { shouldAskUpiMirror } from '../utils/upiMirror'
 import Warning from '../components/Warning.vue'
 import { canAccessTile, canModifyDate } from '../composables/usePermission'
 
@@ -2453,8 +2454,8 @@ async function processPayment(unsentConfirmed = false) {
       cost_center: localStorage.getItem('wb-cost-center') || null
     }
     
-    const wasUpi = upi > 0.01
-    const wasExempted = selectedInvoice.value?.tax_template?.toLowerCase().includes('exempt')
+    // Mandatory UPI Mirror Series (Automatic Entries): read before the bill is cleared below
+    const askMirror = shouldAskUpiMirror(upi, selectedInvoice.value?.naming_series)
     const invoiceName = selectedInvoice.value?.name
 
     mirrorQueued.value = false
@@ -2494,8 +2495,7 @@ async function processPayment(unsentConfirmed = false) {
       showSuccessModal.value = false
     }, 1500)
 
-    const hasAlternativeCompany = !!localStorage.getItem('ae-alternative_company')
-    if (wasUpi && wasExempted && hasAlternativeCompany) {
+    if (askMirror) {
       nextTick(() => {
         showGstWarning.value = true
       })

@@ -487,6 +487,7 @@ import Warning from '../components/Warning.vue'
 import { canModifyDate } from '../composables/usePermission'
 import { formatDMY } from '../utils/date'
 import { serverToday, serverCalendarDate, toLocalISO, parseCalendarDate } from '../services/serverTime'
+import { shouldAskUpiMirror } from '../utils/upiMirror'
 
 const router = useRouter()
 
@@ -1252,8 +1253,8 @@ async function processPayment() {
       cost_center: localStorage.getItem('wb-cost-center') || null
     }
 
-    const wasUpi = upi > 0.01
-    const wasExempted = selectedInvoice.value?.tax_template?.toLowerCase().includes('exempt')
+    // Mandatory UPI Mirror Series (Automatic Entries)
+    const askMirror = shouldAskUpiMirror(upi, selectedInvoice.value?.naming_series)
     const invoiceName = selectedInvoice.value?.name
 
     mirrorQueued.value = false
@@ -1270,8 +1271,7 @@ async function processPayment() {
 
     setTimeout(() => { showSuccessModal.value = false }, 1500)
 
-    const hasAlternativeCompany = !!localStorage.getItem('ae-alternative_company')
-    if (wasUpi && wasExempted && hasAlternativeCompany) {
+    if (askMirror) {
       nextTick(() => { showGstWarning.value = true })
     }
   } catch (e) {

@@ -516,6 +516,7 @@ function applyToLocalStorage(settings, targetUserArg) {
     localStorage.setItem('ae-warehouse', ae.warehouse || '')
     localStorage.setItem('ae_payment_series', ae.payment_entry_naming_settings || '')
     localStorage.setItem('ae_journal_series', ae.journal_entry_naming_settings || '')
+    localStorage.setItem('ae-mandatory-upi-mirror-series', ae.mandatory_upi_mirror_series || '')
     localStorage.setItem('ae-series', JSON.stringify(ae.series || []))
     localStorage.setItem('ae-accounts', JSON.stringify(ae.accounts || []))
   }

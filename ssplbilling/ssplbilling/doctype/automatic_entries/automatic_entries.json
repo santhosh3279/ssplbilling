@@ -9,6 +9,7 @@
   "payment_entry_naming_settings",
   "journal_entry_naming_settings",
   "mirror_allow_zero_valuation_rate",
+  "mandatory_upi_mirror_series",
   "section_break_tables",
   "series",
   "purchase_mirroring_series",
@@ -48,6 +49,12 @@
    "label": "Allow Zero Valuation Rate on Mirror Invoices"
   },
   {
+   "description": "Comma-separated Sales Invoice series prefixes (e.g. SINV-, RT-). When a bill from one of these series is posted with a UPI amount, the cashier is asked to mirror it to the Alternative Company.",
+   "fieldname": "mandatory_upi_mirror_series",
+   "fieldtype": "Small Text",
+   "label": "Mandatory UPI Mirror Series"
+  },
+  {
    "fieldname": "section_break_tables",
    "fieldtype": "Section Break",
    "label": "Tables Settings"
@@ -73,7 +80,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-07-09 00:00:00.000000",
+ "modified": "2026-11-09 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "Automatic Entries",

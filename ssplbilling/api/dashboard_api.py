@@ -782,6 +782,7 @@ def get_billing_settings(user=None, company=None):
 			"warehouse": automatic_entries.warehouse or "",
 			"payment_entry_naming_settings": automatic_entries.payment_entry_naming_settings or "",
 			"journal_entry_naming_settings": automatic_entries.get("journal_entry_naming_settings") or "",
+			"mandatory_upi_mirror_series": automatic_entries.get("mandatory_upi_mirror_series") or "",
 			"series": [
 				{
 					"sales_invoice_series": r.sales_invoice_series or "",

@@ -524,6 +524,7 @@ import { fireConfetti } from '../utils/confetti'
 import { paytmMockOn, whatsappMockOn, setPaytmMock, setWhatsAppMock, devCall, settleMockOrder } from '../utils/devMock'
 import { canModifyDate } from '../composables/usePermission'
 import { serverToday, serverCalendarDate } from '../services/serverTime'
+import { shouldAskUpiMirror } from '../utils/upiMirror'
 
 const ConfettiTester = import.meta.env.DEV ? defineAsyncComponent(() => import('./ConfettiTester.vue')) : null
 
@@ -857,10 +858,8 @@ async function processPayment(unsentConfirmed = false) {
   const change = changeAmount.value
   isSubmitting.value = true
   try {
-    // CashierDesk rule: an exempt bill paid by UPI is offered for mirroring to the alternate company
-    const askMirror = upi > 0.01
-      && String(invoice.value.tax_template || '').toLowerCase().includes('exempt')
-      && !!localStorage.getItem('ae-alternative_company')
+    // CashierDesk rule: a UPI bill from a Mandatory UPI Mirror Series is offered for mirroring
+    const askMirror = shouldAskUpiMirror(upi, invoice.value.naming_series)
     const res = await submitInvoiceWithPayment({
       invoice_name: name,
       cash_amount: cash,
