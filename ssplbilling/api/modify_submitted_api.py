@@ -1,6 +1,6 @@
 import frappe
 from erpnext.accounts.utils import get_fiscal_year
-from frappe.utils import add_days, getdate, now
+from frappe.utils import add_days, flt, getdate, now
 
 
 SUPPORTED_DOCTYPES = ("Sales Invoice", "Purchase Invoice", "Quotation", "Sales Order", "Purchase Order")
@@ -533,4 +533,221 @@ def rename_submitted_bill(invoice_no, new_name, doctype="Purchase Invoice"):
 		"naming_series": series,
 		"mirror_invoice": partner,
 		"message": f"{doctype} {invoice_no} renamed to {new_name}.",
+	}
+
+
+# ── Purchase mirror link repair ─────────────────────────────────────────────
+
+_MIRROR_FIELDS = [
+	"name", "company", "docstatus", "naming_series", "supplier", "supplier_name", "bill_no",
+	"posting_date", "base_grand_total", "custom_mirrored",
+]
+
+
+def _norm_bill_no(value):
+	return (value or "").strip().lower()
+
+
+def _mirror_rows(**kwargs):
+	"""Purchase Invoices with `custom_mirrored` cleaned up: old bills carry "0" for no link."""
+	rows = frappe.get_all("Purchase Invoice", fields=_MIRROR_FIELDS, **kwargs)
+	for r in rows:
+		link = (r.custom_mirrored or "").strip()
+		r.custom_mirrored = "" if link == "0" else link
+	return rows
+
+
+def _same_bill(a, b):
+	"""Two bills are the same purchase when their supplier bill numbers match; bills without
+	a number only match on an equal total."""
+	if _norm_bill_no(a.bill_no) or _norm_bill_no(b.bill_no):
+		return _norm_bill_no(a.bill_no) == _norm_bill_no(b.bill_no)
+	return abs(flt(a.base_grand_total) - flt(b.base_grand_total)) < 0.02
+
+
+def _mirror_company():
+	from ssplbilling.api.automatic_entries_api import get_automatic_entries
+
+	if not frappe.get_meta("Purchase Invoice").has_field("custom_mirrored"):
+		frappe.throw("Purchase Invoice has no Mirrored field, so there are no mirror links to repair.")
+	ae = get_automatic_entries()
+	if not ae.alternative_company:
+		frappe.throw("No alternative company is set in Automatic Entries, so purchase bills are not mirrored.")
+	return ae, ae.alternative_company
+
+
+@frappe.whitelist()
+def get_purchase_mirror_links(from_date=None, to_date=None):
+	"""Purchase bills of the billing company(s) in the period with the mirror bill they link to and
+	the mirror bill that really is their copy (same supplier bill number), plus mirror bills in the
+	period that no bill claims. Read only."""
+	_check_authenticated()
+	from ssplbilling.api.purchase_mirror_api import should_mirror_purchase_invoice
+
+	ae, ae_company = _mirror_company()
+	to_date = getdate(to_date or now())
+	from_date = getdate(from_date or add_days(to_date, -60))
+	if to_date < from_date:
+		frappe.throw("To date is before from date.")
+
+	originals = [
+		r for r in _mirror_rows(
+			filters={"company": ["!=", ae_company], "docstatus": ["<", 2],
+				"posting_date": ["between", [from_date, to_date]]},
+			order_by="posting_date asc, name asc",
+		)
+		if r.custom_mirrored or r.name.endswith("/")
+		or should_mirror_purchase_invoice(r.naming_series, ae) or should_mirror_purchase_invoice(r.name, ae)
+	]
+	# Mirrors can be posted on another day than their original, so look well past the period edges.
+	pool = {
+		r.name: r for r in _mirror_rows(
+			filters={"company": ae_company, "docstatus": ["<", 2],
+				"posting_date": ["between", [add_days(from_date, -120), add_days(to_date, 120)]]},
+		)
+	}
+	linked = {r.custom_mirrored for r in originals if r.custom_mirrored and r.custom_mirrored not in pool}
+	if linked:
+		for r in _mirror_rows(
+			filters={"name": ["in", list(linked)], "company": ae_company, "docstatus": ["<", 2]},
+		):
+			pool[r.name] = r
+
+	# Pass 1: links that already point at the right copy keep it.
+	used, partner = set(), {}
+	for o in originals:
+		cur = pool.get(o.custom_mirrored or "")
+		if cur and _same_bill(o, cur):
+			partner[o.name] = cur
+			used.add(cur.name)
+
+	# Pass 2: everything else gets the closest unclaimed copy with the same bill number.
+	suggested = {}
+	for o in originals:
+		if o.name in partner:
+			continue
+		toggled = o.name[:-1] if o.name.endswith("/") else f"{o.name}/"
+		cands = [m for m in pool.values() if m.name not in used and _same_bill(o, m)]
+		cands.sort(key=lambda m: (
+			abs(flt(m.base_grand_total) - flt(o.base_grand_total)) >= 0.02,
+			m.name != toggled,
+			abs(flt(m.base_grand_total) - flt(o.base_grand_total)),
+			abs((getdate(m.posting_date) - getdate(o.posting_date)).days),
+		))
+		if cands:
+			suggested[o.name] = cands[0]
+			used.add(cands[0].name)
+
+	rows = []
+	for o in originals:
+		mirror = partner.get(o.name) or suggested.get(o.name)
+		cur = pool.get(o.custom_mirrored or "")
+		diff = flt(flt(o.base_grand_total) - flt(mirror.base_grand_total), 2) if mirror else None
+		if o.name in partner:
+			back_ok = (mirror.custom_mirrored or "") == o.name
+			status = "back_link" if not back_ok else ("amount_diff" if abs(diff) >= 0.5 else "ok")
+			fixable = not back_ok
+		elif mirror:
+			status = "wrong_link" if o.custom_mirrored else "unlinked"
+			fixable = True
+		else:
+			status, fixable = "no_mirror", False
+		rows.append({
+			"bill": o.name,
+			"company": o.company,
+			"posting_date": str(o.posting_date),
+			"supplier": o.supplier_name or o.supplier,
+			"bill_no": o.bill_no or "",
+			"docstatus": o.docstatus,
+			"total": flt(o.base_grand_total, 2),
+			"current": o.custom_mirrored or "",
+			"current_total": flt(cur.base_grand_total, 2) if cur else None,
+			"mirror": mirror.name if mirror else "",
+			"mirror_total": flt(mirror.base_grand_total, 2) if mirror else None,
+			"mirror_back": (mirror.custom_mirrored or "") if mirror else "",
+			"difference": diff,
+			"status": status,
+			"fixable": fixable,
+		})
+
+	orphans = [
+		{
+			"mirror": m.name,
+			"posting_date": str(m.posting_date),
+			"supplier": m.supplier_name or m.supplier,
+			"bill_no": m.bill_no or "",
+			"docstatus": m.docstatus,
+			"total": flt(m.base_grand_total, 2),
+			"current": m.custom_mirrored or "",
+		}
+		for m in sorted(pool.values(), key=lambda m: (m.posting_date, m.name))
+		if m.name not in used and from_date <= getdate(m.posting_date) <= to_date
+	]
+	return {
+		"from_date": str(from_date),
+		"to_date": str(to_date),
+		"mirror_company": ae_company,
+		"rows": rows,
+		"orphans": orphans,
+	}
+
+
+@frappe.whitelist()
+def fix_purchase_mirror_links(pairs):
+	"""Point each {bill, mirror} pair at each other. Any other bill still pointing at one of them
+	is unlinked so every link stays one-to-one. Only the Mirrored field changes; ledger, stock and
+	`modified` are untouched. Every change is noted in the bills' comments."""
+	_check_authenticated()
+	_ae, ae_company = _mirror_company()
+	pairs = frappe.parse_json(pairs) or []
+	if not pairs:
+		frappe.throw("Select at least one bill to fix.")
+
+	final, docs = {}, {}
+	for p in pairs:
+		bill, mirror = (p.get("bill") or "").strip(), (p.get("mirror") or "").strip()
+		if not bill or not mirror:
+			frappe.throw("Every row needs a bill and a mirror bill.")
+		if bill in final or mirror in final:
+			frappe.throw(f"{bill if bill in final else mirror} appears in more than one row.")
+		o = frappe.db.get_value("Purchase Invoice", bill, _MIRROR_FIELDS, as_dict=True)
+		m = frappe.db.get_value("Purchase Invoice", mirror, _MIRROR_FIELDS, as_dict=True)
+		if not o or not m:
+			frappe.throw(f"Purchase Invoice {bill if not o else mirror} not found.")
+		if o.docstatus == 2 or m.docstatus == 2:
+			frappe.throw(f"{bill} or {mirror} is cancelled.")
+		if o.company == ae_company or m.company != ae_company:
+			frappe.throw(f"{mirror} must be in {ae_company} and {bill} in another company.")
+		if not _same_bill(o, m):
+			frappe.throw(f"{bill} (bill no {o.bill_no or '-'}) and {mirror} (bill no {m.bill_no or '-'}) are not the same purchase.")
+		for name in (bill, mirror):
+			frappe.has_permission("Purchase Invoice", "write", doc=name, throw=True)
+		final[bill], final[mirror] = mirror, bill
+		docs[bill], docs[mirror] = o, m
+
+	# Bills outside the batch that still point at a bill in the batch lose that link.
+	stale = frappe.get_all(
+		"Purchase Invoice",
+		filters={"custom_mirrored": ["in", list(final)], "name": ["not in", list(final)]},
+		fields=_MIRROR_FIELDS,
+	)
+	changes = [(name, docs[name].custom_mirrored or "", final[name]) for name in final]
+	changes += [(s.name, s.custom_mirrored, "") for s in stale]
+
+	user = frappe.session.user
+	for name, old, new in changes:
+		if old == new:
+			continue
+		frappe.db.set_value("Purchase Invoice", name, "custom_mirrored", new, update_modified=False)
+		frappe.get_doc({
+			"doctype": "Comment", "comment_type": "Info",
+			"reference_doctype": "Purchase Invoice", "reference_name": name,
+			"content": f"Mirror link changed from {old or '(none)'} to {new or '(none)'} by {user} (Fix Mirror Links)",
+		}).insert(ignore_permissions=True)
+		frappe.clear_document_cache("Purchase Invoice", name)
+
+	return {
+		"fixed": len(pairs),
+		"unlinked": [s.name for s in stale],
+		"changes": [{"name": n, "old": o, "new": v} for n, o, v in changes if o != v],
 	}

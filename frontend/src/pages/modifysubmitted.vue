@@ -100,13 +100,160 @@
           <p class="mt-2 text-sm font-bold text-[var(--color-text)]">New draft: <span class="font-mono text-[var(--color-info)]">{{ draftResult.draft_invoice }}</span></p>
         </div>
 
-        <div v-if="!invoice && !draftResult && !loadingFetch" class="rounded-2xl border border-dashed border-[var(--color-border)] p-8 text-center text-[var(--color-text-muted)]">
+        <div v-if="!invoice && !draftResult && !loadingFetch && activePage !== 'mirror-links'" class="rounded-2xl border border-dashed border-[var(--color-border)] p-8 text-center text-[var(--color-text-muted)]">
           Select a submitted bill from the bill palette to {{ emptyHint }}.
         </div>
-        <div v-if="loadingFetch" class="p-8 text-center text-[var(--color-text-muted)]">Fetching bill…</div>
+        <div v-if="loadingFetch && activePage !== 'mirror-links'" class="p-8 text-center text-[var(--color-text-muted)]">Fetching bill…</div>
+
+        <!-- FIX MIRROR LINKS -->
+        <div v-if="activePage === 'mirror-links'" class="space-y-6">
+          <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+            <h2 class="text-base font-black uppercase tracking-wider text-[var(--color-text)]">Fix Mirror Links</h2>
+            <p class="mt-2 text-sm text-[var(--color-text-muted)]">
+              Each mirrored purchase bill should point to its own copy in {{ mirrorData?.mirror_company || 'the mirror company' }}.
+              The copy is found by the supplier bill number. Fixing changes only the link: amounts, ledger and stock stay as they are.
+            </p>
+
+            <div class="mt-5 flex flex-wrap items-end gap-3">
+              <label class="flex flex-col gap-1 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+                From
+                <input v-model="mirrorFrom" type="date" class="h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 font-mono text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" />
+              </label>
+              <label class="flex flex-col gap-1 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">
+                To
+                <input v-model="mirrorTo" type="date" class="h-10 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-3 font-mono text-sm font-bold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" />
+              </label>
+              <button
+                type="button"
+                @click="scanMirrorLinks"
+                :disabled="mirrorLoading || mirrorFixing"
+                class="h-10 rounded-xl bg-[var(--color-info)] px-5 text-sm font-bold text-[var(--color-text-on-highlight)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {{ mirrorLoading ? 'Scanning…' : 'Scan' }}
+              </button>
+            </div>
+
+            <div v-if="mirrorError" class="mt-4 rounded-xl border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/15 p-3 text-sm font-semibold text-[var(--color-danger)]">{{ mirrorError }}</div>
+            <div v-if="mirrorFixResult" class="mt-4 rounded-xl border border-[var(--color-success)]/40 bg-[var(--color-success)]/15 p-3 text-sm font-semibold text-[var(--color-success)]">
+              Fixed {{ mirrorFixResult.fixed }} bill(s), {{ mirrorFixResult.changes.length }} link(s) changed.
+              <span v-if="mirrorFixResult.unlinked.length">Unlinked: {{ mirrorFixResult.unlinked.join(', ') }}.</span>
+            </div>
+
+            <div v-if="mirrorData" class="mt-5 flex flex-wrap gap-2">
+              <button
+                v-for="key in mirrorStatusOrder"
+                :key="key"
+                type="button"
+                @click="mirrorFilter = mirrorFilter === key ? '' : key"
+                class="rounded-lg px-2.5 py-1 text-xs font-bold transition-all"
+                :class="mirrorFilter === key ? 'bg-[var(--color-info)] text-[var(--color-text-on-highlight)]' : 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+              >
+                {{ mirrorStatusLabels[key] }} · {{ mirrorCounts[key] || 0 }}
+              </button>
+            </div>
+          </div>
+
+          <div v-if="mirrorData" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+            <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--color-text)]">Bills ({{ mirrorVisibleRows.length }})</h3>
+              <button
+                type="button"
+                @click="showMirrorConfirm = true"
+                :disabled="!mirrorSelected.length || mirrorFixing"
+                class="rounded-xl bg-[var(--color-success)] px-5 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {{ mirrorFixing ? 'Fixing…' : `Fix ${mirrorSelected.length} selected` }}
+              </button>
+            </div>
+            <p v-if="!mirrorVisibleRows.length" class="py-6 text-center text-sm text-[var(--color-text-muted)]">Nothing to show.</p>
+            <div v-else class="overflow-x-auto rounded-xl border border-[var(--color-border)]">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                    <th class="px-3 py-2.5">
+                      <input type="checkbox" :checked="mirrorAllChecked" :disabled="!mirrorFixableVisible.length" @change="toggleAllMirror($event.target.checked)" aria-label="Select all fixable bills" />
+                    </th>
+                    <th class="px-3 py-2.5">Bill</th>
+                    <th class="px-3 py-2.5">Date</th>
+                    <th class="px-3 py-2.5">Supplier / Bill No</th>
+                    <th class="px-3 py-2.5 text-right">Total</th>
+                    <th class="px-3 py-2.5">Linked to now</th>
+                    <th class="px-3 py-2.5">Correct mirror</th>
+                    <th class="px-3 py-2.5 text-right">Mirror total</th>
+                    <th class="px-3 py-2.5">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)] font-mono">
+                  <tr
+                    v-for="row in mirrorVisibleRows"
+                    :key="row.bill"
+                    class="transition-colors"
+                    :class="mirrorChecked[row.bill] ? 'bg-[var(--color-info)]/10' : 'hover:bg-[var(--color-surface-raised)]/50'"
+                  >
+                    <td class="px-3 py-2">
+                      <input v-if="row.fixable" type="checkbox" v-model="mirrorChecked[row.bill]" :aria-label="`Fix ${row.bill}`" />
+                    </td>
+                    <td class="px-3 py-2 font-bold text-[var(--color-info)]">
+                      {{ row.bill }}
+                      <span v-if="row.docstatus === 0" class="ml-1 text-[10px] font-sans text-[var(--color-warning)]">Draft</span>
+                    </td>
+                    <td class="px-3 py-2 text-[var(--color-text-muted)]">{{ row.posting_date }}</td>
+                    <td class="px-3 py-2 font-sans">
+                      <div class="text-[var(--color-text)]">{{ row.supplier }}</div>
+                      <div class="font-mono text-xs text-[var(--color-text-muted)]">{{ row.bill_no || '—' }}</div>
+                    </td>
+                    <td class="px-3 py-2 text-right text-[var(--color-text)]">{{ fmtCurrency(row.total) }}</td>
+                    <td class="px-3 py-2" :class="row.current && row.current !== row.mirror ? 'text-[var(--color-danger)] line-through' : 'text-[var(--color-text-muted)]'">{{ row.current || '—' }}</td>
+                    <td class="px-3 py-2 font-bold text-[var(--color-text)]">
+                      {{ row.mirror || '—' }}
+                      <div v-if="row.mirror && row.mirror_back !== row.bill" class="font-sans text-[10px] font-normal text-[var(--color-warning)]">points to {{ row.mirror_back || 'nothing' }}</div>
+                    </td>
+                    <td class="px-3 py-2 text-right" :class="row.difference && Math.abs(row.difference) >= 0.5 ? 'font-bold text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'">
+                      {{ row.mirror_total == null ? '—' : fmtCurrency(row.mirror_total) }}
+                      <div v-if="row.difference && Math.abs(row.difference) >= 0.5" class="text-[10px]">diff {{ fmtCurrency(row.difference) }}</div>
+                    </td>
+                    <td class="px-3 py-2 font-sans">
+                      <span class="whitespace-nowrap rounded-md px-2 py-0.5 text-xs font-bold" :class="mirrorStatusClass[row.status]">{{ mirrorStatusLabels[row.status] }}</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div v-if="mirrorData?.orphans?.length" class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-[var(--color-text)]">Mirror bills no bill claims ({{ mirrorData.orphans.length }})</h3>
+            <p class="mt-1 text-xs text-[var(--color-text-muted)]">Copies in {{ mirrorData.mirror_company }} with no matching original in this period. Check them by hand.</p>
+            <div class="mt-4 overflow-x-auto rounded-xl border border-[var(--color-border)]">
+              <table class="w-full text-left text-sm">
+                <thead>
+                  <tr class="border-b border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[11px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">
+                    <th class="px-3 py-2.5">Mirror</th>
+                    <th class="px-3 py-2.5">Date</th>
+                    <th class="px-3 py-2.5">Supplier / Bill No</th>
+                    <th class="px-3 py-2.5 text-right">Total</th>
+                    <th class="px-3 py-2.5">Points to</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--color-border)] font-mono">
+                  <tr v-for="row in mirrorData.orphans" :key="row.mirror">
+                    <td class="px-3 py-2 font-bold text-[var(--color-info)]">{{ row.mirror }}</td>
+                    <td class="px-3 py-2 text-[var(--color-text-muted)]">{{ row.posting_date }}</td>
+                    <td class="px-3 py-2 font-sans">
+                      <div class="text-[var(--color-text)]">{{ row.supplier }}</div>
+                      <div class="font-mono text-xs text-[var(--color-text-muted)]">{{ row.bill_no || '—' }}</div>
+                    </td>
+                    <td class="px-3 py-2 text-right text-[var(--color-text)]">{{ fmtCurrency(row.total) }}</td>
+                    <td class="px-3 py-2 text-[var(--color-text-muted)]">{{ row.current || '—' }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
         <!-- INVOICE DETAILS (Rendered once invoice is loaded) -->
-        <div v-if="invoice" class="space-y-6">
+        <div v-if="invoice && activePage !== 'mirror-links'" class="space-y-6">
 
           <!-- INVOICE SUMMARY HEADER -->
           <div class="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-sm">
@@ -430,6 +577,7 @@
       </div>
       </main>
       <SubmittedBillPalette
+        v-if="activePage !== 'mirror-links'"
         ref="billPaletteRef"
         :busy="loadingFetch || loadingUpdate || loadingDraft || loadingRename"
         :selected-name="invoice?.name || ''"
@@ -450,6 +598,18 @@
         <div class="mt-6 flex justify-end gap-3">
           <button type="button" @click="showRenameConfirm = false" class="rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]">Cancel</button>
           <button type="button" @click="handleRename" class="rounded-xl bg-[var(--color-success)] px-4 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] hover:brightness-110">Rename</button>
+        </div>
+      </div>
+    </div>
+
+    <div v-if="showMirrorConfirm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="mirror-confirm-title">
+      <div class="w-full max-w-md rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-2xl">
+        <h2 id="mirror-confirm-title" class="text-lg font-black text-[var(--color-text)]">Fix {{ mirrorSelected.length }} Mirror Link(s)?</h2>
+        <p class="mt-4 text-sm text-[var(--color-text)]">Each selected bill and its correct mirror will point to each other. Any other bill still pointing to them is unlinked.</p>
+        <p class="mt-2 text-xs text-[var(--color-text-muted)]">Only the link changes. Every change is noted in the bill's comments.</p>
+        <div class="mt-6 flex justify-end gap-3">
+          <button type="button" @click="showMirrorConfirm = false" class="rounded-xl border border-[var(--color-border)] px-4 py-2 text-sm font-bold text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]">Cancel</button>
+          <button type="button" @click="handleFixMirrorLinks" class="rounded-xl bg-[var(--color-success)] px-4 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] hover:brightness-110">Fix Links</button>
         </div>
       </div>
     </div>
@@ -475,13 +635,14 @@ import { serverCalendarDate } from '../services/serverTime'
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import SubmittedBillPalette from '../components/SubmittedBillPalette.vue'
-import { fetchSubmittedInvoice, modifySubmittedBillDate, moveSubmittedToDraft, fetchBillNumberSeries, renameSubmittedBill } from '../api'
+import { fetchSubmittedInvoice, modifySubmittedBillDate, moveSubmittedToDraft, fetchBillNumberSeries, renameSubmittedBill, fetchPurchaseMirrorLinks, fixPurchaseMirrorLinks } from '../api'
 
 const router = useRouter()
 const pages = [
   { id: 'bill-date', label: 'Modify Bill Date' },
   { id: 'draft-mode', label: 'Submit to Draft Mode' },
   { id: 'bill-number', label: 'Change Bill Number' },
+  { id: 'mirror-links', label: 'Fix Mirror Links' },
 ]
 const activePage = ref(pages[0].id)
 
@@ -508,6 +669,35 @@ const loadingSeries = ref(false)
 const loadingRename = ref(false)
 const showRenameConfirm = ref(false)
 const renameResult = ref(null)
+
+// Fix Mirror Links
+const mirrorFrom = ref('')
+const mirrorTo = ref('')
+const mirrorData = ref(null)
+const mirrorLoading = ref(false)
+const mirrorFixing = ref(false)
+const mirrorError = ref('')
+const mirrorFixResult = ref(null)
+const mirrorFilter = ref('')
+const mirrorChecked = ref({})
+const showMirrorConfirm = ref(false)
+const mirrorStatusOrder = ['wrong_link', 'back_link', 'unlinked', 'amount_diff', 'no_mirror', 'ok']
+const mirrorStatusLabels = {
+  wrong_link: 'Wrong mirror',
+  back_link: 'Mirror points elsewhere',
+  unlinked: 'Not linked',
+  amount_diff: 'Amount differs',
+  no_mirror: 'No mirror',
+  ok: 'OK',
+}
+const mirrorStatusClass = {
+  wrong_link: 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]',
+  back_link: 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]',
+  unlinked: 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]',
+  amount_diff: 'bg-[var(--color-warning)]/15 text-[var(--color-warning)]',
+  no_mirror: 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)]',
+  ok: 'bg-[var(--color-success)]/15 text-[var(--color-success)]',
+}
 
 // Helpers
 function pad(n) {
@@ -552,6 +742,22 @@ function formatTime(timeStr) {
 }
 
 // Computed
+const mirrorCounts = computed(() => {
+  const counts = {}
+  for (const row of mirrorData.value?.rows || []) counts[row.status] = (counts[row.status] || 0) + 1
+  return counts
+})
+
+// Problems only by default; a status chip narrows to that status (OK rows included).
+const mirrorVisibleRows = computed(() => {
+  const rows = mirrorData.value?.rows || []
+  return mirrorFilter.value ? rows.filter(r => r.status === mirrorFilter.value) : rows.filter(r => r.status !== 'ok')
+})
+
+const mirrorFixableVisible = computed(() => mirrorVisibleRows.value.filter(r => r.fixable))
+const mirrorAllChecked = computed(() => mirrorFixableVisible.value.length > 0 && mirrorFixableVisible.value.every(r => mirrorChecked.value[r.bill]))
+const mirrorSelected = computed(() => (mirrorData.value?.rows || []).filter(r => r.fixable && mirrorChecked.value[r.bill]))
+
 const emptyHint = computed(() => ({
   'bill-date': 'change its date',
   'draft-mode': 'move it to draft mode',
@@ -731,17 +937,57 @@ async function handleRename() {
   }
 }
 
+function toggleAllMirror(on) {
+  for (const row of mirrorFixableVisible.value) mirrorChecked.value[row.bill] = on
+}
+
+async function scanMirrorLinks() {
+  if (mirrorLoading.value) return
+  mirrorLoading.value = true
+  mirrorError.value = ''
+  try {
+    const res = await fetchPurchaseMirrorLinks(mirrorFrom.value, mirrorTo.value)
+    mirrorData.value = res
+    mirrorFrom.value = res.from_date
+    mirrorTo.value = res.to_date
+    mirrorChecked.value = Object.fromEntries(res.rows.filter(r => r.fixable).map(r => [r.bill, true]))
+  } catch (err) {
+    mirrorError.value = err.message || 'Failed to scan mirror links.'
+  } finally {
+    mirrorLoading.value = false
+  }
+}
+
+async function handleFixMirrorLinks() {
+  if (!showMirrorConfirm.value || mirrorFixing.value || !mirrorSelected.value.length) return
+  showMirrorConfirm.value = false
+  mirrorFixing.value = true
+  mirrorError.value = ''
+  mirrorFixResult.value = null
+  try {
+    mirrorFixResult.value = await fixPurchaseMirrorLinks(mirrorSelected.value.map(r => ({ bill: r.bill, mirror: r.mirror })))
+  } catch (err) {
+    mirrorError.value = err.message || 'Failed to fix mirror links.'
+  } finally {
+    mirrorFixing.value = false
+  }
+  await scanMirrorLinks()
+}
+
 watch(activePage, page => {
   // Only the rename page takes drafts; the other pages need a submitted bill
   if (page !== 'bill-number' && invoice.value?.docstatus === 0) clearAll()
   if (page === 'bill-number' && invoice.value && !seriesOptions.value.length) loadSeriesOptions()
+  if (page === 'mirror-links' && !mirrorData.value) scanMirrorLinks()
 })
 
 // Global Keyboard shortcuts
 function handleKeyDown(e) {
-  if (loadingDraft.value || loadingRename.value) return
+  if (loadingDraft.value || loadingRename.value || mirrorFixing.value) return
   if (e.key === 'Escape') {
-    if (showRenameConfirm.value) {
+    if (showMirrorConfirm.value) {
+      showMirrorConfirm.value = false
+    } else if (showRenameConfirm.value) {
       showRenameConfirm.value = false
     } else if (showDraftConfirm.value) {
       showDraftConfirm.value = false

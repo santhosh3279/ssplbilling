@@ -1550,6 +1550,17 @@ export async function fetchBillNumberSeries(doctype) {
   return frappeGet("ssplbilling.api.modify_submitted_api.get_bill_number_series", { doctype });
 }
 
+export async function fetchPurchaseMirrorLinks(fromDate, toDate) {
+  return frappeGet("ssplbilling.api.modify_submitted_api.get_purchase_mirror_links", {
+    from_date: fromDate,
+    to_date: toDate,
+  });
+}
+
+export async function fixPurchaseMirrorLinks(pairs) {
+  return frappePost("ssplbilling.api.modify_submitted_api.fix_purchase_mirror_links", { pairs }, { silent: true });
+}
+
 export async function renameSubmittedBill(invoiceNo, newName, doctype) {
   return frappePost("ssplbilling.api.modify_submitted_api.rename_submitted_bill", {
     invoice_no: invoiceNo,
