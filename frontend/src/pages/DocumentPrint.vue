@@ -314,12 +314,14 @@ async function loadPrinters() {
   error.value = ''
   try {
     const list = (await frappeGet('printer_server_configuration.printer_server_configuration.api.get_printers')) || []
-    const allowed = allowedPrinterNames()
-    const mine = allowed.size ? list.filter(p => allowed.has(p.name)) : []
-    const pool = mine.length ? mine : list
-    // Uploads are always sent as PDF, so only PDF-capable printers are offered
+    // Uploads are always sent as PDF, so only PDF-capable printers are offered.
+    // Narrow to the user's printers only when some of them are PDF printers: a user set up
+    // with thermal/barcode printers only (or matched just by blank-user rows) still sees all PDF ones.
     const isPdfPrinter = p => /pdf|a4|laser/i.test(p.printer_name || p.name)
-    printers.value = pool.filter(isPdfPrinter)
+    const pdfPrinters = list.filter(isPdfPrinter)
+    const allowed = allowedPrinterNames()
+    const mine = pdfPrinters.filter(p => allowed.has(p.name))
+    printers.value = mine.length ? mine : pdfPrinters
 
     const remembered = localStorage.getItem('wb-document-printer')
     if (remembered && printers.value.some(p => p.name === remembered)) {
