@@ -111,12 +111,28 @@
           <div class="mb-1.5 text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)] border-t border-[var(--color-border)] pt-2">
             BOX Cash Denomination
           </div>
-          <div class="grid grid-cols-2 gap-x-3 gap-y-1">
+          <div class="grid grid-cols-[3fr_2fr] gap-x-3 gap-y-1">
             <!-- Left column: denominations -->
             <div class="space-y-1">
               <div v-for="(d, i) in denominations" :key="d" class="flex items-center gap-1">
-                <label class="w-24 shrink-0 text-right text-2xl font-semibold text-[var(--color-text)]">{{ d }}</label>
+                <label class="w-14 shrink-0 text-right text-2xl font-semibold text-[var(--color-text)]">{{ d }}</label>
                 <span class="text-[var(--color-text-muted)] text-xl">×</span>
+                <!-- Addition box (UI only): "1+5+6+8" → count 20 -->
+                <input
+                  :ref="el => { if (el) addInputRefs[i] = el }"
+                  v-model="addExpr[d]"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="1+5+…"
+                  :disabled="!!contraName || isLocked"
+                  class="min-w-0 flex-1 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-0.5 py-0.5 text-xl font-mono text-[var(--color-text)] placeholder-[var(--color-text-muted)]/30 outline-none focus:border-[var(--color-info)] disabled:opacity-60 disabled:cursor-not-allowed"
+                  @input="onAddExprInput(d)"
+                  @keydown.enter.prevent="onAddEnter(i)"
+                  @keydown.down.prevent="addInputRefs[i + 1]?.focus()"
+                  @keydown.up.prevent="addInputRefs[i - 1]?.focus()"
+                  @focus="$event.target.select()"
+                />
+                <span class="text-[var(--color-text-muted)] text-xl">=</span>
                 <input
                   :ref="el => { if (el) denomInputRefs[i] = el }"
                   v-model.number="form.denominations[d]"
@@ -124,13 +140,14 @@
                   min="0"
                   placeholder="0"
                   :disabled="!!contraName || isLocked"
-                  class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-0.5 py-0.5 text-2xl text-[var(--color-text)] placeholder-[var(--color-text-muted)]/30 outline-none focus:border-[var(--color-info)] disabled:opacity-60 disabled:cursor-not-allowed"
+                  class="w-20 shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-0.5 py-0.5 text-2xl text-[var(--color-text)] placeholder-[var(--color-text-muted)]/30 outline-none focus:border-[var(--color-info)] disabled:opacity-60 disabled:cursor-not-allowed"
+                  @input="addExpr[d] = ''"
                   @keydown.enter.prevent="onDenomEnter(i)"
                   @keydown.down.prevent="denomInputRefs[i + 1]?.focus()"
                   @keydown.up.prevent="denomInputRefs[i - 1]?.focus()"
                   @focus="$event.target.select()"
                 />
-                <span class="w-40 shrink-0 text-right text-xl text-[var(--color-text-muted)] font-mono">
+                <span class="w-32 shrink-0 text-right text-xl text-[var(--color-text-muted)] font-mono">
                   {{ ((form.denominations[d] || 0) * d).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </span>
               </div>
@@ -205,7 +222,29 @@ const emit = defineEmits(['close', 'saved'])
 
 const denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1]
 const denomInputRefs = ref([])
-onBeforeUpdate(() => { denomInputRefs.value = [] })
+const addInputRefs = ref([])
+onBeforeUpdate(() => { denomInputRefs.value = []; addInputRefs.value = [] })
+
+// UI-only addition boxes: "1+5+6+8" sums into the denomination count. Not saved.
+const addExpr = reactive(Object.fromEntries(denominations.map(d => [d, ''])))
+
+function onAddExprInput(d) {
+  const parts = String(addExpr[d] || '').split(/[+\s,]+/).filter(Boolean)
+  if (!parts.length) {
+    form.denominations[d] = null
+    return
+  }
+  const sum = parts.reduce((s, p) => s + (parseInt(p, 10) || 0), 0)
+  form.denominations[d] = sum || null
+}
+
+function onAddEnter(index) {
+  if (index < denominations.length - 1) {
+    addInputRefs.value[index + 1]?.focus()
+  } else {
+    handleSave()
+  }
+}
 
 
 function formatDate(dateStr) {
@@ -298,7 +337,7 @@ onMounted(async () => {
   }
 
   nextTick(() => {
-    denomInputRefs.value[0]?.focus()
+    addInputRefs.value[0]?.focus()
   })
 })
 
@@ -309,7 +348,8 @@ async function fetchExistingRecord() {
       user: form.user,
       opening_or_closing: form.opening_or_closing
     })
-    
+    denominations.forEach(d => { addExpr[d] = '' })
+
     if (existing) {
       savedName.value = existing.name
       // Always use wb-cash (resolved GL account) — never let the stored record override it
