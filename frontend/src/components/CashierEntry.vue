@@ -132,21 +132,9 @@
                   @keydown.up.prevent="addInputRefs[i - 1]?.focus()"
                   @focus="$event.target.select()"
                 />
-                <span class="text-[var(--color-text-muted)] text-xl">=</span>
-                <input
-                  :ref="el => { if (el) denomInputRefs[i] = el }"
-                  v-model.number="form.denominations[d]"
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  :disabled="!!contraName || isLocked"
-                  class="w-20 shrink-0 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-0.5 py-0.5 text-2xl text-[var(--color-text)] placeholder-[var(--color-text-muted)]/30 outline-none focus:border-[var(--color-info)] disabled:opacity-60 disabled:cursor-not-allowed"
-                  @input="addExpr[d] = ''"
-                  @keydown.enter.prevent="onDenomEnter(i)"
-                  @keydown.down.prevent="denomInputRefs[i + 1]?.focus()"
-                  @keydown.up.prevent="denomInputRefs[i - 1]?.focus()"
-                  @focus="$event.target.select()"
-                />
+                <span class="w-16 shrink-0 text-right text-2xl font-semibold font-mono text-[var(--color-text)]">
+                  = {{ form.denominations[d] || 0 }}
+                </span>
                 <span class="w-32 shrink-0 text-right text-xl text-[var(--color-text-muted)] font-mono">
                   {{ ((form.denominations[d] || 0) * d).toLocaleString('en-IN', { minimumFractionDigits: 2 }) }}
                 </span>
@@ -221,9 +209,8 @@ const props = defineProps({
 const emit = defineEmits(['close', 'saved'])
 
 const denominations = [500, 200, 100, 50, 20, 10, 5, 2, 1]
-const denomInputRefs = ref([])
 const addInputRefs = ref([])
-onBeforeUpdate(() => { denomInputRefs.value = []; addInputRefs.value = [] })
+onBeforeUpdate(() => { addInputRefs.value = [] })
 
 // UI-only addition boxes: "1+5+6+8" sums into the denomination count. Not saved.
 const addExpr = reactive(Object.fromEntries(denominations.map(d => [d, ''])))
@@ -249,14 +236,6 @@ function onAddEnter(index) {
 
 function formatDate(dateStr) {
   return formatDMY(dateStr, "")
-}
-
-function onDenomEnter(index) {
-  if (index < denominations.length - 1) {
-    denomInputRefs.value[index + 1]?.focus()
-  } else {
-    handleSave()
-  }
 }
 
 const form = reactive({
@@ -360,6 +339,8 @@ async function fetchExistingRecord() {
       // Load denominations
       denominations.forEach(d => {
         form.denominations[d] = existing[d] ? parseInt(existing[d]) : null
+        // Seed the addition box with the saved count so it stays editable
+        addExpr[d] = form.denominations[d] ? String(form.denominations[d]) : ''
       })
     } else {
       // No existing record: reset state
