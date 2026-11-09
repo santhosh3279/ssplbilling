@@ -437,6 +437,7 @@ def get_sales_invoice(invoice_name, include_customer_details=0):
         "price_list": si.selling_price_list or "",
         "warehouse": si.get("set_warehouse") or (si.items[0].warehouse if si.items else ""),
         "income_account": si.items[0].income_account if si.items else "",
+        "upi_card_amount": float(si.get("custom_upi_card_amount") or 0),
         "mop": si.get("mop") or "Cash",
         "docstatus": si.docstatus,
         "status": si.status,

@@ -401,6 +401,23 @@ def mirror_name_for(name):
 	return name[:-1] if name.endswith("/") else f"{name}/"
 
 
+def source_upi_card_amount(si):
+	"""UPI + card received against `si`: its submitted Payment Entries whose paid-to
+	account is not a Cash-type account. Mode of payment is not used, since cashier
+	receipts default it to Cash whatever account they land in."""
+	refs = frappe.db.get_all(
+		"Payment Entry Reference",
+		filters={"reference_doctype": "Sales Invoice", "reference_name": si.name, "docstatus": 1},
+		fields=["parent", "allocated_amount"],
+	)
+	total = 0.0
+	for ref in refs:
+		paid_to = frappe.db.get_value("Payment Entry", ref.parent, "paid_to")
+		if paid_to and frappe.get_cached_value("Account", paid_to, "account_type") != "Cash":
+			total += float(ref.allocated_amount or 0)
+	return total
+
+
 def create_mirror_sales_invoice(si, automatic_entries):
 	"""Create + submit a mirror Sales Invoice for `si` in the alternate company, named
 	si.name + '/', posted against the Automatic Entries warehouse with accounts
@@ -539,6 +556,7 @@ def create_mirror_sales_invoice(si, automatic_entries):
 	msi.custom_address_line1 = si.get("custom_address_line1") or ""
 	msi.custom_address_line2 = si.get("custom_address_line2") or ""
 	msi.custom_mobile_number = si.get("custom_mobile_number") or ""
+	msi.custom_upi_card_amount = source_upi_card_amount(si)
 
 	msi.flags.ignore_permissions = True
 	msi.insert(set_name=mirror_name)
@@ -924,6 +942,7 @@ def create_mirror_invoice_for_gst_conversion(si, ae, naming_series=None, price_l
 	msi.custom_address_line1 = si.get("custom_address_line1") or ""
 	msi.custom_address_line2 = si.get("custom_address_line2") or ""
 	msi.custom_mobile_number = si.get("custom_mobile_number") or ""
+	msi.custom_upi_card_amount = source_upi_card_amount(si)
 
 	msi.flags.ignore_permissions = True
 	if mirror_name:

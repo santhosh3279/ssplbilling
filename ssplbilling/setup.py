@@ -201,7 +201,17 @@ CUSTOM_FIELDS = {
 			"fieldtype": "Small Text",
 			"label": "Remarks",
 			"insert_after": "custom_mobile_number",
-		}
+		},
+		{
+			"fieldname": "custom_upi_card_amount",
+			"fieldtype": "Currency",
+			"label": "UPI + Card Amount",
+			"insert_after": "mop",
+			"read_only": 1,
+			"no_copy": 1,
+			"allow_on_submit": 1,
+			"description": "Set on the alternate-company copy of a bill: the UPI and card part of the original bill's payment.",
+		},
 	],
 	"Purchase Invoice": [
 		{
