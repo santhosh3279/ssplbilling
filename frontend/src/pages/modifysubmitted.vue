@@ -206,6 +206,7 @@
                     <td class="px-3 py-2" :class="row.current && row.current !== row.mirror ? 'text-[var(--color-danger)] line-through' : 'text-[var(--color-text-muted)]'">{{ row.current || '—' }}</td>
                     <td class="px-3 py-2 font-bold text-[var(--color-text)]">
                       {{ row.mirror || '—' }}
+                      <div v-if="row.mirror" class="font-sans text-[10px] font-normal text-[var(--color-text-muted)]">{{ row.mirror_supplier }}</div>
                       <div v-if="row.mirror && row.mirror_back !== row.bill" class="font-sans text-[10px] font-normal text-[var(--color-warning)]">points to {{ row.mirror_back || 'nothing' }}</div>
                     </td>
                     <td class="px-3 py-2 text-right" :class="row.difference && Math.abs(row.difference) >= 0.5 ? 'font-bold text-[var(--color-warning)]' : 'text-[var(--color-text-muted)]'">
@@ -950,7 +951,10 @@ async function scanMirrorLinks() {
     mirrorData.value = res
     mirrorFrom.value = res.from_date
     mirrorTo.value = res.to_date
-    mirrorChecked.value = Object.fromEntries(res.rows.filter(r => r.fixable).map(r => [r.bill, true]))
+    // Only exact-amount matches start ticked; rows with an amount gap need a look first.
+    mirrorChecked.value = Object.fromEntries(
+      res.rows.filter(r => r.fixable && Math.abs(r.difference ?? 0) < 0.5).map(r => [r.bill, true])
+    )
   } catch (err) {
     mirrorError.value = err.message || 'Failed to scan mirror links.'
   } finally {

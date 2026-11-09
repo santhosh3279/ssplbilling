@@ -664,6 +664,7 @@ def get_purchase_mirror_links(from_date=None, to_date=None):
 			"current_total": flt(cur.base_grand_total, 2) if cur else None,
 			"mirror": mirror.name if mirror else "",
 			"mirror_total": flt(mirror.base_grand_total, 2) if mirror else None,
+			"mirror_supplier": (mirror.supplier_name or mirror.supplier) if mirror else "",
 			"mirror_back": (mirror.custom_mirrored or "") if mirror else "",
 			"difference": diff,
 			"status": status,
