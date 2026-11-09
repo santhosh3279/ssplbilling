@@ -100,7 +100,7 @@
                 class="group cursor-pointer px-2 py-1 transition-colors outline-none focus:bg-[var(--color-focus)]"
                 :class="[
                   sidebarTiles
-                    ? 'mb-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm focus:border-[var(--color-focus)]'
+                    ? 'mb-1.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] shadow-sm focus:border-[var(--color-focus)]'
                     : 'border-b border-[var(--color-border)] focus:border-l-2 focus:border-l-[var(--color-focus)]',
                   selectedSidebarItemName === inv.name && (sidebarTiles ? 'bg-[var(--color-focus)] border-[var(--color-focus)]' : 'bg-[var(--color-focus)] border-l-2 border-l-[var(--color-focus)]'),
                 ]"
