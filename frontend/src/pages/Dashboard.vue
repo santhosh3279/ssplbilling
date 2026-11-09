@@ -619,7 +619,7 @@ import { useShortcuts, isSubwindowActive } from '../services/shortcutManager'
 import { canAccessTile, canAccessRoute, getUserRole, isDevLicense } from '../composables/usePermission'
 import { dashboardShortcuts } from '../shortcuts/dashboardShortcuts'
 import { useTheme } from '../composables/useTheme'
-import { getFrappeSocket } from '../services/frappeSocket'
+import { getFrappeSocket, initFrappeSocket } from '../services/frappeSocket'
 import { APP_VERSION, APP_UPDATED } from '../version'
 
 const router = useRouter()
@@ -632,6 +632,7 @@ let _flashTimer = null
 
 function _onSocketConnect() { socketConnected.value = true }
 function _onSocketDisconnect() { socketConnected.value = false }
+let _dashboardUnmounted = false
 function _onItemCacheUpdated() {
   lastSyncTime.value = serverNow().toLocaleTimeString('en-IN', { timeZone: serverTimezone(), hour: '2-digit', minute: '2-digit', second: '2-digit' })
   syncFlash.value = true
@@ -1526,13 +1527,15 @@ onMounted(async () => {
   window.addEventListener('wb-item-cache-updated', _onItemCacheUpdated)
   focusSearch()
 
-  const socket = getFrappeSocket()
-  if (socket) {
+  // Children mount before App.vue, whose onMounted awaits initFrappeSocket() — so on a hard
+  // load the socket may not exist yet. Await the same (idempotent) init promise instead.
+  initFrappeSocket().then((socket) => {
+    if (!socket || _dashboardUnmounted) return
     socketConnected.value = socket.connected
     socket.on('connect', _onSocketConnect)
     socket.on('disconnect', _onSocketDisconnect)
-  }
-  
+  })
+
   if (isActualAdmin.value) {
     // Not awaited: the user list only feeds the admin switcher, so it must not delay the rest.
     dashboardApi.getAllUsers()
@@ -1571,6 +1574,7 @@ onUnmounted(() => {
   window.removeEventListener('wb-item-cache-updated', _onItemCacheUpdated)
   clearTimeout(_flashTimer)
 
+  _dashboardUnmounted = true
   const socket = getFrappeSocket()
   if (socket) {
     socket.off('connect', _onSocketConnect)
