@@ -1199,10 +1199,10 @@ function applyPaytmResult(r) {
   showPaidTick(r.amount, paidBy)
   Object.assign(p, { show: false, orderId: '', status: '', message: '' })
   nextTick(() => postButton.value?.focus())
-  if (paidBy === 'upi') autoPostIfCleared(invoice.value?.name)
+  autoPostIfCleared(invoice.value?.name)
 }
 
-// UPI paid on the Paytm machine and nothing left to collect: post the bill without waiting for F9.
+// UPI or card paid on the Paytm machine and nothing left to collect: post the bill without waiting for F9.
 // nextTick lets the cash box shrink first; a balance still due, change to hand back or a typed
 // mode not yet sent leaves it to the cashier as before
 function autoPostIfCleared(name) {
@@ -1396,7 +1396,7 @@ function onQrQueuePaid(q) {
   // another bill may be in view: name the one that got paid
   showPaidTick(q.amount, q.mode === 'card' ? 'card' : 'upi', `${q.customer_name || q.customer || ''} · ${q.sales_invoice}`)
   applyQueuedPayment(q)
-  if (q.channel === 'EDC' && q.mode !== 'card') autoPostIfCleared(q.sales_invoice)
+  if (q.channel === 'EDC') autoPostIfCleared(q.sales_invoice)
 }
 
 // Fill and lock UPI (or Card, when paid by card on the machine) from a paid queue row, only while
