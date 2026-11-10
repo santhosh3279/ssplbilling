@@ -311,7 +311,29 @@ def build_sheets(tool, args=None):
 				)
 		return [{"name": "Stock", "rows": rows}]
 
+	if tool == "item_sales_trend":
+		return _trend_sheets(data)
+
 	return _generic_sheets(data)
+
+
+def _trend_sheets(data):
+	"""Per company: totals per period, and items with one qty column per period."""
+	periods = data["periods"]
+	many = len(data["companies"]) > 1
+	sheets = []
+	for company, c in data["companies"].items():
+		prefix = f"{_abbr(company)} " if many else ""
+		sheets.append({"name": f"{prefix}By Period", "rows": c["by_period"]})
+		rows = []
+		for r in c["items"]:
+			row = {k: r[k] for k in ("item_code", "item_name", "uom", "qty", "net_amount", "purchased_qty") if k in r}
+			row.update({f"sold {p}": q for p, q in zip(periods, r["qty_by_period"], strict=False)})
+			if "purchased_by_period" in r:
+				row.update({f"bought {p}": q for p, q in zip(periods, r["purchased_by_period"], strict=False)})
+			rows.append(row)
+		sheets.append({"name": f"{prefix}Items", "rows": rows})
+	return sheets
 
 
 def _generic_sheets(data):
@@ -624,6 +646,9 @@ def build_series(tool, args=None, chart_type="bar", points=None):
 			points,
 		)
 
+	if tool == "item_sales_trend":
+		return _trend_series(data, chart_type, points)
+
 	if tool == "purchase_mirror_check":
 		s = data["summary"]
 		labels = ["In both", f"Only {_abbr(data['wb_company'])}", f"Only {_abbr(data['ae_company'])}"]
@@ -631,6 +656,34 @@ def build_series(tool, args=None, chart_type="bar", points=None):
 		return labels, [{"name": "Purchase bills", "values": values}]
 
 	raise ValueError(f"No chart for {tool}; use export_excel instead.")
+
+
+# Most items drawn as their own line in an item_sales_trend chart.
+TREND_LINES = 8
+
+
+def _trend_series(data, chart_type, points):
+	"""Periods on the x axis. One company and a few items: a qty line per item. One item: qty
+	(and purchased qty) per company. Otherwise net amount per company. Pie: net amount per item."""
+	companies = data["companies"]
+	if chart_type == "pie":
+		return _align({co: _sum_by(c["items"], "item_name", "net_amount") for co, c in companies.items()}, points)
+	labels = data["periods"]
+	datasets = []
+	if len(companies) == 1 and 1 < data["items_matched"] <= TREND_LINES:
+		c = next(iter(companies.values()))
+		datasets = [{"name": r["item_name"] or r["item_code"], "values": r["qty_by_period"]} for r in c["items"]]
+	elif data["items_matched"] == 1:
+		for co, c in companies.items():
+			total = c["by_period"]
+			datasets.append({"name": f"{_abbr(co)} sold", "values": [t["qty"] for t in total]})
+			if "purchased_qty" in c:
+				datasets.append({"name": f"{_abbr(co)} bought", "values": [t["purchased_qty"] for t in total]})
+	else:
+		datasets = [
+			{"name": co, "values": [t["net_amount"] for t in c["by_period"]]} for co, c in companies.items()
+		]
+	return (labels, datasets) if datasets else ([], [])
 
 
 def _abbr(company):

@@ -30,6 +30,7 @@ DATA_TOOLS = (
 	"item_stock",
 	"item_movement",
 	"supplier_item_sales",
+	"item_sales_trend",
 	"purchase_mirror_check",
 	"account_ledger",
 	"cash_bank_position",
@@ -82,6 +83,10 @@ QUERY_OPERATORS = {
 	"between",
 	"is",
 }
+# Buckets item_sales_trend may return, per period size.
+TREND_PERIODS = {"week": 53, "month": 24, "day": 62}
+# Most items one item_sales_trend call reads.
+MAX_TREND_ITEMS = 300
 # Most parent documents a child-table query resolves by name under Full Read Access.
 MAX_PARENTS = 20000
 QUERY_AGGREGATES = {"sum": "SUM", "count": "COUNT", "avg": "AVG", "min": "MIN", "max": "MAX"}
@@ -439,8 +444,59 @@ TOOLS += [
 ]
 
 
+TOOLS += [
+	{
+		"name": "item_sales_trend",
+		"description": (
+			"Sales of chosen items over time: net qty sold and net amount per day, week or month, per "
+			"company, with every item's qty per period; optionally the purchased qty beside it. Choose the "
+			"items by item (code, name or barcode), items (several), supplier (its Item Supplier items) "
+			"and / or item_group (with its sub-groups); together they narrow each other. Use for 'weekly "
+			"sales of M85', 'monthly sales of Sevana items', 'sales vs purchase pattern of an item', "
+			"'which of these items sold more this week', 'item sales in EOW bills' (series). Returns are "
+			"netted off; qty is in stock UOM."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"item": {"type": "string", "description": "One item: code, name or barcode."},
+				"items": {
+					"type": "array",
+					"items": {"type": "string"},
+					"description": "Several items: codes, names or barcodes.",
+				},
+				"supplier": {"type": "string", "description": "Supplier name, code or mobile."},
+				"item_group": {"type": "string", "description": "Item group; its sub-groups are included."},
+				"period": {
+					"type": "string",
+					"enum": list(TREND_PERIODS),
+					"description": "Bucket size (default week; weeks start on Monday).",
+				},
+				"from_date": {
+					"type": "string",
+					"description": "YYYY-MM-DD; moved back to the start of its period. Defaults: 30 days, "
+					"12 weeks or 6 months back.",
+				},
+				"to_date": {"type": "string", "description": "YYYY-MM-DD. Defaults to today."},
+				"series": {
+					"type": "string",
+					"description": 'Sales invoice naming series, e.g. "EOW" or "EOW.#####" (sales only).',
+				},
+				"include_purchases": {
+					"type": "boolean",
+					"description": "Also the qty bought on submitted purchase invoices per period.",
+				},
+				"company": _COMPANY,
+				"cost_center": _COST_CENTER,
+				"limit": {"type": "integer", "description": f"Items to return per company (max {MAX_ROWS})."},
+			},
+		},
+	},
+]
+
 INSTRUCTIONS = """You are the business assistant for Sundaram and Sons Private Ltd (SSPL), a wholesale business, answering staff questions from live ERPNext data.
-- Use the tools for every figure; never invent numbers, names or document ids. Prefer the specific tools (sales, purchases, receivables, payables, customer activity, stock and item movement, account ledgers, cash and bank, profit and loss, GST, payments). For anything else (orders, quotations, delivery notes, bank charges, journal entries, employees, assets, any other record) use describe_doctype to find the doctype and its fields, then query_records. Never tell the user you can't access something before trying these.
+- Use the tools for every figure; never invent numbers, names or document ids. Prefer the specific tools (sales, purchases, receivables, payables, customer activity, stock and item movement, item sales trends, account ledgers, cash and bank, profit and loss, GST, payments). For anything else (orders, quotations, delivery notes, bank charges, journal entries, employees, assets, any other record) use describe_doctype to find the doctype and its fields, then query_records. Never tell the user you can't access something before trying these.
+- For one item's, a supplier's or an item group's sales by day, week or month (and purchases beside them) use item_sales_trend, not query_records.
 - You are read-only. If asked to create or change anything, say so and point to the screen in the app where it is done.
 - Amounts are INR (₹) with Indian grouping (₹1,25,000). Keep answers short; use markdown tables for lists.
 - State the date range, company and cost center you used (each tool result says which it applied). "Today" means the date given below.
@@ -814,6 +870,8 @@ def _item_breakdown(doctype, filters, limit, item_codes=None):
 			query = query.where(inv[field] == val)
 		elif op == "in":
 			query = query.where(inv[field].isin(val))
+		elif op == "like":
+			query = query.where(inv[field].like(val))
 		else:
 			raise ValueError(f"Unsupported invoice filter {field} {op}")
 	if limit:
@@ -2146,6 +2204,245 @@ def supplier_item_sales(supplier=None, months=6, company=None, limit=None):
 	return {**base, "companies": out}
 
 
+# ── item sales trend ────────────────────────────────────────────────────────
+
+
+def item_sales_trend(
+	item=None,
+	items=None,
+	supplier=None,
+	item_group=None,
+	period="week",
+	from_date=None,
+	to_date=None,
+	series=None,
+	include_purchases=False,
+	company=None,
+	cost_center=None,
+	limit=None,
+):
+	"""Chosen items' net qty / amount sold per day, week or month, per company."""
+	period = period or "week"
+	if period not in TREND_PERIODS:
+		raise ValueError(f"period must be one of {', '.join(TREND_PERIODS)}; got {period!r}")
+	limit = _limit(limit or _row_cap["max"])
+	company, cost_center = _scoped(company, cost_center)
+	picked = _trend_items(item, items, supplier, item_group)
+	if picked.get("found") is False:
+		return picked
+	catalogue = picked["items"]
+
+	to_date = getdate(to_date or nowdate())
+	from_date = _period_start(getdate(from_date) if from_date else _trend_default_start(period, to_date), period)
+	if to_date < from_date:
+		raise ValueError("to_date is before from_date")
+	buckets = _trend_buckets(from_date, to_date, period)
+	if len(buckets) > TREND_PERIODS[period]:
+		raise ValueError(
+			f"{len(buckets)} {period}s is too many (max {TREND_PERIODS[period]}); use a shorter range "
+			"or a longer period."
+		)
+
+	header = {}
+	if cost_center:
+		header["cost_center"] = cost_center
+	sales_filters = dict(header)
+	if series:
+		s = str(series).strip()
+		sales_filters["naming_series"] = s if "." in s else ["like", f"{s}.%"]
+	companies = [company] if company else _get_list("Company", pluck="name", limit=0)
+
+	out = {}
+	for co in companies:
+		sold = _trend_lines("Sales Invoice", {**sales_filters, "company": co}, buckets, catalogue)
+		bought = (
+			_trend_lines("Purchase Invoice", {**header, "company": co}, buckets, catalogue)
+			if include_purchases
+			else {}
+		)
+		if not sold and not bought:
+			continue
+		rows = []
+		for code in set(sold) | set(bought):
+			s_qty = sold.get(code, {}).get("qty", [0.0] * len(buckets))
+			row = {
+				"item_code": code,
+				"item_name": catalogue[code].item_name,
+				"uom": catalogue[code].stock_uom,
+				"qty": flt(sum(s_qty), 3),
+				"net_amount": flt(sum(sold.get(code, {}).get("amount", [])), 2),
+				"avg_qty_per_period": flt(sum(s_qty) / len(buckets), 2),
+				"qty_by_period": s_qty,
+			}
+			if include_purchases:
+				b_qty = bought.get(code, {}).get("qty", [0.0] * len(buckets))
+				row["purchased_qty"] = flt(sum(b_qty), 3)
+				row["purchased_by_period"] = b_qty
+			rows.append(row)
+		rows.sort(key=lambda r: (r["net_amount"], r["qty"]), reverse=True)
+		totals = []
+		for i, b in enumerate(buckets):
+			t = {
+				"period": b["label"],
+				"qty": flt(sum(v["qty"][i] for v in sold.values()), 3),
+				"net_amount": flt(sum(v["amount"][i] for v in sold.values()), 2),
+			}
+			if include_purchases:
+				t["purchased_qty"] = flt(sum(v["qty"][i] for v in bought.values()), 3)
+			totals.append(t)
+		out[co] = {
+			"qty": flt(sum(t["qty"] for t in totals), 3),
+			"net_amount": flt(sum(t["net_amount"] for t in totals), 2),
+			**({"purchased_qty": flt(sum(t["purchased_qty"] for t in totals), 3)} if include_purchases else {}),
+			"items_with_sales": sum(1 for r in rows if r["qty"] or r["net_amount"]),
+			"by_period": totals,
+			"items": rows[:limit],
+			"more_rows": len(rows) > limit,
+		}
+
+	notes = [
+		"qty in stock UOM, returns netted off; net_amount excludes tax",
+		"qty_by_period follows `periods`",
+		f"the last {period} runs only to to_date" if buckets[-1]["to"] < buckets[-1]["end"] else "",
+		"totals add qty across different UOMs" if len({i.stock_uom for i in catalogue.values()}) > 1 else "",
+	]
+	return {
+		"found": True,
+		**picked["selection"],
+		"items_matched": len(catalogue),
+		"from_date": from_date,
+		"to_date": to_date,
+		"period": period,
+		"periods": [b["label"] for b in buckets],
+		**_scope_note(company, cost_center),
+		**({"series_filter": series} if series else {}),
+		"note": "; ".join(n for n in notes if n),
+		"companies": out,
+	}
+
+
+def _trend_items(item, items, supplier, item_group):
+	"""{"found", "items": {code: Item row}, "selection"}; each given filter narrows the others."""
+	terms = [*(items or []), *([item] if item else [])]
+	if not (terms or supplier or item_group):
+		raise ValueError("Give item, items, supplier or item_group.")
+	codes, selection = None, {}
+	if terms:
+		found = []
+		for term in terms:
+			r = _pick_item(str(term).strip())
+			if r.get("found") is False:
+				return {**r, "message": f"{term}: {r.get('message')}"}
+			found.append(r["item_code"])
+		codes = set(found)
+		selection["items_filter"] = found
+	if supplier:
+		party = _pick_party("Supplier", supplier)
+		if party.get("found") is False:
+			return party
+		linked = set(
+			_get_list(
+				"Item Supplier",
+				parent_doctype="Item",
+				filters={"supplier": party.name, "parenttype": "Item"},
+				pluck="parent",
+				limit=0,
+			)
+		)
+		codes = linked if codes is None else codes & linked
+		selection["supplier"] = party.name
+	if item_group:
+		group = _pick_item_group(item_group)
+		if group.get("found") is False:
+			return group
+		groups = _get_list(
+			"Item Group", filters={"lft": [">=", group["lft"]], "rgt": ["<=", group["rgt"]]}, pluck="name", limit=0
+		)
+		in_group = set(_get_list("Item", filters={"item_group": ["in", groups]}, pluck="name", limit=0))
+		codes = in_group if codes is None else codes & in_group
+		selection["item_group"] = group["name"]
+	if not codes:
+		return {"found": False, "message": "No items match that selection.", **selection}
+	if len(codes) > MAX_TREND_ITEMS:
+		return {
+			"found": False,
+			"message": f"{len(codes)} items match (max {MAX_TREND_ITEMS}); narrow by item, supplier or item group.",
+			**selection,
+		}
+	catalogue = {
+		i.name: i
+		for i in _get_list(
+			"Item", filters={"name": ["in", list(codes)]}, fields=["name", "item_name", "stock_uom"], limit=0
+		)
+	}
+	return {"found": True, "items": catalogue, "selection": selection}
+
+
+def _pick_item_group(search):
+	exact = frappe.db.get_value("Item Group", {"name": search}, ["name", "lft", "rgt"], as_dict=True)
+	if exact:
+		return exact
+	hits = _get_list(
+		"Item Group", filters={"name": ["like", f"%{search}%"]}, fields=["name", "lft", "rgt"], limit=10
+	)
+	if len(hits) == 1:
+		return hits[0]
+	if not hits:
+		return {"found": False, "message": f"No item group matches '{search}'."}
+	return {"found": False, "message": "Several item groups match; ask which one.", "candidates": [h.name for h in hits]}
+
+
+def _trend_lines(doctype, filters, buckets, catalogue):
+	"""{item_code: {"qty": [per bucket], "amount": [per bucket]}} of submitted invoice lines."""
+	out = {}
+	for i, b in enumerate(buckets):
+		rows = _item_breakdown(
+			doctype,
+			{**filters, "posting_date": ["between", [str(b["from"]), str(b["to"])]]},
+			0,
+			item_codes=list(catalogue),
+		)
+		# Lines saved under an older item name come back as their own row; add them up.
+		for r in rows:
+			v = out.setdefault(r.item_code, {"qty": [0.0] * len(buckets), "amount": [0.0] * len(buckets)})
+			v["qty"][i] = flt(v["qty"][i] + flt(r.qty), 3)
+			v["amount"][i] = flt(v["amount"][i] + flt(r.net_amount), 2)
+	return out
+
+
+def _trend_default_start(period, to_date):
+	add = frappe.utils.add_days
+	if period == "day":
+		return add(to_date, -29)
+	if period == "week":
+		return add(to_date, -7 * 11)
+	return frappe.utils.add_months(to_date, -5)
+
+
+def _period_start(day, period):
+	if period == "week":
+		return frappe.utils.add_days(day, -day.weekday())
+	if period == "month":
+		return day.replace(day=1)
+	return day
+
+
+def _trend_buckets(from_date, to_date, period):
+	buckets, start = [], from_date
+	while start <= to_date:
+		if period == "day":
+			end = start
+		elif period == "week":
+			end = frappe.utils.add_days(start, 6)
+		else:
+			end = frappe.utils.get_last_day(start)
+		end = getdate(end)
+		label = str(start)[:7] if period == "month" else str(start)
+		buckets.append({"label": label, "from": start, "end": end, "to": min(end, to_date)})
+		start = getdate(frappe.utils.add_days(end, 1))
+	return buckets
+
+
 # ── purchase mirror check ───────────────────────────────────────────────────
 
 MIRROR_FIELDS = [
@@ -2755,6 +3052,7 @@ HANDLERS = {
 	"customer_activity": customer_activity,
 	"item_movement": item_movement,
 	"supplier_item_sales": supplier_item_sales,
+	"item_sales_trend": item_sales_trend,
 	"purchase_mirror_check": purchase_mirror_check,
 	"cash_bank_position": cash_bank_position,
 	"profit_loss": profit_loss,
