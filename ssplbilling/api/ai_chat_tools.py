@@ -82,6 +82,8 @@ QUERY_OPERATORS = {
 	"between",
 	"is",
 }
+# Most parent documents a child-table query resolves by name under Full Read Access.
+MAX_PARENTS = 20000
 QUERY_AGGREGATES = {"sum": "SUM", "count": "COUNT", "avg": "AVG", "min": "MIN", "max": "MAX"}
 
 TOOLS = [
@@ -90,8 +92,9 @@ TOOLS = [
 		"description": (
 			"Sales totals for a date range from submitted Sales Invoices, per company: sales, returns "
 			"(credit notes, negative) and net, plus the drafts still waiting at the cashier. Optionally "
-			"breaks the period down by customer, item, day or naming series (top rows by amount). "
-			"Use for 'sales today', 'sales this month', 'top customers/items', 'daily sales'."
+			"breaks the period down by customer, item, day, month, naming series or cost center (branch) "
+			"(top rows by amount). Use for 'sales today', 'sales this month', 'top customers/items', "
+			"'daily sales', 'cost center wise sales'; with cost_center \"all\" for every branch."
 		),
 		"input_schema": {
 			"type": "object",
@@ -108,7 +111,7 @@ TOOLS = [
 				},
 				"group_by": {
 					"type": "string",
-					"enum": ["none", "customer", "item", "day", "month", "series"],
+					"enum": ["none", "customer", "item", "day", "month", "series", "cost_center"],
 					"description": "Breakdown to add. 'none' returns totals only.",
 				},
 				"limit": {"type": "integer", "description": f"Breakdown rows per company (max {MAX_ROWS})."},
@@ -251,7 +254,8 @@ TOOLS += [
 		"name": "purchase_summary",
 		"description": (
 			"Purchase totals for a date range from submitted Purchase Invoices, per company: purchases, "
-			"returns (negative), net and drafts. Optional breakdown by supplier, item, day, month or series."
+			"returns (negative), net and drafts. Optional breakdown by supplier, item, day, month, series or "
+			"cost center (branch)."
 		),
 		"input_schema": {
 			"type": "object",
@@ -262,7 +266,7 @@ TOOLS += [
 				"cost_center": _COST_CENTER,
 				"group_by": {
 					"type": "string",
-					"enum": ["none", "supplier", "item", "day", "month", "series"],
+					"enum": ["none", "supplier", "item", "day", "month", "series", "cost_center"],
 				},
 				"limit": _LIMIT,
 			},
@@ -491,7 +495,9 @@ TOOLS += [
 			"other tools it applies the chat page's company / cost center when the doctype has those "
 			"fields and no filter names them. docstatus 1 = submitted, 0 = draft, 2 = cancelled; filter "
 			"docstatus 1 for real totals. "
-			"Child tables (e.g. Sales Invoice Item) filter on parent = the document name. "
+			"Child tables (e.g. Sales Invoice Item) filter on parent = the document name, and may also "
+			"filter on the parent document's fields, e.g. posting_date, docstatus, customer; the chat's "
+			"company / cost center then apply to the parent. "
 			"For stock quantities use item_stock (now) or item_movement (opening / closing on a date); "
 			"never SUM actual_qty on Stock Ledger Entry for a balance: Stock Reconciliation rows have "
 			"actual_qty = 0 and set the balance in qty_after_transaction (latest row per item + warehouse)."
@@ -611,6 +617,10 @@ def run_tool(name, args, attachments=None):
 	except (frappe.ValidationError, TypeError, ValueError) as e:
 		frappe.clear_last_message()
 		return f"Invalid request: {e}", True
+	except frappe.db.ProgrammingError as e:
+		# Bad SQL from the arguments (unknown column, syntax): let the AI fix the call.
+		frappe.clear_last_message()
+		return f"The database rejected the query: {e.args[-1] if e.args else e}", True
 
 
 # ── sales / purchases ───────────────────────────────────────────────────────
@@ -636,7 +646,7 @@ def _invoice_summary(doctype, from_date, to_date, company, cost_center, group_by
 	to_date = getdate(to_date or from_date)
 	if to_date < from_date:
 		raise ValueError("to_date is before from_date")
-	options = ("none", cfg["party"], "item", "day", "month", "series")
+	options = ("none", cfg["party"], "item", "day", "month", "series", "cost_center")
 	if group_by not in (None, *options):
 		raise ValueError(f"group_by must be one of {', '.join(options)}; got {group_by!r}")
 	limit = _limit(limit)
@@ -727,7 +737,9 @@ def _breakdown(doctype, group_by, filters, limit):
 	if group_by == "item":
 		return _item_breakdown(doctype, filters, limit)
 
-	keys = {"day": ["posting_date"], "series": ["naming_series"]}.get(group_by) or [
+	keys = {"day": ["posting_date"], "series": ["naming_series"], "cost_center": ["cost_center"]}.get(
+		group_by
+	) or [
 		group_by,
 		f"{group_by}_name",
 	]
@@ -2506,18 +2518,31 @@ def query_records(
 
 	limit = _limit(limit)
 	kwargs = {}
+	parent = None
 	if meta.istable:
-		parent = frappe.get_all(
+		found = frappe.get_all(
 			"DocField", filters={"options": meta.name, "fieldtype": "Table"}, pluck="parent", limit=1
 		)
-		if parent:
-			kwargs["parent_doctype"] = parent[0]
-	filters = _query_filters(filters, column)
+		if found:
+			parent = found[0]
+			kwargs["parent_doctype"] = parent
+	parent_columns = _query_columns(frappe.get_meta(parent)) if parent else set()
+
+	def filter_column(name):
+		# A child table may also filter on its parent document's fields (posting_date, docstatus...).
+		if name in columns or name not in parent_columns:
+			return column(name)
+		return name
+
+	own, parent_filters = [], []
+	for f in _query_filters(filters, filter_column):
+		(own if f[0] in columns else parent_filters).append(f)
 	# The chat's company / cost center, as the other tools apply it, unless a filter names them.
-	# Child tables are left alone: their company is on the parent document.
-	named = {f[0]: f for f in filters}
+	# A child table's company / cost center is on its parent document.
+	scope_filters, scope_columns = (parent_filters, parent_columns) if parent else (own, columns)
+	named = {f[0]: f for f in [*own, *parent_filters]}  # a child's own cost_center counts too
 	scoped = {}  # what the rows are limited to, for the scope note
-	if not meta.istable:
+	if not meta.istable or parent:
 		# A company / cost center filter counts as asking for it (and goes through the guard);
 		# a chat branch of another company is dropped.
 		if "company" in named and not company:
@@ -2530,9 +2555,22 @@ def query_records(
 			cost_center = f[2] if f[1] == "=" else "all"
 		company, cost_center = _scoped(company, cost_center)
 		for field, value in (("company", company), ("cost_center", cost_center)):
-			if value and field in columns:
-				filters = [f for f in filters if f[0] != field] + [[field, "=", value]]
+			if value and field in scope_columns:
+				scope_filters[:] = [f for f in scope_filters if f[0] != field] + [[field, "=", value]]
 				scoped[field] = value
+	filters = own
+	if parent_filters:
+		if _full_read():
+			# frappe.get_list joins the parent only while applying permissions, so with Full Read
+			# Access its filters would name a table missing from the query (1054 Unknown column).
+			names = _get_list(parent, filters=parent_filters, pluck="name", limit=MAX_PARENTS + 1)
+			if len(names) > MAX_PARENTS:
+				raise ValueError(
+					f"Over {MAX_PARENTS} {parent} documents match; narrow the parent filters (e.g. dates)."
+				)
+			filters = [*own, ["parenttype", "=", parent], ["parent", "in", names or [""]]]
+		else:
+			filters = [*own, *([parent, *f] for f in parent_filters)]
 	rows = _get_list(
 		meta.name,
 		fields=select,
@@ -2587,7 +2625,13 @@ def _query_filters(filters, column):
 		op = str(f[1]).lower()
 		if op not in QUERY_OPERATORS:
 			raise ValueError(f"Operator must be one of {', '.join(sorted(QUERY_OPERATORS))}.")
-		out.append([column(f[0]), op, f[2]])
+		value = f[2]
+		# A list with = / != means in / not in (raw it is invalid SQL: 1064 near '[...]').
+		if op in ("=", "!=") and isinstance(value, list | tuple):
+			op = "in" if op == "=" else "not in"
+		if op in ("in", "not in") and isinstance(value, str):
+			value = [v.strip() for v in value.split(",") if v.strip()]
+		out.append([column(f[0]), op, value])
 	return out
 
 

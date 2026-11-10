@@ -485,6 +485,7 @@ def build_series(tool, args=None, chart_type="bar", points=None):
 			"day": "posting_date",
 			"month": "month",
 			"series": "naming_series",
+			"cost_center": "cost_center",
 		}[group]
 		value_key = "net_amount" if group == "item" else "grand_total"
 		per_company = {
