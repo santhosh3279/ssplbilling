@@ -491,7 +491,10 @@ TOOLS += [
 			"other tools it applies the chat page's company / cost center when the doctype has those "
 			"fields and no filter names them. docstatus 1 = submitted, 0 = draft, 2 = cancelled; filter "
 			"docstatus 1 for real totals. "
-			"Child tables (e.g. Sales Invoice Item) filter on parent = the document name."
+			"Child tables (e.g. Sales Invoice Item) filter on parent = the document name. "
+			"For stock quantities use item_stock (now) or item_movement (opening / closing on a date); "
+			"never SUM actual_qty on Stock Ledger Entry for a balance: Stock Reconciliation rows have "
+			"actual_qty = 0 and set the balance in qty_after_transaction (latest row per item + warehouse)."
 		),
 		"input_schema": {
 			"type": "object",
