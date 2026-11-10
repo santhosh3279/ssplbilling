@@ -1941,45 +1941,48 @@ def _add_item_names(companies):
 
 
 def _movement(filters, from_date, to_date, company_of):
-	"""Opening, in, out and closing qty per warehouse, and the in / out per voucher type."""
-	opening = _get_list(
+	"""Opening, in, out and closing qty per warehouse, and the in / out per voucher type.
+
+	Balances come from `qty_after_transaction`, not a sum of `actual_qty`: Stock Reconciliation
+	entries set the balance with actual_qty = 0, so summing would drop every reconciled qty.
+	Each entry's movement is the change in that running balance.
+	"""
+	rows = _get_list(
 		"Stock Ledger Entry",
-		filters={**filters, "posting_date": ["<", from_date]},
-		fields=["warehouse", {"SUM": "actual_qty", "as": "qty"}],
-		group_by="warehouse",
+		filters={**filters, "posting_date": ["<=", to_date]},
+		fields=["warehouse", "posting_date", "voucher_type", "qty_after_transaction"],
+		order_by="posting_datetime asc, creation asc",
 		limit=0,
 	)
-	period = {**filters, "posting_date": ["between", [from_date, to_date]]}
-	moves = {}
-	for side, sign in (("in_qty", [">", 0]), ("out_qty", ["<", 0])):
-		for r in _get_list(
-			"Stock Ledger Entry",
-			filters={**period, "actual_qty": sign},
-			fields=["warehouse", "voucher_type", {"SUM": "actual_qty", "as": "qty"}],
-			group_by="warehouse, voucher_type",
-			limit=0,
-		):
-			m = moves.setdefault(
-				(r.warehouse, r.voucher_type),
-				{"warehouse": r.warehouse, "voucher_type": r.voucher_type, "in_qty": 0.0, "out_qty": 0.0},
-			)
-			m[side] = flt(abs(flt(r.qty)), 3)
+	warehouses, moves, balance = {}, {}, {}
+	for r in rows:
+		before = balance.get(r.warehouse, 0.0)
+		after = balance[r.warehouse] = flt(r.qty_after_transaction)
+		w = warehouses.setdefault(r.warehouse, {"opening": 0.0, "in_qty": 0.0, "out_qty": 0.0})
+		if getdate(r.posting_date) < from_date:
+			w["opening"] = after
+			continue
+		change = flt(after - before, 3)
+		if not change:
+			continue
+		side = "in_qty" if change > 0 else "out_qty"
+		m = moves.setdefault(
+			(r.warehouse, r.voucher_type),
+			{"warehouse": r.warehouse, "voucher_type": r.voucher_type, "in_qty": 0.0, "out_qty": 0.0},
+		)
+		m[side] = flt(m[side] + abs(change), 3)
+		w[side] = flt(w[side] + abs(change), 3)
 
-	warehouses = {}
-	for r in opening:
-		warehouses[r.warehouse] = {"opening": flt(r.qty, 3), "in_qty": 0.0, "out_qty": 0.0}
-	for m in moves.values():
-		w = warehouses.setdefault(m["warehouse"], {"opening": 0.0, "in_qty": 0.0, "out_qty": 0.0})
-		w["in_qty"] = flt(w["in_qty"] + m["in_qty"], 3)
-		w["out_qty"] = flt(w["out_qty"] + m["out_qty"], 3)
-	rows = []
+	out = []
 	for name, w in sorted(warehouses.items()):
-		closing = flt(w["opening"] + w["in_qty"] - w["out_qty"], 3)
+		w["opening"] = flt(w["opening"], 3)
+		closing = flt(balance[name], 3)
 		if w["opening"] or w["in_qty"] or w["out_qty"] or closing:
-			rows.append({"warehouse": name, "company": company_of.get(name), **w, "closing": closing})
+			out.append({"warehouse": name, "company": company_of.get(name), **w, "closing": closing})
 	return {
-		"note": "qty in stock UOM; in/out per voucher type in `movements`",
-		"warehouses": rows,
+		"note": "qty in stock UOM; in/out per voucher type in `movements` "
+		"(a Stock Reconciliation counts as in/out by the qty it changed)",
+		"warehouses": out,
 		"movements": sorted(moves.values(), key=lambda m: (m["warehouse"], m["voucher_type"])),
 	}
 
