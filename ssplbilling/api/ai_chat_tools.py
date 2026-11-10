@@ -31,6 +31,7 @@ DATA_TOOLS = (
 	"item_movement",
 	"supplier_item_sales",
 	"item_sales_trend",
+	"reorder_suggestion",
 	"purchase_mirror_check",
 	"account_ledger",
 	"cash_bank_position",
@@ -85,6 +86,10 @@ QUERY_OPERATORS = {
 }
 # Buckets item_sales_trend may return, per period size.
 TREND_PERIODS = {"week": 53, "month": 24, "day": 62}
+# z-score per service level (% of lead times that should not run out) for safety stock.
+SERVICE_LEVELS = {90: 1.28, 95: 1.65, 98: 2.05, 99: 2.33}
+# Lead time used when neither the question nor the Item gives one.
+DEFAULT_LEAD_DAYS = 7
 # Most items one item_sales_trend call reads.
 MAX_TREND_ITEMS = 300
 # Most parent documents a child-table query resolves by name under Full Read Access.
@@ -494,9 +499,53 @@ TOOLS += [
 	},
 ]
 
+TOOLS += [
+	{
+		"name": "reorder_suggestion",
+		"description": (
+			"What to reorder and how much, per company, from weekly sales over the last `weeks` full weeks "
+			"(returns netted off), stock in the company's warehouses and qty already on order (open "
+			"purchase orders). Per item: avg weekly sales, days of cover, safety stock = z x weekly std "
+			"dev x sqrt(lead weeks), reorder point = avg daily sales x lead time + safety stock, and "
+			"suggested order = avg daily sales x (lead time + review days) + safety stock - stock - on "
+			"order. Status: order_now (stock + on order at or below the reorder point), ok, slow_mover (sold in under "
+			"1 week in 4 and still in stock), overstock (cover over 3x lead + review), no_sales. Choose items like item_sales_trend. Use for 'what "
+			"to reorder', 'safety stock', 'how much should I order', 'is ordering of X healthy', "
+			"'lead time is 1 week, how should I order'. Company-wide: cost center is ignored."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"item": {"type": "string", "description": "One item: code, name or barcode."},
+				"items": {"type": "array", "items": {"type": "string"}, "description": "Several items."},
+				"supplier": {"type": "string", "description": "Supplier name, code or mobile."},
+				"item_group": {"type": "string", "description": "Item group; its sub-groups are included."},
+				"lead_time_days": {
+					"type": "integer",
+					"description": f"Days from order to stock. Defaults to the Item's lead time, else {DEFAULT_LEAD_DAYS}.",
+				},
+				"review_days": {
+					"type": "integer",
+					"description": "Days until the next order is placed (order cycle). Default 7.",
+				},
+				"weeks": {"type": "integer", "description": "Full weeks of sales history to use (4-52, default 12)."},
+				"service_level": {
+					"type": "integer",
+					"enum": list(SERVICE_LEVELS),
+					"description": "% of lead times that should not run out of stock (default 95).",
+				},
+				"only_to_order": {"type": "boolean", "description": "Only items with status order_now."},
+				"company": _COMPANY,
+				"limit": _LIMIT,
+			},
+		},
+	},
+]
+
 INSTRUCTIONS = """You are the business assistant for Sundaram and Sons Private Ltd (SSPL), a wholesale business, answering staff questions from live ERPNext data.
 - Use the tools for every figure; never invent numbers, names or document ids. Prefer the specific tools (sales, purchases, receivables, payables, customer activity, stock and item movement, item sales trends, account ledgers, cash and bank, profit and loss, GST, payments). For anything else (orders, quotations, delivery notes, bank charges, journal entries, employees, assets, any other record) use describe_doctype to find the doctype and its fields, then query_records. Never tell the user you can't access something before trying these.
 - For one item's, a supplier's or an item group's sales by day, week or month (and purchases beside them) use item_sales_trend, not query_records.
+- For what to reorder, how much to order, safety stock, days of cover or whether ordering is healthy use reorder_suggestion; say which lead time, review days and history it used.
 - You are read-only. If asked to create or change anything, say so and point to the screen in the app where it is done.
 - Amounts are INR (₹) with Indian grouping (₹1,25,000). Keep answers short; use markdown tables for lists.
 - State the date range, company and cost center you used (each tool result says which it applied). "Today" means the date given below.
@@ -2410,6 +2459,147 @@ def _trend_lines(doctype, filters, buckets, catalogue):
 	return out
 
 
+# ── reorder suggestion ──────────────────────────────────────────────────────
+
+
+def reorder_suggestion(
+	item=None,
+	items=None,
+	supplier=None,
+	item_group=None,
+	lead_time_days=None,
+	review_days=7,
+	weeks=12,
+	service_level=95,
+	only_to_order=False,
+	company=None,
+	limit=None,
+):
+	"""Reorder point, safety stock and suggested order qty per item, per company."""
+	import math
+
+	weeks = min(max(cint(weeks) or 12, 4), 52)
+	review_days = max(cint(review_days) if review_days is not None else 7, 0)
+	service_level = cint(service_level) or 95
+	if service_level not in SERVICE_LEVELS:
+		raise ValueError(f"service_level must be one of {', '.join(map(str, SERVICE_LEVELS))}.")
+	z = SERVICE_LEVELS[service_level]
+	asked_lead = cint(lead_time_days) if lead_time_days else None
+	if asked_lead is not None and asked_lead < 0:
+		raise ValueError("lead_time_days can't be negative.")
+	limit = _limit(limit or _row_cap["max"])
+	company, _cost_center = _scoped(company, None)
+	picked = _trend_items(item, items, supplier, item_group)
+	if picked.get("found") is False:
+		return picked
+	catalogue = picked["items"]
+	item_lead = dict(
+		_get_list(
+			"Item", filters={"name": ["in", list(catalogue)]}, fields=["name", "lead_time_days"], as_list=True, limit=0
+		)
+	)
+
+	# Full weeks only: the current week would read low.
+	today = getdate(nowdate())
+	to_date = getdate(frappe.utils.add_days(_period_start(today, "week"), -1))
+	from_date = getdate(frappe.utils.add_days(to_date, -7 * weeks + 1))
+	buckets = _trend_buckets(from_date, to_date, "week")
+
+	company_of, warehouses = _warehouses(company, None)
+	bin_filters = {"item_code": ["in", list(catalogue)]}
+	if warehouses is not None:
+		bin_filters["warehouse"] = ["in", warehouses]
+	stock, on_order = {}, {}
+	for b in _get_list(
+		"Bin", filters=bin_filters, fields=["item_code", "warehouse", "actual_qty", "ordered_qty"], limit=0
+	):
+		key = (company_of.get(b.warehouse), b.item_code)
+		stock[key] = flt(stock.get(key, 0) + flt(b.actual_qty), 3)
+		on_order[key] = flt(on_order.get(key, 0) + flt(b.ordered_qty), 3)
+
+	companies = [company] if company else _get_list("Company", pluck="name", limit=0)
+	out = {}
+	for co in companies:
+		sold = _trend_lines("Sales Invoice", {"company": co}, buckets, catalogue)
+		rows = []
+		for code, it in catalogue.items():
+			in_stock, ordered = stock.get((co, code), 0.0), on_order.get((co, code), 0.0)
+			# A week of more returns than sales counts as no demand, not negative demand.
+			weekly = [max(q, 0.0) for q in sold.get(code, {}).get("qty", [0.0] * len(buckets))]
+			if not any(weekly) and not in_stock and not ordered:
+				continue
+			lead = asked_lead if asked_lead is not None else cint(item_lead.get(code)) or DEFAULT_LEAD_DAYS
+			avg_week = sum(weekly) / len(weekly)
+			std_week = math.sqrt(sum((q - avg_week) ** 2 for q in weekly) / max(len(weekly) - 1, 1))
+			daily = avg_week / 7
+			safety = z * std_week * math.sqrt(lead / 7)
+			reorder_point = daily * lead + safety
+			order_up_to = daily * (lead + review_days) + safety
+			available = in_stock + ordered
+			suggested = max(math.ceil(order_up_to - available), 0) if daily else 0
+			cover = flt(max(in_stock, 0) / daily, 1) if daily else None
+			weeks_sold = sum(1 for q in weekly if q)
+			if not daily:
+				status = "no_sales"
+			elif weeks_sold < len(weekly) / 4 and available > 0:
+				# Sold in under 1 week in 4: the safety stock maths does not fit; still in stock.
+				status = "slow_mover"
+			elif available <= reorder_point:
+				status = "order_now"
+			elif cover is not None and cover > 3 * (lead + review_days):
+				status = "overstock"
+			else:
+				status = "ok"
+			rows.append(
+				{
+					"item_code": code,
+					"item_name": it.item_name,
+					"uom": it.stock_uom,
+					"status": status,
+					"stock": in_stock,
+					"on_order": ordered,
+					"avg_weekly_sales": flt(avg_week, 2),
+					"weekly_std_dev": flt(std_week, 2),
+					"weeks_with_sales": weeks_sold,
+					"days_of_cover": cover,
+					"lead_time_days": lead,
+					"safety_stock": math.ceil(safety),
+					"reorder_point": math.ceil(reorder_point),
+					"suggested_order": suggested,
+				}
+			)
+		if not rows:
+			continue
+		rank = {"order_now": 0, "ok": 1, "slow_mover": 2, "overstock": 3, "no_sales": 4}
+		# Fast movers first within a status: they run out soonest and matter most.
+		rows.sort(key=lambda r: (rank[r["status"]], -r["avg_weekly_sales"], r["stock"]))
+		counts = {k: sum(1 for r in rows if r["status"] == k) for k in rank}
+		if only_to_order:
+			rows = [r for r in rows if r["status"] == "order_now"]
+		out[co] = {"status_counts": counts, "items": rows[:limit], "more_rows": len(rows) > limit}
+
+	return {
+		"found": True,
+		**picked["selection"],
+		"items_matched": len(catalogue),
+		"as_of": today,
+		"sales_from": from_date,
+		"sales_to": to_date,
+		"weeks": weeks,
+		"review_days": review_days,
+		"service_level": service_level,
+		"lead_time": f"{asked_lead} days (asked)"
+		if asked_lead is not None
+		else f"per Item lead time, else {DEFAULT_LEAD_DAYS} days",
+		**_scope_note(company, None),
+		"note": (
+			"qty in stock UOM; stock and on_order (open purchase orders) are the company's warehouses now; "
+			"days_of_cover = stock / avg daily sales; suggested_order already subtracts stock and on_order"
+		),
+		"companies": out,
+	}
+
+
 def _trend_default_start(period, to_date):
 	add = frappe.utils.add_days
 	if period == "day":
@@ -3053,6 +3243,7 @@ HANDLERS = {
 	"item_movement": item_movement,
 	"supplier_item_sales": supplier_item_sales,
 	"item_sales_trend": item_sales_trend,
+	"reorder_suggestion": reorder_suggestion,
 	"purchase_mirror_check": purchase_mirror_check,
 	"cash_bank_position": cash_bank_position,
 	"profit_loss": profit_loss,

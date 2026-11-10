@@ -712,6 +712,7 @@ const TOOL_LABELS = {
   customer_activity: 'Customer activity',
   item_movement: 'Item movement',
   item_sales_trend: 'Item trend',
+  reorder_suggestion: 'Reorder',
   cash_bank_position: 'Cash & bank',
   profit_loss: 'P&L',
   gst_summary: 'GST',

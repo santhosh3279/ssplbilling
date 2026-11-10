@@ -649,6 +649,16 @@ def build_series(tool, args=None, chart_type="bar", points=None):
 	if tool == "item_sales_trend":
 		return _trend_series(data, chart_type, points)
 
+	if tool == "reorder_suggestion":
+		# Bar / pie: suggested order qty per item.
+		return _align(
+			{
+				co: {_label(r, "item_name"): r["suggested_order"] for r in c["items"] if r["suggested_order"]}
+				for co, c in data["companies"].items()
+			},
+			points,
+		)
+
 	if tool == "purchase_mirror_check":
 		s = data["summary"]
 		labels = ["In both", f"Only {_abbr(data['wb_company'])}", f"Only {_abbr(data['ae_company'])}"]
