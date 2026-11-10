@@ -2937,11 +2937,8 @@ function onQuickSearchSelect(item) {
     const rowIdx = editQuickSearchRowIdx.value
     editQuickSearchRowIdx.value = null
     if (applyItemToRow(rowIdx, finalItem)) return
-    if (getItemUoms(finalItem.item_code).length > 1) {
-      focusEditField('uom', rowIdx)
-    } else {
-      focusEditField('qty', rowIdx)
-    }
+    // Always land on qty; qty's Enter moves on to the UOM picker for multi-UOM items.
+    focusEditField('qty', rowIdx)
     return
   }
   newItemCode.value = ''
@@ -3210,11 +3207,8 @@ function onEditCodeKeydown(e, rowIdx) {
     const match = lookupBillableItem(code)
     if (match) {
       if (applyItemToRow(rowIdx, match)) return
-      if (getItemUoms(match.item_code).length > 1) {
-        focusEditField('uom', rowIdx)
-      } else {
-        focusEditField('qty', rowIdx)
-      }
+      // Always land on qty; qty's Enter moves on to the UOM picker for multi-UOM items.
+      focusEditField('qty', rowIdx)
     } else {
       openItemSearch(code, rowIdx)
     }
