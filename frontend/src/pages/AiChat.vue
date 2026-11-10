@@ -209,7 +209,7 @@
                 </span>
               </div>
               <div v-if="live.text" class="ai-md text-[18.75px]" v-html="md(live.text)"></div>
-              <div v-else class="text-[18.75px] text-[var(--color-text-muted)] animate-pulse">Thinking…</div>
+              <div v-else class="text-[18.75px] text-[var(--color-text-muted)] animate-pulse">{{ stopping ? 'Stopping…' : 'Thinking…' }}</div>
             </article>
           </div>
         </section>
@@ -264,10 +264,11 @@
               ></textarea>
               <button
                 v-if="running"
-                class="rounded-lg bg-[var(--color-danger)] px-4 py-2 text-[18.75px] font-bold text-white"
+                class="rounded-lg bg-[var(--color-danger)] px-4 py-2 text-[18.75px] font-bold text-white disabled:opacity-60"
+                :disabled="stopping"
                 @click="stop"
               >
-                Stop
+                {{ stopping ? 'Stopping…' : 'Stop' }}
               </button>
               <button
                 v-else
@@ -351,6 +352,8 @@ const messages = ref([])
 const input = ref('')
 const error = ref('')
 const running = ref(false)
+// Stop pressed: the server ends the reply within a second or so and sends 'done'
+const stopping = ref(false)
 const usage = ref(null)
 const listOpen = ref(true)
 const pendingQuick = ref(null)
@@ -411,6 +414,7 @@ onBeforeUnmount(() => {
 // The reply is in the DB anyway.
 watch(running, (on) => {
   clearInterval(pollTimer)
+  stopping.value = false
   if (on) pollTimer = setInterval(pollStatus, POLL_MS)
 })
 
@@ -606,10 +610,14 @@ async function sendText(text, fresh = false) {
 }
 
 async function stop() {
-  if (!running.value || !current.value) return
+  if (!running.value || !current.value || stopping.value) return
+  stopping.value = true
   try {
     await aiChat.cancel(current.value.name)
+    // Check back soon rather than at the next 4 s poll, in case the 'done' event is missed
+    setTimeout(pollStatus, 1500)
   } catch (e) {
+    stopping.value = false
     error.value = lastLine(e)
   }
 }

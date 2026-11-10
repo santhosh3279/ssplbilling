@@ -14,6 +14,7 @@ and returns {"text", "tools", "attachments", "error", "history", "duration_ms", 
 list to replay next turn, kept verbatim (thinking blocks included) as the API requires.
 """
 
+import threading
 import time
 
 import anthropic
@@ -84,18 +85,38 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None, u
 			return bool(is_cancelled())
 		return False
 
+	def cut_short():
+		"""Stop or timeout, checked now (between rounds and tool calls)."""
+		checked["at"] = 0.0
+		return stopped()
+
 	try:
 		for _ in range(MAX_STEPS):
+			if cut_short():
+				break
 			if result["text"] and not result["text"].endswith("\n\n"):
 				emit({"type": "text", "text": "\n\n"})
 			halted = False
 			with client.beta.messages.stream(messages=messages, **params) as stream:
-				for event in stream:
-					if event.type == "text":
-						emit({"type": "text", "text": event.text})
-					if stopped():
-						halted = True
-						break
+				# While the model thinks no events arrive, so the loop below can't see Stop:
+				# a watcher closes the stream instead, which ends the loop.
+				watch = _watch(stream, is_cancelled, started + timeout)
+				try:
+					for event in stream:
+						if event.type == "text":
+							emit({"type": "text", "text": event.text})
+						if stopped():
+							halted = True
+							break
+				except Exception:
+					if not watch["fired"]:
+						raise
+				finally:
+					watch["done"].set()
+				if watch["fired"]:
+					halted = True
+					if watch["fired"] == "timeout":
+						result["error"] = f"Timed out after {timeout}s"
 				if not halted:
 					response = stream.get_final_message()
 					usage = response.usage
@@ -130,6 +151,10 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None, u
 				results.append(
 					{"type": "tool_result", "tool_use_id": block.id, "content": content, "is_error": is_error}
 				)
+			if cut_short():
+				# History must hold complete turns: drop the tool calls that have no results sent.
+				messages.pop()
+				break
 			messages.append({"role": "user", "content": results})
 		else:
 			result["error"] = f"Stopped after {MAX_STEPS} tool rounds without a final answer."
@@ -148,6 +173,28 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None, u
 	result["history"] = messages
 	result["duration_ms"] = int((time.monotonic() - started) * 1000)
 	return result
+
+
+def _watch(stream, is_cancelled, deadline):
+	"""Close `stream` from a thread once Stop is pressed or the deadline passes.
+	Returns {"done": Event to end the watch, "fired": "" | "cancel" | "timeout"}."""
+	state = {"done": threading.Event(), "fired": ""}
+
+	def loop():
+		while not state["done"].wait(CANCEL_POLL_SECONDS):
+			try:
+				reason = "cancel" if is_cancelled and is_cancelled() else ""
+			except Exception:
+				reason = ""
+			if not reason and time.monotonic() > deadline:
+				reason = "timeout"
+			if reason:
+				state["fired"] = reason
+				stream.close()
+				return
+
+	threading.Thread(target=loop, daemon=True, name="ai-chat-stop-watch").start()
+	return state
 
 
 def text_history(prompt, reply):

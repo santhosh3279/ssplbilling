@@ -77,8 +77,15 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None, u
 			return bool(is_cancelled())
 		return False
 
+	def cut_short():
+		"""Stop or timeout, checked now (between rounds and tool calls)."""
+		checked["at"] = 0.0
+		return stopped()
+
 	try:
 		for _ in range(MAX_STEPS):
+			if cut_short():
+				break
 			if result["text"] and not result["text"].endswith("\n\n"):
 				emit({"type": "text", "text": "\n\n"})
 			parts, finish, halted, usage = [], None, False, None
@@ -129,6 +136,10 @@ def run(prompt, history=None, on_event=None, is_cancelled=None, settings=None, u
 						)
 					)
 				)
+			if cut_short():
+				# History must hold complete turns: drop the calls that have no responses sent.
+				contents.pop()
+				break
 			contents.append(types.Content(role="user", parts=responses))
 		else:
 			result["error"] = f"Stopped after {MAX_STEPS} tool rounds without a final answer."

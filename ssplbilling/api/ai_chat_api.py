@@ -325,7 +325,7 @@ def process_turn(chat, prompt, cached=None, fresh=0, values=None):
 		# Tool calls that don't name a company / cost center use the chat's.
 		# The user's last questions let the guard tell "all companies" asked for from the AI's own idea.
 		with ai_chat_tools.scope(doc.company, doc.cost_center, question=_recent_questions(chat)):
-			is_cancelled = lambda: frappe.cache.get_value(_cancel_key(chat))  # noqa: E731
+			is_cancelled = _cancel_check(chat)
 			if cached:
 				result = _reuse(doc, prompt, cached, on_event, is_cancelled, values)
 			else:
@@ -337,7 +337,7 @@ def process_turn(chat, prompt, cached=None, fresh=0, values=None):
 		result = {"text": "", "tools": [], "error": str(e), "duration_ms": 0}
 	flush()
 
-	cancelled = frappe.cache.get_value(_cancel_key(chat))
+	cancelled = _cancel_check(chat)()
 	frappe.cache.delete_value(_cancel_key(chat))
 	if cancelled:
 		result["error"] = None
@@ -605,3 +605,12 @@ def _brief(value, limit=300):
 
 def _cancel_key(chat):
 	return f"sspl_assistant:cancel:{chat}"
+
+
+def _cancel_check(chat):
+	"""A callable telling whether Stop was pressed. It reads redis on every call:
+	frappe.cache.get_value keeps a missing key as None in frappe.local.cache, so polling it
+	never saw the flag set later. The key is built here so the check also works from the
+	runner's watcher thread, which has no frappe.local."""
+	key = frappe.cache.make_key(_cancel_key(chat))
+	return lambda: bool(frappe.cache.exists(key, shared=True))
