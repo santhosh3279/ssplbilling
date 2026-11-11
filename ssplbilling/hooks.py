@@ -376,6 +376,8 @@ scheduler_events = {
 		# Restart WhatsApp sessions the OpenWA gateway left failed / disconnected
 		"*/5 * * * *": [
 			"ssplbilling.api.whatsapp_api.auto_reconnect_sessions",
+			# SSPL WhatsApp Schedule sends (daily sales summary, ...)
+			"ssplbilling.api.whatsapp_scheduler.run_due_schedules",
 		],
 	}
 }

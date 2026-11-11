@@ -1,0 +1,253 @@
+{
+ "actions": [],
+ "autoname": "field:schedule_name",
+ "creation": "2026-11-11 10:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "schedule_name",
+  "enabled",
+  "report_type",
+  "column_break_main",
+  "company",
+  "session_name",
+  "timing_section",
+  "frequency",
+  "send_time",
+  "weekday",
+  "day_of_month",
+  "cron_expression",
+  "report_period",
+  "column_break_timing",
+  "next_run_on",
+  "last_run_on",
+  "last_status",
+  "last_error",
+  "report_section",
+  "cost_centers",
+  "column_break_report",
+  "include_returns",
+  "include_upi",
+  "recipients_section",
+  "recipients",
+  "message_section",
+  "message_template",
+  "placeholders_help"
+ ],
+ "fields": [
+  {
+   "fieldname": "schedule_name",
+   "fieldtype": "Data",
+   "label": "Schedule Name",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "default": "1",
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "in_list_view": 1
+  },
+  {
+   "default": "Daily Sales Summary",
+   "fieldname": "report_type",
+   "fieldtype": "Select",
+   "label": "Report",
+   "options": "Daily Sales Summary",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "description": "Only this company's bills and receipts are counted, so mirror bills in another company are not added twice."
+  },
+  {
+   "fieldname": "session_name",
+   "fieldtype": "Select",
+   "label": "Send From (WhatsApp Session)",
+   "reqd": 1,
+   "description": "A linked session from SSPL WhatsApp Settings."
+  },
+  {
+   "fieldname": "timing_section",
+   "fieldtype": "Section Break",
+   "label": "When"
+  },
+  {
+   "default": "Daily",
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Frequency",
+   "options": "Daily\nWeekly\nMonthly\nCustom Cron",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "default": "21:30:00",
+   "depends_on": "eval:doc.frequency!='Custom Cron'",
+   "fieldname": "send_time",
+   "fieldtype": "Time",
+   "label": "Send Time",
+   "mandatory_depends_on": "eval:doc.frequency!='Custom Cron'",
+   "in_list_view": 1
+  },
+  {
+   "depends_on": "eval:doc.frequency=='Weekly'",
+   "fieldname": "weekday",
+   "fieldtype": "Select",
+   "label": "Day of Week",
+   "mandatory_depends_on": "eval:doc.frequency=='Weekly'",
+   "options": "Monday\nTuesday\nWednesday\nThursday\nFriday\nSaturday\nSunday"
+  },
+  {
+   "depends_on": "eval:doc.frequency=='Monthly'",
+   "fieldname": "day_of_month",
+   "fieldtype": "Int",
+   "label": "Day of Month",
+   "mandatory_depends_on": "eval:doc.frequency=='Monthly'",
+   "description": "1 to 28, so every month has the day."
+  },
+  {
+   "depends_on": "eval:doc.frequency=='Custom Cron'",
+   "fieldname": "cron_expression",
+   "fieldtype": "Data",
+   "label": "Cron Expression",
+   "mandatory_depends_on": "eval:doc.frequency=='Custom Cron'",
+   "description": "minute hour day-of-month month day-of-week, e.g. <code>30 21 * * 1-6</code> = 9:30 PM Monday to Saturday. Checked every 5 minutes."
+  },
+  {
+   "default": "Same Day",
+   "fieldname": "report_period",
+   "fieldtype": "Select",
+   "label": "Report For",
+   "options": "Same Day\nPrevious Day",
+   "description": "The day of the scheduled send, or the day before it (for a send after midnight)."
+  },
+  {
+   "fieldname": "column_break_timing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "next_run_on",
+   "fieldtype": "Datetime",
+   "label": "Next Send On",
+   "read_only": 1,
+   "no_copy": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "last_run_on",
+   "fieldtype": "Datetime",
+   "label": "Last Sent On",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "last_status",
+   "fieldtype": "Select",
+   "label": "Last Status",
+   "options": "\nSent\nPartial\nFailed",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "depends_on": "last_error",
+   "fieldname": "last_error",
+   "fieldtype": "Small Text",
+   "label": "Last Error",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "report_section",
+   "fieldtype": "Section Break",
+   "label": "Report"
+  },
+  {
+   "fieldname": "cost_centers",
+   "fieldtype": "Table MultiSelect",
+   "label": "Cost Centers",
+   "options": "SSPL WhatsApp Schedule Cost Center",
+   "description": "Leave empty for all cost centers. Bills are grouped by the invoice header cost center; UPI by the cost center of the bill it was received against."
+  },
+  {
+   "fieldname": "column_break_report",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "fieldname": "include_returns",
+   "fieldtype": "Check",
+   "label": "Show Returns (cost center wise)"
+  },
+  {
+   "default": "1",
+   "fieldname": "include_upi",
+   "fieldtype": "Check",
+   "label": "Show UPI Receipts (cost center wise)"
+  },
+  {
+   "fieldname": "recipients_section",
+   "fieldtype": "Section Break",
+   "label": "Send To"
+  },
+  {
+   "fieldname": "recipients",
+   "fieldtype": "Table",
+   "label": "Recipients",
+   "options": "SSPL WhatsApp Schedule Recipient"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "message_section",
+   "fieldtype": "Section Break",
+   "label": "Message"
+  },
+  {
+   "fieldname": "message_template",
+   "fieldtype": "Code",
+   "label": "Message Template",
+   "description": "Leave empty for the built-in layout. Use Preview to check the result."
+  },
+  {
+   "fieldname": "placeholders_help",
+   "fieldtype": "HTML",
+   "label": "Placeholders",
+   "options": "<div class=\"text-muted small\">Placeholders: <code>{date}</code> <code>{company}</code> <code>{schedule}</code> <code>{sales_lines}</code> <code>{total_sales}</code> <code>{invoice_count}</code> <code>{return_lines}</code> <code>{total_returns}</code> <code>{return_count}</code> <code>{net_sales}</code> <code>{upi_lines}</code> <code>{total_upi}</code> <code>{upi_count}</code></div>"
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-11 10:00:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL WhatsApp Schedule",
+ "naming_rule": "By fieldname",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
