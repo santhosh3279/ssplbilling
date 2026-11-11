@@ -5,7 +5,8 @@ const SCHEDULER = "ssplbilling.api.whatsapp_scheduler";
 
 frappe.ui.form.on("SSPL WhatsApp Schedule", {
 	setup(frm) {
-		frm.set_query("cost_center", "cost_centers", () => ({
+		// Table MultiSelect has no grid: the query goes on the field itself
+		frm.set_query("cost_centers", () => ({
 			filters: { company: frm.doc.company, is_group: 0 },
 		}));
 	},
