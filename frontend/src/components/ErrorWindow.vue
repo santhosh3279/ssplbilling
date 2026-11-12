@@ -23,7 +23,7 @@
       
       <div class="p-6">
         <div class="bg-[var(--color-bg)] rounded-lg p-4 border border-[var(--color-border)] max-h-[400px] overflow-y-auto scrollbar-none mb-4">
-          <p class="text-[var(--color-text)] font-mono text-[1.75rem] whitespace-pre-wrap leading-relaxed">{{ message }}</p>
+          <p data-testid="app-alert-message" class="text-[var(--color-text)] font-mono text-[1.75rem] whitespace-pre-wrap leading-relaxed">{{ message }}</p>
         </div>
         
         <div class="flex justify-end gap-3">
@@ -34,7 +34,7 @@
             <span v-if="copied" class="text-[var(--color-success)]">Copied!</span>
             <span v-else>Copy</span>
           </button>
-          <button 
+          <button data-testid="app-alert-dismiss" 
             ref="dismissButton"
             @click="$emit('close')" 
             class="rounded-xl px-8 py-2 text-sm font-bold text-[var(--color-text-on-highlight)] shadow-md transition-all active:scale-95"

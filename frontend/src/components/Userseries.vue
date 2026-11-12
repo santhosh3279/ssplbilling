@@ -17,6 +17,8 @@
         <div 
           v-for="(s, idx) in allowedSeries" 
           :key="s"
+          data-testid="series-option"
+          :data-series="s"
           @click="selectSeries(s)"
           class="group flex cursor-pointer items-center justify-between border-b border-[var(--color-border)] px-5 py-4 transition-colors border-l-4"
           :class="focusedIndex === idx

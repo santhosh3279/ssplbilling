@@ -82,6 +82,7 @@
       <div class="border-b border-[var(--color-border)] p-4 relative">
         <input
           ref="searchInput"
+          data-testid="party-search-input"
           v-model="query"
           class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-highlight)] focus:ring-2 focus:ring-[var(--color-highlight)]/20"
           style="font-size: 27px; padding: 2.4px 3.2px;"
@@ -110,6 +111,8 @@
             <tr
               v-for="(c, idx) in results"
               :key="c.name"
+              data-testid="party-result"
+              :data-name="c.name"
               class="cursor-pointer transition-all border-l-4 border-transparent"
               :class="selectedIdx === idx ? 'bg-[var(--color-focus)] border-l-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold' : 'hover:bg-[var(--color-midlight)]/40'"
               @click="handleSelect(c)"

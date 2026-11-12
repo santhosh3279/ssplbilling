@@ -1,0 +1,17 @@
+{
+  "name": "ssplbilling-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tester bot: drives the ssplbilling SPA in a real browser against a dev site. Not part of the production build.",
+  "scripts": {
+    "seed": "../../../env/bin/python scripts/seed.py",
+    "clean": "../../../env/bin/python scripts/seed.py --clean",
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.48.2"
+  }
+}

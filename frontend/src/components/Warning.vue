@@ -26,6 +26,7 @@
         </button>
         <button
           ref="noBtn"
+          data-testid="warning-cancel"
           class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 text-xl font-bold text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-raised)] outline-none focus:border-[10px] focus:border-[var(--color-focus)]"
           @click="$emit('close')"
         >
@@ -33,6 +34,7 @@
         </button>
         <button
           ref="yesBtn"
+          data-testid="warning-confirm"
           class="flex-1 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] py-3 text-xl font-bold text-[var(--color-text)] transition-all hover:bg-[var(--color-surface-raised)] outline-none focus:border-[10px] focus:border-[var(--color-focus)]"
           @click="$emit('confirm')"
         >

@@ -184,7 +184,7 @@
                 :title="!isReadOnly ? 'Triple-click to enter custom invoice number' : ''"
                 @click="onDocNumberClick"
               >
-                <div class="text-4xl text-[var(--color-text)] tabular-nums font-mono font-bold group-hover/series:text-[var(--color-highlight)] transition-colors">
+                <div data-testid="doc-number" class="text-4xl text-[var(--color-text)] tabular-nums font-mono font-bold group-hover/series:text-[var(--color-highlight)] transition-colors">
                   {{ docNumber }}
                 </div>
                 <slot name="doc-number-extra" />
@@ -249,7 +249,7 @@
                       class="text-xl font-bold uppercase text-[var(--color-text-muted)] whitespace-nowrap transition-colors"
                       :class="!isReadOnly ? 'group-hover:text-[var(--color-highlight)]' : ''"
                     >Party</label>
-                    <div class="text-5xl font-bold text-[var(--color-text)] truncate max-w-[600px]">{{ partyName || 'Not Selected' }}</div>
+                    <div data-testid="party-name" class="text-5xl font-bold text-[var(--color-text)] truncate max-w-[600px]">{{ partyName || 'Not Selected' }}</div>
                   </div>
 
                   <div v-if="partyMobile" class="flex items-center gap-1 text-[var(--color-highlight)] font-mono text-3xl whitespace-nowrap shrink-0">
@@ -304,9 +304,10 @@
               </div>
 
               <div v-if="partyModifier !== null && Number(partyModifier) !== 0" class="flex items-center gap-2 border-l border-[var(--color-border)] pl-6 whitespace-nowrap">
-                <span class="text-3xl font-mono font-bold" :class="ignoreModifier ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-warning)]'">{{ partyModifier }}</span>
+                <span data-testid="party-modifier" class="text-3xl font-mono font-bold" :class="ignoreModifier ? 'text-[var(--color-text-muted)] line-through' : 'text-[var(--color-warning)]'">{{ partyModifier }}</span>
                 <input
                   type="checkbox"
+                  data-testid="modifier-toggle"
                   :checked="!ignoreModifier"
                   :disabled="isReadOnly"
                   class="h-[25px] w-[25px] accent-[var(--color-warning)] disabled:opacity-50 disabled:cursor-default"
@@ -496,7 +497,7 @@
                   <tr>
                     <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Item Discount</td>
                     <td class="p-0 border border-[var(--color-border)] text-center text-lg text-[var(--color-text-muted)] italic">Auto</td>
-                    <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ format(itemDiscountTotal) }}</td>
+                    <td data-testid="item-discount-total" class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ format(itemDiscountTotal) }}</td>
                   </tr>
                   <!-- Global Discount -->
                   <tr>
@@ -508,6 +509,7 @@
                           <span class="pl-2 pr-1 text-[var(--color-text-muted)] font-bold text-lg">%</span>
                           <input
                             ref="discountPctRef"
+                            data-testid="discount-pct"
                             type="number"
                             :value="discountPct"
                             @input="$emit('update:discountPct', $event.target.value)"
@@ -522,6 +524,7 @@
                         <div class="flex flex-1 items-center">
                           <input
                             ref="discountAmtRef"
+                            data-testid="discount-amt"
                             type="number"
                             :value="discountDirectAmt"
                             @input="$emit('update:discountDirectAmt', $event.target.value)"
@@ -536,19 +539,19 @@
                         </div>
                       </div>
                     </td>
-                    <td class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ format(discountAmt) }}</td>
+                    <td data-testid="discount-total" class="px-2 text-right font-mono text-[var(--color-danger)] text-4xl border border-[var(--color-border)]">-{{ format(discountAmt) }}</td>
                   </tr>
                   <!-- Subtotal -->
                   <tr class="bg-[var(--color-surface-raised)]/40">
                     <td class="px-2 text-2xl text-[var(--color-text)]/80 border border-[var(--color-border)]">Subtotal</td>
                     <td class="p-0 border border-[var(--color-border)] h-full"></td>
-                    <td class="px-2 text-right font-mono text-[var(--color-text)] text-4xl border border-[var(--color-border)]">{{ format(subtotal) }}</td>
+                    <td data-testid="subtotal" class="px-2 text-right font-mono text-[var(--color-text)] text-4xl border border-[var(--color-border)]">{{ format(subtotal) }}</td>
                   </tr>
                   <!-- Tax -->
                   <tr>
                     <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Tax</td>
                     <td class="p-0 border border-[var(--color-border)]"></td>
-                    <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">+{{ format(totalTax) }}</td>
+                    <td data-testid="total-tax" class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">+{{ format(totalTax) }}</td>
                   </tr>
                   <!-- Freight -->
                   <tr>
@@ -556,6 +559,7 @@
                     <td class="p-0 border border-[var(--color-border)]">
                       <input
                         ref="freightRef"
+                        data-testid="freight"
                         type="number"
                         :value="freightEntry"
                         @input="$emit('update:freightEntry', $event.target.value)"
@@ -574,6 +578,7 @@
                     <td class="p-0 border border-[var(--color-border)]">
                       <input
                         ref="packingRef"
+                        data-testid="packing"
                         type="number"
                         :value="packingEntry"
                         @input="$emit('update:packingEntry', $event.target.value)"
@@ -626,7 +631,7 @@
                   <tr>
                     <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Round Off</td>
                     <td class="p-0 border border-[var(--color-border)]"></td>
-                    <td class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">{{ format(roundOff) }}</td>
+                    <td data-testid="round-off" class="px-2 text-right font-mono text-[var(--color-text-muted)] text-4xl border border-[var(--color-border)]">{{ format(roundOff) }}</td>
                   </tr>
                 </slot>
               </tbody>
@@ -652,19 +657,19 @@
                   </div>
                   <div class="flex items-baseline gap-2 font-bold" :class="isReturn ? 'text-[var(--color-danger)]' : (parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]')">
                     <span class="text-[9mm] font-black">₹</span>
-                    <span class="font-mono text-[15.75mm] font-black leading-none">{{ format(totalAmount) }}</span>
+                    <span data-testid="total-amount" class="font-mono text-[15.75mm] font-black leading-none">{{ format(totalAmount) }}</span>
                   </div>
                 </div>
 
                 <!-- Row 1: Save and Print -->
                 <div class="flex gap-2">
-                  <button ref="saveBtnRef" @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-[var(--color-success)] focus:outline-none">{{ saveButtonText }}</button>
+                  <button ref="saveBtnRef" data-testid="btn-save" @click="$emit('save')" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 transition-colors uppercase focus:bg-[var(--color-success)] focus:outline-none">{{ saveButtonText }}</button>
                   <button @click="$emit('print')" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] cursor-not-allowed'">Print</button>
                 </div>
 
                 <!-- Row 2: Cancel and Submit -->
                 <div class="flex gap-2">
-                  <button @click="$emit('cancel')" class="flex-1 rounded border border-[#C2A96E] bg-[#D4B896] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#C9A87A] transition-colors">Cancel</button>
+                  <button data-testid="btn-new" @click="$emit('cancel')" class="flex-1 rounded border border-[#C2A96E] bg-[#D4B896] py-2.5 text-center text-3xl font-semibold text-[#4A3520] hover:bg-[#C9A87A] transition-colors">Cancel</button>
                   <button v-if="showSubmitButton" v-show="isDraft && isReadOnly" @click="$emit('submit')" class="flex-1 rounded border border-[var(--color-success)] bg-[var(--color-success)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-success)] hover:bg-[var(--color-success)]/30 transition-colors uppercase">Submit</button>
                 </div>
               </div>

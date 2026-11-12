@@ -172,6 +172,10 @@
 
       <template #row="{ item, index, formatQty }">
         <tr
+          data-testid="item-row"
+          :data-item-code="item.item_code"
+          :data-free="item._is_free ? '1' : '0'"
+          :data-deleted="item.deleted ? '1' : '0'"
           :ref="el => { if (el) rowRefs[index] = el }"
           :tabindex="isReadOnly && !isViewing ? -1 : 0"
           class="border-b border-[var(--color-border)] outline-none cursor-pointer transition-all"
@@ -210,7 +214,7 @@
               @input="onEditCodeInput(index)"
               @keydown="onEditCodeKeydown($event, index)"
             />
-            <span v-else class="block px-2 py-1 text-4xl font-mono" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
+            <span v-else data-testid="row-code" class="block px-2 py-1 text-4xl font-mono" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-highlight)]'">{{ item.item_code }}</span>
           </td>
 
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-medium" :class="selectedRowIdx === index && !item.deleted && !item._is_free ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">
@@ -245,7 +249,7 @@
               class="w-full bg-white/10 px-2 py-1 text-6xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown="onEditQtyKeydown($event, index)"
             />
-            <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatQty(item.qty, item.uom) }}</span>
+            <span v-else data-testid="row-qty" class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatQty(item.qty, item.uom) }}</span>
           </td>
 
           <td class="p-0 border-r border-[var(--color-border)]">
@@ -271,7 +275,7 @@
               class="w-full bg-white/10 px-2 py-1 text-5xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown="onEditRateKeydown($event, index)"
             />
-            <span v-else class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format2p(item.rate) }}</span>
+            <span v-else data-testid="row-rate" class="block px-2 py-1 text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format2p(item.rate) }}</span>
           </td>
 
           <!-- disc % -->
@@ -283,16 +287,16 @@
               class="w-full bg-white/10 px-2 py-1 text-4xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown="onEditDiscKeydown($event, index)"
             />
-            <span v-else class="block px-2 py-1 text-4xl font-mono text-right" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ format2p(item.discount) }}</span>
+            <span v-else data-testid="row-disc" class="block px-2 py-1 text-4xl font-mono text-right" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]'">{{ format2p(item.discount) }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
+          <td data-testid="row-net-rate" class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-warning)]/80'">
             {{ format2p((item.rate || 0) * (1 - getDiscPrecision(item.discount) / 100)) }}
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
+          <td data-testid="row-tax" class="px-2 py-1 border-r border-[var(--color-border)] text-4xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">
             {{ format2p(isExempted ? 0 : (item.tax_rate ?? 0)) }}
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format2p(item.amount) }}</td>
+          <td data-testid="row-amount" class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index && !item.deleted ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format2p(item.amount) }}</td>
           <td class="px-2 py-1 text-center">
             <button
               :disabled="isReadOnly"
@@ -432,6 +436,7 @@
             <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Price List</label>
             <select
               ref="priceListSelectRef"
+              data-testid="price-list-select"
               v-model="priceList"
               :disabled="isReadOnly"
               class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 disabled:cursor-default"
@@ -446,6 +451,7 @@
             <label class="text-lg font-bold uppercase text-[var(--color-text-muted)]">Tax Template</label>
             <select
               ref="taxTemplateRef"
+              data-testid="tax-template-select"
               v-model="taxTemplate"
               :disabled="isReadOnly"
               class="w-full rounded border border-[var(--color-border)] bg-[var(--color-bg)] px-1 py-0.5 text-2xl text-[var(--color-text)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] disabled:opacity-50 disabled:cursor-default"
@@ -458,19 +464,19 @@
           <!-- 3 Checkboxes -->
           <div class="flex flex-col gap-1.5 py-1 border-y border-[var(--color-border)]/30">
             <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
-              <input ref="inclusiveTaxRef" type="checkbox" v-model="isInclusiveTax" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-highlight)] disabled:opacity-50" />
+              <input ref="inclusiveTaxRef" data-testid="chk-inclusive" type="checkbox" v-model="isInclusiveTax" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-highlight)] disabled:opacity-50" />
               <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Inclusive Tax</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
-              <input ref="ignoreRuleRef" type="checkbox" v-model="ignoreDiscountRule" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-warning)] disabled:opacity-50" />
+              <input ref="ignoreRuleRef" data-testid="chk-ignore-rule" type="checkbox" v-model="ignoreDiscountRule" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-warning)] disabled:opacity-50" />
               <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Ignore Pricing Rule</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
-              <input type="checkbox" v-model="isReturn" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-danger)] disabled:opacity-50" />
+              <input data-testid="chk-return" type="checkbox" v-model="isReturn" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-danger)] disabled:opacity-50" />
               <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Sale Return</span>
             </label>
             <label class="flex items-center gap-3 cursor-pointer" :class="isReadOnly ? 'cursor-default' : ''">
-              <input ref="halfTaxDiscountRef" type="checkbox" v-model="halfTaxDiscount" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-success)] disabled:opacity-50" />
+              <input ref="halfTaxDiscountRef" data-testid="chk-half-tax" type="checkbox" v-model="halfTaxDiscount" :disabled="isReadOnly" class="h-6 w-6 rounded border-[var(--color-border)] accent-[var(--color-success)] disabled:opacity-50" />
               <span class="text-[var(--color-text-muted)] text-xl font-bold uppercase">Half Tax Discount</span>
             </label>
           </div>
@@ -541,15 +547,15 @@
             </div>
             <div class="flex items-baseline gap-2 font-bold" :class="parseFloat(totalAmount) < 0 ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">
               <span class="text-[9mm] font-black">₹</span>
-              <span class="font-mono text-[15.75mm] font-black leading-none">{{ format2p(totalAmount) }}</span>
+              <span data-testid="total-amount" class="font-mono text-[15.75mm] font-black leading-none">{{ format2p(totalAmount) }}</span>
             </div>
           </div>
           <div class="flex gap-2">
-            <button ref="saveBtnRef" @click="handleSave" :disabled="submitting || modifying" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="submitting || modifying ? 'bg-[var(--color-surface-raised)]/40 text-[var(--color-text-muted)] cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-[var(--color-success)]'">{{ saveButtonText }}</button>
+            <button ref="saveBtnRef" data-testid="btn-save" @click="handleSave" :disabled="submitting || modifying" class="flex-1 rounded py-2.5 text-center text-3xl font-semibold transition-colors uppercase focus:outline-none" :class="submitting || modifying ? 'bg-[var(--color-surface-raised)]/40 text-[var(--color-text-muted)] cursor-not-allowed' : 'text-[var(--color-text-on-highlight)] bg-[var(--color-highlight)] hover:brightness-110 focus:bg-[var(--color-success)]'">{{ saveButtonText }}</button>
             <button @click="handlePrint" :disabled="!isReadOnly" class="flex-1 rounded border py-2.5 text-center text-3xl font-semibold transition-colors" :class="isReadOnly ? 'border-[var(--color-border)] bg-[var(--color-surface-raised)] text-[var(--color-text)] hover:bg-[var(--color-midlight)] cursor-pointer' : 'border-[var(--color-border)]/40 bg-[var(--color-surface)]/30 text-[var(--color-text-muted)] cursor-not-allowed'">Print</button>
           </div>
           <div class="flex gap-2">
-            <button @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>          </div>
+            <button data-testid="btn-new" @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>          </div>
           <button @click="handleBarcodePrint" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-3xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors">Print Barcode</button>
           <div v-if="isSubmitted && (ewaybill || meetsEwayThreshold)" class="flex gap-2">
             <button v-if="!ewaybill" @click="showEWayBillModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Bill</button>
@@ -578,6 +584,7 @@
             <td class="p-0 border-r border-[var(--color-border)]">
               <input
                 ref="pendingQtyInput"
+                data-testid="pending-qty"
                 v-model.number="pendingItem.qty"
                 type="number"
                 step="0.001"
@@ -611,6 +618,7 @@
             <td class="p-0 border-r border-[var(--color-border)]">
               <input
                 ref="newCodeInput"
+                data-testid="item-code-input"
                 v-model="newItemCode"
                 class="w-full bg-transparent px-2 py-1 text-2xl font-mono text-[var(--color-highlight)] outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] placeholder:text-[var(--color-text-muted)]/30"
                 placeholder="Scan or Type Item..."
