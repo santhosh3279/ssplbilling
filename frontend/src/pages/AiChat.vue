@@ -722,6 +722,7 @@ const TOOL_LABELS = {
   item_sales_trend: 'Item trend',
   reorder_suggestion: 'Reorder',
   cash_bank_position: 'Cash & bank',
+  cashflow_forecast: 'Cash flow',
   profit_loss: 'P&L',
   gst_summary: 'GST',
   payments_summary: 'Payments',

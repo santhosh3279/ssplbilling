@@ -35,6 +35,7 @@ DATA_TOOLS = (
 	"purchase_mirror_check",
 	"account_ledger",
 	"cash_bank_position",
+	"cashflow_forecast",
 	"profit_loss",
 	"gst_summary",
 	"payments_summary",
@@ -95,6 +96,11 @@ MAX_TREND_ITEMS = 300
 # Most parent documents a child-table query resolves by name under Full Read Access.
 MAX_PARENTS = 20000
 QUERY_AGGREGATES = {"sum": "SUM", "count": "COUNT", "avg": "AVG", "min": "MIN", "max": "MAX"}
+# cashflow_forecast: weeks it may project ahead / look back on for the run-rate.
+CASHFLOW_WEEKS = (1, 26)
+CASHFLOW_HISTORY = (4, 52)
+# Invoice age (days since posting) buckets for open receivables / payables.
+AGE_BUCKETS = ((30, "0-30"), (60, "31-60"), (90, "61-90"), (None, "90+"))
 
 TOOLS = [
 	{
@@ -139,7 +145,10 @@ TOOLS = [
 		"input_schema": {
 			"type": "object",
 			"properties": {
-				"from_date": {"type": "string", "description": "YYYY-MM-DD. Defaults to the 1st of this month."},
+				"from_date": {
+					"type": "string",
+					"description": "YYYY-MM-DD. Defaults to the 1st of this month.",
+				},
 				"to_date": {"type": "string", "description": "YYYY-MM-DD. Defaults to today."},
 				"company": {
 					"type": "string",
@@ -376,6 +385,32 @@ TOOLS += [
 		},
 	},
 	{
+		"name": "cashflow_forecast",
+		"description": (
+			"Cash flow, per company: actual money in / out of the cash, bank and UPI accounts per week "
+			"(internal transfers left out), the average weekly run-rate, and a week-by-week projection of "
+			"the cash + bank balance from today's balance at that run-rate, with the lowest week and the "
+			"runway when cash is shrinking. Also receivables and payables (GL totals, open invoices aged "
+			"0-30 / 31-60 / 61-90 / 90+ days, days of sales / purchases outstanding) and the balance left "
+			"if every open supplier bill were paid now. Use for 'cash flow', 'cash forecast', 'will we "
+			"have enough money', 'runway', 'money coming in / going out'. Whole company, not per branch."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"weeks": {
+					"type": "integer",
+					"description": f"Weeks to project ahead ({CASHFLOW_WEEKS[0]}-{CASHFLOW_WEEKS[1]}, default 8).",
+				},
+				"history_weeks": {
+					"type": "integer",
+					"description": f"Full past weeks for the run-rate ({CASHFLOW_HISTORY[0]}-{CASHFLOW_HISTORY[1]}, default 12).",
+				},
+				"company": _COMPANY,
+			},
+		},
+	},
+	{
 		"name": "profit_loss",
 		"description": (
 			"Profit and loss from the General Ledger for a date range, per company: income, expense, net "
@@ -528,7 +563,10 @@ TOOLS += [
 					"type": "integer",
 					"description": "Days until the next order is placed (order cycle). Default 7.",
 				},
-				"weeks": {"type": "integer", "description": "Full weeks of sales history to use (4-52, default 12)."},
+				"weeks": {
+					"type": "integer",
+					"description": "Full weeks of sales history to use (4-52, default 12).",
+				},
 				"service_level": {
 					"type": "integer",
 					"enum": list(SERVICE_LEVELS),
@@ -546,6 +584,7 @@ INSTRUCTIONS = """You are the business assistant for Sundaram and Sons Private L
 - Use the tools for every figure; never invent numbers, names or document ids. Prefer the specific tools (sales, purchases, receivables, payables, customer activity, stock and item movement, item sales trends, account ledgers, cash and bank, profit and loss, GST, payments). For anything else (orders, quotations, delivery notes, bank charges, journal entries, employees, assets, any other record) use describe_doctype to find the doctype and its fields, then query_records. Never tell the user you can't access something before trying these.
 - For one item's, a supplier's or an item group's sales by day, week or month (and purchases beside them) use item_sales_trend, not query_records.
 - For what to reorder, how much to order, safety stock, days of cover or whether ordering is healthy use reorder_suggestion; say which lead time, review days and history it used.
+- For cash flow, a cash forecast, runway or whether there will be enough money use cashflow_forecast; say it projects at the past weekly run-rate (not a schedule of dues), which history weeks it used, and show overdue receivables / payables apart.
 - You are read-only. If asked to create or change anything, say so and point to the screen in the app where it is done.
 - Amounts are INR (₹) with Indian grouping (₹1,25,000). Keep answers short; use markdown tables for lists.
 - State the date range, company and cost center you used (each tool result says which it applied). "Today" means the date given below.
@@ -947,7 +986,9 @@ def top_items(from_date=None, to_date=None, company=None, cost_center=None, shar
 		filters["cost_center"] = cost_center
 
 	companies = {}
-	for name in _get_list("Sales Invoice", filters={**filters, "docstatus": 1}, pluck="company", distinct=True):
+	for name in _get_list(
+		"Sales Invoice", filters={**filters, "docstatus": 1}, pluck="company", distinct=True
+	):
 		# Every item sold is needed to rank them; items netting to zero or below (returned) are left out.
 		rows = _item_breakdown("Sales Invoice", {**filters, "company": name}, 0)
 		rows = [r for r in rows if flt(r.net_amount) > 0]
@@ -1451,6 +1492,209 @@ def cash_bank_position(as_of=None, account=None, company=None):
 		**_scope_note(company, None),
 		"note": "balance as per the ledger (Dr positive). Cash, bank and UPI accounts are per branch by name, so the cost center filter does not apply; accounts with a zero balance are left out.",
 		"companies": companies,
+	}
+
+
+def cashflow_forecast(weeks=8, history_weeks=12, company=None):
+	"""Run-rate cash projection. Open invoices here carry no payment terms (due date = posting date,
+	nearly all already overdue), so dues can't be scheduled by due date: the projection uses the
+	actual weekly money in / out, and receivables / payables are aged by invoice date instead."""
+	add = frappe.utils.add_days
+	weeks = min(max(cint(weeks) or 8, CASHFLOW_WEEKS[0]), CASHFLOW_WEEKS[1])
+	history_weeks = min(max(cint(history_weeks) or 12, CASHFLOW_HISTORY[0]), CASHFLOW_HISTORY[1])
+	# Cash and bank accounts are per company (branches by name), so the cost center never applies.
+	company, _cost_center = _scoped(company, None)
+	today = getdate(nowdate())
+	this_monday = getdate(_period_start(today, "week"))
+	hist_from = getdate(add(this_monday, -7 * history_weeks))
+	hist_to = getdate(add(this_monday, -1))
+	window_end = getdate(add(today, 7 * weeks))
+	company_filter = {"company": company} if company else {}
+
+	accounts = list(_money_accounts(company)) or [""]
+	money = {"account": ["in", accounts], "is_cancelled": 0}
+	opening = {
+		r["company"]: r["balance"]
+		for r in _gl_balances({**money, "posting_date": ["<=", today]}, ["company"])
+	}
+	# Net per voucher on the money accounts: a transfer between cash, bank and UPI nets to 0 and
+	# drops out, so money_in / money_out are only what came from or went to someone else.
+	vouchers = _get_list(
+		"GL Entry",
+		filters={**money, "posting_date": ["between", [hist_from, today]]},
+		fields=[
+			"company",
+			"posting_date",
+			{"SUM": "debit", "as": "debit"},
+			{"SUM": "credit", "as": "credit"},
+		],
+		group_by="company, posting_date, voucher_type, voucher_no",
+		limit=0,
+	)
+	flows = {}
+	for v in vouchers:
+		net = flt(v.debit) - flt(v.credit)
+		if not net:
+			continue
+		day = getdate(v.posting_date)
+		week = "wtd" if day >= this_monday else str(_period_start(day, "week"))
+		f = flows.setdefault(v.company, {}).setdefault(week, [0.0, 0.0])
+		f[0 if net > 0 else 1] += abs(net)
+
+	parties = {pt: _cashflow_party(pt, company_filter, today, window_end) for pt in PARTIES}
+	sales = {
+		r.company: flt(r.total)
+		for r in _get_list(
+			"Sales Invoice",
+			filters={**company_filter, "docstatus": 1, "posting_date": ["between", [hist_from, hist_to]]},
+			fields=["company", {"SUM": "base_grand_total", "as": "total"}],
+			group_by="company",
+			limit=0,
+		)
+	}
+	purchases = {
+		r.company: flt(r.total)
+		for r in _get_list(
+			"Purchase Invoice",
+			filters={**company_filter, "docstatus": 1, "posting_date": ["between", [hist_from, hist_to]]},
+			fields=["company", {"SUM": "base_grand_total", "as": "total"}],
+			group_by="company",
+			limit=0,
+		)
+	}
+
+	names = set(opening) | set(flows) | set(parties["Customer"]) | set(parties["Supplier"])
+	if company:
+		names.add(company)
+	days = history_weeks * 7
+	companies = {}
+	for co in sorted(names):
+		balance = flt(opening.get(co), 2)
+		co_flows = flows.get(co, {})
+		wtd_in, wtd_out = co_flows.get("wtd", [0.0, 0.0])
+
+		by_week, closing = [], balance - (wtd_in - wtd_out)
+		for b in reversed(_trend_buckets(hist_from, hist_to, "week")):
+			money_in, money_out = co_flows.get(str(b["from"]), [0.0, 0.0])
+			by_week.append(
+				{
+					"week_from": b["from"],
+					"week_ending": b["end"],
+					"money_in": flt(money_in, 2),
+					"money_out": flt(money_out, 2),
+					"net": flt(money_in - money_out, 2),
+					"closing_balance": flt(closing, 2),
+				}
+			)
+			closing -= money_in - money_out
+		by_week.reverse()
+		avg_in = flt(sum(w["money_in"] for w in by_week) / history_weeks, 2)
+		avg_out = flt(sum(w["money_out"] for w in by_week) / history_weeks, 2)
+		avg_net = flt(avg_in - avg_out, 2)
+
+		receivable = parties["Customer"].get(co) or _cashflow_party_empty()
+		payable = parties["Supplier"].get(co) or _cashflow_party_empty()
+		forecast, running = [], balance
+		for i in range(1, weeks + 1):
+			start, end = getdate(add(today, 7 * (i - 1) + 1)), getdate(add(today, 7 * i))
+			running += avg_net
+			forecast.append(
+				{
+					"week_from": start,
+					"week_ending": end,
+					"expected_in": avg_in,
+					"expected_out": avg_out,
+					"projected_balance": flt(running, 2),
+					"receivable_falling_due": flt(receivable["_due"].get(str(end)), 2),
+					"payable_falling_due": flt(payable["_due"].get(str(end)), 2),
+				}
+			)
+		for side in (receivable, payable):
+			side.pop("_due")
+		lowest = min(forecast, key=lambda r: r["projected_balance"])
+		daily_sales, daily_purchases = sales.get(co, 0) / days, purchases.get(co, 0) / days
+
+		companies[co] = {
+			"balance_today": balance,
+			"week_to_date": {"money_in": flt(wtd_in, 2), "money_out": flt(wtd_out, 2)},
+			"avg_weekly_in": avg_in,
+			"avg_weekly_out": avg_out,
+			"avg_weekly_net": avg_net,
+			"projected_balance_end": forecast[-1]["projected_balance"],
+			"lowest_week": {"week_ending": lowest["week_ending"], "balance": lowest["projected_balance"]},
+			"runway_weeks": flt(balance / -avg_net, 1) if avg_net < 0 and balance > 0 else None,
+			"receivable": receivable,
+			"payable": payable,
+			"days_sales_outstanding": flt(receivable["gl_total"] / daily_sales, 1) if daily_sales else None,
+			"days_purchases_outstanding": (
+				flt(payable["gl_total"] / daily_purchases, 1) if daily_purchases else None
+			),
+			"balance_if_open_bills_paid_now": flt(balance - payable["open_invoices"], 2),
+			"forecast": forecast,
+			"by_week": by_week,
+		}
+
+	return {
+		"as_of": today,
+		**_scope_note(company, None),
+		"history_from": hist_from,
+		"history_to": hist_to,
+		"note": (
+			"Cash, bank and UPI accounts only; transfers between them are left out. Projection = today's "
+			"balance + the average weekly net of the history weeks (the run-rate already includes cash sales "
+			"and customer collections, supplier payments and expenses); it is not a schedule of dues. "
+			"Open invoices have no payment terms, so receivable / payable are aged by invoice date, and "
+			"*_falling_due only counts invoices whose due date lies ahead (usually 0). gl_total is the "
+			"party ledger balance; unscheduled = gl_total - open invoices (opening balances, journal "
+			"entries, advances). Days outstanding = gl_total / average daily invoiced value of the history. "
+			"week_to_date is the current week so far, not in the averages. Whole company, not per branch."
+		),
+		"companies": companies,
+	}
+
+
+def _cashflow_party(party_type, company_filter, today, window_end):
+	"""{company: {gl_total, open_invoices, unscheduled, overdue, ageing, _due: {week end: amount}}}."""
+	cfg = PARTIES[party_type]
+	out = {}
+	for r in _gl_balances({**company_filter, "party_type": party_type, "is_cancelled": 0}, ["company"]):
+		out.setdefault(r["company"], _cashflow_party_empty())["gl_total"] = flt(cfg["sign"] * r["balance"], 2)
+	invoices = _get_list(
+		cfg["invoice"],
+		filters={**company_filter, "docstatus": 1, "outstanding_amount": ["!=", 0]},
+		fields=["company", "posting_date", "due_date", "outstanding_amount"],
+		limit=0,
+	)
+	for inv in invoices:
+		side = out.setdefault(inv.company, _cashflow_party_empty())
+		amount = flt(inv.outstanding_amount)
+		side["open_invoices"] += amount
+		age = date_diff(today, inv.posting_date)
+		label = next(lbl for days, lbl in AGE_BUCKETS if days is None or age <= days)
+		side["ageing"][label] += amount
+		due = getdate(inv.due_date or inv.posting_date)
+		if due <= today:
+			side["overdue"] += amount
+		elif due <= window_end:
+			# The forecast week (ending today + 7n) the due date falls in.
+			week_end = str(getdate(frappe.utils.add_days(today, 7 * -(-date_diff(due, today) // 7))))
+			side["_due"][week_end] = side["_due"].get(week_end, 0.0) + amount
+	for side in out.values():
+		side["open_invoices"] = flt(side["open_invoices"], 2)
+		side["overdue"] = flt(side["overdue"], 2)
+		side["unscheduled"] = flt(side["gl_total"] - side["open_invoices"], 2)
+		side["ageing"] = {k: flt(v, 2) for k, v in side["ageing"].items()}
+	return out
+
+
+def _cashflow_party_empty():
+	return {
+		"gl_total": 0.0,
+		"open_invoices": 0.0,
+		"unscheduled": 0.0,
+		"overdue": 0.0,
+		"ageing": {label: 0.0 for _days, label in AGE_BUCKETS},
+		"_due": {},
 	}
 
 
@@ -2282,7 +2526,9 @@ def item_sales_trend(
 	catalogue = picked["items"]
 
 	to_date = getdate(to_date or nowdate())
-	from_date = _period_start(getdate(from_date) if from_date else _trend_default_start(period, to_date), period)
+	from_date = _period_start(
+		getdate(from_date) if from_date else _trend_default_start(period, to_date), period
+	)
 	if to_date < from_date:
 		raise ValueError("to_date is before from_date")
 	buckets = _trend_buckets(from_date, to_date, period)
@@ -2342,7 +2588,11 @@ def item_sales_trend(
 		out[co] = {
 			"qty": flt(sum(t["qty"] for t in totals), 3),
 			"net_amount": flt(sum(t["net_amount"] for t in totals), 2),
-			**({"purchased_qty": flt(sum(t["purchased_qty"] for t in totals), 3)} if include_purchases else {}),
+			**(
+				{"purchased_qty": flt(sum(t["purchased_qty"] for t in totals), 3)}
+				if include_purchases
+				else {}
+			),
 			"items_with_sales": sum(1 for r in rows if r["qty"] or r["net_amount"]),
 			"by_period": totals,
 			"items": rows[:limit],
@@ -2405,7 +2655,10 @@ def _trend_items(item, items, supplier, item_group):
 		if group.get("found") is False:
 			return group
 		groups = _get_list(
-			"Item Group", filters={"lft": [">=", group["lft"]], "rgt": ["<=", group["rgt"]]}, pluck="name", limit=0
+			"Item Group",
+			filters={"lft": [">=", group["lft"]], "rgt": ["<=", group["rgt"]]},
+			pluck="name",
+			limit=0,
 		)
 		in_group = set(_get_list("Item", filters={"item_group": ["in", groups]}, pluck="name", limit=0))
 		codes = in_group if codes is None else codes & in_group
@@ -2438,7 +2691,11 @@ def _pick_item_group(search):
 		return hits[0]
 	if not hits:
 		return {"found": False, "message": f"No item group matches '{search}'."}
-	return {"found": False, "message": "Several item groups match; ask which one.", "candidates": [h.name for h in hits]}
+	return {
+		"found": False,
+		"message": "Several item groups match; ask which one.",
+		"candidates": [h.name for h in hits],
+	}
 
 
 def _trend_lines(doctype, filters, buckets, catalogue):
@@ -2495,7 +2752,11 @@ def reorder_suggestion(
 	catalogue = picked["items"]
 	item_lead = dict(
 		_get_list(
-			"Item", filters={"name": ["in", list(catalogue)]}, fields=["name", "lead_time_days"], as_list=True, limit=0
+			"Item",
+			filters={"name": ["in", list(catalogue)]},
+			fields=["name", "lead_time_days"],
+			as_list=True,
+			limit=0,
 		)
 	)
 
@@ -3184,9 +3445,7 @@ def _named(value, doctype, question):
 	if doctype == "Company":
 		names.add(frappe.get_cached_value("Company", value, "abbr") or "")
 		names.add("".join(w[0] for w in value.split() if w.lower() not in ("and", "of", "the", "&")))
-	return any(
-		re.search(rf"\b{re.escape(n.lower())}\b", question) for n in names if len(n.strip()) >= 2
-	)
+	return any(re.search(rf"\b{re.escape(n.lower())}\b", question) for n in names if len(n.strip()) >= 2)
 
 
 def _scoped(company, cost_center):
@@ -3246,6 +3505,7 @@ HANDLERS = {
 	"reorder_suggestion": reorder_suggestion,
 	"purchase_mirror_check": purchase_mirror_check,
 	"cash_bank_position": cash_bank_position,
+	"cashflow_forecast": cashflow_forecast,
 	"profit_loss": profit_loss,
 	"gst_summary": gst_summary,
 	"payments_summary": payments_summary,

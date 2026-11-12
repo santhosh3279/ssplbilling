@@ -681,6 +681,7 @@ const TOOL_LABELS = {
   customer_activity: 'Customer activity',
   item_movement: 'Item movement',
   cash_bank_position: 'Cash & bank',
+  cashflow_forecast: 'Cash flow',
   profit_loss: 'P&L',
   gst_summary: 'GST',
   payments_summary: 'Payments',
