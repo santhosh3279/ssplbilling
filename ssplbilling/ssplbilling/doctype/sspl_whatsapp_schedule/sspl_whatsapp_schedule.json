@@ -32,7 +32,8 @@
   "recipients",
   "message_section",
   "message_template",
-  "placeholders_help"
+  "placeholders_help",
+  "order_placeholders_help"
  ],
  "fields": [
   {
@@ -54,7 +55,7 @@
    "fieldname": "report_type",
    "fieldtype": "Select",
    "label": "Report",
-   "options": "Daily Sales Summary",
+   "options": "Daily Sales Summary\nOrder Reminders",
    "reqd": 1,
    "in_list_view": 1
   },
@@ -130,7 +131,8 @@
    "fieldtype": "Select",
    "label": "Report For",
    "options": "Same Day\nPrevious Day",
-   "description": "The day of the scheduled send, or the day before it (for a send after midnight)."
+   "description": "The day of the scheduled send, or the day before it (for a send after midnight).",
+   "depends_on": "eval:doc.report_type=='Daily Sales Summary'"
   },
   {
    "fieldname": "column_break_timing",
@@ -163,21 +165,23 @@
    "depends_on": "last_error",
    "fieldname": "last_error",
    "fieldtype": "Small Text",
-   "label": "Last Error",
+   "label": "Last Error / Note",
    "read_only": 1,
    "no_copy": 1
   },
   {
    "fieldname": "report_section",
    "fieldtype": "Section Break",
-   "label": "Report"
+   "label": "Report",
+   "depends_on": "eval:doc.report_type=='Daily Sales Summary'"
   },
   {
    "fieldname": "cost_centers",
    "fieldtype": "Table MultiSelect",
    "label": "Cost Centers",
    "options": "SSPL WhatsApp Schedule Cost Center",
-   "description": "Leave empty for all cost centers. Bills are grouped by the invoice header cost center; UPI by the cost center of the bill it was received against."
+   "description": "Leave empty for all cost centers. Bills are grouped by the invoice header cost center; UPI by the cost center of the bill it was received against.",
+   "depends_on": "eval:doc.report_type=='Daily Sales Summary'"
   },
   {
    "fieldname": "column_break_report",
@@ -187,13 +191,15 @@
    "default": "1",
    "fieldname": "include_returns",
    "fieldtype": "Check",
-   "label": "Show Returns (cost center wise)"
+   "label": "Show Returns (cost center wise)",
+   "depends_on": "eval:doc.report_type=='Daily Sales Summary'"
   },
   {
    "default": "1",
    "fieldname": "include_upi",
    "fieldtype": "Check",
-   "label": "Show UPI Receipts (cost center wise)"
+   "label": "Show UPI Receipts (cost center wise)",
+   "depends_on": "eval:doc.report_type=='Daily Sales Summary'"
   },
   {
    "fieldname": "recipients_section",
@@ -222,11 +228,19 @@
    "fieldname": "placeholders_help",
    "fieldtype": "HTML",
    "label": "Placeholders",
-   "options": "<div class=\"text-muted small\">Placeholders: <code>{date}</code> <code>{company}</code> <code>{schedule}</code> <code>{sales_lines}</code> <code>{total_sales}</code> <code>{invoice_count}</code> <code>{return_lines}</code> <code>{total_returns}</code> <code>{return_count}</code> <code>{net_sales}</code> <code>{upi_lines}</code> <code>{total_upi}</code> <code>{upi_count}</code></div>"
+   "options": "<div class=\"text-muted small\">Placeholders: <code>{date}</code> <code>{company}</code> <code>{schedule}</code> <code>{sales_lines}</code> <code>{total_sales}</code> <code>{invoice_count}</code> <code>{return_lines}</code> <code>{total_returns}</code> <code>{return_count}</code> <code>{net_sales}</code> <code>{upi_lines}</code> <code>{total_upi}</code> <code>{upi_count}</code></div>",
+   "depends_on": "eval:doc.report_type=='Daily Sales Summary'"
+  },
+  {
+   "fieldname": "order_placeholders_help",
+   "fieldtype": "HTML",
+   "label": "Placeholders",
+   "depends_on": "eval:doc.report_type=='Order Reminders'",
+   "options": "<div class=\"text-muted small\">Lists the suppliers of SSPL Order Reminder that are due or overdue for the company. Nothing is sent on a day with none. Placeholders: <code>{date}</code> <code>{company}</code> <code>{schedule}</code> <code>{due_lines}</code> <code>{due_count}</code> <code>{overdue_lines}</code> <code>{overdue_count}</code> <code>{total_count}</code></div>"
   }
  ],
  "links": [],
- "modified": "2026-11-11 10:00:00",
+ "modified": "2026-11-12 10:00:00",
  "modified_by": "Administrator",
  "module": "Ssplbilling",
  "name": "SSPL WhatsApp Schedule",

@@ -109,6 +109,7 @@ LICENSE_TIERS = [
 			"employee",
 			"essl-machines",
 			"ai-chat",
+			"order-reminder",
 		],
 	),
 ]

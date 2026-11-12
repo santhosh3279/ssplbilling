@@ -5,6 +5,10 @@ due gets its next_run_on moved forward (committed first, so a slow send is never
 and a background send_schedule() job. Messages go through whatsapp_api._send() on the schedule's
 session, so every send lands in SSPL WhatsApp Log with the schedule as its reference.
 
+The schedule's Report picks the message: Daily Sales Summary, or Order Reminders (the suppliers
+of SSPL Order Reminder that are due or overdue for ordering on the day; nothing is sent on a day
+with none).
+
 Daily Sales Summary, for one company and one day:
 - Sales / Returns: submitted Sales Invoices grouped by the invoice header cost center, returns
   (is_return) on their own lines. Amounts are the rounded total (grand total when not rounded).
@@ -44,6 +48,13 @@ CRON_WEEKDAYS = {
 	"Friday": 5,
 	"Saturday": 6,
 }
+
+ORDER_REMINDERS = "Order Reminders"
+DEFAULT_ORDER_REMINDER_TEMPLATE = (
+	"*{schedule}*\n{company} · {date}\n\n"
+	"*Order today* ({due_count})\n{due_lines}\n\n"
+	"*Overdue* ({overdue_count})\n{overdue_lines}"
+)
 
 DEFAULT_SECTIONS = {
 	"header": "*{schedule}*\n{company} · {date}",
@@ -250,7 +261,47 @@ def _lines(groups, money, sign=1):
 	)
 
 
+def _fill(template, values):
+	# Plain replace, so a stray brace in a custom template never breaks the send
+	for key, value in values.items():
+		template = template.replace("{" + key + "}", str(value))
+	return template
+
+
+def build_order_reminder_message(doc, day):
+	from ssplbilling.api.order_reminder_api import reminders_for
+
+	rows = reminders_for(doc.company, day, enabled_only=True)
+	due = [r for r in rows if r["status"] == "due"]
+	overdue = sorted((r for r in rows if r["status"] == "overdue"), key=lambda r: r["due_date"])
+
+	def line(r, late=False):
+		text = f"• {r['supplier_name']}"
+		if late:
+			text += " — " + _("{0} day(s) late").format(-r["days_to_due"])
+		elif r["days_to_due"]:
+			text += " — " + _("order by {0}").format(formatdate(r["due_date"]))
+		if r.get("notes"):
+			text += f" ({' '.join(r['notes'].split())})"
+		return text
+
+	values = {
+		"schedule": doc.schedule_name,
+		"company": doc.company,
+		"date": formatdate(day),
+		"due_lines": "\n".join(line(r) for r in due) or "—",
+		"due_count": len(due),
+		"overdue_lines": "\n".join(line(r, late=True) for r in overdue) or "—",
+		"overdue_count": len(overdue),
+		"total_count": len(due) + len(overdue),
+	}
+	template = (doc.message_template or "").strip() or DEFAULT_ORDER_REMINDER_TEMPLATE
+	return _fill(template, values), {"nothing_to_send": not (due or overdue), "upi_accounts": []}
+
+
 def build_message(doc, day):
+	if doc.report_type == ORDER_REMINDERS:
+		return build_order_reminder_message(doc, day)
 	data = get_daily_sales_summary(doc, day)
 	currency = frappe.get_cached_value("Company", doc.company, "default_currency")
 
@@ -286,11 +337,7 @@ def build_message(doc, day):
 			sections.append(DEFAULT_SECTIONS["upi"])
 		template = "\n\n".join(sections)
 
-	# Plain replace, so a stray brace in a custom template never breaks the send
-	message = template
-	for key, value in values.items():
-		message = message.replace("{" + key + "}", str(value))
-	return message, data
+	return _fill(template, values), data
 
 
 # --------------------------------------------------------------------------- sending
@@ -304,11 +351,15 @@ def send_schedule(schedule, due_on=None, report_date=None):
 		getdate(report_date) if report_date else report_date_for(doc, get_datetime(due_on or now_datetime()))
 	)
 	recipients = [r for r in doc.recipients if cint(r.enabled)]
-	sent, errors = 0, []
+	sent, errors, skipped = 0, [], False
 	try:
 		if not recipients:
 			frappe.throw(_("No enabled recipients"))
-		message, _data = build_message(doc, day)
+		message, data = build_message(doc, day)
+		if data.get("nothing_to_send"):
+			# An empty reminder every morning only teaches people to ignore the real ones
+			recipients = []
+			skipped = True
 		row = wa._managed_row(wa._settings(), doc.session_name)
 		for r in recipients:
 			try:
@@ -331,14 +382,17 @@ def send_schedule(schedule, due_on=None, report_date=None):
 		frappe.clear_messages()
 
 	status = "Sent" if not errors else ("Partial" if sent else "Failed")
+	note = None
+	if skipped and not errors:
+		note = _("Nothing due on {0}: no message sent").format(formatdate(day))
 	doc.db_set(
-		{"last_run_on": now_datetime(), "last_status": status, "last_error": "\n".join(errors) or None},
+		{"last_run_on": now_datetime(), "last_status": status, "last_error": "\n".join(errors) or note},
 		update_modified=False,
 	)
 	frappe.db.commit()
 	if status != "Sent" and not frappe.request:
 		frappe.log_error(title=f"WhatsApp schedule {schedule}: {status}", message="\n".join(errors))
-	return {"status": status, "sent": sent, "errors": errors, "date": str(day)}
+	return {"status": status, "sent": sent, "errors": errors, "date": str(day), "skipped": skipped}
 
 
 @frappe.whitelist()

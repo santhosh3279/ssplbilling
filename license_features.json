@@ -105,7 +105,8 @@
         "hrms",
         "employee",
         "essl-machines",
-        "ai-chat"
+        "ai-chat",
+        "order-reminder"
       ]
     }
   ],
@@ -139,8 +140,8 @@
     ]
   },
   "wildcard": "*",
-  "page_count": 80,
-  "feature_count": 69,
+  "page_count": 81,
+  "feature_count": 70,
   "category_count": 5,
   "features": [
     "Cashier-Management",
@@ -183,6 +184,7 @@
     "modifysubmitted",
     "naming-settings",
     "offer-display",
+    "order-reminder",
     "outstanding-bills",
     "outstanding-customers-report",
     "parcel-address",
@@ -518,6 +520,10 @@
       {
         "id": "ai-chat",
         "name": "AI Chat"
+      },
+      {
+        "id": "order-reminder",
+        "name": "Order Reminder"
       }
     ]
   },
@@ -1306,6 +1312,16 @@
       "feature": null,
       "note": "Not licence gated (public catalogue page)",
       "category": null
+    },
+    {
+      "page": "OrderReminder",
+      "path": "/order-reminder",
+      "title": "Order Reminder",
+      "feature": "order-reminder",
+      "feature_label": "Order Reminder",
+      "bucket": "SSPL Special",
+      "has_dashboard_tile": true,
+      "category": "Purchase & Suppliers"
     }
   ],
   "pages_by_feature": {
@@ -1481,6 +1497,9 @@
     ],
     "ai-chat": [
       "AiChat"
+    ],
+    "order-reminder": [
+      "OrderReminder"
     ]
   },
   "ungated_pages": [

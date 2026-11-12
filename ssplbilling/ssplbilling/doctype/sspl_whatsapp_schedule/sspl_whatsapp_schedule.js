@@ -54,7 +54,7 @@ function preview(frm, report_date) {
 			title: __("Preview"),
 			message:
 				`<pre style="white-space:pre-wrap;font-family:inherit">${frappe.utils.escape_html(message.message)}</pre>` +
-				(frm.doc.include_upi ? `<div class="text-muted small">${__("UPI accounts")}: ${frappe.utils.escape_html(accounts)}</div>` : ""),
+				(frm.doc.report_type === "Daily Sales Summary" && frm.doc.include_upi ? `<div class="text-muted small">${__("UPI accounts")}: ${frappe.utils.escape_html(accounts)}</div>` : ""),
 		});
 	});
 }
@@ -67,7 +67,9 @@ function send_now(frm, report_date) {
 			frappe.msgprint({
 				title: message.status,
 				indicator: message.status === "Sent" ? "green" : message.status === "Partial" ? "orange" : "red",
-				message: __("Sent to {0} recipient(s).", [message.sent]) + (errors ? `<br><br>${errors}` : ""),
+				message:
+					(message.skipped ? __("Nothing due on that day: no message sent.") : __("Sent to {0} recipient(s).", [message.sent])) +
+					(errors ? `<br><br>${errors}` : ""),
 			});
 			frm.reload_doc();
 		});

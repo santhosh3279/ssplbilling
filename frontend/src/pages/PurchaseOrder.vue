@@ -1940,7 +1940,9 @@ async function handleSeriesSelected(series) {
     }
 
     showSeriesModal.value = false
-    supplierInitialQuery.value = ''
+    // Opened from Order Reminder's Create PO: the supplier search starts on that supplier
+    supplierInitialQuery.value = presetSupplier
+    presetSupplier = ''
     showSupplierModal.value = true
   } catch (e) {
     showSeriesModal.value = false
@@ -2181,6 +2183,8 @@ useShortcuts(purchaseOrderShortcuts({
 function handleBeforeUnload() {
   releaseLock()
 }
+
+let presetSupplier = String(router.currentRoute.value.query.supplier || '')
 
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload)

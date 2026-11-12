@@ -1,0 +1,242 @@
+{
+ "actions": [],
+ "autoname": "format:ORD-REM-{#####}",
+ "creation": "2026-11-12 10:00:00",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "supplier",
+  "supplier_name",
+  "company",
+  "column_break_main",
+  "enabled",
+  "assigned_to",
+  "timing_section",
+  "frequency",
+  "weekdays",
+  "month_days",
+  "interval_days",
+  "column_break_timing",
+  "lead_days",
+  "start_date",
+  "notes",
+  "state_section",
+  "handled_upto",
+  "snooze_until",
+  "column_break_state",
+  "last_action",
+  "last_action_on",
+  "last_action_by",
+  "last_note"
+ ],
+ "fields": [
+  {
+   "fieldname": "supplier",
+   "fieldtype": "Link",
+   "label": "Supplier",
+   "options": "Supplier",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "supplier_name",
+   "fieldtype": "Data",
+   "label": "Supplier Name",
+   "fetch_from": "supplier.supplier_name",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1,
+   "in_list_view": 1,
+   "in_standard_filter": 1
+  },
+  {
+   "fieldname": "column_break_main",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "enabled",
+   "fieldtype": "Check",
+   "label": "Enabled",
+   "default": "1",
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "assigned_to",
+   "fieldtype": "Link",
+   "label": "Assigned To",
+   "options": "User"
+  },
+  {
+   "fieldname": "timing_section",
+   "fieldtype": "Section Break",
+   "label": "When to Order"
+  },
+  {
+   "fieldname": "frequency",
+   "fieldtype": "Select",
+   "label": "Frequency",
+   "options": "Weekly\nMonthly\nEvery N Days",
+   "default": "Weekly",
+   "reqd": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "weekdays",
+   "fieldtype": "Data",
+   "label": "Ordering Days",
+   "depends_on": "eval:doc.frequency=='Weekly'",
+   "mandatory_depends_on": "eval:doc.frequency=='Weekly'",
+   "description": "Comma separated: Monday, Thursday"
+  },
+  {
+   "fieldname": "month_days",
+   "fieldtype": "Data",
+   "label": "Days of Month",
+   "depends_on": "eval:doc.frequency=='Monthly'",
+   "mandatory_depends_on": "eval:doc.frequency=='Monthly'",
+   "description": "Comma separated: 1, 15. A day past the end of a month falls on its last day."
+  },
+  {
+   "fieldname": "interval_days",
+   "fieldtype": "Int",
+   "label": "Every (days)",
+   "depends_on": "eval:doc.frequency=='Every N Days'",
+   "mandatory_depends_on": "eval:doc.frequency=='Every N Days'",
+   "description": "Counted from the last order"
+  },
+  {
+   "fieldname": "column_break_timing",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "lead_days",
+   "fieldtype": "Int",
+   "label": "Remind Before (days)",
+   "default": "0",
+   "non_negative": 1
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Start Date",
+   "description": "No reminder before this date"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "state_section",
+   "fieldtype": "Section Break",
+   "label": "Status"
+  },
+  {
+   "fieldname": "handled_upto",
+   "fieldtype": "Date",
+   "label": "Handled Up To",
+   "read_only": 1,
+   "no_copy": 1,
+   "description": "Ordering is settled through this date (set by Ordered / Skip)"
+  },
+  {
+   "fieldname": "snooze_until",
+   "fieldtype": "Date",
+   "label": "Snoozed Until",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "column_break_state",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_action",
+   "fieldtype": "Select",
+   "label": "Last Action",
+   "options": "\nOrdered\nSkipped",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "last_action_on",
+   "fieldtype": "Date",
+   "label": "Last Action On",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "last_action_by",
+   "fieldtype": "Link",
+   "label": "Last Action By",
+   "options": "User",
+   "read_only": 1,
+   "no_copy": 1
+  },
+  {
+   "fieldname": "last_note",
+   "fieldtype": "Small Text",
+   "label": "Last Note",
+   "read_only": 1,
+   "no_copy": 1
+  }
+ ],
+ "links": [],
+ "modified": "2026-11-12 10:00:00",
+ "modified_by": "Administrator",
+ "module": "Ssplbilling",
+ "name": "SSPL Order Reminder",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Purchase User",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "supplier_name",
+ "track_changes": 1
+}

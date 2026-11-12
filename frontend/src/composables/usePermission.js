@@ -45,6 +45,7 @@ export const BILLER_ROUTES = new Set([
   'Repack',
   'OfferDisplay',
   'PurchaseOrder',
+  'OrderReminder',
   'LandCostVoucher',
   'Hrms',
   'Employee',
@@ -99,6 +100,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'IncentiveEntry',
   'Unreconciled',
   'PurchaseOrder',
+  'OrderReminder',
   'ChequeRegister',
   'StoreSalesReport',
   'CostCenterSalesReport',
@@ -444,6 +446,7 @@ const TILE_ROUTE_MAP = {
   'batch-reports':     'BatchReports',
   'create-user':       'UserCreation',
   'ai-chat':           'AiChat',
+  'order-reminder':    'OrderReminder',
 }
 
 export function canAccessTile(tileId) {

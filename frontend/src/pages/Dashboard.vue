@@ -956,6 +956,7 @@ const allTiles = [
   { id: 'essl-machines',      bucket: 'sspl',   name: 'eSSL Machines',         desc: 'Attendance devices and their stores',      icon: '🖥️', shortcut: ''    },
   { id: 'create-user',        bucket: 'sspl',   name: 'Create User',           desc: 'Website login for a customer',             icon: '👤', shortcut: ''    },
   { id: 'ai-chat',            bucket: 'sspl',   name: 'AI Chat',               desc: 'Ask about sales, outstanding and stock', icon: '🤖', shortcut: ''    },
+  { id: 'order-reminder',     bucket: 'sspl',   name: 'Order Reminder',        desc: 'Suppliers due for ordering',               icon: '🗓️', shortcut: ''    },
   { id: 'whatsapp-link',      bucket: 'sspl',   name: 'WhatsApp Link',         desc: 'Link a number to the OpenWA gateway',      icon: '💬', shortcut: ''    },
   { id: 'whatsapp-chat',      bucket: 'sspl',   name: 'WhatsApp Chat',         desc: 'Chat with customers on the business number', icon: '🗨️', shortcut: ''    },
   { id: 'competitive',        bucket: 'sspl',   name: 'Competitive Items',     desc: 'Pricelist percentages per competitive item', icon: '⚖️', shortcut: ''    },
@@ -975,6 +976,7 @@ async function loadAllowedTiles(user = null, force = false) {
   const tiles = await loadAllowedTilesShared(user, force)
   if (tiles !== undefined) allowedTileIds.value = tiles
   refreshDraftCounts()
+  refreshOrderReminderCount()
 }
 
 // Phone pages live on /mobile-dashboard; the desktop dashboard never shows them, even when granted
@@ -1030,6 +1032,20 @@ async function refreshDraftCounts() {
     draftCounts.value = { ...draftCounts.value, ...(counts || {}) }
   } catch (error) {
     console.warn('[Dashboard] Failed to load draft counts:', error)
+  }
+}
+
+// Order Reminder badge: suppliers due or overdue for ordering today. Hidden at zero.
+async function refreshOrderReminderCount() {
+  if (!tiles.value.some(tile => tile.id === 'order-reminder')) return
+  try {
+    const due = await frappeGet('ssplbilling.api.order_reminder_api.get_due_count', { company: localStorage.getItem('wb-company') || '' })
+    const next = { ...draftCounts.value }
+    if (due > 0) next['order-reminder'] = due
+    else delete next['order-reminder']
+    draftCounts.value = next
+  } catch (error) {
+    console.warn('[Dashboard] Failed to load order reminder count:', error)
   }
 }
 
@@ -1225,7 +1241,7 @@ function tilesInBucket(bucketId) {
   return filteredTiles.value.filter(t => t.bucket === bucketId)
 }
 
-const readyModules = ['sales', 'mobile-bill', 'quotation', 'purchase-invoice', 'cashier', 'cashier-mobile', 'pos', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user', 'ai-chat', 'item-barcode', 'paytm-link', 'paytm-unknown', 'bank-statement', 'whatsapp-link', 'whatsapp-chat', 'competitive', 'document-print']
+const readyModules = ['order-reminder', 'sales', 'mobile-bill', 'quotation', 'purchase-invoice', 'cashier', 'cashier-mobile', 'pos', 'purchase-submit', 'ledger', 'purchase-order', 'sales-order', 'journal-contra', 'stock-reconciliation', 'reports', 'pricing-rules', 'barcode-print', 'incentive-ledger', 'incentive-redeem', 'incentive-entry', 'loading-receipt', 'daily-report', 'parcel-address', 'stock-ledger', 'general-ledger', 'single-entry', 'cancellation', 'modifysubmitted', 'naming-settings', 'expense', 'payment-reconciliation', 'repack', 'offer-display', 'catelogue', 'catalogueviewer', 'unreconciled', 'cheques', 'land-cost-voucher', 'account-tree', 'hrms', 'employee', 'essl-machines', 'batch-reports', 'stock-check', 'create-user', 'ai-chat', 'item-barcode', 'paytm-link', 'paytm-unknown', 'bank-statement', 'whatsapp-link', 'whatsapp-chat', 'competitive', 'document-print']
 
 // payment/receipt/journal/contra are aliases into the PaymentReceiptEntry page
 const routeAliases = {
@@ -1396,6 +1412,7 @@ async function syncSettings() {
   const cached = readTileCache()
   allowedTileIds.value = cached ? cached.tiles : null
   refreshDraftCounts()
+  refreshOrderReminderCount()
 }
 
 async function reverifyLicense() {

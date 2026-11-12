@@ -68,6 +68,13 @@ class TestLicenseTiers(IntegrationTestCase):
 				continue
 			self.assertIsNotNone(get_tile_tier(tile_id)[0], f"{tile_id} is in no license tier")
 
+	def test_order_reminder_is_enterprise(self):
+		self.assertEqual(get_tile_tier("order-reminder"), ("enterprise", "Enterprise"))
+		_tier, _label, _addons, granted = expand_license_features(["tier:standard"])
+		self.assertNotIn("order-reminder", granted)
+		_tier, _label, _addons, granted = expand_license_features(["tier:enterprise"])
+		self.assertIn("order-reminder", granted)
+
 	def test_no_tile_in_two_tiers(self):
 		ids = [t for _id, _label, tiles in LICENSE_TIERS for t in tiles]
 		self.assertEqual(len(ids), len(set(ids)))

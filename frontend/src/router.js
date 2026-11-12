@@ -28,6 +28,7 @@ const Competitive = () => import('./pages/Competitive.vue')
 const DocumentPrint = () => import('./pages/DocumentPrint.vue')
 const WhatsAppChat = () => import('./pages/WhatsAppChat.vue')
 const AiChat = () => import('./pages/AiChat.vue')
+const OrderReminder = () => import('./pages/OrderReminder.vue')
 const AiChatMobile = () => import('./pages/AiChatMobile.vue')
 const JournalContraEntry = () => import('./pages/JournalContraEntry.vue')
 const CashierManagement = () => import('./pages/CashierManagement.vue')
@@ -376,6 +377,12 @@ const routes = [
     name: 'WhatsAppChat',
     component: WhatsAppChat,
     meta: { title: 'WhatsApp Chat' },
+  },
+  {
+    path: '/order-reminder',
+    name: 'OrderReminder',
+    component: OrderReminder,
+    meta: { title: 'Order Reminder' },
   },
   {
     path: '/ai-chat',
