@@ -854,6 +854,7 @@ async function loadQuotationData(data, forceHalfTaxFalse = false) {
   // Discounts
   discountPct.value = data.discount_percentage || ''
   discountDirectAmt.value = data.additional_discount_amount || ''
+  autoModifierDiscount = modifierDiscountPct() === (parseFloat(discountPct.value) || 0) ? modifierDiscountPct() : 0
 
   // Custom address
   customAddress.value = {
@@ -1141,6 +1142,7 @@ async function clearBill() {
   editingField.value = null
   discountPct.value = ''
   discountDirectAmt.value = ''
+  autoModifierDiscount = 0
   freightEntry.value = ''
   loadingEntry.value = ''
   packingEntry.value = ''
@@ -1420,6 +1422,7 @@ async function closePrintModal() {
   editingField.value = null
   discountPct.value = ''
   discountDirectAmt.value = ''
+  autoModifierDiscount = 0
   freightEntry.value = ''
   loadingEntry.value = ''
   packingEntry.value = ''
@@ -1602,7 +1605,7 @@ function detectPriceChange(item, focusTarget) {
     ? parseFloat((standardRate * (1 - getDiscPrecision(currentDiscount) / 100)).toFixed(precision))
     : currentRate
 
-  const priceListStandard = parseFloat((standardRate * combinedFactor(item.item_code)).toFixed(precision))
+  const priceListStandard = modifiedRate(standardRate, item.item_code)
   const rateChanged = Math.abs(priceListStandard - currentRate) > 0.001
   const discountChanged = Math.abs(currentDiscount) > 0.001
 
@@ -1830,7 +1833,7 @@ function onUomChange(idx) {
   if (cached) {
     const newRate = getItemRateForPriceList(cached, item.uom)
     item._base_rate = newRate
-    item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(precision))
+    item.rate = modifiedRate(newRate, item.item_code)
     item._is_manual_rate = false
     recalcAmount(idx)
   }
@@ -1843,7 +1846,7 @@ function onPendingUomChange() {
   if (cached) {
     const newRate = getItemRateForPriceList(cached, p.uom)
     p._base_rate = newRate
-    p.rate = parseFloat(((newRate || 0) * combinedFactor(p.item_code)).toFixed(precision))
+    p.rate = modifiedRate(newRate, p.item_code)
   }
 }
 
@@ -1868,13 +1871,56 @@ function recalcAmount(idx) {
   item.amount = parseFloat(((item.qty || 0) * netRate).toFixed(precision))
 }
 
+// Only a markup (modifier above 1) moves the row rates. A modifier below 1 leaves
+// the rates at the price list and is given as a bill discount instead — see
+// modifierDiscountPct().
 function effectiveModifier() {
-  const mod = (!ignoreModifier.value && customerModifier.value != null) ? customerModifier.value : 1
-  return mod === 0 ? 1 : mod
+  const mod = (!ignoreModifier.value && customerModifier.value != null) ? parseFloat(customerModifier.value) : 1
+  return mod > 1 ? mod : 1
+}
+
+// Bill discount % implied by a party modifier below 1 (0.9 → 10).
+function modifierDiscountPct() {
+  const mod = parseFloat(customerModifier.value)
+  if (ignoreModifier.value || !(mod > 0 && mod < 1)) return 0
+  return parseFloat(((1 - mod) * 100).toFixed(2))
+}
+
+// The bill discount % this page last set from the party modifier. Lets a party
+// change or Ignore Modifier take back its own discount without touching one the
+// operator typed in.
+let autoModifierDiscount = 0
+
+function clearModifierDiscount() {
+  if (autoModifierDiscount > 0 && (parseFloat(discountPct.value) || 0) === autoModifierDiscount) {
+    discountPct.value = ''
+  }
+  autoModifierDiscount = 0
+}
+
+function applyModifierDiscount() {
+  const next = modifierDiscountPct()
+  if (next > 0) {
+    discountPct.value = next
+    discountDirectAmt.value = ''
+    autoModifierDiscount = next
+  } else {
+    clearModifierDiscount()
+  }
+}
+
+// A marked-up rate (party modifier above 1) is rounded to the nearest whole rupee.
+function roundMarkedUp(rate) {
+  return effectiveModifier() > 1 ? Math.round(rate) : parseFloat(rate.toFixed(precision))
 }
 
 function applyModifierToRate(baseRate) {
-  return parseFloat(((baseRate || 0) * effectiveModifier()).toFixed(precision))
+  return roundMarkedUp((baseRate || 0) * effectiveModifier())
+}
+
+// Row rate for a price list rate: party modifier times the per-item customer factor.
+function modifiedRate(baseRate, item_code) {
+  return roundMarkedUp((baseRate || 0) * combinedFactor(item_code))
 }
 
 function combinedFactor(item_code) {
@@ -1904,7 +1950,7 @@ function updateTableRates() {
     if (cached) {
       const newRate = getItemRateForPriceList(cached, item.uom)
       item._base_rate = newRate
-      item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(precision))
+      item.rate = modifiedRate(newRate, item.item_code)
       item._is_manual_rate = false
       recalcAmount(idx)
     }
@@ -1938,6 +1984,7 @@ async function applyCustomerPricingToRows() {
     customerPricing.value = {}
   }
   reapplyCustomerPricing()
+  applyModifierDiscount()
   nextTick(() => { newCodeInput.value?.focus() })
 }
 
@@ -1956,18 +2003,19 @@ function reapplyCustomerPricing() {
     }
     const base = item.price_list_rate || item._base_rate || item.rate
     item._base_rate = base
-    item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
+    item.rate = modifiedRate(base, item.item_code)
     item._cp_applied = customerPricing.value[item.item_code] != null
     recalcAmount(idx)
   })
 }
 
 watch(ignoreModifier, () => {
+  if (!isLoadingBill.value) applyModifierDiscount()
   items.value.forEach(item => {
     if (item.deleted || item._is_manual_rate) return
     const base = item._base_rate ?? item.rate
     item._base_rate = base
-    item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
+    item.rate = modifiedRate(base, item.item_code)
     item.amount = parseFloat(((item.qty || 0) * item.rate * (1 - getDiscPrecision(item.discount) / 100)).toFixed(precision))
   })
 })
@@ -2128,7 +2176,7 @@ function applyItemToRow(rowIdx, item) {
     row._base_rate = base
     const cpFactor = customerPricing.value[item.item_code]
     row._cp_applied = cpFactor != null
-    row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
+    row.rate = modifiedRate(base, item.item_code)
     // row.discount is handled by useDiscountRules watcher
   }
   recalcAmount(rowIdx)
@@ -2182,7 +2230,7 @@ function onItemSearchSelectMultiple(entries) {
   for (const entry of entries) {
     const baseRate = getItemRateForPriceList(entry, entry.uom) || 0
     const cpApplied = customerPricing.value[entry.item_code] != null
-    const rate = parseFloat((baseRate * combinedFactor(entry.item_code)).toFixed(precision))
+    const rate = modifiedRate(baseRate, entry.item_code)
     const qty = entry.qty
     items.value.push({
       item_code: entry.item_code, item_name: entry.item_name, qty, uom: entry.uom || 'Nos',
@@ -2423,7 +2471,7 @@ function setPendingItem(item) {
   item._base_rate = base
   const cpFactor = customerPricing.value[item.item_code]
   item._cp_applied = cpFactor != null
-  item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
+  item.rate = modifiedRate(base, item.item_code)
   pendingItem.value = item
   nextTick(() => {
     pendingQtyInput.value?.focus()
@@ -2491,6 +2539,7 @@ function handleCustomerSelected(cust, opts = {}) {
       i._is_manual_rate = false
     })
     ignoreModifier.value = false
+    applyModifierDiscount()
   }
   customerPricing.value = {}
   if (repriceNow) reapplyCustomerPricing()

@@ -213,8 +213,9 @@
         <span v-if="!keypadVisible" class="text-xs text-[var(--color-text-muted)]">
           {{ activeRows.length }} {{ activeRows.length === 1 ? 'item' : 'items' }} · Qty {{ fmtQty(totalQty) }}
           <template v-if="taxTemplate && !isInclusive"> · tax extra</template>
+          <template v-if="!isReadOnly && billDiscountPct > 0"> · {{ billDiscountPct }}% bill disc</template>
         </span>
-        <span class="font-mono font-black tabular-nums" :class="keypadVisible ? 'truncate text-lg' : 'text-2xl'">{{ money(isReadOnly && loadedTotal != null ? loadedTotal : subTotal) }}</span>
+        <span class="font-mono font-black tabular-nums" :class="keypadVisible ? 'truncate text-lg' : 'text-2xl'">{{ money(isReadOnly && loadedTotal != null ? loadedTotal : discountedTotal) }}</span>
       </div>
       <div class="flex gap-1.5" :class="keypadVisible ? 'shrink-0' : ''">
         <button
@@ -513,6 +514,7 @@ const round = v => parseFloat((Number(v) || 0).toFixed(precision))
 const netRate = row => round((row.rate || 0) * (1 - (Number(row.discount) || 0) / 100))
 const rowAmount = row => round((Number(row.qty) || 0) * netRate(row))
 const subTotal = computed(() => round(activeRows.value.reduce((s, r) => s + rowAmount(r), 0)))
+const discountedTotal = computed(() => round(subTotal.value * (1 - billDiscountPct.value / 100)))
 const totalQty = computed(() => activeRows.value.reduce((s, r) => s + (Number(r.qty) || 0), 0))
 
 function money(v) {
@@ -553,9 +555,40 @@ function baseRateFor(cached, uom) {
   return parseFloat(cached.price || 0)
 }
 
+// Only a markup (modifier above 1) moves the row rates. A modifier below 1 leaves the rates
+// at the price list and is given as a bill discount instead — see billDiscountPct.
+function effectiveModifier() {
+  const mod = (!ignoreModifier.value && customerModifier.value != null) ? parseFloat(customerModifier.value) : 1
+  return mod > 1 ? mod : 1
+}
+
+// Bill discount % implied by a party modifier below 1 (0.9 → 10).
+function modifierDiscountPct() {
+  const mod = parseFloat(customerModifier.value)
+  if (ignoreModifier.value || !(mod > 0 && mod < 1)) return 0
+  return parseFloat(((1 - mod) * 100).toFixed(2))
+}
+
+// Bill discount % the save sends. The party modifier's discount wins; otherwise a loaded bill
+// keeps the discount it was saved with, unless that one came from a modifier no longer in force.
+// Return rows are priced from the original bill, net of its bill discount.
+const loadedDiscountPct = ref(0)
+const loadedDiscountIsAuto = ref(false)
+const billDiscountPct = computed(() => {
+  if (isReturn.value) return loadedDiscountPct.value
+  const fromModifier = modifierDiscountPct()
+  if (fromModifier > 0) return fromModifier
+  return loadedDiscountIsAuto.value ? 0 : loadedDiscountPct.value
+})
+
+// A marked-up rate (party modifier above 1) is rounded to the nearest whole rupee.
+function modifiedRate(baseRate, itemCode) {
+  const rate = (Number(baseRate) || 0) * combinedFactor(itemCode)
+  return effectiveModifier() > 1 ? Math.round(rate) : round(rate)
+}
+
 function combinedFactor(itemCode) {
-  let mod = (!ignoreModifier.value && customerModifier.value != null) ? customerModifier.value : 1
-  if (mod === 0) mod = 1
+  const mod = effectiveModifier()
   let cp = customerPricing.value[itemCode]
   if (cp === 0) cp = 1
   const factor = cp != null ? mod * cp : mod
@@ -563,7 +596,7 @@ function combinedFactor(itemCode) {
 }
 
 function rateFor(cached, uom) {
-  return round(baseRateFor(cached, uom) * combinedFactor(cached.item_code))
+  return modifiedRate(baseRateFor(cached, uom), cached.item_code)
 }
 
 function repriceRows() {
@@ -573,7 +606,7 @@ function repriceRows() {
     const cached = lookupItemInCache(row.item_code)
     if (!cached) continue
     row._base_rate = baseRateFor(cached, row.uom)
-    row.rate = round(row._base_rate * combinedFactor(row.item_code))
+    row.rate = modifiedRate(row._base_rate, row.item_code)
   }
 }
 
@@ -659,7 +692,7 @@ function onPendingUomChange() {
   const cached = p && lookupItemInCache(p.item_code)
   if (!cached) return
   const base = baseRateFor(cached, p.uom)
-  const rate = round(base * combinedFactor(p.item_code))
+  const rate = modifiedRate(base, p.item_code)
   p.baseRate = base
   p.computedRate = rate
   p.rate = String(rate)
@@ -680,7 +713,7 @@ function addItem(cached, uom = null) {
   // Every pick is its own bill line, even when the same item is entered again
   if (pending.value) commitPending()
   const base = baseRateFor(cached, rowUom)
-  const rate = round(base * combinedFactor(cached.item_code))
+  const rate = modifiedRate(base, cached.item_code)
   openPending({
     target: 'new',
     item_code: cached.item_code,
@@ -1058,6 +1091,8 @@ async function loadBill(name) {
     customerState.value = data.state || ''
     customerModifier.value = data.customer_billing_details?.pricelist_multiplication_factor ?? null
     customerPricing.value = {}
+    loadedDiscountPct.value = Number(data.discount_percentage) || 0
+    loadedDiscountIsAuto.value = loadedDiscountPct.value > 0 && loadedDiscountPct.value === modifierDiscountPct()
     _loadedExtras = data
     rows.value = (data.items || []).map(i => {
       const discount = Number(i.discount) || 0
@@ -1105,6 +1140,8 @@ async function newBill(confirmDiscard = true) {
   rows.value = []
   mop.value = 'Cash'
   ignoreModifier.value = false
+  loadedDiscountPct.value = 0
+  loadedDiscountIsAuto.value = false
   _loadedExtras = null
   await setCustomer('', '')
   warehouse.value = userDefaults.warehouse || ''
@@ -1157,8 +1194,8 @@ async function saveBill() {
     posting_date: extra?.posting_date || serverToday(),
     update_stock: 1,
     price_list: priceList.value,
-    discount_pct: extra?.discount_percentage || '',
-    discount_amt: extra?.additional_discount_amount || '',
+    discount_pct: billDiscountPct.value || '',
+    discount_amt: billDiscountPct.value > 0 ? '' : (extra?.additional_discount_amount || ''),
     tax_template: taxTemplate.value,
     cost_center: costCenter.value,
     warehouse: warehouse.value,
