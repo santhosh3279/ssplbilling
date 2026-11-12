@@ -1362,7 +1362,7 @@ async function loadInvoice(invoiceName) {
       // effectiveModifier(), not combinedFactor(): customerPricing is never loaded
       // by loadBill, so it still holds the previously opened customer's per-item
       // factors and would mis-flag rows that merely share an item code.
-      const expectedRate = parseFloat(((basePl) * effectiveModifier()).toFixed(precision))
+      const expectedRate = roundMarkedUp(basePl * effectiveModifier())
       const overridden = basePl > 0 && Math.abs(preDiscountRate - expectedRate) > 0.01
       return {
         item_code: i.item_code,
@@ -2362,7 +2362,7 @@ function detectPriceChange(item, focusTarget) {
     ? parseFloat((standardRate * (1 - getDiscPrecision(currentDiscount) / 100)).toFixed(precision))
     : currentRate
 
-  const priceListStandard = parseFloat((standardRate * combinedFactor(item.item_code)).toFixed(precision))
+  const priceListStandard = modifiedRate(standardRate, item.item_code)
   const rateChanged = Math.abs(priceListStandard - currentRate) > 0.001
   const discountChanged = Math.abs(currentDiscount) > 0.001
 
@@ -2590,7 +2590,7 @@ function onUomChange(idx) {
   if (cached) {
     const newRate = getItemRateForPriceList(cached, item.uom)
     item._base_rate = newRate
-    item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(precision))
+    item.rate = modifiedRate(newRate, item.item_code)
     // The row now carries the price list rate again, so it is no longer an
     // override and must follow later reprices.
     item._rate_overridden = false
@@ -2669,8 +2669,18 @@ function applyModifierDiscount() {
   }
 }
 
+// A marked-up rate (party modifier above 1) is rounded to the nearest whole rupee.
+function roundMarkedUp(rate) {
+  return effectiveModifier() > 1 ? Math.round(rate) : parseFloat(rate.toFixed(precision))
+}
+
 function applyModifierToRate(baseRate) {
-  return parseFloat(((baseRate || 0) * effectiveModifier()).toFixed(precision))
+  return roundMarkedUp((baseRate || 0) * effectiveModifier())
+}
+
+// Row rate for a price list rate: party modifier times the per-item customer factor.
+function modifiedRate(baseRate, item_code) {
+  return roundMarkedUp((baseRate || 0) * combinedFactor(item_code))
 }
 
 function combinedFactor(item_code) {
@@ -2711,7 +2721,7 @@ function updateTableRates() {
     if (cached) {
       const newRate = getItemRateForPriceList(cached, item.uom)
       item._base_rate = newRate
-      item.rate = parseFloat(((newRate || 0) * combinedFactor(item.item_code)).toFixed(precision))
+      item.rate = modifiedRate(newRate, item.item_code)
       recalcAmount(idx)
     }
   })
@@ -2738,7 +2748,7 @@ watch(isReturn, (val) => {
       if (cached) {
         const base = getItemRateForPriceList(cached, item.uom)
         item._base_rate = base
-        item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
+        item.rate = modifiedRate(base, item.item_code)
         // discount is reapplied by useDiscountRules unless the operator ticked Ignore Rule
       }
     }
@@ -2819,7 +2829,7 @@ function reapplyCustomerPricing() {
     if (item.deleted || item._is_free || item._rate_overridden || item._retain_rate) return
     const base = item.price_list_rate || item._base_rate || item.rate
     item._base_rate = base
-    item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
+    item.rate = modifiedRate(base, item.item_code)
     item._cp_applied = customerPricing.value[item.item_code] != null
     recalcAmount(idx)
   })
@@ -2835,7 +2845,7 @@ watch(ignoreModifier, () => {
     if (item._rate_overridden) return
     const base = item._base_rate ?? item.rate
     item._base_rate = base
-    item.rate = parseFloat(((base || 0) * combinedFactor(item.item_code)).toFixed(precision))
+    item.rate = modifiedRate(base, item.item_code)
     item.amount = parseFloat(((item.qty || 0) * item.rate * (1 - getDiscPrecision(item.discount) / 100)).toFixed(precision))
   })
 })
@@ -3077,7 +3087,7 @@ function applyItemToRow(rowIdx, item) {
       row._base_rate = base
       const cpFactor = customerPricing.value[item.item_code]
       row._cp_applied = cpFactor != null
-      row.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
+      row.rate = modifiedRate(base, item.item_code)
       // row.discount is handled by useDiscountRules watcher
     }
     // A batch belongs to one item
@@ -3188,7 +3198,7 @@ function onItemSearchSelectMultiple(entries) {
     } else {
       baseRate = getItemRateForPriceList(entry, entry.uom) || 0
       cpApplied = customerPricing.value[entry.item_code] != null
-      rate = parseFloat((baseRate * combinedFactor(entry.item_code)).toFixed(precision))
+      rate = modifiedRate(baseRate, entry.item_code)
       discount = 0
     }
     const qty = isReturn.value ? -Math.abs(entry.qty) : entry.qty
@@ -3492,7 +3502,7 @@ function onPendingUomChange() {
   if (cached) {
     const newRate = getItemRateForPriceList(cached, p.uom)
     p._base_rate = newRate
-    p.rate = parseFloat(((newRate || 0) * combinedFactor(p.item_code)).toFixed(precision))
+    p.rate = modifiedRate(newRate, p.item_code)
   }
 }
 
@@ -3507,7 +3517,7 @@ function setPendingItem(item) {
     item._base_rate = base
     const cpFactor = customerPricing.value[item.item_code]
     item._cp_applied = cpFactor != null
-    item.rate = parseFloat((base * combinedFactor(item.item_code)).toFixed(precision))
+    item.rate = modifiedRate(base, item.item_code)
     item.discount = 0
   }
   item.batch_no = item.batch_no || ''
