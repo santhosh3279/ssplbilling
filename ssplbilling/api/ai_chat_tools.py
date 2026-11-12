@@ -392,7 +392,7 @@ TOOLS += [
 			"the cash + bank balance from today's balance at that run-rate, with the lowest week and the "
 			"runway when cash is shrinking. Also receivables and payables (GL totals, open invoices aged "
 			"0-30 / 31-60 / 61-90 / 90+ days, days of sales / purchases outstanding) and the balance left "
-			"if every open supplier bill were paid now. Use for 'cash flow', 'cash forecast', 'will we "
+			"if every supplier were paid now. Use for 'cash flow', 'cash forecast', 'will we "
 			"have enough money', 'runway', 'money coming in / going out'. Whole company, not per branch."
 		),
 		"input_schema": {
@@ -1629,7 +1629,7 @@ def cashflow_forecast(weeks=8, history_weeks=12, company=None):
 			"days_purchases_outstanding": (
 				flt(payable["gl_total"] / daily_purchases, 1) if daily_purchases else None
 			),
-			"balance_if_open_bills_paid_now": flt(balance - payable["open_invoices"], 2),
+			"balance_if_payables_paid_now": flt(balance - payable["gl_total"], 2),
 			"forecast": forecast,
 			"by_week": by_week,
 		}
@@ -1643,10 +1643,13 @@ def cashflow_forecast(weeks=8, history_weeks=12, company=None):
 			"Cash, bank and UPI accounts only; transfers between them are left out. Projection = today's "
 			"balance + the average weekly net of the history weeks (the run-rate already includes cash sales "
 			"and customer collections, supplier payments and expenses); it is not a schedule of dues. "
-			"Open invoices have no payment terms, so receivable / payable are aged by invoice date, and "
-			"*_falling_due only counts invoices whose due date lies ahead (usually 0). gl_total is the "
-			"party ledger balance; unscheduled = gl_total - open invoices (opening balances, journal "
-			"entries, advances). Days outstanding = gl_total / average daily invoiced value of the history. "
+			"gl_total = what parties owe / are owed per the party ledger (same as customer_outstanding / "
+			"supplier_outstanding); advances = parties in credit. Many payments are not allocated to bills, "
+			"so each party's balance is matched to its newest open invoices (oldest bills taken as paid) and "
+			"only that invoice_backed part is aged by invoice date; unscheduled = gl_total - invoice_backed "
+			"(opening balances, journal entries); invoice_outstanding_unadjusted is the raw bill outstanding, "
+			"overstated by unallocated payments. Bills have no payment terms, so *_falling_due only counts "
+			"due dates ahead (usually 0). Days outstanding = gl_total / average daily invoiced value of the history. "
 			"week_to_date is the current week so far, not in the averages. Whole company, not per branch."
 		),
 		"companies": companies,
@@ -1654,21 +1657,41 @@ def cashflow_forecast(weeks=8, history_weeks=12, company=None):
 
 
 def _cashflow_party(party_type, company_filter, today, window_end):
-	"""{company: {gl_total, open_invoices, unscheduled, overdue, ageing, _due: {week end: amount}}}."""
+	"""{company: {gl_total, advances, invoice_backed, unscheduled, overdue, ageing, _due: {week end: amount}}}.
+
+	Many payments here are posted on account without being allocated to bills, so invoice
+	outstanding overstates what is owed. Each party's ledger balance is the truth: it is laid on
+	that party's open invoices newest first (the oldest bills taken as paid), and only that part
+	is aged. gl_total / advances match customer_outstanding / supplier_outstanding."""
 	cfg = PARTIES[party_type]
-	out = {}
-	for r in _gl_balances({**company_filter, "party_type": party_type, "is_cancelled": 0}, ["company"]):
-		out.setdefault(r["company"], _cashflow_party_empty())["gl_total"] = flt(cfg["sign"] * r["balance"], 2)
+	key = cfg["key"]
+	out, owed = {}, {}
+	for r in _gl_balances(
+		{**company_filter, "party_type": party_type, "is_cancelled": 0}, ["company", "party"]
+	):
+		side = out.setdefault(r["company"], _cashflow_party_empty())
+		balance = cfg["sign"] * r["balance"]
+		if balance > 0:
+			side["gl_total"] += balance
+			owed[(r["company"], r["party"])] = balance
+		else:
+			side["advances"] += balance
 	invoices = _get_list(
 		cfg["invoice"],
-		filters={**company_filter, "docstatus": 1, "outstanding_amount": ["!=", 0]},
-		fields=["company", "posting_date", "due_date", "outstanding_amount"],
+		filters={**company_filter, "docstatus": 1, "outstanding_amount": [">", 0]},
+		fields=["company", key, "posting_date", "due_date", "outstanding_amount"],
+		order_by="posting_date desc, name desc",
 		limit=0,
 	)
 	for inv in invoices:
 		side = out.setdefault(inv.company, _cashflow_party_empty())
-		amount = flt(inv.outstanding_amount)
-		side["open_invoices"] += amount
+		side["invoice_outstanding_unadjusted"] += flt(inv.outstanding_amount)
+		party = (inv.company, inv[key])
+		amount = min(flt(inv.outstanding_amount), owed.get(party, 0.0))
+		if amount <= 0:
+			continue
+		owed[party] -= amount
+		side["invoice_backed"] += amount
 		age = date_diff(today, inv.posting_date)
 		label = next(lbl for days, lbl in AGE_BUCKETS if days is None or age <= days)
 		side["ageing"][label] += amount
@@ -1680,9 +1703,9 @@ def _cashflow_party(party_type, company_filter, today, window_end):
 			week_end = str(getdate(frappe.utils.add_days(today, 7 * -(-date_diff(due, today) // 7))))
 			side["_due"][week_end] = side["_due"].get(week_end, 0.0) + amount
 	for side in out.values():
-		side["open_invoices"] = flt(side["open_invoices"], 2)
-		side["overdue"] = flt(side["overdue"], 2)
-		side["unscheduled"] = flt(side["gl_total"] - side["open_invoices"], 2)
+		for k in ("gl_total", "advances", "invoice_backed", "overdue", "invoice_outstanding_unadjusted"):
+			side[k] = flt(side[k], 2)
+		side["unscheduled"] = flt(side["gl_total"] - side["invoice_backed"], 2)
 		side["ageing"] = {k: flt(v, 2) for k, v in side["ageing"].items()}
 	return out
 
@@ -1690,8 +1713,10 @@ def _cashflow_party(party_type, company_filter, today, window_end):
 def _cashflow_party_empty():
 	return {
 		"gl_total": 0.0,
-		"open_invoices": 0.0,
+		"advances": 0.0,
+		"invoice_backed": 0.0,
 		"unscheduled": 0.0,
+		"invoice_outstanding_unadjusted": 0.0,
 		"overdue": 0.0,
 		"ageing": {label: 0.0 for _days, label in AGE_BUCKETS},
 		"_due": {},
