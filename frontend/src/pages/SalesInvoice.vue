@@ -1329,6 +1329,7 @@ async function loadInvoice(invoiceName) {
     // Discounts
     discountPct.value = data.discount_percentage || ''
     discountDirectAmt.value = data.additional_discount_amount || ''
+    autoModifierDiscount = modifierDiscountPct() === (parseFloat(discountPct.value) || 0) ? modifierDiscountPct() : 0
 
     // Custom address
     customAddress.value = {
@@ -1804,6 +1805,7 @@ async function clearBill() {
   editingField.value = null
   discountPct.value = ''
   discountDirectAmt.value = ''
+  autoModifierDiscount = 0
   freightEntry.value = ''
   upiAmount.value = 0
   cardAmount.value = 0
@@ -2200,6 +2202,7 @@ async function closePrintModal() {
   editingField.value = null
   discountPct.value = ''
   discountDirectAmt.value = ''
+  autoModifierDiscount = 0
   freightEntry.value = ''
   upiAmount.value = 0
   cardAmount.value = 0
@@ -2626,9 +2629,44 @@ function recalcAmount(idx) {
   item.amount = parseFloat(((item.qty || 0) * netRate).toFixed(precision))
 }
 
+// Only a markup (modifier above 1) moves the row rates. A modifier below 1 leaves
+// the rates at the price list and is given as a bill discount instead — see
+// modifierDiscountPct().
 function effectiveModifier() {
-  const mod = (!ignoreModifier.value && customerModifier.value != null) ? customerModifier.value : 1
-  return mod === 0 ? 1 : mod
+  const mod = (!ignoreModifier.value && customerModifier.value != null) ? parseFloat(customerModifier.value) : 1
+  return mod > 1 ? mod : 1
+}
+
+// Bill discount % implied by a party modifier below 1 (0.9 → 10).
+function modifierDiscountPct() {
+  const mod = parseFloat(customerModifier.value)
+  if (ignoreModifier.value || !(mod > 0 && mod < 1)) return 0
+  return parseFloat(((1 - mod) * 100).toFixed(2))
+}
+
+// The bill discount % this page last set from the party modifier. Lets a party
+// change or Ignore Modifier take back its own discount without touching one the
+// operator typed in.
+let autoModifierDiscount = 0
+
+function clearModifierDiscount() {
+  if (autoModifierDiscount > 0 && (parseFloat(discountPct.value) || 0) === autoModifierDiscount) {
+    discountPct.value = ''
+  }
+  autoModifierDiscount = 0
+}
+
+function applyModifierDiscount() {
+  // Return rows are priced from the original bill, net of its bill discount.
+  if (isReturn.value) return
+  const next = modifierDiscountPct()
+  if (next > 0) {
+    discountPct.value = next
+    discountDirectAmt.value = ''
+    autoModifierDiscount = next
+  } else {
+    clearModifierDiscount()
+  }
 }
 
 function applyModifierToRate(baseRate) {
@@ -2716,6 +2754,10 @@ watch(isReturn, (val) => {
       }
     }
   }
+  if (!isLoadingBill.value) {
+    if (val) clearModifierDiscount()
+    else applyModifierDiscount()
+  }
 })
 
 // Reprice all rows when price list is changed in settings panel
@@ -2753,6 +2795,7 @@ async function applyCustomerPricingToRows() {
     customerPricing.value = {}
   }
   reapplyCustomerPricing()
+  applyModifierDiscount()
   focusMopAfterPartyChange()
 }
 
@@ -2787,6 +2830,7 @@ watch(ignoreModifier, () => {
   // synchronous block that assigns items.value, so an unguarded callback
   // reprices the rows it just loaded.
   if (isReturn.value || isLoadingBill.value) return
+  applyModifierDiscount()
   items.value.forEach(item => {
     if (item._rate_overridden) return
     const base = item._base_rate ?? item.rate
@@ -3541,6 +3585,7 @@ function handleCustomerSelected(cust, opts = {}) {
   } else if (repriceNow) {
     items.value.forEach(i => { i._retain_rate = false })
     ignoreModifier.value = false
+    applyModifierDiscount()
   }
   customerPricing.value = {}
   if (repriceNow) reapplyCustomerPricing()
