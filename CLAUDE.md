@@ -165,20 +165,22 @@ Use conventional commit types: `feat`, `fix`, `refactor`, `chore`, `docs`, `styl
 
 ## Testing After Sales Invoice Changes
 
-> **MANDATORY — a change to the Sales Invoice screen is not done until the tester bot passes.**
+> **Ask before running the tester bot. Do not run it on your own after every change** — it takes about 5 minutes.
 
-Applies to any edit of `frontend/src/pages/SalesInvoice.vue`, or of something it renders or prices with: `components/Item_Invoice_Template.vue`, `Userseries.vue`, `CustomerSearchModal.vue`, `Warning.vue`, `ErrorWindow.vue`, `composables/useDiscountRules.js`, and the save endpoints in `ssplbilling/api/sales.py`.
+Applies to edits of `frontend/src/pages/SalesInvoice.vue`, or of something it renders or prices with: `components/Item_Invoice_Template.vue`, `Userseries.vue`, `CustomerSearchModal.vue`, `Warning.vue`, `ErrorWindow.vue`, `composables/useDiscountRules.js`, and the save endpoints in `ssplbilling/api/sales.py`.
 
-1. Build, then run the Sales Invoice scenarios, before the post-task commit:
+1. Finish and commit the change as usual, then **ask the user** (`AskUserQuestion`) whether to run the Sales Invoice tests. Recommend running when the change touches rates, discounts, tax, totals, party handling or saving; recommend skipping for text, styling or layout-only changes.
+2. Run without asking only when the user asked for a test run in the request.
+3. To run: build first, then the Sales Invoice scenarios.
 
    ```bash
    cd frontend && yarn build && cd ../e2e && npm test -- tests/sales-invoice
    ```
 
-2. All must pass. On a failure, read the expected / received values and the screenshot in `e2e/test-results/`, then fix the code. Change a test's expectation only when the user asked for that behaviour to change, and say so in the response.
-3. New or changed behaviour gets a scenario in `e2e/tests/sales-invoice/` in the same task; a bug fix gets one that fails before the fix. New elements the bot must reach get a `data-testid` (never select by CSS class or position) and a helper in `e2e/lib/SalesInvoicePage.js`.
-4. Never remove or rename an existing `data-testid` without updating `e2e/lib/`.
-5. Report the result in the response as `passed / total` (e.g. "tester bot: 13/13 passed"). If it could not be run (site down, browser missing), say so plainly instead of claiming it passed.
+4. On a failure, read the expected / received values and the screenshot in `e2e/test-results/`, then fix the code. Change a test's expectation only when the user asked for that behaviour to change, and say so in the response.
+5. Report the result as `passed / total` (e.g. "tester bot: 13/13 passed"). If the bot was not run, say "tester bot not run" — never imply it passed.
+6. Never remove or rename an existing `data-testid` without updating `e2e/lib/`. New elements the bot must reach get a `data-testid` (never select by CSS class or position) and a helper in `e2e/lib/SalesInvoicePage.js`.
+7. Adding a scenario for new behaviour or a fixed bug is also ask-first; offer it in the same question.
 
 The bot only saves drafts for `TESTBOT …` customers on the dev site and deletes them afterwards; it never submits.
 
