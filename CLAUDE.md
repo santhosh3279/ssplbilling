@@ -23,6 +23,10 @@ ssplbilling/                     ← Frappe app root
 │   │   └── page/
 │   │       └── wholesale_billing/  ← Legacy Frappe desk page (JS/HTML)
 │   └── hooks.py
+├── e2e/                         ← Tester bot: Playwright end-to-end tests, own package.json (not in the production build)
+│   ├── lib/                     ← SalesInvoicePage.js (page helpers), backend.js, fixtures.js, env.js
+│   ├── scripts/seed.py          ← Creates / cleans the bot user and TESTBOT customers + items on the dev site
+│   └── tests/sales-invoice/     ← Scenarios
 └── frontend/                    ← Vue 3 SPA
     ├── src/
     │   ├── api.js               ← Canonical fetch()-based transport (frappeGet, frappePost + all domain calls)
@@ -89,6 +93,18 @@ bench --site <site> run-tests --app ssplbilling
 bench --site <site> run-tests --app ssplbilling --module ssplbilling.ssplbilling.doctype.sspl_billing_settings.test_sspl_billing_settings
 ```
 
+### End-to-end tests — tester bot (inside `e2e/`)
+
+```bash
+npm test                              # all scenarios, headless, ~5 min
+npm test -- tests/sales-invoice       # Sales Invoice scenarios only
+npm test -- -g "modifier"             # scenarios whose name matches
+npm run clean                         # delete drafts a crashed run left behind
+npm run seed                          # (re)create the bot user + TESTBOT data, rewrite e2e/.env
+```
+
+> Playwright drives the built SPA at `/frontend` on the dev site, so `bench start` must be running and `yarn build` must have been run after the last Vue change. `e2e/` has its own `package.json` (never installed by the production image) and refuses non-local sites. See `e2e/README.md`.
+
 ## Architecture
 
 ### Billing workflow (two-step)
@@ -146,6 +162,25 @@ git add -A && git commit -m "<type>: <description of what was done>"
 Both commits are required for every task, no matter how small. The before-commit captures the baseline; the after-commit records the change. Skipping either is not allowed.
 
 Use conventional commit types: `feat`, `fix`, `refactor`, `chore`, `docs`, `style`, `test`.
+
+## Testing After Sales Invoice Changes
+
+> **MANDATORY — a change to the Sales Invoice screen is not done until the tester bot passes.**
+
+Applies to any edit of `frontend/src/pages/SalesInvoice.vue`, or of something it renders or prices with: `components/Item_Invoice_Template.vue`, `Userseries.vue`, `CustomerSearchModal.vue`, `Warning.vue`, `ErrorWindow.vue`, `composables/useDiscountRules.js`, and the save endpoints in `ssplbilling/api/sales.py`.
+
+1. Build, then run the Sales Invoice scenarios, before the post-task commit:
+
+   ```bash
+   cd frontend && yarn build && cd ../e2e && npm test -- tests/sales-invoice
+   ```
+
+2. All must pass. On a failure, read the expected / received values and the screenshot in `e2e/test-results/`, then fix the code. Change a test's expectation only when the user asked for that behaviour to change, and say so in the response.
+3. New or changed behaviour gets a scenario in `e2e/tests/sales-invoice/` in the same task; a bug fix gets one that fails before the fix. New elements the bot must reach get a `data-testid` (never select by CSS class or position) and a helper in `e2e/lib/SalesInvoicePage.js`.
+4. Never remove or rename an existing `data-testid` without updating `e2e/lib/`.
+5. Report the result in the response as `passed / total` (e.g. "tester bot: 13/13 passed"). If it could not be run (site down, browser missing), say so plainly instead of claiming it passed.
+
+The bot only saves drafts for `TESTBOT …` customers on the dev site and deletes them afterwards; it never submits.
 
 ## Response Format
 
