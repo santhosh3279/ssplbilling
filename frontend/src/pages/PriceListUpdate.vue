@@ -110,7 +110,7 @@
                   <div class="flex flex-col gap-1.5 items-start w-full">
                     <div class="flex items-center gap-1.5">
                       <span>Calc</span>
-                      <span v-if="overrideSources.includes('competitive')" class="text-[18px] bg-[var(--color-highlight)]/20 text-[var(--color-highlight)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none" :title="`Using ${competitiveItemName} pricelist percentages`">Competitive</span>
+                      <span v-if="overrideSources.includes('competitive')" class="text-[18px] bg-[var(--color-highlight)]/20 text-[var(--color-highlight)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none" :title="`Using ${selectedCompetitiveItem} pricelist percentages`">Competitive</span>
                       <span v-if="overrideSources.includes('supplier')" class="text-[18px] bg-[var(--color-warning)]/20 text-[var(--color-warning)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none" title="Using supplier pricelist percentages">Supplier</span>
                       <span v-else-if="hasFetchedPercentages" class="text-[18px] bg-[var(--color-success)]/20 text-[var(--color-success)] px-1.5 py-0.5 rounded font-black uppercase tracking-wider leading-none">Fetched</span>
                     </div>
@@ -322,6 +322,7 @@
               <select
                 v-model="selectedCompetitiveItem"
                 data-testid="plu-competitive-item"
+                @change="onCompetitiveItemChange"
                 class="max-w-[320px] cursor-pointer rounded bg-transparent outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
               >
                 <option value="" class="bg-[var(--color-surface)] text-[var(--color-text)]">No Competitive Item</option>
@@ -464,6 +465,27 @@ const { competitiveItems, loading: competitiveLoading, lookupCompetitiveItem, re
 // Competitive Item picked in the header; saved to the Item's custom_competitive_item on Save All
 const selectedCompetitiveItem = ref('')
 const competitiveItemChanged = computed(() => selectedCompetitiveItem.value !== competitiveItemName.value)
+// Picking a Competitive Item puts its price list percentages into the Calc row; price lists it
+// does not cover (or clearing the picker) fall back to the markup the window loaded without it
+async function onCompetitiveItemChange() {
+  const name = selectedCompetitiveItem.value
+  const percentages = await competitivePercentages(name)
+  if (selectedCompetitiveItem.value !== name) return // picked again while loading
+  const sources = new Set()
+  for (const p of prices.value) {
+    const comp = percentages.find(cp => cp.pricelist === p.price_list)
+    if (comp) {
+      p.markup = parseFloat(comp.percentage) || 0
+      sources.add('competitive')
+    } else {
+      p.markup = p._base_markup ?? p.markup
+      if (p._base_source) sources.add(p._base_source)
+    }
+  }
+  overrideSources.value = ['competitive', 'supplier'].filter(s => sources.has(s))
+  if (name && !sources.has('competitive')) showToast(`${name} has no percentages for these price lists`, 'error')
+}
+
 // Refetch every Competitive Item, store it in the local (IndexedDB) snapshot and refresh the dropdown
 async function refreshCompetitiveList() {
   if (competitiveLoading.value) return
@@ -874,11 +896,7 @@ async function loadPrices(code) {
       const sup = supplierPercentages.find(sp => sp.pricelist === p.price_list)
       // 1. Prioritize fetched markup from child table in item master
       const fetched = (data.pricelist_percentages || []).find(fp => fp.pricelist === p.price_list)
-      if (comp) {
-        markup = parseFloat(comp.percentage) || 0
-        sources.add('competitive')
-      }
-      else if (sup) {
+      if (sup) {
         markup = parseFloat(sup.percentage) || 0
         sources.add('supplier')
       }
@@ -900,10 +918,19 @@ async function loadPrices(code) {
       // mark every price list as changed even when the user typed nothing
       const stockRate = (p.uom_rates || {})[stockUom.value]
       const rate = stockRate !== undefined ? stockRate : p.rate
+      // Markup without the competitive item, restored when the picker is cleared or changed
+      const baseMarkup = markup
+      const baseSource = sup ? 'supplier' : ''
+      if (comp) {
+        markup = parseFloat(comp.percentage) || 0
+        sources.add('competitive')
+      }
       const res = {
         ...p,
         rate,
         markup,
+        _base_markup: baseMarkup,
+        _base_source: baseSource,
         original_rate: rate,
         original_uom_rates: { ...(p.uom_rates || {}) },
       }
