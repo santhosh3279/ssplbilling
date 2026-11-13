@@ -130,6 +130,15 @@
               <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Item Name</span>
               <span class="text-2xl text-[var(--color-text)] truncate font-semibold">{{ results[selectedIdx].item_name }}</span>
             </div>
+            <div v-if="results[selectedIdx].offers.length" class="flex flex-col min-w-[150px] max-w-[30%]">
+              <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Active Offer</span>
+              <span
+                v-for="o in results[selectedIdx].offers"
+                :key="o.name"
+                class="truncate text-2xl font-semibold text-[var(--color-success)]"
+                :title="`${o.name}: ${o.label}`"
+              >🏷️ {{ o.label }}</span>
+            </div>
             <div class="flex flex-col flex-[0.35]">
               <span class="text-base uppercase text-[var(--color-text-muted)] font-medium">Suppliers</span>
               <span class="text-2xl text-[var(--color-text-muted)] truncate" :title="getSupplierListDisplay(results[selectedIdx])">{{ getSupplierListDisplay(results[selectedIdx]) }}</span>
@@ -182,7 +191,17 @@
                 <span>{{ item.item_code }}</span>
               </td>
               <td class="p-[5px]">
-                <div class="font-medium" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-text)]'">{{ item.item_name }}</div>
+                <div class="flex min-w-0 items-center gap-3">
+                  <div class="min-w-0 font-medium" :class="selectedIdx === idx ? 'text-[var(--color-text-on-highlight)] font-bold' : 'text-[var(--color-text)]'">{{ item.item_name }}</div>
+                  <span
+                    v-if="item.offers.length"
+                    class="max-w-[50%] shrink-0 truncate whitespace-nowrap rounded-full px-2 py-0.5 text-xl font-bold"
+                    :class="selectedIdx === idx
+                      ? 'bg-[var(--color-text-on-highlight)]/20 text-[var(--color-text-on-highlight)]'
+                      : 'bg-[var(--color-success)]/15 text-[var(--color-success)]'"
+                    :title="item.offers.map(o => `${o.name}: ${o.label}`).join('\n')"
+                  >🏷️ {{ item.offers.map(o => o.label).join(' | ') }}</span>
+                </div>
               </td>
               <td
                 v-if="quickQtyMode"
@@ -337,6 +356,7 @@ import ItemCreation from './ItemCreation.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { canAccessTile, canViewPurchasePrice } from '../composables/usePermission'
 import { getCipherMap } from '../encryption.js'
+import { isRuleLive, ruleCoversItem, ruleMatchesPriceList, offerLabel } from '../composables/useDiscountRules.js'
 import CustomerSearchModal from './CustomerSearchModal.vue'
 import {
   loadQuickQtyMap,
@@ -500,7 +520,7 @@ useSubwindowWatcher(computed(() => props.show), {
   }
 })
 
-const { items: allItems, refreshItemCache, lookupItemInCache, updateItemPriceInCache, lastSync, syncLoading: loading, lastParams } = useItemCache()
+const { items: allItems, refreshItemCache, lookupItemInCache, updateItemPriceInCache, lastSync, syncLoading: loading, lastParams, discountRules } = useItemCache()
 const { hasHistory, getItemHistoryQty } = useCustomerHistory()
 
 const query = ref('')
@@ -945,6 +965,22 @@ function updateItemInsight(item) {
   }
 }
 
+// ─── Discount Offers ─────────────────────────────────────────────────────────
+
+// Offers only apply when selling. Live rules for the active price list are filtered once;
+// each of the ≤100 visible rows then only checks coverage.
+const liveOfferRules = computed(() => {
+  if (props.searchType !== 'Sales') return []
+  return (discountRules.value || []).filter(r => isRuleLive(r) && ruleMatchesPriceList(r, props.priceList))
+})
+
+function itemOffers(item) {
+  if (!liveOfferRules.value.length) return []
+  return liveOfferRules.value
+    .filter(r => ruleCoversItem(r, item))
+    .map(r => ({ name: r.rule_name || r.name, label: offerLabel(r, item.item_code) }))
+}
+
 // ─── Local Filtering ─────────────────────────────────────────────────────────
 
 const results = computed(() => {
@@ -1014,7 +1050,8 @@ const results = computed(() => {
       ...i,
       price: displayPrice,
       has_history,
-      history_qty: has_history ? getItemHistoryQty(i.item_code) : 0
+      history_qty: has_history ? getItemHistoryQty(i.item_code) : 0,
+      offers: itemOffers(i)
     }
   })
 })
