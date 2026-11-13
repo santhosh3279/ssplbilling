@@ -311,6 +311,8 @@ def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None, phone=No
 		frappe.throw(_("Sales Invoice {0} not found").format(invoice_name))
 
 	now = now_datetime()
+	customer_name, bill_phone = _invoice_contact(invoice_name)
+	phone = _valid_phone(phone) or bill_phone
 	# ECR ids are plain alphanumeric in Paytm's sample; invoice series carry "-" and "/"
 	bill_no = _paytm_bill_no(invoice_name)
 	order_id = f"{bill_no[:30]}{now.strftime('%y%m%d%H%M%S%f')[:15]}"
@@ -326,11 +328,12 @@ def send_to_device(invoice_name, amount, tid, pay_mode="QR", user=None, phone=No
 			"device_name": device.device_name,
 			"tid": tid,
 			"transaction_datetime": txn_datetime,
+			# kept so the bill's UPI / Card Payment Entry remark can name the number
+			"customer_mobile": phone or None,
 		}
 	).insert(ignore_permissions=True)
 
-	customer_name, bill_phone = _invoice_contact(invoice_name)
-	_push_to_device(settings, txn, bill_no, pay_mode, customer_name, _valid_phone(phone) or bill_phone)
+	_push_to_device(settings, txn, bill_no, pay_mode, customer_name, phone)
 	return {"order_id": order_id, "device_name": device.device_name, "status": "Pending"}
 
 

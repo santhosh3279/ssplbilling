@@ -513,9 +513,9 @@ def _paytm_refs(invoice_name):
 	return upi_ref, card_ref
 
 
-def _paytm_upi_remarks(invoice_name, ref_no):
-	"""Payment Entry remarks for a UPI ref paid through a Paytm request that went to a phone:
-	the reference plus the mobile it was sent to. None when no such request matches."""
+def _paytm_upi_remarks(invoice_name, ref_no, label="UPI"):
+	"""Payment Entry remarks for a UPI / Card ref paid through a Paytm request carrying a phone:
+	the reference plus the customer's mobile. None when no such request matches."""
 	if not ref_no:
 		return None
 	for t in frappe.get_all(
@@ -525,7 +525,7 @@ def _paytm_upi_remarks(invoice_name, ref_no):
 		order_by="modified desc",
 	):
 		if ref_no in (t.rrn, t.paytm_txn_id, t.auth_code, t.order_id):
-			return f"UPI Ref {ref_no} · Mobile {t.customer_mobile}"
+			return f"{label} Ref {ref_no} · Mobile {t.customer_mobile}"
 	return None
 
 
@@ -774,7 +774,12 @@ def submit_invoice_with_payment(data=None, **kwargs):
 			original_upi_pe = pe_name
 
 	if card_amount > 0.01:
-		pe_name = _create_pe(card_amount, card_account, ref_no=card_ref_no)
+		pe_name = _create_pe(
+			card_amount,
+			card_account,
+			ref_no=card_ref_no,
+			remarks=_paytm_upi_remarks(si.name, card_ref_no, "Card"),
+		)
 		if pe_name:
 			payment_entries.append(pe_name)
 			original_card_pe = pe_name
