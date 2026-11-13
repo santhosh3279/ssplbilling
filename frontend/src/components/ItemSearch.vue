@@ -356,7 +356,7 @@ import ItemCreation from './ItemCreation.vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { canAccessTile, canViewPurchasePrice } from '../composables/usePermission'
 import { getCipherMap } from '../encryption.js'
-import { isRuleLive, ruleCoversItem, ruleMatchesPriceList, offerLabel } from '../composables/useDiscountRules.js'
+import { isRuleLive, ruleCoversItem, ruleMatchesPriceList, offerLabel, getRulePriceLists } from '../composables/useDiscountRules.js'
 import CustomerSearchModal from './CustomerSearchModal.vue'
 import {
   loadQuickQtyMap,
@@ -520,7 +520,7 @@ useSubwindowWatcher(computed(() => props.show), {
   }
 })
 
-const { items: allItems, refreshItemCache, lookupItemInCache, updateItemPriceInCache, lastSync, syncLoading: loading, lastParams, discountRules } = useItemCache()
+const { items: allItems, refreshItemCache, lookupItemInCache, updateItemPriceInCache, lastSync, syncLoading: loading, lastParams, discountRules, refreshDiscountRuleCache } = useItemCache()
 const { hasHistory, getItemHistoryQty } = useCustomerHistory()
 
 const query = ref('')
@@ -967,18 +967,24 @@ function updateItemInsight(item) {
 
 // ─── Discount Offers ─────────────────────────────────────────────────────────
 
-// Offers only apply when selling. Live rules for the active price list are filtered once;
-// each of the ≤100 visible rows then only checks coverage.
-const liveOfferRules = computed(() => {
-  if (props.searchType !== 'Sales') return []
-  return (discountRules.value || []).filter(r => isRuleLive(r) && ruleMatchesPriceList(r, props.priceList))
-})
+// Every live rule is badged, whatever the screen or price list, so the operator always sees an
+// item is on offer. Rules not for this screen's price list carry their price list(s) in the label.
+// Live rules are filtered once; each of the ≤100 visible rows then only checks coverage.
+const liveOfferRules = computed(() => (discountRules.value || []).filter(isRuleLive))
 
 function itemOffers(item) {
   if (!liveOfferRules.value.length) return []
   return liveOfferRules.value
     .filter(r => ruleCoversItem(r, item))
-    .map(r => ({ name: r.rule_name || r.name, label: offerLabel(r, item.item_code) }))
+    .map(r => {
+      const applies = props.searchType === 'Sales' && !!props.priceList && ruleMatchesPriceList(r, props.priceList)
+      const lists = getRulePriceLists(r)
+      const label = offerLabel(r, item.item_code)
+      return {
+        name: r.rule_name || r.name,
+        label: applies || !lists.length ? label : `${label} (${lists.join(', ')})`
+      }
+    })
 }
 
 // ─── Local Filtering ─────────────────────────────────────────────────────────
@@ -1188,6 +1194,8 @@ watch(() => props.show, async (newVal) => {
     if (!enabledPriceLists.value.length) {
       fetchEnabledPriceLists()
     }
+    // Rules are normally synced from the Dashboard; fetch them if this browser has none yet
+    if (!discountRules.value?.length) refreshDiscountRuleCache()
     // Re-scope/refresh the shared cache to THIS modal's warehouse + price list.
     // The global cache may have been populated warehouse-less (e.g. by Dashboard),
     // which shows all-warehouse aggregate stock. preloadItems() only refetches when
