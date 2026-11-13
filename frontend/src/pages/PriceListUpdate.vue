@@ -329,6 +329,17 @@
               </select>
               <span v-if="competitiveItemChanged" class="text-xl text-[var(--color-warning)]" title="Unsaved — saved with Save All (F8)">●</span>
             </label>
+            <button
+              v-if="currentItemCode"
+              type="button"
+              data-testid="plu-competitive-refresh"
+              :disabled="competitiveLoading"
+              class="flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1.5 text-xl text-[var(--color-text-muted)] transition-all hover:text-[var(--color-text)] disabled:opacity-50 outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              title="Refresh Competitive Items from the server"
+              @click="refreshCompetitiveList"
+            >
+              <span :class="{ 'animate-spin': competitiveLoading }" class="inline-block">🔄</span>
+            </button>
             <div class="text-sm text-[var(--color-text-muted)]">
               Total Price Lists: <span class="font-bold text-[var(--color-text)]">{{ prices.length }}</span>
               <span v-if="props.initialQty" class="ml-4">
@@ -448,11 +459,17 @@ const taxRate = ref(0)
 const toast = ref(null)
 
 const { lookupItemInCache, discountRules } = useItemCache()
-const { competitiveItems, lookupCompetitiveItem, refreshCompetitiveCache } = useCompetitiveCache()
+const { competitiveItems, loading: competitiveLoading, lookupCompetitiveItem, refreshCompetitiveCache } = useCompetitiveCache()
 
 // Competitive Item picked in the header; saved to the Item's custom_competitive_item on Save All
 const selectedCompetitiveItem = ref('')
 const competitiveItemChanged = computed(() => selectedCompetitiveItem.value !== competitiveItemName.value)
+// Refetch every Competitive Item, store it in the local (IndexedDB) snapshot and refresh the dropdown
+async function refreshCompetitiveList() {
+  if (competitiveLoading.value) return
+  const list = await refreshCompetitiveCache()
+  showToast(`Competitive Items refreshed (${(list || []).length})`, 'success')
+}
 // Keep the item's current competitive item selectable even before the cache lists it
 const competitiveItemOptions = computed(() => {
   const names = (competitiveItems.value || []).map(c => c.name)
