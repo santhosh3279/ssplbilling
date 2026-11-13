@@ -25,23 +25,6 @@
           <div v-if="cachedItem && cachedItem.stock !== undefined" class="rounded-full px-3 py-1 text-3xl font-bold" :class="cachedItem.stock <= 0 ? 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]' : 'bg-[var(--color-success)]/20 text-[var(--color-success)]'">
             Stock: {{ cachedItem.stock }} {{ cachedItem.uom || '' }}
           </div>
-          <label
-            v-if="currentItemCode"
-            class="flex items-center gap-2 rounded-full px-3 py-1 text-3xl font-bold"
-            :class="selectedCompetitiveItem ? 'bg-[var(--color-highlight)]/20 text-[var(--color-highlight)]' : 'bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)]'"
-            :title="overrideSources.includes('competitive') ? 'Competitive item percentages applied · saved to the Item on Save' : 'Competitive item (applied when Override is on) · saved to the Item on Save'"
-          >
-            <span>⚖️</span>
-            <select
-              v-model="selectedCompetitiveItem"
-              data-testid="plu-competitive-item"
-              class="max-w-[320px] cursor-pointer rounded bg-transparent outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
-            >
-              <option value="" class="bg-[var(--color-surface)] text-[var(--color-text)]">No Competitive Item</option>
-              <option v-for="c in competitiveItemOptions" :key="c" :value="c" class="bg-[var(--color-surface)] text-[var(--color-text)]">{{ c }}</option>
-            </select>
-            <span v-if="competitiveItemChanged" class="text-xl text-[var(--color-warning)]" title="Unsaved — saved with Save All (F8)">●</span>
-          </label>
           <div v-if="hsnSac" class="rounded-full bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1 text-3xl font-bold text-[var(--color-text-muted)]">
             HSN: {{ hsnSac }}
           </div>
@@ -328,11 +311,30 @@
       <!-- Footer -->
       <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4">
         <div class="flex items-center justify-between">
-          <div class="text-sm text-[var(--color-text-muted)]">
-            Total Price Lists: <span class="font-bold text-[var(--color-text)]">{{ prices.length }}</span>
-            <span v-if="props.initialQty" class="ml-4">
-              Qty: <span class="font-bold text-[var(--color-text)]">{{ props.initialQty }} {{ props.initialUom }}</span>
-            </span>
+          <div class="flex items-center gap-6">
+            <label
+              v-if="currentItemCode"
+              class="flex items-center gap-2 rounded-full px-3 py-1 text-2xl font-bold"
+              :class="selectedCompetitiveItem ? 'bg-[var(--color-highlight)]/20 text-[var(--color-highlight)]' : 'bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)]'"
+              :title="overrideSources.includes('competitive') ? 'Competitive item percentages applied · saved to the Item on Save' : 'Competitive item (applied when Override is on) · saved to the Item on Save'"
+            >
+              <span>⚖️</span>
+              <select
+                v-model="selectedCompetitiveItem"
+                data-testid="plu-competitive-item"
+                class="max-w-[320px] cursor-pointer rounded bg-transparent outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+              >
+                <option value="" class="bg-[var(--color-surface)] text-[var(--color-text)]">No Competitive Item</option>
+                <option v-for="c in competitiveItemOptions" :key="c" :value="c" class="bg-[var(--color-surface)] text-[var(--color-text)]">{{ c }}</option>
+              </select>
+              <span v-if="competitiveItemChanged" class="text-xl text-[var(--color-warning)]" title="Unsaved — saved with Save All (F8)">●</span>
+            </label>
+            <div class="text-sm text-[var(--color-text-muted)]">
+              Total Price Lists: <span class="font-bold text-[var(--color-text)]">{{ prices.length }}</span>
+              <span v-if="props.initialQty" class="ml-4">
+                Qty: <span class="font-bold text-[var(--color-text)]">{{ props.initialQty }} {{ props.initialUom }}</span>
+              </span>
+            </div>
           </div>
           <div class="flex gap-3">
             <button
