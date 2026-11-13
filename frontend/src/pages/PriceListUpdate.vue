@@ -25,13 +25,23 @@
           <div v-if="cachedItem && cachedItem.stock !== undefined" class="rounded-full px-3 py-1 text-3xl font-bold" :class="cachedItem.stock <= 0 ? 'bg-[var(--color-danger)]/20 text-[var(--color-danger)]' : 'bg-[var(--color-success)]/20 text-[var(--color-success)]'">
             Stock: {{ cachedItem.stock }} {{ cachedItem.uom || '' }}
           </div>
-          <div
-            v-if="competitiveItemName"
-            class="rounded-full bg-[var(--color-highlight)]/20 px-3 py-1 text-3xl font-bold text-[var(--color-highlight)]"
-            :title="overrideSources.includes('competitive') ? 'Competitive item percentages applied' : 'Competitive item (applied when Override is on)'"
+          <label
+            v-if="currentItemCode"
+            class="flex items-center gap-2 rounded-full px-3 py-1 text-3xl font-bold"
+            :class="selectedCompetitiveItem ? 'bg-[var(--color-highlight)]/20 text-[var(--color-highlight)]' : 'bg-[var(--color-surface-raised)] border border-[var(--color-border)] text-[var(--color-text-muted)]'"
+            :title="overrideSources.includes('competitive') ? 'Competitive item percentages applied · saved to the Item on Save' : 'Competitive item (applied when Override is on) · saved to the Item on Save'"
           >
-            ⚖️ {{ competitiveItemName }}
-          </div>
+            <span>⚖️</span>
+            <select
+              v-model="selectedCompetitiveItem"
+              data-testid="plu-competitive-item"
+              class="max-w-[320px] cursor-pointer rounded bg-transparent outline-none focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]"
+            >
+              <option value="" class="bg-[var(--color-surface)] text-[var(--color-text)]">No Competitive Item</option>
+              <option v-for="c in competitiveItemOptions" :key="c" :value="c" class="bg-[var(--color-surface)] text-[var(--color-text)]">{{ c }}</option>
+            </select>
+            <span v-if="competitiveItemChanged" class="text-xl text-[var(--color-warning)]" title="Unsaved — saved with Save All (F8)">●</span>
+          </label>
           <div v-if="hsnSac" class="rounded-full bg-[var(--color-surface-raised)] border border-[var(--color-border)] px-3 py-1 text-3xl font-bold text-[var(--color-text-muted)]">
             HSN: {{ hsnSac }}
           </div>
@@ -373,7 +383,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
 import { useSubwindow } from '../services/shortcutManager'
-import { useItemCache } from '../services/itemCache.js'
+import { useItemCache, patchItemInCache } from '../services/itemCache.js'
 import { useCompetitiveCache } from '../services/competitiveCache.js'
 import { useCustomerHistory } from '../composables/useCustomerHistory.js'
 import { getRulePriceLists } from '../composables/useDiscountRules.js'
@@ -436,7 +446,18 @@ const taxRate = ref(0)
 const toast = ref(null)
 
 const { lookupItemInCache, discountRules } = useItemCache()
-const { lookupCompetitiveItem, refreshCompetitiveCache } = useCompetitiveCache()
+const { competitiveItems, lookupCompetitiveItem, refreshCompetitiveCache } = useCompetitiveCache()
+
+// Competitive Item picked in the header; saved to the Item's custom_competitive_item on Save All
+const selectedCompetitiveItem = ref('')
+const competitiveItemChanged = computed(() => selectedCompetitiveItem.value !== competitiveItemName.value)
+// Keep the item's current competitive item selectable even before the cache lists it
+const competitiveItemOptions = computed(() => {
+  const names = (competitiveItems.value || []).map(c => c.name)
+  const current = competitiveItemName.value
+  if (current && !names.includes(current)) names.unshift(current)
+  return names
+})
 
 // Competitive Item name for an item: from the item cache, else from the server
 async function resolveCompetitiveItemName(code, cached) {
@@ -810,6 +831,7 @@ async function loadPrices(code) {
     const savedMarkups = JSON.parse(localStorage.getItem('sspl_pricelist_markups') || '{}')
 
     competitiveItemName.value = await resolveCompetitiveItemName(code, cached)
+    selectedCompetitiveItem.value = competitiveItemName.value
 
     let competitive = []
     let supplierPercentages = []
@@ -963,14 +985,18 @@ async function savePrices() {
     return false
   })
   const factorChanged = factor.value !== props.initialFactor
+  const competitiveChanged = competitiveItemChanged.value
 
-  if (!changedPrices.length && !factorChanged) {
+  if (!changedPrices.length && !factorChanged && !competitiveChanged) {
     if (props.isSubWindow) emit('close')
     return
   }
 
   saving.value = true
   try {
+    if (competitiveChanged) {
+      await saveCompetitiveItem(code)
+    }
     if (changedPrices.length) {
       await frappePost('ssplbilling.api.pricelist_api.update_multiple_prices', {
         item_code: code,
@@ -982,7 +1008,8 @@ async function savePrices() {
     emit('saved', {
       changedPrices,
       factor: factor.value,
-      factorChanged
+      factorChanged,
+      competitiveItem: competitiveChanged ? competitiveItemName.value : undefined
     })
 
     if (props.isSubWindow) emit('close')
@@ -991,6 +1018,21 @@ async function savePrices() {
     showToast('Update failed: ' + e.message, 'error')
   } finally {
     saving.value = false
+  }
+}
+
+// Write the header's Competitive Item to the Item and mirror it into the local item cache,
+// so the next open (and the override percentages) see it without waiting for the item sync
+async function saveCompetitiveItem(code) {
+  const saved = await frappePost('ssplbilling.api.pricelist_api.set_item_competitive_item', {
+    item_code: code,
+    competitive_item: selectedCompetitiveItem.value || ''
+  })
+  competitiveItemName.value = saved || ''
+  selectedCompetitiveItem.value = competitiveItemName.value
+  const cached = lookupItemInCache(code)
+  if (cached && cached.item_code === code) {
+    patchItemInCache(code, { ...cached, custom_competitive_item: competitiveItemName.value })
   }
 }
 
@@ -1119,6 +1161,7 @@ onMounted(() => {
     return
   }
 
+  if (!competitiveItems.value.length) refreshCompetitiveCache()
   const code = props.itemCode || route.query.item_code
   if (code) {
     loadPrices(code)

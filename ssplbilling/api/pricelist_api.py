@@ -235,3 +235,14 @@ def get_price_list_rates(price_list):
 		"selling": int(pl.selling or 0),
 		"rates": [[code, uom or "", float(rate or 0)] for code, uom, rate in rows],
 	}
+
+
+@frappe.whitelist()
+def set_item_competitive_item(item_code, competitive_item=None):
+	"""Link the Item to a Competitive Item (empty clears it). Saved through the doc so Item hooks fire."""
+	if competitive_item and not frappe.db.exists("Competitive Item", competitive_item):
+		frappe.throw(f"Competitive Item {competitive_item} not found")
+	item = frappe.get_doc("Item", item_code)
+	item.custom_competitive_item = competitive_item or None
+	item.save()
+	return item.custom_competitive_item or ""
