@@ -217,6 +217,18 @@ class SalesInvoicePage {
     return out
   }
 
+  /** Multi Edit → Rate Edit: apply `pct` (positive lowers every rate, negative raises it,
+   *  0 puts the rates back), then close. Returns the "Applied now" text. */
+  async setRateEdit(pct) {
+    await this.openMultiEdit()
+    await this.id('multi-edit-tab-rate').click()
+    await this.id('rate-edit-pct').fill(String(pct))
+    await this.id('rate-edit-apply').click()
+    const applied = await this.id('rate-edit-applied').innerText()
+    await this.closeMultiEdit()
+    return applied.trim()
+  }
+
   /** Is this row soft-deleted (still listed, marked Deleted)? */
   async isRowDeleted(itemCode, nth = 0) {
     return (await this.row(itemCode, nth).getAttribute('data-deleted')) === '1'

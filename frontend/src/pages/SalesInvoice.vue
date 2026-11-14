@@ -770,8 +770,11 @@
       :show="showMultiEdit"
       :rows="multiEditRows"
       :checked="multiEditChecked"
+      :rate-pct="rateEditPct"
+      :rate-rows="rateEditRows.length"
       @close="closeMultiEdit"
       @toggle="toggleMultiEdit"
+      @rate="applyRateEdit"
     />
     <JumpToRowModal
       v-model:show="showJumpModal"
@@ -3064,7 +3067,41 @@ watch(() => items.value, (rows) => {
   const kept = new Set([...multiEditRemoved.value].filter(r => onBill.has(r)))
   multiEditRemoved.value = kept
   if (!kept.size) multiEditChecked.value = []
+  if (!rows.some(r => r._rate_edit_from != null)) rateEditPct.value = 0
 })
+
+// Rate Edit: every row's rate × (1 − pct / 100), so a positive % lowers it and a negative %
+// raises it. Always worked out from the rate the row had before Rate Edit (_rate_edit_from),
+// so applying again never compounds and 0 % puts the rates back. An edited rate counts as an
+// override, so a reprice / party change leaves it alone.
+const rateEditPct = ref(0)
+const rateEditRows = computed(() => items.value.filter(i => !i.deleted && !i._is_free))
+
+function applyRateEdit(pct) {
+  if (isReadOnly.value || isLoadingBill.value || submitting.value) return
+  pct = parseFloat(pct) || 0
+  if (pct >= 100) return
+  items.value.forEach((item, idx) => {
+    if (item._is_free) return
+    if (pct === 0) {
+      if (item._rate_edit_from == null) return
+      item.rate = item._rate_edit_from
+      item._rate_overridden = item._rate_edit_overridden
+      delete item._rate_edit_from
+      delete item._rate_edit_overridden
+    } else {
+      if (item.deleted) return
+      if (item._rate_edit_from == null) {
+        item._rate_edit_from = item.rate || 0
+        item._rate_edit_overridden = !!item._rate_overridden
+      }
+      item.rate = parseFloat((item._rate_edit_from * (1 - pct / 100)).toFixed(precision))
+      item._rate_overridden = true
+    }
+    recalcAmount(idx)
+  })
+  rateEditPct.value = pct
+}
 
 function closeMultiEdit() {
   showMultiEdit.value = false
