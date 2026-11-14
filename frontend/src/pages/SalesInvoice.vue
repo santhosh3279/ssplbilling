@@ -129,6 +129,40 @@
               {{ mirroredInvoice }}
             </a>
           </div>
+          <!-- Same-company billing (wb-company = AE alternative company): drop rows by GST / tax rate -->
+          <div
+            v-if="showTaxCleanup"
+            data-testid="tax-cleanup"
+            class="flex items-center gap-2 shrink-0 select-none rounded border border-black/20 bg-black/5 px-2 py-0.5 text-black/70"
+          >
+            <span class="text-[10px] font-bold uppercase tracking-widest">Remove</span>
+            <label
+              v-for="opt in taxCleanupOptions"
+              :key="opt.key"
+              :data-testid="`tax-cleanup-${opt.key}`"
+              class="flex items-center gap-1 rounded px-1.5 py-0.5 cursor-pointer"
+              :class="taxCleanupPicked.includes(opt.key) ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]' : 'hover:bg-black/10'"
+            >
+              <input
+                type="checkbox"
+                :value="opt.key"
+                v-model="taxCleanupPicked"
+                class="h-4 w-4 rounded accent-[var(--color-danger)]"
+              />
+              <span class="text-xs font-bold uppercase">{{ opt.label }}</span>
+              <span class="text-[10px] font-mono opacity-70">{{ opt.count }}</span>
+            </label>
+            <button
+              type="button"
+              data-testid="tax-cleanup-delete"
+              :disabled="!taxCleanupMatches.length"
+              class="rounded bg-[var(--color-danger)] px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-[var(--color-danger)]/80 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              :title="taxCleanupMatches.length ? `Remove ${taxCleanupMatches.length} row(s) from this bill` : 'Tick what to remove'"
+              @click="deleteTaxCleanupRows"
+            >
+              Delete{{ taxCleanupMatches.length ? ` (${taxCleanupMatches.length})` : '' }}
+            </button>
+          </div>
           <!-- Mirrors the Sale Return checkbox in the details panel — same isReturn ref -->
           <label
             class="flex items-center gap-2 shrink-0 select-none rounded border px-3 py-1 transition-all"
@@ -2963,6 +2997,89 @@ function deleteItem(idx) {
       focusBarcodeInput()
     }
   }
+}
+
+// ── Tax cleanup toolbox ─────────────────────────────────────────────────────
+// Shown when this counter bills into the AE alternative company itself (wb-company =
+// ae-alternative_company): rows can be dropped by GST status or by tax rate before saving.
+const billingCompany = ref(localStorage.getItem('wb-company') || '')
+const alternativeCompany = ref(localStorage.getItem('ae-alternative_company') || '')
+function readCompanyKeys(e) {
+  if (e && e.key && e.key !== 'wb-company' && e.key !== 'ae-alternative_company') return
+  billingCompany.value = localStorage.getItem('wb-company') || ''
+  alternativeCompany.value = localStorage.getItem('ae-alternative_company') || ''
+}
+onMounted(() => window.addEventListener('storage', readCompanyKeys))
+// Settings sync writes these keys in this same tab (no storage event): re-read as rows change.
+watch(() => activeItems.value.length, () => readCompanyKeys())
+onUnmounted(() => window.removeEventListener('storage', readCompanyKeys))
+
+const showTaxCleanup = computed(() =>
+  !!billingCompany.value
+  && billingCompany.value === alternativeCompany.value
+  && !isReadOnly.value
+)
+
+// Checkbox keys: 'gst', 'nongst', or 'rate:<n>' for each tax rate on the bill (0 = Exempt).
+function taxCleanupKeysOf(item) {
+  const keys = []
+  const gst = itemGstStatus.value[item.item_code]
+  if (gst === true) keys.push('gst')
+  else if (gst === false) keys.push('nongst')
+  keys.push(`rate:${parseFloat(item.tax_rate) || 0}`)
+  return keys
+}
+
+const taxCleanupOptions = computed(() => {
+  const counts = new Map()
+  for (const item of activeItems.value) {
+    for (const key of taxCleanupKeysOf(item)) counts.set(key, (counts.get(key) || 0) + 1)
+  }
+  const opts = []
+  if (counts.has('gst')) opts.push({ key: 'gst', label: 'GST', count: counts.get('gst') })
+  if (counts.has('nongst')) opts.push({ key: 'nongst', label: 'Non-GST', count: counts.get('nongst') })
+  const rates = [...counts.keys()]
+    .filter(k => k.startsWith('rate:'))
+    .map(k => parseFloat(k.slice(5)))
+    .sort((a, b) => b - a)
+  for (const r of rates) {
+    opts.push({ key: `rate:${r}`, label: r ? `${r}%` : 'Exempt', count: counts.get(`rate:${r}`) })
+  }
+  return opts
+})
+
+const taxCleanupPicked = ref([])
+// Drop ticks whose category is no longer on the bill (its last row deleted, bill changed).
+watch(taxCleanupOptions, (opts) => {
+  const keys = new Set(opts.map(o => o.key))
+  const kept = taxCleanupPicked.value.filter(k => keys.has(k))
+  if (kept.length !== taxCleanupPicked.value.length) taxCleanupPicked.value = kept
+})
+
+// Rows matching any ticked option.
+const taxCleanupMatches = computed(() => {
+  const picked = new Set(taxCleanupPicked.value)
+  if (!picked.size) return []
+  return items.value
+    .map((item, idx) => ({ item, idx }))
+    .filter(({ item }) => !item.deleted && taxCleanupKeysOf(item).some(k => picked.has(k)))
+})
+
+function deleteTaxCleanupRows() {
+  if (isReadOnly.value || isLoadingBill.value || submitting.value) return
+  const rows = taxCleanupMatches.value
+  if (!rows.length) return
+  for (const { item, idx } of rows) {
+    item.deleted = true
+    if (editingRowIdx.value === idx) {
+      editingRowIdx.value = -1
+      editingField.value = null
+    }
+  }
+  taxCleanupPicked.value = []
+  const nextIdx = items.value.findIndex(item => !item.deleted)
+  if (nextIdx >= 0) focusRow(nextIdx)
+  else focusBarcodeInput()
 }
 
 function deleteNonGstItems() {
