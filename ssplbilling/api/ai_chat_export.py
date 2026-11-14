@@ -96,6 +96,15 @@ LABELS = {
 	"income": "Income (₹)",
 	"expense": "Expense (₹)",
 	"net_profit": "Net Profit (₹)",
+	"assets": "Assets (₹)",
+	"liabilities": "Liabilities (₹)",
+	"equity": "Equity (₹)",
+	"unclosed_profit": "Unclosed Profit (₹)",
+	"liabilities_and_equity": "Liabilities + Equity (₹)",
+	"difference": "Difference (₹)",
+	"balanced": "Balanced",
+	"sub_group": "Sub-group",
+	"as_of": "As of",
 	"net_payable": "Net Payable (₹)",
 	"qty_sold": "Qty Sold",
 	"in_qty": "In",
@@ -138,6 +147,12 @@ MONEY = {
 	"expense",
 	"net_profit",
 	"net_payable",
+	"assets",
+	"liabilities",
+	"equity",
+	"unclosed_profit",
+	"liabilities_and_equity",
+	"difference",
 }
 # Generic sheets flatten nested totals into columns like received_total or output_by_tax_CGST.
 MONEY_SUFFIXES = ("total", "amount", "balance", "value", "output", "input", "CGST", "SGST", "IGST", "CESS")
@@ -598,6 +613,20 @@ def build_series(tool, args=None, chart_type="bar", points=None):
 			{co: {g["group"]: g["amount"] for g in c["by_group"]} for co, c in data["companies"].items()},
 			points,
 		)
+
+	if tool == "balance_sheet":
+		# Sub-groups where the chart has them (Stock Assets, Accounts Payable...), else the group.
+		# A pie is shares of total assets only; liabilities are not part of that total.
+		per_company = {}
+		for co, c in data["companies"].items():
+			split = {g["group"] for g in c["by_sub_group"]}
+			rows = [g for g in c["by_group"] if g["group"] not in split] + [
+				{**g, "group": g["sub_group"]} for g in c["by_sub_group"]
+			]
+			if chart_type == "pie":
+				rows = [g for g in rows if g["type"] == "Asset"]
+			per_company[co] = {g["group"]: g["amount"] for g in rows}
+		return _align(per_company, points)
 
 	if tool == "gst_summary":
 		companies = data["companies"]

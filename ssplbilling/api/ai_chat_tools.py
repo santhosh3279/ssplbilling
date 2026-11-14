@@ -37,6 +37,7 @@ DATA_TOOLS = (
 	"cash_bank_position",
 	"cashflow_forecast",
 	"profit_loss",
+	"balance_sheet",
 	"gst_summary",
 	"payments_summary",
 	"query_records",
@@ -428,6 +429,25 @@ TOOLS += [
 		},
 	},
 	{
+		"name": "balance_sheet",
+		"description": (
+			"Balance sheet from the General Ledger as of a date, per company: total assets, liabilities "
+			"and equity, the profit / loss not yet closed to equity, whether it balances, totals per "
+			"group (Current Assets, Fixed Assets, Capital Account, Current Liabilities...) with their "
+			"sub-groups (Stock Assets, Accounts Receivable, Bank Accounts, Accounts Payable, Duties and "
+			"Taxes...) and the biggest accounts. Whole company, not per branch. Use for 'balance sheet', "
+			"'assets and liabilities', 'net worth', 'capital'."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"as_of": {"type": "string", "description": "YYYY-MM-DD. Defaults to today."},
+				"company": _COMPANY,
+				"limit": _LIMIT,
+			},
+		},
+	},
+	{
 		"name": "gst_summary",
 		"description": (
 			"GST collected (output) vs paid (input credit) from the GST accounts, per company, by CGST / "
@@ -581,7 +601,7 @@ TOOLS += [
 ]
 
 INSTRUCTIONS = """You are the business assistant for Sundaram and Sons Private Ltd (SSPL), a wholesale business, answering staff questions from live ERPNext data.
-- Use the tools for every figure; never invent numbers, names or document ids. Prefer the specific tools (sales, purchases, receivables, payables, customer activity, stock and item movement, item sales trends, account ledgers, cash and bank, profit and loss, GST, payments). For anything else (orders, quotations, delivery notes, bank charges, journal entries, employees, assets, any other record) use describe_doctype to find the doctype and its fields, then query_records. Never tell the user you can't access something before trying these.
+- Use the tools for every figure; never invent numbers, names or document ids. Prefer the specific tools (sales, purchases, receivables, payables, customer activity, stock and item movement, item sales trends, account ledgers, cash and bank, profit and loss, balance sheet, GST, payments). For anything else (orders, quotations, delivery notes, bank charges, journal entries, employees, assets, any other record) use describe_doctype to find the doctype and its fields, then query_records. Never tell the user you can't access something before trying these.
 - For one item's, a supplier's or an item group's sales by day, week or month (and purchases beside them) use item_sales_trend, not query_records.
 - For what to reorder, how much to order, safety stock, days of cover or whether ordering is healthy use reorder_suggestion; say which lead time, review days and history it used.
 - For cash flow, a cash forecast, runway or whether there will be enough money use cashflow_forecast; say it projects at the past weekly run-rate (not a schedule of dues), which history weeks it used, and show overdue receivables / payables apart.
@@ -1840,6 +1860,117 @@ def profit_loss(from_date=None, to_date=None, company=None, cost_center=None, li
 		"to_date": to_date,
 		**_scope_note(company, cost_center),
 		"note": "from the General Ledger: income = credit - debit, expense = debit - credit; cost of goods sold is the stock expense posted with each sale",
+		"companies": companies,
+	}
+
+
+# ── balance sheet ───────────────────────────────────────────────────────────
+
+BALANCE_SHEET_TYPES = ("Asset", "Liability", "Equity")
+
+
+def balance_sheet(as_of=None, company=None, limit=10):
+	"""Closing balances of every Asset / Liability / Equity account up to `as_of`. Income and
+	expense not yet moved to equity by a Period Closing Voucher are shown as the unclosed profit
+	(all P&L entries to date, closing vouchers included, so closed years net out to zero)."""
+	as_of = getdate(as_of or nowdate())
+	limit = _limit(limit)
+	company, _cost_center = _scoped(company, None)
+	accounts = _get_list(
+		"Account",
+		filters={
+			"root_type": ["in", [*BALANCE_SHEET_TYPES, "Income", "Expense"]],
+			**({"company": company} if company else {}),
+		},
+		fields=["name", "account_name", "parent_account", "root_type", "is_group"],
+		limit=0,
+	)
+	by_name = {a.name: a for a in accounts}
+
+	def path(name):
+		"""Account names from the group just below the root down to the account itself."""
+		names, a = [], by_name[name]
+		while a.parent_account in by_name:
+			names.insert(0, (a.account_name or a.name).strip())
+			a = by_name[a.parent_account]
+		return names
+
+	filters = {
+		"account": ["in", [a.name for a in accounts if not a.is_group] or [""]],
+		"is_cancelled": 0,
+		"posting_date": ["<=", as_of],
+	}
+	if company:
+		filters["company"] = company
+	rows = _get_list(
+		"GL Entry",
+		filters=filters,
+		fields=["company", "account", {"SUM": "debit", "as": "debit"}, {"SUM": "credit", "as": "credit"}],
+		group_by="company, account",
+		limit=0,
+	)
+
+	companies = {}
+	for r in rows:
+		acc = by_name[r.account]
+		c = companies.setdefault(
+			r.company,
+			{
+				"assets": 0.0,
+				"liabilities": 0.0,
+				"equity": 0.0,
+				"unclosed_profit": 0.0,
+				"_groups": {},
+				"_accounts": [],
+			},
+		)
+		debit_side = acc.root_type in ("Asset", "Expense")
+		amount = flt(flt(r.debit) - flt(r.credit) if debit_side else flt(r.credit) - flt(r.debit), 2)
+		if not amount:
+			continue
+		if acc.root_type in ("Income", "Expense"):
+			c["unclosed_profit"] += amount if acc.root_type == "Income" else -amount
+			continue
+		c[{"Asset": "assets", "Liability": "liabilities", "Equity": "equity"}[acc.root_type]] += amount
+		names = path(r.account)
+		group = names[0]
+		sub = names[1] if len(names) > 2 else None
+		g = c["_groups"].setdefault(
+			(acc.root_type, group), {"type": acc.root_type, "group": group, "amount": 0.0, "_sub": {}}
+		)
+		g["amount"] += amount
+		if sub:
+			g["_sub"][sub] = g["_sub"].get(sub, 0.0) + amount
+		c["_accounts"].append({"account": r.account, "type": acc.root_type, "group": group, "amount": amount})
+
+	order = {t: i for i, t in enumerate(BALANCE_SHEET_TYPES)}
+	for c in companies.values():
+		for key in ("assets", "liabilities", "equity", "unclosed_profit"):
+			c[key] = flt(c[key], 2)
+		c["liabilities_and_equity"] = flt(c["liabilities"] + c["equity"] + c["unclosed_profit"], 2)
+		c["difference"] = flt(c["assets"] - c["liabilities_and_equity"], 2)
+		c["balanced"] = abs(c["difference"]) < 1  # per-account rounding leaves paise
+		groups = sorted(c.pop("_groups").values(), key=lambda g: (order[g["type"]], -abs(g["amount"])))
+		c["by_group"] = [
+			{"type": g["type"], "group": g["group"], "amount": flt(g["amount"], 2)} for g in groups
+		]
+		c["by_sub_group"] = [
+			{"type": g["type"], "group": g["group"], "sub_group": sub, "amount": flt(amount, 2)}
+			for g in groups
+			for sub, amount in sorted(g["_sub"].items(), key=lambda kv: -abs(kv[1]))
+			if flt(amount, 2)
+		]
+		c["top_accounts"] = sorted(c.pop("_accounts"), key=lambda a: abs(a["amount"]), reverse=True)[:limit]
+	return {
+		"as_of": as_of,
+		**_scope_note(company, None),
+		"note": (
+			"from the General Ledger up to as_of: assets = debit - credit, liabilities / equity = credit - "
+			"debit (a negative amount sits on the other side, e.g. a bank overdraft or a debit-balance "
+			"supplier). unclosed_profit = income - expense not yet closed to equity. "
+			"liabilities_and_equity = liabilities + equity + unclosed_profit; difference should be 0. "
+			"Whole company: the cost center filter does not apply."
+		),
 		"companies": companies,
 	}
 
@@ -3532,6 +3663,7 @@ HANDLERS = {
 	"cash_bank_position": cash_bank_position,
 	"cashflow_forecast": cashflow_forecast,
 	"profit_loss": profit_loss,
+	"balance_sheet": balance_sheet,
 	"gst_summary": gst_summary,
 	"payments_summary": payments_summary,
 	"describe_doctype": describe_doctype,

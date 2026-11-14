@@ -724,6 +724,7 @@ const TOOL_LABELS = {
   cash_bank_position: 'Cash & bank',
   cashflow_forecast: 'Cash flow',
   profit_loss: 'P&L',
+  balance_sheet: 'Balance sheet',
   gst_summary: 'GST',
   payments_summary: 'Payments',
   export_excel: 'Excel',

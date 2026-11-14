@@ -18,6 +18,7 @@ ACTIONS = {
 	"top_outstanding": ("Top outstanding", False),
 	"customer_outstanding": ("Customer outstanding", True),
 	"stock_summary": ("Stock summary", False),
+	"balance_sheet": ("Balance sheet", False),
 	"item_stock": ("Item stock", True),
 	"supplier_sales": ("Supplier item sales", True),
 	"purchase_mirrors": ("Purchase mirror bills", True),
@@ -117,6 +118,7 @@ def _source(action, query):
 		"top_outstanding": ("customer_outstanding", {"limit": 10}, _top_outstanding),
 		"customer_outstanding": ("customer_outstanding", {"customer": query, "limit": 20}, _customer),
 		"stock_summary": ("item_stock", {}, _stock_summary),
+		"balance_sheet": ("balance_sheet", {"as_of": str(today), "limit": 10}, _balance_sheet),
 		"item_stock": ("item_stock", {"item": query, "limit": 10}, _item_stock),
 		"supplier_sales": _supplier_sales_source(query),
 		"purchase_mirrors": _purchase_mirrors_source(query),
@@ -472,6 +474,42 @@ def _stock_summary(data):
 			row.append(inr(w.get("stock_value")))
 		rows.append(row)
 	return f"**Stock as of {format_date(data['as_of'])}**\n\n" + _table(headers, rows)
+
+
+def _balance_sheet(data):
+	if not data["companies"]:
+		return "No ledger balances found."
+	out = []
+	for company, c in data["companies"].items():
+		split = {g["group"] for g in c["by_sub_group"]}
+		subs = {}
+		for g in c["by_sub_group"]:
+			subs.setdefault(g["group"], []).append(g)
+
+		def side(types, c=c, split=split, subs=subs):
+			rows = []
+			for g in c["by_group"]:
+				if g["type"] not in types:
+					continue
+				rows.append([f"**{g['group']}**", f"**{inr(g['amount'])}**"])
+				if g["group"] in split:
+					rows += [[f"  {s['sub_group']}", inr(s["amount"])] for s in subs[g["group"]]]
+			return rows
+
+		liabilities = side(("Liability", "Equity"))
+		if c["unclosed_profit"]:
+			label = "Profit not yet closed" if c["unclosed_profit"] > 0 else "Loss not yet closed"
+			liabilities.append([f"**{label}**", f"**{inr(c['unclosed_profit'])}**"])
+		liabilities.append(["**Total liabilities + equity**", f"**{inr(c['liabilities_and_equity'])}**"])
+		assets = side(("Asset",)) + [["**Total assets**", f"**{inr(c['assets'])}**"]]
+		check = "✅ Balanced" if c["balanced"] else f"⚠ Difference {inr(c['difference'])}"
+		out.append(
+			f"**{company}** · {check}\n\n"
+			+ _table(["Liabilities & equity", "₹"], liabilities)
+			+ "\n\n"
+			+ _table(["Assets", "₹"], assets)
+		)
+	return f"**Balance sheet as of {format_date(data['as_of'])}**\n\n" + "\n\n".join(out)
 
 
 def _item_stock(data):
