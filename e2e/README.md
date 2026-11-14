@@ -65,6 +65,7 @@ To remove the bot user and all its test data from the site:
 | `04-party-change` | "Party Changed" prompt: Retain Prices vs Reprice |
 | `05-reopen-draft` | saved draft re-opens and updates with unchanged rates, discount, total |
 | `06-inclusive-tax` | GST-inclusive series: total, tax inside it, same as ERPNext |
+| `07-tax-cleanup` | Multi Edit button only when billing into the AE alternative company; Non-GST tick soft-deletes those rows, Undo restores them, total and saved bill follow |
 
 Not covered yet: sale return, discount rules / free items, row-level discount entry, additional
 charges, batches, submit + payment (cashier), keyboard shortcuts.

@@ -143,6 +143,72 @@ class SalesInvoicePage {
     }
   }
 
+  // ------------------------------------------------------------------ tax cleanup toolbox
+
+  /** Bill into the AE alternative company (wb-company = ae-alternative_company), which shows the
+   *  Multi Edit button; `false` clears both keys again. The page re-reads them when rows change. */
+  async setSameCompanyBilling(on, company) {
+    await this.page.evaluate(([on, company]) => {
+      if (on) {
+        localStorage.setItem('wb-company', company)
+        localStorage.setItem('ae-alternative_company', company)
+      } else {
+        localStorage.removeItem('wb-company')
+        localStorage.removeItem('ae-alternative_company')
+      }
+    }, [on, company])
+  }
+
+  /** The Multi Edit button by Sale Return (only there when billing into the alternative company). */
+  taxCleanup() {
+    return this.id('multi-edit-open')
+  }
+
+  async openMultiEdit() {
+    await this.taxCleanup().click()
+    await expect(this.id('multi-edit')).toBeVisible()
+  }
+
+  async closeMultiEdit() {
+    await this.page.keyboard.press('Escape')
+    await expect(this.id('multi-edit')).toHaveCount(0)
+  }
+
+  /** Multi Edit's options as { key: rowCount }, e.g. { gst: 1, nongst: 2, 'rate:5': 3 }. */
+  async taxCleanupOptions() {
+    await this.openMultiEdit()
+    const out = {}
+    for (const option of await this.id('multi-edit').locator('label[data-testid^="tax-cleanup-"]').all()) {
+      const testId = await option.getAttribute('data-testid')
+      out[testId.slice('tax-cleanup-'.length)] = num(await option.getByTestId('tax-cleanup-count').innerText())
+    }
+    await this.closeMultiEdit()
+    return out
+  }
+
+  /** Open Multi Edit, tick the given options ('gst', 'nongst', 'rate:<n>') and press Delete. */
+  async removeByTax(...keys) {
+    await this.openMultiEdit()
+    for (const key of keys) await this.id(`tax-cleanup-${key}`).locator('input').check()
+    await this.id('tax-cleanup-delete').click()
+    await expect(this.id('multi-edit')).toHaveCount(0)
+  }
+
+  /** Open Multi Edit and undo the newest removed batch (or the one with `batchId`). */
+  async undoRemoveByTax(batchId) {
+    await this.openMultiEdit()
+    const undo = batchId != null
+      ? this.id(`multi-edit-undo-${batchId}`)
+      : this.id('multi-edit-removed').locator('[data-testid^="multi-edit-undo-"]').first()
+    await undo.click()
+    await this.closeMultiEdit()
+  }
+
+  /** Is this row soft-deleted (still listed, marked Deleted)? */
+  async isRowDeleted(itemCode, nth = 0) {
+    return (await this.row(itemCode, nth).getAttribute('data-deleted')) === '1'
+  }
+
   // ------------------------------------------------------------------ saving
 
   /** Press Save and return the name ERPNext gave the invoice. Closes the print prompt. */

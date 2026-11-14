@@ -129,40 +129,17 @@
               {{ mirroredInvoice }}
             </a>
           </div>
-          <!-- Same-company billing (wb-company = AE alternative company): drop rows by GST / tax rate -->
-          <div
+          <!-- Same-company billing (wb-company = AE alternative company): Multi Edit drops rows by GST / tax rate -->
+          <button
             v-if="showTaxCleanup"
-            data-testid="tax-cleanup"
-            class="flex items-center gap-2 shrink-0 select-none rounded border border-black/20 bg-black/5 px-2 py-0.5 text-black/70"
+            type="button"
+            data-testid="multi-edit-open"
+            class="flex items-center gap-2 shrink-0 rounded border border-black/20 bg-black/5 px-3 py-1 text-xs font-bold uppercase tracking-widest text-black/60 transition-all hover:bg-black/10 active:scale-95"
+            title="Remove rows by GST status or tax rate"
+            @click="showMultiEdit = true"
           >
-            <span class="text-[10px] font-bold uppercase tracking-widest">Remove</span>
-            <label
-              v-for="opt in taxCleanupOptions"
-              :key="opt.key"
-              :data-testid="`tax-cleanup-${opt.key}`"
-              class="flex items-center gap-1 rounded px-1.5 py-0.5 cursor-pointer"
-              :class="taxCleanupPicked.includes(opt.key) ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]' : 'hover:bg-black/10'"
-            >
-              <input
-                type="checkbox"
-                :value="opt.key"
-                v-model="taxCleanupPicked"
-                class="h-4 w-4 rounded accent-[var(--color-danger)]"
-              />
-              <span class="text-xs font-bold uppercase">{{ opt.label }}</span>
-              <span class="text-[10px] font-mono opacity-70">{{ opt.count }}</span>
-            </label>
-            <button
-              type="button"
-              data-testid="tax-cleanup-delete"
-              :disabled="!taxCleanupMatches.length"
-              class="rounded bg-[var(--color-danger)] px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-[var(--color-danger)]/80 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
-              :title="taxCleanupMatches.length ? `Remove ${taxCleanupMatches.length} row(s) from this bill` : 'Tick what to remove'"
-              @click="deleteTaxCleanupRows"
-            >
-              Delete{{ taxCleanupMatches.length ? ` (${taxCleanupMatches.length})` : '' }}
-            </button>
-          </div>
+            <span>🧹</span> Multi Edit
+          </button>
           <!-- Mirrors the Sale Return checkbox in the details panel — same isReturn ref -->
           <label
             class="flex items-center gap-2 shrink-0 select-none rounded border px-3 py-1 transition-all"
@@ -789,6 +766,14 @@
       @close="closePrintModal"
     />
 
+    <MultiEdit
+      :show="showMultiEdit"
+      :rows="multiEditRows"
+      :removed="multiEditRemovedList"
+      @close="showMultiEdit = false"
+      @delete="deleteMultiEditRows"
+      @undo="undoMultiEditBatch"
+    />
     <JumpToRowModal
       v-model:show="showJumpModal"
       :max-rows="items.length"
@@ -936,6 +921,7 @@ import { clearQuickQtyMap } from '../services/quickQty.js'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import CustomerPrice from '../components/CustomerPrice.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
+import MultiEdit from '../components/MultiEdit.vue'
 import CustomInvoiceModal from '../components/CustomInvoiceModal.vue'
 import CustomAddress from '../components/CustomAddress.vue'
 import Warning from '../components/Warning.vue'
@@ -2999,8 +2985,8 @@ function deleteItem(idx) {
   }
 }
 
-// ── Tax cleanup toolbox ─────────────────────────────────────────────────────
-// Shown when this counter bills into the AE alternative company itself (wb-company =
+// ── Multi Edit (tax cleanup) ────────────────────────────────────────────────
+// Offered when this counter bills into the AE alternative company itself (wb-company =
 // ae-alternative_company): rows can be dropped by GST status or by tax rate before saving.
 const billingCompany = ref(localStorage.getItem('wb-company') || '')
 const alternativeCompany = ref(localStorage.getItem('ae-alternative_company') || '')
@@ -3020,7 +3006,7 @@ const showTaxCleanup = computed(() =>
   && !isReadOnly.value
 )
 
-// Checkbox keys: 'gst', 'nongst', or 'rate:<n>' for each tax rate on the bill (0 = Exempt).
+// Multi Edit keys: 'gst', 'nongst', and 'rate:<n>' for the row's tax rate (0 = Exempt).
 function taxCleanupKeysOf(item) {
   const keys = []
   const gst = itemGstStatus.value[item.item_code]
@@ -3030,53 +3016,60 @@ function taxCleanupKeysOf(item) {
   return keys
 }
 
-const taxCleanupOptions = computed(() => {
-  const counts = new Map()
-  for (const item of activeItems.value) {
-    for (const key of taxCleanupKeysOf(item)) counts.set(key, (counts.get(key) || 0) + 1)
-  }
-  const opts = []
-  if (counts.has('gst')) opts.push({ key: 'gst', label: 'GST', count: counts.get('gst') })
-  if (counts.has('nongst')) opts.push({ key: 'nongst', label: 'Non-GST', count: counts.get('nongst') })
-  const rates = [...counts.keys()]
-    .filter(k => k.startsWith('rate:'))
-    .map(k => parseFloat(k.slice(5)))
-    .sort((a, b) => b - a)
-  for (const r of rates) {
-    opts.push({ key: `rate:${r}`, label: r ? `${r}%` : 'Exempt', count: counts.get(`rate:${r}`) })
-  }
-  return opts
-})
+const showMultiEdit = ref(false)
+watch(showTaxCleanup, (v) => { if (!v) showMultiEdit.value = false })
 
-const taxCleanupPicked = ref([])
-// Drop ticks whose category is no longer on the bill (its last row deleted, bill changed).
-watch(taxCleanupOptions, (opts) => {
-  const keys = new Set(opts.map(o => o.key))
-  const kept = taxCleanupPicked.value.filter(k => keys.has(k))
-  if (kept.length !== taxCleanupPicked.value.length) taxCleanupPicked.value = kept
-})
-
-// Rows matching any ticked option.
-const taxCleanupMatches = computed(() => {
-  const picked = new Set(taxCleanupPicked.value)
-  if (!picked.size) return []
-  return items.value
+// Active rows with their Multi Edit keys, for the sub-window to count and match.
+const multiEditRows = computed(() =>
+  items.value
     .map((item, idx) => ({ item, idx }))
-    .filter(({ item }) => !item.deleted && taxCleanupKeysOf(item).some(k => picked.has(k)))
+    .filter(({ item }) => !item.deleted)
+    .map(({ item, idx }) => ({ idx, keys: taxCleanupKeysOf(item) }))
+)
+
+// Multi Edit deletes that can still be undone, newest last. Each keeps the row objects
+// themselves, so an undo finds them even if other rows were added or removed since.
+const multiEditRemoved = ref([])
+let multiEditBatchId = 0
+const multiEditRemovedList = computed(() =>
+  multiEditRemoved.value.map(b => ({ id: b.id, labels: b.labels, count: b.rows.length }))
+)
+// When the rows array is replaced, keep only rows still on the bill: a new / loaded bill
+// empties the list, a re-mapped one (half-tax toggle keeps deleted rows as-is) keeps it.
+watch(() => items.value, (rows) => {
+  const onBill = new Set(rows)
+  multiEditRemoved.value = multiEditRemoved.value
+    .map(b => ({ ...b, rows: b.rows.filter(r => onBill.has(r)) }))
+    .filter(b => b.rows.length)
 })
 
-function deleteTaxCleanupRows() {
+function undoMultiEditBatch(id) {
   if (isReadOnly.value || isLoadingBill.value || submitting.value) return
-  const rows = taxCleanupMatches.value
-  if (!rows.length) return
-  for (const { item, idx } of rows) {
+  const batch = multiEditRemoved.value.find(b => b.id === id)
+  if (!batch) return
+  for (const item of batch.rows) {
+    if (items.value.includes(item)) item.deleted = false
+  }
+  multiEditRemoved.value = multiEditRemoved.value.filter(b => b.id !== id)
+}
+
+function deleteMultiEditRows(indexes, labels = []) {
+  showMultiEdit.value = false
+  if (isReadOnly.value || isLoadingBill.value || submitting.value) return
+  const removed = []
+  for (const idx of indexes) {
+    const item = items.value[idx]
+    if (!item || item.deleted) continue
     item.deleted = true
+    removed.push(item)
     if (editingRowIdx.value === idx) {
       editingRowIdx.value = -1
       editingField.value = null
     }
   }
-  taxCleanupPicked.value = []
+  if (removed.length) {
+    multiEditRemoved.value = [...multiEditRemoved.value, { id: ++multiEditBatchId, labels, rows: removed }]
+  }
   const nextIdx = items.value.findIndex(item => !item.deleted)
   if (nextIdx >= 0) focusRow(nextIdx)
   else focusBarcodeInput()

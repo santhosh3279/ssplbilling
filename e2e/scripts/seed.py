@@ -28,6 +28,8 @@ CUSTOMERS = {
 	f"{PREFIX} MARKUP": (1.05, 0),
 	f"{PREFIX} DISCOUNT": (1, 10),
 }
+# Items flagged as GST items (Item.custom_is_gst_item); the rest are non-GST
+GST_ITEMS = {f"{PREFIX}-C"}
 # item_code -> (item_name, wholesale rate, retail rate)
 ITEMS = {
 	f"{PREFIX}-A": (f"{PREFIX} Item A", 98.60, 110),
@@ -139,6 +141,8 @@ def seed(frappe, args):
 			item.append("barcodes", {"barcode": code})
 		item.item_name = item_name
 		item.disabled = 0
+		if item.meta.has_field("custom_is_gst_item"):
+			item.custom_is_gst_item = 1 if code in GST_ITEMS else 0
 		item.save(ignore_permissions=True)
 		for price_list in price_lists:
 			rate = wholesale if price_list.upper().startswith("W") else retail
