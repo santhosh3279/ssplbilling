@@ -1934,7 +1934,9 @@ def balance_sheet(as_of=None, company=None, limit=10):
 		c[{"Asset": "assets", "Liability": "liabilities", "Equity": "equity"}[acc.root_type]] += amount
 		names = path(r.account)
 		group = names[0]
-		sub = names[1] if len(names) > 2 else None
+		# Second level: a sub-group, or the account itself when it sits right under the group,
+		# so the sub-rows always add up to the group.
+		sub = names[1] if len(names) > 1 else None
 		g = c["_groups"].setdefault(
 			(acc.root_type, group), {"type": acc.root_type, "group": group, "amount": 0.0, "_sub": {}}
 		)
