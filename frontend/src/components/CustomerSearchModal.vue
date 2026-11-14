@@ -838,6 +838,7 @@ async function onCustomerSaved(result) {
         gstin: result.gstin || '',
         group: result.customer_group || '',
         pricelist_multiplication_factor: result.pricelist_multiplication_factor || 1.0,
+        customer_discount_percentage: result.customer_discount_percentage || 0,
         balance: 0,
       })
     }

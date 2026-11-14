@@ -45,6 +45,7 @@ export async function fetchCustomerDetails(customerId) {
     pincode: '',
     state: '',
     pricelist_multiplication_factor: null,
+    customer_discount_percentage: 0,
   }
 
   try {
@@ -63,6 +64,7 @@ export async function fetchCustomerDetails(customerId) {
     // Unset on rows from before the field existed: those are enabled
     result.whatsapp_enabled = cust.whatsapp_enabled ?? 1
     result.pricelist_multiplication_factor = cust.pricelist_multiplication_factor !== undefined ? cust.pricelist_multiplication_factor : null
+    result.customer_discount_percentage = cust.customer_discount_percentage || 0
 
     // 2. Fetch linked Address
     const addresses = await frappeGet('frappe.client.get_list', {

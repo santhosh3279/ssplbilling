@@ -477,6 +477,8 @@ const customerName = ref('')
 const customerAddress = ref('')
 const customerState = ref('')
 const customerModifier = ref(null)
+// Customer's Discount % (Customer.customer_discount_percentage), given as the bill discount.
+const customerDiscount = ref(0)
 const ignoreModifier = ref(false)
 const customerPricing = ref({})
 const mop = ref('Cash')
@@ -562,10 +564,14 @@ function effectiveModifier() {
   return mod > 1 ? mod : 1
 }
 
-// Bill discount % implied by a party modifier below 1 (0.9 → 10).
+// Bill discount % from the customer's Discount % field, or (for a customer saved
+// before that field existed) implied by a party modifier below 1 (0.9 → 10).
 function modifierDiscountPct() {
+  if (ignoreModifier.value) return 0
+  const disc = parseFloat(customerDiscount.value)
+  if (disc > 0 && disc < 100) return parseFloat(disc.toFixed(2))
   const mod = parseFloat(customerModifier.value)
-  if (ignoreModifier.value || !(mod > 0 && mod < 1)) return 0
+  if (!(mod > 0 && mod < 1)) return 0
   return parseFloat(((1 - mod) * 100).toFixed(2))
 }
 
@@ -994,6 +1000,7 @@ async function setCustomer(id, name) {
   customerId.value = id
   customerName.value = name
   customerModifier.value = null
+  customerDiscount.value = 0
   customerPricing.value = {}
   customerAddress.value = ''
   customerState.value = ''
@@ -1006,6 +1013,7 @@ async function setCustomer(id, name) {
   if (details.status === 'fulfilled' && details.value) {
     const d = details.value
     customerModifier.value = d.pricelist_multiplication_factor ?? null
+    customerDiscount.value = d.customer_discount_percentage || 0
     customerAddress.value = d.address_name || ''
     customerState.value = d.state || ''
   }
@@ -1090,6 +1098,7 @@ async function loadBill(name) {
     customerAddress.value = data.customer_address || ''
     customerState.value = data.state || ''
     customerModifier.value = data.customer_billing_details?.pricelist_multiplication_factor ?? null
+    customerDiscount.value = data.customer_billing_details?.customer_discount_percentage || 0
     customerPricing.value = {}
     loadedDiscountPct.value = Number(data.discount_percentage) || 0
     loadedDiscountIsAuto.value = loadedDiscountPct.value > 0 && loadedDiscountPct.value === modifierDiscountPct()

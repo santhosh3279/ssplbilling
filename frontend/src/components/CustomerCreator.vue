@@ -129,7 +129,15 @@
         <div class="flex flex-col gap-1.5">
           <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Pricelist Modifier %</label>
           <div class="relative w-full">
-            <input v-model.number="form.pricelist_modifier" type="number" step="0.1" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em 1.2em 0.2em 0.2em;" placeholder="e.g. 10 or -10" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+            <input v-model.number="form.pricelist_modifier" data-testid="customer-pricelist-modifier" type="number" min="0" step="0.1" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em 1.2em 0.2em 0.2em;" placeholder="e.g. 10 (markup only)" @keydown="blockMinus" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
+            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">%</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+          <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Discount %</label>
+          <div class="relative w-full">
+            <input v-model.number="form.discount_percentage" data-testid="customer-discount-percentage" type="number" min="0" max="99.99" step="0.1" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text)] outline-none focus:border-[var(--color-info)]" style="font-size: 1.5rem; padding: 0.2em 1.2em 0.2em 0.2em;" placeholder="bill discount, e.g. 5" @keydown="blockMinus" @keydown.esc.stop="$emit('close')" @keydown.enter.prevent="handleFormEnter" />
             <span class="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-text-muted)] font-bold">%</span>
           </div>
         </div>
@@ -292,6 +300,7 @@ const defaultForm = () => ({
   address_name: '', address_line1: '', address_line2: '',
   city: 'Palakkad', pincode: '678000', state: 'Kerala',
   pricelist_modifier: null,
+  discount_percentage: null,
   primary_party: '',
   primary_party_role: '',
   disabled: 0,
@@ -337,6 +346,7 @@ onMounted(async () => {
       pincode:        row.pincode        || '',
       state:          row.state          || '',
       pricelist_modifier: null,
+      discount_percentage: null,
       primary_party:  '',
       primary_party_role: '',
       disabled:       row.disabled       || 0,
@@ -355,15 +365,18 @@ onMounted(async () => {
         primaryPartyQuery.value = merged.primary_party
       }
       
-      // Reverse calculate modifier percentage
+      merged.discount_percentage = full.customer_discount_percentage || null
+      // Reverse calculate modifier percentage. The modifier is a markup only; an old
+      // factor below 1 (0.9) is shown as the discount it gave (10%) and saved that way.
       if (full.pricelist_multiplication_factor != null) {
         const factor = full.pricelist_multiplication_factor
-        if (factor === 0 || factor === 1) {
-          merged.pricelist_modifier = 0
-        } else if (factor > 1) {
+        if (factor > 1) {
           merged.pricelist_modifier = Math.round((factor - 1) * 100 * 100) / 100
-        } else if (factor < 1) {
-          merged.pricelist_modifier = -Math.round((1 - factor) * 100 * 100) / 100
+        } else {
+          merged.pricelist_modifier = 0
+          if (factor > 0 && factor < 1 && !merged.discount_percentage) {
+            merged.discount_percentage = Math.round((1 - factor) * 100 * 100) / 100
+          }
         }
       }
       
@@ -492,7 +505,17 @@ function validate() {
   if (form.value.address_line1?.trim() && form.value.pincode && !/^[1-9]\d{5}$/.test(form.value.pincode)) {
     alert('Pincode must be a 6-digit number and cannot start with 0'); return false
   }
+  if (Number(form.value.pricelist_modifier) < 0) {
+    alert('Pricelist Modifier % must be 0 or more. Give a reduction as Discount % instead.'); return false
+  }
+  const disc = Number(form.value.discount_percentage) || 0
+  if (disc < 0 || disc >= 100) { alert('Discount % must be from 0 to below 100'); return false }
   return true
+}
+
+// Modifier and discount are both positive: the minus key does nothing in them.
+function blockMinus(e) {
+  if (e.key === '-' || e.key === 'Subtract') e.preventDefault()
 }
 
 function handleFormEnter(e) {

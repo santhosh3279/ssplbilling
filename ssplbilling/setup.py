@@ -57,6 +57,13 @@ CUSTOM_FIELDS = {
 			"insert_after": "default_price_list",
 		},
 		{
+			"fieldname": "customer_discount_percentage",
+			"label": "Discount %",
+			"fieldtype": "Percent",
+			"insert_after": "pricelist_multiplication_factor",
+			"description": "Bill discount the billing pages fill in when this customer is picked.",
+		},
+		{
 			"fieldname": "whatsapp_enabled",
 			"label": "WhatsApp Enabled",
 			"fieldtype": "Check",

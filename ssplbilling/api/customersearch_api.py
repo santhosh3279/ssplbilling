@@ -1,5 +1,6 @@
 import json
 import frappe
+from frappe.utils import flt
 
 @frappe.whitelist()
 def get_user_mop_ledgers():
@@ -188,7 +189,7 @@ def _build_ledgers(company=None, alternative_company=None, cost_center=None, nam
     customers = frappe.get_all(
         "Customer",
         filters={"disabled": 0, **name_filter},
-        fields=["name", "customer_name as label", "mobile_no", "email_id as email", "gstin", "customer_group as group", "pricelist_multiplication_factor"],
+        fields=["name", "customer_name as label", "mobile_no", "email_id as email", "gstin", "customer_group as group", "pricelist_multiplication_factor", "customer_discount_percentage"],
         limit=0
     )
     for c in customers:
@@ -570,7 +571,7 @@ def search_customers(query):
             "customer_name": ["like", f"%{query}%"],
         },
         filters={"disabled": 0},
-        fields=["name", "customer_name", "mobile_no", "pricelist_multiplication_factor"],
+        fields=["name", "customer_name", "mobile_no", "pricelist_multiplication_factor", "customer_discount_percentage"],
         limit=20,
         order_by="customer_name asc",
     )
@@ -623,6 +624,21 @@ def search_customers(query):
 
     return customers
 
+def _modifier_factor(modifier):
+	"""Pricelist modifier % (a markup, 0 or more) as the multiplication factor stored on Customer."""
+	mod = flt(modifier)
+	if mod < 0:
+		frappe.throw("Pricelist Modifier % must be 0 or more. Give a reduction as Discount % instead.")
+	return 1 + mod / 100
+
+
+def _discount_percentage(value):
+	discount = flt(value, 2)
+	if not 0 <= discount < 100:
+		frappe.throw("Discount % must be from 0 to below 100.")
+	return discount
+
+
 @frappe.whitelist()
 def get_customer_full(customer):
 	"""Return complete customer data (Customer + Address + WhatsApp)."""
@@ -643,6 +659,7 @@ def get_customer_full(customer):
 		"pincode": "",
 		"state": "",
 		"pricelist_multiplication_factor": doc.pricelist_multiplication_factor or 1,
+		"customer_discount_percentage": flt(doc.customer_discount_percentage),
 	}
 
 	addr_name = frappe.db.get_value(
@@ -749,13 +766,9 @@ def update_customer_full(data):
 		cust.whatsapp_enabled = 1 if frappe.utils.cint(data.get("whatsapp_enabled")) else 0
 	
 	if "pricelist_modifier" in data:
-		mod = float(data.get("pricelist_modifier") or 0)
-		if mod > 0:
-			cust.pricelist_multiplication_factor = 1 + (mod / 100)
-		elif mod < 0:
-			cust.pricelist_multiplication_factor = 1 - (abs(mod) / 100)
-		else:
-			cust.pricelist_multiplication_factor = 1
+		cust.pricelist_multiplication_factor = _modifier_factor(data.get("pricelist_modifier"))
+	if "discount_percentage" in data:
+		cust.customer_discount_percentage = _discount_percentage(data.get("discount_percentage"))
 			
 	cust.save(ignore_permissions=True)
 
@@ -876,7 +889,8 @@ def create_customer_full(data):
     if len(mobile) != 10 or not mobile.isascii() or not mobile.isdigit():
         frappe.throw("Valid 10-digit Mobile required")
 
-    modifier = data.get("pricelist_modifier")
+    factor = _modifier_factor(data.get("pricelist_modifier"))
+    discount = _discount_percentage(data.get("discount_percentage"))
     customer = frappe.get_doc({
         "doctype": "Customer",
         "customer_name": customer_name,
@@ -891,7 +905,8 @@ def create_customer_full(data):
         "disabled": 1 if data.get("disabled") else 0,
         # On unless the form explicitly turned it off
         "whatsapp_enabled": frappe.utils.cint(data.get("whatsapp_enabled", 1)),
-        "pricelist_multiplication_factor": 1 + float(modifier or 0) / 100,
+        "pricelist_multiplication_factor": factor,
+        "customer_discount_percentage": discount,
     })
     customer.insert()
 
@@ -966,13 +981,9 @@ def quick_create_customer(data=None, **kwargs):
     cust.gst_category = "Registered Regular" if cust.gstin else "Unregistered"
 
     if "pricelist_modifier" in data:
-        mod = float(data.get("pricelist_modifier") or 0)
-        if mod > 0:
-            cust.pricelist_multiplication_factor = 1 + (mod / 100)
-        elif mod < 0:
-            cust.pricelist_multiplication_factor = 1 - (abs(mod) / 100)
-        else:
-            cust.pricelist_multiplication_factor = 1
+        cust.pricelist_multiplication_factor = _modifier_factor(data.get("pricelist_modifier"))
+    if "discount_percentage" in data:
+        cust.customer_discount_percentage = _discount_percentage(data.get("discount_percentage"))
 
     cust.insert(ignore_permissions=True)
 
@@ -1054,7 +1065,7 @@ def get_customer_billing_details(customer):
 	cust_data = frappe.db.get_value(
 		"Customer",
 		customer,
-		["mobile_no", "pricelist_multiplication_factor"],
+		["mobile_no", "pricelist_multiplication_factor", "customer_discount_percentage"],
 		as_dict=True
 	)
 
@@ -1084,6 +1095,7 @@ def get_customer_billing_details(customer):
 	return {
 		"mobile_no": (cust_data.mobile_no or "") if cust_data else "",
 		"pricelist_multiplication_factor": float(cust_data.pricelist_multiplication_factor or 1.0) if cust_data else 1.0,
+		"customer_discount_percentage": flt(cust_data.customer_discount_percentage) if cust_data else 0.0,
 		"gst_balance": gst_balance,
 		"last_invoice_date": str(last_inv[0].posting_date) if last_inv else None
 	}
@@ -1130,6 +1142,7 @@ def get_single_ledger(party_name, party_type="Customer"):
 				"gstin": doc.gstin or "",
 				"group": doc.customer_group or "",
 				"pricelist_multiplication_factor": float(doc.pricelist_multiplication_factor or 1.0),
+				"customer_discount_percentage": flt(doc.customer_discount_percentage),
 				"type": "Customer",
 				"whatsapp": "",
 				"address_name": "",
