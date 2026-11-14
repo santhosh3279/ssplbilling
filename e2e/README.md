@@ -43,7 +43,7 @@ the bot tests what `/frontend` serves, not your unsaved source.
 ```bash
 npm test                                   # everything, headless
 npm test -- tests/sales-invoice            # one folder
-npm test -- -g "modifier below 1"          # tests whose name matches
+npm test -- -g "customer Discount"         # tests whose name matches
 npm run test:headed                        # watch the bot work
 npm run report                             # open the HTML report of the last run
 npm run clean                              # delete any drafts a crashed run left behind
@@ -60,7 +60,7 @@ To remove the bot user and all its test data from the site:
 | File | Checks |
 |---|---|
 | `01-basic-bill` | 3 items, totals, draft saved with same rates and total; save with no items refused |
-| `02-party-modifier` | modifier > 1 marks up and rounds to whole rupee; modifier < 1 becomes bill discount; tick / untick |
+| `02-party-modifier` | modifier > 1 marks up and rounds to whole rupee; customer Discount % becomes bill discount; tick / untick |
 | `03-bill-discount` | typed discount % and amount; hand-typed discount kept on customer change |
 | `04-party-change` | "Party Changed" prompt: Retain Prices vs Reprice |
 | `05-reopen-draft` | saved draft re-opens and updates with unchanged rates, discount, total |

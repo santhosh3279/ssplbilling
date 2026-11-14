@@ -23,9 +23,9 @@ test.describe('Sales Invoice: party modifier', () => {
     expect(saved.rounded_total || saved.grand_total).toBe(409)
   })
 
-  test('modifier below 1 keeps the price list rate and becomes a bill discount', async ({ invoice, backend }) => {
+  test('customer Discount % keeps the price list rate and becomes a bill discount', async ({ invoice, backend }) => {
     await invoice.open(env.E2E_SERIES_EXEMPT)
-    await invoice.pickCustomer(CUSTOMERS.discount) // 0.9
+    await invoice.pickCustomer(CUSTOMERS.discount) // Discount % 10
     await invoice.addItem(ITEMS.A.code, 3)
 
     const row = await invoice.rowValues(ITEMS.A.code)
@@ -57,7 +57,7 @@ test.describe('Sales Invoice: party modifier', () => {
     await expect.poll(async () => (await invoice.rowValues(ITEMS.A.code)).rate).toBe(104)
   })
 
-  test('unticking the modifier removes its bill discount, ticking restores it', async ({ invoice }) => {
+  test('unticking the modifier removes the customer discount, ticking restores it', async ({ invoice }) => {
     await invoice.open(env.E2E_SERIES_EXEMPT)
     await invoice.pickCustomer(CUSTOMERS.discount)
     await invoice.addItem(ITEMS.B.code, 2)

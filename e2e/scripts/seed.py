@@ -21,11 +21,12 @@ ENV_FILE = os.path.join(E2E_DIR, ".env")
 
 BOT_USER = "testbot@sspl.local"
 PREFIX = "TESTBOT"
-# name -> party modifier (Customer.pricelist_multiplication_factor)
+# name -> (party modifier, Discount %): Customer.pricelist_multiplication_factor (a markup,
+# 1 or more) and Customer.customer_discount_percentage (the bill discount the pages fill in)
 CUSTOMERS = {
-	f"{PREFIX} PLAIN": 1,
-	f"{PREFIX} MARKUP": 1.05,
-	f"{PREFIX} DISCOUNT": 0.9,
+	f"{PREFIX} PLAIN": (1, 0),
+	f"{PREFIX} MARKUP": (1.05, 0),
+	f"{PREFIX} DISCOUNT": (1, 10),
 }
 # item_code -> (item_name, wholesale rate, retail rate)
 ITEMS = {
@@ -106,7 +107,7 @@ def seed(frappe, args):
 	settings.save(ignore_permissions=True)
 
 	# --- customers
-	for name, modifier in CUSTOMERS.items():
+	for name, (modifier, discount) in CUSTOMERS.items():
 		doc = frappe.get_doc("Customer", name) if frappe.db.exists("Customer", name) else frappe.new_doc("Customer")
 		doc.customer_name = name
 		doc.customer_type = "Individual"
@@ -114,6 +115,7 @@ def seed(frappe, args):
 		doc.territory = doc.territory or frappe.db.get_value("Territory", {"is_group": 0})
 		doc.gst_category = "Unregistered"
 		doc.pricelist_multiplication_factor = modifier
+		doc.customer_discount_percentage = discount
 		doc.save(ignore_permissions=True)
 
 	# --- items, priced in every selling price list the series under test use
