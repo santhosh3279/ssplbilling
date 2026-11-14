@@ -186,22 +186,35 @@ class SalesInvoicePage {
     return out
   }
 
-  /** Open Multi Edit, tick the given options ('gst', 'nongst', 'rate:<n>') and press Delete. */
-  async removeByTax(...keys) {
+  /** Open Multi Edit, set the given options ('gst', 'nongst', 'rate:<n>') ticked (removes their
+   *  rows) or unticked (brings back the rows Multi Edit removed), then close it. */
+  async setTaxRemoved(removed, ...keys) {
     await this.openMultiEdit()
-    for (const key of keys) await this.id(`tax-cleanup-${key}`).locator('input').check()
-    await this.id('tax-cleanup-delete').click()
-    await expect(this.id('multi-edit')).toHaveCount(0)
+    for (const key of keys) {
+      await this.id(`tax-cleanup-${key}`).locator('input').setChecked(removed)
+    }
+    await this.closeMultiEdit()
   }
 
-  /** Open Multi Edit and undo the newest removed batch (or the one with `batchId`). */
-  async undoRemoveByTax(batchId) {
+  async removeByTax(...keys) {
+    await this.setTaxRemoved(true, ...keys)
+  }
+
+  async restoreByTax(...keys) {
+    await this.setTaxRemoved(false, ...keys)
+  }
+
+  /** Multi Edit's ticked options. */
+  async taxRemovedKeys() {
     await this.openMultiEdit()
-    const undo = batchId != null
-      ? this.id(`multi-edit-undo-${batchId}`)
-      : this.id('multi-edit-removed').locator('[data-testid^="multi-edit-undo-"]').first()
-    await undo.click()
+    const out = []
+    for (const option of await this.id('multi-edit').locator('label[data-testid^="tax-cleanup-"]').all()) {
+      if (await option.locator('input').isChecked()) {
+        out.push((await option.getAttribute('data-testid')).slice('tax-cleanup-'.length))
+      }
+    }
     await this.closeMultiEdit()
+    return out
   }
 
   /** Is this row soft-deleted (still listed, marked Deleted)? */

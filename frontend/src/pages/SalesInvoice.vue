@@ -769,10 +769,9 @@
     <MultiEdit
       :show="showMultiEdit"
       :rows="multiEditRows"
-      :removed="multiEditRemovedList"
-      @close="showMultiEdit = false"
-      @delete="deleteMultiEditRows"
-      @undo="undoMultiEditBatch"
+      :checked="multiEditChecked"
+      @close="closeMultiEdit"
+      @toggle="toggleMultiEdit"
     />
     <JumpToRowModal
       v-model:show="showJumpModal"
@@ -3019,57 +3018,56 @@ function taxCleanupKeysOf(item) {
 const showMultiEdit = ref(false)
 watch(showTaxCleanup, (v) => { if (!v) showMultiEdit.value = false })
 
-// Active rows with their Multi Edit keys, for the sub-window to count and match.
-const multiEditRows = computed(() =>
-  items.value
-    .map((item, idx) => ({ item, idx }))
-    .filter(({ item }) => !item.deleted)
-    .map(({ item, idx }) => ({ idx, keys: taxCleanupKeysOf(item) }))
-)
+// Ticked Multi Edit categories, and the rows Multi Edit itself removed (so unticking brings
+// back only those, never a row the operator deleted by hand).
+const multiEditChecked = ref([])
+const multiEditRemoved = ref(new Set())
 
-// Multi Edit deletes that can still be undone, newest last. Each keeps the row objects
-// themselves, so an undo finds them even if other rows were added or removed since.
-const multiEditRemoved = ref([])
-let multiEditBatchId = 0
-const multiEditRemovedList = computed(() =>
-  multiEditRemoved.value.map(b => ({ id: b.id, labels: b.labels, count: b.rows.length }))
-)
-// When the rows array is replaced, keep only rows still on the bill: a new / loaded bill
-// empties the list, a re-mapped one (half-tax toggle keeps deleted rows as-is) keeps it.
-watch(() => items.value, (rows) => {
-  const onBill = new Set(rows)
-  multiEditRemoved.value = multiEditRemoved.value
-    .map(b => ({ ...b, rows: b.rows.filter(r => onBill.has(r)) }))
-    .filter(b => b.rows.length)
-})
-
-function undoMultiEditBatch(id) {
-  if (isReadOnly.value || isLoadingBill.value || submitting.value) return
-  const batch = multiEditRemoved.value.find(b => b.id === id)
-  if (!batch) return
-  for (const item of batch.rows) {
-    if (items.value.includes(item)) item.deleted = false
-  }
-  multiEditRemoved.value = multiEditRemoved.value.filter(b => b.id !== id)
+// Rows Multi Edit works on: those still on the bill plus those it removed.
+function multiEditCandidates() {
+  return items.value.filter(item => !item.deleted || multiEditRemoved.value.has(item))
 }
+const multiEditRows = computed(() => multiEditCandidates().map(item => ({ keys: taxCleanupKeysOf(item) })))
 
-function deleteMultiEditRows(indexes, labels = []) {
-  showMultiEdit.value = false
+// A row is removed while any ticked category matches it: one that is both Non-GST and 5%
+// comes back only when both are unticked.
+function toggleMultiEdit(key, on) {
   if (isReadOnly.value || isLoadingBill.value || submitting.value) return
-  const removed = []
-  for (const idx of indexes) {
-    const item = items.value[idx]
-    if (!item || item.deleted) continue
-    item.deleted = true
-    removed.push(item)
-    if (editingRowIdx.value === idx) {
-      editingRowIdx.value = -1
-      editingField.value = null
+  const checked = new Set(multiEditChecked.value)
+  if (on) checked.add(key)
+  else checked.delete(key)
+  multiEditChecked.value = [...checked]
+
+  const removed = new Set(multiEditRemoved.value)
+  for (const item of multiEditCandidates()) {
+    const remove = taxCleanupKeysOf(item).some(k => checked.has(k))
+    if (remove && !item.deleted) {
+      item.deleted = true
+      removed.add(item)
+      const idx = items.value.indexOf(item)
+      if (editingRowIdx.value === idx) {
+        editingRowIdx.value = -1
+        editingField.value = null
+      }
+    } else if (!remove && removed.has(item)) {
+      item.deleted = false
+      removed.delete(item)
     }
   }
-  if (removed.length) {
-    multiEditRemoved.value = [...multiEditRemoved.value, { id: ++multiEditBatchId, labels, rows: removed }]
-  }
+  multiEditRemoved.value = removed
+}
+
+// When the rows array is replaced keep only rows still on the bill: a new / loaded bill starts
+// with nothing ticked, a re-mapped one (half-tax toggle keeps deleted rows as-is) keeps its state.
+watch(() => items.value, (rows) => {
+  const onBill = new Set(rows)
+  const kept = new Set([...multiEditRemoved.value].filter(r => onBill.has(r)))
+  multiEditRemoved.value = kept
+  if (!kept.size) multiEditChecked.value = []
+})
+
+function closeMultiEdit() {
+  showMultiEdit.value = false
   const nextIdx = items.value.findIndex(item => !item.deleted)
   if (nextIdx >= 0) focusRow(nextIdx)
   else focusBarcodeInput()

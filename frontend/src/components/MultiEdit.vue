@@ -10,7 +10,7 @@
         <div class="mr-4 flex-1">
           <h2 class="text-2xl font-bold text-[var(--color-text)]">Multi Edit</h2>
           <p class="text-left text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
-            Tick what to remove from this bill
+            Ticked = removed from this bill · untick to bring back
           </p>
         </div>
         <button
@@ -33,80 +33,45 @@
           :key="opt.key"
           :data-testid="`tax-cleanup-${opt.key}`"
           class="flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-2.5 transition-colors"
-          :class="picked.includes(opt.key)
+          :class="checked.includes(opt.key)
             ? 'border-[var(--color-danger)] bg-[var(--color-danger)]/15 text-[var(--color-danger)]'
             : 'border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-raised)]'"
         >
           <kbd class="w-6 rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] text-center text-xs text-[var(--color-text-muted)]">{{ i + 1 }}</kbd>
           <input
             type="checkbox"
-            :value="opt.key"
-            v-model="picked"
+            :checked="checked.includes(opt.key)"
             class="h-5 w-5 rounded accent-[var(--color-danger)]"
+            @change="$emit('toggle', opt.key, $event.target.checked)"
           />
-          <span class="flex-1 text-lg font-bold uppercase">{{ opt.label }}</span>
+          <span class="flex-1 text-lg font-bold uppercase" :class="checked.includes(opt.key) ? 'line-through' : ''">{{ opt.label }}</span>
+          <span v-if="checked.includes(opt.key)" class="rounded bg-[var(--color-danger)] px-1.5 text-[10px] font-bold uppercase text-white">Removed</span>
           <span data-testid="tax-cleanup-count" class="font-mono text-sm text-[var(--color-text-muted)]">{{ opt.count }} row{{ opt.count === 1 ? '' : 's' }}</span>
         </label>
       </div>
 
-      <div v-if="removed.length" data-testid="multi-edit-removed" class="mt-5 border-t border-[var(--color-border)] pt-4">
-        <div class="mb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Removed from this bill</div>
-        <div class="flex flex-col gap-2">
-          <div
-            v-for="batch in [...removed].reverse()"
-            :key="batch.id"
-            :data-testid="`multi-edit-batch-${batch.id}`"
-            class="flex items-center gap-3 rounded-xl border border-[var(--color-border)] px-4 py-2 text-[var(--color-text)]"
-          >
-            <span class="flex-1 text-sm font-bold uppercase">{{ batch.labels.join(' + ') }}</span>
-            <span class="font-mono text-sm text-[var(--color-text-muted)]">{{ batch.count }} row{{ batch.count === 1 ? '' : 's' }}</span>
-            <button
-              type="button"
-              :data-testid="`multi-edit-undo-${batch.id}`"
-              class="rounded-lg border border-[var(--color-info)] px-3 py-1 text-xs font-bold uppercase tracking-widest text-[var(--color-info)] transition-all hover:bg-[var(--color-info)]/15 active:scale-95"
-              @click="$emit('undo', batch.id)"
-            >
-              ↶ Undo
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-5 flex items-center justify-between gap-3">
-        <div class="flex gap-3 text-[10px] font-medium text-[var(--color-text-muted)]">
-          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">1-9</kbd> Tick</span>
-          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">Enter</kbd> Delete</span>
-          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">Esc</kbd> Close</span>
-        </div>
-        <button
-          type="button"
-          data-testid="tax-cleanup-delete"
-          :disabled="!matches.length"
-          class="rounded-xl bg-[var(--color-danger)] px-5 py-2 text-sm font-bold uppercase tracking-widest text-white transition-all hover:bg-[var(--color-danger)]/80 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
-          @click="apply"
-        >
-          Delete{{ matches.length ? ` (${matches.length})` : '' }}
-        </button>
+      <div class="mt-5 flex gap-3 text-[10px] font-medium text-[var(--color-text-muted)]">
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">1-9</kbd> Remove / bring back</span>
+        <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">Enter</kbd> / <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">Esc</kbd> Close</span>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { computed } from 'vue'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 
 const props = defineProps({
   show: Boolean,
-  // Active bill rows: [{ idx, keys }] where keys are 'gst' / 'nongst' and 'rate:<n>' (0 = Exempt).
+  // Rows Multi Edit works on (on the bill, or removed by Multi Edit): [{ keys }], where keys
+  // are 'gst' / 'nongst' and 'rate:<n>' (0 = Exempt).
   rows: { type: Array, default: () => [] },
-  // Earlier Multi Edit deletes still undoable: [{ id, labels, count }].
-  removed: { type: Array, default: () => [] },
+  // Ticked categories: their rows are removed from the bill.
+  checked: { type: Array, default: () => [] },
 })
 
-const emit = defineEmits(['close', 'delete', 'undo'])
-
-const picked = ref([])
+const emit = defineEmits(['close', 'toggle'])
 
 const options = computed(() => {
   const counts = new Map()
@@ -126,28 +91,9 @@ const options = computed(() => {
   return opts
 })
 
-// Rows matching any ticked option.
-const matches = computed(() => {
-  const set = new Set(picked.value)
-  if (!set.size) return []
-  return props.rows.filter(row => row.keys.some(k => set.has(k)))
-})
-
-// Every opening starts with nothing ticked.
-watch(() => props.show, (open) => { if (open) picked.value = [] })
-
 function toggle(n) {
   const opt = options.value[n - 1]
-  if (!opt) return
-  picked.value = picked.value.includes(opt.key)
-    ? picked.value.filter(k => k !== opt.key)
-    : [...picked.value, opt.key]
-}
-
-function apply() {
-  if (!matches.value.length) return
-  const labels = options.value.filter(o => picked.value.includes(o.key)).map(o => o.label)
-  emit('delete', matches.value.map(row => row.idx), labels)
+  if (opt) emit('toggle', opt.key, !props.checked.includes(opt.key))
 }
 
 const digitShortcuts = Object.fromEntries(
@@ -156,7 +102,7 @@ const digitShortcuts = Object.fromEntries(
 
 useSubwindowWatcher(computed(() => props.show), {
   ESCAPE: () => emit('close'),
-  ENTER: () => apply(),
+  ENTER: () => emit('close'),
   ...digitShortcuts,
 })
 </script>

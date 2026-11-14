@@ -14,7 +14,7 @@ test.describe('Sales Invoice: Multi Edit (tax cleanup)', () => {
     await expect(invoice.taxCleanup()).toHaveCount(0)
   })
 
-  test('Multi Edit: ticking Non-GST and Delete soft-deletes only the non-GST rows, Undo restores them', async ({ invoice, backend }) => {
+  test('Multi Edit: ticking Non-GST removes those rows, unticking brings them back', async ({ invoice, backend }) => {
     await invoice.open(env.E2E_SERIES_EXEMPT)
     await invoice.setSameCompanyBilling(true, env.E2E_COMPANY)
     await invoice.pickCustomer(CUSTOMERS.plain)
@@ -27,25 +27,29 @@ test.describe('Sales Invoice: Multi Edit (tax cleanup)', () => {
     expect(options.gst).toBe(1)
     expect(options.nongst).toBe(2)
     const rateKeys = Object.keys(options).filter(k => k.startsWith('rate:'))
-    expect(rateKeys.length).toBeGreaterThan(0)
-    expect(rateKeys.reduce((sum, k) => sum + options[k], 0)).toBe(3) // every row has one rate
+    expect(rateKeys.length).toBe(1) // all three rows share one rate
+    expect(options[rateKeys[0]]).toBe(3)
 
     await invoice.removeByTax('nongst')
     expect(await invoice.isRowDeleted(ITEMS.A.code)).toBe(true)
     expect(await invoice.isRowDeleted(ITEMS.B.code)).toBe(true)
     expect(await invoice.isRowDeleted(ITEMS.C.code)).toBe(false)
     await expect.poll(async () => (await invoice.totals()).total).toBe(200)
-    // Only the GST row is left: Non-GST is no longer offered
-    expect(await invoice.taxCleanupOptions()).toEqual({ gst: 1, [rateKeys[0]]: 1 })
+    // Categories stay listed with the same counts; the ticked one is shown removed
+    expect(await invoice.taxCleanupOptions()).toEqual(options)
+    expect(await invoice.taxRemovedKeys()).toEqual(['nongst'])
 
-    // Undo brings the Non-GST rows back; delete them again before saving
-    await invoice.undoRemoveByTax()
+    // A row comes back only when no ticked category matches it
+    await invoice.removeByTax(rateKeys[0])
+    await expect.poll(async () => (await invoice.totals()).total).toBe(0)
+    await invoice.restoreByTax('nongst')
+    expect(await invoice.isRowDeleted(ITEMS.A.code)).toBe(true) // still under the ticked rate
+    await invoice.restoreByTax(rateKeys[0])
     expect(await invoice.isRowDeleted(ITEMS.A.code)).toBe(false)
-    expect(await invoice.isRowDeleted(ITEMS.B.code)).toBe(false)
+    expect(await invoice.isRowDeleted(ITEMS.C.code)).toBe(false)
     await expect.poll(async () => (await invoice.totals()).total).toBe(799) // 798.60 rounded
-    await invoice.removeByTax('nongst')
-    await expect.poll(async () => (await invoice.totals()).total).toBe(200)
 
+    await invoice.removeByTax('nongst')
     const saved = await backend.getSalesInvoice(await invoice.save())
     expect(saved.items.map(i => i.item_code)).toEqual([ITEMS.C.code])
     expect(saved.rounded_total || saved.grand_total).toBe(200)
