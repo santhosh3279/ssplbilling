@@ -124,25 +124,12 @@ def get_draft_purchase_qtys_batch(warehouse=None):
 				qtys[(item_code, wh)] = float(v)
 	return qtys
 
-def _sum_draft_qty(qtys_raw, item_code, warehouse=None):
-	"""Total qty of one item in a raw "item:warehouse" -> qty draft map, optionally for one warehouse."""
-	total = 0.0
-	for key, qty in qtys_raw.items():
-		parts = key.split(":")
-		if len(parts) == 2 and parts[0] == item_code and (not warehouse or parts[1] == warehouse):
-			total += float(qty)
-	return total
-
-
 def get_item_available_stock(item_code, warehouse, draft_qtys=None, purchase_qtys=None):
 	"""Compute the live available qty (Bin actual_qty minus draft invoice qty plus draft purchase qty) for one
 	item+warehouse, plus the item's total draft (redis) qty across all warehouses.
 
 	The warehouse-scoped draft quantities and Bin valuation rate let warehouse-scoped client caches
-	recompute `redis_stock` / `valuation_rate` exactly as get_all_items_detailed would.
-
-	Callers broadcasting many items pass the raw draft maps in, so they are read from Redis once
-	per batch instead of six times per item."""
+	recompute `redis_stock` / `valuation_rate` exactly as get_all_items_detailed would."""
 	if draft_qtys is None:
 		draft_qtys = get_draft_invoice_qtys_from_redis()
 	if purchase_qtys is None:
@@ -150,31 +137,51 @@ def get_item_available_stock(item_code, warehouse, draft_qtys=None, purchase_qty
 	bin_row = frappe.db.get_value(
 		"Bin", {"item_code": item_code, "warehouse": warehouse}, ["actual_qty", "valuation_rate"], as_dict=True
 	) or {}
-	draft_qty = _sum_draft_qty(draft_qtys, item_code, warehouse)
-	draft_purchase_qty = _sum_draft_qty(purchase_qtys, item_code, warehouse)
+	return _available_stock_payload(
+		item_code,
+		warehouse,
+		bin_row,
+		_index_qtys_by_item(draft_qtys).get(item_code, {}),
+		_index_qtys_by_item(purchase_qtys).get(item_code, {}),
+	)
+
+
+def _index_qtys_by_item(qtys_raw):
+	"""{item_code: {warehouse: qty}} from a raw "item:warehouse" -> qty draft map, built in one pass.
+
+	Broadcasts used to rescan the whole raw map six times per bill line; with many open drafts
+	that made the after-commit stock broadcast grow with draft count x bill lines."""
+	by_item = {}
+	for key, qty in qtys_raw.items():
+		parts = key.split(":")
+		if len(parts) != 2:
+			continue
+		by_warehouse = by_item.setdefault(parts[0], {})
+		by_warehouse[parts[1]] = by_warehouse.get(parts[1], 0.0) + float(qty)
+	return by_item
+
+
+def _available_stock_payload(item_code, warehouse, bin_row, draft_by_warehouse, purchase_by_warehouse):
+	"""stock_update payload for one item+warehouse from its Bin row and per-warehouse draft maps."""
+	if warehouse:
+		draft_qty = draft_by_warehouse.get(warehouse, 0.0)
+		draft_purchase_qty = purchase_by_warehouse.get(warehouse, 0.0)
+	else:
+		draft_qty = sum(draft_by_warehouse.values())
+		draft_purchase_qty = sum(purchase_by_warehouse.values())
 	return {
 		"item_code": item_code,
 		"warehouse": warehouse,
 		"qty": float(bin_row.get("actual_qty") or 0) - draft_qty + draft_purchase_qty,
-		"redis_stock": _sum_draft_qty(draft_qtys, item_code),
-		"redis_purchase_stock": _sum_draft_qty(purchase_qtys, item_code),
+		"redis_stock": sum(draft_by_warehouse.values()),
+		"redis_purchase_stock": sum(purchase_by_warehouse.values()),
 		"draft_qty": draft_qty,
 		"draft_purchase_qty": draft_purchase_qty,
 		# Per-warehouse drafts let all-warehouse caches sum only their company's warehouses.
-		"draft_by_warehouse": _item_qtys_by_warehouse(draft_qtys, item_code),
-		"draft_purchase_by_warehouse": _item_qtys_by_warehouse(purchase_qtys, item_code),
+		"draft_by_warehouse": dict(draft_by_warehouse),
+		"draft_purchase_by_warehouse": dict(purchase_by_warehouse),
 		"valuation_rate": float(bin_row.get("valuation_rate") or 0),
 	}
-
-
-def _item_qtys_by_warehouse(qtys_raw, item_code):
-	"""{warehouse: qty} for one item from a raw "item:warehouse" -> qty draft map."""
-	by_warehouse = {}
-	for key, qty in qtys_raw.items():
-		parts = key.split(":")
-		if len(parts) == 2 and parts[0] == item_code:
-			by_warehouse[parts[1]] = by_warehouse.get(parts[1], 0.0) + float(qty)
-	return by_warehouse
 
 def publish_stock_update(item_code, warehouse):
 	"""Broadcast the live stock/redis-stock figures for an item+warehouse to all clients after commit."""
@@ -263,9 +270,29 @@ def _stock_payloads(pairs):
 	"""stock_update payloads for many (item_code, warehouse) pairs, sent as one
 	stock_update_batch message: a 70-line bill used to fan out into 70 socket messages,
 	and every client re-ran its reactive item lists once per message."""
-	draft_qtys = get_draft_invoice_qtys_from_redis()
-	purchase_qtys = get_draft_purchase_qtys_from_redis()
-	return [get_item_available_stock(ic, wh, draft_qtys, purchase_qtys) for ic, wh in pairs]
+	pairs = list(pairs)
+	if not pairs:
+		return []
+	draft_by_item = _index_qtys_by_item(get_draft_invoice_qtys_from_redis())
+	purchase_by_item = _index_qtys_by_item(get_draft_purchase_qtys_from_redis())
+	# One Bin query for the whole bill instead of one per line.
+	bins = {
+		(b.item_code, b.warehouse): b
+		for b in frappe.get_all(
+			"Bin",
+			filters={
+				"item_code": ["in", list({ic for ic, _ in pairs})],
+				"warehouse": ["in", list({wh for _, wh in pairs})],
+			},
+			fields=["item_code", "warehouse", "actual_qty", "valuation_rate"],
+		)
+	}
+	return [
+		_available_stock_payload(
+			ic, wh, bins.get((ic, wh)) or {}, draft_by_item.get(ic, {}), purchase_by_item.get(ic, {})
+		)
+		for ic, wh in pairs
+	]
 
 def publish_stock_updates(doc, method=None):
 	"""Doc event handler: broadcast live stock figures for every item on a stock document."""
