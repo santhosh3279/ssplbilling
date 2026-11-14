@@ -19,6 +19,7 @@ ACTIONS = {
 	"customer_outstanding": ("Customer outstanding", True),
 	"stock_summary": ("Stock summary", False),
 	"balance_sheet": ("Balance sheet", False),
+	"incentive_points": ("Incentive points (this month)", False),
 	"item_stock": ("Item stock", True),
 	"supplier_sales": ("Supplier item sales", True),
 	"purchase_mirrors": ("Purchase mirror bills", True),
@@ -119,6 +120,11 @@ def _source(action, query):
 		"customer_outstanding": ("customer_outstanding", {"customer": query, "limit": 20}, _customer),
 		"stock_summary": ("item_stock", {}, _stock_summary),
 		"balance_sheet": ("balance_sheet", {"as_of": str(today), "limit": 10}, _balance_sheet),
+		"incentive_points": (
+			"incentive_points",
+			{"from_date": str(get_first_day(today)), "to_date": str(today), "limit": QUICK_TOP_ITEMS},
+			_incentive_points,
+		),
 		"item_stock": ("item_stock", {"item": query, "limit": 10}, _item_stock),
 		"supplier_sales": _supplier_sales_source(query),
 		"purchase_mirrors": _purchase_mirrors_source(query),
@@ -501,7 +507,7 @@ def _balance_sheet(data):
 			label = "Profit not yet closed" if c["unclosed_profit"] > 0 else "Loss not yet closed"
 			liabilities.append([f"**{label}**", f"**{inr(c['unclosed_profit'])}**"])
 		liabilities.append(["**Total liabilities + equity**", f"**{inr(c['liabilities_and_equity'])}**"])
-		assets = side(("Asset",)) + [["**Total assets**", f"**{inr(c['assets'])}**"]]
+		assets = [*side(("Asset",)), ["**Total assets**", f"**{inr(c['assets'])}**"]]
 		check = "✅ Balanced" if c["balanced"] else f"⚠ Difference {inr(c['difference'])}"
 		out.append(
 			f"**{company}** · {check}\n\n"
@@ -510,6 +516,32 @@ def _balance_sheet(data):
 			+ _table(["Assets", "₹"], assets)
 		)
 	return f"**Balance sheet as of {format_date(data['as_of'])}**\n\n" + "\n\n".join(out)
+
+
+def _incentive_points(data):
+	t = data["totals"]
+	head = (
+		f"**Incentive points {_period(data['from_date'], data['to_date'])}**\n\n"
+		f"Earned **{qty(t['earned'])}** points (₹{qty(t['earned_rupees'])}) on {t['bills']} bills by "
+		f"{t['employees_earning']} staff · redeemed {qty(t['redeemed'])} · "
+		f"{qty(data['points_per_rupee'])} points = ₹1"
+	)
+	if not data["employees"]:
+		return head
+	rows = [
+		[
+			e["employee_name"],
+			qty(e["earned"]),
+			qty(e["as_biller"]),
+			qty(e["as_sales"]),
+			e["bills"],
+			qty(e["redeemed"]) if e["redeemed"] else "—",
+			f"{qty(e['balance'])} ({inr(e['balance_rupees'])})",
+		]
+		for e in data["employees"]
+	]
+	headers = ["Employee", "Earned", "As biller", "As sales", "Bills", "Redeemed", "Balance now"]
+	return head + "\n\n" + _table(headers, rows)
 
 
 def _item_stock(data):

@@ -105,6 +105,22 @@ LABELS = {
 	"balanced": "Balanced",
 	"sub_group": "Sub-group",
 	"as_of": "As of",
+	"employee": "Employee",
+	"employee_name": "Employee Name",
+	"designation": "Designation",
+	"status": "Status",
+	"earned": "Points Earned",
+	"earned_rupees": "Earned (₹)",
+	"as_biller": "As Biller",
+	"as_sales": "As Sales",
+	"bills": "Bills",
+	"points_per_bill": "Points / Bill",
+	"redeemed": "Points Redeemed",
+	"lifetime_earned": "Lifetime Earned",
+	"lifetime_redeemed": "Lifetime Redeemed",
+	"balance_rupees": "Balance (₹)",
+	"points": "Points",
+	"role": "Role",
 	"net_payable": "Net Payable (₹)",
 	"qty_sold": "Qty Sold",
 	"in_qty": "In",
@@ -153,6 +169,8 @@ MONEY = {
 	"unclosed_profit",
 	"liabilities_and_equity",
 	"difference",
+	"earned_rupees",
+	"balance_rupees",
 }
 # Generic sheets flatten nested totals into columns like received_total or output_by_tax_CGST.
 MONEY_SUFFIXES = ("total", "amount", "balance", "value", "output", "input", "CGST", "SGST", "IGST", "CESS")
@@ -627,6 +645,32 @@ def build_series(tool, args=None, chart_type="bar", points=None):
 				rows = [g for g in rows if g["type"] == "Asset"]
 			per_company[co] = {g["group"]: g["amount"] for g in rows}
 		return _align(per_company, points)
+
+	if tool == "incentive_points":
+		# A line is the trend (by day / month); a bar or pie ranks employees by points earned.
+		for key in ("by_day", "by_month"):
+			if chart_type == "line" and data.get(key):
+				period = key[3:]
+				return _align({"Points": {r[period]: r["points"] for r in data[key]}}, points, sort=True)
+		if data.get("by_voucher_type") and chart_type == "pie":
+			rows = data["by_voucher_type"]
+			return [r["voucher_type"] for r in rows], [
+				{"name": "Points", "values": [r["points"] for r in rows]}
+			]
+		if data.get("employee"):
+			rows = data.get("biggest_bills") or []
+			return [r["voucher_no"] for r in rows], [
+				{"name": "Points", "values": [r["points"] for r in rows]}
+			]
+		rows = data.get("employees") or []
+		if chart_type == "pie":
+			return [r["employee_name"] for r in rows], [
+				{"name": "Points", "values": [r["earned"] for r in rows]}
+			]
+		return [r["employee_name"] for r in rows], [
+			{"name": "As biller", "values": [r["as_biller"] for r in rows]},
+			{"name": "As sales", "values": [r["as_sales"] for r in rows]},
+		]
 
 	if tool == "gst_summary":
 		companies = data["companies"]

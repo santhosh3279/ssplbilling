@@ -40,6 +40,7 @@ DATA_TOOLS = (
 	"balance_sheet",
 	"gst_summary",
 	"payments_summary",
+	"incentive_points",
 	"query_records",
 )
 # Cost price is ciphered on screen in the billing app; only these roles see valuation.
@@ -448,6 +449,33 @@ TOOLS += [
 		},
 	},
 	{
+		"name": "incentive_points",
+		"description": (
+			"Staff incentive points earned on bills (Invoice Incentive: each sale, purchase or store "
+			"transfer splits its points between the Biller and the Sales staff on it) and redeemed "
+			"(Incentive Redeem), for a date range. Without `employee`: totals and every employee ranked "
+			"by points earned, with points as biller / as sales, bills worked, points per bill, redeemed "
+			"and their current lifetime balance. With `employee`: that person's totals, trend and "
+			"biggest bills. Points convert to rupees at the Incentive Rule's conversion factor (rupee "
+			"values are given). Whole business, not per company or branch. Use for 'incentive', "
+			"'points', 'who earned most', 'staff performance', 'incentive balance'."
+		),
+		"input_schema": {
+			"type": "object",
+			"properties": {
+				"from_date": _FROM,
+				"to_date": _TO,
+				"employee": {"type": "string", "description": "Employee id or part of the name."},
+				"group_by": {
+					"type": "string",
+					"enum": ["none", "day", "month", "voucher_type"],
+					"description": "Also split the points earned by day, month or bill type.",
+				},
+				"limit": _LIMIT,
+			},
+		},
+	},
+	{
 		"name": "gst_summary",
 		"description": (
 			"GST collected (output) vs paid (input credit) from the GST accounts, per company, by CGST / "
@@ -601,7 +629,7 @@ TOOLS += [
 ]
 
 INSTRUCTIONS = """You are the business assistant for Sundaram and Sons Private Ltd (SSPL), a wholesale business, answering staff questions from live ERPNext data.
-- Use the tools for every figure; never invent numbers, names or document ids. Prefer the specific tools (sales, purchases, receivables, payables, customer activity, stock and item movement, item sales trends, account ledgers, cash and bank, profit and loss, balance sheet, GST, payments). For anything else (orders, quotations, delivery notes, bank charges, journal entries, employees, assets, any other record) use describe_doctype to find the doctype and its fields, then query_records. Never tell the user you can't access something before trying these.
+- Use the tools for every figure; never invent numbers, names or document ids. Prefer the specific tools (sales, purchases, receivables, payables, customer activity, stock and item movement, item sales trends, account ledgers, cash and bank, profit and loss, balance sheet, GST, payments, staff incentive points). For anything else (orders, quotations, delivery notes, bank charges, journal entries, employees, assets, any other record) use describe_doctype to find the doctype and its fields, then query_records. Never tell the user you can't access something before trying these.
 - For one item's, a supplier's or an item group's sales by day, week or month (and purchases beside them) use item_sales_trend, not query_records.
 - For what to reorder, how much to order, safety stock, days of cover or whether ordering is healthy use reorder_suggestion; say which lead time, review days and history it used.
 - For cash flow, a cash forecast, runway or whether there will be enough money use cashflow_forecast; say it projects at the past weekly run-rate (not a schedule of dues), which history weeks it used, and show overdue receivables / payables apart.
@@ -1975,6 +2003,218 @@ def balance_sheet(as_of=None, company=None, limit=10):
 		),
 		"companies": companies,
 	}
+
+
+# ── staff incentive points ──────────────────────────────────────────────────
+
+INCENTIVE_VOUCHERS = ("Sales Invoice", "Purchase Invoice", "Stock Entry")
+# An Invoice Incentive whose inv_no is no longer any bill (deleted after the points were given).
+MISSING_BILL = "Bill not found"
+
+
+def incentive_points(from_date=None, to_date=None, employee=None, group_by="none", limit=10):
+	"""Points from submitted Invoice Incentive rows (what the Incentive Ledger page counts) and
+	submitted Incentive Redeem entries. The Employee's total / redeemed / balance are its cached
+	lifetime figures, so they don't depend on the date range."""
+	from_date = getdate(from_date or get_first_day(nowdate()))
+	to_date = getdate(to_date or nowdate())
+	if to_date < from_date:
+		raise ValueError("to_date is before from_date")
+	if group_by not in (None, "none", "day", "month", "voucher_type"):
+		raise ValueError(f"group_by must be none, day, month or voucher_type; got {group_by!r}")
+	limit = _limit(limit)
+	factor = flt(frappe.db.get_single_value("Incentive Rule", "conversion_factor")) or 4.0
+
+	person = None
+	if employee:
+		matches = _get_list(
+			"Employee",
+			or_filters=[["name", "=", employee], ["employee_name", "like", f"%{employee}%"]],
+			fields=["name", "employee_name"],
+			order_by="status asc, employee_name asc",
+			limit=10,
+		)
+		if not matches:
+			return {"found": False, "message": f"No employee matches '{employee}'."}
+		exact = [m for m in matches if employee.casefold() in (m.name.casefold(), m.employee_name.casefold())]
+		if len(exact) != 1 and len(matches) > 1:
+			return {
+				"found": False,
+				"message": f"Several employees match '{employee}'; ask which one.",
+				"matches": [{"employee": m.name, "employee_name": m.employee_name} for m in matches],
+			}
+		person = (exact or matches)[0].name
+
+	child = "`tabIncentive System`"
+	filters = [["docstatus", "=", 1], ["date", "between", [from_date, to_date]]]
+	if person:
+		filters.append(["Incentive System", "employee", "=", person])
+	rows = _get_list(
+		"Invoice Incentive",
+		filters=filters,
+		fields=[
+			"name",
+			"date",
+			"inv_no",
+			f"{child}.employee as employee",
+			f"{child}.role as role",
+			f"{child}.points as points",
+		],
+		limit=0,
+	)
+	redeems = _get_list(
+		"Incentive Redeem",
+		filters={
+			"docstatus": 1,
+			"posting_date": ["between", [from_date, to_date]],
+			**({"employee": person} if person else {}),
+		},
+		fields=["employee", {"SUM": "redeem_points", "as": "points"}, {"COUNT": "name", "as": "entries"}],
+		group_by="employee",
+		limit=0,
+	)
+
+	bills = {r.inv_no for r in rows if r.inv_no}
+	kind = {}
+	for doctype in INCENTIVE_VOUCHERS:
+		left = list(bills - set(kind))
+		for i in range(0, len(left), 1000):
+			for name in frappe.get_all(doctype, filters={"name": ["in", left[i : i + 1000]]}, pluck="name"):
+				kind[name] = doctype
+
+	staff = {}
+	bill_points = {}
+	periods = {}
+	for r in rows:
+		points = flt(r.points)
+		if not r.employee or not points:
+			continue
+		e = staff.setdefault(
+			r.employee,
+			{"employee": r.employee, "earned": 0.0, "as_biller": 0.0, "as_sales": 0.0, "_bills": set()},
+		)
+		e["earned"] += points
+		e["as_biller" if r.role == "Biller" else "as_sales"] += points
+		e["_bills"].add(r.inv_no)
+		b = bill_points.setdefault(
+			r.inv_no,
+			{
+				"voucher_no": r.inv_no,
+				"voucher_type": kind.get(r.inv_no, MISSING_BILL),
+				"date": r.date,
+				"points": 0.0,
+			},
+		)
+		b["points"] += points
+		if person:
+			b["role"] = r.role
+		if group_by in ("day", "month", "voucher_type"):
+			key = {
+				"day": str(r.date),
+				"month": str(r.date)[:7],
+				"voucher_type": kind.get(r.inv_no, MISSING_BILL),
+			}[group_by]
+			p = periods.setdefault(key, {group_by: key, "points": 0.0, "_bills": set()})
+			p["points"] += points
+			p["_bills"].add(r.inv_no)
+
+	redeemed = {r.employee: r for r in redeems}
+	people = set(staff) | set(redeemed)
+	info = {
+		e.name: e
+		for e in _get_list(
+			"Employee",
+			filters={"name": ["in", list(people) or [""]]},
+			fields=[
+				"name",
+				"employee_name",
+				"designation",
+				"status",
+				"total_incentive",
+				"redeemed_incentive",
+				"balance_incentive",
+			],
+			limit=0,
+		)
+	}
+	out = []
+	for emp in people:
+		e = staff.get(emp) or {
+			"employee": emp,
+			"earned": 0.0,
+			"as_biller": 0.0,
+			"as_sales": 0.0,
+			"_bills": set(),
+		}
+		i = info.get(emp) or frappe._dict()
+		n = len(e.pop("_bills"))
+		red = redeemed.get(emp)
+		out.append(
+			{
+				"employee": emp,
+				"employee_name": i.get("employee_name") or emp,
+				"designation": i.get("designation"),
+				"status": i.get("status"),
+				"earned": flt(e["earned"], 2),
+				"earned_rupees": flt(e["earned"] / factor, 2),
+				"as_biller": flt(e["as_biller"], 2),
+				"as_sales": flt(e["as_sales"], 2),
+				"bills": n,
+				"points_per_bill": flt(e["earned"] / n, 2) if n else 0.0,
+				"redeemed": flt(red.points, 2) if red else 0.0,
+				"lifetime_earned": flt(i.get("total_incentive"), 2),
+				"lifetime_redeemed": flt(i.get("redeemed_incentive"), 2),
+				"balance": flt(i.get("balance_incentive"), 2),
+				"balance_rupees": flt(flt(i.get("balance_incentive")) / factor, 2),
+			}
+		)
+	out.sort(key=lambda r: (-r["earned"], r["employee_name"]))
+	earned = sum(r["earned"] for r in out)
+	result = {
+		"from_date": from_date,
+		"to_date": to_date,
+		"note": (
+			f"{factor:g} points = ₹1. earned / redeemed are for the date range; lifetime_* and balance "
+			"are each employee's running totals today. A bill's points are split: the Biller gets "
+			"total / (2 x staff on the bill), the Sales staff share the rest. Whole business: the "
+			"company / cost center selection does not apply. 'Bill not found' = points still counted for a "
+			"bill number that no longer exists (deleted bill)."
+		),
+		"points_per_rupee": factor,
+		"totals": {
+			"earned": flt(earned, 2),
+			"earned_rupees": flt(earned / factor, 2),
+			"redeemed": flt(sum(r["redeemed"] for r in out), 2),
+			"bills": len(bill_points),
+			"employees_earning": sum(1 for r in out if r["earned"]),
+		},
+	}
+	if periods:
+		key = f"by_{group_by}"
+		result[key] = [
+			{
+				**{k: v for k, v in p.items() if k != "_bills"},
+				"points": flt(p["points"], 2),
+				"bills": len(p["_bills"]),
+			}
+			for p in sorted(
+				periods.values(), key=lambda p: p[group_by] if group_by != "voucher_type" else -p["points"]
+			)
+		]
+	if person:
+		result["employee"] = next((r for r in out if r["employee"] == person), None) or {
+			"employee": person,
+			"employee_name": info.get(person, frappe._dict()).get("employee_name") or person,
+			"earned": 0.0,
+		}
+		for b in bill_points.values():
+			b["points"] = flt(b["points"], 2)
+		result["biggest_bills"] = sorted(bill_points.values(), key=lambda b: -b["points"])[:limit]
+	else:
+		result["employees"] = out[:limit]
+		result["employees_shown"] = min(len(out), limit)
+		result["employees_total"] = len(out)
+	return result
 
 
 # ── GST ─────────────────────────────────────────────────────────────────────
@@ -3667,6 +3907,7 @@ HANDLERS = {
 	"profit_loss": profit_loss,
 	"balance_sheet": balance_sheet,
 	"gst_summary": gst_summary,
+	"incentive_points": incentive_points,
 	"payments_summary": payments_summary,
 	"describe_doctype": describe_doctype,
 	"query_records": query_records,
