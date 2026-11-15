@@ -96,10 +96,10 @@
                       <tbody class="divide-y divide-slate-200 font-medium">
                         <tr 
                           v-for="bp in item.barcode_prices" 
-                          :key="bp.barcode"
+                          :key="bp.key || bp.barcode"
                         >
                           <td class="py-0.5 pr-2 font-mono text-slate-800 select-all font-bold">
-                            {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-600 font-normal text-lg font-sans">({{ bp.uom }})</span>
+                            <span v-if="bp.size" class="font-sans font-black mr-2">{{ bp.size }}</span><span :class="bp.size ? 'font-normal opacity-70 text-[0.75em]' : ''">{{ bp.barcode || '—' }}</span> <span v-if="bp.uom && !bp.size" class="text-slate-600 font-normal text-lg font-sans">({{ bp.uom }})</span>
                           </td>
                           <td 
                             v-for="pl in offer.price_lists" 
@@ -161,9 +161,9 @@
 
                 <table v-if="activeItem.barcode_prices && activeItem.barcode_prices.length" class="w-full text-left text-[2vw] border-collapse">
                   <tbody class="divide-y divide-slate-200">
-                    <tr v-for="bp in activeItem.barcode_prices" :key="bp.barcode">
+                    <tr v-for="bp in activeItem.barcode_prices" :key="bp.key || bp.barcode">
                       <td class="py-1 pr-3 font-mono font-bold text-slate-800">
-                        {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-slate-600 font-normal text-[1.4vw] font-sans">({{ bp.uom }})</span>
+                        <span v-if="bp.size" class="font-sans font-black mr-2">{{ bp.size }}</span><span :class="bp.size ? 'font-normal opacity-70 text-[0.75em]' : ''">{{ bp.barcode || '—' }}</span> <span v-if="bp.uom && !bp.size" class="text-slate-600 font-normal text-[1.4vw] font-sans">({{ bp.uom }})</span>
                       </td>
                       <td
                         v-for="pl in offer.price_lists"
@@ -376,11 +376,11 @@
                         <tbody class="divide-y divide-[var(--color-border)]/30 font-medium">
                           <tr 
                             v-for="bp in item.barcode_prices" 
-                            :key="bp.barcode"
+                            :key="bp.key || bp.barcode"
                             class="hover:bg-[var(--color-bg)]/50 transition-colors"
                           >
                             <td class="py-0.5 pr-2 font-mono text-[var(--color-text)] select-all font-bold">
-                              {{ bp.barcode || '—' }} <span v-if="bp.uom" class="text-[var(--color-text-muted)] font-normal text-base font-sans">({{ bp.uom }})</span>
+                              <span v-if="bp.size" class="font-sans font-black mr-2">{{ bp.size }}</span><span :class="bp.size ? 'font-normal opacity-70 text-[0.75em]' : ''">{{ bp.barcode || '—' }}</span> <span v-if="bp.uom && !bp.size" class="text-[var(--color-text-muted)] font-normal text-base font-sans">({{ bp.uom }})</span>
                             </td>
                             <td 
                               v-for="pl in offer.price_lists" 
@@ -847,6 +847,34 @@ function handleFullscreenChange() {
   }
 }
 
+// Collapse a template and its variants into one card: template image (else the first
+// variant image), one barcode/price row per variant labelled with its size.
+function templateCard(item) {
+  const variants = [...(item.variants || [])]
+  if (!variants.length) return item
+  const sortKey = v => (v.variant_attributes || []).map(a => a.sort)
+  variants.sort((a, b) => {
+    const ka = sortKey(a)
+    const kb = sortKey(b)
+    for (let i = 0; i < Math.max(ka.length, kb.length); i++) {
+      if ((ka[i] ?? 0) !== (kb[i] ?? 0)) return (ka[i] ?? 0) - (kb[i] ?? 0)
+    }
+    return 0
+  })
+  const offerVariant = variants.find(v => v.discount_desc)
+  return {
+    ...item,
+    image: item.image || variants.find(v => v.image)?.image || null,
+    discount_type: item.discount_type || offerVariant?.discount_type || null,
+    discount_desc: item.discount_desc || offerVariant?.discount_desc || null,
+    barcode_prices: variants.map(v => ({
+      ...(v.barcode_prices?.[0] || { barcode: '', uom: v.stock_uom, prices: {} }),
+      size: v.variant_label,
+      key: v.itemcode,
+    })),
+  }
+}
+
 async function loadOffer(silent = false) {
   if (!pageaddress) {
     loading.value = false
@@ -871,8 +899,8 @@ async function loadOffer(silent = false) {
       } else {
         localStorage.removeItem('wb-cipher')
       }
-      // This page shows plain item cards, so each template row is shown as its variants.
-      res.items = res.items.flatMap(item => item.is_template ? item.variants : [item])
+      // A template is one card: its first image, with one size row per variant.
+      res.items = res.items.map(item => (item.is_template ? templateCard(item) : item))
       offer.value = res
       if (activeIndex.value >= res.items.length) activeIndex.value = 0
       document.title = `${res.heading} | Deals`
