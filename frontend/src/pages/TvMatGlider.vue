@@ -63,8 +63,20 @@
                         </div>
                         <div class="shrink-0 space-y-0.5 border-t border-slate-100 pt-[0.4vw]">
                           <h3 class="line-clamp-2 text-[0.9vw] font-semibold leading-tight text-slate-900">{{ item.itemname }}</h3>
+                          <template v-if="item.is_template && item.barcode_prices && item.barcode_prices.length">
+                            <div class="line-clamp-2 text-[0.8vw] font-black leading-tight text-slate-700">
+                              {{ item.barcode_prices.map(bp => bp.size).join(' · ') }}
+                            </div>
+                            <div class="flex justify-end gap-2 font-mono text-[0.85vw] font-bold tracking-wider text-indigo-700">
+                              <template v-for="pl in offer.price_lists" :key="pl.price_list">
+                                <span v-if="rateRange(item, pl.price_list)">
+                                  {{ encryptPrice(rateRange(item, pl.price_list).min) }}<template v-if="rateRange(item, pl.price_list).max !== rateRange(item, pl.price_list).min">–{{ encryptPrice(rateRange(item, pl.price_list).max) }}</template>
+                                </span>
+                              </template>
+                            </div>
+                          </template>
                           <div
-                            v-if="item.barcode_prices && item.barcode_prices.length"
+                            v-else-if="item.barcode_prices && item.barcode_prices.length"
                             class="flex items-baseline justify-between gap-1 font-mono text-[0.85vw] font-bold"
                           >
                             <span class="truncate text-slate-600">{{ item.barcode_prices[0].uom || item.barcode_prices[0].barcode }}</span>
@@ -138,6 +150,7 @@ import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { frappeGet } from '../api.js'
 import { encryptPrice } from '../encryption.js'
+import { templateCard, rateRange } from '../utils/catalogueTemplate.js'
 import { initFrappeSocket } from '../services/frappeSocket.js'
 
 const route = useRoute()
@@ -313,8 +326,8 @@ async function loadOffer(silent = false) {
       const cipher = (res.cipher_map || '').trim()
       if (cipher) localStorage.setItem('wb-cipher', cipher)
       else localStorage.removeItem('wb-cipher')
-      // Plain item tiles, so each template row is shown as its variants.
-      res.items = res.items.flatMap(item => (item.is_template ? item.variants : [item]))
+      // A template is one tile: its first image, with its sizes listed.
+      res.items = res.items.map(item => (item.is_template ? templateCard(item) : item))
       offer.value = res
       document.title = `${res.heading} | Mat`
     } else if (!silent) {
