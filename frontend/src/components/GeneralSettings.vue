@@ -332,7 +332,7 @@ import { dashboardApi } from '../services/dashboard'
 import { session } from '../session.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { getUserRole } from '../composables/usePermission'
-import { seriesPrefix } from '../composables/useAllowedSeries.js'
+import { writeAllowedSeriesPrefixes } from '../composables/useAllowedSeries.js'
 import { useItemCache } from '../services/itemCache'
 import { useLedgerCache } from '../services/ledgerCache'
 
@@ -481,8 +481,7 @@ function applyToLocalStorage(settings, targetUserArg) {
     localStorage.setItem('wb-tax-type-incl', firstSeries.tax_type_incl ? '1' : '0')
   }
 
-  // Save allowed series prefixes
-  const allBillingSeries = settings.billing_series || []
+  // Row of the (inherited) user
   const userRow = (settings.user_series || []).find(r => r.user === targetUser)
 
   // Role flags from user_series row
@@ -495,19 +494,8 @@ function applyToLocalStorage(settings, targetUserArg) {
   // Written every sync so a previous user's flag never carries over on a shared terminal
   localStorage.setItem('wb-view-purchase-price', userRow?.view_purchase_price ? '1' : '0')
 
-  let allowedSeries = allBillingSeries
-  if (userRow?.allowed_series && userRow.allowed_series.trim().toUpperCase() !== 'ALL') {
-    // Exact prefix match only: "PO" allows "PO.#####" but not "POR.#####"
-    const allowedPrefixes = userRow.allowed_series.split(',').map(seriesPrefix).filter(Boolean)
-    allowedSeries = allBillingSeries.filter(bs => allowedPrefixes.includes(seriesPrefix(bs.series)))
-  }
-
-  const seriesPrefixes = allowedSeries
-    .map(bs => bs.series.split('.')[0])
-    .filter(Boolean)
-  if (seriesPrefixes.length) {
-    localStorage.setItem('wb-allowed-series', JSON.stringify(seriesPrefixes))
-  }
+  // Allowed series prefixes for the (inherited) user; same rules as the server
+  writeAllowedSeriesPrefixes(settings, targetUser)
 
   // Cache Automatic Entries values under ae-* keys
   if (settings.automatic_entries) {

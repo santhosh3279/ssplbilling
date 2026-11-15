@@ -7,6 +7,7 @@ import { dashboardApi } from './dashboard'
 import { fetchAllowedTiles, frappeGet } from '../api.js'
 import { useItemCache } from './itemCache.js'
 import { syncNamingSeries } from './seriesCache.js'
+import { writeAllowedSeriesPrefixes } from '../composables/useAllowedSeries.js'
 import { warmPrintCache, clearPrintCache } from './printCache.js'
 
 const SETTINGS_CACHE_KEY = 'wb-settings-v2'
@@ -107,6 +108,8 @@ async function syncBillingSettings(targetUser, force) {
 
     if (settings) {
       localStorage.setItem('wb-gst', settings.company_gstin || '')
+      // Series the (inherited) user may bill on — read by every page's series picker
+      writeAllowedSeriesPrefixes(settings, targetUser)
     }
     if (settings && settings.currency_precision !== undefined && settings.currency_precision !== null) {
       localStorage.setItem('wb-prcision', String(settings.currency_precision))
