@@ -69,6 +69,13 @@
           <template v-else-if="pctValue < 0">Rates go up {{ -pctValue }}% on {{ rateRows }} row{{ rateRows === 1 ? '' : 's' }}.</template>
           <template v-else>0% puts back the rates from before Rate Edit. Positive lowers, negative raises.</template>
         </p>
+        <div
+          v-if="!pctInvalid && pctValue !== ratePct && previewLoss > 0"
+          data-testid="rate-edit-loss-preview"
+          class="rounded-xl border border-[var(--color-danger)] bg-[var(--color-danger)]/15 px-4 py-2 text-sm font-bold text-[var(--color-danger)]"
+        >
+          ⚠ {{ previewLoss }} row{{ previewLoss === 1 ? '' : 's' }} will sell below cost at {{ pctValue }}%
+        </div>
         <div class="flex items-center justify-between rounded-xl border border-[var(--color-border)] px-4 py-2">
           <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Applied now</span>
           <span data-testid="rate-edit-applied" class="font-mono text-lg font-bold" :class="ratePct ? 'text-[var(--color-danger)]' : 'text-[var(--color-text)]'">
@@ -84,6 +91,9 @@
             ↶ Reset
           </button>
         </div>
+        <p v-if="appliedLoss > 0" data-testid="rate-edit-loss" class="text-xs font-bold text-[var(--color-danger)]">
+          ⚠ {{ appliedLoss }} row{{ appliedLoss === 1 ? '' : 's' }} below cost now
+        </p>
       </div>
 
       <div v-else-if="!options.length" class="py-8 text-center text-sm text-[var(--color-text-muted)]">
@@ -137,6 +147,8 @@ const props = defineProps({
   // Rate Edit % applied now (positive = rates lowered), and how many rows it would change.
   ratePct: { type: Number, default: 0 },
   rateRows: { type: Number, default: 0 },
+  // (pct) => rows that would sell below cost with that Rate Edit %, bill discount included.
+  lossAt: { type: Function, default: () => 0 },
 })
 
 const emit = defineEmits(['close', 'toggle', 'rate'])
@@ -150,6 +162,8 @@ const pctText = ref('')
 const pctInput = ref(null)
 const pctValue = computed(() => parseFloat(pctText.value) || 0)
 const pctInvalid = computed(() => pctValue.value >= 100)
+const previewLoss = computed(() => (props.show && tab.value === 'rate' ? props.lossAt(pctValue.value) : 0))
+const appliedLoss = computed(() => (props.show && tab.value === 'rate' ? props.lossAt(props.ratePct) : 0))
 
 function setTab(id) {
   tab.value = id

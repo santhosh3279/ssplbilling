@@ -72,6 +72,7 @@
       v-model:discount-pct="discountPct"
       v-model:discount-direct-amt="discountDirectAmt"
       :discount-amt="discountAmt"
+      :discount-loss-rows="discountLossRows"
       @back="goBack"
       @save="handleSave"
       @print="handlePrint"
@@ -772,6 +773,7 @@
       :checked="multiEditChecked"
       :rate-pct="rateEditPct"
       :rate-rows="rateEditRows.length"
+      :loss-at="rateEditLossRows"
       @close="closeMultiEdit"
       @toggle="toggleMultiEdit"
       @rate="applyRateEdit"
@@ -1813,17 +1815,54 @@ function format2p(val) {
   return isNaN(num) ? '0.00' : num.toFixed(2)
 }
 
-function isBelowValuation(item) {
-  if (item.deleted || item._is_free) return false
+// Cost of one unit in the row's UOM (valuation rate × conversion factor), or null when unknown.
+function rowCostPerUom(item) {
   const cached = lookupItemInCache(item.item_code)
   const valuationRate = Number(cached?.valuation_rate)
-  const rate = Number(item.rate)
-  if (!Number.isFinite(valuationRate) || valuationRate <= 0 || !Number.isFinite(rate)) return false
-
+  if (!Number.isFinite(valuationRate) || valuationRate <= 0) return null
   const conversionFactor = Number(cached.uoms?.find(u => u.uom === item.uom)?.conversion_factor) || 1
-  const costPerUom = Number((valuationRate * conversionFactor).toFixed(precision))
-  const sellingPrice = Number((rate * (1 - getDiscPrecision(item.discount) / 100)).toFixed(precision))
-  return sellingPrice < costPerUom
+  return Number((valuationRate * conversionFactor).toFixed(precision))
+}
+
+// True when the row sells below cost at `rate` after its row discount and `billFraction`
+// (share of the bill discount, 0..1).
+function sellsBelowCost(item, rate = Number(item.rate), billFraction = 0) {
+  if (item.deleted || item._is_free || !Number.isFinite(rate)) return false
+  const cost = rowCostPerUom(item)
+  if (cost == null) return false
+  const net = rate * (1 - getDiscPrecision(item.discount) / 100) * (1 - billFraction)
+  return Number(net.toFixed(precision)) < cost
+}
+
+function isBelowValuation(item) {
+  return sellsBelowCost(item)
+}
+
+// Bill discount (% or amount) as a share of the undiscounted bill, so each row bears it pro rata.
+const billDiscountFraction = computed(() => {
+  const amt = Number(discountAmt.value) || 0
+  if (amt <= 0) return 0
+  const grossSubtotal = activeItems.value.reduce((sum, item) => sum + item.amount, 0)
+  const charges = freightAmt.value + packingAmt.value + loadingAmt.value + otherAmt.value
+  const undiscounted = grossSubtotal + (isInclusiveTax.value ? 0 : taxOnGross.value) + charges
+  return undiscounted > 0 ? Math.min(amt / undiscounted, 1) : 0
+})
+
+// Rows that go below cost once the bill discount is applied (shown under Discount).
+const discountLossRows = computed(() => {
+  const f = billDiscountFraction.value
+  if (f <= 0) return 0
+  return items.value.filter(item => sellsBelowCost(item, Number(item.rate), f)).length
+})
+
+// Rows below cost if Rate Edit applied `pct` now (from the pre-Rate-Edit rates), bill discount included.
+function rateEditLossRows(pct) {
+  pct = parseFloat(pct) || 0
+  const f = billDiscountFraction.value
+  return items.value.filter(item => {
+    const from = Number(item._rate_edit_from ?? item.rate)
+    return sellsBelowCost(item, from * (1 - pct / 100), f)
+  }).length
 }
 
 async function clearBill() {

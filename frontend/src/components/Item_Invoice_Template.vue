@@ -501,7 +501,16 @@
                   </tr>
                   <!-- Global Discount -->
                   <tr>
-                    <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">Discount</td>
+                    <td class="px-2 text-2xl text-[var(--color-text-muted)] border border-[var(--color-border)]">
+                      Discount
+                      <div
+                        v-if="discountLossRows > 0"
+                        data-testid="discount-loss-rows"
+                        class="text-xs font-bold uppercase tracking-wider text-[var(--color-danger)]"
+                      >
+                        ⚠ {{ discountLossRows }} row{{ discountLossRows === 1 ? '' : 's' }} below cost
+                      </div>
+                    </td>
                     <td class="p-0 border border-[var(--color-border)]">
                       <div class="flex h-full items-stretch">
                         <!-- Pct Half -->
@@ -768,6 +777,8 @@ const props = defineProps({
   discountPct: { type: [Number, String], default: 0 },
   discountDirectAmt: { type: [Number, String], default: 0 },
   discountAmt: { type: [Number, String], default: '0.00' },
+  // Rows whose net price (after row + bill discount) falls below cost; 0 hides the warning.
+  discountLossRows: { type: Number, default: 0 },
   subtotal: { type: [Number, String], default: '0.00' },
   freightEntry: { type: [Number, String], default: '' },
   freightAmt: { type: [Number, String], default: '0.00' },

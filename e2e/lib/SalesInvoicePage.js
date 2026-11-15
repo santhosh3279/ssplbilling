@@ -229,6 +229,26 @@ class SalesInvoicePage {
     return applied.trim()
   }
 
+  /** Rows below cost after the bill discount, from the warning under Discount (0 when hidden). */
+  async discountLossRows() {
+    const badge = this.id('discount-loss-rows')
+    if (!(await badge.isVisible())) return 0
+    return parseInt((await badge.innerText()).replace(/\D+/g, ' ').trim(), 10) || 0
+  }
+
+  /** Type a Rate Edit % without applying; returns how many rows it would put below cost. */
+  async rateEditLossPreview(pct) {
+    await this.openMultiEdit()
+    await this.id('multi-edit-tab-rate').click()
+    await this.id('rate-edit-pct').fill(String(pct))
+    const preview = this.id('rate-edit-loss-preview')
+    const n = (await preview.isVisible())
+      ? parseInt((await preview.innerText()).replace(/\D+/g, ' ').trim(), 10) || 0
+      : 0
+    await this.closeMultiEdit()
+    return n
+  }
+
   /** Is this row soft-deleted (still listed, marked Deleted)? */
   async isRowDeleted(itemCode, nth = 0) {
     return (await this.row(itemCode, nth).getAttribute('data-deleted')) === '1'
