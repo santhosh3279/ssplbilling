@@ -11,6 +11,7 @@
           <h2 class="text-2xl font-bold text-[var(--color-text)]">Multi Edit</h2>
           <p class="text-left text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
             <template v-if="tab === 'remove'">Ticked = removed from this bill · untick to bring back</template>
+            <template v-else-if="base === 'valuation'">Set every row's rate to valuation rate + a percentage</template>
             <template v-else>Change every row's rate by a percentage</template>
           </p>
         </div>
@@ -38,8 +39,25 @@
         </button>
       </div>
 
-      <!-- Rate Edit: + lowers every rate, − raises it, always from the rates before Rate Edit -->
+      <!-- Rate Edit. Current rate: + lowers every rate, − raises it, always from the rates before
+           Rate Edit. Valuation: rate = valuation rate × (1 + %), a markup on cost. -->
       <div v-if="tab === 'rate'" class="flex flex-col gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Based on</span>
+          <div class="flex flex-1 gap-1 rounded-xl border border-[var(--color-border)] p-1">
+            <button
+              v-for="b in BASES"
+              :key="b.id"
+              type="button"
+              :data-testid="`rate-edit-base-${b.id}`"
+              class="flex-1 rounded-lg px-3 py-1 text-xs font-bold uppercase tracking-widest transition-colors"
+              :class="base === b.id ? 'bg-[var(--color-info)] text-white shadow' : 'text-[var(--color-text-muted)] hover:text-[var(--color-text)]'"
+              @click="setBase(b.id)"
+            >
+              {{ b.label }}
+            </button>
+          </div>
+        </div>
         <div class="flex items-center gap-2">
           <div class="relative flex-1">
             <input
@@ -56,7 +74,7 @@
           <button
             type="button"
             data-testid="rate-edit-apply"
-            :disabled="!rateRows || pctInvalid"
+            :disabled="!activeRows || pctInvalid"
             class="rounded-xl bg-[var(--color-highlight)] px-5 py-3 text-sm font-bold uppercase tracking-widest text-[var(--color-text-on-highlight)] transition-all hover:bg-[var(--color-highlight)]/80 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
             @click="applyRate"
           >
@@ -64,25 +82,32 @@
           </button>
         </div>
         <p class="text-xs font-semibold" :class="pctInvalid ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
-          <template v-if="pctInvalid">Percentage must be below 100.</template>
+          <template v-if="pctInvalid">{{ base === 'valuation' ? 'Percentage must be above −100.' : 'Percentage must be below 100.' }}</template>
+          <template v-else-if="base === 'valuation'">
+            <template v-if="!valuationRows">No row has a valuation rate.</template>
+            <template v-else>
+              Rates set to valuation {{ pctValue < 0 ? '−' : '+' }} {{ Math.abs(pctValue) }}% on {{ valuationRows }} row{{ valuationRows === 1 ? '' : 's' }}<template v-if="rateRows > valuationRows">; {{ rateRows - valuationRows }} without valuation keep their rate</template>.
+            </template>
+          </template>
           <template v-else-if="pctValue > 0">Rates go down {{ pctValue }}% on {{ rateRows }} row{{ rateRows === 1 ? '' : 's' }}.</template>
           <template v-else-if="pctValue < 0">Rates go up {{ -pctValue }}% on {{ rateRows }} row{{ rateRows === 1 ? '' : 's' }}.</template>
           <template v-else>0% puts back the rates from before Rate Edit. Positive lowers, negative raises.</template>
         </p>
         <div
-          v-if="!pctInvalid && pctValue !== ratePct && previewLoss > 0"
+          v-if="!pctInvalid && (pctValue !== ratePct || base !== rateBase) && previewLoss > 0"
           data-testid="rate-edit-loss-preview"
           class="rounded-xl border border-[var(--color-danger)] bg-[var(--color-danger)]/15 px-4 py-2 text-sm font-bold text-[var(--color-danger)]"
         >
-          ⚠ {{ previewLoss }} row{{ previewLoss === 1 ? '' : 's' }} will sell below cost at {{ pctValue }}%
+          ⚠ {{ previewLoss }} row{{ previewLoss === 1 ? '' : 's' }} will sell below cost at {{ base === 'valuation' ? 'valuation ' + (pctValue < 0 ? '−' : '+') + Math.abs(pctValue) : pctValue }}%
         </div>
         <div class="flex items-center justify-between rounded-xl border border-[var(--color-border)] px-4 py-2">
           <span class="text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)]">Applied now</span>
-          <span data-testid="rate-edit-applied" class="font-mono text-lg font-bold" :class="ratePct ? 'text-[var(--color-danger)]' : 'text-[var(--color-text)]'">
-            {{ ratePct > 0 ? `−${ratePct}` : ratePct < 0 ? `+${-ratePct}` : '0' }}%
+          <span data-testid="rate-edit-applied" class="font-mono text-lg font-bold" :class="ratePct || rateBase === 'valuation' ? 'text-[var(--color-danger)]' : 'text-[var(--color-text)]'">
+            <template v-if="rateBase === 'valuation'">Val {{ ratePct < 0 ? `−${-ratePct}` : `+${ratePct}` }}%</template>
+            <template v-else>{{ ratePct > 0 ? `−${ratePct}` : ratePct < 0 ? `+${-ratePct}` : '0' }}%</template>
           </span>
           <button
-            v-if="ratePct"
+            v-if="ratePct || rateBase === 'valuation'"
             type="button"
             data-testid="rate-edit-reset"
             class="rounded-lg border border-[var(--color-info)] px-3 py-1 text-xs font-bold uppercase tracking-widest text-[var(--color-info)] transition-all hover:bg-[var(--color-info)]/15 active:scale-95"
@@ -125,7 +150,10 @@
 
       <div class="mt-5 flex flex-wrap gap-3 text-[10px] font-medium text-[var(--color-text-muted)]">
         <span v-if="tab === 'remove'"><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">1-9</kbd> Remove / bring back</span>
-        <span v-else><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">Enter</kbd> Apply</span>
+        <template v-else>
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">Enter</kbd> Apply</span>
+          <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">F2</kbd> Rate / Valuation</span>
+        </template>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">PgUp</kbd> / <kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">PgDn</kbd> Tab</span>
         <span><kbd class="rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-1 text-[var(--color-text)]">Esc</kbd> Close</span>
       </div>
@@ -147,7 +175,11 @@ const props = defineProps({
   // Rate Edit % applied now (positive = rates lowered), and how many rows it would change.
   ratePct: { type: Number, default: 0 },
   rateRows: { type: Number, default: 0 },
-  // (pct) => rows that would sell below cost with that Rate Edit %, bill discount included.
+  // What the applied % works on: 'rate' (pre-Rate-Edit rate) or 'valuation' (markup on cost),
+  // and how many rows have a valuation rate.
+  rateBase: { type: String, default: 'rate' },
+  valuationRows: { type: Number, default: 0 },
+  // (pct, base) => rows that would sell below cost with that Rate Edit, bill discount included.
   lossAt: { type: Function, default: () => 0 },
 })
 
@@ -157,32 +189,51 @@ const TABS = [
   { id: 'remove', label: 'Remove' },
   { id: 'rate', label: 'Rate Edit' },
 ]
+const BASES = [
+  { id: 'rate', label: 'Current rate' },
+  { id: 'valuation', label: 'Valuation' },
+]
 const tab = ref('remove')
+const base = ref('rate')
 const pctText = ref('')
 const pctInput = ref(null)
 const pctValue = computed(() => parseFloat(pctText.value) || 0)
-const pctInvalid = computed(() => pctValue.value >= 100)
-const previewLoss = computed(() => (props.show && tab.value === 'rate' ? props.lossAt(pctValue.value) : 0))
-const appliedLoss = computed(() => (props.show && tab.value === 'rate' ? props.lossAt(props.ratePct) : 0))
+const pctInvalid = computed(() => (base.value === 'valuation' ? pctValue.value <= -100 : pctValue.value >= 100))
+const activeRows = computed(() => (base.value === 'valuation' ? props.valuationRows : props.rateRows))
+const previewLoss = computed(() => (props.show && tab.value === 'rate' ? props.lossAt(pctValue.value, base.value) : 0))
+const appliedLoss = computed(() => (props.show && tab.value === 'rate' ? props.lossAt(props.ratePct, props.rateBase) : 0))
 
 function setTab(id) {
   tab.value = id
   if (id === 'rate') {
-    pctText.value = props.ratePct ? String(props.ratePct) : ''
-    nextTick(() => { pctInput.value?.focus(); pctInput.value?.select() })
+    base.value = props.rateBase
+    pctText.value = props.ratePct || props.rateBase === 'valuation' ? String(props.ratePct) : ''
+    focusPct()
   }
+}
+
+function focusPct() {
+  nextTick(() => { pctInput.value?.focus(); pctInput.value?.select() })
+}
+
+function setBase(id) {
+  if (base.value === id) return
+  base.value = id
+  pctText.value = id === props.rateBase && (props.ratePct || id === 'valuation') ? String(props.ratePct) : ''
+  focusPct()
 }
 
 watch(() => props.show, (open) => { if (open) tab.value = 'remove' })
 
 function applyRate() {
-  if (!props.rateRows || pctInvalid.value) return
-  emit('rate', pctValue.value)
+  if (!activeRows.value || pctInvalid.value) return
+  emit('rate', pctValue.value, base.value)
 }
 
 function resetRate() {
   pctText.value = ''
-  emit('rate', 0)
+  base.value = 'rate'
+  emit('rate', 0, 'rate')
 }
 
 function switchTab(step) {
@@ -223,6 +274,7 @@ useSubwindowWatcher(computed(() => props.show), {
   ENTER: () => (tab.value === 'rate' ? applyRate() : emit('close')),
   PAGEUP: () => switchTab(-1),
   PAGEDOWN: () => switchTab(1),
+  F2: () => { if (tab.value === 'rate') setBase(base.value === 'rate' ? 'valuation' : 'rate') },
   ...digitShortcuts,
 })
 </script>

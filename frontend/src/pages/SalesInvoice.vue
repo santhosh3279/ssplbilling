@@ -773,6 +773,8 @@
       :checked="multiEditChecked"
       :rate-pct="rateEditPct"
       :rate-rows="rateEditRows.length"
+      :rate-base="rateEditBase"
+      :valuation-rows="rateEditValuationRows.length"
       :loss-at="rateEditLossRows"
       @close="closeMultiEdit"
       @toggle="toggleMultiEdit"
@@ -1855,13 +1857,15 @@ const discountLossRows = computed(() => {
   return items.value.filter(item => sellsBelowCost(item, Number(item.rate), f)).length
 })
 
-// Rows below cost if Rate Edit applied `pct` now (from the pre-Rate-Edit rates), bill discount included.
-function rateEditLossRows(pct) {
+// Rows below cost if Rate Edit applied `pct` on `base` now, bill discount included.
+function rateEditLossRows(pct, base = 'rate') {
   pct = parseFloat(pct) || 0
   const f = billDiscountFraction.value
   return items.value.filter(item => {
     const from = Number(item._rate_edit_from ?? item.rate)
-    return sellsBelowCost(item, from * (1 - pct / 100), f)
+    const cost = base === 'valuation' ? rowCostPerUom(item) : null
+    const rate = cost != null ? cost * (1 + pct / 100) : base === 'valuation' ? from : from * (1 - pct / 100)
+    return sellsBelowCost(item, rate, f)
   }).length
 }
 
@@ -3106,23 +3110,33 @@ watch(() => items.value, (rows) => {
   const kept = new Set([...multiEditRemoved.value].filter(r => onBill.has(r)))
   multiEditRemoved.value = kept
   if (!kept.size) multiEditChecked.value = []
-  if (!rows.some(r => r._rate_edit_from != null)) rateEditPct.value = 0
+  if (!rows.some(r => r._rate_edit_from != null)) {
+    rateEditPct.value = 0
+    rateEditBase.value = 'rate'
+  }
 })
 
 // Rate Edit: every row's rate × (1 − pct / 100), so a positive % lowers it and a negative %
 // raises it. Always worked out from the rate the row had before Rate Edit (_rate_edit_from),
 // so applying again never compounds and 0 % puts the rates back. An edited rate counts as an
 // override, so a reprice / party change leaves it alone.
+// base 'valuation': rate = cost per UOM × (1 + pct / 100) instead (a markup on valuation rate);
+// rows with no valuation rate keep their pre-Rate-Edit rate.
 const rateEditPct = ref(0)
+const rateEditBase = ref('rate')
 const rateEditRows = computed(() => items.value.filter(i => !i.deleted && !i._is_free))
+const rateEditValuationRows = computed(() => rateEditRows.value.filter(i => rowCostPerUom(i) != null))
 
-function applyRateEdit(pct) {
+function applyRateEdit(pct, base = 'rate') {
   if (isReadOnly.value || isLoadingBill.value || submitting.value) return
   pct = parseFloat(pct) || 0
-  if (pct >= 100) return
+  const byValuation = base === 'valuation'
+  if (byValuation ? pct <= -100 : pct >= 100) return
+  const reset = !byValuation && pct === 0
   items.value.forEach((item, idx) => {
     if (item._is_free) return
-    if (pct === 0) {
+    const cost = byValuation ? rowCostPerUom(item) : null
+    if (reset || (byValuation && cost == null)) {
       if (item._rate_edit_from == null) return
       item.rate = item._rate_edit_from
       item._rate_overridden = item._rate_edit_overridden
@@ -3134,12 +3148,14 @@ function applyRateEdit(pct) {
         item._rate_edit_from = item.rate || 0
         item._rate_edit_overridden = !!item._rate_overridden
       }
-      item.rate = parseFloat((item._rate_edit_from * (1 - pct / 100)).toFixed(precision))
+      const rate = byValuation ? cost * (1 + pct / 100) : item._rate_edit_from * (1 - pct / 100)
+      item.rate = parseFloat(rate.toFixed(precision))
       item._rate_overridden = true
     }
     recalcAmount(idx)
   })
-  rateEditPct.value = pct
+  rateEditPct.value = reset ? 0 : pct
+  rateEditBase.value = reset ? 'rate' : base
 }
 
 function closeMultiEdit() {

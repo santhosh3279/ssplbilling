@@ -218,10 +218,12 @@ class SalesInvoicePage {
   }
 
   /** Multi Edit → Rate Edit: apply `pct` (positive lowers every rate, negative raises it,
-   *  0 puts the rates back), then close. Returns the "Applied now" text. */
-  async setRateEdit(pct) {
+   *  0 puts the rates back), then close. Returns the "Applied now" text.
+   *  base 'valuation': rate = valuation rate + `pct`% instead. */
+  async setRateEdit(pct, base = 'rate') {
     await this.openMultiEdit()
     await this.id('multi-edit-tab-rate').click()
+    await this.id(`rate-edit-base-${base}`).click()
     await this.id('rate-edit-pct').fill(String(pct))
     await this.id('rate-edit-apply').click()
     const applied = await this.id('rate-edit-applied').innerText()
