@@ -9,8 +9,8 @@ const env = requireEnv()
 const CUSTOMERS = { plain: 'TESTBOT PLAIN', markup: 'TESTBOT MARKUP', discount: 'TESTBOT DISCOUNT' }
 // Rates as seeded by scripts/seed.py: wholesale (W… price lists) and retail
 const ITEMS = {
-  A: { code: 'TESTBOT-A', wholesale: 98.6, retail: 110 },
-  B: { code: 'TESTBOT-B', wholesale: 250, retail: 275 },
+  A: { code: 'TESTBOT-A', wholesale: 98.6, retail: 110, valuation: 50 },
+  B: { code: 'TESTBOT-B', wholesale: 250, retail: 275, valuation: 100 },
   C: { code: 'TESTBOT-C', wholesale: 40, retail: 45 },
 }
 

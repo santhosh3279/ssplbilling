@@ -82,4 +82,37 @@ test.describe('Sales Invoice: Multi Edit (tax cleanup)', () => {
     expect(saved.items.find(i => i.item_code === ITEMS.B.code).rate).toBe(225)
     expect(saved.rounded_total || saved.grand_total).toBe(539)
   })
+
+  test('Rate Edit by valuation: rate = valuation + %, rows without valuation keep their rate', async ({ invoice, backend }) => {
+    await invoice.open(env.E2E_SERIES_EXEMPT)
+    await invoice.setSameCompanyBilling(true, env.E2E_COMPANY)
+    await invoice.pickCustomer(CUSTOMERS.plain)
+    await invoice.addItem(ITEMS.A.code, 1) // valuation 50
+    await invoice.addItem(ITEMS.B.code, 2) // valuation 100
+    await invoice.addItem(ITEMS.C.code, 1) // no valuation
+
+    expect(await invoice.setRateEdit(20, 'valuation')).toBe('Val +20%')
+    expect((await invoice.rowValues(ITEMS.A.code)).rate).toBe(60)
+    expect((await invoice.rowValues(ITEMS.B.code)).rate).toBe(120)
+    expect((await invoice.rowValues(ITEMS.C.code)).rate).toBe(ITEMS.C.wholesale)
+
+    // Below cost is flagged before applying
+    expect(await invoice.rateEditLossPreview(-10, 'valuation')).toBe(2)
+
+    // Back to the current-rate base works from the original rates, not the valuation ones
+    expect(await invoice.setRateEdit(10)).toBe('−10%')
+    expect((await invoice.rowValues(ITEMS.A.code)).rate).toBe(88.74)
+    expect((await invoice.rowValues(ITEMS.C.code)).rate).toBe(36)
+
+    expect(await invoice.setRateEdit(0, 'valuation')).toBe('Val +0%')
+    expect((await invoice.rowValues(ITEMS.A.code)).rate).toBe(ITEMS.A.valuation)
+    expect((await invoice.rowValues(ITEMS.C.code)).rate).toBe(ITEMS.C.wholesale)
+
+    await invoice.setRateEdit(20, 'valuation')
+    await expect.poll(async () => (await invoice.totals()).total).toBe(340) // 60 + 240 + 40
+    const saved = await backend.getSalesInvoice(await invoice.save())
+    expect(saved.items.find(i => i.item_code === ITEMS.A.code).rate).toBe(60)
+    expect(saved.items.find(i => i.item_code === ITEMS.B.code).rate).toBe(120)
+    expect(saved.items.find(i => i.item_code === ITEMS.C.code).rate).toBe(ITEMS.C.wholesale)
+  })
 })

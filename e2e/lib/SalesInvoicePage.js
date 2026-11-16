@@ -239,9 +239,10 @@ class SalesInvoicePage {
   }
 
   /** Type a Rate Edit % without applying; returns how many rows it would put below cost. */
-  async rateEditLossPreview(pct) {
+  async rateEditLossPreview(pct, base = 'rate') {
     await this.openMultiEdit()
     await this.id('multi-edit-tab-rate').click()
+    await this.id(`rate-edit-base-${base}`).click()
     await this.id('rate-edit-pct').fill(String(pct))
     const preview = this.id('rate-edit-loss-preview')
     const n = (await preview.isVisible())
