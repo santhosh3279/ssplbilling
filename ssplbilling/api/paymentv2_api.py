@@ -315,3 +315,46 @@ def search_accounts(query="", account_type=None):
     if account_type: filters.append(["account_type", "=", account_type])
     if query: filters.append(["account_name", "like", f"%{query}%"])
     return frappe.get_all("Account", filters=filters, fields=["name", "account_name"], limit=25)
+
+
+@frappe.whitelist()
+def get_last_payment(party, party_type=None, company=None):
+    """Return the most recent submitted Payment Entry for a party (or, when no party type, an account)."""
+    if not party:
+        return None
+    base = {"docstatus": 1}
+    if company:
+        base["company"] = company
+
+    fields = [
+        "name", "posting_date", "payment_type", "paid_amount", "mode_of_payment",
+        "reference_no", "paid_from", "paid_to", "creation",
+    ]
+    order_by = "posting_date desc, creation desc"
+
+    if party_type and party_type != "Account":
+        rows = frappe.get_all(
+            "Payment Entry",
+            filters={**base, "party_type": party_type, "party": party},
+            fields=fields, order_by=order_by, limit=1,
+        )
+    else:
+        # Account used as party (internal transfer): match either side
+        rows = []
+        for side in ("paid_from", "paid_to"):
+            rows += frappe.get_all(
+                "Payment Entry", filters={**base, side: party},
+                fields=fields, order_by=order_by, limit=1,
+            )
+        rows.sort(key=lambda r: (r.posting_date, r.creation), reverse=True)
+        rows = rows[:1]
+
+    if not rows:
+        return None
+    pe = rows[0]
+    # Bank/Cash side of the entry
+    pe["mop_account"] = pe.paid_to if pe.payment_type == "Receive" else pe.paid_from
+    if pe.mop_account == party:
+        pe["mop_account"] = pe.paid_to if pe.paid_from == party else pe.paid_from
+    pe["days_ago"] = frappe.utils.date_diff(frappe.utils.today(), pe.posting_date)
+    return pe

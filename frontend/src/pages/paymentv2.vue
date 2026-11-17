@@ -378,7 +378,35 @@
         </div>
 
         <!-- Right End: Save Button -->
-        <div class="flex items-center pl-8 border-l border-[var(--color-border)]">
+        <div class="flex flex-col items-stretch gap-2 pl-8 border-l border-[var(--color-border)]">
+          <!-- Last payment badge for selected party -->
+          <div
+            v-if="form.party && (lastPayment || loadingLastPayment)"
+            class="flex items-center gap-2 self-end rounded-full border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-sm font-bold"
+            :title="lastPayment ? `${lastPayment.name} · ${lastPayment.mop_account || ''}${lastPayment.reference_no ? ' · Ref ' + lastPayment.reference_no : ''}` : ''"
+          >
+            <template v-if="loadingLastPayment">
+              <span class="text-[var(--color-text-muted)]">Loading last payment…</span>
+            </template>
+            <template v-else>
+              <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Last</span>
+              <span
+                class="rounded-full px-2 py-0.5 text-[10px] font-black uppercase"
+                :class="lastPayment.payment_type === 'Receive'
+                  ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]'
+                  : lastPayment.payment_type === 'Pay'
+                    ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'
+                    : 'bg-[var(--color-highlight)]/15 text-[var(--color-highlight)]'"
+              >{{ lastPayment.payment_type === 'Receive' ? 'Receipt' : lastPayment.payment_type === 'Pay' ? 'Payment' : 'Transfer' }}</span>
+              <span class="font-black">₹{{ Number(lastPayment.paid_amount || 0).toLocaleString('en-IN') }}</span>
+              <span class="text-[var(--color-text-muted)]">{{ formatLastPaymentDate(lastPayment.posting_date) }}</span>
+              <span class="text-[var(--color-text-muted)]">({{ lastPayment.days_ago === 0 ? 'today' : `${lastPayment.days_ago}d ago` }})</span>
+              <span v-if="lastPayment.mode_of_payment" class="text-[var(--color-text-muted)]">· {{ lastPayment.mode_of_payment }}</span>
+            </template>
+          </div>
+          <div v-else-if="form.party && lastPaymentChecked" class="self-end rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-bold text-[var(--color-text-muted)]">
+            No previous payments
+          </div>
           <button
             ref="saveBtn"
             @click="handleSubmit"
@@ -837,7 +865,8 @@ function handleSelect(item) {
       }
       fetchOutstanding()
     }
-    
+    fetchLastPayment()
+
     // Focus amount input after party selection
     nextTick(() => {
       setTimeout(() => {
@@ -1003,6 +1032,42 @@ async function fetchOutstanding() {
   }
 }
 
+const lastPayment = ref(null)
+const loadingLastPayment = ref(false)
+const lastPaymentChecked = ref(false)
+let lastPaymentSeq = 0
+
+async function fetchLastPayment() {
+  const seq = ++lastPaymentSeq
+  lastPayment.value = null
+  lastPaymentChecked.value = false
+  if (!form.party) return
+  loadingLastPayment.value = true
+  try {
+    const res = await frappeGet('ssplbilling.api.paymentv2_api.get_last_payment', {
+      party: form.party,
+      party_type: form.party_type || '',
+      company: localStorage.getItem('wb-company') || '',
+    })
+    if (seq !== lastPaymentSeq) return
+    lastPayment.value = res || null
+  } catch (e) {
+    console.error('Failed to fetch last payment:', e)
+  } finally {
+    if (seq === lastPaymentSeq) {
+      loadingLastPayment.value = false
+      lastPaymentChecked.value = true
+    }
+  }
+}
+
+function formatLastPaymentDate(dateStr) {
+  if (!dateStr) return ''
+  const d = parseCalendarDate(dateStr)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  return `${String(d.getDate()).padStart(2, '0')}-${months[d.getMonth()]}-${d.getFullYear()}`
+}
+
 function handlePartyTypeChange() {
   form.party = ''
   form.party_name = ''
@@ -1031,6 +1096,10 @@ function resetForm() {
   form.amount = null
   form.remarks = ''
   outstandingBalance.value = null
+  lastPaymentSeq++
+  lastPayment.value = null
+  loadingLastPayment.value = false
+  lastPaymentChecked.value = false
   form.mop_rows = []
   addMopRow()
   invoices.value = []
