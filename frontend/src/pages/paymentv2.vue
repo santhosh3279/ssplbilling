@@ -322,6 +322,31 @@
       </div>
     </main>
 
+    <!-- Last payment bar for selected party -->
+    <div
+      v-if="form.party && (lastPayment || loadingLastPayment || lastPaymentChecked)"
+      class="flex items-center gap-6 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-8 py-2"
+      :title="lastPayment ? `${lastPayment.name} · ${lastPayment.mop_account || ''}${lastPayment.reference_no ? ' · Ref ' + lastPayment.reference_no : ''}` : ''"
+    >
+      <span class="text-xl font-black uppercase tracking-widest text-[var(--color-text-muted)]">Last Payment</span>
+      <span v-if="loadingLastPayment" class="text-4xl font-normal text-[var(--color-text-muted)]">Loading…</span>
+      <span v-else-if="!lastPayment" class="text-4xl font-normal text-[var(--color-text-muted)]">No previous payments</span>
+      <template v-else>
+        <span
+          class="rounded-xl px-4 py-1 text-3xl font-black uppercase"
+          :class="lastPayment.payment_type === 'Receive'
+            ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]'
+            : lastPayment.payment_type === 'Pay'
+              ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'
+              : 'bg-[var(--color-highlight)]/15 text-[var(--color-highlight)]'"
+        >{{ lastPayment.payment_type === 'Receive' ? 'Receipt' : lastPayment.payment_type === 'Pay' ? 'Payment' : 'Transfer' }}</span>
+        <span class="text-4xl font-black">₹{{ Number(lastPayment.paid_amount || 0).toLocaleString('en-IN') }}</span>
+        <span class="text-4xl font-normal">{{ formatLastPaymentDate(lastPayment.posting_date) }}</span>
+        <span class="text-3xl font-normal text-[var(--color-text-muted)]">({{ lastPayment.days_ago === 0 ? 'today' : `${lastPayment.days_ago}d ago` }})</span>
+        <span v-if="lastPayment.mop_account" class="text-4xl font-normal truncate">· {{ lastPayment.mop_account }}</span>
+      </template>
+    </div>
+
     <!-- Bottom Action Bar -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
       <div class="flex items-center justify-between gap-8">
@@ -378,35 +403,7 @@
         </div>
 
         <!-- Right End: Save Button -->
-        <div class="flex flex-col items-stretch gap-2 pl-8 border-l border-[var(--color-border)]">
-          <!-- Last payment badge for selected party -->
-          <div
-            v-if="form.party && (lastPayment || loadingLastPayment)"
-            class="flex items-center gap-2 self-end rounded-full border border-[var(--color-border)] bg-[var(--color-surface-raised)] px-3 py-1 text-sm font-bold"
-            :title="lastPayment ? `${lastPayment.name} · ${lastPayment.mop_account || ''}${lastPayment.reference_no ? ' · Ref ' + lastPayment.reference_no : ''}` : ''"
-          >
-            <template v-if="loadingLastPayment">
-              <span class="text-[var(--color-text-muted)]">Loading last payment…</span>
-            </template>
-            <template v-else>
-              <span class="text-[10px] font-black uppercase tracking-widest text-[var(--color-text-muted)]">Last</span>
-              <span
-                class="rounded-full px-2 py-0.5 text-[10px] font-black uppercase"
-                :class="lastPayment.payment_type === 'Receive'
-                  ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]'
-                  : lastPayment.payment_type === 'Pay'
-                    ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'
-                    : 'bg-[var(--color-highlight)]/15 text-[var(--color-highlight)]'"
-              >{{ lastPayment.payment_type === 'Receive' ? 'Receipt' : lastPayment.payment_type === 'Pay' ? 'Payment' : 'Transfer' }}</span>
-              <span class="font-black">₹{{ Number(lastPayment.paid_amount || 0).toLocaleString('en-IN') }}</span>
-              <span class="text-[var(--color-text-muted)]">{{ formatLastPaymentDate(lastPayment.posting_date) }}</span>
-              <span class="text-[var(--color-text-muted)]">({{ lastPayment.days_ago === 0 ? 'today' : `${lastPayment.days_ago}d ago` }})</span>
-              <span v-if="lastPayment.mode_of_payment" class="text-[var(--color-text-muted)]">· {{ lastPayment.mode_of_payment }}</span>
-            </template>
-          </div>
-          <div v-else-if="form.party && lastPaymentChecked" class="self-end rounded-full border border-[var(--color-border)] px-3 py-1 text-xs font-bold text-[var(--color-text-muted)]">
-            No previous payments
-          </div>
+        <div class="flex items-center pl-8 border-l border-[var(--color-border)]">
           <button
             ref="saveBtn"
             @click="handleSubmit"
