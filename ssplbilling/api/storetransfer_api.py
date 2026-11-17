@@ -44,8 +44,11 @@ def save_store_transfer(data):
             "uom": row.get("uom"),
             "s_warehouse": row.get("s_warehouse") or se.from_warehouse,
             "t_warehouse": row.get("t_warehouse") or se.to_warehouse,
+            # per stock UOM, whatever UOM the row is in
             "basic_rate": float(row.get("rate") or 0)
         }
+        if row.get("uom"):
+            item["conversion_factor"] = _uom_conversion_factor(row.get("item_code"), row.get("uom"))
         if row.get("batch_no"):
             # Batch fields instead of a bundle: ERPNext builds the bundle on submit
             item["batch_no"] = row["batch_no"]
@@ -61,6 +64,12 @@ def save_store_transfer(data):
         "name": se.name,
         "status": "Draft"
     }
+
+def _uom_conversion_factor(item_code, uom):
+    """Stock UOMs held by one `uom` of the item (1 for the stock UOM itself)."""
+    from erpnext.stock.get_item_details import get_conversion_factor
+
+    return float(get_conversion_factor(item_code, uom).get("conversion_factor") or 1)
 
 @frappe.whitelist()
 def submit_store_transfer(name):

@@ -132,9 +132,20 @@
                 @keydown="handlePendingQtyKeydown"
               />
             </td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl whitespace-nowrap">{{ uomLabel(pendingItem.item_code, pendingItem.uom || 'Nos') }}</td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ format(pendingItem.rate) }}</td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ (pendingItem.qty * pendingItem.rate).toFixed(2) }}</td>
+            <td class="p-0 border-r border-[var(--color-border)]">
+              <UomPicker
+                v-if="getItemUoms(pendingItem.item_code).length > 1"
+                ref="pendingUomPicker"
+                v-model="pendingItem.uom"
+                :item-code="pendingItem.item_code"
+                :uoms="getItemUoms(pendingItem.item_code)"
+                @confirm="confirmPendingItem"
+                @cancel="focusPendingQty"
+              />
+              <span v-else class="block px-2 py-1 text-[var(--color-text-muted)] text-3xl whitespace-nowrap">{{ uomLabel(pendingItem.item_code, pendingItem.uom || 'Nos') }}</span>
+            </td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ format(rowRate(pendingItem)) }}</td>
+            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text)] text-5xl font-mono text-right">{{ format(rowAmount(pendingItem)) }}</td>
             <td class="px-2 py-1 text-center">
               <button class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:text-[var(--color-danger)]" @click="pendingItem = null; focusBarcodeInput()">&times;</button>
             </td>
@@ -212,9 +223,20 @@
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ formatQty(item.qty) }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl whitespace-nowrap" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ uomLabel(item.item_code, item.uom || 'Nos') }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.rate) }}</td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(item.qty * item.rate) }}</td>
+          <td class="p-0 border-r border-[var(--color-border)]">
+            <UomPicker
+              v-if="!isReadOnly && editingRowIdx === index && editingField === 'uom'"
+              ref="editUomPicker"
+              v-model="item.uom"
+              :item-code="item.item_code"
+              :uoms="getItemUoms(item.item_code)"
+              @confirm="onEditUomConfirm(index)"
+              @cancel="focusEditField('qty', index)"
+            />
+            <span v-else class="block px-2 py-1 text-3xl whitespace-nowrap" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ uomLabel(item.item_code, item.uom || 'Nos') }}</span>
+          </td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(rowRate(item)) }}</td>
+          <td class="px-2 py-1 border-r border-[var(--color-border)] text-5xl font-mono text-right tabular-nums" :class="selectedRowIdx === index ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ format(rowAmount(item)) }}</td>
           <td class="px-2 py-1 text-center">
             <button v-if="!isReadOnly" class="rounded px-1 py-0.5 text-[var(--color-text-muted)] hover:bg-[var(--color-danger)]/20 hover:text-[var(--color-danger)] focus:outline-none" @click="removeItem(index)">&times;</button>
           </td>
@@ -367,6 +389,7 @@ import Warning from '../components/Warning.vue'
 import PrintOptionsModal from '../components/PrintOptionsModal.vue'
 import JumpToRowModal from '../components/JumpToRowModal.vue'
 import BatchView from '../components/BatchView.vue'
+import UomPicker from '../components/UomPicker.vue'
 import { frappePost } from '../api'
 import { useItemCache, uomLabel, searchBillableItems, itemHasBatch } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
@@ -425,6 +448,37 @@ const stockWarehouse = localStorage.getItem('wb-warehouse') || null
 
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
+const pendingUomPicker = ref(null)
+const editUomPicker = ref(null)
+
+// ─── Multi-UOM ───────────────────────────────────────────────────────────────
+// `rate` stays per stock UOM (Stock Entry basic_rate); rows show it in their own UOM.
+function getItemUoms(itemCode) {
+  const cached = lookupItemInCache(itemCode)
+  if (!cached) return []
+  const list = (cached.uoms || []).map(u => u.uom).filter(Boolean)
+  if (cached.uom && !list.includes(cached.uom)) list.unshift(cached.uom)
+  return list
+}
+
+function uomFactor(itemCode, uom) {
+  const cached = lookupItemInCache(itemCode)
+  if (!cached || !uom || uom === cached.uom) return 1
+  return parseFloat((cached.uoms || []).find(u => u.uom === uom)?.conversion_factor) || 1
+}
+
+const rowRate = (row) => (Number(row.rate) || 0) * uomFactor(row.item_code, row.uom)
+const rowAmount = (row) => (Number(row.qty) || 0) * rowRate(row)
+
+// refs inside the template's row slot may come back as an array
+const firstRef = (r) => (Array.isArray(r) ? r[0] : r)
+
+function focusPendingQty() {
+  nextTick(() => {
+    pendingQtyInput.value?.focus()
+    pendingQtyInput.value?.select()
+  })
+}
 
 const sidebarDate = ref(serverToday())
 const recentTransfers = ref([])
@@ -440,7 +494,7 @@ watch(fromWarehouse, (src) => {
 })
 
 const totalAmount = computed(() => {
-  return items.value.reduce((sum, item) => sum + (item.qty * item.rate), 0).toFixed(2)
+  return items.value.reduce((sum, item) => sum + rowAmount(item), 0).toFixed(2)
 })
 
 const saveButtonText = computed(() => {
@@ -548,6 +602,8 @@ function focusEditField(field, idx) {
     } else if (field === 'qty') {
       editQtyInput.value?.focus({ preventScroll: true })
       editQtyInput.value?.select()
+    } else if (field === 'uom') {
+      firstRef(editUomPicker.value)?.focus()
     }
     scrollInvoiceRowIntoView(rowRefs.value[idx])
   })
@@ -619,7 +675,10 @@ async function onEditCodeKeydown(e, idx) {
 }
 
 function onEditQtyKeydown(e, idx) {
-  if (e.key === 'Enter') {
+  if (e.key === 'Enter' && getItemUoms(items.value[idx]?.item_code).length > 1) {
+    e.preventDefault()
+    focusEditField('uom', idx)
+  } else if (e.key === 'Enter') {
     e.preventDefault()
     exitEditMode()
     if (idx < items.value.length - 1) {
@@ -633,6 +692,16 @@ function onEditQtyKeydown(e, idx) {
   } else if (e.key === 'Escape') {
     e.preventDefault()
     exitEditMode()
+  }
+}
+
+function onEditUomConfirm(idx) {
+  exitEditMode()
+  if (idx < items.value.length - 1) {
+    focusRow(idx + 1)
+    nextTick(() => focusEditField('code', idx + 1))
+  } else {
+    focusBarcodeInput()
   }
 }
 
@@ -675,11 +744,13 @@ async function handleBarcodeEnter() {
   if (!toWarehouse.value) return focusToWarehouse()
   
   const code = barcodeQuery.value.trim()
+  const cached = lookupItemInCache(code)
   // Variant templates cannot be transferred; send them to Item Search like an unknown code
-  const res = lookupItemInCache(code)?.has_variants ? null : await getItemDetailsFromServer(code)
+  const res = cached?.has_variants ? null : await getItemDetailsFromServer(code)
   
   if (res && res.found) {
-    setPendingItem(res)
+    // A barcode tied to a pack UOM starts the row in that UOM
+    setPendingItem(cached?.item_code === res.item_code && cached.uom ? { ...res, uom: cached.uom } : res)
     barcodeQuery.value = ''
     quickSearchResults.value = []
   } else {
@@ -851,7 +922,12 @@ function confirmPendingItem() {
 function handlePendingQtyKeydown(e) {
   if (e.key === 'Enter') {
     e.preventDefault()
-    confirmPendingItem()
+    if (!pendingItem.value || pendingItem.value.qty <= 0) return
+    if (getItemUoms(pendingItem.value.item_code).length > 1) {
+      nextTick(() => firstRef(pendingUomPicker.value)?.focus())
+    } else {
+      confirmPendingItem()
+    }
   } else if (e.key === 'Escape') {
     e.preventDefault()
     e.stopPropagation()
