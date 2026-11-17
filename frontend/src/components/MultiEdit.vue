@@ -11,7 +11,7 @@
           <h2 class="text-2xl font-bold text-[var(--color-text)]">Multi Edit</h2>
           <p class="text-left text-xs font-medium uppercase tracking-wider text-[var(--color-text-muted)]">
             <template v-if="tab === 'remove'">Ticked = removed from this bill · untick to bring back</template>
-            <template v-else-if="base === 'valuation'">Set every row's rate to valuation rate + a percentage</template>
+            <template v-else-if="base === 'valuation'">Set rates above valuation to valuation rate + a percentage</template>
             <template v-else>Change every row's rate by a percentage</template>
           </p>
         </div>
@@ -84,9 +84,9 @@
         <p class="text-xs font-semibold" :class="pctInvalid ? 'text-[var(--color-danger)]' : 'text-[var(--color-text-muted)]'">
           <template v-if="pctInvalid">{{ base === 'valuation' ? 'Percentage must be above −100.' : 'Percentage must be below 100.' }}</template>
           <template v-else-if="base === 'valuation'">
-            <template v-if="!valuationRows">No row has a valuation rate.</template>
+            <template v-if="!valuationRows">No row is above its valuation rate.</template>
             <template v-else>
-              Rates set to valuation {{ pctValue < 0 ? '−' : '+' }} {{ Math.abs(pctValue) }}% on {{ valuationRows }} row{{ valuationRows === 1 ? '' : 's' }}<template v-if="rateRows > valuationRows">; {{ rateRows - valuationRows }} without valuation keep their rate</template>.
+              Rates set to valuation {{ pctValue < 0 ? '−' : '+' }} {{ Math.abs(pctValue) }}% on {{ valuationRows }} row{{ valuationRows === 1 ? '' : 's' }}<template v-if="rateRows > valuationRows">; {{ rateRows - valuationRows }} without valuation or not above it keep their rate</template>.
             </template>
           </template>
           <template v-else-if="pctValue > 0">Rates go down {{ pctValue }}% on {{ rateRows }} row{{ rateRows === 1 ? '' : 's' }}.</template>
@@ -176,7 +176,7 @@ const props = defineProps({
   ratePct: { type: Number, default: 0 },
   rateRows: { type: Number, default: 0 },
   // What the applied % works on: 'rate' (pre-Rate-Edit rate) or 'valuation' (markup on cost),
-  // and how many rows have a valuation rate.
+  // and how many rows sit above their valuation rate (the only ones a valuation Rate Edit changes).
   rateBase: { type: String, default: 'rate' },
   valuationRows: { type: Number, default: 0 },
   // (pct, base) => rows that would sell below cost with that Rate Edit, bill discount included.

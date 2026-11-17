@@ -1863,7 +1863,7 @@ function rateEditLossRows(pct, base = 'rate') {
   const f = billDiscountFraction.value
   return items.value.filter(item => {
     const from = Number(item._rate_edit_from ?? item.rate)
-    const cost = base === 'valuation' ? rowCostPerUom(item) : null
+    const cost = base === 'valuation' ? rateEditValuationCost(item) : null
     const rate = cost != null ? cost * (1 + pct / 100) : base === 'valuation' ? from : from * (1 - pct / 100)
     return sellsBelowCost(item, rate, f)
   }).length
@@ -3121,11 +3121,19 @@ watch(() => items.value, (rows) => {
 // so applying again never compounds and 0 % puts the rates back. An edited rate counts as an
 // override, so a reprice / party change leaves it alone.
 // base 'valuation': rate = cost per UOM × (1 + pct / 100) instead (a markup on valuation rate);
-// rows with no valuation rate keep their pre-Rate-Edit rate.
+// rows with no valuation rate, or whose pre-Rate-Edit rate is not above it, keep that rate.
 const rateEditPct = ref(0)
 const rateEditBase = ref('rate')
 const rateEditRows = computed(() => items.value.filter(i => !i.deleted && !i._is_free))
-const rateEditValuationRows = computed(() => rateEditRows.value.filter(i => rowCostPerUom(i) != null))
+const rateEditValuationRows = computed(() => rateEditRows.value.filter(i => rateEditValuationCost(i) != null))
+
+// Cost per UOM a valuation Rate Edit works from, or null when the row has no valuation rate or
+// its pre-Rate-Edit rate is not above it (those rows are left alone).
+function rateEditValuationCost(item) {
+  const cost = rowCostPerUom(item)
+  if (cost == null) return null
+  return Number(item._rate_edit_from ?? item.rate) > cost ? cost : null
+}
 
 function applyRateEdit(pct, base = 'rate') {
   if (isReadOnly.value || isLoadingBill.value || submitting.value) return
@@ -3135,7 +3143,7 @@ function applyRateEdit(pct, base = 'rate') {
   const reset = !byValuation && pct === 0
   items.value.forEach((item, idx) => {
     if (item._is_free) return
-    const cost = byValuation ? rowCostPerUom(item) : null
+    const cost = byValuation ? rateEditValuationCost(item) : null
     if (reset || (byValuation && cost == null)) {
       if (item._rate_edit_from == null) return
       item.rate = item._rate_edit_from
