@@ -48,6 +48,7 @@
         </button>
         <button
           ref="savePriceNoBtn"
+          data-testid="customer-price-dismiss"
           @click="$emit('dismiss')"
           @keydown="onKeydown"
           class="w-full rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] px-6 py-4 text-3xl font-bold text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] transition-all outline-none focus:border-[var(--color-focus)] focus:ring-[10px] focus:ring-[var(--color-focus)]"

@@ -115,4 +115,28 @@ test.describe('Sales Invoice: Multi Edit (tax cleanup)', () => {
     expect(saved.items.find(i => i.item_code === ITEMS.B.code).rate).toBe(120)
     expect(saved.items.find(i => i.item_code === ITEMS.C.code).rate).toBe(ITEMS.C.wholesale)
   })
+
+  test('Rate Edit by valuation leaves rows priced at or below valuation alone', async ({ invoice, backend }) => {
+    await invoice.open(env.E2E_SERIES_EXEMPT)
+    await invoice.setSameCompanyBilling(true, env.E2E_COMPANY)
+    await invoice.pickCustomer(CUSTOMERS.plain)
+    await invoice.addItem(ITEMS.A.code, 1) // valuation 50
+    await invoice.addItem(ITEMS.B.code, 2) // valuation 100
+    await invoice.setRowRate(ITEMS.A.code, 45) // below valuation
+    expect((await invoice.rowValues(ITEMS.A.code)).rate).toBe(45)
+
+    expect(await invoice.setRateEdit(20, 'valuation')).toBe('Val +20%')
+    expect((await invoice.rowValues(ITEMS.A.code)).rate).toBe(45)
+    expect((await invoice.rowValues(ITEMS.B.code)).rate).toBe(120)
+
+    // A different % still judges A on its rate from before Rate Edit
+    expect(await invoice.setRateEdit(-50, 'valuation')).toBe('Val −50%')
+    expect((await invoice.rowValues(ITEMS.A.code)).rate).toBe(45)
+    expect((await invoice.rowValues(ITEMS.B.code)).rate).toBe(50)
+
+    await invoice.setRateEdit(20, 'valuation')
+    const saved = await backend.getSalesInvoice(await invoice.save())
+    expect(saved.items.find(i => i.item_code === ITEMS.A.code).rate).toBe(45)
+    expect(saved.items.find(i => i.item_code === ITEMS.B.code).rate).toBe(120)
+  })
 })

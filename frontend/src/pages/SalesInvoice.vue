@@ -283,6 +283,7 @@
             <input v-if="editingRowIdx === index && editingField === 'rate'"
               ref="editRateInput"
               v-model.number="item.rate"
+              data-testid="row-rate-input"
               type="number" min="0" step="0.01"
               class="w-full bg-white/10 px-2 py-1 text-5xl font-mono text-[var(--color-text)] outline-none text-right focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               @keydown="onEditRateKeydown($event, index)"

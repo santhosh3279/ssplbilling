@@ -114,6 +114,29 @@ class SalesInvoicePage {
     }
   }
 
+  /** Open the row's edit mode, Enter through to the rate cell, type `rate`, Enter out of the row,
+   *  then dismiss the "Update Item Price?" prompt (rate stays on this bill only). */
+  async setRowRate(itemCode, rate, nth = 0) {
+    const row = this.row(itemCode, nth)
+    const input = row.getByTestId('row-rate-input')
+    await row.focus()
+    await row.press('Enter')
+    for (let i = 0; i < 4 && !(await input.isVisible()); i++) {
+      await this.page.keyboard.press('Enter')
+    }
+    await expect(input, `${itemCode} rate cell did not open`).toBeVisible()
+    await input.fill(String(rate))
+    await input.press('Enter') // to discount
+    await this.page.keyboard.press('Enter') // finish the row
+    await expect(input).toHaveCount(0)
+    const dismiss = this.id('customer-price-dismiss')
+    await dismiss.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {})
+    if (await dismiss.isVisible()) {
+      await dismiss.click()
+      await expect(dismiss).toHaveCount(0)
+    }
+  }
+
   // ------------------------------------------------------------------ footer
 
   async setDiscountPct(value) {
