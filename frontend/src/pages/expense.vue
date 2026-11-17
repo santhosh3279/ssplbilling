@@ -149,7 +149,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="(row, idx) in form.rows" :key="idx" class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)]">
+              <tr v-for="(row, idx) in form.rows" :key="idx" @focusin="activeRowIdx = idx" class="divide-x divide-[var(--color-border)] border-b border-[var(--color-border)]">
                 <td class="px-2 py-1.5 group hover:bg-[var(--color-midlight)]/20 transition-colors focus-within:bg-[var(--color-focus)] focus-within:text-[var(--color-text-on-focus)]">
                   <div class="relative">
                     <input
@@ -255,6 +255,13 @@
         </div>
       </div>
     </main>
+
+    <!-- Last 3 payments for the party of the focused row -->
+    <LastPaymentsBar
+      :party="activeRow?.account || ''"
+      :partyType="activeRow?.party_type || ''"
+      :label="form.rows.length > 1 ? (activeRow?.account_name || '') : ''"
+    />
 
     <!-- Bottom Action Bar -->
     <footer
@@ -376,6 +383,7 @@ import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 import Warning from '../components/Warning.vue'
+import LastPaymentsBar from '../components/LastPaymentsBar.vue'
 import { canModifyDate } from '../composables/usePermission.js'
 
 import { useShortcuts, useSubwindowWatcher } from '../services/shortcutManager'
@@ -425,6 +433,9 @@ const referenceNoInput = ref(null)
 const referenceDateInput = ref(null)
 const postButtonRef = ref(null)
 const currentIdx = ref(0)
+// Row whose party the Last Payments bar shows (follows focus)
+const activeRowIdx = ref(0)
+const activeRow = computed(() => form.rows[activeRowIdx.value])
 const showSearchModal = ref(false)
 const searchQuery = ref('')
 const custSearchModalRef = ref(null)
@@ -568,6 +579,7 @@ function handleSelect(item) {
   row.account_name = item.label || item.account_name || item.name
   row.query = row.account_name
   row.party_type = item.type || ''
+  activeRowIdx.value = currentIdx.value
   fetchRowBalance(currentIdx.value)
   
   nextTick(() => {
@@ -648,6 +660,7 @@ function onTabClick(t) {
   form.rows = [
     { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {} }
   ]
+  activeRowIdx.value = 0
   nextTick(() => {
     setTimeout(() => {
       expenseSearchRefs.value[0]?.focus()
@@ -844,6 +857,7 @@ function selectEntryType(type) {
   form.rows = [
     { account: '', account_name: '', amount: null, query: '', balance: null, remarks: '', party_type: '', allocations: [], modalAmounts: {} }
   ]
+  activeRowIdx.value = 0
   nextTick(() => {
     setTimeout(() => {
       expenseSearchRefs.value[0]?.focus()

@@ -323,38 +323,7 @@
     </main>
 
     <!-- Last 3 payments for selected party -->
-    <div
-      v-if="form.party && (lastPayments.length || loadingLastPayment || lastPaymentChecked)"
-      class="flex items-start gap-6 border-t border-[var(--color-border)] bg-[var(--color-surface-raised)] px-8 py-2"
-    >
-      <span class="pt-2 text-xl font-black uppercase tracking-widest text-[var(--color-text-muted)] whitespace-nowrap">Last Payments</span>
-      <span v-if="loadingLastPayment" class="text-4xl font-normal text-[var(--color-text-muted)]">Loading…</span>
-      <span v-else-if="!lastPayments.length" class="text-4xl font-normal text-[var(--color-text-muted)]">No previous payments</span>
-      <table v-else class="border-collapse">
-        <tbody>
-          <tr
-            v-for="p in lastPayments"
-            :key="p.name"
-            :title="`${p.name}${p.reference_no ? ' · Ref ' + p.reference_no : ''}`"
-          >
-            <td class="py-0.5 pr-6">
-              <span
-                class="inline-block rounded-xl px-4 py-0.5 text-2xl font-black uppercase"
-                :class="p.payment_type === 'Receive'
-                  ? 'bg-[var(--color-success)]/15 text-[var(--color-success)]'
-                  : p.payment_type === 'Pay'
-                    ? 'bg-[var(--color-danger)]/15 text-[var(--color-danger)]'
-                    : 'bg-[var(--color-highlight)]/15 text-[var(--color-highlight)]'"
-              >{{ p.payment_type === 'Receive' ? 'Receipt' : p.payment_type === 'Pay' ? 'Payment' : 'Transfer' }}</span>
-            </td>
-            <td class="py-0.5 pr-6 text-right text-4xl font-black whitespace-nowrap">₹{{ Number(p.paid_amount || 0).toLocaleString('en-IN') }}</td>
-            <td class="py-0.5 pr-4 text-3xl font-normal whitespace-nowrap">{{ formatLastPaymentDate(p.posting_date) }}</td>
-            <td class="py-0.5 pr-6 text-2xl font-normal text-[var(--color-text-muted)] whitespace-nowrap">({{ p.days_ago === 0 ? 'today' : `${p.days_ago}d ago` }})</td>
-            <td class="py-0.5 text-3xl font-normal whitespace-nowrap">{{ p.mop_account }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <LastPaymentsBar :party="form.party" :partyType="form.party_type" />
 
     <!-- Bottom Action Bar -->
     <footer class="border-t border-[var(--color-border)] bg-[var(--color-surface)] px-8 py-4 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
@@ -507,6 +476,7 @@ import { frappeGet, frappePost } from '../api.js'
 import CustomerSearchModal from '../components/CustomerSearchModal.vue'
 import OutstandingBillsModal from '../components/OutstandingBillsModal.vue'
 import Warning from '../components/Warning.vue'
+import LastPaymentsBar from '../components/LastPaymentsBar.vue'
 import { useShortcuts } from '../services/shortcutManager'
 import { paymentShortcuts } from '../shortcuts/paymentShortcuts'
 import { canModifyDate } from '../composables/usePermission.js'
@@ -871,7 +841,6 @@ function handleSelect(item) {
       }
       fetchOutstanding()
     }
-    fetchLastPayment()
 
     // Focus amount input after party selection
     nextTick(() => {
@@ -1038,43 +1007,6 @@ async function fetchOutstanding() {
   }
 }
 
-const lastPayments = ref([])
-const loadingLastPayment = ref(false)
-const lastPaymentChecked = ref(false)
-let lastPaymentSeq = 0
-
-async function fetchLastPayment() {
-  const seq = ++lastPaymentSeq
-  lastPayments.value = []
-  lastPaymentChecked.value = false
-  if (!form.party) return
-  loadingLastPayment.value = true
-  try {
-    const res = await frappeGet('ssplbilling.api.paymentv2_api.get_last_payments', {
-      party: form.party,
-      party_type: form.party_type || '',
-      company: localStorage.getItem('wb-company') || '',
-      limit: 3,
-    })
-    if (seq !== lastPaymentSeq) return
-    lastPayments.value = Array.isArray(res) ? res : []
-  } catch (e) {
-    console.error('Failed to fetch last payment:', e)
-  } finally {
-    if (seq === lastPaymentSeq) {
-      loadingLastPayment.value = false
-      lastPaymentChecked.value = true
-    }
-  }
-}
-
-function formatLastPaymentDate(dateStr) {
-  if (!dateStr) return ''
-  const d = parseCalendarDate(dateStr)
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  return `${String(d.getDate()).padStart(2, '0')}-${months[d.getMonth()]}-${d.getFullYear()}`
-}
-
 function handlePartyTypeChange() {
   form.party = ''
   form.party_name = ''
@@ -1103,10 +1035,6 @@ function resetForm() {
   form.amount = null
   form.remarks = ''
   outstandingBalance.value = null
-  lastPaymentSeq++
-  lastPayments.value = []
-  loadingLastPayment.value = false
-  lastPaymentChecked.value = false
   form.mop_rows = []
   addMopRow()
   invoices.value = []
