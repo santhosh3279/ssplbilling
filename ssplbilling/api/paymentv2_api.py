@@ -318,10 +318,11 @@ def search_accounts(query="", account_type=None):
 
 
 @frappe.whitelist()
-def get_last_payment(party, party_type=None, company=None):
-    """Return the most recent submitted Payment Entry for a party (or, when no party type, an account)."""
+def get_last_payments(party, party_type=None, company=None, limit=3):
+    """Return the most recent submitted Payment Entries for a party (or, when no party type, an account)."""
     if not party:
-        return None
+        return []
+    limit = min(int(limit or 3), 20)
     base = {"docstatus": 1}
     if company:
         base["company"] = company
@@ -336,7 +337,7 @@ def get_last_payment(party, party_type=None, company=None):
         rows = frappe.get_all(
             "Payment Entry",
             filters={**base, "party_type": party_type, "party": party},
-            fields=fields, order_by=order_by, limit=1,
+            fields=fields, order_by=order_by, limit=limit,
         )
     else:
         # Account used as party (internal transfer): match either side
@@ -344,17 +345,17 @@ def get_last_payment(party, party_type=None, company=None):
         for side in ("paid_from", "paid_to"):
             rows += frappe.get_all(
                 "Payment Entry", filters={**base, side: party},
-                fields=fields, order_by=order_by, limit=1,
+                fields=fields, order_by=order_by, limit=limit,
             )
+        rows = list({r.name: r for r in rows}.values())
         rows.sort(key=lambda r: (r.posting_date, r.creation), reverse=True)
-        rows = rows[:1]
+        rows = rows[:limit]
 
-    if not rows:
-        return None
-    pe = rows[0]
-    # Bank/Cash side of the entry
-    pe["mop_account"] = pe.paid_to if pe.payment_type == "Receive" else pe.paid_from
-    if pe.mop_account == party:
-        pe["mop_account"] = pe.paid_to if pe.paid_from == party else pe.paid_from
-    pe["days_ago"] = frappe.utils.date_diff(frappe.utils.today(), pe.posting_date)
-    return pe
+    today = frappe.utils.today()
+    for pe in rows:
+        # Bank/Cash side of the entry
+        pe["mop_account"] = pe.paid_to if pe.payment_type == "Receive" else pe.paid_from
+        if pe.mop_account == party:
+            pe["mop_account"] = pe.paid_to if pe.paid_from == party else pe.paid_from
+        pe["days_ago"] = frappe.utils.date_diff(today, pe.posting_date)
+    return rows
