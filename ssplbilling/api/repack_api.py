@@ -21,7 +21,8 @@ def get_repack_details(name):
             item_dict["type"] = "Consume" if item.s_warehouse else "Produce"
         
         # Add rate/amount mapping for frontend
-        item_dict["rate"] = float(item.basic_rate or 0)
+        # basic_rate is per stock UOM; the page works in the row's UOM
+        item_dict["rate"] = float(item.basic_rate or 0) * float(item.conversion_factor or 1)
         item_dict["amount"] = float(item.amount or 0)
         items.append(item_dict)
         
@@ -76,13 +77,16 @@ def save_repack(data):
         else:
             s_wh = None
 
+        # The page's rate is per the row's UOM; basic_rate is per stock UOM
+        conversion_factor = _uom_conversion_factor(row.get("item_code"), row.get("uom"))
         item_doc = {
             "item_code": row.get("item_code"),
             "qty": float(row.get("qty") or 0),
             "uom": row.get("uom"),
+            "conversion_factor": conversion_factor,
             "s_warehouse": s_wh,
             "t_warehouse": t_wh,
-            "basic_rate": float(row.get("rate") or 0)
+            "basic_rate": float(row.get("rate") or 0) / conversion_factor,
         }
         # Several produced rows, or a rate typed by the user, must not be recalculated by ERPNext
         if not is_consume and (fg_count > 1 or row.get("rate_manual")):
@@ -100,6 +104,14 @@ def save_repack(data):
         "posting_time": str(se.posting_time),
         "status": "Draft"
     }
+
+def _uom_conversion_factor(item_code, uom):
+    """Stock UOMs held by one `uom` of the item (1 for the stock UOM or when unknown)."""
+    if not uom:
+        return 1.0
+    from erpnext.stock.get_item_details import get_conversion_factor
+
+    return float(get_conversion_factor(item_code, uom).get("conversion_factor") or 1)
 
 @frappe.whitelist()
 def submit_repack(name):

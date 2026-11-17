@@ -26,7 +26,7 @@
         @mousedown.prevent="pick(u)"
       >{{ uomLabel(itemCode, u) }}</div>
       <div class="border-t border-[var(--color-border)] px-3 py-1 text-xs font-bold uppercase tracking-widest text-[var(--color-text-muted)] whitespace-nowrap">
-        ↑ ↓ change · Enter ok · Esc back
+        {{ horizontalNav ? '↑ ↓' : '↑ ↓ ← →' }} change · Enter ok · Esc back
       </div>
     </div>
   </div>
@@ -42,8 +42,10 @@ const props = defineProps({
   modelValue: { type: String, default: '' },
   uoms: { type: Array, default: () => [] },
   textClass: { type: String, default: 'text-3xl' },
+  // true: ← → leave the picker (emit 'left' / 'right') instead of changing the UOM
+  horizontalNav: { type: Boolean, default: false },
 })
-const emit = defineEmits(['update:modelValue', 'confirm', 'cancel'])
+const emit = defineEmits(['update:modelValue', 'confirm', 'cancel', 'left', 'right'])
 
 const boxRef = ref(null)
 const focused = ref(false)
@@ -61,6 +63,11 @@ function pick(u) {
 }
 
 function onKeydown(e) {
+  if (props.horizontalNav && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+    e.preventDefault(); e.stopPropagation()
+    emit(e.key === 'ArrowLeft' ? 'left' : 'right')
+    return
+  }
   if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); e.stopPropagation(); step(1) }
   else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); step(-1) }
   else if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); emit('confirm') }

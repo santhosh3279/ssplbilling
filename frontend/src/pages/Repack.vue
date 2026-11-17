@@ -151,7 +151,22 @@
             <span v-else class="block px-2 py-1 text-6xl font-mono text-right tabular-nums" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]'">{{ item.qty }}</span>
           </td>
 
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-3xl" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ item.uom }}</td>
+          <td class="p-0 border-r border-[var(--color-border)]" @click="getItemUoms(item.item_code).length > 1 && startCellEdit(index, 'uom')">
+            <UomPicker
+              v-if="editingRowIdx === index && editingField === 'uom'"
+              ref="editUomPicker"
+              :model-value="item.uom"
+              :item-code="item.item_code"
+              :uoms="getItemUoms(item.item_code)"
+              horizontal-nav
+              @update:model-value="u => changeRowUom(item, u)"
+              @confirm="focusEditField('type', index)"
+              @cancel="exitEditMode(index)"
+              @left="focusEditField('qty', index)"
+              @right="focusEditField('type', index)"
+            />
+            <span v-else class="block px-2 py-1 text-3xl whitespace-nowrap" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text-muted)]'">{{ uomLabel(item.item_code, item.uom) }}</span>
+          </td>
           <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl tabular-nums" :class="isSelected(index) ? '!text-[var(--color-text-on-focus)]' : 'text-[var(--color-text)]/80'">
             {{ formatRate(getPriceListRate(item, 'Buying')) }}
           </td>
@@ -220,7 +235,19 @@
                 @keydown="handlePendingQtyKeydown"
               />
             </td>
-            <td class="px-2 py-1 border-r border-[var(--color-border)] text-[var(--color-text-muted)] text-3xl">{{ pendingItem.uom || 'Nos' }}</td>
+            <td class="p-0 border-r border-[var(--color-border)]">
+              <UomPicker
+                v-if="getItemUoms(pendingItem.item_code).length > 1"
+                ref="pendingUomPicker"
+                :model-value="pendingItem.uom"
+                :item-code="pendingItem.item_code"
+                :uoms="getItemUoms(pendingItem.item_code)"
+                @update:model-value="u => changeRowUom(pendingItem, u)"
+                @confirm="pendingTypeInput?.focus()"
+                @cancel="focusPendingQty"
+              />
+              <span v-else class="block px-2 py-1 text-[var(--color-text-muted)] text-3xl whitespace-nowrap">{{ uomLabel(pendingItem.item_code, pendingItem.uom || 'Nos') }}</span>
+            </td>
             <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl text-[var(--color-text)]/70 tabular-nums bg-transparent">
               {{ formatRate(getPriceListRate(pendingItem, 'Buying')) }}
             </td>
@@ -327,8 +354,9 @@ import ItemSearch from '../components/ItemSearch.vue'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 import Warning from '../components/Warning.vue'
+import UomPicker from '../components/UomPicker.vue'
 import { frappePost } from '../api'
-import { useItemCache } from '../services/itemCache.js'
+import { useItemCache, uomLabel } from '../services/itemCache.js'
 import { canModifyDate } from '../composables/usePermission.js'
 
 import { formatDMY } from '../utils/date'
@@ -370,11 +398,13 @@ const quickSearchAnchor = ref(null)
 const pendingItem = ref(null)
 const pendingQtyInput = ref(null)
 const pendingTypeInput = ref(null)
+const pendingUomPicker = ref(null)
+const editUomPicker = ref(null)
 const rowRefs = ref([])
 const selectedRowIdx = ref(-1)
 // Row edit mode, as in Sales Invoice: one cell of one row is editable at a time
 const editingRowIdx = ref(-1)
-const editingField = ref(null) // 'code' | 'qty' | 'type' | 'rate'
+const editingField = ref(null) // 'code' | 'qty' | 'uom' | 'type' | 'rate'
 const editCodeInput = ref(null)
 const editQtyInput = ref(null)
 const editTypeSelect = ref(null)
@@ -458,6 +488,40 @@ function getPriceListRate(item, priceListName) {
 // Produced item rates are kept and shown to 3 decimals
 const PRODUCE_RATE_PRECISION = 3
 
+// ─── Multi-UOM ───────────────────────────────────────────────────────────────
+// Row rates are per the row's own UOM; save converts them to the stock-UOM basic_rate.
+function getItemUoms(itemCode) {
+  const cached = lookupItemInCache(itemCode)
+  if (!cached) return []
+  const list = (cached.uoms || []).map(u => u.uom).filter(Boolean)
+  if (cached.uom && !list.includes(cached.uom)) list.unshift(cached.uom)
+  return list
+}
+
+// Stock UOMs in one `uom` of the item (1 for the stock UOM or when unknown)
+function uomFactor(itemCode, uom) {
+  const cached = lookupItemInCache(itemCode)
+  if (!cached || !uom) return 1
+  const match = (cached.uoms || []).find(u => u.uom === uom)
+  if (match) return parseFloat(match.conversion_factor) || 1
+  return 1
+}
+
+// Switching UOM keeps the value per stock unit, so the rate scales with the factor
+function changeRowUom(row, uom) {
+  if (!row || row.uom === uom) return
+  const ratio = uomFactor(row.item_code, uom) / uomFactor(row.item_code, row.uom)
+  row.uom = uom
+  if (row.rate) row.rate = parseFloat((Number(row.rate) * ratio).toFixed(PRODUCE_RATE_PRECISION))
+}
+
+function focusPendingQty() {
+  nextTick(() => {
+    pendingQtyInput.value?.focus()
+    pendingQtyInput.value?.select()
+  })
+}
+
 function formatRate(val, digits = 2) {
   const num = parseFloat(val)
   return (isNaN(num) ? 0 : num).toFixed(digits)
@@ -478,11 +542,12 @@ function autoCalculateProduceRates() {
   const manualValuation = produceItems
     .filter(i => i.rate_manual)
     .reduce((sum, item) => sum + (item.qty * (Number(item.rate) || 0)), 0)
-  const autoQty = autoItems.reduce((sum, item) => sum + item.qty, 0)
+  // Shared per stock unit, so produced rows in different UOMs split fairly
+  const autoStockQty = autoItems.reduce((sum, item) => sum + item.qty * uomFactor(item.item_code, item.uom), 0)
 
-  const ratePerQty = autoQty > 0 ? Math.max(0, (consumedValuation(items.value) - manualValuation) / autoQty) : 0
-  const newRate = parseFloat(ratePerQty.toFixed(PRODUCE_RATE_PRECISION))
+  const ratePerStockQty = autoStockQty > 0 ? Math.max(0, (consumedValuation(items.value) - manualValuation) / autoStockQty) : 0
   for (const item of autoItems) {
+    const newRate = parseFloat((ratePerStockQty * uomFactor(item.item_code, item.uom)).toFixed(PRODUCE_RATE_PRECISION))
     if (item.rate !== newRate) {
       item.rate = newRate
     }
@@ -513,10 +578,11 @@ function markLoadedManualRates(serverRows) {
     produceRows[0].rate_manual = !!serverRows[idx]?.set_basic_rate_manually
     return
   }
-  const totalQty = produceRows.reduce((sum, item) => sum + item.qty, 0)
-  if (totalQty <= 0) return
-  const even = consumedValuation(items.value) / totalQty
+  const totalStockQty = produceRows.reduce((sum, item) => sum + item.qty * uomFactor(item.item_code, item.uom), 0)
+  if (totalStockQty <= 0) return
+  const evenPerStockQty = consumedValuation(items.value) / totalStockQty
   for (const item of produceRows) {
+    const even = evenPerStockQty * uomFactor(item.item_code, item.uom)
     item.rate_manual = Math.abs((Number(item.rate) || 0) - even) > 0.0005
   }
 }
@@ -698,7 +764,8 @@ function setPendingItem(details) {
     item_name: details.item_name,
     qty: 0,
     uom: details.uom,
-    rate: details.valuation_rate || details.rate || 0,
+    // valuation is per stock UOM; a barcode can start the row in a pack UOM
+    rate: (details.valuation_rate || details.rate || 0) * uomFactor(details.item_code, details.uom),
     // Second row is the produced item by default
     type: items.value.length === 1 ? 'Produce' : 'Consume'
   }
@@ -712,7 +779,7 @@ function confirmPendingItem() {
   if (!pendingItem.value || pendingItem.value.qty <= 0) return
   const p = pendingItem.value
   
-  let idx = items.value.findIndex(i => i.item_code === p.item_code && i.type === p.type)
+  let idx = items.value.findIndex(i => i.item_code === p.item_code && i.type === p.type && i.uom === p.uom)
   if (idx !== -1) {
     items.value[idx].qty += p.qty
   } else {
@@ -737,7 +804,11 @@ function confirmPendingItem() {
 function handlePendingQtyKeydown(e) {
   if (e.key === 'Enter') {
     e.preventDefault()
-    pendingTypeInput.value?.focus()
+    if (getItemUoms(pendingItem.value?.item_code).length > 1) {
+      nextTick(() => (Array.isArray(pendingUomPicker.value) ? pendingUomPicker.value[0] : pendingUomPicker.value)?.focus())
+    } else {
+      pendingTypeInput.value?.focus()
+    }
   } else if (e.key === 'Escape') {
     e.preventDefault()
     pendingItem.value = null
@@ -771,7 +842,12 @@ function focusRow(idx) {
   })
 }
 
-const EDIT_FIELDS = ['code', 'qty', 'type', 'rate']
+const EDIT_FIELDS = ['code', 'qty', 'uom', 'type', 'rate']
+
+// UOM is only an edit stop for items that have more than one
+function editFieldsFor(idx) {
+  return getItemUoms(items.value[idx]?.item_code).length > 1 ? EDIT_FIELDS : EDIT_FIELDS.filter(f => f !== 'uom')
+}
 
 function focusEditField(field, idx) {
   if (isReadOnly.value || !items.value[idx]) return
@@ -781,9 +857,10 @@ function focusEditField(field, idx) {
   editingRowIdx.value = idx
   editingField.value = field
   selectedRowIdx.value = idx
-  const inputMap = { code: editCodeInput, qty: editQtyInput, type: editTypeSelect, rate: editRateInput }
+  const inputMap = { code: editCodeInput, qty: editQtyInput, uom: editUomPicker, type: editTypeSelect, rate: editRateInput }
   nextTick(() => {
-    const el = inputMap[field]?.value
+    let el = inputMap[field]?.value
+    if (Array.isArray(el)) el = el[0]
     if (!el) return
     el.focus({ preventScroll: true })
     if (el.select) el.select()
@@ -818,17 +895,18 @@ function finishRowEdit(idx) {
 
 // ArrowLeft / ArrowRight move between the editable cells of a row
 function handleCellNavigation(e, idx, field) {
-  const pos = EDIT_FIELDS.indexOf(field)
+  const fields = editFieldsFor(idx)
+  const pos = fields.indexOf(field)
   if (e.key === 'ArrowLeft' && pos > 0) {
     if (e.target.type === 'text' && e.target.selectionStart !== 0) return false
     e.preventDefault()
-    focusEditField(EDIT_FIELDS[pos - 1], idx)
+    focusEditField(fields[pos - 1], idx)
     return true
   }
-  if (e.key === 'ArrowRight' && pos < EDIT_FIELDS.length - 1) {
+  if (e.key === 'ArrowRight' && pos < fields.length - 1) {
     if (e.target.type === 'text' && e.target.selectionStart !== e.target.value.length) return false
     e.preventDefault()
-    focusEditField(EDIT_FIELDS[pos + 1], idx)
+    focusEditField(fields[pos + 1], idx)
     return true
   }
   return false
@@ -841,7 +919,7 @@ function applyItemToRow(idx, details) {
   row.item_name = details.item_name
   row.uom = details.uom || details.stock_uom || row.uom
   // Produce rates are recalculated from the consumed items
-  if (row.type === 'Consume') row.rate = details.valuation_rate || details.rate || 0
+  if (row.type === 'Consume') row.rate = (details.valuation_rate || details.rate || 0) * uomFactor(row.item_code, row.uom)
   originalRowCode.value = row.item_code
   focusEditField('qty', idx)
 }
@@ -907,7 +985,7 @@ function onEditQtyKeydown(e, idx) {
     e.preventDefault()
   } else if (e.key === 'Enter') {
     e.preventDefault()
-    if (items.value[idx]?.qty > 0) focusEditField('type', idx)
+    if (items.value[idx]?.qty > 0) focusEditField(editFieldsFor(idx).includes('uom') ? 'uom' : 'type', idx)
   } else if (e.key === 'Escape') {
     e.preventDefault()
     e.stopPropagation()
