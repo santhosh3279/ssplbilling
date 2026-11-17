@@ -448,41 +448,29 @@ const buyingPriceList = computed(() =>
   || 'Buying'
 )
 
+// Price-list rate in the row's UOM. An exact per-UOM price wins; otherwise the price per
+// stock UOM (stock-UOM record, UOM-less record, or another UOM's price divided down) is scaled up.
 function getPriceListRate(item, priceListName) {
   if (!item) return 0.0
-  
-  if (item.price_lists) {
-    const pl = item.price_lists.find(p => p.name === priceListName)
-    if (pl) return pl.rate
-  }
-  
-  if (item.uom_price_lists?.[priceListName]) {
-    const targetUom = item.uom || 'Nos'
-    if (item.uom_price_lists[priceListName][targetUom] != null) {
-      return item.uom_price_lists[priceListName][targetUom]
-    }
-    const rates = Object.values(item.uom_price_lists[priceListName])
-    if (rates.length) return rates[0]
-  }
-  
   const cached = lookupItemInCache(item.item_code)
-  if (cached) {
-    if (cached.uom_price_lists?.[priceListName]) {
-      const targetUom = item.uom || cached.uom || 'Nos'
-      if (cached.uom_price_lists[priceListName][targetUom] != null) {
-        return cached.uom_price_lists[priceListName][targetUom]
-      }
-      const rates = Object.values(cached.uom_price_lists[priceListName])
-      if (rates.length) return rates[0]
-    }
-    
-    if (cached.price_lists) {
-      const pl = cached.price_lists.find(p => p.name === priceListName)
-      if (pl) return pl.rate
+  const uom = item.uom || cached?.uom || 'Nos'
+  const perUom = item.uom_price_lists?.[priceListName] || cached?.uom_price_lists?.[priceListName] || {}
+  if (perUom[uom] != null) return perUom[uom]
+
+  let perStock = null
+  const stockUom = cached?.uom
+  if (stockUom && perUom[stockUom] != null) {
+    perStock = perUom[stockUom]
+  } else {
+    const base = (item.price_lists || cached?.price_lists || []).find(p => p.name === priceListName)
+    if (base) {
+      perStock = base.rate
+    } else {
+      const [otherUom, otherRate] = Object.entries(perUom)[0] || []
+      if (otherUom) perStock = otherRate / uomFactor(item.item_code, otherUom)
     }
   }
-  
-  return 0.0
+  return perStock == null ? 0.0 : perStock * uomFactor(item.item_code, uom)
 }
 
 // Produced item rates are kept and shown to 3 decimals
@@ -513,6 +501,19 @@ function changeRowUom(row, uom) {
   const ratio = uomFactor(row.item_code, uom) / uomFactor(row.item_code, row.uom)
   row.uom = uom
   if (row.rate) row.rate = parseFloat((Number(row.rate) * ratio).toFixed(PRODUCE_RATE_PRECISION))
+}
+
+// Valuation per stock UOM in the source warehouse, or null when the server has no answer
+async function sourceValuation(itemCode) {
+  try {
+    const res = await frappePost('ssplbilling.api.storetransfer_api.get_item_details', {
+      item_code: itemCode,
+      warehouse: fromWarehouse.value
+    })
+    return res?.found ? (Number(res.rate) || 0) : null
+  } catch {
+    return null
+  }
 }
 
 function focusPendingQty() {
@@ -769,6 +770,12 @@ function setPendingItem(details) {
     // Second row is the produced item by default
     type: items.value.length === 1 ? 'Produce' : 'Consume'
   }
+  // The cached valuation is from whichever warehouse the sync read last; use the source's
+  const p = pendingItem.value
+  sourceValuation(p.item_code).then(v => {
+    if (v == null || pendingItem.value !== p || p.rate_manual) return
+    p.rate = v * uomFactor(p.item_code, p.uom)
+  })
   nextTick(() => {
     pendingQtyInput.value?.focus()
     pendingQtyInput.value?.select()
@@ -919,7 +926,13 @@ function applyItemToRow(idx, details) {
   row.item_name = details.item_name
   row.uom = details.uom || details.stock_uom || row.uom
   // Produce rates are recalculated from the consumed items
-  if (row.type === 'Consume') row.rate = (details.valuation_rate || details.rate || 0) * uomFactor(row.item_code, row.uom)
+  if (row.type === 'Consume') {
+    row.rate = (details.valuation_rate || details.rate || 0) * uomFactor(row.item_code, row.uom)
+    const code = row.item_code
+    sourceValuation(code).then(v => {
+      if (v != null && row.item_code === code && row.type === 'Consume') row.rate = v * uomFactor(code, row.uom)
+    })
+  }
   originalRowCode.value = row.item_code
   focusEditField('qty', idx)
 }
