@@ -486,6 +486,8 @@ def get_sales_invoice(invoice_name, include_customer_details=0):
         "custom_address_line2": si.get("custom_address_line2") or "",
         "custom_mobile_number": si.get("custom_mobile_number") or "",
         "custom_remarks": si.get("custom_remarks") or "",
+        "ewaybill": si.get("ewaybill") or "",
+        "e_waybill_status": si.get("e_waybill_status") or "",
         "payments": payments,
     }
     # Bill-open fetches the party panel in the same round trip when asked to.
