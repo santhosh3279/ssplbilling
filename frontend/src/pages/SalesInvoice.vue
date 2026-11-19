@@ -1275,6 +1275,36 @@ function applySidebarPanelEvent(data) {
   return true
 }
 
+// The open bill was submitted somewhere else (Cashier desk, POS, another tab):
+// flip this screen to submitted. Not gated on the sidebar series — the open bill
+// matters even when the panel shows a different series.
+async function onOpenBillSubmittedElsewhere(e) {
+  const d = e?.detail
+  if (!d || d.doctype !== 'Sales Invoice' || d.docstatus !== 1) return
+  const name = d.name
+  if (!name || name !== invoiceNo.value || !isSaved.value || isSubmitted.value) return
+
+  if (!isReadOnly.value || modifying.value) {
+    // Mid-edit: those edits can no longer be saved, so drop the lock and reload the bill as submitted
+    await releaseLock()
+    modifying.value = false
+    if (invoiceNo.value !== name) return
+    alert(`Bill ${name} was submitted elsewhere. Unsaved changes are discarded.`)
+    await loadInvoice(name)
+    return
+  }
+
+  isSubmitted.value = true
+  try {
+    const data = await frappeGet('ssplbilling.api.cashier_api.get_sales_invoice', { invoice_name: name })
+    // the screen may have moved to another bill (or a new one) while this was in flight
+    if (invoiceNo.value !== name) return
+    linkedPayments.value = data.payments || []
+  } catch (err) {
+    console.warn('[SalesInvoice] refresh after remote submit failed:', err)
+  }
+}
+
 function handleSidebarDateChange(days) {
   const d = parseCalendarDate(sidebarDate.value)
   d.setDate(d.getDate() + days)
@@ -4086,6 +4116,7 @@ onMounted(() => {
   }
 
   _billPanelCleanup = onBillPanelUpdate('Sales Invoice', sidebarSeries, () => fetchRecentInvoices(true), applySidebarPanelEvent)
+  window.addEventListener('wb-bill-panel-update', onOpenBillSubmittedElsewhere)
 })
 
 let _billPanelCleanup = null
@@ -4095,6 +4126,7 @@ onUnmounted(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
   releaseLock()
   _billPanelCleanup?.()
+  window.removeEventListener('wb-bill-panel-update', onOpenBillSubmittedElsewhere)
 })
 </script>
 
