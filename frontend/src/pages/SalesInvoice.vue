@@ -570,7 +570,7 @@
           <div class="flex gap-2">
             <button data-testid="btn-new" @click="showClearWarning = true" class="flex-1 rounded border border-[var(--color-highlight)]/50 bg-[var(--color-highlight)]/10 py-2.5 text-center text-3xl font-semibold text-[var(--color-highlight)] hover:bg-[var(--color-highlight)]/20 transition-colors">New</button>          </div>
           <button @click="handleBarcodePrint" class="w-full rounded border border-[var(--color-border)] bg-[var(--color-surface-raised)] py-2.5 text-center text-3xl font-semibold text-[var(--color-text)] hover:bg-[var(--color-midlight)] transition-colors">Print Barcode</button>
-          <div v-if="isSubmitted && (ewaybill || meetsEwayThreshold)" class="flex gap-2">
+          <div v-if="isSubmitted && ewayCompanyAllowed && (ewaybill || meetsEwayThreshold)" class="flex gap-2">
             <button v-if="!ewaybill" @click="showEWayBillModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Bill</button>
             <button v-else @click="showEWayOptionsModal = true" class="flex-1 rounded border border-[var(--color-info)] bg-[var(--color-info)]/20 py-2.5 text-center text-3xl font-semibold text-[var(--color-info)] hover:bg-[var(--color-info)]/30 transition-all uppercase active:scale-95">E-Way Options</button>
           </div>
@@ -3051,6 +3051,14 @@ const showTaxCleanup = computed(() =>
   && billingCompany.value === alternativeCompany.value
   && !isReadOnly.value
 )
+
+// E-Way Bill button: when an AE alternative company is set, only that company's counter
+// (wb-company = ae-alternative_company) gets it; with no AE company it shows everywhere.
+const ewayCompanyAllowed = computed(() => {
+  const ae = (alternativeCompany.value || '').trim().toLowerCase()
+  if (!ae) return true
+  return (billingCompany.value || '').trim().toLowerCase() === ae
+})
 
 // Multi Edit keys: 'gst', 'nongst', and 'rate:<n>' for the row's tax rate (0 = Exempt).
 function taxCleanupKeysOf(item) {
