@@ -14,8 +14,9 @@ status "Failed" + error_message on the entry and returns normally) and reports t
 rest through msgprint. So every action re-reads the entry from the database and hands
 back the messages hrms queued, instead of trusting a clean response.
 
-Nothing here uses ignore_permissions: hrms checks write permission on Payroll Entry
-itself, and a user without HR rights should see that error rather than bypass it.
+Nothing here uses ignore_permissions. The write steps rely on hrms / the ORM checking
+Payroll Entry permission; the read (get_payroll_overview) queries with qb, so it checks
+Payroll Entry read permission explicitly first.
 """
 
 import json
@@ -277,6 +278,11 @@ def _check(level, code, message, link=None):
 def get_payroll_overview(month, company=None):
 	"""Everything the page shows for one month: readiness checks, one row per employee
 	(structure, attendance, slip) and the payroll run for the period."""
+	# The rows carry every employee's salary and are read with qb, which skips
+	# permission checks. Salary Slip / Salary Structure Assignment are no gate: the
+	# Employee role reads them too (its own record only). Payroll Entry is HR Manager
+	# only by default — the same people who can run payroll at all.
+	frappe.has_permission(PAYROLL_ENTRY, "read", throw=True)
 	company = _company(company)
 	if not company:
 		frappe.throw(_("No Company found"))
