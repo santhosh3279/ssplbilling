@@ -226,7 +226,7 @@
               v-model="draft"
               rows="1"
               placeholder="Type a message — Enter sends, Shift+Enter new line"
-              class="max-h-40 min-h-[40px] flex-1 resize-none rounded-lg bg-[var(--color-bg)] px-3 py-2 text-[1.09375rem] focus:bg-[var(--color-info)]/15 focus:outline-none"
+              class="max-h-40 min-h-[40px] flex-1 resize-none rounded-lg bg-[var(--color-bg)] px-3 py-2 text-[1.3671875rem] focus:bg-[var(--color-info)]/15 focus:outline-none"
               @keydown.enter.exact.prevent="send"
             />
             <button
