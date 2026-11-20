@@ -434,20 +434,27 @@ let lazyObserver = null
 // Whether the thread was at the bottom before an image grew it
 let pinnedToBottom = true
 
-const filteredChats = computed(() => {
-  const q = search.value.trim().toLowerCase()
-  const list = q
-    ? chats.value.filter((c) => c.name.toLowerCase().includes(q) || c.id.includes(q.replace(/\D/g, '') || '\u0000'))
-    : chats.value
-  return sortChats(list)
-})
+const filteredChats = computed(() => filterChats(search.value))
 
-const forwardChats = computed(() => {
-  const q = forwardSearch.value.trim().toLowerCase()
+const forwardChats = computed(() => filterChats(forwardSearch.value))
+
+// Lowercase, no accents, single spaces, so "Ravi  Kumar" finds "ravi kumar"
+function normalize(s) {
+  return String(s || '').normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/\s+/g, ' ').trim()
+}
+
+function filterChats(query) {
+  const q = normalize(query)
   if (!q) return sortChats(chats.value)
-  const digits = q.replace(/\D/g, '')
-  return sortChats(chats.value.filter((c) => c.name.toLowerCase().includes(q) || (digits && c.id.includes(digits))))
-})
+  // Match the number only when the query is a number: a digit inside a name ("Shop 2")
+  // must not pull in every chat whose phone has a 2 in it
+  const isNumber = /^[\d\s+()-]+$/.test(q)
+  // "098765 43210" and "+91 98765 43210" both mean 9876543210; ids carry the country code, never a 0
+  const digits = isNumber ? q.replace(/\D/g, '').replace(/^0+/, '') : ''
+  return sortChats(
+    chats.value.filter((c) => normalize(c.name).includes(q) || (digits && c.id.split('@')[0].includes(digits))),
+  )
+}
 
 const forwardNames = computed(() =>
   forwardPicks.value.map((id) => chats.value.find((c) => c.id === id)?.name || id.split('@')[0]).join(', '),
