@@ -153,6 +153,7 @@
           <input
             ref="nameInput"
             v-model="form.supplier_name"
+            v-title-case
             class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="Full name"
@@ -166,6 +167,7 @@
           <input
             ref="printNameInput"
             v-model="form.supplier_print_name"
+            v-title-case
             class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="Name as it appears on print"
@@ -391,6 +393,7 @@ import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 import QuickLedgerSearch from './QuickLedgerSearch.vue'
 import WhatsAppStatus from './WhatsAppStatus.vue'
 import BankAccountsEditor from './BankAccountsEditor.vue'
+import { vTitleCase } from '../utils/titleCase.js'
 
 useSubwindow()
 

@@ -90,6 +90,7 @@
               <input
                 ref="itemNameInput"
                 v-model="form.item_name"
+                v-title-case
                 type="text"
                 class="w-full rounded-xl border bg-[var(--color-surface)] px-[20px] py-[12px] text-4xl font-medium text-[var(--color-text)] outline-none transition-all"
                 :class="duplicateItemName
@@ -108,6 +109,7 @@
               <input
                 ref="itemPrintNameInput"
                 v-model="form.item_print_name"
+                v-title-case
                 type="text"
                 class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-[20px] py-[12px] text-4xl font-medium text-[var(--color-text)] outline-none focus:border-[var(--color-info)] transition-all"
                 placeholder="Print name..."
@@ -857,6 +859,7 @@ import { ref, onMounted, computed, nextTick, watch } from 'vue'
 import { fetchItemCreationMetadata, getNextBarcode, createItem, updateItem, getItemForEdit, setItemDisabled, getItemVariants, createItemVariants, updateVariantAttributes, searchLinkableItems, linkItemAsVariant, getVariantUpdateSetting, setVariantUpdateSetting, frappeGet, uploadFile } from '../api.js'
 import { useSubwindowWatcher } from '../services/shortcutManager'
 import { useItemAttributeCache } from '../services/itemAttributeCache.js'
+import { vTitleCase } from '../utils/titleCase.js'
 
 const props = defineProps({
   show: Boolean,

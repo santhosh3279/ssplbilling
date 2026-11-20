@@ -88,6 +88,7 @@
           <input
             ref="nameInputRef"
             v-model="form.customer_name"
+            v-title-case
             class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="Full name"
@@ -100,6 +101,7 @@
           <label class="text-[20px] font-bold uppercase tracking-wider text-[var(--color-text-muted)]">Customer Print Name</label>
           <input
             v-model="form.customer_print_name"
+            v-title-case
             class="rounded border border-[var(--color-border)] bg-[var(--color-surface)] font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-info)]"
             style="font-size: 1.5rem; padding: 0.2em;"
             placeholder="Name as it appears on print"
@@ -285,6 +287,7 @@ import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 import QuickLedgerSearch from './QuickLedgerSearch.vue'
 import WhatsAppStatus from './WhatsAppStatus.vue'
 import BankAccountsEditor from './BankAccountsEditor.vue'
+import { vTitleCase } from '../utils/titleCase.js'
 
 const props = defineProps({
   show: Boolean,
