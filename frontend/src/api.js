@@ -1434,6 +1434,34 @@ export async function syncEsslAttendanceToErp({ machine = null, fromDate = null 
   });
 }
 
+// ─── Payroll Run (/hrms/payroll) — wraps hrms Payroll Entry, one request per step ───
+// Each action returns { run, messages }: hrms reports failures by writing them on the
+// Payroll Entry and through msgprint, so the page shows both instead of trusting a 200.
+export async function fetchPayrollOverview({ month, company = null }) {
+  return frappePost("ssplbilling.api.payroll_api.get_payroll_overview", { month, company });
+}
+
+export async function createPayrollRun({ month, company, employees, postingDate = null }) {
+  return frappePost("ssplbilling.api.payroll_api.create_payroll_run", {
+    month,
+    company,
+    employees: JSON.stringify(employees),
+    posting_date: postingDate,
+  }, { silent: true });
+}
+
+export async function createPayrollSalarySlips(payrollEntry) {
+  return frappePost("ssplbilling.api.payroll_api.create_salary_slips", { payroll_entry: payrollEntry }, { silent: true });
+}
+
+export async function submitPayrollSalarySlips(payrollEntry) {
+  return frappePost("ssplbilling.api.payroll_api.submit_salary_slips", { payroll_entry: payrollEntry }, { silent: true });
+}
+
+export async function cancelPayrollRun(payrollEntry) {
+  return frappePost("ssplbilling.api.payroll_api.cancel_payroll_run", { payroll_entry: payrollEntry }, { silent: true });
+}
+
 export async function fetchAttendanceRecords({ fromDate = null, toDate = null, employee = null } = {}) {
   return frappePost("ssplbilling.api.essl_attendance_api.get_attendance_records", {
     from_date: fromDate,

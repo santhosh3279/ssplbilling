@@ -56,6 +56,7 @@ export const BILLER_ROUTES = new Set([
   'DeviceUsers',
   'AttendanceChart',
   'ShiftRoaster',
+  'PayrollRun',
   'BatchReports',
   'Competitive',
   'DocumentPrint',
@@ -125,6 +126,7 @@ export const ACCOUNTS_ROUTES = new Set([
   'DeviceUsers',
   'AttendanceChart',
   'ShiftRoaster',
+  'PayrollRun',
   'BatchReports',
 ])
 
@@ -282,6 +284,7 @@ function getTileIdForRoute(routeName) {
     'DeviceUsers',
     'AttendanceChart',
     'ShiftRoaster',
+    'PayrollRun',
   ]
   if (hrmsRoutes.includes(routeName)) return 'hrms'
   if (routeName === 'Employee') return 'employee'
@@ -343,6 +346,7 @@ export function canAccessRoute(routeName) {
       allowed.add('DeviceUsers')
       allowed.add('AttendanceChart')
       allowed.add('ShiftRoaster')
+      allowed.add('PayrollRun')
     }
     if (allowed.has('Reports')) {
       allowed.add('StoreSalesReport')

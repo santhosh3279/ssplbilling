@@ -256,10 +256,10 @@
           <div class="flex items-center justify-between border-b border-[var(--color-border)] pb-4 mb-4">
             <h3 class="text-lg font-bold text-[var(--color-text)]">Payroll Processing ({{ payrollMonth }} {{ payrollYear }})</h3>
             <button
-              @click="alert('Payroll generation script triggered. Salary slips created.')"
+              @click="router.push('/hrms/payroll')"
               class="px-4 py-2 bg-[var(--color-success)] text-white text-xs font-bold rounded-lg shadow-sm hover:brightness-110 active:scale-95 transition-all"
             >
-              ⚙ Processing Salary
+              ⚙ Open Payroll Run
             </button>
           </div>
 
@@ -854,7 +854,7 @@ function triggerAction(action) {
   if (action === 'attendance') {
     activeSubTab.value = 'attendance'
   } else if (action === 'payroll') {
-    activeSubTab.value = 'payroll'
+    router.push('/hrms/payroll')
   }
 }
 

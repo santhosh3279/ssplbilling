@@ -38,7 +38,7 @@
 import { useRouter } from 'vue-router'
 
 defineProps({
-  // key of the link to highlight: dashboard | employees | machines | mapping | enroll | attendance | chart | roaster
+  // key of the link to highlight: dashboard | employees | machines | mapping | enroll | attendance | chart | roaster | payroll
   active: { type: String, default: '' },
 })
 
@@ -53,5 +53,6 @@ const links = [
   { key: 'attendance', label: 'Attendance',       icon: '📅', path: '/hrms/attendance' },
   { key: 'chart',      label: 'Attendance Chart', icon: '📊', path: '/hrms/attendance-chart' },
   { key: 'roaster',    label: 'Shift Roaster',    icon: '🗓️', path: '/hrms/shift-roaster' },
+  { key: 'payroll',    label: 'Payroll Run',      icon: '💸', path: '/hrms/payroll' },
 ]
 </script>

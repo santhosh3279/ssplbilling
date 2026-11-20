@@ -78,6 +78,7 @@ const CashflowReport = () => import('./pages/CashflowReport.vue')
 const LandCostVoucher = () => import('./pages/land_cost_voucher.vue')
 const AccountTree = () => import('./pages/AccountTree.vue')
 const Hrms = () => import('./pages/Hrms.vue')
+const PayrollRun = () => import('./pages/PayrollRun.vue')
 const Employee = () => import('./pages/Employee.vue')
 const Employees = () => import('./pages/employees.vue')
 const EsslMachines = () => import('./pages/EsslMachines.vue')
@@ -143,6 +144,12 @@ const routes = [
     name: 'ShiftRoaster',
     component: ShiftRoaster,
     meta: { title: 'Shift Roaster' },
+  },
+  {
+    path: '/hrms/payroll',
+    name: 'PayrollRun',
+    component: PayrollRun,
+    meta: { title: 'Payroll Run' },
   },
   {
     path: '/catalogue-editor',
