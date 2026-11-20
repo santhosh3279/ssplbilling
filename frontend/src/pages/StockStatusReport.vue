@@ -15,7 +15,24 @@
             <p class="text-xs text-[var(--color-text-muted)]">Real-time stock status with advanced filters</p>
           </div>
         </div>
-        <div>
+        <div class="flex items-center gap-3">
+          <span v-if="saveMsg" class="text-sm" :class="saveError ? 'text-[var(--color-danger)]' : 'text-[var(--color-success)]'">{{ saveMsg }}</span>
+          <button
+            v-if="dirtyCount"
+            @click="discardEdits"
+            :disabled="savingEdits"
+            class="rounded-lg px-3 py-2 text-sm text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)] hover:text-[var(--color-text)] transition-colors disabled:opacity-50"
+          >
+            Discard
+          </button>
+          <button
+            @click="saveEdits"
+            :disabled="savingEdits || !dirtyCount"
+            title="Save Safety Stock / Max Stock / Min Ord to Item master (Ctrl+S)"
+            class="flex items-center gap-2 rounded-lg bg-[var(--color-info)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--color-info)]/80 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {{ savingEdits ? 'Saving…' : `Save${dirtyCount ? ` (${dirtyCount})` : ''}` }}
+          </button>
           <button
             @click="exportStockReportToExcel"
             :disabled="loadingStockData || !stockReportRows.length"
@@ -178,6 +195,7 @@
               <th class="px-2 py-1.5 font-semibold text-right" :title="`Most net qty sold in any one calendar month of the last ${avgMonths} (incl. current month)`">Highest Monthly Sale ({{ avgMonths }}M)</th>
               <th class="px-2 py-1.5 font-semibold text-right">Safety Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right">Max Stock</th>
+              <th class="px-2 py-1.5 font-semibold text-right" title="Minimum order qty (Item master)">Min Ord</th>
               <th class="px-2 py-1.5 font-semibold">UOM</th>
               <th class="px-2 py-1.5 font-semibold">Linked Suppliers</th>
             </tr>
@@ -204,8 +222,22 @@
               <td class="px-2 py-1 text-right tabular-nums">{{ fmt(row.monthly_avg_sales) }}</td>
               <td class="px-2 py-1 text-right tabular-nums">{{ fmt(row.highest_weekly_sales) }}</td>
               <td class="px-2 py-1 text-right tabular-nums">{{ fmt(row.highest_monthly_sales) }}</td>
-              <td class="px-2 py-1 text-right tabular-nums" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.safety_stock }}</td>
-              <td class="px-2 py-1 text-right tabular-nums" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.max_stock }}</td>
+              <td v-for="f in EDIT_FIELDS" :key="f" class="px-1 py-0.5 text-right">
+                <input
+                  v-model.number="row[f]"
+                  type="number"
+                  min="0"
+                  step="any"
+                  :data-edit-field="f"
+                  :data-row-idx="idx"
+                  class="w-24 rounded border px-1.5 py-0.5 text-right text-xl tabular-nums focus:border-[var(--color-info)] focus:outline-none"
+                  :class="isFieldDirty(row, f)
+                    ? 'border-[var(--color-warning)] bg-[var(--color-warning)]/20 text-[var(--color-text)]'
+                    : 'border-transparent bg-transparent text-inherit hover:border-[var(--color-border)]'"
+                  @focus="focusedRowIdx = idx; $event.target.select()"
+                  @input="markEdited(row)"
+                />
+              </td>
               <td class="px-2 py-1 font-sans uppercase tracking-wider" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.stock_uom }}</td>
               <td class="px-2 py-1 font-sans max-w-xs truncate" :title="row.suppliers">{{ row.suppliers || '—' }}</td>
             </tr>
@@ -219,7 +251,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
-import { fetchStockReportFilters, fetchStockReportData } from '../api.js'
+import { fetchStockReportFilters, fetchStockReportData, frappePost } from '../api.js'
 import ExcelJS from 'exceljs'
 
 const router = useRouter()
@@ -229,6 +261,83 @@ const stockReportRows = ref([])
 const focusedRowIdx = ref(-1)
 const maxDisplayed = ref(100)
 const filterOptions = ref({ warehouses: [], suppliers: [] })
+
+// Inline-editable Item master fields. `originals` holds each edited item's values as loaded, so a row
+// is dirty only while some field differs from what the Item master has.
+const EDIT_FIELDS = ['safety_stock', 'max_stock', 'min_order_qty']
+const originals = ref({})
+const savingEdits = ref(false)
+const saveMsg = ref('')
+const saveError = ref(false)
+
+function num(v) {
+  const n = Number(v)
+  return Number.isFinite(n) ? n : 0
+}
+
+function isFieldDirty(row, f) {
+  const orig = originals.value[row.item_code]
+  return !!orig && num(row[f]) !== num(orig[f])
+}
+
+function markEdited(row) {
+  if (!originals.value[row.item_code]) {
+    // First edit: the input already changed row[f], so rebuild the original from the loaded copy.
+    const loaded = loadedValues.get(row.item_code) || {}
+    originals.value[row.item_code] = { ...loaded }
+  }
+  saveMsg.value = ''
+}
+
+const dirtyRows = computed(() =>
+  stockReportRows.value.filter(r => originals.value[r.item_code] && EDIT_FIELDS.some(f => isFieldDirty(r, f)))
+)
+const dirtyCount = computed(() => dirtyRows.value.length)
+
+// Snapshot of the editable fields as last loaded / saved, keyed by item_code.
+let loadedValues = new Map()
+function snapshotLoaded(rows) {
+  loadedValues = new Map(rows.map(r => [r.item_code, Object.fromEntries(EDIT_FIELDS.map(f => [f, num(r[f])]))]))
+}
+
+function discardEdits() {
+  for (const r of stockReportRows.value) {
+    const orig = originals.value[r.item_code]
+    if (orig) for (const f of EDIT_FIELDS) r[f] = orig[f]
+  }
+  originals.value = {}
+  saveMsg.value = ''
+}
+
+async function saveEdits() {
+  const rows = dirtyRows.value
+  if (!rows.length || savingEdits.value) return
+  savingEdits.value = true
+  saveMsg.value = ''
+  saveError.value = false
+  try {
+    await frappePost('ssplbilling.api.purchase_api.update_items_order_quantities', {
+      items: JSON.stringify(rows.map(r => ({
+        item_code: r.item_code,
+        safety_stock: num(r.safety_stock),
+        custom_max_stock: num(r.max_stock),
+        min_order_qty: num(r.min_order_qty)
+      })))
+    })
+    for (const r of rows) {
+      for (const f of EDIT_FIELDS) r[f] = num(r[f])
+      loadedValues.set(r.item_code, Object.fromEntries(EDIT_FIELDS.map(f => [f, r[f]])))
+    }
+    originals.value = {}
+    saveMsg.value = `Saved ${rows.length} item${rows.length === 1 ? '' : 's'}`
+  } catch (err) {
+    console.error('Failed to save item quantities:', err)
+    saveError.value = true
+    saveMsg.value = err?.message || 'Save failed'
+  } finally {
+    savingEdits.value = false
+  }
+}
 
 const stockFilters = ref({
   search: '',
@@ -328,6 +437,9 @@ async function loadStockReportFilters() {
 }
 
 async function loadStockReportData() {
+  if (dirtyCount.value && !confirm(`Discard ${dirtyCount.value} unsaved change(s)?`)) return
+  originals.value = {}
+  saveMsg.value = ''
   loadingStockData.value = true
   try {
     const company = localStorage.getItem('wb-company') || ''
@@ -339,6 +451,7 @@ async function loadStockReportData() {
       avg_months: avgMonths.value
     })
     stockReportRows.value = data || []
+    snapshotLoaded(stockReportRows.value)
     maxDisplayed.value = 100
     focusedRowIdx.value = stockReportRows.value.length ? 0 : -1
   } catch (err) {
@@ -439,13 +552,14 @@ async function exportStockReportToExcel() {
     { key: 'highest_monthly_sales', width: 22 },
     { key: 'safety_stock', width: 15 },
     { key: 'max_stock', width: 15 },
+    { key: 'min_order_qty', width: 12 },
     { key: 'stock_uom', width: 10 },
     { key: 'suppliers', width: 35 }
   ]
 
   // Add Table Header
   const headerRow = worksheet.addRow([
-    'Item Code', 'Item Name', 'Actual Stock', 'Weekly Avg Sales', `Monthly Avg Sales (${avgMonths.value}M)`, 'Highest Weekly Sale', `Highest Monthly Sale (${avgMonths.value}M)`, 'Safety Stock', 'Max Stock', 'UOM', 'Suppliers'
+    'Item Code', 'Item Name', 'Actual Stock', 'Weekly Avg Sales', `Monthly Avg Sales (${avgMonths.value}M)`, 'Highest Weekly Sale', `Highest Monthly Sale (${avgMonths.value}M)`, 'Safety Stock', 'Max Stock', 'Min Ord', 'UOM', 'Suppliers'
   ])
   headerRow.eachCell(cell => {
     cell.font = { name: 'Arial', bold: true }
@@ -468,6 +582,7 @@ async function exportStockReportToExcel() {
       fmt(r.highest_monthly_sales),
       fmt(r.safety_stock),
       fmt(r.max_stock),
+      fmt(r.min_order_qty),
       r.stock_uom,
       r.suppliers || ''
     ])
@@ -497,8 +612,27 @@ function scrollToFocusedRow() {
 }
 
 function handleKeyDown(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+    e.preventDefault()
+    saveEdits()
+    return
+  }
   // Arrow keys inside the supplier box move through its list, not the report rows.
   if (e.target instanceof Element && e.target.closest('[data-supplier-combo]')) return
+  // In an editable cell: Up/Down/Enter jump to the same field in the previous/next row.
+  const field = e.target instanceof Element && e.target.getAttribute('data-edit-field')
+  if (field && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter')) {
+    e.preventDefault()
+    const len = filteredStockRows.value.length
+    if (!len) return
+    const step = e.key === 'ArrowUp' ? -1 : 1
+    focusedRowIdx.value = (Number(e.target.getAttribute('data-row-idx')) + step + len) % len
+    nextTick(() => {
+      const el = document.querySelector(`[data-edit-field="${field}"][data-row-idx="${focusedRowIdx.value}"]`)
+      if (el) { el.focus(); el.scrollIntoView({ block: 'nearest' }) }
+    })
+    return
+  }
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     const len = filteredStockRows.value.length

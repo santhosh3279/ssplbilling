@@ -1173,6 +1173,7 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 			SUM(bin.actual_qty) as actual_stock,
 			item.safety_stock,
 			item.custom_max_stock as max_stock,
+			item.min_order_qty,
 			(SELECT GROUP_CONCAT(supplier SEPARATOR ', ') FROM `tabItem Supplier` WHERE parent = bin.item_code) as suppliers
 		FROM
 			`tabBin` bin
@@ -1202,7 +1203,7 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 	if conditions:
 		query += " WHERE " + " AND ".join(conditions)
 
-	query += " GROUP BY bin.item_code, item.item_name, item.stock_uom, item.safety_stock, item.custom_max_stock"
+	query += " GROUP BY bin.item_code, item.item_name, item.stock_uom, item.safety_stock, item.custom_max_stock, item.min_order_qty"
 
 	query += " ORDER BY bin.item_code ASC"
 
