@@ -93,9 +93,9 @@
         <template v-else>
           <div class="shrink-0 flex items-center gap-3 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-2">
             <button class="md:hidden rounded px-2 py-1 text-lg" @click="closeChat">&larr;</button>
-            <div class="min-w-0">
-              <div class="truncate font-bold">{{ active.name }}</div>
-              <div class="text-xs text-[var(--color-text-muted)] font-mono">{{ chatSubtitle }}</div>
+            <div class="flex min-w-0 items-baseline gap-3">
+              <span class="truncate font-bold">{{ active.name }}</span>
+              <span class="shrink-0 font-mono text-[var(--color-text-muted)]">{{ chatSubtitle }}</span>
             </div>
           </div>
 
@@ -226,7 +226,7 @@
               v-model="draft"
               rows="1"
               placeholder="Type a message — Enter sends, Shift+Enter new line"
-              class="max-h-40 min-h-[40px] flex-1 resize-none rounded-lg bg-[var(--color-bg)] px-3 py-2 text-sm focus:bg-[var(--color-info)]/15 focus:outline-none"
+              class="max-h-40 min-h-[40px] flex-1 resize-none rounded-lg bg-[var(--color-bg)] px-3 py-2 text-[1.09375rem] focus:bg-[var(--color-info)]/15 focus:outline-none"
               @keydown.enter.exact.prevent="send"
             />
             <button
