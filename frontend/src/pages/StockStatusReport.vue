@@ -411,9 +411,6 @@ function onSupplierKeydown(e) {
   } else if (e.key === 'Enter') {
     e.preventDefault()
     if (supplierOpen.value && len) toggleSupplier(supplierMatches.value[supplierActiveIdx.value])
-  } else if (e.key === 'Backspace' && !supplierQuery.value && stockFilters.value.suppliers.length) {
-    // Empty box: Backspace drops the last picked supplier.
-    stockFilters.value.suppliers = stockFilters.value.suppliers.slice(0, -1)
   } else if (e.key === 'Escape') {
     supplierOpen.value = false
     supplierQuery.value = ''
