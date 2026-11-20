@@ -55,24 +55,26 @@
 
         <!-- Supplier -->
         <div>
-          <label class="mb-1 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">Supplier</label>
+          <label class="mb-1 block text-base font-semibold uppercase tracking-wider text-[var(--color-text-muted)]">
+            Supplier<span v-if="stockFilters.suppliers.length" class="ml-1 normal-case">({{ stockFilters.suppliers.length }} selected)</span>
+          </label>
           <div class="relative" data-supplier-combo>
             <input
               v-model="supplierQuery"
               type="text"
-              placeholder="— All Suppliers —"
+              :placeholder="stockFilters.suppliers.length ? 'Type to add more…' : '— All Suppliers —'"
               class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 pr-7 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
               @focus="openSupplierList"
-              @input="supplierOpen = true; supplierActiveIdx = 0; if (!supplierQuery.trim()) stockFilters.supplier = ''"
+              @input="supplierOpen = true; supplierActiveIdx = 0"
               @keydown="onSupplierKeydown"
               @blur="closeSupplierList"
             />
             <button
-              v-if="stockFilters.supplier || supplierQuery"
+              v-if="stockFilters.suppliers.length || supplierQuery"
               type="button"
               class="absolute right-1.5 top-1/2 -translate-y-1/2 text-lg text-[var(--color-text-muted)] hover:text-[var(--color-text)]"
-              title="Clear supplier"
-              @mousedown.prevent="selectSupplier(null)"
+              title="Clear all suppliers"
+              @mousedown.prevent="clearSuppliers"
             >×</button>
             <ul
               v-if="supplierOpen && supplierMatches.length"
@@ -81,15 +83,38 @@
               <li
                 v-for="(sup, i) in supplierMatches"
                 :key="sup.id"
-                class="cursor-pointer px-2 py-1 text-lg text-[var(--color-text)]"
+                class="flex cursor-pointer items-center gap-2 px-2 py-1 text-lg text-[var(--color-text)]"
                 :class="i === supplierActiveIdx ? 'supplier-active bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : 'hover:bg-[var(--color-surface-raised)]'"
-                @mousedown.prevent="selectSupplier(sup)"
+                @mousedown.prevent="toggleSupplier(sup)"
                 @mouseenter="supplierActiveIdx = i"
               >
-                {{ sup.name }}
-                <span v-if="sup.name !== sup.id" class="ml-1 text-sm opacity-70">{{ sup.id }}</span>
+                <input
+                  type="checkbox"
+                  tabindex="-1"
+                  class="pointer-events-none h-4 w-4 shrink-0"
+                  :checked="selectedSupplierSet.has(sup.id)"
+                />
+                <span class="truncate">
+                  {{ sup.name }}
+                  <span v-if="sup.name !== sup.id" class="ml-1 text-sm opacity-70">{{ sup.id }}</span>
+                </span>
               </li>
             </ul>
+          </div>
+          <div v-if="stockFilters.suppliers.length" class="mt-1 flex max-h-20 flex-wrap gap-1 overflow-y-auto">
+            <span
+              v-for="id in stockFilters.suppliers"
+              :key="id"
+              class="flex items-center gap-1 rounded-md bg-[var(--color-surface-raised)] px-1.5 py-0.5 text-sm text-[var(--color-text)]"
+            >
+              {{ supplierNameById[id] || id }}
+              <button
+                type="button"
+                class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)]"
+                :title="`Remove ${supplierNameById[id] || id}`"
+                @click="removeSupplier(id)"
+              >×</button>
+            </span>
           </div>
         </div>
 
@@ -204,45 +229,54 @@ const filterOptions = ref({ warehouses: [], suppliers: [] })
 const stockFilters = ref({
   search: '',
   warehouse: '',
-  supplier: '',
+  suppliers: [],
   negativeOnly: false,
   avgMonths: 6
 })
 
-// Searchable supplier filter: typing filters by name or id; picking one sets stockFilters.supplier (the id).
+// Searchable multi-supplier filter: typing filters the list by name or id; clicking / Enter toggles a
+// supplier in stockFilters.suppliers (ids). The list stays open so several can be picked in a row.
 const supplierQuery = ref('')
 const supplierOpen = ref(false)
 const supplierActiveIdx = ref(0)
 
-const selectedSupplierName = computed(() => {
-  const sup = filterOptions.value.suppliers.find(s => s.id === stockFilters.value.supplier)
-  return sup ? sup.name : ''
+const selectedSupplierSet = computed(() => new Set(stockFilters.value.suppliers))
+
+const supplierNameById = computed(() => {
+  const map = {}
+  for (const s of filterOptions.value.suppliers || []) map[s.id] = s.name
+  return map
 })
 
 const supplierMatches = computed(() => {
   const list = filterOptions.value.suppliers || []
   const q = supplierQuery.value.trim().toLowerCase()
-  // Show the full list when the box holds the already-picked supplier's name.
-  if (!q || q === selectedSupplierName.value.toLowerCase()) return list
+  if (!q) return list
   return list.filter(s => (s.name || '').toLowerCase().includes(q) || s.id.toLowerCase().includes(q))
 })
 
 function openSupplierList() {
   supplierOpen.value = true
-  const idx = supplierMatches.value.findIndex(s => s.id === stockFilters.value.supplier)
-  supplierActiveIdx.value = idx >= 0 ? idx : 0
+  supplierActiveIdx.value = 0
 }
 
 function closeSupplierList() {
   supplierOpen.value = false
-  // Text that wasn't picked from the list falls back to the current selection.
-  supplierQuery.value = selectedSupplierName.value
+  supplierQuery.value = ''
 }
 
-function selectSupplier(sup) {
-  stockFilters.value.supplier = sup ? sup.id : ''
-  supplierQuery.value = sup ? sup.name : ''
-  supplierOpen.value = false
+function toggleSupplier(sup) {
+  const list = stockFilters.value.suppliers
+  stockFilters.value.suppliers = list.includes(sup.id) ? list.filter(id => id !== sup.id) : [...list, sup.id]
+}
+
+function removeSupplier(id) {
+  stockFilters.value.suppliers = stockFilters.value.suppliers.filter(s => s !== id)
+}
+
+function clearSuppliers() {
+  stockFilters.value.suppliers = []
+  supplierQuery.value = ''
 }
 
 function scrollActiveSupplier() {
@@ -263,18 +297,15 @@ function onSupplierKeydown(e) {
     scrollActiveSupplier()
   } else if (e.key === 'Enter') {
     e.preventDefault()
-    if (supplierOpen.value && len) selectSupplier(supplierMatches.value[supplierActiveIdx.value])
-    else if (!supplierQuery.value.trim()) selectSupplier(null)
+    if (supplierOpen.value && len) toggleSupplier(supplierMatches.value[supplierActiveIdx.value])
+  } else if (e.key === 'Backspace' && !supplierQuery.value && stockFilters.value.suppliers.length) {
+    // Empty box: Backspace drops the last picked supplier.
+    stockFilters.value.suppliers = stockFilters.value.suppliers.slice(0, -1)
   } else if (e.key === 'Escape') {
     supplierOpen.value = false
-    supplierQuery.value = selectedSupplierName.value
+    supplierQuery.value = ''
   }
 }
-
-// Keep the box text in step when the selection changes elsewhere (Clear Filters, filters loading late).
-watch(selectedSupplierName, (name) => {
-  if (!supplierOpen.value) supplierQuery.value = name
-})
 
 // Monthly avg divisor: sales of last N months (N*30 days) ÷ N. Invalid input falls back to 6.
 const avgMonths = computed(() => {
@@ -299,7 +330,7 @@ async function loadStockReportData() {
     const data = await fetchStockReportData({
       company: company,
       warehouse: stockFilters.value.warehouse,
-      supplier: stockFilters.value.supplier,
+      supplier: stockFilters.value.suppliers.length ? stockFilters.value.suppliers : '',
       negative_only: stockFilters.value.negativeOnly,
       avg_months: avgMonths.value
     })
@@ -314,7 +345,7 @@ async function loadStockReportData() {
 }
 
 watch(
-  () => [stockFilters.value.warehouse, stockFilters.value.supplier, stockFilters.value.negativeOnly, avgMonths.value],
+  () => [stockFilters.value.warehouse, stockFilters.value.suppliers.join('\u0001'), stockFilters.value.negativeOnly, avgMonths.value],
   () => {
     loadStockReportData()
   }
@@ -374,7 +405,7 @@ function resetStockFilters() {
   stockFilters.value = {
     search: '',
     warehouse: '',
-    supplier: '',
+    suppliers: [],
     negativeOnly: false,
     avgMonths: 6
   }
@@ -441,7 +472,8 @@ async function exportStockReportToExcel() {
   link.href = URL.createObjectURL(blob)
   
   const fromStr = stockFilters.value.warehouse ? '_' + stockFilters.value.warehouse.replace(/[^A-Za-z0-9]/g, '') : ''
-  const supStr = stockFilters.value.supplier ? '_' + stockFilters.value.supplier.replace(/[^A-Za-z0-9]/g, '') : ''
+  const sups = stockFilters.value.suppliers
+  const supStr = sups.length === 1 ? '_' + sups[0].replace(/[^A-Za-z0-9]/g, '') : sups.length > 1 ? `_${sups.length}suppliers` : ''
   const negStr = stockFilters.value.negativeOnly ? '_negative_only' : ''
   link.download = `StockStatusReport${fromStr}${supStr}${negStr}.xlsx`
   link.click()

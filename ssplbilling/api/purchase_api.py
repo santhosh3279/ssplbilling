@@ -1134,6 +1134,22 @@ def get_stock_report_filters(company=None):
 	}
 
 
+def _parse_supplier_list(supplier):
+	"""Supplier filter arrives as a JSON list of ids, a list, or a single id. Returns a list of ids."""
+	if not supplier:
+		return []
+	if isinstance(supplier, str):
+		s = supplier.strip()
+		if s.startswith("["):
+			try:
+				supplier = json.loads(s)
+			except ValueError:
+				supplier = [s]
+		else:
+			supplier = [s]
+	return [str(x).strip() for x in supplier if x and str(x).strip()]
+
+
 @frappe.whitelist()
 def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_only=False, avg_months=6):
 	"""Returns stock report data (one row per item, stock summed across warehouses) with
@@ -1171,13 +1187,14 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 		conditions.append("bin.warehouse = %(warehouse)s")
 		values["warehouse"] = warehouse
 
-	if supplier:
+	suppliers = _parse_supplier_list(supplier)
+	if suppliers:
 		conditions.append("""
 			bin.item_code IN (
-				SELECT parent FROM `tabItem Supplier` WHERE supplier = %(supplier)s
+				SELECT parent FROM `tabItem Supplier` WHERE supplier IN %(suppliers)s
 			)
 		""")
-		values["supplier"] = supplier
+		values["suppliers"] = tuple(suppliers)
 
 	if conditions:
 		query += " WHERE " + " AND ".join(conditions)
@@ -1235,12 +1252,12 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 	if warehouse:
 		sales_conditions.append("sii.warehouse = %(warehouse)s")
 		sales_values["warehouse"] = warehouse
-	if supplier:
-		# Only the supplier's items: reads their invoice lines via the item_code index, not the whole period.
+	if suppliers:
+		# Only the suppliers' items: reads their invoice lines via the item_code index, not the whole period.
 		sales_conditions.append(
-			"sii.item_code IN (SELECT parent FROM `tabItem Supplier` WHERE supplier = %(supplier)s)"
+			"sii.item_code IN (SELECT parent FROM `tabItem Supplier` WHERE supplier IN %(suppliers)s)"
 		)
-		sales_values["supplier"] = supplier
+		sales_values["suppliers"] = tuple(suppliers)
 
 	sales = frappe.db.sql(
 		f"""
