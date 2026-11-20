@@ -35,7 +35,7 @@
             v-model="search"
             type="text"
             placeholder="Search chats"
-            class="w-full rounded-lg bg-[var(--color-bg)] px-3 py-2 text-sm focus:bg-[var(--color-info)]/15 focus:outline-none"
+            class="w-full rounded-lg bg-[var(--color-bg)] px-3 py-2 text-[1.09375rem] focus:bg-[var(--color-info)]/15 focus:outline-none"
           />
           <form class="flex gap-2" @submit.prevent="startChat">
             <input
