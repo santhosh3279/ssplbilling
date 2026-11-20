@@ -23,8 +23,36 @@
       <button @click="$emit('close')" class="text-[var(--color-text-muted)] hover:text-[var(--color-text)] text-xl leading-none mt-0.5">✕</button>
     </div>
 
+    <!-- Tabs -->
+    <div class="flex gap-1 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 pt-2">
+      <button
+        v-for="t in tabs"
+        :key="t.id"
+        type="button"
+        class="rounded-t px-5 py-2 font-bold uppercase tracking-wider transition-colors"
+        :class="activeTab === t.id ? 'bg-[var(--color-info)] text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
+        @click="switchTab(t.id)"
+      >
+        {{ t.label }}
+        <span v-if="t.id === 'bank' && bankCount" class="ml-1 rounded-full bg-white/25 px-2 text-xs">{{ bankCount }}</span>
+        <kbd class="ml-2 rounded border border-current px-1 font-mono text-[10px] opacity-70">Alt+{{ t.key }}</kbd>
+      </button>
+    </div>
+
+    <div v-show="activeTab === 'bank'" class="max-h-[72vh] overflow-y-auto px-6 py-5">
+      <BankAccountsEditor
+        ref="bankEditorRef"
+        v-model="bankRows"
+        :party-name="form.supplier_name"
+        :party-email="form.email || ''"
+        :loading="loading"
+        @close="$emit('close')"
+        @submit="submit"
+      />
+    </div>
+
     <!-- Form -->
-    <div class="grid grid-cols-3 gap-6 px-6 py-5 max-h-[72vh] overflow-y-auto align-stretch form-fields-container">
+    <div v-show="activeTab === 'details'" class="grid grid-cols-3 gap-6 px-6 py-5 max-h-[72vh] overflow-y-auto align-stretch form-fields-container">
       <!-- Column 1: Identity & Grouping -->
       <div class="flex flex-col gap-4">
         <!-- GSTIN + GST Category badge -->
@@ -362,6 +390,7 @@ import { useSubwindow } from '../services/shortcutManager'
 import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 import QuickLedgerSearch from './QuickLedgerSearch.vue'
 import WhatsAppStatus from './WhatsAppStatus.vue'
+import BankAccountsEditor from './BankAccountsEditor.vue'
 
 useSubwindow()
 
@@ -438,6 +467,24 @@ const stateInput           = ref(null)
 
 const primaryPartyQuery = ref('')
 const primaryParties = ref([])
+
+// ─── Tabs + bank accounts ─────────────────────────────────────────────────────
+const tabs = [
+  { id: 'details', label: 'Details', key: 1 },
+  { id: 'bank', label: 'Bank Accounts', key: 2 },
+]
+const activeTab = ref('details')
+const bankEditorRef = ref(null)
+const bankRows = ref([])
+// False while an edit's saved accounts are unknown, so a save cannot wipe them
+let bankLoaded = true
+const bankCount = computed(() => bankRows.value.filter(r => r.bank || r.bank_account_no).length)
+
+function switchTab(id) {
+  activeTab.value = id
+  if (id === 'bank') nextTick(() => bankEditorRef.value?.focusFirst())
+  else focusFirst()
+}
 
 // ─── Pricelist percentages ────────────────────────────────────────────────────
 // One row per configured price list (same source as PriceListUpdate), plus any saved extras
@@ -588,6 +635,15 @@ function focusNext() {
 }
 
 function handleKeydown(e) {
+  if (e.altKey) {
+    const t = tabs.find(t => e.key === String(t.key))
+    if (t) {
+      e.preventDefault()
+      e.stopPropagation()
+      switchTab(t.id)
+    }
+    return
+  }
   if (e.key === 'End') {
     e.preventDefault()
     submit()
@@ -617,15 +673,18 @@ async function initForm() {
     })
     loading.value = true
     pctLoaded = false
+    bankLoaded = false
     try {
       const full = await fetchSupplierDetails(props.supplierRow.name)
       // Merge: only overwrite with non-empty values from API so ledger prefill isn't blanked
-      const { pricelist_percentages, ...fields } = full
+      const { pricelist_percentages, bank_accounts, ...fields } = full
       for (const [k, v] of Object.entries(fields)) {
         if (k === 'address_name' || v !== '') form[k] = v
       }
       buildPricelistRows(pricelist_percentages || [])
       pctLoaded = true
+      bankRows.value = bank_accounts || []
+      bankLoaded = true
       if (form.primary_party) {
         primaryPartyQuery.value = form.primary_party
       }
@@ -654,6 +713,9 @@ function resetForm() {
   primaryPartyQuery.value = ''
   primaryParties.value = []
   buildPricelistRows()
+  activeTab.value = 'details'
+  bankRows.value = []
+  bankLoaded = true
   Object.assign(form, {
     name: '',
     supplier_type: 'Individual',
@@ -691,6 +753,12 @@ function validate() {
     pincodeInput.value?.focus()
     return false
   }
+  const bankError = bankEditorRef.value?.validate()
+  if (bankError) {
+    activeTab.value = 'bank'
+    alert(bankError)
+    return false
+  }
   return true
 }
 
@@ -711,6 +779,7 @@ async function submit() {
         .filter(r => r.percentage !== '' && r.percentage !== null)
         .map(r => ({ pricelist: r.pricelist, percentage: parseFloat(r.percentage) }))
     }
+    if (bankLoaded) payload.bank_accounts = bankRows.value
     const result = props.isEdit
       ? await updateSupplier(form.name, payload)
       : await createSupplier(payload)

@@ -1,5 +1,5 @@
 <template>
-  <div class="w-[1000px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+  <div class="w-[1000px] rounded-xl bg-[var(--color-bg)] border border-[var(--color-border)] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" @keydown="handleTabKeys">
     <div class="border-b border-[var(--color-border)] px-5 py-4 bg-[var(--color-surface)]">
       <div class="text-xl font-bold text-[var(--color-text)]">{{ isEdit ? 'Modify Customer Details' : 'New Customer' }}</div>
       <div class="text-sm text-[var(--color-text-muted)] flex items-center gap-2">
@@ -13,7 +13,34 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-3 gap-6 px-6 py-5 max-h-[70vh] overflow-y-auto align-stretch form-fields-container">
+    <div class="flex gap-1 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-6 pt-2">
+      <button
+        v-for="t in tabs"
+        :key="t.id"
+        type="button"
+        class="rounded-t px-5 py-2 font-bold uppercase tracking-wider transition-colors"
+        :class="activeTab === t.id ? 'bg-[var(--color-info)] text-white' : 'text-[var(--color-text-muted)] hover:bg-[var(--color-surface-raised)]'"
+        @click="switchTab(t.id)"
+      >
+        {{ t.label }}
+        <span v-if="t.id === 'bank' && bankCount" class="ml-1 rounded-full bg-white/25 px-2 text-xs">{{ bankCount }}</span>
+        <kbd class="ml-2 rounded border border-current px-1 font-mono text-[10px] opacity-70">Alt+{{ t.key }}</kbd>
+      </button>
+    </div>
+
+    <div v-show="activeTab === 'bank'" class="max-h-[70vh] overflow-y-auto px-6 py-5">
+      <BankAccountsEditor
+        ref="bankEditorRef"
+        v-model="bankRows"
+        :party-name="form.customer_name"
+        :party-email="form.email || ''"
+        :loading="editLoading"
+        @close="$emit('close')"
+        @submit="submit"
+      />
+    </div>
+
+    <div v-show="activeTab === 'details'" class="grid grid-cols-3 gap-6 px-6 py-5 max-h-[70vh] overflow-y-auto align-stretch form-fields-container">
       <!-- Column 1: Identity & Grouping -->
       <div class="flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
@@ -252,11 +279,12 @@
 
 <script setup>
 import { ref, computed, nextTick, onMounted, watch } from 'vue'
-import { fetchCustomerDetails, createCustomer, updateCustomer, fetchCustomerGroups } from '../api/customer.js'
+import { fetchCustomerDetails, createCustomer, updateCustomer, fetchCustomerGroups, fetchPartyBankAccounts } from '../api/customer.js'
 import { validateGstin } from '../api.js'
 import { useLedgerCache, searchLedgersInCache } from '../services/ledgerCache'
 import QuickLedgerSearch from './QuickLedgerSearch.vue'
 import WhatsAppStatus from './WhatsAppStatus.vue'
+import BankAccountsEditor from './BankAccountsEditor.vue'
 
 const props = defineProps({
   show: Boolean,
@@ -271,6 +299,34 @@ const nameInputRef = ref(null)
 const primaryPartyInputRef = ref(null)
 const quickSearchRef = ref(null)
 const gstinInputRef = ref(null)
+const bankEditorRef = ref(null)
+
+// ─── Tabs ─────────────────────────────────────────────────────────────────────
+const tabs = [
+  { id: 'details', label: 'Details', key: 1 },
+  { id: 'bank', label: 'Bank Accounts', key: 2 },
+]
+const activeTab = ref('details')
+const bankRows = ref([])
+// False while an edit's saved accounts are unknown, so a save cannot wipe them
+const bankLoaded = ref(!props.isEdit)
+const bankCount = computed(() => bankRows.value.filter(r => r.bank || r.bank_account_no).length)
+
+function switchTab(id) {
+  activeTab.value = id
+  if (id === 'bank') nextTick(() => bankEditorRef.value?.focusFirst())
+  else focusFirst()
+}
+
+function handleTabKeys(e) {
+  if (!e.altKey) return
+  const t = tabs.find(t => e.key === String(t.key))
+  if (t) {
+    e.preventDefault()
+    e.stopPropagation()
+    switchTab(t.id)
+  }
+}
 
 const saving = ref(false)
 const editLoading = ref(false)
@@ -381,6 +437,12 @@ onMounted(async () => {
       }
       
       form.value = merged
+      try {
+        bankRows.value = await fetchPartyBankAccounts('Customer', row.name)
+        bankLoaded.value = true
+      } catch (e) {
+        console.warn('[CustomerCreator] fetch bank accounts failed:', e)
+      }
       // Legacy customers carry a group node (or a group since deleted). It is not in the
       // dropdown, so the select renders blank while the model still holds the bad value
       // and the save would fail server-side — clear it and make the user pick.
@@ -510,6 +572,8 @@ function validate() {
   }
   const disc = Number(form.value.discount_percentage) || 0
   if (disc < 0 || disc >= 100) { alert('Discount % must be from 0 to below 100'); return false }
+  const bankError = bankEditorRef.value?.validate()
+  if (bankError) { activeTab.value = 'bank'; alert(bankError); return false }
   return true
 }
 
@@ -542,6 +606,7 @@ async function submit() {
       new_customer_name: form.value.customer_name,
       new_name: form.value.customer_name
     }
+    if (bankLoaded.value) payload.bank_accounts = bankRows.value
     const result = props.isEdit
       ? await updateCustomer(form.value.name, payload)
       : await createCustomer(payload)

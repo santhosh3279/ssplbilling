@@ -1,6 +1,8 @@
 import json
 import frappe
 
+from ssplbilling.api.party_bank_api import get_party_bank_accounts, sync_party_bank_accounts
+
 
 def _resolve_gst_category(gstin):
 	return "Registered Regular" if (gstin or "").strip() else "Unregistered"
@@ -71,6 +73,9 @@ def create_supplier_full(data):
 	_set_pricelist_percentages(sup, data.get("pricelist_percentages"))
 	sup.insert(ignore_permissions=True)
 
+	if "bank_accounts" in data:
+		sync_party_bank_accounts("Supplier", sup.name, data["bank_accounts"])
+
 	if address_line1:
 		addr = frappe.new_doc("Address")
 		addr.address_title = supplier_name
@@ -136,6 +141,7 @@ def get_supplier_details(supplier):
 			{"pricelist": row.pricelist, "percentage": float(row.percentage or 0)}
 			for row in sup.get("custom_pricelist_percentages") or []
 		],
+		"bank_accounts": get_party_bank_accounts("Supplier", supplier),
 	}
 
 	# Fetch WhatsApp from Contact phone_nos row 1
@@ -230,6 +236,9 @@ def update_supplier_full(data):
 	if "pricelist_percentages" in data:
 		_set_pricelist_percentages(sup, data["pricelist_percentages"])
 	sup.save(ignore_permissions=True)
+
+	if "bank_accounts" in data:
+		sync_party_bank_accounts("Supplier", supplier_id, data["bank_accounts"])
 
 	if "whatsapp" in data:
 		_sync_whatsapp_to_contact(supplier_id, data.get("whatsapp") or "")

@@ -140,3 +140,19 @@ export async function updateCustomer(customerId, data) {
     data: JSON.stringify({ ...data, name: customerId }),
   })
 }
+
+/** Active bank accounts of a Customer or Supplier, default first. */
+export async function fetchPartyBankAccounts(partyType, party) {
+  return frappeGet('ssplbilling.api.party_bank_api.get_party_bank_accounts', {
+    party_type: partyType,
+    party,
+  })
+}
+
+/**
+ * Bank names already in ERPNext (a new name is created on save), plus which bank fields
+ * this site requires: { banks, strict_names, ifsc_required, email_field, email_required }.
+ */
+export async function fetchBankFormMeta() {
+  return frappeGet('ssplbilling.api.party_bank_api.get_bank_form_meta')
+}

@@ -2,6 +2,8 @@ import json
 import frappe
 from frappe.utils import flt
 
+from ssplbilling.api.party_bank_api import sync_party_bank_accounts
+
 @frappe.whitelist()
 def get_user_mop_ledgers():
 	"""Return GL ledger entries for the current user's direct GL accounts (cash/card/upi/bank)."""
@@ -772,6 +774,9 @@ def update_customer_full(data):
 			
 	cust.save(ignore_permissions=True)
 
+	if "bank_accounts" in data:
+		sync_party_bank_accounts("Customer", customer_id, data["bank_accounts"])
+
 	# Handle Party Link modification / deletion
 	primary_party = data.get("primary_party", "").strip()
 	primary_role = data.get("primary_party_role", "").strip()
@@ -909,6 +914,9 @@ def create_customer_full(data):
         "customer_discount_percentage": discount,
     })
     customer.insert()
+
+    if "bank_accounts" in data:
+        sync_party_bank_accounts("Customer", customer.name, data["bank_accounts"])
 
     if data.get("primary_party"):
         frappe.get_doc({
