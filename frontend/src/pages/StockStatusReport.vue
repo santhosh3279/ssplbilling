@@ -633,6 +633,25 @@ function handleKeyDown(e) {
     })
     return
   }
+  // Left/Right: move between editable columns of the row. From outside a cell, Right enters the first one.
+  if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+    const inOtherInput = !field && e.target instanceof Element && e.target.matches('input, select, textarea')
+    if (inOtherInput || focusedRowIdx.value < 0) return
+    let col
+    if (field) col = EDIT_FIELDS.indexOf(field) + (e.key === 'ArrowRight' ? 1 : -1)
+    else if (e.key === 'ArrowRight') col = 0
+    else return
+    e.preventDefault()
+    if (col < 0) {
+      e.target.blur() // Left from the first cell leaves edit mode; Up/Down then move rows again.
+      return
+    }
+    if (col >= EDIT_FIELDS.length) return
+    const rowIdx = field ? e.target.getAttribute('data-row-idx') : focusedRowIdx.value
+    const el = document.querySelector(`[data-edit-field="${EDIT_FIELDS[col]}"][data-row-idx="${rowIdx}"]`)
+    if (el) el.focus()
+    return
+  }
   if (e.key === 'ArrowDown') {
     e.preventDefault()
     const len = filteredStockRows.value.length
