@@ -60,6 +60,11 @@ def get_party_bank_accounts(party_type, party):
 	"""Active bank accounts of one party, default first."""
 	_check_party_type(party_type)
 	frappe.has_permission(party_type, "read", doc=party, throw=True)
+	return party_bank_accounts(party_type, party)
+
+
+def party_bank_accounts(party_type, party):
+	"""Same as get_party_bank_accounts, for callers that already checked access."""
 	rows = frappe.get_all(
 		"Bank Account",
 		filters={"party_type": party_type, "party": party, "disabled": 0, "is_company_account": 0},
@@ -144,8 +149,9 @@ def _default_company():
 def sync_party_bank_accounts(party_type, party, rows):
 	"""Make the party's active bank accounts match `rows`.
 
-	Rows with a `name` update that record; rows without one are created; active records of this
-	party missing from `rows` are deleted, or disabled when a transaction already links them.
+	A row whose `name` matches a record with the same holder, bank, number and IFSC keeps that
+	record (only email and default can change in place). Any other row creates a new record, and
+	active records of this party not kept are deleted, or disabled when a transaction links them.
 	"""
 	_check_party_type(party_type)
 	rules = _rules()
@@ -172,45 +178,51 @@ def sync_party_bank_accounts(party_type, party, rows):
 		if d.is_default:
 			frappe.db.set_value("Bank Account", name, "is_default", 0, update_modified=False)
 
-	company = _default_company()
-	kept = set()
+	# The approval workflow (india_banking) approves the number and IFSC: a change to either, or to
+	# the holder/bank that make up the record name, replaces the record so it starts Pending again.
+	to_insert, to_remove = [], set(existing)
 	for r in cleaned:
 		r["bank"] = _ensure_bank(r["bank"])
-		values = {
-			"bank_account_no": r["bank_account_no"],
-			"branch_code": r["branch_code"],
-			"is_default": r["is_default"],
-		}
-		if rules["email_field"]:
-			values["email"] = r["email"]
-
 		old = existing.get(r["name"]) if r["name"] else None
-		# account_name and bank make up the record name: a change there makes a new record
-		if old and old.account_name == r["account_name"] and old.bank == r["bank"]:
-			doc = frappe.get_doc("Bank Account", old.name)
-			doc.update(values)
-			doc.save(ignore_permissions=True)
-			kept.add(doc.name)
+		same = old and all(
+			(old.get(f) or "") == r[f] for f in ("account_name", "bank", "bank_account_no", "branch_code")
+		)
+		if not same:
+			to_insert.append(r)
 			continue
+		to_remove.discard(old.name)
+		if rules["email_field"] and (frappe.db.get_value("Bank Account", old.name, "email") or "") != r["email"]:
+			doc = frappe.get_doc("Bank Account", old.name)
+			doc.email = r["email"]
+			doc.save(ignore_permissions=True)
+		if r["is_default"]:
+			frappe.db.set_value("Bank Account", old.name, "is_default", 1, update_modified=False)
 
+	# Removals first: india_banking can require account numbers to be unique among active accounts
+	for name in to_remove:
+		frappe.db.savepoint("bank_account_delete")
+		try:
+			frappe.delete_doc("Bank Account", name, ignore_permissions=True)
+		except frappe.LinkExistsError:
+			# on_trash already ran before the link check: undo it and only disable
+			frappe.db.rollback(save_point="bank_account_delete")
+			frappe.clear_last_message()
+			frappe.db.set_value("Bank Account", name, {"disabled": 1, "is_default": 0})
+
+	company = _default_company()
+	for r in to_insert:
 		doc = frappe.get_doc({
 			"doctype": "Bank Account",
 			"account_name": _free_account_name(r["account_name"], r["bank"], r["bank_account_no"]),
 			"bank": r["bank"],
+			"bank_account_no": r["bank_account_no"],
+			"branch_code": r["branch_code"],
+			"is_default": r["is_default"],
 			"party_type": party_type,
 			"party": party,
 			# india_banking takes the currency from the party, else from this company
 			"company": company,
-			**values,
 		})
+		if rules["email_field"]:
+			doc.email = r["email"]
 		doc.insert(ignore_permissions=True)
-		kept.add(doc.name)
-
-	for name in existing:
-		if name in kept:
-			continue
-		try:
-			frappe.delete_doc("Bank Account", name, ignore_permissions=True)
-		except frappe.LinkExistsError:
-			frappe.clear_last_message()
-			frappe.db.set_value("Bank Account", name, {"disabled": 1, "is_default": 0})

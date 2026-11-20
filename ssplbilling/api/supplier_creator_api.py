@@ -1,7 +1,7 @@
 import json
 import frappe
 
-from ssplbilling.api.party_bank_api import get_party_bank_accounts, sync_party_bank_accounts
+from ssplbilling.api.party_bank_api import party_bank_accounts, sync_party_bank_accounts
 
 
 def _resolve_gst_category(gstin):
@@ -141,7 +141,7 @@ def get_supplier_details(supplier):
 			{"pricelist": row.pricelist, "percentage": float(row.percentage or 0)}
 			for row in sup.get("custom_pricelist_percentages") or []
 		],
-		"bank_accounts": get_party_bank_accounts("Supplier", supplier),
+		"bank_accounts": party_bank_accounts("Supplier", supplier),
 	}
 
 	# Fetch WhatsApp from Contact phone_nos row 1
