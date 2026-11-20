@@ -42,7 +42,7 @@
               v-model="newNumber"
               type="tel"
               placeholder="New chat: mobile number"
-              class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-3 py-2 text-sm focus:bg-[var(--color-info)]/15 focus:outline-none"
+              class="min-w-0 flex-1 rounded-lg bg-[var(--color-bg)] px-3 py-2 text-[1.09375rem] focus:bg-[var(--color-info)]/15 focus:outline-none"
             />
             <button
               type="submit"
