@@ -411,6 +411,10 @@ function onSupplierKeydown(e) {
   } else if (e.key === 'Enter') {
     e.preventDefault()
     if (supplierOpen.value && len) toggleSupplier(supplierMatches.value[supplierActiveIdx.value])
+  } else if (e.key === 'Delete') {
+    // Delete clears the whole box: typed text and every picked supplier.
+    e.preventDefault()
+    clearSuppliers()
   } else if (e.key === 'Escape') {
     supplierOpen.value = false
     supplierQuery.value = ''
