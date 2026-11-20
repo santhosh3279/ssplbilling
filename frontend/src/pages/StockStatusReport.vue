@@ -175,7 +175,7 @@
               <th class="px-2 py-1.5 font-semibold text-right" title="Net qty sold in last 4 weeks ÷ 4">Weekly Avg Sales</th>
               <th class="px-2 py-1.5 font-semibold text-right" :title="`Net qty sold in last ${avgMonths} months ÷ ${avgMonths}`">Monthly Avg Sales ({{ avgMonths }}M)</th>
               <th class="px-2 py-1.5 font-semibold text-right" title="Most net qty sold in any one week of the last 4 weeks">Highest Weekly Sale</th>
-              <th class="px-2 py-1.5 font-semibold text-right" :title="`Most net qty sold in any one 30-day month of the last ${avgMonths} months`">Highest Monthly Sale ({{ avgMonths }}M)</th>
+              <th class="px-2 py-1.5 font-semibold text-right" :title="`Most net qty sold in any one calendar month of the last ${avgMonths} (incl. current month)`">Highest Monthly Sale ({{ avgMonths }}M)</th>
               <th class="px-2 py-1.5 font-semibold text-right">Safety Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right">Max Stock</th>
               <th class="px-2 py-1.5 font-semibold">UOM</th>
