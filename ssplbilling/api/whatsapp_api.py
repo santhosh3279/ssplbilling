@@ -1558,6 +1558,25 @@ def list_chats(limit=200, session_id=None):
 	return _guarded(run)
 
 
+@frappe.whitelist()
+def get_chat_phone(chat_id, session_id=None):
+	"""Phone number behind a one-to-one chat. Most chats are keyed by an @lid privacy id, whose digits
+	are not the number, so ask OpenWA to map it. Empty for groups or when WhatsApp keeps it hidden
+	(never None: the client would get the whole response object instead)."""
+	_require_chat_user()
+	if chat_id.endswith("@c.us"):
+		return chat_id.split("@")[0]
+	if not chat_id.endswith("@lid"):
+		return ""
+
+	def run():
+		settings, row = _chat_settings(session_id)
+		res = _call(settings, "GET", f"/sessions/{row.session_id}/contacts/{quote(chat_id, safe='@.')}/phone")
+		return res.get("phone") or ""
+
+	return _guarded(run)
+
+
 def _apply_receipts(settings, row, chat_id, messages):
 	"""Live history carries no ack, so take sent/delivered/read from the rows OpenWA stored.
 

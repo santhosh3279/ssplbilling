@@ -95,7 +95,7 @@
             <button class="md:hidden rounded px-2 py-1 text-lg" @click="closeChat">&larr;</button>
             <div class="min-w-0">
               <div class="truncate font-bold">{{ active.name }}</div>
-              <div class="text-xs text-[var(--color-text-muted)] font-mono">{{ active.is_group ? 'Group' : '+' + active.id.split('@')[0] }}</div>
+              <div class="text-xs text-[var(--color-text-muted)] font-mono">{{ chatSubtitle }}</div>
             </div>
           </div>
 
@@ -434,6 +434,29 @@ let lazyObserver = null
 // Whether the thread was at the bottom before an image grew it
 let pinnedToBottom = true
 
+// chat id -> phone digits, or null when WhatsApp keeps it hidden. Chat ids are mostly @lid
+// privacy ids whose digits are not the number, so the server looks the real one up
+const chatPhones = shallowReactive(new Map())
+
+const chatSubtitle = computed(() => {
+  const c = active.value
+  if (!c) return ''
+  if (c.is_group) return 'Group'
+  if (!chatPhones.has(c.id)) return '…'
+  const phone = chatPhones.get(c.id)
+  return phone ? `+${phone}` : 'Number hidden'
+})
+
+async function loadChatPhone(chat) {
+  if (chat.is_group || chatPhones.has(chat.id)) return
+  try {
+    const phone = await frappeGet(`${API}.get_chat_phone`, { chat_id: chat.id, session_id: getWhatsAppSessionId() })
+    chatPhones.set(chat.id, typeof phone === 'string' && phone ? phone : null)
+  } catch {
+    chatPhones.set(chat.id, null)
+  }
+}
+
 const filteredChats = computed(() => filterChats(search.value))
 
 const forwardChats = computed(() => filterChats(forwardSearch.value))
@@ -727,6 +750,7 @@ async function openChat(chat) {
   clearMedia()
   draft.value = ''
   pendingFile.value = null
+  loadChatPhone(chat)
   await loadThread({ scroll: true })
   scheduleThreadPoll()
   composerEl.value?.focus()
