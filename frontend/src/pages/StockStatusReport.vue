@@ -174,6 +174,8 @@
               <th class="px-2 py-1.5 font-semibold text-right" title="Book stock + draft purchases − draft sales">Actual Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right" title="Net qty sold in last 4 weeks ÷ 4">Weekly Avg Sales</th>
               <th class="px-2 py-1.5 font-semibold text-right" :title="`Net qty sold in last ${avgMonths} months ÷ ${avgMonths}`">Monthly Avg Sales ({{ avgMonths }}M)</th>
+              <th class="px-2 py-1.5 font-semibold text-right" title="Most net qty sold in any one week of the last 4 weeks">Highest Weekly Sale</th>
+              <th class="px-2 py-1.5 font-semibold text-right" :title="`Most net qty sold in any one 30-day month of the last ${avgMonths} months`">Highest Monthly Sale ({{ avgMonths }}M)</th>
               <th class="px-2 py-1.5 font-semibold text-right">Safety Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right">Max Stock</th>
               <th class="px-2 py-1.5 font-semibold">UOM</th>
@@ -200,6 +202,8 @@
               </td>
               <td class="px-2 py-1 text-right tabular-nums">{{ fmt(row.weekly_avg_sales) }}</td>
               <td class="px-2 py-1 text-right tabular-nums">{{ fmt(row.monthly_avg_sales) }}</td>
+              <td class="px-2 py-1 text-right tabular-nums">{{ fmt(row.highest_weekly_sales) }}</td>
+              <td class="px-2 py-1 text-right tabular-nums">{{ fmt(row.highest_monthly_sales) }}</td>
               <td class="px-2 py-1 text-right tabular-nums" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.safety_stock }}</td>
               <td class="px-2 py-1 text-right tabular-nums" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.max_stock }}</td>
               <td class="px-2 py-1 font-sans uppercase tracking-wider" :class="focusedRowIdx === idx ? '' : 'text-[var(--color-text-muted)]'">{{ row.stock_uom }}</td>
@@ -431,6 +435,8 @@ async function exportStockReportToExcel() {
     { key: 'actual_stock', width: 15 },
     { key: 'weekly_avg_sales', width: 18 },
     { key: 'monthly_avg_sales', width: 18 },
+    { key: 'highest_weekly_sales', width: 20 },
+    { key: 'highest_monthly_sales', width: 22 },
     { key: 'safety_stock', width: 15 },
     { key: 'max_stock', width: 15 },
     { key: 'stock_uom', width: 10 },
@@ -439,7 +445,7 @@ async function exportStockReportToExcel() {
 
   // Add Table Header
   const headerRow = worksheet.addRow([
-    'Item Code', 'Item Name', 'Actual Stock', 'Weekly Avg Sales', `Monthly Avg Sales (${avgMonths.value}M)`, 'Safety Stock', 'Max Stock', 'UOM', 'Suppliers'
+    'Item Code', 'Item Name', 'Actual Stock', 'Weekly Avg Sales', `Monthly Avg Sales (${avgMonths.value}M)`, 'Highest Weekly Sale', `Highest Monthly Sale (${avgMonths.value}M)`, 'Safety Stock', 'Max Stock', 'UOM', 'Suppliers'
   ])
   headerRow.eachCell(cell => {
     cell.font = { name: 'Arial', bold: true }
@@ -458,6 +464,8 @@ async function exportStockReportToExcel() {
       fmt(r.actual_stock),
       fmt(r.weekly_avg_sales),
       fmt(r.monthly_avg_sales),
+      fmt(r.highest_weekly_sales),
+      fmt(r.highest_monthly_sales),
       fmt(r.safety_stock),
       fmt(r.max_stock),
       r.stock_uom,

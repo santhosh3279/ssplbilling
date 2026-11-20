@@ -1157,6 +1157,7 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 
 	Weekly average = net qty sold in the last 28 days / 4.
 	Monthly average = net qty sold in the last (avg_months * 30) days / avg_months (default 6).
+	Highest weekly / monthly = largest net qty sold in any one 7-day / 30-day period of those windows.
 	Returns are netted off (return invoices carry negative qty).
 	"""
 	conditions = []
@@ -1241,6 +1242,7 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 		"from_month": frappe.utils.add_days(today, -30 * avg_months),
 		"from_week": frappe.utils.add_days(today, -28),
 		"today": today,
+		"last_month_bucket": avg_months - 1,
 	}
 	sales_conditions = [
 		"si.docstatus = 1",
@@ -1263,22 +1265,37 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 		f"""
 		SELECT
 			sii.item_code,
-			SUM(CASE WHEN si.posting_date >= %(from_week)s THEN sii.stock_qty ELSE 0 END) as week_qty,
-			SUM(CASE WHEN si.posting_date >= %(from_month)s THEN sii.stock_qty ELSE 0 END) as month_qty
+			LEAST(FLOOR(DATEDIFF(%(today)s, si.posting_date) / 30), %(last_month_bucket)s) as month_bucket,
+			CASE WHEN si.posting_date >= %(from_week)s
+				THEN LEAST(FLOOR(DATEDIFF(%(today)s, si.posting_date) / 7), 3) ELSE -1 END as week_bucket,
+			SUM(sii.stock_qty) as qty
 		FROM `tabSales Invoice Item` sii
 		INNER JOIN `tabSales Invoice` si ON sii.parent = si.name
 		WHERE {" AND ".join(sales_conditions)}
-		GROUP BY sii.item_code
+		GROUP BY sii.item_code, month_bucket, week_bucket
 		""",
 		sales_values,
 		as_dict=True,
 	)
-	sales_map = {r.item_code: r for r in sales}
+	# Per item: net qty per 30-day bucket (0 = latest 30 days) and per 7-day bucket of the last 28 days.
+	month_buckets = {}
+	week_buckets = {}
+	for r in sales:
+		qty = frappe.utils.flt(r.qty)
+		mb = month_buckets.setdefault(r.item_code, {})
+		mb[r.month_bucket] = mb.get(r.month_bucket, 0.0) + qty
+		if r.week_bucket >= 0:
+			wb = week_buckets.setdefault(r.item_code, {})
+			wb[r.week_bucket] = wb.get(r.week_bucket, 0.0) + qty
 
 	for row in data:
-		s = sales_map.get(row.item_code)
-		row["weekly_avg_sales"] = frappe.utils.flt((s.week_qty if s else 0) / 4, 2)
-		row["monthly_avg_sales"] = frappe.utils.flt((s.month_qty if s else 0) / avg_months, 2)
+		mb = month_buckets.get(row.item_code, {})
+		wb = week_buckets.get(row.item_code, {})
+		row["weekly_avg_sales"] = frappe.utils.flt(sum(wb.values()) / 4, 2)
+		row["monthly_avg_sales"] = frappe.utils.flt(sum(mb.values()) / avg_months, 2)
+		# Highest single week / month in the same windows; a period with no sales counts as 0.
+		row["highest_weekly_sales"] = frappe.utils.flt(max([0.0, *wb.values()]), 2)
+		row["highest_monthly_sales"] = frappe.utils.flt(max([0.0, *mb.values()]), 2)
 
 	return data
 
