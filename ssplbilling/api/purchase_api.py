@@ -1305,6 +1305,8 @@ def get_stock_report_data(company=None, warehouse=None, supplier=None, negative_
 		row["highest_weekly_sales"] = frappe.utils.flt(max([0.0, *wb.values()]), 2)
 		row["highest_monthly_sales"] = frappe.utils.flt(max([0.0, *mb.values()]), 2)
 
+	# Best sellers first: highest monthly sale, then highest weekly sale, then item code.
+	data.sort(key=lambda r: (-r.highest_monthly_sales, -r.highest_weekly_sales, r.item_code))
 	return data
 
 
