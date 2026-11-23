@@ -191,7 +191,7 @@
               <th class="px-2 py-1.5 font-semibold text-right" title="Book stock + draft purchases − draft sales">Actual Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right" title="Net qty sold in last 4 weeks ÷ 4">Weekly Avg Sales</th>
               <th class="px-2 py-1.5 font-semibold text-right" :title="`Net qty sold in last ${avgMonths} months ÷ ${avgMonths}`">Monthly Avg Sales ({{ avgMonths }}M)</th>
-              <th class="px-2 py-1.5 font-semibold text-right" title="Most net qty sold in any one week of the last 4 weeks">Highest Weekly Sale</th>
+              <th class="px-2 py-1.5 font-semibold text-right" title="Most net qty sold in any one 7-day week of the last 12 months">Highest Weekly Sale (12M)</th>
               <th class="px-2 py-1.5 font-semibold text-right" :title="`Most net qty sold in any one calendar month of the last ${avgMonths} (incl. current month)`">Highest Monthly Sale ({{ avgMonths }}M)</th>
               <th class="px-2 py-1.5 font-semibold text-right">Safety Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right">Max Stock</th>
@@ -561,7 +561,7 @@ async function exportStockReportToExcel() {
 
   // Add Table Header
   const headerRow = worksheet.addRow([
-    'Item Code', 'Item Name', 'Actual Stock', 'Weekly Avg Sales', `Monthly Avg Sales (${avgMonths.value}M)`, 'Highest Weekly Sale', `Highest Monthly Sale (${avgMonths.value}M)`, 'Safety Stock', 'Max Stock', 'Min Ord', 'UOM', 'Suppliers'
+    'Item Code', 'Item Name', 'Actual Stock', 'Weekly Avg Sales', `Monthly Avg Sales (${avgMonths.value}M)`, 'Highest Weekly Sale (12M)', `Highest Monthly Sale (${avgMonths.value}M)`, 'Safety Stock', 'Max Stock', 'Min Ord', 'UOM', 'Suppliers'
   ])
   headerRow.eachCell(cell => {
     cell.font = { name: 'Arial', bold: true }
