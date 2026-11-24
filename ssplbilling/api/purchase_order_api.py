@@ -500,7 +500,7 @@ def delete_purchase_order(order_name):
 
 @frappe.whitelist()
 def get_supplier_items(supplier):
-    """Get all item codes linked to the selected supplier."""
+    """Get all enabled item codes linked to the selected supplier."""
     if not supplier:
         return []
 
@@ -509,5 +509,8 @@ def get_supplier_items(supplier):
         filters={"supplier": supplier},
         fields=["parent as item_code"]
     )
-    return list(set([d.item_code for d in items if d.item_code]))
+    codes = list({d.item_code for d in items if d.item_code})
+    if not codes:
+        return []
+    return frappe.get_all("Item", filters={"name": ["in", codes], "disabled": 0}, pluck="name")
 
