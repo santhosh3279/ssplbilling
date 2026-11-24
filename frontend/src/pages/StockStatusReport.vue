@@ -79,8 +79,9 @@
             <input
               v-model="supplierQuery"
               type="text"
-              :placeholder="stockFilters.suppliers.length ? 'Type to add more…' : '— All Suppliers —'"
-              class="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 pr-7 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+              :placeholder="selectedSupplierNames || '— All Suppliers —'"
+              :title="selectedSupplierNames || undefined"
+              class="w-full text-ellipsis placeholder:text-[var(--color-text-muted)] rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 pr-7 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
               @focus="openSupplierList"
               @input="supplierOpen = true; supplierActiveIdx = 0"
               @keydown="onSupplierKeydown"
@@ -387,6 +388,12 @@ const supplierOpen = ref(false)
 const supplierActiveIdx = ref(0)
 
 const selectedSupplierSet = computed(() => new Set(stockFilters.value.suppliers))
+
+// Shown greyed in the search box while nothing is typed.
+const selectedSupplierNames = computed(() => {
+  const selected = selectedSupplierSet.value
+  return (filterOptions.value.suppliers || []).filter(s => selected.has(s.id)).map(s => s.name || s.id).join(', ')
+})
 
 // Every typed word must appear somewhere in the name or id ("sev hy" finds "Sevana Hygiene").
 // Selected suppliers come first, so they can be seen and unticked at the top of the list.
