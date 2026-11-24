@@ -235,7 +235,7 @@
               class="transition-colors"
               :class="[
                 focusedRowIdx === idx ? 'stock-row-focused bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-sm' : 'hover:bg-[var(--color-surface-raised)]/30',
-                row.disabled && focusedRowIdx !== idx ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] opacity-60' : ''
+                row.disabled && focusedRowIdx !== idx ? 'stock-row-disabled' : ''
               ]"
               :title="row.disabled ? 'Disabled item' : undefined"
             >
@@ -745,6 +745,16 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
+/* Disabled items: neutral grey in both themes (theme surface / muted colours are tinted, not grey). */
+.stock-row-disabled,
+.stock-row-disabled:hover {
+  background-color: rgb(128 128 128 / 0.35);
+}
+.stock-row-disabled > td {
+  color: color-mix(in srgb, var(--color-text) 50%, #808080);
+  opacity: 0.65;
+}
+
 /* Optional: improve scrolling for wide tables */
 .overflow-auto {
   scrollbar-width: thin;
