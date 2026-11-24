@@ -228,6 +228,14 @@
       </aside>
     </main>
 
+    <AutoPoGenerator
+      v-if="poReminder"
+      :supplier="poReminder.supplier"
+      :supplier-name="poReminder.supplier_name"
+      @close="poReminder = null"
+      @generate="generatePo"
+    />
+
     <div
       v-if="toast"
       class="fixed bottom-6 right-6 z-50 rounded-lg px-4 py-3 text-sm font-medium text-white shadow-lg"
@@ -242,6 +250,7 @@
 import { ref, reactive, computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { frappeGet, frappePost } from '../api.js'
+import AutoPoGenerator from '../components/AutoPoGenerator.vue'
 import { serverToday } from '../services/serverTime'
 
 const router = useRouter()
@@ -270,6 +279,7 @@ const busy = ref(false)
 const query = ref('')
 const toast = ref(null)
 const editing = ref(false)
+const poReminder = ref(null) // reminder the Auto PO window is open for
 
 const searchInput = ref(null)
 const supplierInput = ref(null)
@@ -451,7 +461,12 @@ async function remove() {
 }
 
 function createPo(r) {
-  router.push({ path: '/purchase-order', query: { supplier: r.supplier, reorder: 1 } })
+  poReminder.value = r
+}
+
+// The Purchase Order page adds these once its series and this supplier are picked
+function generatePo(poItems) {
+  router.push({ path: '/purchase-order', query: { supplier: poReminder.value.supplier }, state: { poItems } })
 }
 
 function markOrdered(r) {
