@@ -135,17 +135,8 @@
           </div>
         </div>
 
-        <!-- Negative Stock and Reset -->
+        <!-- Options dropdown and Reset -->
         <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-5">
-          <label class="flex items-center gap-2 cursor-pointer select-none text-xl text-[var(--color-text)]">
-            <input
-              v-model="stockFilters.negativeOnly"
-              type="checkbox"
-              class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-info)] w-5 h-5"
-            />
-            <span>Negative Stock Only</span>
-          </label>
-
           <div ref="monthsBox" class="relative" data-months-combo @keydown.esc="monthsOpen = false">
             <button
               type="button"
@@ -153,7 +144,7 @@
               :aria-expanded="monthsOpen"
               @click="monthsOpen = !monthsOpen"
             >
-              Avg {{ avgMonths }}M · High Week {{ weekMonths }}M ▾
+              Avg {{ avgMonths }}M · High Week {{ weekMonths }}M{{ stockFilters.negativeOnly ? ' · Negative' : '' }}{{ stockFilters.showDisabled ? '' : ' · Disabled hidden' }} ▾
             </button>
             <div
               v-if="monthsOpen"
@@ -176,6 +167,22 @@
                 >
                   <option v-for="n in 36" :key="n" :value="n">{{ n }}</option>
                 </select>
+              </label>
+              <label class="flex items-center justify-between gap-4 cursor-pointer select-none text-xl text-[var(--color-text)]">
+                <span>Negative Stock Only</span>
+                <input
+                  v-model="stockFilters.negativeOnly"
+                  type="checkbox"
+                  class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-info)] w-5 h-5"
+                />
+              </label>
+              <label class="flex items-center justify-between gap-4 cursor-pointer select-none text-xl text-[var(--color-text)]">
+                <span>Show Disabled Items</span>
+                <input
+                  v-model="stockFilters.showDisabled"
+                  type="checkbox"
+                  class="rounded border-[var(--color-border)] text-[var(--color-info)] focus:ring-[var(--color-info)] w-5 h-5"
+                />
               </label>
             </div>
           </div>
@@ -235,7 +242,11 @@
               v-for="(row, idx) in displayedStockRows"
               :key="row.item_code"
               class="transition-colors"
-              :class="focusedRowIdx === idx ? 'stock-row-focused bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-sm' : 'hover:bg-[var(--color-surface-raised)]/30'"
+              :class="[
+                focusedRowIdx === idx ? 'stock-row-focused bg-[var(--color-focus)] text-[var(--color-text-on-focus)] font-bold shadow-sm' : 'hover:bg-[var(--color-surface-raised)]/30',
+                row.disabled && focusedRowIdx !== idx ? 'bg-[var(--color-surface-raised)] text-[var(--color-text-muted)] opacity-60' : ''
+              ]"
+              :title="row.disabled ? 'Disabled item' : undefined"
             >
               <td class="px-2 py-1 font-bold">{{ row.item_code }}</td>
               <td class="px-2 py-1 font-sans">{{ row.item_name }}</td>
@@ -374,6 +385,7 @@ const stockFilters = ref({
   warehouse: '',
   suppliers: [],
   negativeOnly: false,
+  showDisabled: true,
   avgMonths: 6,
   weekMonths: 12
 })
@@ -453,7 +465,7 @@ function onSupplierKeydown(e) {
   }
 }
 
-// Dropdown holding both month settings; a click outside closes it.
+// Dropdown holding the month settings and the negative / disabled options; a click outside closes it.
 const monthsOpen = ref(false)
 const monthsBox = ref(null)
 function closeMonthsOnOutsideClick(e) {
@@ -516,7 +528,7 @@ watch(
 )
 
 watch(
-  () => stockFilters.value.search,
+  () => [stockFilters.value.search, stockFilters.value.showDisabled],
   () => {
     maxDisplayed.value = 100
     focusedRowIdx.value = 0
@@ -541,7 +553,9 @@ function handleScroll(e) {
 const filteredStockRows = computed(() => {
   const query = stockFilters.value.search.trim().toLowerCase()
   let rows = stockReportRows.value
-  
+
+  if (!stockFilters.value.showDisabled) rows = rows.filter(r => !r.disabled)
+
   if (query) {
     rows = rows.filter(r => 
       r.item_code.toLowerCase().includes(query) || 
@@ -571,6 +585,7 @@ function resetStockFilters() {
     warehouse: '',
     suppliers: [],
     negativeOnly: false,
+    showDisabled: true,
     avgMonths: 6,
     weekMonths: 12
   }
