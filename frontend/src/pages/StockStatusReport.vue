@@ -146,27 +146,39 @@
             <span>Negative Stock Only</span>
           </label>
 
-          <label class="flex items-center gap-2 select-none text-xl text-[var(--color-text)]" title="Monthly avg = sales of last N months ÷ N">
-            <span>Avg Months</span>
-            <input
-              v-model.number="stockFilters.avgMonths"
-              type="number"
-              min="1"
-              max="36"
-              class="w-16 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 text-xl text-right text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-            />
-          </label>
-
-          <label class="flex items-center gap-2 select-none text-xl text-[var(--color-text)]" title="Highest Weekly Sale looks at the last N months">
-            <span>High Week Months</span>
-            <input
-              v-model.number="stockFilters.weekMonths"
-              type="number"
-              min="1"
-              max="36"
-              class="w-16 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 text-xl text-right text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
-            />
-          </label>
+          <div ref="monthsBox" class="relative" data-months-combo @keydown.esc="monthsOpen = false">
+            <button
+              type="button"
+              class="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+              :aria-expanded="monthsOpen"
+              @click="monthsOpen = !monthsOpen"
+            >
+              Avg {{ avgMonths }}M · High Week {{ weekMonths }}M ▾
+            </button>
+            <div
+              v-if="monthsOpen"
+              class="absolute right-0 z-30 mt-1 w-72 space-y-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3 shadow-lg"
+            >
+              <label class="flex items-center justify-between gap-4 select-none text-xl text-[var(--color-text)]" title="Monthly avg = sales of last N months ÷ N">
+                <span>Avg Months</span>
+                <select
+                  v-model="stockFilters.avgMonths"
+                  class="w-20 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+                >
+                  <option v-for="n in 36" :key="n" :value="n">{{ n }}</option>
+                </select>
+              </label>
+              <label class="flex items-center justify-between gap-4 select-none text-xl text-[var(--color-text)]" title="Highest Weekly Sale looks at the last N months">
+                <span>High Week Months</span>
+                <select
+                  v-model="stockFilters.weekMonths"
+                  class="w-20 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+                >
+                  <option v-for="n in 36" :key="n" :value="n">{{ n }}</option>
+                </select>
+              </label>
+            </div>
+          </div>
 
           <button
             @click="resetStockFilters"
@@ -441,6 +453,13 @@ function onSupplierKeydown(e) {
   }
 }
 
+// Dropdown holding both month settings; a click outside closes it.
+const monthsOpen = ref(false)
+const monthsBox = ref(null)
+function closeMonthsOnOutsideClick(e) {
+  if (monthsOpen.value && !monthsBox.value?.contains(e.target)) monthsOpen.value = false
+}
+
 // Monthly avg divisor: sales of last N months (N*30 days) ÷ N. Invalid input falls back to 6.
 const avgMonths = computed(() => {
   const n = Math.floor(Number(stockFilters.value.avgMonths))
@@ -648,6 +667,8 @@ function handleKeyDown(e) {
   }
   // Arrow keys inside the supplier box move through its list, not the report rows.
   if (e.target instanceof Element && e.target.closest('[data-supplier-combo]')) return
+  // Likewise the months dropdown: arrows change its selects.
+  if (e.target instanceof Element && e.target.closest('[data-months-combo]')) return
   // In an editable cell: Up/Down/Enter jump to the same field in the previous/next row.
   const field = e.target instanceof Element && e.target.getAttribute('data-edit-field')
   if (field && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter')) {
@@ -702,10 +723,12 @@ onMounted(() => {
   loadStockReportFilters()
   loadStockReportData()
   window.addEventListener('keydown', handleKeyDown)
+  document.addEventListener('mousedown', closeMonthsOnOutsideClick)
 })
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown)
+  document.removeEventListener('mousedown', closeMonthsOnOutsideClick)
 })
 </script>
 
