@@ -177,6 +177,13 @@
         </div>
       </div>
 
+      <!-- Item count: rows matching the filters, out of all rows loaded -->
+      <div v-if="!loadingStockData" class="mb-2 text-lg text-[var(--color-text-muted)]" data-testid="stock-item-count">
+        Showing <span class="font-bold tabular-nums text-[var(--color-text)]">{{ filteredStockRows.length.toLocaleString('en-IN') }}</span>
+        <template v-if="filteredStockRows.length !== stockReportRows.length"> of {{ stockReportRows.length.toLocaleString('en-IN') }}</template>
+        items
+      </div>
+
       <!-- Report Data Table -->
       <div
         @scroll="handleScroll"
