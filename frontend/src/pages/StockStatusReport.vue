@@ -136,7 +136,7 @@
         </div>
 
         <!-- Negative Stock and Reset -->
-        <div class="flex items-center justify-between pt-5">
+        <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 pt-5">
           <label class="flex items-center gap-2 cursor-pointer select-none text-xl text-[var(--color-text)]">
             <input
               v-model="stockFilters.negativeOnly"
@@ -156,7 +156,18 @@
               class="w-16 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 text-xl text-right text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
             />
           </label>
-          
+
+          <label class="flex items-center gap-2 select-none text-xl text-[var(--color-text)]" title="Highest Weekly Sale looks at the last N months">
+            <span>High Week Months</span>
+            <input
+              v-model.number="stockFilters.weekMonths"
+              type="number"
+              min="1"
+              max="36"
+              class="w-16 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-1.5 py-1 text-xl text-right text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+            />
+          </label>
+
           <button
             @click="resetStockFilters"
             class="text-base text-[var(--color-text-muted)] hover:text-[var(--color-info)] transition-colors underline"
@@ -191,7 +202,7 @@
               <th class="px-2 py-1.5 font-semibold text-right" title="Book stock + draft purchases − draft sales">Actual Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right" title="Net qty sold in last 4 weeks ÷ 4">Weekly Avg Sales</th>
               <th class="px-2 py-1.5 font-semibold text-right" :title="`Net qty sold in last ${avgMonths} months ÷ ${avgMonths}`">Monthly Avg Sales ({{ avgMonths }}M)</th>
-              <th class="px-2 py-1.5 font-semibold text-right" title="Most net qty sold in any one 7-day week of the last 12 months">Highest Weekly Sale (12M)</th>
+              <th class="px-2 py-1.5 font-semibold text-right" :title="`Most net qty sold in any one 7-day week of the last ${weekMonths} months`">Highest Weekly Sale ({{ weekMonths }}M)</th>
               <th class="px-2 py-1.5 font-semibold text-right" :title="`Most net qty sold in any one calendar month of the last ${avgMonths} (incl. current month)`">Highest Monthly Sale ({{ avgMonths }}M)</th>
               <th class="px-2 py-1.5 font-semibold text-right">Safety Stock</th>
               <th class="px-2 py-1.5 font-semibold text-right">Max Stock</th>
@@ -344,7 +355,8 @@ const stockFilters = ref({
   warehouse: '',
   suppliers: [],
   negativeOnly: false,
-  avgMonths: 6
+  avgMonths: 6,
+  weekMonths: 12
 })
 
 // Searchable multi-supplier filter: typing filters the list by name or id; clicking / Enter toggles a
@@ -428,6 +440,12 @@ const avgMonths = computed(() => {
   return n >= 1 ? Math.min(n, 36) : 6
 })
 
+// Months searched for the highest weekly sale. Invalid input falls back to 12.
+const weekMonths = computed(() => {
+  const n = Math.floor(Number(stockFilters.value.weekMonths))
+  return n >= 1 ? Math.min(n, 36) : 12
+})
+
 async function loadStockReportFilters() {
   try {
     const company = localStorage.getItem('wb-company') || ''
@@ -450,7 +468,8 @@ async function loadStockReportData() {
       warehouse: stockFilters.value.warehouse,
       supplier: stockFilters.value.suppliers.length ? stockFilters.value.suppliers : '',
       negative_only: stockFilters.value.negativeOnly,
-      avg_months: avgMonths.value
+      avg_months: avgMonths.value,
+      week_months: weekMonths.value
     })
     stockReportRows.value = data || []
     snapshotLoaded(stockReportRows.value)
@@ -464,7 +483,7 @@ async function loadStockReportData() {
 }
 
 watch(
-  () => [stockFilters.value.warehouse, stockFilters.value.suppliers.join('\u0001'), stockFilters.value.negativeOnly, avgMonths.value],
+  () => [stockFilters.value.warehouse, stockFilters.value.suppliers.join('\u0001'), stockFilters.value.negativeOnly, avgMonths.value, weekMonths.value],
   () => {
     loadStockReportData()
   }
@@ -526,7 +545,8 @@ function resetStockFilters() {
     warehouse: '',
     suppliers: [],
     negativeOnly: false,
-    avgMonths: 6
+    avgMonths: 6,
+    weekMonths: 12
   }
 }
 
@@ -561,7 +581,7 @@ async function exportStockReportToExcel() {
 
   // Add Table Header
   const headerRow = worksheet.addRow([
-    'Item Code', 'Item Name', 'Actual Stock', 'Weekly Avg Sales', `Monthly Avg Sales (${avgMonths.value}M)`, 'Highest Weekly Sale (12M)', `Highest Monthly Sale (${avgMonths.value}M)`, 'Safety Stock', 'Max Stock', 'Min Ord', 'UOM', 'Suppliers'
+    'Item Code', 'Item Name', 'Actual Stock', 'Weekly Avg Sales', `Monthly Avg Sales (${avgMonths.value}M)`, `Highest Weekly Sale (${weekMonths.value}M)`, `Highest Monthly Sale (${avgMonths.value}M)`, 'Safety Stock', 'Max Stock', 'Min Ord', 'UOM', 'Suppliers'
   ])
   headerRow.eachCell(cell => {
     cell.font = { name: 'Arial', bold: true }
