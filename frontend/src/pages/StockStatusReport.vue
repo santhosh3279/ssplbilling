@@ -101,8 +101,13 @@
                 v-for="(sup, i) in supplierMatches"
                 :key="sup.id"
                 class="flex cursor-pointer items-center gap-2 px-2 py-1 text-lg text-[var(--color-text)]"
-                :class="i === supplierActiveIdx ? 'supplier-active bg-[var(--color-focus)] text-[var(--color-text-on-focus)]' : 'hover:bg-[var(--color-surface-raised)]'"
-                @mousedown.prevent="toggleSupplier(sup)"
+                :class="[
+                  i === supplierActiveIdx
+                    ? 'supplier-active bg-[var(--color-focus)] text-[var(--color-text-on-focus)]'
+                    : selectedSupplierSet.has(sup.id) ? 'bg-[var(--color-surface-raised)]' : 'hover:bg-[var(--color-surface-raised)]',
+                  selectedSupplierSet.has(sup.id) ? 'font-semibold' : ''
+                ]"
+                @mousedown.prevent="$event.detail < 2 && toggleSupplier(sup)"
                 @mouseenter="supplierActiveIdx = i"
               >
                 <input
@@ -117,21 +122,6 @@
                 </span>
               </li>
             </ul>
-          </div>
-          <div v-if="stockFilters.suppliers.length" class="mt-1 flex max-h-20 flex-wrap gap-1 overflow-y-auto">
-            <span
-              v-for="id in stockFilters.suppliers"
-              :key="id"
-              class="flex items-center gap-1 rounded-md bg-[var(--color-surface-raised)] px-1.5 py-0.5 text-sm text-[var(--color-text)]"
-            >
-              {{ supplierNameById[id] || id }}
-              <button
-                type="button"
-                class="text-[var(--color-text-muted)] hover:text-[var(--color-danger)]"
-                :title="`Remove ${supplierNameById[id] || id}`"
-                @click="removeSupplier(id)"
-              >×</button>
-            </span>
           </div>
         </div>
 
@@ -398,17 +388,16 @@ const supplierActiveIdx = ref(0)
 
 const selectedSupplierSet = computed(() => new Set(stockFilters.value.suppliers))
 
-const supplierNameById = computed(() => {
-  const map = {}
-  for (const s of filterOptions.value.suppliers || []) map[s.id] = s.name
-  return map
-})
-
+// Every typed word must appear somewhere in the name or id ("sev hy" finds "Sevana Hygiene").
+// Selected suppliers come first, so they can be seen and unticked at the top of the list.
 const supplierMatches = computed(() => {
-  const list = filterOptions.value.suppliers || []
-  const q = supplierQuery.value.trim().toLowerCase()
-  if (!q) return list
-  return list.filter(s => (s.name || '').toLowerCase().includes(q) || s.id.toLowerCase().includes(q))
+  const words = supplierQuery.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const list = (filterOptions.value.suppliers || []).filter(s => {
+    const text = `${s.name || ''} ${s.id}`.toLowerCase()
+    return words.every(w => text.includes(w))
+  })
+  const selected = selectedSupplierSet.value
+  return [...list.filter(s => selected.has(s.id)), ...list.filter(s => !selected.has(s.id))]
 })
 
 function openSupplierList() {
@@ -424,10 +413,8 @@ function closeSupplierList() {
 function toggleSupplier(sup) {
   const list = stockFilters.value.suppliers
   stockFilters.value.suppliers = list.includes(sup.id) ? list.filter(id => id !== sup.id) : [...list, sup.id]
-}
-
-function removeSupplier(id) {
-  stockFilters.value.suppliers = stockFilters.value.suppliers.filter(s => s !== id)
+  // The row moves to / from the top group: keep the highlight on it.
+  supplierActiveIdx.value = Math.max(0, supplierMatches.value.findIndex(s => s.id === sup.id))
 }
 
 function clearSuppliers() {
@@ -453,7 +440,10 @@ function onSupplierKeydown(e) {
     scrollActiveSupplier()
   } else if (e.key === 'Enter') {
     e.preventDefault()
-    if (supplierOpen.value && len) toggleSupplier(supplierMatches.value[supplierActiveIdx.value])
+    if (supplierOpen.value && len) {
+      toggleSupplier(supplierMatches.value[supplierActiveIdx.value])
+      scrollActiveSupplier()
+    }
   } else if (e.key === 'Delete') {
     // Delete clears the typed text only; picked suppliers stay selected.
     e.preventDefault()
