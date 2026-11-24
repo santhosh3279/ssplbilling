@@ -131,11 +131,13 @@
           <div ref="monthsBox" class="relative" data-months-combo @keydown.esc="monthsOpen = false">
             <button
               type="button"
-              class="rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1 text-xl text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+              class="w-72 max-w-full truncate rounded-lg border border-[var(--color-border)] px-2 py-1 text-xl tabular-nums text-[var(--color-text)] focus:border-[var(--color-info)] focus:outline-none"
+              :class="activeOptions ? 'bg-[var(--color-info)]/20' : 'bg-[var(--color-bg)]'"
+              :title="activeOptions || undefined"
               :aria-expanded="monthsOpen"
               @click="monthsOpen = !monthsOpen"
             >
-              Avg {{ avgMonths }}M · High Week {{ weekMonths }}M{{ stockFilters.negativeOnly ? ' · Negative' : '' }}{{ stockFilters.showDisabled ? '' : ' · Disabled hidden' }} ▾
+              Avg {{ avgMonths }}M · High Week {{ weekMonths }}M ▾
             </button>
             <div
               v-if="monthsOpen"
@@ -468,6 +470,13 @@ const monthsBox = ref(null)
 function closeMonthsOnOutsideClick(e) {
   if (monthsOpen.value && !monthsBox.value?.contains(e.target)) monthsOpen.value = false
 }
+
+// Row filters in use inside the dropdown: fills the fixed-width button and shows as its tooltip.
+const activeOptions = computed(() =>
+  [stockFilters.value.negativeOnly && 'Negative stock only', !stockFilters.value.showDisabled && 'Disabled items hidden']
+    .filter(Boolean)
+    .join(' · ')
+)
 
 // Monthly avg divisor: sales of last N months (N*30 days) ÷ N. Invalid input falls back to 6.
 const avgMonths = computed(() => {
