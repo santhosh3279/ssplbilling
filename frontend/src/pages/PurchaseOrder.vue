@@ -623,6 +623,7 @@ import ShortcutPage from '../components/ShortcutPage.vue'
 import PriceListUpdate from './PriceListUpdate.vue'
 
 import { formatDMY } from '../utils/date'
+import { reorderQty } from '../utils/reorderQty'
 import { serverToday, serverNow, toLocalISO, parseCalendarDate } from '../services/serverTime'
 import { getSeriesDefaults } from '../services/masterCache.js'
 const router = useRouter()
@@ -1857,6 +1858,78 @@ function handleSupplierSelected(party) {
     supplierLastInvDate.value = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: '2-digit' })
   } else supplierLastInvDate.value = 'None'
   fetchCustomerSalesHistory(party.name); showSupplierModal.value = false; nextTick(() => { newCodeInput.value?.focus() })
+
+  if (reorderSupplier) {
+    const isPreset = reorderSupplier === party.name
+    reorderSupplier = ''
+    if (isPreset) fillReorderItems(party.name)
+  }
+}
+
+// Stock in the order's warehouse; with no warehouse chosen, across the company's warehouses
+function getReorderStock(item) {
+  if (warehouse.value && warehouse.value !== 'None') return item.stock ?? 0
+  return (item.warehouse_stock || []).reduce((sum, w) => sum + (Number(w.qty) || 0), 0)
+}
+
+// Order Reminder's Create PO: add the supplier's items that are due, at their reorder qty
+async function fillReorderItems(supplier) {
+  fetchingSupplierItems.value = true
+  try {
+    const [itemCodes] = await Promise.all([
+      frappeGet('ssplbilling.api.purchase_order_api.get_supplier_items', { supplier }),
+      refreshItemCache('Purchase', priceList.value, warehouse.value),
+    ])
+    // The order may have been switched while loading
+    if (supplierId.value !== supplier || isReadOnly.value || isSaved.value) return
+    if (!itemCodes?.length) {
+      alert('No items found linked to this supplier.')
+      return
+    }
+
+    const existing = new Set(activeItems.value.map(i => i.item_code))
+    const rows = []
+    let withLevels = 0
+    for (const code of itemCodes) {
+      const match = lookupBillableItem(code)
+      if (!match) continue
+      const { safety_stock = 0, custom_max_stock = 0, min_order_qty = 0 } = match
+      if (safety_stock > 0 || custom_max_stock > 0 || min_order_qty > 0) withLevels++
+      if (existing.has(match.item_code)) continue
+
+      const qty = reorderQty({
+        stock: getReorderStock(match),
+        safetyStock: safety_stock,
+        maxStock: custom_max_stock,
+        minOrderQty: min_order_qty,
+      })
+      if (qty <= 0) continue
+      const uom = match.uom || 'Nos'
+      const rate = getItemRateForPriceList(match, uom)
+      rows.push({
+        item_code: match.item_code, item_name: match.item_name, qty, uom,
+        rate, _base_rate: rate, discount: 0, tax_rate: match.tax_rate || 0,
+        amount: parseFloat((qty * rate).toFixed(precision)), deleted: false,
+        min_order_qty, custom_max_stock, safety_stock,
+        custom_max_order_qty: match.custom_max_order_qty ?? 0,
+      })
+    }
+
+    if (rows.length) {
+      rows.sort((a, b) => (a.item_name || '').localeCompare(b.item_name || ''))
+      items.value.push(...rows)
+      nextTick(() => { newCodeInput.value?.focus() })
+    } else if (!withLevels) {
+      alert('None of this supplier\'s items has a Safety Stock, Max Stock or Min Order Qty set, so no quantity could be filled. Use Fetch Items to list them.')
+    } else if (!existing.size) {
+      alert('Nothing to order: this supplier\'s items with stock levels set are all above them.')
+    }
+  } catch (err) {
+    console.error('Failed to fill reorder items:', err)
+    alert('Error filling order quantities: ' + (err.message || err))
+  } finally {
+    fetchingSupplierItems.value = false
+  }
 }
 
 async function fetchSupplierItems() {
@@ -2185,6 +2258,8 @@ function handleBeforeUnload() {
 }
 
 let presetSupplier = String(router.currentRoute.value.query.supplier || '')
+// Supplier whose due items are filled in once it is picked (cleared after the first pick)
+let reorderSupplier = router.currentRoute.value.query.reorder ? presetSupplier : ''
 
 onMounted(() => {
   window.addEventListener('beforeunload', handleBeforeUnload)

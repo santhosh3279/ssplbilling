@@ -451,7 +451,7 @@ async function remove() {
 }
 
 function createPo(r) {
-  router.push({ path: '/purchase-order', query: { supplier: r.supplier } })
+  router.push({ path: '/purchase-order', query: { supplier: r.supplier, reorder: 1 } })
 }
 
 function markOrdered(r) {
