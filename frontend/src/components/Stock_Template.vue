@@ -235,6 +235,7 @@
                 <div v-if="itemCount !== null" class="text-2xl font-bold text-[var(--color-text-muted)] px-2">
                   Total {{ itemCount }} {{ Number(itemCount) === 1 ? 'item' : 'items' }}
                 </div>
+                <slot name="below-item-count"></slot>
               </div>
 
               <!-- Action Buttons -->

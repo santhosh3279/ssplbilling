@@ -295,6 +295,21 @@
           <td :colspan="5 + priceLists.length" class="px-2 text-[var(--color-text-muted)] italic text-lg">Enter Item Code to add to Repack</td>
         </tr>
       </template>
+
+      <template #below-item-count>
+        <div class="flex items-start gap-4 px-2">
+          <label for="repack-remark" class="pt-1 text-2xl font-bold text-[var(--color-text-muted)]">Remark</label>
+          <textarea
+            id="repack-remark"
+            v-model="remarks"
+            rows="2"
+            :readonly="isReadOnly"
+            placeholder="Enter remark..."
+            class="flex-1 resize-none rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-2xl text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)]/50"
+            :class="isReadOnly ? '' : 'focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]'"
+          ></textarea>
+        </div>
+      </template>
     </Stock_Template>
 
     <QuickItemSearch
@@ -374,6 +389,7 @@ const { refreshItemCache, lookupItemInCache, searchItemsInCache, items: cachedIt
 const repackNo = ref('')
 const repackDate = ref(serverToday())
 const repackTime = ref('')
+const remarks = ref('')
 const fromWarehouse = ref('')
 const toWarehouse = ref('')
 const items = ref([])
@@ -1118,6 +1134,7 @@ async function handleSave() {
         posting_time: repackTime.value || undefined,
         from_warehouse: fromWarehouse.value,
         to_warehouse: toWarehouse.value,
+        remarks: remarks.value.trim(),
         items: items.value.map(i => (i.type === 'Produce' ? { ...i, rate: roundProduceRate(i.rate) } : i))
       }
     })
@@ -1150,6 +1167,7 @@ function resetForm() {
   repackNo.value = ''
   repackName.value = ''
   repackTime.value = ''
+  remarks.value = ''
   items.value = []
   selectedRowIdx.value = -1
   editingRowIdx.value = -1
@@ -1167,7 +1185,7 @@ function goBack() {
 // In edit mode with rows entered, Esc asks before leaving instead of dropping the entry
 function handleBack() {
   if (showExitWarning.value) return
-  if (!isReadOnly.value && (items.value.length > 0 || pendingItem.value)) {
+  if (!isReadOnly.value && (items.value.length > 0 || pendingItem.value || remarks.value.trim())) {
     showExitWarning.value = true
   } else {
     goBack()
@@ -1194,6 +1212,7 @@ async function handleSelectSidebarItem(item) {
   repackName.value = details.name
   repackDate.value = details.posting_date
   repackTime.value = details.posting_time
+  remarks.value = details.remarks || ''
   fromWarehouse.value = details.from_warehouse
   toWarehouse.value = details.to_warehouse
   selectedSeries.value = details.naming_series

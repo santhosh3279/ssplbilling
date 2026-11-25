@@ -59,6 +59,8 @@ def save_repack(data):
     se.set_posting_time = 1
     se.from_warehouse = data.get("from_warehouse")  # Default Source
     se.to_warehouse = data.get("to_warehouse")      # Default Destination
+    if "remarks" in data:
+        se.remarks = data.get("remarks") or ""
 
     items_list = data.get("items") or []
     fg_count = sum(1 for row in items_list if row.get("type") == "Produce")
