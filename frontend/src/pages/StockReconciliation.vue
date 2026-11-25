@@ -103,7 +103,6 @@
           <th v-if="showBatchColumn" class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-px whitespace-nowrap">Batch</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Curr Qty</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">New Qty</th>
-          <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-24">Curr Rate</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-left text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-20">UOM</th>
           <th class="border-r border-b border-[var(--color-border)] px-1.5 py-2 text-right text-4xl font-normal uppercase tracking-wider text-[var(--color-text)] w-28">Diff</th>
           <th class="border-b border-[var(--color-border)] w-12"></th>
@@ -159,9 +158,6 @@
               <span v-if="rowEntryUom(item) !== item.uom" class="block px-2 pb-1 text-xl" :class="tone(index, 'text-[var(--color-text-muted)]')">= {{ formatQty(item.qty) }} {{ item.uom }}</span>
             </template>
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-right font-mono text-4xl" :class="tone(index, 'text-[var(--color-text-muted)]')">
-            {{ item.current_valuation_rate?.toFixed(2) }}
-          </td>
           <td class="p-0 border-r border-[var(--color-border)]">
             <select
               v-if="editingRow === index && itemUoms(item.item_code, item.uom).length > 1"
@@ -213,9 +209,6 @@
               @keydown="onNewQtyKeydown"
             />
           </td>
-          <td class="px-2 py-1 border-r border-[var(--color-border)] text-right text-[var(--color-text-muted)] font-mono text-4xl">
-            {{ newPending.valuation_rate?.toFixed(2) }}
-          </td>
           <td class="p-0 border-r border-[var(--color-border)]">
             <select
               v-if="newItemUoms.length > 1"
@@ -250,7 +243,7 @@
               @keydown="handleNewCodeKeydown"
             />
           </td>
-          <td :colspan="showBatchColumn ? 8 : 7" class="px-2 text-[var(--color-text-muted)] italic text-2xl">Enter item code / barcode &nbsp;·&nbsp; &rarr; search &nbsp;·&nbsp; &uarr; rows</td>
+          <td :colspan="showBatchColumn ? 7 : 6" class="px-2 text-[var(--color-text-muted)] italic text-2xl">Enter item code / barcode &nbsp;·&nbsp; &rarr; search &nbsp;·&nbsp; &uarr; rows</td>
         </tr>
       </template>
 
