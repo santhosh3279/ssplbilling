@@ -1008,6 +1008,8 @@ const draftTileFilters = {
   'purchase-submit': { doctype: 'Purchase Invoice', byWarehouse: true },
   'purchase-order': { doctype: 'Purchase Order' },
   'store-transfer': { doctype: 'Stock Entry', purpose: 'Material Transfer' },
+  'stock-reconciliation': { doctype: 'Stock Reconciliation' },
+  repack: { doctype: 'Stock Entry', purpose: 'Repack' },
 }
 
 async function refreshDraftCounts() {
