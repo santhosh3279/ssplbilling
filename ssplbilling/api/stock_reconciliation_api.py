@@ -185,7 +185,7 @@ def get_stock_reconciliation_purposes():
 
 @frappe.whitelist()
 def get_stock_reconciliations(query="", limit=20, posting_date=None, docstatus=None):
-    """List Stock Reconciliations."""
+    """List Stock Reconciliations. `limit=0` lists all of them."""
     filters = {}
     if docstatus is not None:
         filters["docstatus"] = docstatus
@@ -208,6 +208,9 @@ def get_stock_reconciliations(query="", limit=20, posting_date=None, docstatus=N
     entries = frappe.get_all("Stock Reconciliation", **kwargs)
     for entry in entries:
         entry["customer_name"] = entry.get("company")
+        if not posting_date:
+            # The list spans dates, so each row shows its own
+            entry["customer_name"] = f"{frappe.utils.formatdate(entry.posting_date, 'dd-MM-yyyy')} {entry.company or ''}"
     return entries
 
 @frappe.whitelist()

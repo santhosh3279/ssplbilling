@@ -390,7 +390,7 @@ const sidebarDate = ref(serverToday())
 const sidebarSearch = ref('')
 const sidebarEntries = ref([])
 const sidebarLoading = ref(false)
-const draftOnly = ref(true)
+const draftOnly = ref(true) // drafts are listed for all dates
 const sidebarEntryRefs = new Map()
 
 const dynamicRowStyle = computed(() => ({
@@ -457,6 +457,8 @@ function changeSidebarDate(days) {
   const d = parseCalendarDate(sidebarDate.value)
   d.setDate(d.getDate() + days)
   sidebarDate.value = toLocalISO(d)
+  // Picking a date means looking at that day, so leave the all-dates drafts list
+  draftOnly.value = false
 }
 
 function changeDate(dir) {
@@ -885,18 +887,28 @@ function addNewItem() {
   focusNewCode()
 }
 
+let sidebarRequest = 0
+
 async function fetchSidebarEntries() {
+  const request = ++sidebarRequest
   sidebarLoading.value = true
   try {
-    const params = {
-      posting_date: sidebarSearch.value ? null : sidebarDate.value,
-      query: sidebarSearch.value,
+    const params = { query: sidebarSearch.value }
+    if (draftOnly.value) {
+      params.docstatus = 0
+      params.limit = 0 // every draft, whatever its date
+    } else if (!sidebarSearch.value) {
+      params.posting_date = sidebarDate.value
     }
-    if (draftOnly.value) params.docstatus = 0
-    
-    sidebarEntries.value = await frappeGet(`${API}.get_stock_reconciliations`, params)
-  } catch (e) {}
-  sidebarLoading.value = false
+
+    const entries = await frappeGet(`${API}.get_stock_reconciliations`, params)
+    if (request === sidebarRequest) sidebarEntries.value = entries || []
+  } catch (e) {
+    if (request === sidebarRequest) sidebarEntries.value = []
+    console.error('Failed to load reconciliations', e)
+  } finally {
+    if (request === sidebarRequest) sidebarLoading.value = false
+  }
 }
 
 watch([sidebarDate, draftOnly], () => fetchSidebarEntries())
