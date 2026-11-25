@@ -76,12 +76,23 @@
 
           <button
             ref="printBtn"
-            @click="triggerPrint"
+            @click="triggerPrint()"
             :disabled="!canPrint || printing"
             class="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--color-supplier)] py-4 text-lg font-black text-[var(--color-text-on-highlight)] shadow-xl transition hover:brightness-110 active:scale-95 disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)] disabled:grayscale disabled:cursor-not-allowed uppercase tracking-widest"
           >
             <span v-if="printing" class="inline-block h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
             {{ printing ? 'Sending…' : '🖨️ Print Barcodes' }}
+          </button>
+
+          <!-- Dev server only: same flow without the print call -->
+          <button
+            v-if="isDev"
+            data-testid="barcode-mock-print"
+            @click="triggerPrint(true)"
+            :disabled="!hasPrintableItems || printing"
+            class="w-full rounded-xl border border-dashed border-[var(--color-warning)] bg-[var(--color-surface)] py-2.5 text-sm font-bold text-[var(--color-text)] transition hover:bg-[var(--color-surface-raised)] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            🧪 Mock Print (dev)
           </button>
 
           <div v-if="loadingResources" class="text-center text-xs text-[var(--color-text-muted)] italic py-2">Loading…</div>
@@ -1134,8 +1145,14 @@ const statusMsg = ref('')
 const statusError = ref(false)
 const localBillNo = ref('')
 
+const isDev = import.meta.env.DEV // false in `yarn build`, so the mock never ships
+
+const hasPrintableItems = computed(() =>
+  itemsToPrint.value.some(item => item.qty !== null && item.qty !== undefined && item.qty !== '' && item.qty > 0)
+)
+
 const canPrint = computed(() =>
-  itemsToPrint.value.some(item => item.qty !== null && item.qty !== undefined && item.qty !== '' && item.qty > 0) &&
+  hasPrintableItems.value &&
   !!selectedPrinter.value &&
   !!selectedTemplate.value
 )
@@ -1148,7 +1165,7 @@ function setStatus(msg, isError = false) {
 
 // Sticker limit from SSPL Billing Settings (0 = no limit)
 const printBtn = ref(null)
-const limitWarning = reactive({ show: false, limit: 0, total: 0, overItems: [] })
+const limitWarning = reactive({ show: false, limit: 0, total: 0, overItems: [], mock: false })
 
 function closeLimitWarning() {
   limitWarning.show = false
@@ -1157,26 +1174,30 @@ function closeLimitWarning() {
 
 function confirmLimitWarning() {
   limitWarning.show = false
-  doPrint()
+  doPrint(limitWarning.mock)
 }
 
-function triggerPrint() {
-  if (!canPrint.value || printing.value) return
+function canStart(mock) {
+  return !printing.value && (mock ? isDev && hasPrintableItems.value : canPrint.value)
+}
+
+function triggerPrint(mock = false) {
+  if (!canStart(mock)) return
   const limit = Number(localStorage.getItem('wb-barcode-sticker-limit')) || 0
   if (limit > 0) {
     const rows = itemsToPrint.value.filter(item => Number(item.qty) > 0)
     const total = rows.reduce((sum, item) => sum + Number(item.qty), 0)
     const overItems = rows.filter(item => Number(item.qty) > limit)
     if (total > limit || overItems.length) {
-      Object.assign(limitWarning, { show: true, limit, total, overItems })
+      Object.assign(limitWarning, { show: true, limit, total, overItems, mock })
       return
     }
   }
-  doPrint()
+  doPrint(mock)
 }
 
-async function doPrint() {
-  if (!canPrint.value || printing.value) return
+async function doPrint(mock = false) {
+  if (!canStart(mock)) return
   printing.value = true
   statusMsg.value = ''
   try {
@@ -1189,6 +1210,19 @@ async function doPrint() {
         })
         return itm
       })
+
+    if (mock) {
+      // Page stays open so the print can be repeated
+      console.log('[Barcode mock print]', {
+        printer: selectedPrinter.value,
+        print_template: selectedTemplate.value,
+        bill_no: localBillNo.value || null,
+        items: itemsWithRates,
+      })
+      const total = itemsWithRates.reduce((sum, item) => sum + Number(item.qty), 0)
+      setStatus(`🧪 Mock print: ${total} stickers, nothing sent`)
+      return
+    }
 
     // Creates the Barcode_Printing entry, prints it and deletes it in one call
     const res = await frappePost('ssplbilling.api.barcode_api.print_barcodes', {
