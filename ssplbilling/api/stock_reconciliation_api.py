@@ -62,6 +62,44 @@ def _split_by_batch(items, warehouse):
     return out
 
 
+def _fallback_valuation_rate(item_code, warehouse, company):
+    """Rate per stock UOM for a row entered without one; 0 when none is known.
+
+    ERPNext's own fallback never reaches the buying price here: it only runs for a blank rate,
+    and remove_items_with_no_change fills a blank rate with the current one (0) first.
+    """
+    rate = flt(frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": warehouse}, "valuation_rate"))
+    if rate:
+        return rate
+
+    item = frappe.db.get_value(
+        "Item", item_code, ["valuation_rate", "standard_rate", "stock_uom"], as_dict=True
+    )
+    if not item:
+        return 0
+    if flt(item.valuation_rate):
+        return flt(item.valuation_rate)
+
+    # Only a price in the stock UOM and company currency is comparable to a valuation rate
+    prices = frappe.get_all(
+        "Item Price",
+        filters={
+            "item_code": item_code,
+            "buying": 1,
+            "currency": frappe.get_cached_value("Company", company, "default_currency"),
+            "price_list_rate": [">", 0],
+        },
+        fields=["price_list", "price_list_rate", "uom"],
+        order_by="modified desc",
+    )
+    prices = [p for p in prices if not p.uom or p.uom == item.stock_uom]
+    if prices:
+        default_list = frappe.db.get_single_value("Buying Settings", "buying_price_list")
+        price = next((p for p in prices if p.price_list == default_list), prices[0])
+        return flt(price.price_list_rate)
+    return flt(item.standard_rate)
+
+
 def _append_item(sr, item, warehouse, valuation_rate):
     row = {
         "item_code": item["item_code"],
@@ -73,6 +111,8 @@ def _append_item(sr, item, warehouse, valuation_rate):
         # Batch fields instead of a bundle: ERPNext builds the bundle on submit
         row["batch_no"] = item["batch_no"]
         row["use_serial_batch_fields"] = 1
+    if row["qty"] and not row["valuation_rate"]:
+        row["valuation_rate"] = _fallback_valuation_rate(row["item_code"], row["warehouse"], sr.company)
     sr.append("items", row)
 
 @frappe.whitelist()
@@ -220,6 +260,10 @@ def submit_stock_reconciliation(name):
     if sr.docstatus == 0:
         # Keep the draft's own date; without the flag ERPNext resets it to now on submit
         sr.set_posting_time = 1
+        # Drafts saved without a rate would be refused on submit
+        for row in sr.items:
+            if row.qty and not row.valuation_rate and not row.allow_zero_valuation_rate:
+                row.valuation_rate = _fallback_valuation_rate(row.item_code, row.warehouse, sr.company)
         sr.submit()
         return {"name": sr.name, "status": "Submitted"}
     elif sr.docstatus == 1:
