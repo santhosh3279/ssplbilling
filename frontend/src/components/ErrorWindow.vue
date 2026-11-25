@@ -22,7 +22,7 @@
       </div>
       
       <div class="p-6">
-        <div class="bg-[var(--color-bg)] rounded-lg p-4 border border-[var(--color-border)] max-h-[400px] overflow-y-auto scrollbar-none mb-4">
+        <div class="bg-[var(--color-bg)] rounded-lg p-4 border border-[var(--color-border)] max-h-[400px] overflow-y-auto error-scroll mb-4">
           <p data-testid="app-alert-message" class="text-[var(--color-text)] font-mono text-[1.75rem] whitespace-pre-wrap leading-relaxed">{{ message }}</p>
         </div>
         
@@ -71,9 +71,38 @@ watch(() => props.show, (newVal) => {
   }
 })
 
+// navigator.clipboard only exists on HTTPS / localhost; on plain HTTP (LAN address) copy through a textarea
+function copyWithTextarea(text) {
+  const el = document.createElement('textarea')
+  el.value = text
+  el.readOnly = true
+  el.style.cssText = 'position:fixed;top:0;left:0;opacity:0'
+  document.body.appendChild(el)
+  el.focus({ preventScroll: true })
+  el.select()
+  try {
+    return document.execCommand('copy')
+  } finally {
+    el.remove()
+    dismissButton.value?.focus()
+  }
+}
+
+async function copyToClipboard(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text)
+      return true
+    } catch (err) {
+      console.warn('Clipboard API failed, using fallback: ', err)
+    }
+  }
+  return copyWithTextarea(text)
+}
+
 async function copyError() {
   try {
-    await navigator.clipboard.writeText(props.message)
+    if (!(await copyToClipboard(props.message))) throw new Error('Copy command was rejected')
     copied.value = true
     setTimeout(() => {
       copied.value = false
@@ -85,11 +114,26 @@ async function copyError() {
 </script>
 
 <style scoped>
-.scrollbar-none::-webkit-scrollbar {
-  display: none;
+.error-scroll::-webkit-scrollbar {
+  display: block;
+  width: 12px;
 }
-.scrollbar-none {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+.error-scroll::-webkit-scrollbar-track {
+  background: var(--color-surface);
+  border-radius: 6px;
+}
+.error-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-text-muted);
+  border-radius: 6px;
+}
+.error-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text);
+}
+/* Firefox only: in Chrome these properties would override the ::-webkit-scrollbar styles */
+@supports not selector(::-webkit-scrollbar) {
+  .error-scroll {
+    scrollbar-width: auto;
+    scrollbar-color: var(--color-text-muted) var(--color-surface);
+  }
 }
 </style>
