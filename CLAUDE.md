@@ -196,6 +196,12 @@ After completing a task, always include a line-count table for every affected fi
 
 Use `wc -l` to get accurate counts. Never estimate or skip this table.
 
+## Clear Chat After Each Task
+
+> **MANDATORY — at the end of every completed task, ask the user to clear the chat.**
+
+Make it the last line of the final response, after the commit and the line-count table: "Task done. Clear the chat with `/clear` before the next task?" Ask in plain text (not `AskUserQuestion`); only the user can run `/clear`. Do not ask mid-task or while waiting on an answer from the user.
+
 ## Adding a New Page
 
 > **MANDATORY — a new page is not done until its tile is registered in the dashboard tile access list.**
