@@ -11,6 +11,7 @@
       :total-label="'Adjusted Items'"
       :show-total-currency="false"
       :item-count="items.length"
+      :summary-at-top="true"
       :sidebar-date="sidebarDate"
       :sidebar-items="sidebarEntries"
       :sidebar-search="sidebarSearch"
@@ -264,6 +265,21 @@
            </ul>
         </div>
       </template>
+
+      <template #below-item-count>
+        <div class="flex items-start gap-4 px-2">
+          <label for="reconciliation-remark" class="pt-1 text-2xl font-bold text-[var(--color-text-muted)]">Remark</label>
+          <textarea
+            id="reconciliation-remark"
+            v-model="remarks"
+            rows="2"
+            :readonly="isReadOnly"
+            placeholder="Enter remark..."
+            class="flex-1 resize-none rounded border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-1 text-2xl text-[var(--color-text)] outline-none placeholder:text-[var(--color-text-muted)]/50"
+            :class="isReadOnly ? '' : 'focus:bg-[var(--color-focus)] focus:text-[var(--color-text-on-focus)]'"
+          ></textarea>
+        </div>
+      </template>
     </Stock_Template>
   </div>
 
@@ -353,6 +369,7 @@ const items = ref([])
 const selectedRow = ref(-1)
 const warehouse = ref('')
 const purpose = ref('Stock Reconciliation')
+const remarks = ref('')
 const entryName = ref(null)
 const entryDocStatus = ref(0)
 const submitting = ref(false)
@@ -955,6 +972,7 @@ async function saveEntry() {
     posting_date: entryDate.value,
     purpose: purpose.value,
     warehouse: warehouse.value,
+    remarks: remarks.value.trim(),
     items: items.value.filter(i => Math.abs(i.qty - i.current_qty) > 0.0001).map(i => ({
       item_code: i.item_code,
       warehouse: i.warehouse || warehouse.value,
@@ -1000,6 +1018,7 @@ async function submitEntry() {
 }
 
 function startNewEntry() {
+  remarks.value = ''
   items.value = []; entryName.value = null; entryDocStatus.value = 0
   isReadOnly.value = false
   isDraft.value = false
@@ -1015,6 +1034,7 @@ async function loadEntry(name) {
     entryName.value = data.name
     entryDate.value = data.posting_date
     purpose.value = data.purpose || 'Stock Reconciliation'
+    remarks.value = data.remarks || ''
     warehouse.value = data.items.length ? (data.items[0].warehouse || '') : ''
     items.value = data.items
     entryDocStatus.value = data.docstatus
@@ -1033,7 +1053,7 @@ async function loadEntry(name) {
 // In edit mode (new entry or draft being edited) with rows entered, ask before leaving
 function handleBack() {
   if (showExitWarning.value) return
-  if (!isReadOnly.value && (items.value.length || newItemCode.value)) {
+  if (!isReadOnly.value && (items.value.length || newItemCode.value || remarks.value.trim())) {
     showExitWarning.value = true
     return
   }

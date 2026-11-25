@@ -91,6 +91,7 @@ def create_stock_reconciliation(data=None, **kwargs):
     sr.posting_time = data.get("posting_time") or nowtime()
     sr.company = data.get("company") or frappe.db.get_single_value("Global Defaults", "default_company")
     sr.purpose = data.get("purpose") or "Stock Reconciliation"
+    sr.custom_remarks = data.get("remarks") or ""
     sr.set_posting_time = 1
 
     for item in data["items"]:
@@ -121,6 +122,8 @@ def update_stock_reconciliation(data=None, **kwargs):
     sr.posting_date = data.get("posting_date") or sr.posting_date
     sr.posting_time = data.get("posting_time") or sr.posting_time
     sr.purpose = data.get("purpose") or sr.purpose
+    if "remarks" in data:
+        sr.custom_remarks = data.get("remarks") or ""
     if data.get("company"):
         sr.company = data["company"]
     
@@ -172,7 +175,7 @@ def get_stock_reconciliation(name):
     """Fetch a Stock Reconciliation with its items."""
     doc = frappe.get_all("Stock Reconciliation", 
         filters={"name": name},
-        fields=["name", "posting_date", "company", "docstatus", "purpose"]
+        fields=["name", "posting_date", "company", "docstatus", "purpose", "custom_remarks"]
     )
     if not doc:
         frappe.throw(_("Stock Reconciliation {0} not found").format(name))
@@ -188,6 +191,7 @@ def get_stock_reconciliation(name):
         "name": sr.name,
         "posting_date": str(sr.posting_date),
         "purpose": sr.purpose,
+        "remarks": sr.custom_remarks or "",
         "company": sr.company,
         "docstatus": sr.docstatus,
         "items": [

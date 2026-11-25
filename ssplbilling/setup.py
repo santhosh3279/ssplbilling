@@ -230,6 +230,14 @@ CUSTOM_FIELDS = {
 			"description": "Card received when the bill was settled at the cashier / POS; copied to its alternate-company bill.",
 		},
 	],
+	"Stock Reconciliation": [
+		{
+			"fieldname": "custom_remarks",
+			"fieldtype": "Small Text",
+			"label": "Remarks",
+			"insert_after": "difference_amount",
+		},
+	],
 	"Purchase Invoice": [
 		{
 			"fieldname": "custom_remarks",

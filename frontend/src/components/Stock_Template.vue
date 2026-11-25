@@ -224,8 +224,8 @@
           <slot name="calculation-rows">
             <div class="flex flex-1 items-stretch p-4 gap-6">
               <!-- Summary Card -->
-              <div class="flex-[3] flex flex-col justify-center gap-4">
-                <div class="rounded-2xl border-2 border-[var(--color-highlight)]/30 bg-[var(--color-highlight)]/5 p-6 shadow-xl flex justify-between items-baseline">
+              <div class="flex-[3] flex flex-col" :class="summaryAtTop ? 'justify-start gap-2' : 'justify-center gap-4'">
+                <div class="rounded-2xl border-2 border-[var(--color-highlight)]/30 bg-[var(--color-highlight)]/5 shadow-xl flex justify-between items-baseline" :class="summaryAtTop ? 'px-6 py-4' : 'p-6'">
                   <div class="text-2xl font-black uppercase tracking-[0.2em] text-[var(--color-highlight)]">{{ totalLabel }}</div>
                   <div class="flex items-baseline gap-3 font-bold text-[var(--color-success)]">
                     <span v-if="showTotalCurrency" class="text-4xl font-black">₹</span>
@@ -333,6 +333,8 @@ const props = defineProps({
   totalLabel: { type: String, default: 'Total Value' },
   totalAmount: { type: [Number, String], default: '0.00' },
   itemCount: { type: [Number, String], default: null },
+  // Place the summary card at the top of its column instead of the middle
+  summaryAtTop: { type: Boolean, default: false },
   warehouse: { type: String, default: '' },
 
   // State Props
