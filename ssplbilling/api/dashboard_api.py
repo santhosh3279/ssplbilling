@@ -713,6 +713,7 @@ def get_billing_settings(user=None, company=None):
 		"other_charges": settings.other_charges or "",
 		"round_off": settings.round_off or "",
 		"cipher_map": settings.cipher_map or "",
+		"barcode_sticker_limit": cint(settings.get("barcode_sticker_limit")),
 		"float_precision": cint(frappe.db.get_single_value("System Settings", "float_precision")) or 3,
 		"store_transfer_bill_limit": incentive_rule.store_transfer_bill_limit or 0,
 		"mop_map": mop_map,

@@ -95,7 +95,9 @@ async function syncBillingSettings(targetUser, force) {
       // leaving wb-printer-records unwritten until the TTL expires
       cached.data?.printer_records !== undefined &&
       // Older settings payloads must be refreshed to populate wb-gst.
-      cached.data?.company_gstin !== undefined
+      cached.data?.company_gstin !== undefined &&
+      // ... and to populate wb-barcode-sticker-limit
+      cached.data?.barcode_sticker_limit !== undefined
     if (cacheValid) {
       settings = cached.data
     } else {
@@ -108,6 +110,8 @@ async function syncBillingSettings(targetUser, force) {
 
     if (settings) {
       localStorage.setItem('wb-gst', settings.company_gstin || '')
+      // Written even when 0, so turning the limit off clears the old value
+      localStorage.setItem('wb-barcode-sticker-limit', String(settings.barcode_sticker_limit || 0))
       // Series the (inherited) user may bill on — read by every page's series picker
       writeAllowedSeriesPrefixes(settings, targetUser)
     }

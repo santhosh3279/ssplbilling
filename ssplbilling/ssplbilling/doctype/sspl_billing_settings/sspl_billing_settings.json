@@ -21,6 +21,8 @@
   "billing_series",
   "user_series",
   "table_vycb",
+  "barcode_settings_section",
+  "barcode_sticker_limit",
   "online_order_settings_section",
   "online_order_company",
   "online_order_series",
@@ -129,6 +131,19 @@
    "options": "Account"
   },
   {
+   "fieldname": "barcode_settings_section",
+   "fieldtype": "Section Break",
+   "label": "Barcode Printing"
+  },
+  {
+   "default": "0",
+   "description": "Warn before printing when the total stickers, or the stickers of any one item, exceed this number. 0 = no warning.",
+   "fieldname": "barcode_sticker_limit",
+   "fieldtype": "Int",
+   "label": "No of Barcode Stickers Limit",
+   "non_negative": 1
+  },
+  {
    "fieldname": "online_order_settings_section",
    "fieldtype": "Section Break",
    "label": "Online Order Settings"
@@ -185,7 +200,7 @@
  ],
  "issingle": 1,
  "links": [],
- "modified": "2026-11-06 12:00:00.000000",
+ "modified": "2026-11-25 12:00:00.000000",
  "modified_by": "biller@gmail.com",
  "module": "Ssplbilling",
  "name": "SSPL Billing Settings",

@@ -444,6 +444,9 @@ function applyToLocalStorage(settings, targetUserArg) {
   if (settings.store_transfer_bill_limit !== undefined && settings.store_transfer_bill_limit !== null) {
     localStorage.setItem('wb-store-transfer-limit', String(settings.store_transfer_bill_limit))
   }
+  if (settings.barcode_sticker_limit !== undefined) {
+    localStorage.setItem('wb-barcode-sticker-limit', String(settings.barcode_sticker_limit || 0))
+  }
 
   // Visible accounts — global list of GL accounts exposed in the ledger search modal
   const visibleAccountNames = (settings.visible_accounts || [])

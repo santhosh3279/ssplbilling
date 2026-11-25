@@ -75,6 +75,7 @@
           </div>
 
           <button
+            ref="printBtn"
             @click="triggerPrint"
             :disabled="!canPrint || printing"
             class="w-full flex items-center justify-center gap-2 rounded-xl bg-[var(--color-supplier)] py-4 text-lg font-black text-[var(--color-text-on-highlight)] shadow-xl transition hover:brightness-110 active:scale-95 disabled:bg-[var(--color-surface-raised)] disabled:text-[var(--color-text-muted)] disabled:grayscale disabled:cursor-not-allowed uppercase tracking-widest"
@@ -356,6 +357,15 @@
       @close="quickSearchResults = []"
       @refresh="onQuickSearchRefresh"
     />
+
+    <BarcodeLimitWarning
+      :show="limitWarning.show"
+      :limit="limitWarning.limit"
+      :total="limitWarning.total"
+      :over-items="limitWarning.overItems"
+      @close="closeLimitWarning"
+      @confirm="confirmLimitWarning"
+    />
   </div>
 </template>
 
@@ -373,6 +383,7 @@ import {
 } from '../services/printCache.js'
 import { useShortcuts, useSubwindow } from '../services/shortcutManager'
 import QuickItemSearch from '../components/QuickItemSearch.vue'
+import BarcodeLimitWarning from '../components/BarcodeLimitWarning.vue'
 import { canViewPurchasePrice } from '../composables/usePermission'
 
 const props = defineProps({
@@ -1135,7 +1146,36 @@ function setStatus(msg, isError = false) {
   if (!isError) setTimeout(() => { statusMsg.value = '' }, 4000)
 }
 
-async function triggerPrint() {
+// Sticker limit from SSPL Billing Settings (0 = no limit)
+const printBtn = ref(null)
+const limitWarning = reactive({ show: false, limit: 0, total: 0, overItems: [] })
+
+function closeLimitWarning() {
+  limitWarning.show = false
+  nextTick(() => printBtn.value?.focus())
+}
+
+function confirmLimitWarning() {
+  limitWarning.show = false
+  doPrint()
+}
+
+function triggerPrint() {
+  if (!canPrint.value || printing.value) return
+  const limit = Number(localStorage.getItem('wb-barcode-sticker-limit')) || 0
+  if (limit > 0) {
+    const rows = itemsToPrint.value.filter(item => Number(item.qty) > 0)
+    const total = rows.reduce((sum, item) => sum + Number(item.qty), 0)
+    const overItems = rows.filter(item => Number(item.qty) > limit)
+    if (total > limit || overItems.length) {
+      Object.assign(limitWarning, { show: true, limit, total, overItems })
+      return
+    }
+  }
+  doPrint()
+}
+
+async function doPrint() {
   if (!canPrint.value || printing.value) return
   printing.value = true
   statusMsg.value = ''
