@@ -434,7 +434,7 @@ const sidebarDate = ref(serverToday())
 const recentRepacks = ref([])
 const sidebarSearch = ref('')
 const sidebarSeries = ref([])
-const draftOnly = ref(false)
+const draftOnly = ref(true) // drafts are listed for all dates
 const sidebarLoading = ref(false)
 
 const totalAmount = computed(() => {
@@ -658,11 +658,26 @@ async function fetchMetadata() {
   }
 }
 
+let repackListRequest = 0
+
 async function fetchRecentRepacks() {
+  const request = ++repackListRequest
   sidebarLoading.value = true
-  recentRepacks.value = await frappePost('ssplbilling.api.repack_api.get_recent_repacks', { date: sidebarDate.value })
-  sidebarLoading.value = false
+  try {
+    const repacks = await frappePost('ssplbilling.api.repack_api.get_recent_repacks', {
+      date: sidebarDate.value,
+      draft_only: draftOnly.value
+    })
+    if (request === repackListRequest) recentRepacks.value = repacks || []
+  } catch (error) {
+    if (request === repackListRequest) recentRepacks.value = []
+    console.error('Failed to load repacks:', error)
+  } finally {
+    if (request === repackListRequest) sidebarLoading.value = false
+  }
 }
+
+watch(draftOnly, () => fetchRecentRepacks())
 
 function focusBarcodeInput() {
   selectedRowIdx.value = -1
@@ -1196,7 +1211,9 @@ function handleSidebarDateChange(dir) {
   const d = parseCalendarDate(sidebarDate.value)
   d.setDate(d.getDate() + dir)
   sidebarDate.value = toLocalISO(d)
-  fetchRecentRepacks()
+  // Picking a date means looking at that day, so leave the all-dates drafts list
+  if (draftOnly.value) draftOnly.value = false // the watcher refetches
+  else fetchRecentRepacks()
 }
 
 function handleDocDateChange(dir) {

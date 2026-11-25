@@ -151,22 +151,26 @@ def get_naming_series():
     return ["MAT-REP-.YYYY.-", "STE-.YYYY.-"]
 
 @frappe.whitelist()
-def get_recent_repacks(date=None):
-    """Get recent Repack Stock Entries for the sidebar."""
-    if not date:
-        date = frappe.utils.today()
-    
+def get_recent_repacks(date=None, draft_only=False):
+    """Get Repack Stock Entries for the sidebar: one date's, or all drafts of every date."""
+    draft_only = frappe.parse_json(draft_only)
+    filters = {"purpose": "Repack"}
+    if draft_only:
+        filters["docstatus"] = 0
+    else:
+        filters["posting_date"] = date or frappe.utils.today()
+
     repacks = frappe.get_all(
         "Stock Entry",
-        filters={
-            "posting_date": date,
-            "purpose": "Repack"
-        },
+        filters=filters,
         fields=["name", "total_amount as grand_total", "from_warehouse", "to_warehouse", "docstatus", "posting_date"],
         order_by="creation desc"
     )
     
     for r in repacks:
         r["customer_name"] = f"{r.from_warehouse or ''} -> {r.to_warehouse or ''}"
-    
+        if draft_only:
+            # The list spans dates, so each row shows its own
+            r["customer_name"] = f"{frappe.utils.formatdate(r.posting_date, 'dd-MM-yyyy')} {r['customer_name']}"
+
     return repacks
